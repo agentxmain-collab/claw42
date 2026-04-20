@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-purple: #6c4fff;
+  --brand-lime: #d1ff55;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #000000;
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, #6c4fff 0%, #ffffff 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Purple glow background */
+.purple-glow {
+  background: radial-gradient(ellipse at center, rgba(108, 79, 255, 0.15) 0%, transparent 70%);
+}
+
+/* Card glow on hover */
+.card-glow {
+  transition: all 0.3s ease;
+}
+.card-glow:hover {
+  box-shadow: 0 0 30px rgba(108, 79, 255, 0.3), 0 0 60px rgba(108, 79, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Middle card special glow */
+.card-glow-purple {
+  box-shadow: 0 0 20px rgba(108, 79, 255, 0.2);
+  border-color: rgba(108, 79, 255, 0.5) !important;
+}
+.card-glow-purple:hover {
+  box-shadow: 0 0 40px rgba(108, 79, 255, 0.4), 0 0 80px rgba(108, 79, 255, 0.15);
+}
+
+/* Terminal glow */
+.terminal-glow {
+  box-shadow: 0 0 40px rgba(108, 79, 255, 0.15), 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Fade-in animation for intersection observer */
+.fade-in-section {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+.fade-in-section.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
