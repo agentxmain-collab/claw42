@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "@/i18n/I18nProvider";
 
 /* ─────────── Intersection Observer Hook ─────────── */
 function useScrollFadeIn() {
@@ -57,7 +58,7 @@ function Section({
     <section
       id={id}
       ref={ref}
-      className={`fade-in-section relative py-20 md:py-28 px-6 md:px-12 lg:px-20 ${className}`}
+      className={`fade-in-section relative py-12 md:py-16 px-6 md:px-12 lg:px-20 ${className}`}
     >
       {children}
     </section>
@@ -68,8 +69,9 @@ function Section({
    HERO SECTION
    ═══════════════════════════════════════════════════ */
 function HeroSection() {
+  const { t } = useI18n();
   return (
-    <section className="relative pt-8 md:pt-16">
+    <section className="relative pt-6 md:pt-10">
       {/* Hero background image */}
       <div className="relative w-full hero-fade">
         <Image
@@ -83,19 +85,19 @@ function HeroSection() {
       </div>
 
       {/* Content below hero image */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 -mt-8 md:-mt-16 pb-20">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-5 text-white leading-tight">
-          Meet Your AI Trading Partner
+      <div className="relative z-10 flex flex-col items-center text-center px-6 -mt-8 md:-mt-16 pb-12">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
+          {t.hero.title}
         </h1>
-        <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mb-10 leading-relaxed">
-          The world&apos;s first AI Agent competitive cultivation ecosystem dedicated to cryptocurrency trading
+        <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mb-8 leading-relaxed">
+          {t.hero.subtitle}
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
           <button className="px-8 py-3 rounded-full bg-[#d1ff55] text-black font-semibold text-base hover:brightness-110 transition-all hover:scale-105">
-            立即开始
+            {t.hero.ctaPrimary}
           </button>
           <button className="px-8 py-3 rounded-full border border-white/30 text-white font-semibold text-base hover:border-white/60 transition-all hover:scale-105">
-            API文档
+            {t.hero.ctaSecondary}
           </button>
         </div>
       </div>
@@ -107,6 +109,7 @@ function HeroSection() {
    QUICK START SECTION
    ═══════════════════════════════════════════════════ */
 function QuickStartSection() {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const command = "pip install claw42-sdk && claw42 run daily-report";
 
@@ -119,8 +122,8 @@ function QuickStartSection() {
 
   return (
     <Section className="flex flex-col items-center max-w-4xl mx-auto">
-      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-12 gradient-text">
-        30秒即可遇见你的第一个AI Agent
+      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 gradient-text">
+        {t.quickStart.title}
       </h2>
 
       {/* Terminal window */}
@@ -169,14 +172,15 @@ function QuickStartSection() {
    SCENARIOS SECTION (Bento Grid)
    ═══════════════════════════════════════════════════ */
 function ScenariosSection() {
+  const { t } = useI18n();
   return (
     <Section className="max-w-7xl mx-auto">
-      <div className="text-center mb-14">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-white">
-          常用场景
+      <div className="text-center mb-10">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 text-white">
+          {t.scenarios.sectionTitle}
         </h2>
         <p className="text-gray-400 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
-          从新手入门到资深策略，AI Agent正在接管加密交易的每一个关键环节。
+          {t.scenarios.sectionSubtitle}
         </p>
       </div>
 
@@ -185,22 +189,22 @@ function ScenariosSection() {
         {/* LEFT LARGE CARD */}
         <div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col lg:row-span-2">
           <div className="flex items-center gap-3 mb-4">
-            <h3 className="text-xl md:text-2xl font-bold text-white">生成加密货币日报</h3>
+            <h3 className="text-xl md:text-2xl font-bold text-white">{t.scenarios.daily.title}</h3>
             <span className="px-2.5 py-1 text-xs font-bold bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
-              推荐场景
+              {t.scenarios.daily.badge}
             </span>
           </div>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed mb-6">
-            一键唤醒 AI 获取全球市场动态。AI 将自动扫描主流币种波动、热门社交媒体情绪、重要链上数据与宏观新闻，输出结构化的中文研报，助你开启每日交易。
+            {t.scenarios.daily.desc}
           </p>
 
           {/* Input field */}
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 bg-[#1a1a1a] border border-white/10 rounded-lg px-4 py-3 text-sm text-gray-500">
-              点击复制内容，发送给你的 agent 即可体验
+              {t.scenarios.daily.inputPlaceholder}
             </div>
             <button className="px-5 py-3 bg-green-500 text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition-colors shrink-0">
-              立即试用
+              {t.scenarios.daily.cta}
             </button>
           </div>
 
@@ -210,17 +214,15 @@ function ScenariosSection() {
               <div className="w-7 h-7 rounded-full bg-brand-purple/30 flex items-center justify-center">
                 <span className="text-xs">🤖</span>
               </div>
-              <span className="text-sm font-semibold text-white">Claw 42 Agent</span>
-              <span className="text-xs text-gray-500 ml-auto">just now</span>
+              <span className="text-sm font-semibold text-white">{t.scenarios.daily.chatSpeaker}</span>
+              <span className="text-xs text-gray-500 ml-auto">{t.scenarios.daily.chatTime}</span>
             </div>
             <div className="space-y-2 text-sm text-gray-300">
-              <p className="font-semibold text-white text-sm mb-2">📊 今日加密货币市场日报</p>
+              <p className="font-semibold text-white text-sm mb-2">{t.scenarios.daily.chatTitle}</p>
               <div className="space-y-1.5 text-xs md:text-sm">
-                <p>• BTC: $67,432 <span className="text-green-400">(+2.3%)</span> — 突破关键阻力位</p>
-                <p>• ETH: $3,521 <span className="text-green-400">(+1.8%)</span> — Layer2 TVL 创新高</p>
-                <p>• SOL: $178 <span className="text-red-400">(-0.5%)</span> — Meme 币热度回落</p>
-                <p>• 市场情绪: <span className="text-green-400">贪婪 72</span></p>
-                <p>• 链上大额转账: 3笔 &gt; 1000 BTC</p>
+                {t.scenarios.daily.chatBullets.map((line, i) => (
+                  <p key={i}>• {line}</p>
+                ))}
               </div>
             </div>
           </div>
@@ -228,9 +230,9 @@ function ScenariosSection() {
 
         {/* RIGHT TOP CARD */}
         <div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col">
-          <h3 className="text-xl font-bold text-white mb-2">实时行情监控</h3>
+          <h3 className="text-xl font-bold text-white mb-2">{t.scenarios.realtime.title}</h3>
           <p className="text-gray-400 text-sm leading-relaxed mb-5">
-            24/7 监控市场行情，大涨大跌及时知晓
+            {t.scenarios.realtime.desc}
           </p>
           <div className="flex-1 bg-[#1a1a1a] rounded-xl min-h-[120px] flex items-center justify-center">
             <div className="text-center">
@@ -239,21 +241,21 @@ function ScenariosSection() {
                 <span>$67,432</span>
                 <span className="text-sm text-green-400">+2.3%</span>
               </div>
-              <p className="text-xs text-gray-500">BTC/USDT · Real-time</p>
+              <p className="text-xs text-gray-500">{t.scenarios.realtime.ticker}</p>
             </div>
           </div>
         </div>
 
         {/* RIGHT BOTTOM CARD */}
         <div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col">
-          <h3 className="text-xl font-bold text-white mb-2">Agent自动化交易</h3>
+          <h3 className="text-xl font-bold text-white mb-2">{t.scenarios.autoTrade.title}</h3>
           <p className="text-gray-400 text-sm leading-relaxed mb-5">
-            如需使用交易功能,请先创建apikey
+            {t.scenarios.autoTrade.desc}
           </p>
           <div className="flex-1 bg-[#1a1a1a] rounded-xl min-h-[120px] flex items-center justify-center">
             <div className="text-center">
               <div className="text-3xl mb-2">🔑</div>
-              <p className="text-sm text-gray-400">Create API Key to start</p>
+              <p className="text-sm text-gray-400">{t.scenarios.autoTrade.cta}</p>
             </div>
           </div>
         </div>
@@ -265,38 +267,23 @@ function ScenariosSection() {
 /* ═══════════════════════════════════════════════════
    WHY SECTION
    ═══════════════════════════════════════════════════ */
-const whyCards = [
-  {
-    title: "竞技公信力",
-    desc: "战绩即信任，拒绝纸上谈兵。我们用公开榜单、实时数据和全真回测，让每一次选择都有据可依。",
-    highlight: false,
-  },
-  {
-    title: "养成共生力",
-    desc: "从通用模板到你的专属交易大师。领养一个\u201c龙虾\u201dAgent，喂养数据、打磨策略，让它陪你一起成长。",
-    highlight: true,
-  },
-  {
-    title: "生态自驱力",
-    desc: "Agent成为KOL，工具场进化为生态圈。这里不只有交易，还有观点、粉丝、合作与挑战。",
-    highlight: false,
-  },
-];
-
 function WhySection() {
+  const { t } = useI18n();
+  const cards = t.why.cards;
+
   return (
     <Section className="max-w-7xl mx-auto">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6 text-white leading-tight">
-          为什么要做这个产品？
+      <div className="text-center mb-4">
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 text-white leading-tight">
+          {t.why.title}
         </h2>
         <p className="text-gray-400 text-sm md:text-base max-w-4xl mx-auto leading-relaxed">
-          我们搭建这个生态，是为了让每一位交易者都能遇见契合自己的数字同行者，以竞技和养成，重塑加密交易的全新格局。
+          {t.why.subtitle}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-14">
-        {whyCards.map((card, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+        {cards.map((card, i) => (
           <div
             key={i}
             className={`card-glow relative bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col overflow-hidden`}
@@ -306,8 +293,8 @@ function WhySection() {
             </div>
             <h3 className="text-xl font-bold text-white mb-3">{card.title}</h3>
             <p className="text-gray-400 text-sm leading-relaxed flex-1">{card.desc}</p>
-            {/* Purple gradient bar at bottom for highlighted card */}
-            {card.highlight && (
+            {/* Purple gradient bar at bottom for highlighted card (index 1) */}
+            {i === 1 && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#6c4fff] to-[#a78bfa]" />
             )}
           </div>
@@ -318,26 +305,18 @@ function WhySection() {
 }
 
 /* ═══════════════════════════════════════════════════
-   DISCLAIMER SECTION (免责声明)
+   DISCLAIMER SECTION
    ═══════════════════════════════════════════════════ */
 function DisclaimerSection() {
+  const { t } = useI18n();
   return (
-    <section className="relative border-t border-white/5 mt-20 py-16 px-6 md:px-12 lg:px-20">
+    <section className="relative border-t border-white/5 mt-10 py-10 px-6 md:px-12 lg:px-20">
       <div className="max-w-5xl mx-auto">
-        <h3 className="text-white font-bold text-lg mb-6">免责声明</h3>
+        <h3 className="text-white font-bold text-lg mb-6">{t.disclaimer.title}</h3>
         <div className="space-y-4 text-gray-500 text-xs leading-relaxed">
-          <p>
-            1. Claw 42 Skills 仅作为信息参考工具。Claw 42 Skills 及其输出的报告以&ldquo;现状&rdquo;及&ldquo;现有&rdquo;基础提供，不作任何形式的陈述或保证。其内容不构成投资、财务、交易或任何其他形式的建议；不代表买入、卖出或持有任何资产的推荐；不保证所呈现数据或分析的准确性、及时性或完整性。
-          </p>
-          <p>
-            2. 您使用 Claw 42 Skills 及其相关任意的风险由您自行承担。您需独立负责评估和获得的信息对于自身特定需求的适用性。Claw 42 不认可或保证任何 AI 生成的信息，且 AI 生成的信息内容不作为决策的唯一依据。AI 生成的内容可能包含或反映第三方的观点，并可能存在错误、偏差或过时信息。
-          </p>
-          <p>
-            3. 对于因使用或禁止使用 Claw 42 Skills 功能而导致的任何损失，Claw 42 概不负责。Claw 42 有权自行决定终止或限制此功能。数字资产价格具有高市场风险和波动性。您的投资价值可能下降也可能上涨，且可能无法收回投资本金。您应对自己的投资决策负全责。Claw 42 对您可能遭受的任何损失不承担责任。
-          </p>
-          <p>
-            4. 记住过去的并非未来表现的可靠预测指标。在做出任何投资前，您应仔细考虑自己的投资经验、财务状况、投资目标和风险承受能力，并咨询独立财务顾问。更多信息请参阅我们的风险提示和使用条款。
-          </p>
+          {t.disclaimer.paragraphs.map((para, i) => (
+            <p key={i}>{para}</p>
+          ))}
         </div>
       </div>
     </section>
