@@ -71,7 +71,7 @@ function Section({
 function HeroSection() {
   const { t } = useI18n();
   return (
-    <section className="relative pt-6 md:pt-10">
+    <section className="relative pt-20 md:pt-24">
       {/* Hero background image */}
       <div className="relative w-full hero-fade">
         <Image
