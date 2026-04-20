@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { I18nProvider } from "@/i18n/I18nProvider";
-import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { TopBar } from "@/i18n/LanguageSwitcher";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,7 +22,7 @@ export default function RootLayout({
     <html lang="zh-CN" className="dark">
       <body className={inter.className}>
         <I18nProvider>
-          <LanguageSwitcher />
+          <TopBar />
           {children}
         </I18nProvider>
       </body>
