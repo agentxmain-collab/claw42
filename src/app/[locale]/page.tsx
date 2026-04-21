@@ -257,9 +257,9 @@ function DisclaimerSection() {
       viewport={motionViewport}
       variants={fadeOnlyVariants()}
       transition={getFadeUpTransition()}
-      className="relative border-t border-white/5 mt-10 py-10 px-6 md:px-12 lg:px-20"
+      className="relative border-t border-white/5 mt-10 py-10"
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
         <h3 className="text-white font-bold text-lg mb-6">{t.disclaimer.title}</h3>
         <div className="space-y-4 text-gray-500 text-xs leading-relaxed">
           {t.disclaimer.paragraphs.map((para, i) => (
