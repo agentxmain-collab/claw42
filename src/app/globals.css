@@ -50,6 +50,16 @@ body {
   mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .card-glow:hover {
+    transform: none;
+  }
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

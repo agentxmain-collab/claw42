@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
+import { COINW_SKILLS_URL } from "@/lib/constants";
 import { fadeUp } from "@/lib/motion";
 
 export function SkillsEcoSection() {
@@ -50,7 +51,9 @@ export function SkillsEcoSection() {
               {card.desc}
             </p>
             <a
-              href="#"
+              href={COINW_SKILLS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-[#d1ff55] text-sm font-semibold hover:brightness-110 transition-colors self-start"
             >
               {card.cta} →

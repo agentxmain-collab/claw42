@@ -22,6 +22,8 @@ export interface Dict {
       badge: string;
       desc: string;
       inputPlaceholder: string;
+      defaultPrompt: string;
+      copiedToast: string;
       cta: string;
       chatSpeaker: string;
       chatTime: string;

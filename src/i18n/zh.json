@@ -20,6 +20,8 @@
       "badge": "推荐场景",
       "desc": "一键唤醒 AI 获取全球市场动态。AI 将自动扫描主流币种波动、热门社交媒体情绪、重要链上数据与宏观新闻，输出结构化的中文研报，助你开启每日交易。",
       "inputPlaceholder": "点击复制内容，发送给你的 agent 即可体验",
+      "defaultPrompt": "帮我生成今日加密货币市场日报：扫描 BTC/ETH/SOL 等主流币种 24 小时价格波动、主要社交媒体的情绪变化、链上大额转账和宏观新闻，输出结构化的中文日报，帮我开启今天的交易。",
+      "copiedToast": "已复制到剪贴板",
       "cta": "立即试用",
       "chatSpeaker": "Claw 42 Agent",
       "chatTime": "just now",
@@ -42,6 +44,24 @@
       "desc": "如需使用交易功能，请先创建 apikey",
       "cta": "Create API Key to start"
     }
+  },
+  "skillsEco": {
+    "title": "探索 AI Skills 生态",
+    "subtitle": "AI 调用的不只是接口，而是整个交易系统。从研究、策略到风控的全链路闭环。",
+    "cards": [
+      {
+        "icon": "⚙️",
+        "title": "Contract",
+        "desc": "合约专用 skill：涵盖市场数据、下单 / 取消订单、止盈 / 止损、持仓和订单查询、账户资产、持仓模式和杠杆查询",
+        "cta": "了解详情"
+      },
+      {
+        "icon": "📊",
+        "title": "Spot",
+        "desc": "现货专用 skill：涵盖市场数据、下单 / 取消订单、订单查询、账户余额和资金划转",
+        "cta": "了解详情"
+      }
+    ]
   },
   "why": {
     "title": "为什么要做这个产品？",
