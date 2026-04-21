@@ -1,19 +1,25 @@
 "use client";
 
-import { useI18n } from "./I18nProvider";
+import Image from "next/image";
+import { useI18n } from "@/i18n/I18nProvider";
 
-export function TopBar() {
+export function SiteHeader() {
   const { locale, setLocale, t } = useI18n();
   const nextLabel = locale === "zh" ? t.nav.switchLangToEn : t.nav.switchLangToZh;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 h-[60px] bg-black/80 backdrop-blur-xl border-b border-white/[0.06]">
+    <nav className="fixed top-0 left-0 right-0 z-50 h-[72px] bg-black/80 backdrop-blur-xl border-b border-white/[0.06]">
       <div className="max-w-[1440px] mx-auto h-full flex items-center justify-between px-6 md:px-10 lg:px-16">
         {/* Logo */}
         <a href="/" className="flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-full bg-[#6c4fff] flex items-center justify-center text-white font-bold text-lg">
-            C
-          </div>
+          <Image
+            src="/images/claw42-logo-trimmed.png"
+            alt="Claw 42"
+            width={40}
+            height={40}
+            priority
+            className="w-10 h-10 object-contain"
+          />
           <span className="text-white font-semibold text-lg tracking-tight">
             Claw 42
           </span>

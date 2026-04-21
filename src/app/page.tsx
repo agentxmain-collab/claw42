@@ -1,31 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { COINW_SKILLS_URL } from "@/lib/constants";
+import { ScenariosSection } from "@/modules/landing/ScenariosSection";
+import { SkillsEcoSection } from "@/modules/landing/SkillsEcoSection";
+import {
+  fadeOnlyVariants,
+  fadeScaleVariants,
+  fadeUpVariants,
+  getFadeUpTransition,
+  motionViewport,
+} from "@/lib/motion";
 
-/* ─────────── Intersection Observer Hook ─────────── */
-function useScrollFadeIn() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add("is-visible");
-          obs.unobserve(el);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return ref;
-}
-
-/* ─────────── Icons ─────────── */
 function ClipboardIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -42,38 +31,51 @@ function TrendingUpIcon() {
   );
 }
 
-
-/* ─────────── Section wrapper with fade ─────────── */
 function Section({
   children,
   className = "",
   id,
+  variant = "fadeUp",
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   id?: string;
+  variant?: "fadeUp" | "scale" | "fade";
 }) {
-  const ref = useScrollFadeIn();
+  const reduceMotion = useReducedMotion();
+  const variants =
+    variant === "scale"
+      ? fadeScaleVariants(reduceMotion)
+      : variant === "fade"
+        ? fadeOnlyVariants()
+        : fadeUpVariants(reduceMotion);
+
   return (
-    <section
+    <motion.section
       id={id}
-      ref={ref}
-      className={`fade-in-section relative py-12 md:py-16 px-6 md:px-12 lg:px-20 ${className}`}
+      initial="hidden"
+      whileInView="visible"
+      viewport={motionViewport}
+      variants={variants}
+      transition={getFadeUpTransition()}
+      className={`relative py-12 md:py-16 px-6 md:px-12 lg:px-20 ${className}`}
     >
       {children}
-    </section>
+    </motion.section>
   );
 }
 
-/* ═══════════════════════════════════════════════════
-   HERO SECTION
-   ═══════════════════════════════════════════════════ */
 function HeroSection() {
   const { t } = useI18n();
+  const reduceMotion = useReducedMotion();
+
   return (
-    <section className="relative pt-20 md:pt-24">
-      {/* Hero background image */}
-      <div className="relative w-full hero-fade">
+    <section className="relative pt-24 md:pt-28 pb-12">
+      <motion.div
+        animate={reduceMotion ? undefined : { y: [0, -8, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="relative w-full hero-fade mb-8 md:mb-12"
+      >
         <Image
           src="/images/hero-robot-scene.png"
           alt="Claw 42 AI Trading"
@@ -82,10 +84,16 @@ function HeroSection() {
           className="w-full h-auto object-cover"
           priority
         />
-      </div>
+      </motion.div>
 
-      {/* Content below hero image */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 -mt-8 md:-mt-16 pb-12">
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={motionViewport}
+        variants={fadeUpVariants(reduceMotion)}
+        transition={getFadeUpTransition()}
+        className="relative z-10 flex flex-col items-center text-center px-6 max-w-4xl mx-auto"
+      >
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
           {t.hero.title}
         </h1>
@@ -93,31 +101,48 @@ function HeroSection() {
           {t.hero.subtitle}
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
-          <button className="px-8 py-3 rounded-full bg-[#d1ff55] text-black font-semibold text-base hover:brightness-110 transition-all hover:scale-105">
+          <motion.a
+            href={COINW_SKILLS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            whileHover={reduceMotion ? undefined : { scale: 1.05 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+            className="px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
+          >
             {t.hero.ctaPrimary}
-          </button>
-          <button className="px-8 py-3 rounded-full border border-white/30 text-white font-semibold text-base hover:border-white/60 transition-all hover:scale-105">
+          </motion.a>
+          <motion.a
+            href={COINW_SKILLS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            whileHover={reduceMotion ? undefined : { scale: 1.05 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+            className="px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
+          >
             {t.hero.ctaSecondary}
-          </button>
+          </motion.a>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
 
-/* ═══════════════════════════════════════════════════
-   QUICK START SECTION
-   ═══════════════════════════════════════════════════ */
 function QuickStartSection() {
   const { t } = useI18n();
+  const reduceMotion = useReducedMotion();
   const [copied, setCopied] = useState(false);
-  const command = "pip install claw42-sdk && claw42 run daily-report";
+  const command = `npx skills add ${COINW_SKILLS_URL}`;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(command).then(() => {
+  const handleCopy = async () => {
+    try {
+      if (!navigator.clipboard) return;
+
+      await navigator.clipboard.writeText(command);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
   };
 
   return (
@@ -126,9 +151,14 @@ function QuickStartSection() {
         {t.quickStart.title}
       </h2>
 
-      {/* Terminal window */}
-      <div className="w-full max-w-2xl terminal-glow rounded-xl overflow-hidden border border-white/10 bg-[#1a1a1a]">
-        {/* macOS title bar */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={motionViewport}
+        variants={fadeScaleVariants(reduceMotion)}
+        transition={getFadeUpTransition()}
+        className="w-full max-w-2xl terminal-glow rounded-xl overflow-hidden border border-white/10 bg-[#1a1a1a]"
+      >
         <div className="flex items-center justify-between px-4 py-3 bg-[#111] border-b border-white/5">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
@@ -139,18 +169,18 @@ function QuickStartSection() {
             </span>
           </div>
         </div>
-        {/* Code content */}
         <div className="flex items-center justify-between p-5 font-mono text-sm md:text-base">
-          <div className="leading-relaxed">
+          <div className="leading-relaxed break-all">
             <span className="text-gray-500">$ </span>
-            <span className="text-white">pip install </span>
-            <span className="text-green-400">claw42-sdk</span>
-            <span className="text-white"> && </span>
-            <span className="text-white">claw42 run </span>
-            <span className="text-green-400">daily-report</span>
+            <span className="text-white">npx </span>
+            <span className="text-green-400">skills add</span>
+            <span className="text-white"> </span>
+            <span className="text-[#7c5cff]">{COINW_SKILLS_URL}</span>
           </div>
-          <button
+          <motion.button
             onClick={handleCopy}
+            whileHover={reduceMotion ? undefined : { scale: 1.05 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
             className="relative ml-4 p-2 text-gray-400 hover:text-white transition-colors shrink-0 copy-btn"
             title="Copy to clipboard"
           >
@@ -161,114 +191,16 @@ function QuickStartSection() {
             ) : (
               <ClipboardIcon />
             )}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
     </Section>
   );
 }
 
-/* ═══════════════════════════════════════════════════
-   SCENARIOS SECTION (Bento Grid)
-   ═══════════════════════════════════════════════════ */
-function ScenariosSection() {
-  const { t } = useI18n();
-  return (
-    <Section className="max-w-7xl mx-auto">
-      <div className="text-center mb-10">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 text-white">
-          {t.scenarios.sectionTitle}
-        </h2>
-        <p className="text-gray-400 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
-          {t.scenarios.sectionSubtitle}
-        </p>
-      </div>
-
-      {/* Bento grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* LEFT LARGE CARD */}
-        <div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col lg:row-span-2">
-          <div className="flex items-center gap-3 mb-4">
-            <h3 className="text-xl md:text-2xl font-bold text-white">{t.scenarios.daily.title}</h3>
-            <span className="px-2.5 py-1 text-xs font-bold bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
-              {t.scenarios.daily.badge}
-            </span>
-          </div>
-          <p className="text-gray-400 text-sm md:text-base leading-relaxed mb-6">
-            {t.scenarios.daily.desc}
-          </p>
-
-          {/* Input field */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 bg-[#1a1a1a] border border-white/10 rounded-lg px-4 py-3 text-sm text-gray-500">
-              {t.scenarios.daily.inputPlaceholder}
-            </div>
-            <button className="px-5 py-3 bg-green-500 text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition-colors shrink-0">
-              {t.scenarios.daily.cta}
-            </button>
-          </div>
-
-          {/* Chat preview card */}
-          <div className="flex-1 bg-[#0a0a0a] border border-white/10 rounded-xl p-5 mt-auto">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-full bg-brand-purple/30 flex items-center justify-center">
-                <span className="text-xs">🤖</span>
-              </div>
-              <span className="text-sm font-semibold text-white">{t.scenarios.daily.chatSpeaker}</span>
-              <span className="text-xs text-gray-500 ml-auto">{t.scenarios.daily.chatTime}</span>
-            </div>
-            <div className="space-y-2 text-sm text-gray-300">
-              <p className="font-semibold text-white text-sm mb-2">{t.scenarios.daily.chatTitle}</p>
-              <div className="space-y-1.5 text-xs md:text-sm">
-                {t.scenarios.daily.chatBullets.map((line, i) => (
-                  <p key={i}>• {line}</p>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT TOP CARD */}
-        <div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col">
-          <h3 className="text-xl font-bold text-white mb-2">{t.scenarios.realtime.title}</h3>
-          <p className="text-gray-400 text-sm leading-relaxed mb-5">
-            {t.scenarios.realtime.desc}
-          </p>
-          <div className="flex-1 bg-[#1a1a1a] rounded-xl min-h-[120px] flex items-center justify-center">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-3 text-2xl font-mono font-bold text-white mb-2">
-                <span className="text-green-400">📈</span>
-                <span>$67,432</span>
-                <span className="text-sm text-green-400">+2.3%</span>
-              </div>
-              <p className="text-xs text-gray-500">{t.scenarios.realtime.ticker}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT BOTTOM CARD */}
-        <div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col">
-          <h3 className="text-xl font-bold text-white mb-2">{t.scenarios.autoTrade.title}</h3>
-          <p className="text-gray-400 text-sm leading-relaxed mb-5">
-            {t.scenarios.autoTrade.desc}
-          </p>
-          <div className="flex-1 bg-[#1a1a1a] rounded-xl min-h-[120px] flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-3xl mb-2">🔑</div>
-              <p className="text-sm text-gray-400">{t.scenarios.autoTrade.cta}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ═══════════════════════════════════════════════════
-   WHY SECTION
-   ═══════════════════════════════════════════════════ */
 function WhySection() {
   const { t } = useI18n();
+  const reduceMotion = useReducedMotion();
   const cards = t.why.cards;
 
   return (
@@ -284,33 +216,43 @@ function WhySection() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
         {cards.map((card, i) => (
-          <div
-            key={i}
-            className={`card-glow relative bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col overflow-hidden`}
+          <motion.div
+            key={card.title}
+            initial="hidden"
+            whileInView="visible"
+            viewport={motionViewport}
+            variants={fadeUpVariants(reduceMotion)}
+            transition={getFadeUpTransition(i * 0.08)}
+            whileHover={reduceMotion ? undefined : { y: -4 }}
+            className="card-glow relative bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col overflow-hidden"
           >
             <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-5 text-brand-purple">
               <TrendingUpIcon />
             </div>
             <h3 className="text-xl font-bold text-white mb-3">{card.title}</h3>
             <p className="text-gray-400 text-sm leading-relaxed flex-1">{card.desc}</p>
-            {/* Purple gradient bar at bottom for highlighted card (index 1) */}
             {i === 1 && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#6c4fff] to-[#a78bfa]" />
             )}
-          </div>
+          </motion.div>
         ))}
       </div>
     </Section>
   );
 }
 
-/* ═══════════════════════════════════════════════════
-   DISCLAIMER SECTION
-   ═══════════════════════════════════════════════════ */
 function DisclaimerSection() {
   const { t } = useI18n();
+
   return (
-    <section className="relative border-t border-white/5 mt-10 py-10 px-6 md:px-12 lg:px-20">
+    <motion.section
+      initial="hidden"
+      whileInView="visible"
+      viewport={motionViewport}
+      variants={fadeOnlyVariants()}
+      transition={getFadeUpTransition()}
+      className="relative border-t border-white/5 mt-10 py-10 px-6 md:px-12 lg:px-20"
+    >
       <div className="max-w-5xl mx-auto">
         <h3 className="text-white font-bold text-lg mb-6">{t.disclaimer.title}</h3>
         <div className="space-y-4 text-gray-500 text-xs leading-relaxed">
@@ -319,19 +261,17 @@ function DisclaimerSection() {
           ))}
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
-/* ═══════════════════════════════════════════════════
-   PAGE
-   ═══════════════════════════════════════════════════ */
 export default function Home() {
   return (
     <main className="bg-black min-h-screen">
       <HeroSection />
       <QuickStartSection />
       <ScenariosSection />
+      <SkillsEcoSection />
       <WhySection />
       <DisclaimerSection />
     </main>

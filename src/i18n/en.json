@@ -20,6 +20,8 @@
       "badge": "Recommended",
       "desc": "Wake up your AI with one click to capture global market dynamics. The AI scans price action of major coins, social sentiment, on-chain signals and macro news, then delivers a structured report to kick off your trading day.",
       "inputPlaceholder": "Click to copy, then send to your agent to try it out",
+      "defaultPrompt": "Generate today's crypto market report for me: scan 24h price moves of BTC/ETH/SOL, social sentiment shifts, major on-chain whale transfers and macro news, then deliver a structured report to start my trading day.",
+      "copiedToast": "Copied to clipboard",
       "cta": "Try Now",
       "chatSpeaker": "Claw 42 Agent",
       "chatTime": "just now",
@@ -43,6 +45,24 @@
       "cta": "Create API Key to start"
     }
   },
+  "skillsEco": {
+    "title": "Explore the AI Skills Ecosystem",
+    "subtitle": "AI doesn't just call APIs — it orchestrates the whole trading system. From research to strategy to risk, a full-loop closed workflow.",
+    "cards": [
+      {
+        "icon": "⚙️",
+        "title": "Contract",
+        "desc": "Contract-specific skills: market data, order placement & cancellation, TP/SL, positions & orders queries, account assets, position mode and leverage queries.",
+        "cta": "Learn more"
+      },
+      {
+        "icon": "📊",
+        "title": "Spot",
+        "desc": "Spot-specific skills: market data, order placement & cancellation, order queries, account balance and fund transfers.",
+        "cta": "Learn more"
+      }
+    ]
+  },
   "why": {
     "title": "Why This Product?",
     "subtitle": "We built this ecosystem so every trader can meet a digital companion tailored to them — reshaping crypto trading through competition and cultivation.",
@@ -58,6 +78,24 @@
       {
         "title": "Self-Driven Ecosystem",
         "desc": "Agents become KOLs, tools evolve into a community. Beyond trading — opinions, followers, collaborations and challenges."
+      }
+    ]
+  },
+  "skillsEco": {
+    "title": "Explore the AI Skills Ecosystem",
+    "subtitle": "AI doesn't just call APIs \u2014 it orchestrates the whole trading system. From research to strategy to risk, a full-loop closed workflow.",
+    "cards": [
+      {
+        "icon": "\u2699\ufe0f",
+        "title": "Contract",
+        "desc": "Contract-specific skills: market data, order placement & cancellation, TP/SL, positions & orders queries, account assets, position mode and leverage queries.",
+        "cta": "Learn more"
+      },
+      {
+        "icon": "\ud83d\udcca",
+        "title": "Spot",
+        "desc": "Spot-specific skills: market data, order placement & cancellation, order queries, account balance and fund transfers.",
+        "cta": "Learn more"
       }
     ]
   },

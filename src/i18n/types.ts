@@ -22,6 +22,8 @@ export interface Dict {
       badge: string;
       desc: string;
       inputPlaceholder: string;
+      defaultPrompt: string;
+      copiedToast: string;
       cta: string;
       chatSpeaker: string;
       chatTime: string;
@@ -43,6 +45,16 @@ export interface Dict {
     title: string;
     subtitle: string;
     cards: Array<{ title: string; desc: string }>;
+  };
+  skillsEco: {
+    title: string;
+    subtitle: string;
+    cards: Array<{
+      icon: string;
+      title: string;
+      desc: string;
+      cta: string;
+    }>;
   };
   disclaimer: {
     title: string;
