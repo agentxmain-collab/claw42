@@ -105,7 +105,7 @@ function DailyReportCard({ delay }: { delay: number }) {
         {t.scenarios.daily.desc}
       </p>
 
-      <div className="flex flex-col sm:flex-row items-stretch gap-3 mt-auto">
+      <div className="flex flex-col sm:flex-row items-stretch gap-3">
         <DailyReportInput />
         <motion.a
           href={COINW_SKILLS_URL}
@@ -118,6 +118,8 @@ function DailyReportCard({ delay }: { delay: number }) {
           {t.scenarios.daily.cta}
         </motion.a>
       </div>
+
+      <ChatPreviewCard delay={delay + 0.08} />
     </motion.div>
   );
 }
@@ -133,41 +135,38 @@ function ChatPreviewCard({ delay }: { delay: number }) {
       viewport={motionViewport}
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
-      whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-      className="bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col shadow-[0_0_40px_-10px_rgba(124,92,255,0.4),0_0_80px_-20px_rgba(255,138,212,0.2)] hover:shadow-[0_0_60px_-8px_rgba(124,92,255,0.6),0_0_120px_-20px_rgba(255,138,212,0.3)] transition-shadow duration-500"
+      className="mt-6 rounded-xl p-[1.5px] bg-gradient-to-br from-[#7c5cff] via-[#ff8ad4] to-[#d1ff55] shadow-[0_0_32px_-4px_rgba(124,92,255,0.35)]"
     >
-      <div className="rounded-xl p-[1.5px] bg-gradient-to-br from-[#7c5cff] via-[#ff8ad4] to-[#d1ff55] shadow-[0_0_32px_-4px_rgba(124,92,255,0.35)] flex-1">
-        <div className="h-full bg-[#0a0a0a] rounded-[10px] p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8ad4] via-[#a78bfa] to-[#7c5cff] flex items-center justify-center shadow-[0_0_12px_rgba(167,139,250,0.5)]">
-              <span className="text-sm">✨</span>
-            </div>
-            <span className="text-sm font-semibold text-white">
-              {t.scenarios.daily.chatSpeaker}
-            </span>
-            <TypingDots />
-            <span className="text-xs text-gray-500 ml-auto">
-              {t.scenarios.daily.chatTime}
-            </span>
+      <div className="h-full bg-[#0a0a0a] rounded-[10px] p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8ad4] via-[#a78bfa] to-[#7c5cff] flex items-center justify-center shadow-[0_0_12px_rgba(167,139,250,0.5)]">
+            <span className="text-sm">✨</span>
           </div>
+          <span className="text-sm font-semibold text-white">
+            {t.scenarios.daily.chatSpeaker}
+          </span>
+          <TypingDots />
+          <span className="text-xs text-gray-500 ml-auto">
+            {t.scenarios.daily.chatTime}
+          </span>
+        </div>
 
-          <div className="space-y-2 text-sm text-gray-300">
-            <p className="font-semibold text-white text-sm mb-2">
-              {t.scenarios.daily.chatTitle}
-            </p>
-            <div className="space-y-1.5 text-xs md:text-sm">
-              {t.scenarios.daily.chatBullets.map((line, i) => (
-                <motion.p
-                  key={line}
-                  initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={motionViewport}
-                  transition={getFadeUpTransition(0.3 + i * 0.06)}
-                >
-                  • {line}
-                </motion.p>
-              ))}
-            </div>
+        <div className="space-y-2 text-sm text-gray-300">
+          <p className="font-semibold text-white text-sm mb-2">
+            {t.scenarios.daily.chatTitle}
+          </p>
+          <div className="space-y-1.5 text-xs md:text-sm">
+            {t.scenarios.daily.chatBullets.map((line, i) => (
+              <motion.p
+                key={line}
+                initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={motionViewport}
+                transition={getFadeUpTransition(0.3 + i * 0.06)}
+              >
+                • {line}
+              </motion.p>
+            ))}
           </div>
         </div>
       </div>
@@ -258,9 +257,8 @@ export function ScenariosSection() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 flex flex-col gap-6">
+        <div className="lg:col-span-2">
           <DailyReportCard delay={0} />
-          <ChatPreviewCard delay={0.08} />
         </div>
         <div className="flex flex-col gap-4">
           <RealtimeMonitorCard delay={0.16} />
