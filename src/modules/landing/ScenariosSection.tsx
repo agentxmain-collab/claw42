@@ -24,7 +24,7 @@ function DailyReportInput() {
   };
 
   return (
-    <div className="relative flex-1">
+    <div className="relative w-full flex-1">
       <motion.button
         type="button"
         onClick={handleClick}
@@ -91,35 +91,39 @@ function DailyReportCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-      className="bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col shadow-[0_0_40px_-10px_rgba(124,92,255,0.4),0_0_80px_-20px_rgba(255,138,212,0.2)] hover:shadow-[0_0_60px_-8px_rgba(124,92,255,0.6),0_0_120px_-20px_rgba(255,138,212,0.3)] transition-shadow duration-500"
+      className="h-full bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 shadow-[0_0_40px_-10px_rgba(124,92,255,0.4),0_0_80px_-20px_rgba(255,138,212,0.2)] hover:shadow-[0_0_60px_-8px_rgba(124,92,255,0.6),0_0_120px_-20px_rgba(255,138,212,0.3)] transition-shadow duration-500"
     >
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <h3 className="text-xl md:text-2xl font-bold text-white">
-          {t.scenarios.daily.title}
-        </h3>
-        <span className="px-2.5 py-1 text-xs font-bold bg-[#7c5cff]/20 text-[#d7ccff] rounded-full border border-[#7c5cff]/30">
-          {t.scenarios.daily.badge}
-        </span>
-      </div>
-      <p className="text-gray-400 text-sm md:text-base leading-relaxed mb-6">
-        {t.scenarios.daily.desc}
-      </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 h-full">
+        <div className="flex flex-col h-full">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <h3 className="text-xl md:text-2xl font-bold text-white">
+              {t.scenarios.daily.title}
+            </h3>
+            <span className="px-2.5 py-1 text-xs font-bold bg-[#7c5cff]/20 text-[#d7ccff] rounded-full border border-[#7c5cff]/30">
+              {t.scenarios.daily.badge}
+            </span>
+          </div>
+          <p className="text-gray-400 text-sm md:text-base leading-relaxed mb-6">
+            {t.scenarios.daily.desc}
+          </p>
 
-      <div className="flex flex-col sm:flex-row items-stretch gap-3">
-        <DailyReportInput />
-        <motion.a
-          href={COINW_SKILLS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          whileHover={reduceMotion ? undefined : { scale: 1.05 }}
-          whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-          className="px-5 py-3 bg-[#7c5cff] text-white text-sm font-semibold rounded-lg hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)] transition-all shrink-0 inline-flex items-center justify-center"
-        >
-          {t.scenarios.daily.cta}
-        </motion.a>
-      </div>
+          <div className="mt-auto flex flex-col items-start gap-5">
+            <DailyReportInput />
+            <motion.a
+              href={COINW_SKILLS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={reduceMotion ? undefined : { scale: 1.05 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+              className="px-5 py-3 bg-[#7c5cff] text-white text-sm font-semibold rounded-lg hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)] transition-all shrink-0 inline-flex items-center justify-center"
+            >
+              {t.scenarios.daily.cta}
+            </motion.a>
+          </div>
+        </div>
 
-      <ChatPreviewCard delay={delay + 0.08} />
+        <ChatPreviewCard delay={delay + 0.08} />
+      </div>
     </motion.div>
   );
 }
@@ -135,7 +139,7 @@ function ChatPreviewCard({ delay }: { delay: number }) {
       viewport={motionViewport}
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
-      className="mt-6 rounded-xl p-[1.5px] bg-gradient-to-br from-[#7c5cff] via-[#ff8ad4] to-[#d1ff55] shadow-[0_0_32px_-4px_rgba(124,92,255,0.35)]"
+      className="h-full min-h-[260px] rounded-xl p-[1.5px] bg-gradient-to-br from-[#7c5cff] via-[#ff8ad4] to-[#d1ff55] shadow-[0_0_32px_-4px_rgba(124,92,255,0.35)]"
     >
       <div className="h-full bg-[#0a0a0a] rounded-[10px] p-5">
         <div className="flex items-center gap-2 mb-3">
@@ -186,7 +190,7 @@ function RealtimeMonitorCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-      className="bg-[#111] border border-white/10 rounded-2xl p-5 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)] hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)] transition-shadow duration-500"
+      className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-5 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)] hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)] transition-shadow duration-500"
     >
       <h3 className="text-base md:text-lg font-semibold text-white mb-2">
         {t.scenarios.realtime.title}
@@ -214,7 +218,7 @@ function AutoTradeCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-      className="bg-[#111] border border-white/10 rounded-2xl p-5 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)] hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)] transition-shadow duration-500"
+      className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-5 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)] hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)] transition-shadow duration-500"
     >
       <h3 className="text-base md:text-lg font-semibold text-white mb-2">
         {t.scenarios.autoTrade.title}
@@ -256,11 +260,9 @@ export function ScenariosSection() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <DailyReportCard delay={0} />
-        </div>
-        <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <DailyReportCard delay={0} />
+        <div className="flex flex-col gap-6 h-full">
           <RealtimeMonitorCard delay={0.16} />
           <AutoTradeCard delay={0.24} />
         </div>
