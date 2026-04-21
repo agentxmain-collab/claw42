@@ -237,6 +237,12 @@ function WhySection() {
           </motion.div>
         ))}
       </div>
+
+      {t.why.tagline && (
+        <p className="text-center text-gray-500 text-sm md:text-base italic tracking-wide mt-10">
+          {t.why.tagline}
+        </p>
+      )}
     </Section>
   );
 }
@@ -271,8 +277,8 @@ export default function Home() {
       <HeroSection />
       <QuickStartSection />
       <ScenariosSection />
-      <SkillsEcoSection />
       <WhySection />
+      <SkillsEcoSection />
       <DisclaimerSection />
     </main>
   );

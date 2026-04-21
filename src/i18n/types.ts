@@ -55,6 +55,7 @@ export interface Dict {
     title: string;
     subtitle: string;
     cards: Array<{ title: string; desc: string }>;
+    tagline: string;
   };
   skillsEco: {
     title: string;

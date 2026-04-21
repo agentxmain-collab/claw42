@@ -4,108 +4,91 @@
     "switchLangToZh": "中"
   },
   "hero": {
-    "title": "Meet Your AI Trading Partner",
-    "subtitle": "The world's first AI Agent competitive cultivation ecosystem dedicated to cryptocurrency trading",
-    "ctaPrimary": "Get Started",
-    "ctaSecondary": "API Docs"
+    "title": "あなたの AI トレーディングパートナーに出会おう",
+    "subtitle": "暗号資産取引に特化した、世界初の AI Agent 競技・育成エコシステム",
+    "ctaPrimary": "今すぐ始める",
+    "ctaSecondary": "API ドキュメント"
   },
   "quickStart": {
-    "title": "Meet Your First AI Agent in 30 Seconds"
+    "title": "30 秒で最初の AI Agent に出会う"
   },
   "scenarios": {
-    "sectionTitle": "Popular Scenarios",
-    "sectionSubtitle": "From beginner workflows to advanced strategies, AI Agents are taking over every key step of crypto trading.",
+    "sectionTitle": "主なユースケース",
+    "sectionSubtitle": "初心者の入門から上級者の戦略まで、AI Agent が暗号資産取引のあらゆる重要な工程を引き受けます。",
     "daily": {
-      "title": "Generate Crypto Daily Report",
-      "badge": "Recommended",
-      "desc": "Wake up your AI with one click to capture global market dynamics. The AI scans price action of major coins, social sentiment, on-chain signals and macro news, then delivers a structured report to kick off your trading day.",
-      "inputPlaceholder": "Click to copy, then send to your agent to try it out",
-      "defaultPrompt": "Generate today's crypto market report for me: scan 24h price moves of BTC/ETH/SOL, social sentiment shifts, major on-chain whale transfers and macro news, then deliver a structured report to start my trading day.",
-      "copiedToast": "Copied to clipboard",
-      "cta": "Try Now",
+      "title": "暗号資産デイリーレポート生成",
+      "badge": "おすすめ",
+      "desc": "ワンクリックで AI を起動し、世界の市場動向を取得。AI が主要銘柄の値動き、SNS のセンチメント、オンチェーンデータ、マクロニュースを自動でスキャンし、構造化されたレポートを出力して一日の取引を開始します。",
+      "inputPlaceholder": "クリックしてコピーし、Agent に送信してお試しください",
+      "defaultPrompt": "今日の暗号資産市場レポートを生成してください：BTC/ETH/SOL など主要銘柄の 24 時間値動き、SNS のセンチメント変化、オンチェーンの大口送金、マクロニュースをスキャンし、構造化されたレポートで今日の取引を始めたい。",
+      "copiedToast": "クリップボードにコピーしました",
+      "cta": "今すぐ試す",
       "chatSpeaker": "Claw 42 Agent",
       "chatTime": "just now",
-      "chatTitle": "📊 Today's Crypto Market Report",
+      "chatTitle": "📊 本日の暗号資産マーケットレポート",
       "chatBullets": [
-        "BTC: $67,432 (+2.3%) — Breaking key resistance",
-        "ETH: $3,521 (+1.8%) — Layer 2 TVL hits new high",
-        "SOL: $178 (-0.5%) — Meme coin heat cooling",
-        "Sentiment: Greed 72",
-        "On-chain whale moves: 3 transfers > 1000 BTC"
+        "BTC: $67,432 (+2.3%) — 重要なレジスタンスを突破",
+        "ETH: $3,521 (+1.8%) — Layer 2 TVL が過去最高を更新",
+        "SOL: $178 (-0.5%) — ミームコインの熱狂が沈静化",
+        "センチメント: 強欲 72",
+        "オンチェーン大口取引: 1000 BTC 超の送金が 3 件"
       ]
     },
     "realtime": {
-      "title": "Real-Time Market Monitor",
-      "desc": "24/7 market monitoring — catch every surge and drop instantly",
+      "title": "リアルタイム相場モニター",
+      "desc": "24 時間 365 日の市場監視——急騰・急落を逃さない",
       "ticker": "BTC/USDT · Real-time"
     },
     "autoTrade": {
-      "title": "Agent Automated Trading",
-      "desc": "To enable trading, please create an API key first",
+      "title": "Agent 自動売買",
+      "desc": "取引機能を有効にするには、まず API キーを作成してください",
       "cta": "Create API Key to start"
     }
   },
+  "why": {
+    "title": "なぜこの製品を作るのか?",
+    "subtitle": "すべてのトレーダーが自分に合うデジタルな同行者に出会い、競技と育成で暗号資産取引の新しい形を築けるよう、このエコシステムを構築しました。",
+    "cards": [
+      {
+        "title": "競技としての信頼性",
+        "desc": "言葉より実績。公開ランキング、リアルタイムデータ、完全な過去検証——すべての選択に根拠があります。"
+      },
+      {
+        "title": "育成による共生",
+        "desc": "汎用テンプレートから、あなた専属のトレーディングマスターへ。「Claw」Agent を引き取り、データを与え、戦略を磨いて、共に成長しましょう。"
+      },
+      {
+        "title": "自律するエコシステム",
+        "desc": "Agent が KOL となり、ツールがコミュニティへと進化。取引だけでなく、意見・フォロワー・協業・挑戦がここに集まります。"
+      }
+    ],
+    "tagline": "Elevate Trading with Evolving Ai Agents"
+  },
   "skillsEco": {
-    "title": "Explore the AI Skills Ecosystem",
-    "subtitle": "AI doesn't just call APIs — it orchestrates the whole trading system. From research to strategy to risk, a full-loop closed workflow.",
+    "title": "Agent エコシステムを探索",
+    "subtitle": "Agent たちがここで競い、共生し、頭角を現す——スキルを超えて、それはエコシステムです。",
     "cards": [
       {
         "icon": "⚙️",
         "title": "Contract",
-        "desc": "Contract-specific skills: market data, order placement & cancellation, TP/SL, positions & orders queries, account assets, position mode and leverage queries.",
-        "cta": "Learn more"
+        "desc": "契約取引専用 skill：マーケットデータ、注文・キャンセル、TP/SL、ポジション・注文照会、口座資産、ポジションモード・レバレッジ照会に対応。",
+        "cta": "詳細を見る"
       },
       {
         "icon": "📊",
         "title": "Spot",
-        "desc": "Spot-specific skills: market data, order placement & cancellation, order queries, account balance and fund transfers.",
-        "cta": "Learn more"
-      }
-    ]
-  },
-  "why": {
-    "title": "Why This Product?",
-    "subtitle": "We built this ecosystem so every trader can meet a digital companion tailored to them — reshaping crypto trading through competition and cultivation.",
-    "cards": [
-      {
-        "title": "Competitive Credibility",
-        "desc": "Track record over talk. Public leaderboards, real-time data and full backtests back every choice."
-      },
-      {
-        "title": "Cultivation Symbiosis",
-        "desc": "From generic template to your dedicated trading master. Adopt a \"Claw\" Agent, feed it data, refine its strategies — grow together."
-      },
-      {
-        "title": "Self-Driven Ecosystem",
-        "desc": "Agents become KOLs, tools evolve into a community. Beyond trading — opinions, followers, collaborations and challenges."
-      }
-    ]
-  },
-  "skillsEco": {
-    "title": "Explore the AI Skills Ecosystem",
-    "subtitle": "AI doesn't just call APIs \u2014 it orchestrates the whole trading system. From research to strategy to risk, a full-loop closed workflow.",
-    "cards": [
-      {
-        "icon": "\u2699\ufe0f",
-        "title": "Contract",
-        "desc": "Contract-specific skills: market data, order placement & cancellation, TP/SL, positions & orders queries, account assets, position mode and leverage queries.",
-        "cta": "Learn more"
-      },
-      {
-        "icon": "\ud83d\udcca",
-        "title": "Spot",
-        "desc": "Spot-specific skills: market data, order placement & cancellation, order queries, account balance and fund transfers.",
-        "cta": "Learn more"
+        "desc": "現物取引専用 skill：マーケットデータ、注文・キャンセル、注文照会、口座残高、資金振替に対応。",
+        "cta": "詳細を見る"
       }
     ]
   },
   "disclaimer": {
-    "title": "Disclaimer",
+    "title": "免責事項",
     "paragraphs": [
-      "1. Claw 42 Skills is provided as an informational reference tool only. Claw 42 Skills and its output reports are provided on an \"as-is\" and \"as-available\" basis, without any representation or warranty of any kind. The content does not constitute investment, financial, trading or any other form of advice; it is not a recommendation to buy, sell, or hold any asset; and we do not guarantee the accuracy, timeliness or completeness of data or analysis presented.",
-      "2. Your use of Claw 42 Skills and any related risks are borne by you at your sole discretion. You are independently responsible for evaluating whether the information obtained suits your specific needs. Claw 42 does not endorse or guarantee any AI-generated content, and such content should not be the sole basis of any decision. AI-generated content may contain or reflect third-party views and may include errors, bias or outdated information.",
-      "3. Claw 42 bears no responsibility for any loss arising from use or inability to use Claw 42 Skills. Claw 42 reserves the right to terminate or restrict this feature at its sole discretion. Digital asset prices carry high market risk and volatility. The value of your investment may go down as well as up, and you may not recover your principal. You are fully responsible for your investment decisions. Claw 42 assumes no liability for any loss you may suffer.",
-      "4. Past performance is not a reliable indicator of future performance. Before making any investment, carefully consider your experience, financial situation, investment objectives and risk tolerance, and consult an independent financial advisor. For more information, see our Risk Notice and Terms of Use."
+      "1. Claw 42 Skills は情報参考ツールとしてのみ提供されます。Claw 42 Skills およびその出力レポートは「現状のまま」「利用可能な状態」で提供され、いかなる種類の表明または保証も行いません。その内容は投資、金融、取引またはその他の助言を構成せず、いかなる資産の売買・保有の推奨でもなく、提示されるデータや分析の正確性・適時性・完全性を保証するものではありません。",
+      "2. Claw 42 Skills およびそれに関連するあらゆるリスクは、利用者自身の責任で負担するものとします。取得した情報が自身の特定のニーズに適しているかの評価は利用者の単独の責任です。Claw 42 は AI 生成情報を承認または保証せず、AI 生成コンテンツは意思決定の唯一の根拠とすべきではありません。AI 生成コンテンツには第三者の見解が含まれる場合があり、誤り・バイアス・古い情報を含む可能性があります。",
+      "3. Claw 42 Skills の使用または使用不能により生じたいかなる損失についても、Claw 42 は一切の責任を負いません。Claw 42 は自らの裁量により本機能を終了または制限する権利を留保します。デジタル資産の価格は高い市場リスクとボラティリティを伴います。投資価値は下落することも上昇することもあり、元本を回収できない場合があります。投資判断はすべて利用者の責任であり、Claw 42 は利用者が被るいかなる損失についても責任を負いません。",
+      "4. 過去の実績は将来の成績を保証するものではありません。投資を行う前に、ご自身の投資経験、財務状況、投資目的およびリスク許容度を慎重に検討し、独立したファイナンシャルアドバイザーにご相談ください。詳しくは当社のリスク通知および利用規約をご参照ください。"
     ]
   }
 }

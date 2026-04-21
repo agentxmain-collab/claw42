@@ -4,108 +4,91 @@
     "switchLangToZh": "中"
   },
   "hero": {
-    "title": "Meet Your AI Trading Partner",
-    "subtitle": "The world's first AI Agent competitive cultivation ecosystem dedicated to cryptocurrency trading",
-    "ctaPrimary": "Get Started",
-    "ctaSecondary": "API Docs"
+    "title": "Conoce a tu socio de trading con IA",
+    "subtitle": "El primer ecosistema mundial de competición y cultivo de Agentes de IA dedicado al trading de criptomonedas",
+    "ctaPrimary": "Empezar",
+    "ctaSecondary": "Documentación API"
   },
   "quickStart": {
-    "title": "Meet Your First AI Agent in 30 Seconds"
+    "title": "Conoce a tu primer Agente de IA en 30 segundos"
   },
   "scenarios": {
-    "sectionTitle": "Popular Scenarios",
-    "sectionSubtitle": "From beginner workflows to advanced strategies, AI Agents are taking over every key step of crypto trading.",
+    "sectionTitle": "Casos de uso populares",
+    "sectionSubtitle": "Desde flujos para principiantes hasta estrategias avanzadas, los Agentes de IA se encargan de cada paso clave del trading cripto.",
     "daily": {
-      "title": "Generate Crypto Daily Report",
-      "badge": "Recommended",
-      "desc": "Wake up your AI with one click to capture global market dynamics. The AI scans price action of major coins, social sentiment, on-chain signals and macro news, then delivers a structured report to kick off your trading day.",
-      "inputPlaceholder": "Click to copy, then send to your agent to try it out",
-      "defaultPrompt": "Generate today's crypto market report for me: scan 24h price moves of BTC/ETH/SOL, social sentiment shifts, major on-chain whale transfers and macro news, then deliver a structured report to start my trading day.",
-      "copiedToast": "Copied to clipboard",
-      "cta": "Try Now",
+      "title": "Generar informe cripto diario",
+      "badge": "Recomendado",
+      "desc": "Activa tu IA con un clic para captar la dinámica global del mercado. La IA escanea el movimiento de precios de las principales monedas, el sentimiento en redes sociales, señales on-chain y noticias macro, y entrega un informe estructurado para arrancar tu día de trading.",
+      "inputPlaceholder": "Haz clic para copiar y envíalo a tu agente para probar",
+      "defaultPrompt": "Genera el informe cripto de hoy: escanea los movimientos de 24h de BTC/ETH/SOL, cambios de sentimiento en redes sociales, grandes transferencias on-chain y noticias macro — entrega un informe estructurado para arrancar mi día de trading.",
+      "copiedToast": "Copiado al portapapeles",
+      "cta": "Probar",
       "chatSpeaker": "Claw 42 Agent",
       "chatTime": "just now",
-      "chatTitle": "📊 Today's Crypto Market Report",
+      "chatTitle": "📊 Informe del mercado cripto de hoy",
       "chatBullets": [
-        "BTC: $67,432 (+2.3%) — Breaking key resistance",
-        "ETH: $3,521 (+1.8%) — Layer 2 TVL hits new high",
-        "SOL: $178 (-0.5%) — Meme coin heat cooling",
-        "Sentiment: Greed 72",
-        "On-chain whale moves: 3 transfers > 1000 BTC"
+        "BTC: $67 432 (+2,3 %) — Rompe resistencia clave",
+        "ETH: $3 521 (+1,8 %) — TVL de Layer 2 en máximos",
+        "SOL: $178 (-0,5 %) — El furor meme coin se enfría",
+        "Sentimiento: Codicia 72",
+        "Grandes movimientos on-chain: 3 transferencias > 1000 BTC"
       ]
     },
     "realtime": {
-      "title": "Real-Time Market Monitor",
-      "desc": "24/7 market monitoring — catch every surge and drop instantly",
+      "title": "Monitor de mercado en tiempo real",
+      "desc": "Vigilancia 24/7 — no pierdas ninguna subida ni caída",
       "ticker": "BTC/USDT · Real-time"
     },
     "autoTrade": {
-      "title": "Agent Automated Trading",
-      "desc": "To enable trading, please create an API key first",
+      "title": "Trading automatizado por Agente",
+      "desc": "Para habilitar el trading, primero crea una clave API",
       "cta": "Create API Key to start"
     }
   },
+  "why": {
+    "title": "¿Por qué este producto?",
+    "subtitle": "Construimos este ecosistema para que cada trader encuentre un compañero digital a su medida — y reinvente el trading cripto mediante competición y cultivo.",
+    "cards": [
+      {
+        "title": "Credibilidad competitiva",
+        "desc": "El historial importa más que las palabras. Rankings públicos, datos en tiempo real y backtests completos respaldan cada decisión."
+      },
+      {
+        "title": "Simbiosis de cultivo",
+        "desc": "De plantilla genérica a tu maestro de trading personal. Adopta un Agente «Claw», aliméntalo con datos, afina sus estrategias — creced juntos."
+      },
+      {
+        "title": "Ecosistema autoimpulsado",
+        "desc": "Los Agentes se vuelven KOLs, las herramientas se vuelven comunidad. Más allá del trading — opiniones, seguidores, colaboraciones y retos."
+      }
+    ],
+    "tagline": "Elevate Trading with Evolving Ai Agents"
+  },
   "skillsEco": {
-    "title": "Explore the AI Skills Ecosystem",
-    "subtitle": "AI doesn't just call APIs — it orchestrates the whole trading system. From research to strategy to risk, a full-loop closed workflow.",
+    "title": "Explora el ecosistema Agent",
+    "subtitle": "Aquí los Agentes compiten, coexisten y destacan — más allá de los skills, es un ecosistema.",
     "cards": [
       {
         "icon": "⚙️",
         "title": "Contract",
-        "desc": "Contract-specific skills: market data, order placement & cancellation, TP/SL, positions & orders queries, account assets, position mode and leverage queries.",
-        "cta": "Learn more"
+        "desc": "Skills para contratos: datos de mercado, colocación y cancelación de órdenes, TP/SL, consultas de posiciones y órdenes, activos de la cuenta, modos de posición y apalancamiento.",
+        "cta": "Saber más"
       },
       {
         "icon": "📊",
         "title": "Spot",
-        "desc": "Spot-specific skills: market data, order placement & cancellation, order queries, account balance and fund transfers.",
-        "cta": "Learn more"
-      }
-    ]
-  },
-  "why": {
-    "title": "Why This Product?",
-    "subtitle": "We built this ecosystem so every trader can meet a digital companion tailored to them — reshaping crypto trading through competition and cultivation.",
-    "cards": [
-      {
-        "title": "Competitive Credibility",
-        "desc": "Track record over talk. Public leaderboards, real-time data and full backtests back every choice."
-      },
-      {
-        "title": "Cultivation Symbiosis",
-        "desc": "From generic template to your dedicated trading master. Adopt a \"Claw\" Agent, feed it data, refine its strategies — grow together."
-      },
-      {
-        "title": "Self-Driven Ecosystem",
-        "desc": "Agents become KOLs, tools evolve into a community. Beyond trading — opinions, followers, collaborations and challenges."
-      }
-    ]
-  },
-  "skillsEco": {
-    "title": "Explore the AI Skills Ecosystem",
-    "subtitle": "AI doesn't just call APIs \u2014 it orchestrates the whole trading system. From research to strategy to risk, a full-loop closed workflow.",
-    "cards": [
-      {
-        "icon": "\u2699\ufe0f",
-        "title": "Contract",
-        "desc": "Contract-specific skills: market data, order placement & cancellation, TP/SL, positions & orders queries, account assets, position mode and leverage queries.",
-        "cta": "Learn more"
-      },
-      {
-        "icon": "\ud83d\udcca",
-        "title": "Spot",
-        "desc": "Spot-specific skills: market data, order placement & cancellation, order queries, account balance and fund transfers.",
-        "cta": "Learn more"
+        "desc": "Skills para spot: datos de mercado, colocación y cancelación de órdenes, consultas de órdenes, saldo de cuenta y transferencias de fondos.",
+        "cta": "Saber más"
       }
     ]
   },
   "disclaimer": {
-    "title": "Disclaimer",
+    "title": "Aviso legal",
     "paragraphs": [
-      "1. Claw 42 Skills is provided as an informational reference tool only. Claw 42 Skills and its output reports are provided on an \"as-is\" and \"as-available\" basis, without any representation or warranty of any kind. The content does not constitute investment, financial, trading or any other form of advice; it is not a recommendation to buy, sell, or hold any asset; and we do not guarantee the accuracy, timeliness or completeness of data or analysis presented.",
-      "2. Your use of Claw 42 Skills and any related risks are borne by you at your sole discretion. You are independently responsible for evaluating whether the information obtained suits your specific needs. Claw 42 does not endorse or guarantee any AI-generated content, and such content should not be the sole basis of any decision. AI-generated content may contain or reflect third-party views and may include errors, bias or outdated information.",
-      "3. Claw 42 bears no responsibility for any loss arising from use or inability to use Claw 42 Skills. Claw 42 reserves the right to terminate or restrict this feature at its sole discretion. Digital asset prices carry high market risk and volatility. The value of your investment may go down as well as up, and you may not recover your principal. You are fully responsible for your investment decisions. Claw 42 assumes no liability for any loss you may suffer.",
-      "4. Past performance is not a reliable indicator of future performance. Before making any investment, carefully consider your experience, financial situation, investment objectives and risk tolerance, and consult an independent financial advisor. For more information, see our Risk Notice and Terms of Use."
+      "1. Claw 42 Skills se proporciona únicamente como herramienta informativa de referencia. Claw 42 Skills y sus informes de salida se proporcionan «tal cual» y «según disponibilidad», sin representaciones ni garantías de ningún tipo. El contenido no constituye asesoramiento de inversión, financiero, de trading ni de ningún otro tipo; no es una recomendación de compra, venta o mantenimiento de ningún activo; y no garantizamos la exactitud, oportunidad ni integridad de los datos o análisis presentados.",
+      "2. Su uso de Claw 42 Skills y los riesgos relacionados corren por su cuenta. Usted es independientemente responsable de evaluar si la información obtenida se ajusta a sus necesidades específicas. Claw 42 no respalda ni garantiza ningún contenido generado por IA, y dicho contenido no debe ser la única base de ninguna decisión. El contenido generado por IA puede contener o reflejar opiniones de terceros e incluir errores, sesgos o información desactualizada.",
+      "3. Claw 42 no asume responsabilidad por pérdidas derivadas del uso o la imposibilidad de usar Claw 42 Skills. Claw 42 se reserva el derecho de terminar o restringir esta función a su entera discreción. Los precios de los activos digitales conllevan alto riesgo de mercado y volatilidad. El valor de su inversión puede bajar o subir, y puede que no recupere su capital. Usted es totalmente responsable de sus decisiones de inversión. Claw 42 no asume responsabilidad por ninguna pérdida que pueda sufrir.",
+      "4. El rendimiento pasado no es un indicador fiable del rendimiento futuro. Antes de invertir, considere cuidadosamente su experiencia, situación financiera, objetivos de inversión y tolerancia al riesgo, y consulte a un asesor financiero independiente. Para más información, consulte nuestro Aviso de riesgo y Condiciones de uso."
     ]
   }
 }
