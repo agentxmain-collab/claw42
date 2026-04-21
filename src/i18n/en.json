@@ -61,6 +61,24 @@
       }
     ]
   },
+  "skillsEco": {
+    "title": "Explore the AI Skills Ecosystem",
+    "subtitle": "AI doesn't just call APIs \u2014 it orchestrates the whole trading system. From research to strategy to risk, a full-loop closed workflow.",
+    "cards": [
+      {
+        "icon": "\u2699\ufe0f",
+        "title": "Contract",
+        "desc": "Contract-specific skills: market data, order placement & cancellation, TP/SL, positions & orders queries, account assets, position mode and leverage queries.",
+        "cta": "Learn more"
+      },
+      {
+        "icon": "\ud83d\udcca",
+        "title": "Spot",
+        "desc": "Spot-specific skills: market data, order placement & cancellation, order queries, account balance and fund transfers.",
+        "cta": "Learn more"
+      }
+    ]
+  },
   "disclaimer": {
     "title": "Disclaimer",
     "paragraphs": [

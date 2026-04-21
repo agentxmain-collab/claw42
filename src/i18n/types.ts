@@ -44,6 +44,16 @@ export interface Dict {
     subtitle: string;
     cards: Array<{ title: string; desc: string }>;
   };
+  skillsEco: {
+    title: string;
+    subtitle: string;
+    cards: Array<{
+      icon: string;
+      title: string;
+      desc: string;
+      cta: string;
+    }>;
+  };
   disclaimer: {
     title: string;
     paragraphs: string[];

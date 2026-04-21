@@ -61,6 +61,24 @@
       }
     ]
   },
+  "skillsEco": {
+    "title": "探索 AI Skills 生态",
+    "subtitle": "AI 调用的不只是接口，而是整个交易系统。从研究、策略到风控的全链路闭环。",
+    "cards": [
+      {
+        "icon": "⚙️",
+        "title": "Contract",
+        "desc": "合约专用 skill：涵盖市场数据、下单 / 取消订单、止盈 / 止损、持仓和订单查询、账户资产、持仓模式和杠杆查询",
+        "cta": "了解详情"
+      },
+      {
+        "icon": "📊",
+        "title": "Spot",
+        "desc": "现货专用 skill：涵盖市场数据、下单 / 取消订单、订单查询、账户余额和资金划转",
+        "cta": "了解详情"
+      }
+    ]
+  },
   "disclaimer": {
     "title": "免责声明",
     "paragraphs": [
