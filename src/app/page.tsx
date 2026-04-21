@@ -1,29 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
-
-/* ─────────── Intersection Observer Hook ─────────── */
-function useScrollFadeIn() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add("is-visible");
-          obs.unobserve(el);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return ref;
-}
+import { SkillsEcoSection } from "@/modules/landing/SkillsEcoSection";
+import { fadeUp, fadeIn, fadeInScale } from "@/lib/motion";
 
 /* ─────────── Icons ─────────── */
 function ClipboardIcon() {
@@ -42,27 +24,18 @@ function TrendingUpIcon() {
   );
 }
 
-
-/* ─────────── Section wrapper with fade ─────────── */
-function Section({
-  children,
-  className = "",
-  id,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  id?: string;
-}) {
-  const ref = useScrollFadeIn();
-  return (
-    <section
-      id={id}
-      ref={ref}
-      className={`fade-in-section relative py-12 md:py-16 px-6 md:px-12 lg:px-20 ${className}`}
-    >
-      {children}
-    </section>
-  );
+/* ─────────── Reduced-motion helper ─────────── */
+function useMotionProps(variants: Record<string, unknown>) {
+  const prefersReducedMotion = useReducedMotion();
+  if (prefersReducedMotion) {
+    return {
+      initial: { opacity: 0 },
+      whileInView: { opacity: 1 },
+      viewport: { once: true, amount: 0.2 },
+      transition: { duration: 0.6 },
+    };
+  }
+  return variants;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -70,10 +43,16 @@ function Section({
    ═══════════════════════════════════════════════════ */
 function HeroSection() {
   const { t } = useI18n();
+  const prefersReducedMotion = useReducedMotion();
+
   return (
-    <section className="relative pt-20 md:pt-24">
-      {/* Hero background image */}
-      <div className="relative w-full hero-fade">
+    <section className="relative pt-24 md:pt-28 pb-12">
+      {/* Hero background image — floating animation */}
+      <motion.div
+        animate={prefersReducedMotion ? {} : { y: [0, -8, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="relative w-full hero-fade mb-8 md:mb-12"
+      >
         <Image
           src="/images/hero-robot-scene.png"
           alt="Claw 42 AI Trading"
@@ -82,10 +61,13 @@ function HeroSection() {
           className="w-full h-auto object-cover"
           priority
         />
-      </div>
+      </motion.div>
 
-      {/* Content below hero image */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 -mt-8 md:-mt-16 pb-12">
+      {/* Content — completely independent from hero image, no negative margins */}
+      <motion.div
+        {...useMotionProps(fadeUp)}
+        className="relative z-10 flex flex-col items-center text-center px-6 max-w-4xl mx-auto"
+      >
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
           {t.hero.title}
         </h1>
@@ -93,14 +75,22 @@ function HeroSection() {
           {t.hero.subtitle}
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
-          <button className="px-8 py-3 rounded-full bg-[#d1ff55] text-black font-semibold text-base hover:brightness-110 transition-all hover:scale-105">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+            className="px-8 py-3 rounded-full bg-[#d1ff55] text-black font-semibold text-base hover:brightness-110 transition-all"
+          >
             {t.hero.ctaPrimary}
-          </button>
-          <button className="px-8 py-3 rounded-full border border-white/30 text-white font-semibold text-base hover:border-white/60 transition-all hover:scale-105">
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+            className="px-8 py-3 rounded-full border border-white/30 text-white font-semibold text-base hover:border-white/60 transition-all"
+          >
             {t.hero.ctaSecondary}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -121,13 +111,19 @@ function QuickStartSection() {
   };
 
   return (
-    <Section className="flex flex-col items-center max-w-4xl mx-auto">
+    <motion.section
+      {...useMotionProps(fadeUp)}
+      className="relative py-12 md:py-16 px-6 md:px-12 lg:px-20 flex flex-col items-center max-w-4xl mx-auto"
+    >
       <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 gradient-text">
         {t.quickStart.title}
       </h2>
 
       {/* Terminal window */}
-      <div className="w-full max-w-2xl terminal-glow rounded-xl overflow-hidden border border-white/10 bg-[#1a1a1a]">
+      <motion.div
+        {...useMotionProps(fadeInScale)}
+        className="w-full max-w-2xl terminal-glow rounded-xl overflow-hidden border border-white/10 bg-[#1a1a1a]"
+      >
         {/* macOS title bar */}
         <div className="flex items-center justify-between px-4 py-3 bg-[#111] border-b border-white/5">
           <div className="flex items-center gap-2">
@@ -163,8 +159,8 @@ function QuickStartSection() {
             )}
           </button>
         </div>
-      </div>
-    </Section>
+      </motion.div>
+    </motion.section>
   );
 }
 
@@ -173,8 +169,29 @@ function QuickStartSection() {
    ═══════════════════════════════════════════════════ */
 function ScenariosSection() {
   const { t } = useI18n();
+  const prefersReducedMotion = useReducedMotion();
+
+  const cardMotion = (i: number) =>
+    prefersReducedMotion
+      ? { initial: { opacity: 0 }, whileInView: { opacity: 1 }, viewport: { once: true }, transition: { duration: 0.6, delay: i * 0.08 } }
+      : { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.6, ease: "easeOut", delay: i * 0.08 } };
+
+  const bulletMotion = (parentDelay: number, bulletIndex: number) =>
+    prefersReducedMotion
+      ? { initial: { opacity: 0 }, whileInView: { opacity: 1 }, viewport: { once: true }, transition: { duration: 0.4, delay: parentDelay + bulletIndex * 0.06 } }
+      : { initial: { opacity: 0, y: 8 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.4, ease: "easeOut", delay: parentDelay + bulletIndex * 0.06 } };
+
   return (
-    <Section className="max-w-7xl mx-auto">
+    <motion.section
+      {...useMotionProps(fadeUp)}
+      className="relative py-12 md:py-16 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto"
+    >
+      {/* Nebula background glow */}
+      <div className="absolute inset-0 pointer-events-none -z-10 opacity-60">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,92,255,0.15),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,138,212,0.08),transparent_50%)]" />
+      </div>
+
       <div className="text-center mb-10">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 text-white">
           {t.scenarios.sectionTitle}
@@ -187,7 +204,14 @@ function ScenariosSection() {
       {/* Bento grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* LEFT LARGE CARD */}
-        <div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col lg:row-span-2">
+        <motion.div
+          {...cardMotion(0)}
+          whileHover={{ scale: 1.02 }}
+          className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col lg:row-span-2
+                     shadow-[0_0_40px_-10px_rgba(124,92,255,0.4),0_0_80px_-20px_rgba(255,138,212,0.2)]
+                     hover:shadow-[0_0_60px_-8px_rgba(124,92,255,0.6),0_0_120px_-20px_rgba(255,138,212,0.3)]
+                     transition-shadow duration-500"
+        >
           <div className="flex items-center gap-3 mb-4">
             <h3 className="text-xl md:text-2xl font-bold text-white">{t.scenarios.daily.title}</h3>
             <span className="px-2.5 py-1 text-xs font-bold bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
@@ -198,38 +222,60 @@ function ScenariosSection() {
             {t.scenarios.daily.desc}
           </p>
 
-          {/* Input field */}
+          {/* Input field — purple CTA */}
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 bg-[#1a1a1a] border border-white/10 rounded-lg px-4 py-3 text-sm text-gray-500">
               {t.scenarios.daily.inputPlaceholder}
             </div>
-            <button className="px-5 py-3 bg-green-500 text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition-colors shrink-0">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-5 py-3 bg-[#7c5cff] text-white text-sm font-semibold rounded-lg
+                         hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)]
+                         transition-all shrink-0"
+            >
               {t.scenarios.daily.cta}
-            </button>
+            </motion.button>
           </div>
 
-          {/* Chat preview card */}
-          <div className="flex-1 bg-[#0a0a0a] border border-white/10 rounded-xl p-5 mt-auto">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-full bg-brand-purple/30 flex items-center justify-center">
-                <span className="text-xs">🤖</span>
+          {/* Chat preview card — rainbow gradient border */}
+          <div className="flex-1 mt-auto rounded-xl p-[1.5px]
+                          bg-gradient-to-br from-[#7c5cff] via-[#ff8ad4] to-[#d1ff55]
+                          shadow-[0_0_32px_-4px_rgba(124,92,255,0.35)]">
+            <div className="h-full bg-[#0a0a0a] rounded-[10px] p-5">
+              <div className="flex items-center gap-2 mb-4">
+                {/* Gradient avatar */}
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8ad4] via-[#a78bfa] to-[#7c5cff]
+                                flex items-center justify-center shadow-[0_0_12px_rgba(167,139,250,0.5)]">
+                  <span className="text-sm">✨</span>
+                </div>
+                <span className="text-sm font-semibold text-white">{t.scenarios.daily.chatSpeaker}</span>
+                <span className="text-xs text-gray-500 ml-auto">{t.scenarios.daily.chatTime}</span>
               </div>
-              <span className="text-sm font-semibold text-white">{t.scenarios.daily.chatSpeaker}</span>
-              <span className="text-xs text-gray-500 ml-auto">{t.scenarios.daily.chatTime}</span>
-            </div>
-            <div className="space-y-2 text-sm text-gray-300">
-              <p className="font-semibold text-white text-sm mb-2">{t.scenarios.daily.chatTitle}</p>
-              <div className="space-y-1.5 text-xs md:text-sm">
-                {t.scenarios.daily.chatBullets.map((line, i) => (
-                  <p key={i}>• {line}</p>
-                ))}
+              <div className="space-y-2 text-sm text-gray-300">
+                <p className="font-semibold text-white text-sm mb-2">{t.scenarios.daily.chatTitle}</p>
+                <div className="space-y-1.5 text-xs md:text-sm">
+                  {t.scenarios.daily.chatBullets.map((line, i) => (
+                    <motion.p key={i} {...bulletMotion(0.3, i)} className="flex items-start gap-2">
+                      <span className="text-[#d1ff55] mt-1">●</span>
+                      <span className="text-gray-300">{line}</span>
+                    </motion.p>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* RIGHT TOP CARD */}
-        <div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col">
+        <motion.div
+          {...cardMotion(1)}
+          whileHover={{ scale: 1.02 }}
+          className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col
+                     shadow-[0_0_24px_-10px_rgba(124,92,255,0.3)]
+                     hover:shadow-[0_0_40px_-8px_rgba(124,92,255,0.5)]
+                     transition-shadow duration-500"
+        >
           <h3 className="text-xl font-bold text-white mb-2">{t.scenarios.realtime.title}</h3>
           <p className="text-gray-400 text-sm leading-relaxed mb-5">
             {t.scenarios.realtime.desc}
@@ -244,10 +290,17 @@ function ScenariosSection() {
               <p className="text-xs text-gray-500">{t.scenarios.realtime.ticker}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* RIGHT BOTTOM CARD */}
-        <div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col">
+        <motion.div
+          {...cardMotion(2)}
+          whileHover={{ scale: 1.02 }}
+          className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col
+                     shadow-[0_0_24px_-10px_rgba(124,92,255,0.3)]
+                     hover:shadow-[0_0_40px_-8px_rgba(124,92,255,0.5)]
+                     transition-shadow duration-500"
+        >
           <h3 className="text-xl font-bold text-white mb-2">{t.scenarios.autoTrade.title}</h3>
           <p className="text-gray-400 text-sm leading-relaxed mb-5">
             {t.scenarios.autoTrade.desc}
@@ -258,9 +311,9 @@ function ScenariosSection() {
               <p className="text-sm text-gray-400">{t.scenarios.autoTrade.cta}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </Section>
+    </motion.section>
   );
 }
 
@@ -269,10 +322,19 @@ function ScenariosSection() {
    ═══════════════════════════════════════════════════ */
 function WhySection() {
   const { t } = useI18n();
+  const prefersReducedMotion = useReducedMotion();
   const cards = t.why.cards;
 
+  const cardMotion = (i: number) =>
+    prefersReducedMotion
+      ? { initial: { opacity: 0 }, whileInView: { opacity: 1 }, viewport: { once: true }, transition: { duration: 0.6, delay: i * 0.08 } }
+      : { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.6, ease: "easeOut", delay: i * 0.08 } };
+
   return (
-    <Section className="max-w-7xl mx-auto">
+    <motion.section
+      {...useMotionProps(fadeUp)}
+      className="relative py-12 md:py-16 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto"
+    >
       <div className="text-center mb-4">
         <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 text-white leading-tight">
           {t.why.title}
@@ -284,9 +346,11 @@ function WhySection() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
         {cards.map((card, i) => (
-          <div
+          <motion.div
             key={i}
-            className={`card-glow relative bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col overflow-hidden`}
+            {...cardMotion(i)}
+            whileHover={{ y: -4 }}
+            className="card-glow relative bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col overflow-hidden"
           >
             <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-5 text-brand-purple">
               <TrendingUpIcon />
@@ -297,10 +361,10 @@ function WhySection() {
             {i === 1 && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#6c4fff] to-[#a78bfa]" />
             )}
-          </div>
+          </motion.div>
         ))}
       </div>
-    </Section>
+    </motion.section>
   );
 }
 
@@ -310,7 +374,10 @@ function WhySection() {
 function DisclaimerSection() {
   const { t } = useI18n();
   return (
-    <section className="relative border-t border-white/5 mt-10 py-10 px-6 md:px-12 lg:px-20">
+    <motion.section
+      {...useMotionProps(fadeIn)}
+      className="relative border-t border-white/5 mt-10 py-10 px-6 md:px-12 lg:px-20"
+    >
       <div className="max-w-5xl mx-auto">
         <h3 className="text-white font-bold text-lg mb-6">{t.disclaimer.title}</h3>
         <div className="space-y-4 text-gray-500 text-xs leading-relaxed">
@@ -319,7 +386,7 @@ function DisclaimerSection() {
           ))}
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
@@ -332,6 +399,7 @@ export default function Home() {
       <HeroSection />
       <QuickStartSection />
       <ScenariosSection />
+      <SkillsEcoSection />
       <WhySection />
       <DisclaimerSection />
     </main>
