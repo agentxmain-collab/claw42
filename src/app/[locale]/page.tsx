@@ -70,18 +70,18 @@ function HeroSection() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="relative pt-20 md:pt-24 pb-12">
+    <section className="relative pt-[72px] md:pt-[80px] pb-12">
       <motion.div
         animate={reduceMotion ? undefined : { y: [0, -8, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="relative w-full max-w-[1200px] mx-auto hero-fade mb-8 md:mb-12"
+        className="relative w-full hero-fade mb-8 md:mb-12 aspect-[16/5] overflow-hidden"
       >
         <Image
           src="/images/hero-robot-scene.png"
           alt="Claw 42 AI Trading"
-          width={1440}
-          height={548}
-          className="w-full h-auto object-cover"
+          fill
+          sizes="100vw"
+          className="object-cover object-center"
           priority
         />
       </motion.div>
