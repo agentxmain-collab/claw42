@@ -44,17 +44,6 @@ body {
   box-shadow: 0 0 40px rgba(108, 79, 255, 0.15), 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* Fade-in animation for intersection observer */
-.fade-in-section {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
-}
-.fade-in-section.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* Hero image fade to black */
 .hero-fade {
   -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
