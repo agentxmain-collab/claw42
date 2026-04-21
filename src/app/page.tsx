@@ -170,7 +170,7 @@ function QuickStartSection() {
           </div>
         </div>
         <div className="flex items-center justify-between p-5 font-mono text-sm md:text-base">
-          <div className="leading-relaxed break-all">
+          <div className="flex-1 leading-relaxed whitespace-nowrap overflow-x-auto min-w-0">
             <span className="text-gray-500">$ </span>
             <span className="text-white">npx </span>
             <span className="text-green-400">skills add</span>
