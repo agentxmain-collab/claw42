@@ -190,7 +190,7 @@ function RealtimeMonitorCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-      className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-5 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)] hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)] transition-shadow duration-500"
+      className="bg-[#111] border border-white/10 rounded-2xl p-5 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)] hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)] transition-shadow duration-500"
     >
       <h3 className="text-base md:text-lg font-semibold text-white mb-2">
         {t.scenarios.realtime.title}
@@ -218,7 +218,7 @@ function AutoTradeCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-      className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-5 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)] hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)] transition-shadow duration-500"
+      className="bg-[#111] border border-white/10 rounded-2xl p-5 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)] hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)] transition-shadow duration-500"
     >
       <h3 className="text-base md:text-lg font-semibold text-white mb-2">
         {t.scenarios.autoTrade.title}
@@ -260,9 +260,11 @@ export function ScenariosSection() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-        <DailyReportCard delay={0} />
-        <div className="flex flex-col gap-6 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-2">
+          <DailyReportCard delay={0} />
+        </div>
+        <div className="flex flex-col gap-4">
           <RealtimeMonitorCard delay={0.16} />
           <AutoTradeCard delay={0.24} />
         </div>
