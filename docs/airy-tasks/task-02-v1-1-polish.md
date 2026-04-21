@@ -1,12 +1,12 @@
-# Task 02 — v1.1 Polish：Header + Hero 稳定 + AI Skills 生态 + 全站动效
+# Task 02 — v1.1 Polish：Header + Hero 稳定 + AI Skills 生态 + Scenarios 布局重构 + 全站动效
 
 > 分支：`feature/claw42-v1-1-polish`
 > 依赖：Task 01（i18n + 排版收敛，已合并到 `main` @ 14616a2）
-> 预估：1 个工作日
+> 预估：1-1.5 个工作日（比原版多 0.5 天，因 Scenarios 从"视觉重做"升级为"布局重构"）
 
 ## 目标
 
-一段话：站点从"Task 01 能看"升级到"v1.1 能打磨上评审"——Header 变好看且固定、Hero 切语言不再错位、补一个主入口级的"AI Skills 生态"板块、全站加一层 framer-motion 动效、Scenarios 结构不改只补动效。
+一段话：站点从"Task 01 能看"升级到"v1.1 能打磨上评审"——Header 变好看且固定、Hero 切语言不再错位、补一个主入口级的"AI Skills 生态"板块、全站加一层 framer-motion 动效、**Scenarios 整体重构**（主板块 2 列 = 日报入口 + Chat Preview，次要栏 2 列 = 实时监控 + 自动化交易缩小版）、输入框 click-to-copy、Agent 头像思考动画。
 
 ## 变更范围
 
@@ -219,7 +219,23 @@ function HeroSection() {
           {t.hero.subtitle}
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
-          {/* 原两个按钮保留 */}
+          {/* 主 CTA：立即开始 / Get Started — href 锁定 #signup */}
+          <a
+            href="#signup"
+            className="px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl
+                       hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)]
+                       transition-all inline-flex items-center justify-center"
+          >
+            {t.hero.ctaPrimary}
+          </a>
+          {/* 次 CTA：API 文档 / API Docs — href 占位 #api-docs */}
+          <a
+            href="#api-docs"
+            className="px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl
+                       hover:bg-white/15 transition-all inline-flex items-center justify-center"
+          >
+            {t.hero.ctaSecondary}
+          </a>
         </div>
       </div>
     </section>
@@ -231,6 +247,8 @@ function HeroSection() {
 - 移除 `-mt-8 md:-mt-16`
 - hero image 之后加 `mb-8 md:mb-12`（图片和标题之间固定间距）
 - 中英文切换后布局必须稳定（标题不叠进图片）
+- **两个 CTA href 必须固定**：`#signup` / `#api-docs`（Dan 后续给真实 URL 时统一改）
+- **Scenarios 的「立即试用」按钮 href 必须和 Hero 主 CTA 完全一致**（都用 `#signup`）
 
 #### 2.3 验收
 - 中文状态下截图（Header + Hero + Scenarios 前半），机器人和标题之间有清晰间距
@@ -404,125 +422,300 @@ export const fadeUp = {
 ```
 注意：振幅 8px 足够 subtle，不要做大，避免喧宾夺主。
 
-### 5. Scenarios 视觉重做（结构 + 文案都不改，只改视觉）
+### 5. Scenarios 布局重构 + 视觉（dict 已有字段不改，追加两个新字段）
 
 > 参考：`docs/airy-tasks/assets/scenarios-reference-zh.png`（中文设计稿，pixel 对齐目标）
 > 对照：`docs/airy-tasks/assets/scenarios-current-en.png`（当前上线英文版，视觉缺失项参考）
+>
+> **本节替代上一版"视觉重做不改结构"的策略**。Airy 第一版按 bento 2x2 做了视觉重做，结构不对——Dan 反馈后按下方布局重构一次性重做。
 
-#### 5.1 绝对不改
-- ❌ Bento grid 结构（左大卡 `lg:row-span-2` + 右两小卡）
-- ❌ 任何 i18n dict 字段（Task 01 已验收通过的字符串一个字不动，包括 `chatBullets`、`chatTitle`、`sectionSubtitle` 等）
-- ❌ 卡片拆分逻辑、`t.scenarios.*` 的绑定点
+#### 5.1 新布局（结构要改）
 
-#### 5.2 要改的视觉项（逐条）
+页面从当前 bento grid（左大卡 `lg:row-span-2` + 右两小卡）重构为**两层结构**：
 
-**a. 主按钮配色：绿 → 紫**
-
-左大卡的「立即试用 / Try Now」按钮当前是 `bg-green-500 hover:bg-green-600`，改为：
-```tsx
-className="px-5 py-3 bg-[#7c5cff] text-white text-sm font-semibold rounded-lg
-           hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)]
-           transition-all shrink-0"
+```
+┌────────────────────────────────────────────────────┐
+│              Section header (title + subtitle)      │
+├──────────────────────────┬─────────────────────────┤
+│                          │                          │
+│   ① 生成加密货币日报       │   ② Chat Preview         │
+│      (左，日报入口)         │      (右，Agent 运行效果) │
+│                          │                          │
+│   + 描述文案              │   + Claw 42 Agent + 思考 │
+│   + 输入框（click 复制）    │     三点跳动            │
+│   + 立即试用 CTA          │   + chatTitle           │
+│                          │   + chatBullets          │
+│                          │                          │
+│         (主板块，lg:grid-cols-2 等宽)                 │
+├──────────────┬───────────────────────────────────────┤
+│  ③ 实时行情   │  ④ 自动化交易                           │
+│    监控       │   (缩小版，单行 desc + 单 CTA)          │
+│  (缩小版)    │                                        │
+└──────────────┴───────────────────────────────────────┘
+       ↑ 次要栏，lg:grid-cols-2，高度 / 字号显著小于主板块
+       ↑ 原来 Airy 在两张小卡下方加的大块占位图全部删除
 ```
 
-**b. Agent 头像：emoji → 渐变方形**
+**关键点**：
+- ① + ② 是**同一个大板块**，等宽两列（`lg:grid-cols-2 gap-6`），不是原来的左大右小
+- ③ + ④ 是次要栏，放在主板块**下方**，另起一个 grid（`lg:grid-cols-2 gap-4`）
+- 次要栏两张卡的**体量**（padding、字号、icon 尺寸）明显小于主板块，形成主次对比
+- 次要栏卡片下方**没有**大块占位图 / placeholder 插画——Airy 第一版里有，删掉
+- 整个 Scenarios section 背景 radial glow（紫 + 粉星云）保持
 
-当前：
+#### 5.2 dict 字段处理
+
+**不改**（Task 01 已验收）：
+- `scenarios.sectionTitle` / `sectionSubtitle`
+- `scenarios.daily.title` / `badge` / `desc` / `inputPlaceholder` / `cta` / `chatSpeaker` / `chatTime` / `chatTitle` / `chatBullets`
+- `scenarios.realtime.title` / `desc` / `ticker`
+- `scenarios.autoTrade.title` / `desc` / `cta`
+
+**追加**（这次 task 新加的两个 key，不碰已有字段）：
+
+`zh.json` 的 `scenarios.daily` 下加：
+```json
+"defaultPrompt": "帮我生成今日加密货币市场日报：扫描 BTC/ETH/SOL 等主流币种 24 小时价格波动、主要社交媒体的情绪变化、链上大额转账和宏观新闻，输出结构化的中文日报，帮我开启今天的交易。",
+"copiedToast": "已复制到剪贴板"
+```
+
+`en.json` 的 `scenarios.daily` 下加：
+```json
+"defaultPrompt": "Generate today's crypto market report for me: scan 24h price moves of BTC/ETH/SOL, social sentiment shifts, major on-chain whale transfers and macro news, then deliver a structured report to start my trading day.",
+"copiedToast": "Copied to clipboard"
+```
+
+`types.ts` 的 `scenarios.daily` 类型里追加：
+```ts
+defaultPrompt: string;
+copiedToast: string;
+```
+
+> **注**：`defaultPrompt` 文案是 F 的初稿，Dan 会 review。如果 Dan 改了，以 Dan 为准。Airy 不要自己改 prompt 内容。
+
+#### 5.3 输入框点击复制交互
+
+主板块 ① 的输入框当前是纯展示，改成 click-to-copy：
+
 ```tsx
-<div className="w-7 h-7 rounded-full bg-brand-purple/30 flex items-center justify-center">
-  <span className="text-xs">🤖</span>
+"use client";
+import { useState } from "react";
+
+function DailyReportInput() {
+  const { t } = useI18n();
+  const [copied, setCopied] = useState(false);
+
+  const handleClick = async () => {
+    try {
+      await navigator.clipboard.writeText(t.scenarios.daily.defaultPrompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      // 回退：选中文本让用户手动复制
+      console.warn("Clipboard API 不可用", e);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={handleClick}
+        className="w-full text-left bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3
+                   text-sm text-gray-400 hover:border-[#7c5cff]/40 hover:text-gray-300
+                   transition-colors cursor-pointer"
+      >
+        {t.scenarios.daily.inputPlaceholder}
+      </button>
+      {/* Toast */}
+      {copied && (
+        <div className="absolute -top-10 left-0 px-3 py-1.5 rounded-md bg-[#7c5cff] text-white text-xs font-semibold shadow-lg">
+          {t.scenarios.daily.copiedToast}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+要求：
+- 点击整个输入框区域都能复制（用 `<button>` 而不是 `<input readOnly>`，避免 focus 状态干扰）
+- 复制成功后在输入框上方浮出 toast `已复制到剪贴板` / `Copied to clipboard`，2 秒后自动消失
+- 浏览器不支持 `navigator.clipboard`（如 HTTP 站点或老浏览器）时静默失败，不报错、不 alert
+- 不引入任何 toast 库（react-hot-toast / sonner 等），纯 useState + Tailwind 实现
+
+#### 5.4 立即试用 CTA 的 href
+
+主板块 ① 的「立即试用 / Try Now」按钮：
+
+```tsx
+<a
+  href="#signup"
+  className="px-5 py-3 bg-[#7c5cff] text-white text-sm font-semibold rounded-lg
+             hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)]
+             transition-all shrink-0 inline-flex items-center"
+>
+  {t.scenarios.daily.cta}
+</a>
+```
+
+- 当前 Airy 版本可能是 `<button>`，改为 `<a href="#signup">`
+- **href 必须和 Hero 「立即开始」按钮 href 完全一致**（Dan：两个按钮跳转目标相同）
+- 现阶段两个按钮 href 都用 `#signup` 占位，Dan 后续给真实 URL 时一起改
+- 在 #2 Hero 修法里同步把 Hero 主 CTA 按钮的 href 锁定为 `#signup`
+
+#### 5.5 Agent 头像思考动画（C 方案：三点省略号跳动）
+
+Chat Preview ② 的 header 区域（`chatSpeaker` + `chatTime` 行）加一个 typing dots 指示器，放在 `chatSpeaker` 后面、`chatTime` 前面：
+
+```tsx
+<div className="flex items-center gap-2 mb-3">
+  {/* Agent 头像（保持上版粉紫渐变方块 + ✨） */}
+  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8ad4] via-[#a78bfa] to-[#7c5cff]
+                  flex items-center justify-center shadow-[0_0_12px_rgba(167,139,250,0.5)]">
+    <span className="text-sm">✨</span>
+  </div>
+  <span className="text-sm font-semibold text-white">{t.scenarios.daily.chatSpeaker}</span>
+  {/* Typing dots — 三点交替跳动，视觉表达"Agent 正在思考" */}
+  <div className="flex gap-1 items-end pb-0.5">
+    {[0, 1, 2].map((i) => (
+      <motion.span
+        key={i}
+        className="w-1.5 h-1.5 rounded-full bg-[#a78bfa]"
+        animate={{ y: [0, -3, 0], opacity: [0.3, 1, 0.3] }}
+        transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
+      />
+    ))}
+  </div>
+  <span className="text-xs text-gray-500 ml-auto">{t.scenarios.daily.chatTime}</span>
 </div>
 ```
 
-改为（粉紫渐变圆角方形 + ✨ 图标）：
-```tsx
-<div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8ad4] via-[#a78bfa] to-[#7c5cff]
-                flex items-center justify-center shadow-[0_0_12px_rgba(167,139,250,0.5)]">
-  <span className="text-sm">✨</span>
-</div>
-```
+要点：
+- 三个圆点紫色 `#a78bfa`，直径 6px，间距 4px
+- 动画：y 方向 0 → -3px → 0，opacity 0.3 → 1 → 0.3，循环
+- 三点之间 delay 0.15s 错开，形成"波浪跳动"
+- 循环周期 1.2s
+- `useReducedMotion` 为 true 时三点改为纯静态（不跳动，保持 opacity 0.5 常亮）
 
-**c. Chat preview 卡片：彩虹渐变描边 + 内部发光**
+#### 5.6 视觉细节（上版已做的保留，补齐）
 
-当前：
-```tsx
-<div className="flex-1 bg-[#0a0a0a] border border-white/10 rounded-xl p-5 mt-auto">
-```
+**a. 主按钮配色紫色**（已上版 Airy 做了，保留）：`bg-[#7c5cff] hover:bg-[#8e6bff]`
 
-改为「渐变边框」(gradient-border trick：外层做 padding 显示渐变，内层用纯色遮回来)：
+**b. Agent 头像渐变方形 + ✨**（已上版 Airy 做了，保留）
+
+**c. Chat preview 彩虹渐变描边**（已上版 Airy 做了，保留）：
 ```tsx
-<div className="flex-1 mt-auto rounded-xl p-[1.5px]
-                bg-gradient-to-br from-[#7c5cff] via-[#ff8ad4] to-[#d1ff55]
+<div className="rounded-xl p-[1.5px] bg-gradient-to-br from-[#7c5cff] via-[#ff8ad4] to-[#d1ff55]
                 shadow-[0_0_32px_-4px_rgba(124,92,255,0.35)]">
   <div className="h-full bg-[#0a0a0a] rounded-[10px] p-5">
-    {/* 原内容原封不动搬进来 */}
+    {/* header 行（5.5 的 typing dots）+ chatTitle + chatBullets */}
   </div>
 </div>
 ```
 
-bullet 列表保留现有结构和 i18n 字符串，但 bullet 前的 `•` 符号用彩色点替换：
+**d. 主板块两张卡 glow**（主板块 ① 和 ② 都是主卡，都要较强 glow）：
 ```tsx
-<div className="space-y-1.5 text-xs md:text-sm">
-  {t.scenarios.daily.chatBullets.map((line, i) => (
-    <p key={i} className="flex items-start gap-2">
-      <span className="text-[#d1ff55] mt-1">●</span>
-      <span className="text-gray-300">{line}</span>
-    </p>
-  ))}
+shadow-[0_0_40px_-10px_rgba(124,92,255,0.4),0_0_80px_-20px_rgba(255,138,212,0.2)]
+hover:shadow-[0_0_60px_-8px_rgba(124,92,255,0.6),0_0_120px_-20px_rgba(255,138,212,0.3)]
+transition-shadow duration-500
+```
+
+**e. 次要栏两张卡 glow**（弱于主板块，形成主次对比）：
+```tsx
+shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)]
+hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)]
+```
+
+**f. 次要栏卡片内部结构**（体量缩小）：
+- padding：`p-5`（主板块是 `p-6 md:p-8`）
+- 标题：`text-base md:text-lg font-semibold`（主板块是 `text-xl md:text-2xl font-bold`）
+- desc：`text-xs md:text-sm`（主板块是 `text-sm md:text-base`）
+- 不设高度撑满，内容多高卡片就多高
+- 无 emoji 图标 / 大占位图 / 底部插画——只有 title + 1 行 desc（+ `realtime.ticker` 或 `autoTrade.cta` 两者其一）
+- 次要栏整体最大高度控制在 160px 左右（靠内容控制，不硬设 `max-h`）
+
+**g. 板块整体粒子 / 星云底色**（上版已做，保留）：
+```tsx
+<div className="absolute inset-0 pointer-events-none -z-10 opacity-60">
+  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,92,255,0.15),transparent_60%)]" />
+  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,138,212,0.08),transparent_50%)]" />
 </div>
 ```
 
-**d. 左大卡外层 glow 增强**
+**h. "M" 黄色徽标**：不加（Dan 明确说不要）。
 
-当前：`card-glow bg-[#111] border border-white/10 rounded-2xl`（glow 很弱）
+#### 5.7 ScenariosSection 完整骨架
 
-保留 class 前提下，`globals.css` 里的 `.card-glow` 定义需要升级，或者直接 inline 加 shadow：
 ```tsx
-<div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col lg:row-span-2
-                shadow-[0_0_40px_-10px_rgba(124,92,255,0.4),0_0_80px_-20px_rgba(255,138,212,0.2)]
-                hover:shadow-[0_0_60px_-8px_rgba(124,92,255,0.6),0_0_120px_-20px_rgba(255,138,212,0.3)]
-                transition-shadow duration-500">
+"use client";
+import { motion } from "framer-motion";
+import { useI18n } from "@/i18n/I18nProvider";
+import { fadeUp } from "@/lib/motion";
+
+export function ScenariosSection() {
+  const { t } = useI18n();
+
+  return (
+    <motion.section
+      {...fadeUp}
+      className="relative max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-16 md:py-20"
+    >
+      {/* 星云底 */}
+      <div className="absolute inset-0 pointer-events-none -z-10 opacity-60">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,92,255,0.15),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,138,212,0.08),transparent_50%)]" />
+      </div>
+
+      {/* Section header */}
+      <div className="text-center mb-10">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-white">
+          {t.scenarios.sectionTitle}
+        </h2>
+        <p className="text-gray-400 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
+          {t.scenarios.sectionSubtitle}
+        </p>
+      </div>
+
+      {/* ① + ② 主板块（等宽两列） */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <DailyReportCard />   {/* ① */}
+        <ChatPreviewCard />   {/* ② */}
+      </div>
+
+      {/* ③ + ④ 次要栏（等宽两列，体量小） */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <RealtimeMonitorCard />  {/* ③ */}
+        <AutoTradeCard />        {/* ④ */}
+      </div>
+    </motion.section>
+  );
+}
 ```
 
-右边两张小卡保持较低 glow 强度（主次对比）：
-```tsx
-shadow-[0_0_24px_-10px_rgba(124,92,255,0.3)]
-hover:shadow-[0_0_40px_-8px_rgba(124,92,255,0.5)]
-```
+子组件（`DailyReportCard` / `ChatPreviewCard` / `RealtimeMonitorCard` / `AutoTradeCard`）可以放同文件内，也可以拆到 `src/modules/landing/scenarios/` 下——Airy 自行决定，但要保持代码可读性，主文件不超过 300 行。
 
-**e. 板块整体粒子 / 星云底色**
+#### 5.8 动效（同 #4 全局规则，在 Scenarios 落地）
 
-当前 `<Section>` 是纯黑。给 ScenariosSection 加一层背景层（不是整页，只有这个 section 范围内）：
-```tsx
-<Section className="max-w-7xl mx-auto relative">
-  {/* 粒子底 — 放在 section 第一子元素，absolute 定位 */}
-  <div className="absolute inset-0 pointer-events-none -z-10 opacity-60">
-    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,92,255,0.15),transparent_60%)]" />
-    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,138,212,0.08),transparent_50%)]" />
-  </div>
+- 整个 Section 用 `motion.section` + `fadeUp`（已在骨架里）
+- 主板块 ① + ② 两张卡 stagger 入场（`fadeUp` + `transition.delay: i * 0.08`）
+- 次要栏 ③ + ④ 在主板块之后延迟 0.3s 入场，两张卡再 stagger 0.08s
+- Chat Preview 里 `chatBullets` 逐条 fade-in（父级 delay 0.3s + 每条间隔 0.06s）
+- 卡片 hover：`scale: 1.02` + glow 加强
+- Typing dots 动画独立循环（不受 whileInView 影响，进入视口后一直跳）
 
-  {/* 原有内容保持 */}
-  <div className="text-center mb-10">...</div>
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">...</div>
-</Section>
-```
+#### 5.9 验收对照（替代原 #5.4）
 
-如果觉得视觉不够接近设计稿，允许再加一层微噪点 SVG / CSS（但不引入图片，保持 pure CSS）。
-
-**f. "M" 黄色徽标 — 不加**
-
-设计稿右下角有个黄色圆形 M 徽标——Dan 明确说**不要加**。忽略。
-
-#### 5.3 动效（保持上一版 #4 全局规则，在 Scenarios 落地）
-
-- 三张卡片入场 stagger（`fadeUp` + `transition.delay: i * 0.08`）
-- Chat preview 里 bullets 逐条 fade-in（父级 delay 0.3s + 每条间隔 0.06s）
-- 卡片 hover：`scale: 1.02` + glow 加强（上面 #5.2d 已经写了 shadow 变化）
-- Agent 头像的 ✨ 可以加一个 2s loop 的轻微 rotate / pulse（可选）
-
-#### 5.4 验收对照
-- [ ] 中文版浏览器截图 vs `scenarios-reference-zh.png` 视觉差异描述（Airy 在 PR 里写一段）：按钮色对齐、头像对齐、chat preview 边框对齐、板块 glow 对齐
-- [ ] 英文版同样位置截图，和中文版视觉一致（文案不同是正常的）
+- [ ] 主板块布局：日报入口左、Chat Preview 右，等宽两列（`lg:grid-cols-2`）
+- [ ] 次要栏布局：实时监控 + 自动化交易两张小卡，位于主板块下方，等宽两列
+- [ ] 次要栏卡片**没有**任何大块占位图 / 插画 / emoji 集合图
+- [ ] 次要栏体量小于主板块（padding、字号、glow 强度都降档）
+- [ ] 输入框点击后复制 `defaultPrompt` 到剪贴板，并浮出 toast
+- [ ] 立即试用按钮 href = `#signup`，和 Hero 立即开始按钮一致
+- [ ] Agent 头像旁有三点跳动动画（C 方案），循环播放
+- [ ] Reduce motion 打开时三点变静态
+- [ ] dict 字段：`scenarios.daily.defaultPrompt` + `scenarios.daily.copiedToast` 两个新 key 已加到 zh.json / en.json / types.ts，其他字段**一个字没改**
+- [ ] 中英文切换时，Scenarios 布局不错位、不跳动
 
 ### 6. Why / QuickStart / Disclaimer 动效
 
@@ -542,46 +735,67 @@ hover:shadow-[0_0_40px_-8px_rgba(124,92,255,0.5)]
   - [ ] Header 高度 72px
   - [ ] 点右上语言按钮，中英切换正常
   - [ ] 中文和英文两种状态下，Hero 的标题都和机器人图片之间有清晰间距，不叠加
+  - [ ] Hero 主 CTA 「立即开始 / Get Started」 href = `#signup`
   - [ ] 滑到中间看到新板块「探索 AI Skills 生态」，两张卡（Contract + Spot），图标占位 + 标题 + 描述 + "了解详情 →"
   - [ ] 首次滚动到每个 section，都有 fade-up 入场动画
-  - [ ] Scenarios 三张卡 stagger 入场，chat bullets 逐条 fade-in
+  - [ ] **Scenarios 布局**：主板块等宽两列（日报入口 + Chat Preview）+ 次要栏等宽两列（实时监控 + 自动化交易，缩小版）
+  - [ ] **Scenarios 次要栏**：卡片下方没有任何大块占位图 / 插画 / emoji 集合图
+  - [ ] **Scenarios 次要栏体量**：padding / 字号 / glow 强度都小于主板块
+  - [ ] Scenarios 主板块两卡和次要栏两卡依次 stagger 入场
+  - [ ] Chat preview 里 chatBullets 逐条 fade-in
+  - [ ] **Scenarios 输入框点击后**：默认 prompt 复制到剪贴板，输入框上方浮现 toast `已复制到剪贴板` / `Copied to clipboard`，2 秒后消失
+  - [ ] **Scenarios 立即试用按钮**：`<a href="#signup">`（和 Hero 主 CTA href 一致）
+  - [ ] **Scenarios Agent 头像旁**：三点跳动动画（紫色 #a78bfa，波浪 delay）循环播放
   - [ ] Scenarios 主按钮是紫色（#7c5cff），不是绿色
   - [ ] Scenarios Agent 头像是粉紫渐变圆角方块 + ✨，不是小圆 🤖
   - [ ] Scenarios Chat preview 卡片有紫/粉/绿彩虹渐变描边
   - [ ] Scenarios 整个 section 背景有紫/粉星云 radial glow（不是纯黑）
-  - [ ] Scenarios 中文版和 `docs/airy-tasks/assets/scenarios-reference-zh.png` 视觉差异 ≤ 小细节（按钮/头像/边框/背景 glow 都要对齐）
   - [ ] 按钮 hover 有 scale 反馈，tap 时回弹
-  - [ ] 系统设置 reduce-motion 打开时，所有动效降级为简单 fade
+  - [ ] 系统设置 reduce-motion 打开时，所有入场动效降级为简单 fade，typing dots 变静态
+- [ ] **i18n 字段校验**：
+  - [ ] `zh.json` / `en.json` 里 `scenarios.daily.defaultPrompt` 和 `scenarios.daily.copiedToast` 两个新 key 存在
+  - [ ] `scenarios.daily.defaultPrompt` 文案和 spec #5.2 给的初稿一致（Dan review 后定稿）
+  - [ ] 其他所有已有字段一个字没改（跑 `git diff src/i18n/zh.json src/i18n/en.json` 只能看到追加）
+  - [ ] `types.ts` 的 `scenarios.daily` 类型里有 `defaultPrompt: string; copiedToast: string;`
+  - [ ] 顶层 `skillsEco` 字段已加（zh/en/types 三处）
 - [ ] `git grep -l "LanguageSwitcher"` 无任何匹配（老文件已删、老 import 已改完）
 - [ ] `git grep -l "TopBar"` 在 src/ 下无匹配（export 已改 `SiteHeader`）
 - [ ] `ls public/images/claw42-logo.png` 报文件不存在（死资源已删）
 - [ ] `ls public/images/claw42-logo-trimmed.png` 存在
 - [ ] `git grep "useScrollFadeIn"` 和 `git grep "fade-in-section"` 只能两个都匹配或两个都不匹配（不能一半 motion 一半 CSS 并存）
-- [ ] 中文 + 英文两个语言下分别截图 Hero 区域，发在 PR 里
+- [ ] 中文 + 英文两个语言下分别截图 Hero 区域 + Scenarios 区域，发在 PR 里
 
 ## 约束 / 不要做的事
 
 - ❌ 不要重构 `I18nProvider`。Task 01 已经审核通过 hydration 安全，任何改动都要重审
 - ❌ 不要改 Why / QuickStart / Disclaimer 的文案或结构
-- ❌ 不要改 Scenarios 的 bento grid 结构（视觉可重做，但结构和 i18n dict 不变——详见 #5）
-- ❌ 不要加除 `framer-motion` 之外的任何新依赖
+- ❌ Scenarios 的 **结构**：按 #5.1 的新布局（主板块 2 列 + 次要栏 2 列）重做，不保留原 bento grid
+- ❌ Scenarios 的 **i18n 已有字段**：一个字不改，只追加 `scenarios.daily.defaultPrompt` 和 `scenarios.daily.copiedToast` 两个新 key（详见 #5.2）
+- ❌ 不要加除 `framer-motion` 之外的任何新依赖（toast 库、utility 库都不行）
 - ❌ 不要自作主张改 Tailwind config（除了可选的 keyframes，其他不动）
 - ❌ 不要改 Dan 上传的图片（hero-robot-scene.png / claw42-logo-trimmed.png），就用现有文件
-- ❌ 不要用绝对 URL 当 href（所有"了解详情 →"用 `href="#"` 占位）
+- ❌ 不要用绝对 URL 当 href。全站 CTA 跳转占位：
+  - Hero 「立即开始 / Get Started」→ `#signup`
+  - Scenarios 「立即试用 / Try Now」→ `#signup`（和 Hero 一致）
+  - Hero 「API 文档 / API Docs」→ `#api-docs`
+  - SkillsEco 「了解详情 / Learn more」→ `#`
 - ❌ 不要用 localStorage 以外的持久化方式（Task 01 已经用 `claw42-locale` key，不要动）
-- ❌ 不要改 zh.json / en.json 里 Task 01 已有的字段（只追加 `skillsEco`）
+- ❌ 不要改 zh.json / en.json 里**已有字段**（`scenarios.*` 已有字段 + Task 01 所有字段）。只追加：顶层 `skillsEco` + `scenarios.daily.defaultPrompt` + `scenarios.daily.copiedToast`
+- ❌ 不要自己改 `defaultPrompt` 的文案（用 spec 给的初稿，Dan review 后定稿）
 
 ## Commit 策略
 
 建议按原子 commit：
 1. `refactor: rename TopBar → SiteHeader, move to components/`
 2. `fix(header): real logo png + 72px height`
-3. `feat(hero): decouple title from image, fix language switch layout`
+3. `feat(hero): decouple title from image, lock CTA href to #signup, fix language switch layout`
 4. `feat: add SkillsEcoSection between Scenarios and Why`
-5. `feat(i18n): add skillsEco dictionary entries`
+5. `feat(i18n): add skillsEco + scenarios.daily.defaultPrompt/copiedToast`
 6. `feat: add framer-motion, replace fade-in-section with motion whileInView`
-7. `feat(scenarios): visual rework — purple CTA, gradient border chat, nebula bg, animations (no content/structure change)`
-8. `chore: delete unused claw42-logo.png (2MB)`
+7. `refactor(scenarios): rebuild layout — 2-col main block (daily + chat) + smaller 2-col aux row (realtime + autoTrade)`
+8. `feat(scenarios): click-to-copy prompt with toast + href=#signup on CTA`
+9. `feat(scenarios): typing dots animation next to Claw 42 Agent avatar (C plan)`
+10. `chore: delete unused claw42-logo.png (2MB)`
 
 一次 PR 全套交，别拆 PR。
 
@@ -600,5 +814,5 @@ hover:shadow-[0_0_40px_-8px_rgba(124,92,255,0.5)]
 ---
 
 *Spec: F（总调度）*
-*日期: 2026-04-21*
+*日期: 2026-04-21（v2：Scenarios 从视觉重做升级为布局重构 + 交互补齐）*
 *技术栈版本: Next.js 14.2.35 + React 18 + Tailwind 3.4.1 + 新增 framer-motion ^11*
