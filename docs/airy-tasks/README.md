@@ -20,7 +20,8 @@
 | # | 任务 | 分支 | 状态 | 依赖 |
 |---|------|------|------|------|
 | 01 | i18n 双语切换 + 排版收敛 | `feature/claw42-i18n-layout` | 已合并 @ 14616a2 | 无 |
-| 02 | v1.1 Polish：Header + Hero 稳定 + AI Skills 生态 + 全站动效 | `feature/claw42-v1-1-polish` | 待认领 | Task 01（已合并） |
+| 02 | v1.1 Polish：Header + Hero 稳定 + AI Skills 生态 + Scenarios 布局重构 + 全站动效 | `feature/claw42-v1-1-polish` | 在途 | Task 01（已合并） |
+| 03 | 真实 URL 替换 + QuickStart 命令更新 | `feature/claw42-v1-1-polish`（同 Task 02 分支） | 待认领 | Task 02（合并到同一 PR） |
 
 ## 工作流
 
