@@ -257,14 +257,15 @@ export function ScenariosSection() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <DailyReportCard delay={0} />
-        <ChatPreviewCard delay={0.08} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <RealtimeMonitorCard delay={0.3} />
-        <AutoTradeCard delay={0.38} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <DailyReportCard delay={0} />
+          <ChatPreviewCard delay={0.08} />
+        </div>
+        <div className="flex flex-col gap-4">
+          <RealtimeMonitorCard delay={0.16} />
+          <AutoTradeCard delay={0.24} />
+        </div>
       </div>
     </motion.section>
   );
