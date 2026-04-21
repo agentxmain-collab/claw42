@@ -1,4 +1,14 @@
-export type Locale = "zh" | "en";
+export type Locale =
+  | "zh_CN"
+  | "zh_TW"
+  | "en_US"
+  | "ru_RU"
+  | "uk_UA"
+  | "ja_JP"
+  | "fr_FR"
+  | "es_ES"
+  | "ar_SA"
+  | "en_XA";
 
 export interface Dict {
   nav: {
