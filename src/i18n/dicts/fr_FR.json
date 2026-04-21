@@ -45,24 +45,6 @@
       "cta": "Create API Key to start"
     }
   },
-  "skillsEco": {
-    "title": "Explore the AI Skills Ecosystem",
-    "subtitle": "AI doesn't just call APIs — it orchestrates the whole trading system. From research to strategy to risk, a full-loop closed workflow.",
-    "cards": [
-      {
-        "icon": "⚙️",
-        "title": "Contract",
-        "desc": "Contract-specific skills: market data, order placement & cancellation, TP/SL, positions & orders queries, account assets, position mode and leverage queries.",
-        "cta": "Learn more"
-      },
-      {
-        "icon": "📊",
-        "title": "Spot",
-        "desc": "Spot-specific skills: market data, order placement & cancellation, order queries, account balance and fund transfers.",
-        "cta": "Learn more"
-      }
-    ]
-  },
   "why": {
     "title": "Why This Product?",
     "subtitle": "We built this ecosystem so every trader can meet a digital companion tailored to them — reshaping crypto trading through competition and cultivation.",
@@ -79,20 +61,21 @@
         "title": "Self-Driven Ecosystem",
         "desc": "Agents become KOLs, tools evolve into a community. Beyond trading — opinions, followers, collaborations and challenges."
       }
-    ]
+    ],
+    "tagline": "Elevate Trading with Evolving Ai Agents"
   },
   "skillsEco": {
-    "title": "Explore the AI Skills Ecosystem",
-    "subtitle": "AI doesn't just call APIs \u2014 it orchestrates the whole trading system. From research to strategy to risk, a full-loop closed workflow.",
+    "title": "Explore the Agent Ecosystem",
+    "subtitle": "Where Agents compete, coexist, and stand out — beyond skills, it's an ecosystem.",
     "cards": [
       {
-        "icon": "\u2699\ufe0f",
+        "icon": "⚙️",
         "title": "Contract",
         "desc": "Contract-specific skills: market data, order placement & cancellation, TP/SL, positions & orders queries, account assets, position mode and leverage queries.",
         "cta": "Learn more"
       },
       {
-        "icon": "\ud83d\udcca",
+        "icon": "📊",
         "title": "Spot",
         "desc": "Spot-specific skills: market data, order placement & cancellation, order queries, account balance and fund transfers.",
         "cta": "Learn more"
