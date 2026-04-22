@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { Pose } from "./useRobotPose";
 import { SpeechBubble } from "./SpeechBubble";
 
@@ -84,21 +84,35 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
             : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
         }
       >
-        <AnimatePresence mode="popLayout">
+        {/*
+          Body 双张常驻 + opacity 切换，避免 AnimatePresence mount/unmount 导致
+          motion.div 高度在切换瞬间塌陷（会让 eyes/mouth 的百分比定位跑到底座区域，
+          并且造成机器人整体概率性消失的 flicker）
+        */}
+        <div className="relative">
           <motion.img
-            key={displayPose}
-            src={POSE_SRC[displayPose]}
+            src={POSE_SRC.left}
             alt=""
             aria-label="Claw 42 robot"
             draggable={false}
             className="w-full h-auto select-none block cursor-pointer"
-            style={{ pointerEvents: "auto" }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            style={{ pointerEvents: displayPose === "left" ? "auto" : "none" }}
+            initial={false}
+            animate={{ opacity: displayPose === "left" ? 1 : 0 }}
             transition={{ duration: 0.2 }}
           />
-        </AnimatePresence>
+          <motion.img
+            src={POSE_SRC.right}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="w-full h-auto select-none block cursor-pointer absolute inset-0"
+            style={{ pointerEvents: displayPose === "right" ? "auto" : "none" }}
+            initial={false}
+            animate={{ opacity: displayPose === "right" ? 1 : 0 }}
+            transition={{ duration: 0.2 }}
+          />
+        </div>
 
         <div
           className="absolute select-none pointer-events-none"
