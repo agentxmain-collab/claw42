@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -204,6 +205,22 @@ function DisclaimerSection() {
             <p key={i}>{para}</p>
           ))}
         </div>
+
+        <div className="mt-10 flex justify-center">
+          <a
+            href="#top"
+            aria-label="Back to top"
+            className="group rounded-[28px] bg-white/[0.96] p-4 md:p-5 shadow-[0_18px_50px_rgba(0,0,0,0.24)] transition-transform duration-300 hover:scale-[1.03]"
+          >
+            <Image
+              src="/images/brand/claw42-stacked.png"
+              alt="Claw 42"
+              width={220}
+              height={220}
+              className="w-28 md:w-36 h-auto object-contain"
+            />
+          </a>
+        </div>
       </div>
     </motion.section>
   );
@@ -211,7 +228,7 @@ function DisclaimerSection() {
 
 export default function Home() {
   return (
-    <main className="bg-black min-h-screen">
+    <main id="top" className="bg-black min-h-screen">
       <HeroScene />
       <QuickStartSection />
       <ScenariosSection />

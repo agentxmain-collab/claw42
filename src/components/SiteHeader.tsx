@@ -12,16 +12,15 @@ export function SiteHeader() {
     <nav className="fixed top-0 left-0 right-0 z-50 h-[72px] bg-black/80 backdrop-blur-xl border-b border-white/[0.06]">
       <div className="max-w-[1440px] mx-auto h-full flex items-center justify-between px-6 md:px-10 lg:px-16">
         <a href={`/${locale}`} className="flex items-center gap-3 shrink-0">
-          <Image
-            src="/images/claw42-logo-trimmed.png"
-            alt="Claw 42"
-            width={40}
-            height={40}
-            priority
-            className="w-10 h-10 object-contain"
-          />
-          <span className="text-white font-semibold text-lg tracking-tight">
-            Claw 42
+          <span className="rounded-xl bg-white/[0.96] px-3 py-2 shadow-[0_8px_28px_rgba(0,0,0,0.18)]">
+            <Image
+              src="/images/brand/claw42-horizontal.png"
+              alt="Claw 42"
+              width={270}
+              height={90}
+              priority
+              className="h-7 md:h-8 w-auto object-contain"
+            />
           </span>
         </a>
 

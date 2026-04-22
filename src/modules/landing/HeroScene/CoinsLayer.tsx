@@ -173,7 +173,7 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
   }, []);
 
   useEffect(() => {
-    if (!hovered) {
+    if (!hovered && trail.length === 0) {
       if (trailTimerRef.current) {
         clearInterval(trailTimerRef.current);
         trailTimerRef.current = null;
@@ -183,8 +183,8 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
 
     trailTimerRef.current = setInterval(() => {
       const now = Date.now();
-      setTrail((current) => current.filter((point) => now - point.createdAt < 360));
-    }, 40);
+      setTrail((current) => current.filter((point) => now - point.createdAt < 1000));
+    }, 50);
 
     return () => {
       if (trailTimerRef.current) {
@@ -192,7 +192,7 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
         trailTimerRef.current = null;
       }
     };
-  }, [hovered]);
+  }, [hovered, trail.length]);
 
   const baseFilter = bursting
     ? "drop-shadow(0 0 12px rgba(255,205,98,0.52)) saturate(1.08)"
@@ -222,16 +222,20 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
           lastPointRef.current = null;
         }}
         onMouseMove={(event) => {
+          if (reduceMotion) return;
           const rect = event.currentTarget.getBoundingClientRect();
           const x = event.clientX - rect.left;
           const y = event.clientY - rect.top;
           const last = lastPointRef.current;
           const dx = last ? x - last.x : 12;
           const dy = last ? y - last.y : 0;
+          const distance = Math.hypot(dx, dy);
           lastPointRef.current = { x, y };
 
+          if (last && distance < 2) return;
+
           setTrail((current) => [
-            ...current.slice(-8),
+            ...current.slice(-18),
             {
               id: trailIdRef.current++,
               x,
@@ -248,34 +252,80 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
         }}
       >
         <AnimatePresence>
-          {hovered &&
-            !reduceMotion &&
+          {!reduceMotion &&
             trail.map((point) => {
               const angle = Math.atan2(point.dy || 0.01, point.dx || 0.01) * (180 / Math.PI);
-              const length = Math.max(26, Math.min(52, Math.hypot(point.dx, point.dy) * 5 + 18));
+              const distance = Math.max(1, Math.hypot(point.dx, point.dy));
+              const nx = point.dx / distance;
+              const ny = point.dy / distance;
+              const tailLength = Math.max(10, Math.min(26, distance * 3.2));
 
               return (
-                <motion.span
+                <motion.div
                   key={point.id}
-                  className="absolute pointer-events-none rounded-full"
+                  className="absolute pointer-events-none"
                   style={{
                     left: point.x,
                     top: point.y,
-                    width: length,
-                    height: 10,
-                    background:
-                      "linear-gradient(90deg, rgba(255,246,198,0.98) 0%, rgba(255,209,96,0.82) 38%, rgba(255,157,48,0.48) 72%, rgba(255,157,48,0) 100%)",
-                    filter: "blur(4px)",
-                    transform: `translate(-18%, -50%) rotate(${angle}deg)`,
-                    transformOrigin: "left center",
                     zIndex: 1,
                   }}
-                  initial={{ opacity: 0.92, scaleX: 0.68 }}
-                  animate={{ opacity: 0, scaleX: 1.2 }}
+                  initial={{ opacity: 0.95, scale: 0.72 }}
+                  animate={{ opacity: 0, scale: 1.18 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.34, ease: "easeOut" }}
+                  transition={{ duration: 0.96, ease: "easeOut" }}
                   aria-hidden="true"
-                />
+                >
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -7,
+                      top: -7,
+                      width: 14,
+                      height: 14,
+                      background:
+                        "radial-gradient(circle, rgba(255,252,225,0.98) 0%, rgba(255,217,118,0.88) 38%, rgba(255,161,51,0.42) 72%, rgba(255,161,51,0) 100%)",
+                      filter: "blur(1px)",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * tailLength - 8,
+                      top: -ny * tailLength - 4,
+                      width: 16,
+                      height: 8,
+                      background:
+                        "linear-gradient(90deg, rgba(255,244,195,0.92) 0%, rgba(255,203,92,0.68) 52%, rgba(255,150,45,0) 100%)",
+                      filter: "blur(4px)",
+                      transform: `rotate(${angle}deg)`,
+                      transformOrigin: "left center",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * (tailLength + 12) + ny * 4 - 4,
+                      top: -ny * (tailLength + 12) - nx * 4 - 4,
+                      width: 8,
+                      height: 8,
+                      background:
+                        "radial-gradient(circle, rgba(255,246,210,0.86) 0%, rgba(255,196,82,0.58) 58%, rgba(255,145,40,0) 100%)",
+                      filter: "blur(1.6px)",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * (tailLength + 24) - ny * 3 - 3,
+                      top: -ny * (tailLength + 24) + nx * 3 - 3,
+                      width: 6,
+                      height: 6,
+                      background:
+                        "radial-gradient(circle, rgba(255,240,196,0.82) 0%, rgba(255,186,66,0.42) 65%, rgba(255,142,38,0) 100%)",
+                      filter: "blur(1.8px)",
+                    }}
+                  />
+                </motion.div>
               );
             })}
         </AnimatePresence>
