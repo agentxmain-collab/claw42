@@ -40,6 +40,26 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
         />
       </motion.div>
 
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{
+          bottom: "22%",
+          width: "min(210px, 18vw)",
+          height: "min(88px, 7vw)",
+          transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
+          zIndex: 18,
+          background:
+            "radial-gradient(ellipse 50% 60% at 50% 50%, rgba(178,152,255,0.92) 0%, rgba(124,92,255,0.52) 36%, rgba(73,201,255,0.2) 56%, transparent 76%)",
+          filter: "blur(16px)",
+        }}
+        animate={reduceMotion ? { opacity: 0.75 } : { opacity: [0.55, 1, 0.55] }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+        }
+      />
+
       <div
         className="absolute left-1/2 pointer-events-none"
         style={{

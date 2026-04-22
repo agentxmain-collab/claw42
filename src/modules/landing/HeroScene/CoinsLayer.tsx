@@ -148,6 +148,7 @@ const SPARKS = [
 
 function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps) {
   const [hovered, setHovered] = useState(false);
+  const [burstId, setBurstId] = useState(0);
 
   const baseFilter = hovered
     ? "drop-shadow(0 0 22px rgba(255,212,108,0.98)) drop-shadow(0 0 42px rgba(255,170,56,0.84)) saturate(1.22)"
@@ -168,29 +169,16 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
           transform: `translate(${translateX}px, ${translateY}px)`,
           transition: "transform 180ms ease-out",
         }}
-        onMouseEnter={() => setHovered(true)}
+        onMouseEnter={() => {
+          setHovered(true);
+          setBurstId((current) => current + 1);
+        }}
         onMouseLeave={() => setHovered(false)}
       >
-        {hovered && !reduceMotion && (
-          <motion.span
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
-            style={{
-              width: "122%",
-              height: "122%",
-              background:
-                "radial-gradient(circle, rgba(255,246,190,0.82) 0%, rgba(255,206,92,0.42) 26%, rgba(255,168,56,0.18) 46%, rgba(255,168,56,0) 70%)",
-              filter: "blur(2px)",
-            }}
-            initial={{ opacity: 0.15, scale: 0.82 }}
-            animate={{ opacity: [0.2, 0.8, 0.25], scale: [0.82, 1.08, 0.9] }}
-            transition={{ duration: 0.46, repeat: Infinity, ease: "easeInOut" }}
-            aria-hidden="true"
-          />
-        )}
         {hovered && !reduceMotion &&
           SPARKS.map((spark, index) => (
             <motion.span
-              key={`${coin.symbol}-spark-${index}`}
+              key={`${coin.symbol}-spark-${burstId}-${index}`}
               className="absolute left-1/2 top-1/2 pointer-events-none rounded-full"
               style={{
                 width: spark.width,
@@ -212,37 +200,41 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
               transition={{
                 duration: 0.52,
                 delay: spark.delay,
-                repeat: Infinity,
                 ease: "easeOut",
               }}
               aria-hidden="true"
             />
           ))}
-        <motion.img
-          src={coin.src}
-          alt=""
-          aria-label={coin.label}
-          draggable={false}
-          className="relative w-full h-auto select-none pointer-events-auto cursor-pointer"
+        <motion.div
+          key={`${coin.symbol}-burst-${burstId}`}
+          initial={false}
           animate={
             hovered && !reduceMotion
               ? {
-                  x: [0, -1.5, 2.5, -2, 1.5, 0],
-                  y: [0, 1.5, -2, 2, -1.5, 0],
-                  rotate: [0, -1.8, 1.6, -1.2, 0.8, 0],
+                  x: [0, -1.5, 2.4, -1.6, 0.9, 0],
+                  y: [0, 1.2, -1.8, 1.6, -0.8, 0],
+                  rotate: [0, -1.4, 1.2, -0.7, 0.3, 0],
                 }
               : { x: 0, y: 0, rotate: 0 }
           }
           transition={
             hovered && !reduceMotion
-              ? { duration: 0.42, repeat: Infinity, ease: "easeInOut" }
-              : { duration: 0.18 }
+              ? { duration: 0.34, ease: "easeOut" }
+              : { duration: 0.16 }
           }
-          style={{
-            filter: baseFilter,
-            transition: "filter 240ms ease-out",
-          }}
-        />
+        >
+          <motion.img
+            src={coin.src}
+            alt=""
+            aria-label={coin.label}
+            draggable={false}
+            className="relative w-full h-auto select-none pointer-events-auto cursor-pointer"
+            style={{
+              filter: baseFilter,
+              transition: "filter 240ms ease-out",
+            }}
+          />
+        </motion.div>
       </div>
     </div>
   );
