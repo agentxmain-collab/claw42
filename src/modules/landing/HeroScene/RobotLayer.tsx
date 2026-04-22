@@ -17,16 +17,23 @@ const POSE_SRC: Record<"left" | "right", string> = {
   right: "/images/hero/robot-right.png",
 };
 
+const FACE_LAYOUT = {
+  left: {
+    x: "42.3%",
+  },
+  right: {
+    x: "57.7%",
+  },
+};
+
 const EYES_OVERLAY = {
-  top: "49.5%",
-  left: "50%",
-  width: "96px",
+  top: "54.4%",
+  width: "33.9%",
 };
 
 const MOUTH_OVERLAY = {
-  top: "45%",
-  left: "50%",
-  width: "98px",
+  top: "54.6%",
+  width: "33.9%",
 };
 
 export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerProps) {
@@ -97,7 +104,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
           className="absolute select-none pointer-events-none"
           style={{
             top: EYES_OVERLAY.top,
-            left: EYES_OVERLAY.left,
+            left: FACE_LAYOUT[displayPose].x,
             width: EYES_OVERLAY.width,
             transform: `translate(-50%, 0)${displayPose === "right" ? " scaleX(-1)" : ""}`,
             transformOrigin: "center center",
@@ -127,7 +134,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
           className="absolute select-none pointer-events-none"
           style={{
             top: MOUTH_OVERLAY.top,
-            left: MOUTH_OVERLAY.left,
+            left: FACE_LAYOUT[displayPose].x,
             width: MOUTH_OVERLAY.width,
             transform: "translate(-50%, 0)",
             filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",

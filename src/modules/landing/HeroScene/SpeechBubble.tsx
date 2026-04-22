@@ -27,9 +27,9 @@ export function SpeechBubble({ visible, reduceMotion, side }: SpeechBubbleProps)
       className="absolute pointer-events-none"
       style={{
         zIndex: 40,
-        top: "58%",
-        left: side === "right" ? "70%" : undefined,
-        right: side === "left" ? "70%" : undefined,
+        top: "66%",
+        left: side === "right" ? "68%" : undefined,
+        right: side === "left" ? "68%" : undefined,
         transform: "translateY(-50%)",
       }}
     >
@@ -41,7 +41,7 @@ export function SpeechBubble({ visible, reduceMotion, side }: SpeechBubbleProps)
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 6 }}
             transition={{ duration: reduceMotion ? 0 : 0.22, ease: "easeOut" }}
-            className="relative bg-white/95 text-gray-900 rounded-2xl px-4 py-3 text-sm md:text-[14px] font-medium leading-snug max-w-[280px] md:max-w-[340px] shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+            className="relative bg-white/95 text-gray-900 rounded-2xl px-4 py-3 text-sm md:text-[14px] font-medium leading-snug min-w-[220px] sm:min-w-[280px] md:min-w-[340px] max-w-[240px] sm:max-w-[340px] md:max-w-[420px] md:whitespace-nowrap shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
             aria-label={t.hero.speechBubbleAriaLabel}
             role="status"
           >
@@ -51,7 +51,7 @@ export function SpeechBubble({ visible, reduceMotion, side }: SpeechBubbleProps)
               style={{
                 left: side === "right" ? "-6px" : undefined,
                 right: side === "left" ? "-6px" : undefined,
-                top: "74%",
+                top: "68%",
               }}
               aria-hidden="true"
             />

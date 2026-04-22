@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface CoinsLayerProps {
   mouseX: number;
@@ -135,6 +135,15 @@ interface CoinItemProps {
   reduceMotion: boolean;
 }
 
+interface TrailPoint {
+  id: number;
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  createdAt: number;
+}
+
 const SPARKS = [
   { size: 3, width: 28, height: 4, angle: -78, x: -18, y: -38, delay: 0.0 },
   { size: 3, width: 34, height: 4, angle: -32, x: 38, y: -20, delay: 0.05 },
@@ -150,13 +159,40 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
   const [hovered, setHovered] = useState(false);
   const [burstId, setBurstId] = useState(0);
   const [bursting, setBursting] = useState(false);
+  const [trail, setTrail] = useState<TrailPoint[]>([]);
   const burstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trailTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const trailIdRef = useRef(0);
 
   useEffect(() => {
     return () => {
       if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
+      if (trailTimerRef.current) clearInterval(trailTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!hovered) {
+      if (trailTimerRef.current) {
+        clearInterval(trailTimerRef.current);
+        trailTimerRef.current = null;
+      }
+      return;
+    }
+
+    trailTimerRef.current = setInterval(() => {
+      const now = Date.now();
+      setTrail((current) => current.filter((point) => now - point.createdAt < 360));
+    }, 40);
+
+    return () => {
+      if (trailTimerRef.current) {
+        clearInterval(trailTimerRef.current);
+        trailTimerRef.current = null;
+      }
+    };
+  }, [hovered]);
 
   const baseFilter = bursting
     ? "drop-shadow(0 0 12px rgba(255,205,98,0.52)) saturate(1.08)"
@@ -183,61 +219,66 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
           setBursting(true);
           if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
           burstTimerRef.current = setTimeout(() => setBursting(false), 900);
+          lastPointRef.current = null;
         }}
-        onMouseLeave={() => setHovered(false)}
+        onMouseMove={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const y = event.clientY - rect.top;
+          const last = lastPointRef.current;
+          const dx = last ? x - last.x : 12;
+          const dy = last ? y - last.y : 0;
+          lastPointRef.current = { x, y };
+
+          setTrail((current) => [
+            ...current.slice(-8),
+            {
+              id: trailIdRef.current++,
+              x,
+              y,
+              dx,
+              dy,
+              createdAt: Date.now(),
+            },
+          ]);
+        }}
+        onMouseLeave={() => {
+          setHovered(false);
+          lastPointRef.current = null;
+        }}
       >
-        {bursting && !reduceMotion && (
-          <>
-            <motion.span
-              key={`${coin.symbol}-tail-main-${burstId}`}
-              className="absolute left-1/2 top-1/2 pointer-events-none rounded-full"
-              style={{
-                width: "132%",
-                height: "34%",
-                background:
-                  "linear-gradient(90deg, rgba(255,242,184,0.94) 0%, rgba(255,207,92,0.82) 28%, rgba(255,154,42,0.5) 62%, rgba(255,154,42,0) 100%)",
-                filter: "blur(10px)",
-                transformOrigin: "left center",
-                rotate: "26deg",
-                zIndex: 0,
-              }}
-              initial={{ x: -18, y: -4, opacity: 0, scaleX: 0.2, scaleY: 0.7 }}
-              animate={{
-                x: [-18, -6, 10, 16],
-                y: [-4, -2, 2, 4],
-                opacity: [0, 0.88, 0.35, 0],
-                scaleX: [0.18, 0.92, 1.16, 1.24],
-                scaleY: [0.7, 1, 1.08, 1.12],
-              }}
-              transition={{ duration: 0.82, ease: "easeOut" }}
-              aria-hidden="true"
-            />
-            <motion.span
-              key={`${coin.symbol}-tail-sub-${burstId}`}
-              className="absolute left-1/2 top-1/2 pointer-events-none rounded-full"
-              style={{
-                width: "96%",
-                height: "24%",
-                background:
-                  "linear-gradient(90deg, rgba(255,251,222,0.92) 0%, rgba(255,219,120,0.75) 36%, rgba(255,156,44,0.38) 70%, rgba(255,156,44,0) 100%)",
-                filter: "blur(7px)",
-                transformOrigin: "left center",
-                rotate: "14deg",
-                zIndex: 0,
-              }}
-              initial={{ x: -10, y: 4, opacity: 0, scaleX: 0.18, scaleY: 0.66 }}
-              animate={{
-                x: [-10, -2, 8, 12],
-                y: [4, 3, 5, 6],
-                opacity: [0, 0.72, 0.28, 0],
-                scaleX: [0.16, 0.84, 1.02, 1.12],
-                scaleY: [0.66, 1, 1.04, 1.08],
-              }}
-              transition={{ duration: 0.76, ease: "easeOut" }}
-              aria-hidden="true"
-            />
-          </>
-        )}
+        <AnimatePresence>
+          {hovered &&
+            !reduceMotion &&
+            trail.map((point) => {
+              const angle = Math.atan2(point.dy || 0.01, point.dx || 0.01) * (180 / Math.PI);
+              const length = Math.max(26, Math.min(52, Math.hypot(point.dx, point.dy) * 5 + 18));
+
+              return (
+                <motion.span
+                  key={point.id}
+                  className="absolute pointer-events-none rounded-full"
+                  style={{
+                    left: point.x,
+                    top: point.y,
+                    width: length,
+                    height: 10,
+                    background:
+                      "linear-gradient(90deg, rgba(255,246,198,0.98) 0%, rgba(255,209,96,0.82) 38%, rgba(255,157,48,0.48) 72%, rgba(255,157,48,0) 100%)",
+                    filter: "blur(4px)",
+                    transform: `translate(-18%, -50%) rotate(${angle}deg)`,
+                    transformOrigin: "left center",
+                    zIndex: 1,
+                  }}
+                  initial={{ opacity: 0.92, scaleX: 0.68 }}
+                  animate={{ opacity: 0, scaleX: 1.2 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.34, ease: "easeOut" }}
+                  aria-hidden="true"
+                />
+              );
+            })}
+        </AnimatePresence>
         {bursting && !reduceMotion &&
           SPARKS.map((spark, index) => (
             <motion.span
@@ -272,17 +313,18 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
           key={`${coin.symbol}-burst-${burstId}`}
           initial={false}
           animate={
-            hovered && !reduceMotion
+            bursting && !reduceMotion
               ? {
-                  x: [0, -1.5, 2.4, -1.6, 0.9, 0],
-                  y: [0, 1.2, -1.8, 1.6, -0.8, 0],
-                  rotate: [0, -1.4, 1.2, -0.7, 0.3, 0],
+                  x: [0, -2.6, 3.8, -2.1, 1.1, 0],
+                  y: [0, 1.6, -2.2, 1.4, -0.7, 0],
+                  rotate: [0, -2.2, 1.6, -0.9, 0.4, 0],
+                  scale: [1, 1.04, 0.985, 1.02, 1],
                 }
-              : { x: 0, y: 0, rotate: 0 }
+              : { x: 0, y: 0, rotate: 0, scale: 1 }
           }
           transition={
             bursting && !reduceMotion
-              ? { duration: 0.26, ease: "easeOut" }
+              ? { duration: 0.32, ease: "easeOut" }
               : { duration: 0.16 }
           }
         >
