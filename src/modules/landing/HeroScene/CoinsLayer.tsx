@@ -23,6 +23,22 @@ interface CoinConfig {
   freqScale: number;
 }
 
+interface CoinItemProps {
+  coin: CoinConfig;
+  translateX: number;
+  translateY: number;
+  reduceMotion: boolean;
+}
+
+interface TrailPoint {
+  id: number;
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  createdAt: number;
+}
+
 const COINS: CoinConfig[] = [
   {
     symbol: "BTC",
@@ -128,33 +144,6 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
   );
 }
 
-interface CoinItemProps {
-  coin: CoinConfig;
-  translateX: number;
-  translateY: number;
-  reduceMotion: boolean;
-}
-
-interface TrailPoint {
-  id: number;
-  x: number;
-  y: number;
-  dx: number;
-  dy: number;
-  createdAt: number;
-}
-
-const SPARKS = [
-  { size: 3, width: 28, height: 4, angle: -78, x: -18, y: -38, delay: 0.0 },
-  { size: 3, width: 34, height: 4, angle: -32, x: 38, y: -20, delay: 0.05 },
-  { size: 4, width: 30, height: 5, angle: 18, x: 42, y: 10, delay: 0.1 },
-  { size: 3, width: 26, height: 4, angle: 58, x: 22, y: 36, delay: 0.16 },
-  { size: 3, width: 28, height: 4, angle: 118, x: -22, y: 34, delay: 0.22 },
-  { size: 4, width: 24, height: 4, angle: 164, x: -40, y: 8, delay: 0.28 },
-  { size: 3, width: 22, height: 3, angle: -142, x: -34, y: -18, delay: 0.34 },
-  { size: 3, width: 20, height: 3, angle: -102, x: -6, y: -44, delay: 0.4 },
-];
-
 function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps) {
   const [hovered, setHovered] = useState(false);
   const [burstId, setBurstId] = useState(0);
@@ -198,6 +187,29 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
     ? "drop-shadow(0 0 12px rgba(255,205,98,0.52)) saturate(1.08)"
     : "drop-shadow(0 0 18px rgba(124,92,255,0.35))";
 
+  const addTrailPoint = (x: number, y: number) => {
+    const last = lastPointRef.current;
+    const dx = last ? x - last.x : 0;
+    const dy = last ? y - last.y : 0;
+    const distance = Math.hypot(dx, dy);
+
+    lastPointRef.current = { x, y };
+
+    if (last && distance < 1.5) return;
+
+    setTrail((current) => [
+      ...current.slice(-28),
+      {
+        id: trailIdRef.current++,
+        x,
+        y,
+        dx,
+        dy,
+        createdAt: Date.now(),
+      },
+    ]);
+  };
+
   return (
     <div
       className="absolute"
@@ -213,38 +225,22 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
           transform: `translate(${translateX}px, ${translateY}px)`,
           transition: "transform 180ms ease-out",
         }}
-        onMouseEnter={() => {
+        onMouseEnter={(event) => {
           setHovered(true);
           setBurstId((current) => current + 1);
           setBursting(true);
           if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
           burstTimerRef.current = setTimeout(() => setBursting(false), 900);
-          lastPointRef.current = null;
+
+          if (!reduceMotion) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            addTrailPoint(event.clientX - rect.left, event.clientY - rect.top);
+          }
         }}
         onMouseMove={(event) => {
           if (reduceMotion) return;
           const rect = event.currentTarget.getBoundingClientRect();
-          const x = event.clientX - rect.left;
-          const y = event.clientY - rect.top;
-          const last = lastPointRef.current;
-          const dx = last ? x - last.x : 12;
-          const dy = last ? y - last.y : 0;
-          const distance = Math.hypot(dx, dy);
-          lastPointRef.current = { x, y };
-
-          if (last && distance < 2) return;
-
-          setTrail((current) => [
-            ...current.slice(-18),
-            {
-              id: trailIdRef.current++,
-              x,
-              y,
-              dx,
-              dy,
-              createdAt: Date.now(),
-            },
-          ]);
+          addTrailPoint(event.clientX - rect.left, event.clientY - rect.top);
         }}
         onMouseLeave={() => {
           setHovered(false);
@@ -254,11 +250,10 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
         <AnimatePresence>
           {!reduceMotion &&
             trail.map((point) => {
-              const angle = Math.atan2(point.dy || 0.01, point.dx || 0.01) * (180 / Math.PI);
               const distance = Math.max(1, Math.hypot(point.dx, point.dy));
               const nx = point.dx / distance;
               const ny = point.dy / distance;
-              const tailLength = Math.max(10, Math.min(26, distance * 3.2));
+              const drift = Math.max(8, Math.min(26, distance * 2.8 + 8));
 
               return (
                 <motion.div
@@ -269,96 +264,58 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
                     top: point.y,
                     zIndex: 1,
                   }}
-                  initial={{ opacity: 0.95, scale: 0.72 }}
-                  animate={{ opacity: 0, scale: 1.18 }}
+                  initial={{ opacity: 0.96, scale: 0.75 }}
+                  animate={{
+                    opacity: 0,
+                    scale: 1.05,
+                    x: -nx * drift,
+                    y: -ny * drift,
+                  }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.96, ease: "easeOut" }}
+                  transition={{ duration: 1.02, ease: "easeOut" }}
                   aria-hidden="true"
                 >
                   <span
                     className="absolute rounded-full"
                     style={{
-                      left: -7,
-                      top: -7,
-                      width: 14,
-                      height: 14,
-                      background:
-                        "radial-gradient(circle, rgba(255,252,225,0.98) 0%, rgba(255,217,118,0.88) 38%, rgba(255,161,51,0.42) 72%, rgba(255,161,51,0) 100%)",
-                      filter: "blur(1px)",
-                    }}
-                  />
-                  <span
-                    className="absolute rounded-full"
-                    style={{
-                      left: -nx * tailLength - 8,
-                      top: -ny * tailLength - 4,
-                      width: 16,
-                      height: 8,
-                      background:
-                        "linear-gradient(90deg, rgba(255,244,195,0.92) 0%, rgba(255,203,92,0.68) 52%, rgba(255,150,45,0) 100%)",
-                      filter: "blur(4px)",
-                      transform: `rotate(${angle}deg)`,
-                      transformOrigin: "left center",
-                    }}
-                  />
-                  <span
-                    className="absolute rounded-full"
-                    style={{
-                      left: -nx * (tailLength + 12) + ny * 4 - 4,
-                      top: -ny * (tailLength + 12) - nx * 4 - 4,
+                      left: -4,
+                      top: -4,
                       width: 8,
                       height: 8,
                       background:
-                        "radial-gradient(circle, rgba(255,246,210,0.86) 0%, rgba(255,196,82,0.58) 58%, rgba(255,145,40,0) 100%)",
-                      filter: "blur(1.6px)",
+                        "radial-gradient(circle, rgba(255,252,225,0.98) 0%, rgba(255,217,118,0.88) 38%, rgba(255,161,51,0.42) 72%, rgba(255,161,51,0) 100%)",
+                      filter: "blur(0.8px)",
                     }}
                   />
                   <span
                     className="absolute rounded-full"
                     style={{
-                      left: -nx * (tailLength + 24) - ny * 3 - 3,
-                      top: -ny * (tailLength + 24) + nx * 3 - 3,
+                      left: -nx * 10 - ny * 2 - 3,
+                      top: -ny * 10 + nx * 2 - 3,
                       width: 6,
                       height: 6,
                       background:
-                        "radial-gradient(circle, rgba(255,240,196,0.82) 0%, rgba(255,186,66,0.42) 65%, rgba(255,142,38,0) 100%)",
-                      filter: "blur(1.8px)",
+                        "radial-gradient(circle, rgba(255,248,216,0.92) 0%, rgba(255,204,98,0.68) 58%, rgba(255,150,45,0) 100%)",
+                      filter: "blur(1.2px)",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * 18 + ny * 3 - 2.5,
+                      top: -ny * 18 - nx * 3 - 2.5,
+                      width: 5,
+                      height: 5,
+                      background:
+                        "radial-gradient(circle, rgba(255,246,210,0.86) 0%, rgba(255,196,82,0.58) 65%, rgba(255,145,40,0) 100%)",
+                      filter: "blur(1.4px)",
                     }}
                   />
                 </motion.div>
               );
             })}
         </AnimatePresence>
-        {bursting && !reduceMotion &&
-          SPARKS.map((spark, index) => (
-            <motion.span
-              key={`${coin.symbol}-spark-${burstId}-${index}`}
-              className="absolute left-1/2 top-1/2 pointer-events-none rounded-full"
-              style={{
-                width: spark.width,
-                height: spark.height,
-                background:
-                  "linear-gradient(90deg, rgba(255,252,220,0.98) 0%, rgba(255,212,108,0.92) 36%, rgba(255,155,46,0.55) 72%, rgba(255,155,46,0) 100%)",
-                boxShadow: "0 0 18px rgba(255,195,82,0.88)",
-                transformOrigin: "left center",
-                rotate: `${spark.angle}deg`,
-              }}
-              initial={{ x: 0, y: 0, opacity: 0, scaleX: 0.3, scaleY: 0.6 }}
-              animate={{
-                x: [0, spark.x],
-                y: [0, spark.y],
-                opacity: [0, 1, 0],
-                scaleX: [0.28, 1.05, 0.38],
-                scaleY: [0.72, 1, 0.56],
-              }}
-              transition={{
-                duration: 0.52,
-                delay: spark.delay,
-                ease: "easeOut",
-              }}
-              aria-hidden="true"
-            />
-          ))}
+
         <motion.div
           key={`${coin.symbol}-burst-${burstId}`}
           initial={false}

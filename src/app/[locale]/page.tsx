@@ -210,7 +210,7 @@ function DisclaimerSection() {
           <a
             href="#top"
             aria-label="Back to top"
-            className="group rounded-[28px] bg-white/[0.96] p-4 md:p-5 shadow-[0_18px_50px_rgba(0,0,0,0.24)] transition-transform duration-300 hover:scale-[1.03]"
+            className="group p-4 md:p-5 transition-transform duration-300 hover:scale-[1.03]"
           >
             <Image
               src="/images/brand/claw42-stacked.png"
