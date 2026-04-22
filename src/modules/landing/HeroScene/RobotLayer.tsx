@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Pose } from "./useRobotPose";
+import { SpeechBubble } from "./SpeechBubble";
 
 interface RobotLayerProps {
   pose: Pose;
@@ -11,136 +12,120 @@ interface RobotLayerProps {
   reduceMotion: boolean;
 }
 
-const POSE_SRC: Record<Pose, string> = {
-  center: "/images/hero/robot-center.png",
+const POSE_SRC: Record<"left" | "right", string> = {
   left: "/images/hero/robot-left.png",
   right: "/images/hero/robot-right.png",
 };
 
+const FACE_OVERLAY = {
+  top: "31.6%",
+  left: "50%",
+  width: "107px",
+};
+
 export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerProps) {
-  const depth = 0.3;
-  const parallaxX = reduceMotion ? 0 : mouseX * depth * 20;
-  const parallaxY = reduceMotion ? 0 : mouseY * depth * 12;
+  const [blink, setBlink] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
 
-  // --- Eye tracking ---
-  const faceDepth = 0.35;
-  const faceParallaxX = reduceMotion ? 0 : mouseX * faceDepth * 20;
-  const faceParallaxY = reduceMotion ? 0 : mouseY * faceDepth * 12;
-  const eyeOffsetX = reduceMotion ? 0 : mouseX * 4;
-  const eyeOffsetY = reduceMotion ? 0 : mouseY * 3;
-
-  // --- Blinking ---
-  const [blinking, setBlinking] = useState(false);
-  const blinkTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const triggerBlink = useCallback(() => {
-    setBlinking(true);
-    setTimeout(() => setBlinking(false), 150);
-  }, []);
-
-  // Idle blink every 3-5s
   useEffect(() => {
     if (reduceMotion) return;
+    let blinkId: ReturnType<typeof setTimeout> | undefined;
+    let closeId: ReturnType<typeof setTimeout> | undefined;
+
     const scheduleBlink = () => {
-      const delay = 3000 + Math.random() * 2000;
-      blinkTimeout.current = setTimeout(() => {
-        triggerBlink();
+      blinkId = setTimeout(() => {
+        setBlink(true);
+        closeId = setTimeout(() => setBlink(false), 150);
         scheduleBlink();
-      }, delay);
+      }, 3000 + Math.random() * 2000);
     };
+
     scheduleBlink();
     return () => {
-      if (blinkTimeout.current) clearTimeout(blinkTimeout.current);
+      if (blinkId) clearTimeout(blinkId);
+      if (closeId) clearTimeout(closeId);
     };
-  }, [reduceMotion, triggerBlink]);
+  }, [reduceMotion]);
 
-  // --- Click bump ---
-  const [bumping, setBumping] = useState(false);
-  const handleClick = useCallback(() => {
-    if (reduceMotion) return;
-    triggerBlink();
-    setBumping(true);
-    setTimeout(() => setBumping(false), 200);
-  }, [reduceMotion, triggerBlink]);
+  const parallaxX = reduceMotion ? 0 : mouseX * 0.3 * 20;
+  const parallaxY = reduceMotion ? 0 : mouseY * 0.3 * 12;
 
   return (
     <div
-      className="absolute z-20 left-1/2 bottom-[28%] cursor-pointer"
+      className="absolute z-20 left-1/2 bottom-[30%] md:bottom-[32%]"
       style={{
-        transform: `translateX(-50%) translate(${parallaxX}px, ${parallaxY}px)`,
-        transition: "transform 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
         width: "min(316px, 28vw)",
+        pointerEvents: "none",
       }}
-      onClick={handleClick}
     >
-      {/* Idle float */}
       <motion.div
-        animate={reduceMotion ? undefined : { y: [0, -8, 0] }}
+        className="relative"
+        animate={reduceMotion ? { y: 0 } : { y: [0, -12, 0] }}
         transition={
           reduceMotion
             ? { duration: 0 }
-            : { duration: 4, repeat: Infinity, ease: "easeInOut" }
+            : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
         }
-        style={{
-          transform: bumping ? "scale(0.97)" : "scale(1)",
-          transition: "transform 200ms ease-out",
-        }}
       >
-        <div className="relative">
-          {/* Robot body – pose switching */}
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key={pose}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={POSE_SRC[pose]}
-                alt="Claw 42 Robot"
-                className="w-full select-none"
-                draggable={false}
-              />
-            </motion.div>
-          </AnimatePresence>
+        <AnimatePresence mode="popLayout">
+          <motion.img
+            key={displayPose}
+            src={POSE_SRC[displayPose]}
+            alt=""
+            aria-label="Claw 42 robot"
+            draggable={false}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            className="w-full h-auto select-none block cursor-pointer"
+            style={{ pointerEvents: "auto" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+        </AnimatePresence>
 
-          {/* Face overlay – only in center pose */}
-          <AnimatePresence>
-            {pose === "center" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="absolute z-[25]"
-                style={{
-                  top: "31.6%",
-                  left: "50%",
-                  width: "107px",
-                  height: "59px",
-                  transform: `translate(-50%, 0) translate(${faceParallaxX}px, ${faceParallaxY}px) translate(${eyeOffsetX}px, ${eyeOffsetY}px)`,
-                  transition: "transform 220ms cubic-bezier(0.16, 1, 0.3, 1)",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/hero/robot-face.png"
-                  alt=""
-                  className="w-full h-full select-none"
-                  style={{
-                    transform: blinking ? "scaleY(0.1)" : "scaleY(1)",
-                    transition: "transform 150ms ease-in-out",
-                    transformOrigin: "center center",
-                  }}
-                  draggable={false}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div
+          className="absolute select-none pointer-events-none"
+          style={{
+            top: FACE_OVERLAY.top,
+            left: FACE_OVERLAY.left,
+            width: FACE_OVERLAY.width,
+            transform: `translate(-50%, 0)${displayPose === "right" ? " scaleX(-1)" : ""}`,
+            transformOrigin: "center center",
+          }}
+        >
+          <motion.img
+            src="/images/hero/robot-eyes.png"
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="w-full h-auto block"
+            animate={blink ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
+            transition={{ duration: 0.15 }}
+            style={{ transformOrigin: "center center" }}
+          />
         </div>
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/hero/robot-mouth.png"
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="absolute select-none pointer-events-none"
+          style={{
+            top: FACE_OVERLAY.top,
+            left: FACE_OVERLAY.left,
+            width: FACE_OVERLAY.width,
+            transform: "translate(-50%, 0)",
+          }}
+        />
       </motion.div>
+
+      <SpeechBubble visible={hovered} reduceMotion={reduceMotion} />
     </div>
   );
 }

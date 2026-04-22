@@ -9,7 +9,6 @@ import { useRobotPose, type Pose } from "./useRobotPose";
 import { RobotLayer } from "./RobotLayer";
 import { PedestalLayer } from "./PedestalLayer";
 import { CoinsLayer } from "./CoinsLayer";
-import { SpeechBubble } from "./SpeechBubble";
 
 /** Simple mobile detection without extra dependencies. */
 function useIsMobile() {
@@ -73,9 +72,6 @@ export function HeroScene() {
 
       {/* z-30 Coins */}
       <CoinsLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
-
-      {/* z-40 Speech bubble */}
-      <SpeechBubble reduceMotion={reduceMotion} />
 
       {/* z-50 Gradient scrim for title readability */}
       <div className="absolute inset-x-0 bottom-0 z-50 h-[42%] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />

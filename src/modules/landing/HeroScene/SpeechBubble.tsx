@@ -1,61 +1,51 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 
 interface SpeechBubbleProps {
+  visible: boolean;
   reduceMotion: boolean;
 }
 
-export function SpeechBubble({ reduceMotion }: SpeechBubbleProps) {
+export function SpeechBubble({ visible, reduceMotion }: SpeechBubbleProps) {
   const { t } = useI18n();
-  const messages = t.hero.speechBubble;
-
-  // Random start index, then sequential
-  const startIndex = useMemo(
-    () => Math.floor(Math.random() * messages.length),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [messages.length]
-  );
-  const [index, setIndex] = useState(startIndex);
+  const pool = t.hero.speechBubble;
+  const [currentLine, setCurrentLine] = useState("");
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % messages.length);
-    }, 5500);
-    return () => clearInterval(timer);
-  }, [messages.length]);
+    if (visible) {
+      const idx = Math.floor(Math.random() * pool.length);
+      setCurrentLine(pool[idx]);
+    }
+  }, [visible, pool]);
 
   return (
     <div
-      className="absolute z-40 right-[15%] top-[12%] md:right-[28%] md:top-[10%] pointer-events-none"
-      aria-label={t.hero.speechBubbleAriaLabel}
-      role="status"
-      aria-live="polite"
+      className="absolute pointer-events-none top-[-8%] left-1/2 -translate-x-1/2 md:top-[28%] md:left-[62%] md:translate-x-0"
+      style={{ zIndex: 40 }}
     >
-      <div className="relative max-w-[70vw] md:max-w-xs">
-        <AnimatePresence mode="wait">
+      <AnimatePresence>
+        {visible && (
           <motion.div
-            key={index}
-            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -6 }}
-            transition={reduceMotion ? { duration: 0 } : { duration: 0.3, ease: "easeInOut" }}
-            className="relative bg-white/95 text-gray-900 text-xs md:text-sm font-medium rounded-2xl px-4 py-3 shadow-lg"
+            key="bubble"
+            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.9, y: 6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 6 }}
+            transition={{ duration: reduceMotion ? 0 : 0.22, ease: "easeOut" }}
+            className="relative bg-white/95 text-gray-900 rounded-2xl px-4 py-2 text-sm font-medium max-w-[240px] md:max-w-[280px] shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+            aria-label={t.hero.speechBubbleAriaLabel}
+            role="status"
           >
-            {messages[index]}
-            {/* Tail pointing down-left (desktop) / down (mobile) */}
-            <svg
-              className="absolute -bottom-2 left-6 md:left-4 w-4 h-3 text-white/95"
-              viewBox="0 0 16 12"
-              fill="currentColor"
-            >
-              <path d="M0 0 L8 12 L16 0 Z" />
-            </svg>
+            {currentLine}
+            <span
+              className="absolute w-3 h-3 bg-white/95 rotate-45 left-[16px] bottom-[-6px] md:left-[16px]"
+              aria-hidden="true"
+            />
           </motion.div>
-        </AnimatePresence>
-      </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
