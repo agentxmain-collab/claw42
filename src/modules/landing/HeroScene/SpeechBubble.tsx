@@ -7,9 +7,10 @@ import { useI18n } from "@/i18n/I18nProvider";
 interface SpeechBubbleProps {
   visible: boolean;
   reduceMotion: boolean;
+  side: "left" | "right";
 }
 
-export function SpeechBubble({ visible, reduceMotion }: SpeechBubbleProps) {
+export function SpeechBubble({ visible, reduceMotion, side }: SpeechBubbleProps) {
   const { t } = useI18n();
   const pool = t.hero.speechBubble;
   const [currentLine, setCurrentLine] = useState("");
@@ -23,8 +24,14 @@ export function SpeechBubble({ visible, reduceMotion }: SpeechBubbleProps) {
 
   return (
     <div
-      className="absolute pointer-events-none top-[-6%] left-1/2 -translate-x-1/2 md:top-[16%] md:left-[72%] md:translate-x-0"
-      style={{ zIndex: 40 }}
+      className="absolute pointer-events-none"
+      style={{
+        zIndex: 40,
+        top: "58%",
+        left: side === "right" ? "70%" : undefined,
+        right: side === "left" ? "70%" : undefined,
+        transform: "translateY(-50%)",
+      }}
     >
       <AnimatePresence>
         {visible && (
@@ -34,13 +41,18 @@ export function SpeechBubble({ visible, reduceMotion }: SpeechBubbleProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 6 }}
             transition={{ duration: reduceMotion ? 0 : 0.22, ease: "easeOut" }}
-            className="relative bg-white/95 text-gray-900 rounded-2xl px-4 py-2 text-sm font-medium max-w-[220px] md:max-w-[250px] shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+            className="relative bg-white/95 text-gray-900 rounded-2xl px-4 py-3 text-sm md:text-[14px] font-medium leading-snug max-w-[280px] md:max-w-[340px] shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
             aria-label={t.hero.speechBubbleAriaLabel}
             role="status"
           >
             {currentLine}
             <span
-              className="absolute w-3 h-3 bg-white/95 rotate-45 left-[26px] bottom-[-6px] md:left-[22px]"
+              className="absolute w-3 h-3 bg-white/95 rotate-45"
+              style={{
+                left: side === "right" ? "-6px" : undefined,
+                right: side === "left" ? "-6px" : undefined,
+                top: "74%",
+              }}
               aria-hidden="true"
             />
           </motion.div>

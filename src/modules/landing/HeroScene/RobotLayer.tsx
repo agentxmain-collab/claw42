@@ -18,15 +18,15 @@ const POSE_SRC: Record<"left" | "right", string> = {
 };
 
 const EYES_OVERLAY = {
-  top: "40.2%",
+  top: "49.5%",
   left: "50%",
-  width: "82px",
+  width: "96px",
 };
 
 const MOUTH_OVERLAY = {
-  top: "41.8%",
+  top: "45%",
   left: "50%",
-  width: "90px",
+  width: "98px",
 };
 
 export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerProps) {
@@ -134,7 +134,11 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
           }}
         />
 
-        <SpeechBubble visible={hovered} reduceMotion={reduceMotion} />
+        <SpeechBubble
+          visible={hovered}
+          reduceMotion={reduceMotion}
+          side={displayPose === "right" ? "left" : "right"}
+        />
       </motion.div>
     </div>
   );

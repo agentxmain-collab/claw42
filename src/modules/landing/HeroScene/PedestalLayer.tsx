@@ -43,20 +43,61 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
-          bottom: "22%",
-          width: "min(210px, 18vw)",
-          height: "min(88px, 7vw)",
+          bottom: "18%",
+          width: "min(180px, 15vw)",
+          height: "min(260px, 22vw)",
+          transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
+          zIndex: 17,
+          background:
+            "linear-gradient(180deg, rgba(198,182,255,0) 0%, rgba(198,182,255,0.24) 18%, rgba(149,121,255,0.52) 42%, rgba(96,73,246,0.46) 66%, rgba(73,201,255,0.14) 82%, rgba(73,201,255,0) 100%)",
+          filter: "blur(22px)",
+          borderRadius: "999px",
+        }}
+        animate={reduceMotion ? { opacity: 0.9 } : { opacity: [0.48, 0.92, 0.48] }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
+        }
+      />
+
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{
+          bottom: "24%",
+          width: "min(260px, 22vw)",
+          height: "min(132px, 10vw)",
           transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
           zIndex: 18,
           background:
-            "radial-gradient(ellipse 50% 60% at 50% 50%, rgba(178,152,255,0.92) 0%, rgba(124,92,255,0.52) 36%, rgba(73,201,255,0.2) 56%, transparent 76%)",
-          filter: "blur(16px)",
+            "radial-gradient(ellipse 52% 68% at 50% 56%, rgba(207,190,255,0.98) 0%, rgba(154,125,255,0.72) 24%, rgba(108,79,244,0.46) 44%, rgba(73,201,255,0.18) 64%, transparent 82%)",
+          filter: "blur(24px)",
         }}
-        animate={reduceMotion ? { opacity: 0.75 } : { opacity: [0.55, 1, 0.55] }}
+        animate={reduceMotion ? { opacity: 0.88 } : { opacity: [0.62, 1, 0.62] }}
         transition={
           reduceMotion
             ? { duration: 0 }
             : { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+        }
+      />
+
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{
+          bottom: "23%",
+          width: "min(196px, 16vw)",
+          height: "min(196px, 16vw)",
+          transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
+          zIndex: 19,
+          background:
+            "radial-gradient(circle, rgba(228,218,255,0.98) 0%, rgba(176,152,255,0.72) 28%, rgba(111,86,248,0.28) 54%, transparent 78%)",
+          filter: "blur(20px)",
+        }}
+        animate={reduceMotion ? { opacity: 0.96 } : { opacity: [0.76, 1, 0.76] }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : { duration: 1.7, repeat: Infinity, ease: "easeInOut" }
         }
       />
 

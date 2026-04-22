@@ -149,9 +149,17 @@ const SPARKS = [
 function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps) {
   const [hovered, setHovered] = useState(false);
   const [burstId, setBurstId] = useState(0);
+  const [bursting, setBursting] = useState(false);
+  const burstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const baseFilter = hovered
-    ? "drop-shadow(0 0 22px rgba(255,212,108,0.98)) drop-shadow(0 0 42px rgba(255,170,56,0.84)) saturate(1.22)"
+  useEffect(() => {
+    return () => {
+      if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
+    };
+  }, []);
+
+  const baseFilter = bursting
+    ? "drop-shadow(0 0 12px rgba(255,205,98,0.52)) saturate(1.08)"
     : "drop-shadow(0 0 18px rgba(124,92,255,0.35))";
 
   return (
@@ -172,10 +180,65 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
         onMouseEnter={() => {
           setHovered(true);
           setBurstId((current) => current + 1);
+          setBursting(true);
+          if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
+          burstTimerRef.current = setTimeout(() => setBursting(false), 900);
         }}
         onMouseLeave={() => setHovered(false)}
       >
-        {hovered && !reduceMotion &&
+        {bursting && !reduceMotion && (
+          <>
+            <motion.span
+              key={`${coin.symbol}-tail-main-${burstId}`}
+              className="absolute left-1/2 top-1/2 pointer-events-none rounded-full"
+              style={{
+                width: "132%",
+                height: "34%",
+                background:
+                  "linear-gradient(90deg, rgba(255,242,184,0.94) 0%, rgba(255,207,92,0.82) 28%, rgba(255,154,42,0.5) 62%, rgba(255,154,42,0) 100%)",
+                filter: "blur(10px)",
+                transformOrigin: "left center",
+                rotate: "26deg",
+                zIndex: 0,
+              }}
+              initial={{ x: -18, y: -4, opacity: 0, scaleX: 0.2, scaleY: 0.7 }}
+              animate={{
+                x: [-18, -6, 10, 16],
+                y: [-4, -2, 2, 4],
+                opacity: [0, 0.88, 0.35, 0],
+                scaleX: [0.18, 0.92, 1.16, 1.24],
+                scaleY: [0.7, 1, 1.08, 1.12],
+              }}
+              transition={{ duration: 0.82, ease: "easeOut" }}
+              aria-hidden="true"
+            />
+            <motion.span
+              key={`${coin.symbol}-tail-sub-${burstId}`}
+              className="absolute left-1/2 top-1/2 pointer-events-none rounded-full"
+              style={{
+                width: "96%",
+                height: "24%",
+                background:
+                  "linear-gradient(90deg, rgba(255,251,222,0.92) 0%, rgba(255,219,120,0.75) 36%, rgba(255,156,44,0.38) 70%, rgba(255,156,44,0) 100%)",
+                filter: "blur(7px)",
+                transformOrigin: "left center",
+                rotate: "14deg",
+                zIndex: 0,
+              }}
+              initial={{ x: -10, y: 4, opacity: 0, scaleX: 0.18, scaleY: 0.66 }}
+              animate={{
+                x: [-10, -2, 8, 12],
+                y: [4, 3, 5, 6],
+                opacity: [0, 0.72, 0.28, 0],
+                scaleX: [0.16, 0.84, 1.02, 1.12],
+                scaleY: [0.66, 1, 1.04, 1.08],
+              }}
+              transition={{ duration: 0.76, ease: "easeOut" }}
+              aria-hidden="true"
+            />
+          </>
+        )}
+        {bursting && !reduceMotion &&
           SPARKS.map((spark, index) => (
             <motion.span
               key={`${coin.symbol}-spark-${burstId}-${index}`}
@@ -218,8 +281,8 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
               : { x: 0, y: 0, rotate: 0 }
           }
           transition={
-            hovered && !reduceMotion
-              ? { duration: 0.34, ease: "easeOut" }
+            bursting && !reduceMotion
+              ? { duration: 0.26, ease: "easeOut" }
               : { duration: 0.16 }
           }
         >
