@@ -204,17 +204,40 @@ function StackedLogoGlow() {
             className="absolute rounded-full"
             style={{
               left: "38.92%",
-              top: "28.33%",
-              width: "7.2%",
-              height: "7.2%",
+              top: "28.05%",
+              width: "8.8%",
+              height: "8.8%",
               transform: "translate(-50%, -50%)",
               background:
-                "radial-gradient(circle, rgba(71,123,255,0.78) 0%, rgba(71,123,255,0.3) 46%, rgba(71,123,255,0) 76%)",
-              filter: "blur(1.4px)",
+                "radial-gradient(circle, rgba(74,136,255,0.95) 0%, rgba(74,136,255,0.48) 34%, rgba(74,136,255,0.14) 56%, rgba(74,136,255,0) 76%)",
+              filter: "blur(2.4px)",
             }}
             animate={{
-              opacity: [0.28, 0.56, 0.34, 0.5, 0.28],
-              scale: [0.92, 1.08, 0.96, 1.04, 0.92],
+              opacity: [0.46, 0.88, 0.58, 0.82, 0.46],
+              scale: [0.94, 1.12, 0.98, 1.06, 0.94],
+            }}
+            transition={{
+              duration: 2.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            aria-hidden="true"
+          />
+          <motion.span
+            className="absolute rounded-full"
+            style={{
+              left: "38.92%",
+              top: "28.05%",
+              width: "3.4%",
+              height: "3.4%",
+              transform: "translate(-50%, -50%)",
+              background:
+                "radial-gradient(circle, rgba(109,176,255,0.98) 0%, rgba(84,145,255,0.86) 38%, rgba(84,145,255,0.16) 70%, rgba(84,145,255,0) 100%)",
+              filter: "blur(0.55px)",
+            }}
+            animate={{
+              opacity: [0.72, 1, 0.8, 0.96, 0.72],
+              scale: [0.96, 1.08, 0.98, 1.04, 0.96],
             }}
             transition={{
               duration: 2.4,
@@ -227,17 +250,40 @@ function StackedLogoGlow() {
             className="absolute rounded-full"
             style={{
               left: "61.08%",
-              top: "28.33%",
-              width: "7.2%",
-              height: "7.2%",
+              top: "28.05%",
+              width: "8.8%",
+              height: "8.8%",
               transform: "translate(-50%, -50%)",
               background:
-                "radial-gradient(circle, rgba(71,123,255,0.78) 0%, rgba(71,123,255,0.3) 46%, rgba(71,123,255,0) 76%)",
-              filter: "blur(1.4px)",
+                "radial-gradient(circle, rgba(74,136,255,0.95) 0%, rgba(74,136,255,0.48) 34%, rgba(74,136,255,0.14) 56%, rgba(74,136,255,0) 76%)",
+              filter: "blur(2.4px)",
             }}
             animate={{
-              opacity: [0.28, 0.56, 0.34, 0.5, 0.28],
-              scale: [0.92, 1.08, 0.96, 1.04, 0.92],
+              opacity: [0.46, 0.88, 0.58, 0.82, 0.46],
+              scale: [0.94, 1.12, 0.98, 1.06, 0.94],
+            }}
+            transition={{
+              duration: 2.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            aria-hidden="true"
+          />
+          <motion.span
+            className="absolute rounded-full"
+            style={{
+              left: "61.08%",
+              top: "28.05%",
+              width: "3.4%",
+              height: "3.4%",
+              transform: "translate(-50%, -50%)",
+              background:
+                "radial-gradient(circle, rgba(109,176,255,0.98) 0%, rgba(84,145,255,0.86) 38%, rgba(84,145,255,0.16) 70%, rgba(84,145,255,0) 100%)",
+              filter: "blur(0.55px)",
+            }}
+            animate={{
+              opacity: [0.72, 1, 0.8, 0.96, 0.72],
+              scale: [0.96, 1.08, 0.98, 1.04, 0.96],
             }}
             transition={{
               duration: 2.4,

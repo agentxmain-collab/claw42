@@ -125,7 +125,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
           />
         </div>
 
-        <motion.div
+        <div
           className="absolute select-none pointer-events-none"
           style={{
             top: MOUTH_OVERLAY.top,
@@ -133,32 +133,35 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
             width: MOUTH_OVERLAY.width,
             transform: "translate(-50%, 0)",
           }}
-          animate={
-            reduceMotion || !hovered
-              ? { scaleX: 1, scaleY: 1, y: 0 }
-              : {
-                  scaleX: [1, 1.12, 0.94, 1.08, 1],
-                  scaleY: [1, 1.38, 0.82, 1.18, 1],
-                  y: [0, 0.45, -0.08, 0.22, 0],
-                }
-          }
-          transition={
-            reduceMotion || !hovered
-              ? { duration: 0.18 }
-              : { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
-          }
         >
-          <motion.img
-            src="/images/hero/robot-mouth.png"
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            className="w-full h-auto block"
-            style={{
-              filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
-            }}
-          />
-        </motion.div>
+          <motion.div
+            animate={
+              reduceMotion || !hovered
+                ? { scaleX: 1, scaleY: 1, y: 0 }
+                : {
+                    scaleX: [1, 1.12, 0.94, 1.08, 1],
+                    scaleY: [1, 1.38, 0.82, 1.18, 1],
+                    y: [0, 0.45, -0.08, 0.22, 0],
+                  }
+            }
+            transition={
+              reduceMotion || !hovered
+                ? { duration: 0.18 }
+                : { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+            }
+          >
+            <motion.img
+              src="/images/hero/robot-mouth.png"
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="w-full h-auto block"
+              style={{
+                filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
+              }}
+            />
+          </motion.div>
+        </div>
 
         <SpeechBubble
           visible={hovered}
