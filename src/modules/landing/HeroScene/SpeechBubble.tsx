@@ -73,19 +73,19 @@ export function SpeechBubble({ visible, reduceMotion, side }: SpeechBubbleProps)
             aria-label={t.hero.speechBubbleAriaLabel}
             role="status"
           >
-            <span className="block w-full whitespace-normal break-words overflow-hidden">
+            <span className="inline whitespace-pre-wrap break-words">
               {typedLine}
+              <motion.span
+                className="inline-block w-[1.5px] h-[1.05em] ml-[2px] align-[-0.12em] rounded-full bg-[#6c4fff] shadow-[0_0_8px_rgba(108,79,255,0.65)]"
+                animate={reduceMotion ? { opacity: 1 } : { opacity: [0.18, 1, 0.18] }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : { duration: 0.72, repeat: Infinity, ease: "easeInOut" }
+                }
+                aria-hidden="true"
+              />
             </span>
-            <motion.span
-              className="inline-block w-[1.5px] h-[1.05em] ml-1 align-[-0.12em] rounded-full bg-[#6c4fff] shadow-[0_0_8px_rgba(108,79,255,0.65)]"
-              animate={reduceMotion ? { opacity: 1 } : { opacity: [0.18, 1, 0.18] }}
-              transition={
-                reduceMotion
-                  ? { duration: 0 }
-                  : { duration: 0.72, repeat: Infinity, ease: "easeInOut" }
-              }
-              aria-hidden="true"
-            />
             <span
               className="absolute w-3 h-3 bg-white/95 rotate-45"
               style={{

@@ -186,6 +186,68 @@ function WhySection() {
   );
 }
 
+function BlinkingStackedLogo() {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <span className="relative inline-block">
+      <Image
+        src="/images/brand/claw42-stacked.png"
+        alt="Claw 42"
+        width={220}
+        height={220}
+        className="w-28 md:w-36 h-auto object-contain"
+      />
+      {!reduceMotion && (
+        <>
+          <motion.span
+            className="absolute rounded-full bg-[#1f2430]"
+            style={{
+              left: "38.9%",
+              top: "28.3%",
+              width: "8.2%",
+              height: "1.9%",
+              transform: "translate(-50%, -50%)",
+            }}
+            animate={{
+              opacity: [0, 0, 0, 1, 1, 0, 0],
+              scaleY: [0.18, 0.18, 0.18, 3.9, 4.2, 0.42, 0.18],
+            }}
+            transition={{
+              duration: 2.8,
+              repeat: Infinity,
+              ease: "linear",
+              times: [0, 0.74, 0.79, 0.83, 0.86, 0.91, 1],
+            }}
+            aria-hidden="true"
+          />
+          <motion.span
+            className="absolute rounded-full bg-[#1f2430]"
+            style={{
+              left: "61.1%",
+              top: "28.3%",
+              width: "8.2%",
+              height: "1.9%",
+              transform: "translate(-50%, -50%)",
+            }}
+            animate={{
+              opacity: [0, 0, 0, 1, 1, 0, 0],
+              scaleY: [0.18, 0.18, 0.18, 3.9, 4.2, 0.42, 0.18],
+            }}
+            transition={{
+              duration: 2.8,
+              repeat: Infinity,
+              ease: "linear",
+              times: [0, 0.74, 0.79, 0.83, 0.86, 0.91, 1],
+            }}
+            aria-hidden="true"
+          />
+        </>
+      )}
+    </span>
+  );
+}
+
 function DisclaimerSection() {
   const { t } = useI18n();
 
@@ -212,13 +274,7 @@ function DisclaimerSection() {
             aria-label="Back to top"
             className="group p-4 md:p-5 transition-transform duration-300 hover:scale-[1.03]"
           >
-            <Image
-              src="/images/brand/claw42-stacked.png"
-              alt="Claw 42"
-              width={220}
-              height={220}
-              className="w-28 md:w-36 h-auto object-contain"
-            />
+            <BlinkingStackedLogo />
           </a>
         </div>
       </div>
