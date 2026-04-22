@@ -13,16 +13,13 @@ export function SiteHeader() {
       <div className="max-w-[1440px] mx-auto h-full flex items-center justify-between px-6 md:px-10 lg:px-16">
         <a href={`/${locale}`} className="flex items-center gap-3 shrink-0">
           <Image
-            src="/images/claw42-logo-trimmed.png"
+            src="/images/brand/claw42-horizontal.png"
             alt="Claw 42"
-            width={40}
-            height={40}
+            width={270}
+            height={90}
             priority
-            className="w-10 h-10 object-contain"
+            className="h-14 md:h-[60px] lg:h-16 w-auto object-contain"
           />
-          <span className="text-white font-semibold text-lg tracking-tight">
-            Claw 42
-          </span>
         </a>
 
         <label className="relative" aria-label="Select language">
