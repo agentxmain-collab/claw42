@@ -53,7 +53,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
 
   return (
     <div
-      className="absolute z-20 left-1/2 bottom-[30%] md:bottom-[32%]"
+      className="absolute z-20 left-1/2 bottom-[34%] md:bottom-[40%]"
       style={{
         transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
         width: "min(316px, 28vw)",
@@ -105,7 +105,10 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
             className="w-full h-auto block"
             animate={blink ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
             transition={{ duration: 0.15 }}
-            style={{ transformOrigin: "center center" }}
+            style={{
+              transformOrigin: "center center",
+              filter: "drop-shadow(0 0 10px rgba(73, 201, 255, 0.95)) saturate(1.35)",
+            }}
           />
         </div>
 
@@ -121,6 +124,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
             left: FACE_OVERLAY.left,
             width: FACE_OVERLAY.width,
             transform: "translate(-50%, 0)",
+            filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
           }}
         />
       </motion.div>

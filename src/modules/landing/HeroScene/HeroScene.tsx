@@ -64,6 +64,23 @@ export function HeroScene() {
       ref={stageRef}
       className="relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden bg-gradient-to-b from-[#0a0a12] via-[#0f0a1f] to-black pt-[72px] md:pt-[80px]"
     >
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at 50% 44%, rgba(109, 86, 255, 0.78) 0%, rgba(92, 66, 224, 0.6) 20%, rgba(52, 28, 132, 0.42) 40%, rgba(10, 8, 26, 0) 72%),
+            radial-gradient(circle at 50% 58%, rgba(255, 255, 255, 0.16) 0%, rgba(196, 185, 255, 0.08) 18%, rgba(14, 9, 34, 0) 42%)
+          `,
+        }}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 125% 82% at 50% 50%, rgba(0,0,0,0) 48%, rgba(0,0,0,0.52) 76%, rgba(0,0,0,0.88) 100%)",
+        }}
+      />
+
       {/* z-10 Pedestal */}
       <PedestalLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
 
