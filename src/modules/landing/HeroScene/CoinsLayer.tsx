@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type MouseEvent as ReactMouseEvent,
-  type RefObject,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface CoinsLayerProps {
@@ -34,8 +28,8 @@ interface CoinItemProps {
   translateX: number;
   translateY: number;
   reduceMotion: boolean;
-  layerRef: RefObject<HTMLDivElement | null>;
-  pushTrailPoint: (point: Omit<TrailPoint, "id" | "createdAt">) => void;
+  onEngageTrail: (clientX: number, clientY: number) => void;
+  onLingerTrail: () => void;
 }
 
 interface TrailPoint {
@@ -50,6 +44,7 @@ interface TrailPoint {
 const TRAIL_LIFETIME_MS = 4200;
 const TRAIL_POINT_THRESHOLD = 1.1;
 const MAX_TRAIL_POINTS = 72;
+const TRAIL_FOLLOW_AFTER_LEAVE_MS = 1400;
 
 const COINS: CoinConfig[] = [
   {
@@ -112,6 +107,9 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
 
   const layerRef = useRef<HTMLDivElement>(null);
   const trailIdRef = useRef(0);
+  const trailActiveRef = useRef(false);
+  const trailFollowUntilRef = useRef(0);
+  const lastWindowPointRef = useRef<{ x: number; y: number } | null>(null);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef(0);
   const [tick, setTick] = useState(0);
@@ -145,7 +143,7 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
     return () => window.clearInterval(timer);
   }, [trail.length]);
 
-  const pushTrailPoint = (point: Omit<TrailPoint, "id" | "createdAt">) => {
+  const pushTrailPoint = useCallback((point: Omit<TrailPoint, "id" | "createdAt">) => {
     setTrail((current) => [
       ...current.slice(-MAX_TRAIL_POINTS),
       {
@@ -154,7 +152,64 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
         createdAt: Date.now(),
       },
     ]);
-  };
+  }, []);
+
+  const pushTrailPointFromClient = useCallback((clientX: number, clientY: number) => {
+    if (!layerRef.current) return;
+
+    const rect = layerRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    if (x < -120 || y < -120 || x > rect.width + 120 || y > rect.height + 120) {
+      return;
+    }
+
+    const last = lastWindowPointRef.current;
+    const dx = last ? x - last.x : 0;
+    const dy = last ? y - last.y : 0;
+    const distance = Math.hypot(dx, dy);
+
+    lastWindowPointRef.current = { x, y };
+
+    if (last && distance < TRAIL_POINT_THRESHOLD) return;
+    pushTrailPoint({ x, y, dx, dy });
+  }, [pushTrailPoint]);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+
+    const handleMove = (event: MouseEvent) => {
+      const now = Date.now();
+      if (!trailActiveRef.current && now > trailFollowUntilRef.current) return;
+      pushTrailPointFromClient(event.clientX, event.clientY);
+    };
+
+    const handleWindowLeave = () => {
+      trailActiveRef.current = false;
+      trailFollowUntilRef.current = 0;
+      lastWindowPointRef.current = null;
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseleave", handleWindowLeave);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseleave", handleWindowLeave);
+    };
+  }, [reduceMotion, pushTrailPointFromClient]);
+
+  const engageTrail = useCallback((clientX: number, clientY: number) => {
+    trailActiveRef.current = true;
+    trailFollowUntilRef.current = Number.POSITIVE_INFINITY;
+    lastWindowPointRef.current = null;
+    pushTrailPointFromClient(clientX, clientY);
+  }, [pushTrailPointFromClient]);
+
+  const lingerTrail = useCallback(() => {
+    trailActiveRef.current = false;
+    trailFollowUntilRef.current = Date.now() + TRAIL_FOLLOW_AFTER_LEAVE_MS;
+  }, []);
 
   return (
     <div ref={layerRef} className="absolute inset-0 z-30">
@@ -176,8 +231,8 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
             translateX={floatX}
             translateY={floatY}
             reduceMotion={reduceMotion}
-            layerRef={layerRef}
-            pushTrailPoint={pushTrailPoint}
+            onEngageTrail={engageTrail}
+            onLingerTrail={lingerTrail}
           />
         );
       })}
@@ -192,36 +247,18 @@ function CoinItem({
   translateX,
   translateY,
   reduceMotion,
-  layerRef,
-  pushTrailPoint,
+  onEngageTrail,
+  onLingerTrail,
 }: CoinItemProps) {
   const [burstId, setBurstId] = useState(0);
   const [bursting, setBursting] = useState(false);
   const burstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     return () => {
       if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
     };
   }, []);
-
-  const emitTrailPoint = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (reduceMotion || !layerRef.current) return;
-
-    const layerRect = layerRef.current.getBoundingClientRect();
-    const x = event.clientX - layerRect.left;
-    const y = event.clientY - layerRect.top;
-    const last = lastPointRef.current;
-    const dx = last ? x - last.x : 0;
-    const dy = last ? y - last.y : 0;
-    const distance = Math.hypot(dx, dy);
-
-    lastPointRef.current = { x, y };
-
-    if (last && distance < TRAIL_POINT_THRESHOLD) return;
-    pushTrailPoint({ x, y, dx, dy });
-  };
 
   const baseFilter = bursting
     ? "drop-shadow(0 0 12px rgba(255,205,98,0.52)) saturate(1.08)"
@@ -247,11 +284,13 @@ function CoinItem({
           setBursting(true);
           if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
           burstTimerRef.current = setTimeout(() => setBursting(false), 900);
-          emitTrailPoint(event);
+          if (!reduceMotion) onEngageTrail(event.clientX, event.clientY);
         }}
-        onMouseMove={emitTrailPoint}
+        onMouseMove={(event) => {
+          if (!reduceMotion) onEngageTrail(event.clientX, event.clientY);
+        }}
         onMouseLeave={() => {
-          lastPointRef.current = null;
+          onLingerTrail();
         }}
       >
         <motion.div

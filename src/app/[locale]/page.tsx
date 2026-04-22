@@ -186,7 +186,7 @@ function WhySection() {
   );
 }
 
-function BlinkingStackedLogo() {
+function StackedLogoGlow() {
   const reduceMotion = useReducedMotion();
 
   return (
@@ -201,44 +201,48 @@ function BlinkingStackedLogo() {
       {!reduceMotion && (
         <>
           <motion.span
-            className="absolute rounded-full bg-[#1f2430]"
+            className="absolute rounded-full"
             style={{
               left: "38.9%",
               top: "28.3%",
-              width: "8.2%",
-              height: "1.9%",
+              width: "10.5%",
+              height: "10.5%",
               transform: "translate(-50%, -50%)",
+              background:
+                "radial-gradient(circle, rgba(71,123,255,0.82) 0%, rgba(71,123,255,0.34) 42%, rgba(71,123,255,0) 78%)",
+              filter: "blur(2.2px)",
             }}
             animate={{
-              opacity: [0, 0, 0, 1, 1, 0, 0],
-              scaleY: [0.18, 0.18, 0.18, 3.9, 4.2, 0.42, 0.18],
+              opacity: [0.35, 0.72, 0.42, 0.64, 0.35],
+              scale: [0.88, 1.16, 0.94, 1.08, 0.88],
             }}
             transition={{
-              duration: 2.8,
+              duration: 2.4,
               repeat: Infinity,
-              ease: "linear",
-              times: [0, 0.74, 0.79, 0.83, 0.86, 0.91, 1],
+              ease: "easeInOut",
             }}
             aria-hidden="true"
           />
           <motion.span
-            className="absolute rounded-full bg-[#1f2430]"
+            className="absolute rounded-full"
             style={{
               left: "61.1%",
               top: "28.3%",
-              width: "8.2%",
-              height: "1.9%",
+              width: "10.5%",
+              height: "10.5%",
               transform: "translate(-50%, -50%)",
+              background:
+                "radial-gradient(circle, rgba(71,123,255,0.82) 0%, rgba(71,123,255,0.34) 42%, rgba(71,123,255,0) 78%)",
+              filter: "blur(2.2px)",
             }}
             animate={{
-              opacity: [0, 0, 0, 1, 1, 0, 0],
-              scaleY: [0.18, 0.18, 0.18, 3.9, 4.2, 0.42, 0.18],
+              opacity: [0.35, 0.72, 0.42, 0.64, 0.35],
+              scale: [0.88, 1.16, 0.94, 1.08, 0.88],
             }}
             transition={{
-              duration: 2.8,
+              duration: 2.4,
               repeat: Infinity,
-              ease: "linear",
-              times: [0, 0.74, 0.79, 0.83, 0.86, 0.91, 1],
+              ease: "easeInOut",
             }}
             aria-hidden="true"
           />
@@ -274,7 +278,7 @@ function DisclaimerSection() {
             aria-label="Back to top"
             className="group p-4 md:p-5 transition-transform duration-300 hover:scale-[1.03]"
           >
-            <BlinkingStackedLogo />
+            <StackedLogoGlow />
           </a>
         </div>
       </div>
