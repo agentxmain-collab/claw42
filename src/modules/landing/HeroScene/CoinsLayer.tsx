@@ -41,10 +41,10 @@ interface TrailPoint {
   createdAt: number;
 }
 
-const TRAIL_LIFETIME_MS = 4200;
+const TRAIL_LIFETIME_MS = 1000;
 const TRAIL_POINT_THRESHOLD = 1.1;
-const MAX_TRAIL_POINTS = 72;
-const TRAIL_FOLLOW_AFTER_LEAVE_MS = 1400;
+const MAX_TRAIL_POINTS = 40;
+const TRAIL_FOLLOW_AFTER_LEAVE_MS = 1000;
 
 const COINS: CoinConfig[] = [
   {
@@ -337,7 +337,7 @@ function TrailOverlay({ trail }: { trail: TrailPoint[] }) {
           const distance = Math.max(1, Math.hypot(point.dx, point.dy));
           const nx = point.dx / distance;
           const ny = point.dy / distance;
-          const drift = Math.max(26, Math.min(68, distance * 4.8 + 18));
+          const drift = Math.max(18, Math.min(42, distance * 3.1 + 12));
 
           return (
             <motion.div
@@ -347,10 +347,10 @@ function TrailOverlay({ trail }: { trail: TrailPoint[] }) {
                 left: point.x,
                 top: point.y,
               }}
-              initial={{ opacity: 0.98, scale: 0.8 }}
+              initial={{ opacity: 0.96, scale: 0.76 }}
               animate={{
                 opacity: 0,
-                scale: 1.22,
+                scale: 1.08,
                 x: -nx * drift,
                 y: -ny * drift,
               }}
@@ -361,99 +361,99 @@ function TrailOverlay({ trail }: { trail: TrailPoint[] }) {
               <span
                 className="absolute rounded-full"
                 style={{
-                  left: -5,
-                  top: -5,
-                  width: 10,
-                  height: 10,
-                  background:
-                    "radial-gradient(circle, rgba(255,252,225,0.98) 0%, rgba(255,217,118,0.9) 38%, rgba(255,161,51,0.42) 72%, rgba(255,161,51,0) 100%)",
-                  filter: "blur(1px)",
-                }}
-              />
-              <span
-                className="absolute rounded-full"
-                style={{
-                  left: -nx * 12 - ny * 4 - 4,
-                  top: -ny * 12 + nx * 4 - 4,
-                  width: 8,
-                  height: 8,
-                  background:
-                    "radial-gradient(circle, rgba(255,248,216,0.92) 0%, rgba(255,204,98,0.68) 58%, rgba(255,150,45,0) 100%)",
-                  filter: "blur(1.4px)",
-                }}
-              />
-              <span
-                className="absolute rounded-full"
-                style={{
-                  left: -nx * 20 + ny * 6 - 3.5,
-                  top: -ny * 20 - nx * 6 - 3.5,
+                  left: -3.5,
+                  top: -3.5,
                   width: 7,
                   height: 7,
                   background:
-                    "radial-gradient(circle, rgba(255,246,210,0.88) 0%, rgba(255,196,82,0.6) 65%, rgba(255,145,40,0) 100%)",
-                  filter: "blur(1.6px)",
-                }}
-              />
-              <span
-                className="absolute rounded-full"
-                style={{
-                  left: -nx * 28 - ny * 8 - 3,
-                  top: -ny * 28 + nx * 8 - 3,
-                  width: 6,
-                  height: 6,
-                  background:
-                    "radial-gradient(circle, rgba(255,241,196,0.82) 0%, rgba(255,184,72,0.5) 62%, rgba(255,142,38,0) 100%)",
-                  filter: "blur(1.8px)",
-                }}
-              />
-              <span
-                className="absolute rounded-full"
-                style={{
-                  left: -nx * 34 + ny * 6 - 2.5,
-                  top: -ny * 34 - nx * 6 - 2.5,
-                  width: 5,
-                  height: 5,
-                  background:
-                    "radial-gradient(circle, rgba(255,245,210,0.76) 0%, rgba(255,190,78,0.44) 62%, rgba(255,142,38,0) 100%)",
-                  filter: "blur(1.8px)",
-                }}
-              />
-              <span
-                className="absolute rounded-full"
-                style={{
-                  left: -nx * 42 - ny * 12 - 2,
-                  top: -ny * 42 + nx * 12 - 2,
-                  width: 4,
-                  height: 4,
-                  background:
-                    "radial-gradient(circle, rgba(255,248,220,0.72) 0%, rgba(255,196,82,0.4) 62%, rgba(255,145,40,0) 100%)",
-                  filter: "blur(1.6px)",
-                }}
-              />
-              <span
-                className="absolute rounded-full"
-                style={{
-                  left: -nx * 52 + ny * 14 - 1.7,
-                  top: -ny * 52 - nx * 14 - 1.7,
-                  width: 3.4,
-                  height: 3.4,
-                  background:
-                    "radial-gradient(circle, rgba(255,248,220,0.72) 0%, rgba(255,196,82,0.34) 62%, rgba(255,145,40,0) 100%)",
-                  filter: "blur(1.6px)",
-                }}
-              />
-              <span
-                className="absolute rounded-full"
-                style={{
-                  left: -nx * 60 - ny * 16 - 1.4,
-                  top: -ny * 60 + nx * 16 - 1.4,
-                  width: 2.8,
-                  height: 2.8,
-                  background:
-                    "radial-gradient(circle, rgba(255,249,228,0.68) 0%, rgba(255,196,82,0.3) 62%, rgba(255,145,40,0) 100%)",
-                  filter: "blur(1.4px)",
-                }}
-              />
+                    "radial-gradient(circle, rgba(255,252,225,0.98) 0%, rgba(255,217,118,0.9) 38%, rgba(255,161,51,0.42) 72%, rgba(255,161,51,0) 100%)",
+                      filter: "blur(0.8px)",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * 10 - ny * 3 - 3.1,
+                      top: -ny * 10 + nx * 3 - 3.1,
+                      width: 6.2,
+                      height: 6.2,
+                      background:
+                        "radial-gradient(circle, rgba(255,248,216,0.92) 0%, rgba(255,204,98,0.68) 58%, rgba(255,150,45,0) 100%)",
+                      filter: "blur(1.1px)",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * 16 + ny * 5 - 2.7,
+                      top: -ny * 16 - nx * 5 - 2.7,
+                      width: 5.4,
+                      height: 5.4,
+                      background:
+                        "radial-gradient(circle, rgba(255,246,210,0.88) 0%, rgba(255,196,82,0.6) 65%, rgba(255,145,40,0) 100%)",
+                      filter: "blur(1.2px)",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * 22 - ny * 7 - 2.3,
+                      top: -ny * 22 + nx * 7 - 2.3,
+                      width: 4.6,
+                      height: 4.6,
+                      background:
+                        "radial-gradient(circle, rgba(255,241,196,0.82) 0%, rgba(255,184,72,0.5) 62%, rgba(255,142,38,0) 100%)",
+                      filter: "blur(1.25px)",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * 28 + ny * 5 - 1.9,
+                      top: -ny * 28 - nx * 5 - 1.9,
+                      width: 3.8,
+                      height: 3.8,
+                      background:
+                        "radial-gradient(circle, rgba(255,245,210,0.76) 0%, rgba(255,190,78,0.44) 62%, rgba(255,142,38,0) 100%)",
+                      filter: "blur(1.2px)",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * 34 - ny * 10 - 1.5,
+                      top: -ny * 34 + nx * 10 - 1.5,
+                      width: 3,
+                      height: 3,
+                      background:
+                        "radial-gradient(circle, rgba(255,248,220,0.72) 0%, rgba(255,196,82,0.4) 62%, rgba(255,145,40,0) 100%)",
+                      filter: "blur(1.1px)",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * 42 + ny * 12 - 1.25,
+                      top: -ny * 42 - nx * 12 - 1.25,
+                      width: 2.5,
+                      height: 2.5,
+                      background:
+                        "radial-gradient(circle, rgba(255,248,220,0.72) 0%, rgba(255,196,82,0.34) 62%, rgba(255,145,40,0) 100%)",
+                      filter: "blur(1px)",
+                    }}
+                  />
+                  <span
+                    className="absolute rounded-full"
+                    style={{
+                      left: -nx * 48 - ny * 14 - 1.05,
+                      top: -ny * 48 + nx * 14 - 1.05,
+                      width: 2.1,
+                      height: 2.1,
+                      background:
+                        "radial-gradient(circle, rgba(255,249,228,0.68) 0%, rgba(255,196,82,0.3) 62%, rgba(255,145,40,0) 100%)",
+                      filter: "blur(0.9px)",
+                    }}
+                  />
             </motion.div>
           );
         })}

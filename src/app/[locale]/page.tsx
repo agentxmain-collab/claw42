@@ -203,18 +203,18 @@ function StackedLogoGlow() {
           <motion.span
             className="absolute rounded-full"
             style={{
-              left: "38.9%",
-              top: "28.3%",
-              width: "10.5%",
-              height: "10.5%",
+              left: "38.92%",
+              top: "28.33%",
+              width: "7.2%",
+              height: "7.2%",
               transform: "translate(-50%, -50%)",
               background:
-                "radial-gradient(circle, rgba(71,123,255,0.82) 0%, rgba(71,123,255,0.34) 42%, rgba(71,123,255,0) 78%)",
-              filter: "blur(2.2px)",
+                "radial-gradient(circle, rgba(71,123,255,0.78) 0%, rgba(71,123,255,0.3) 46%, rgba(71,123,255,0) 76%)",
+              filter: "blur(1.4px)",
             }}
             animate={{
-              opacity: [0.35, 0.72, 0.42, 0.64, 0.35],
-              scale: [0.88, 1.16, 0.94, 1.08, 0.88],
+              opacity: [0.28, 0.56, 0.34, 0.5, 0.28],
+              scale: [0.92, 1.08, 0.96, 1.04, 0.92],
             }}
             transition={{
               duration: 2.4,
@@ -226,18 +226,18 @@ function StackedLogoGlow() {
           <motion.span
             className="absolute rounded-full"
             style={{
-              left: "61.1%",
-              top: "28.3%",
-              width: "10.5%",
-              height: "10.5%",
+              left: "61.08%",
+              top: "28.33%",
+              width: "7.2%",
+              height: "7.2%",
               transform: "translate(-50%, -50%)",
               background:
-                "radial-gradient(circle, rgba(71,123,255,0.82) 0%, rgba(71,123,255,0.34) 42%, rgba(71,123,255,0) 78%)",
-              filter: "blur(2.2px)",
+                "radial-gradient(circle, rgba(71,123,255,0.78) 0%, rgba(71,123,255,0.3) 46%, rgba(71,123,255,0) 76%)",
+              filter: "blur(1.4px)",
             }}
             animate={{
-              opacity: [0.35, 0.72, 0.42, 0.64, 0.35],
-              scale: [0.88, 1.16, 0.94, 1.08, 0.88],
+              opacity: [0.28, 0.56, 0.34, 0.5, 0.28],
+              scale: [0.92, 1.08, 0.96, 1.04, 0.92],
             }}
             transition={{
               duration: 2.4,
