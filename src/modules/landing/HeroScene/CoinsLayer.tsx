@@ -79,6 +79,9 @@ const COINS: CoinConfig[] = [
 ];
 
 export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
+  void mouseX;
+  void mouseY;
+
   const [tick, setTick] = useState(0);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef(0);
@@ -110,15 +113,13 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
           ? 0
           : Math.cos(t * 0.5 + coin.phaseY1) * 22 +
             Math.sin(t * 0.31 + coin.phaseY2) * 14;
-        const parallaxX = reduceMotion ? 0 : mouseX * coin.depth * 24;
-        const parallaxY = reduceMotion ? 0 : mouseY * coin.depth * 14;
 
         return (
           <CoinItem
             key={coin.symbol}
             coin={coin}
-            translateX={floatX + parallaxX}
-            translateY={floatY + parallaxY}
+            translateX={floatX}
+            translateY={floatY}
             reduceMotion={reduceMotion}
           />
         );
@@ -135,18 +136,21 @@ interface CoinItemProps {
 }
 
 const SPARKS = [
-  { top: "-10%", left: "48%", size: 12, delay: 0, x: 0, y: -7 },
-  { top: "22%", left: "92%", size: 10, delay: 0.06, x: 6, y: -2 },
-  { top: "76%", left: "84%", size: 9, delay: 0.12, x: 5, y: 4 },
-  { top: "90%", left: "34%", size: 11, delay: 0.18, x: -3, y: 6 },
-  { top: "18%", left: "8%", size: 9, delay: 0.24, x: -6, y: -1 },
+  { size: 3, width: 28, height: 4, angle: -78, x: -18, y: -38, delay: 0.0 },
+  { size: 3, width: 34, height: 4, angle: -32, x: 38, y: -20, delay: 0.05 },
+  { size: 4, width: 30, height: 5, angle: 18, x: 42, y: 10, delay: 0.1 },
+  { size: 3, width: 26, height: 4, angle: 58, x: 22, y: 36, delay: 0.16 },
+  { size: 3, width: 28, height: 4, angle: 118, x: -22, y: 34, delay: 0.22 },
+  { size: 4, width: 24, height: 4, angle: 164, x: -40, y: 8, delay: 0.28 },
+  { size: 3, width: 22, height: 3, angle: -142, x: -34, y: -18, delay: 0.34 },
+  { size: 3, width: 20, height: 3, angle: -102, x: -6, y: -44, delay: 0.4 },
 ];
 
 function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps) {
   const [hovered, setHovered] = useState(false);
 
   const baseFilter = hovered
-    ? "drop-shadow(0 0 28px rgba(255,198,92,0.8)) drop-shadow(0 0 54px rgba(124,92,255,0.62)) saturate(1.16)"
+    ? "drop-shadow(0 0 22px rgba(255,212,108,0.98)) drop-shadow(0 0 42px rgba(255,170,56,0.84)) saturate(1.22)"
     : "drop-shadow(0 0 18px rgba(124,92,255,0.35))";
 
   return (
@@ -167,25 +171,46 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
+        {hovered && !reduceMotion && (
+          <motion.span
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
+            style={{
+              width: "122%",
+              height: "122%",
+              background:
+                "radial-gradient(circle, rgba(255,246,190,0.82) 0%, rgba(255,206,92,0.42) 26%, rgba(255,168,56,0.18) 46%, rgba(255,168,56,0) 70%)",
+              filter: "blur(2px)",
+            }}
+            initial={{ opacity: 0.15, scale: 0.82 }}
+            animate={{ opacity: [0.2, 0.8, 0.25], scale: [0.82, 1.08, 0.9] }}
+            transition={{ duration: 0.46, repeat: Infinity, ease: "easeInOut" }}
+            aria-hidden="true"
+          />
+        )}
         {hovered && !reduceMotion &&
           SPARKS.map((spark, index) => (
             <motion.span
               key={`${coin.symbol}-spark-${index}`}
-              className="absolute pointer-events-none rounded-full"
+              className="absolute left-1/2 top-1/2 pointer-events-none rounded-full"
               style={{
-                top: spark.top,
-                left: spark.left,
-                width: spark.size,
-                height: spark.size,
+                width: spark.width,
+                height: spark.height,
                 background:
-                  "radial-gradient(circle, rgba(255,245,182,0.98) 0%, rgba(255,208,92,0.88) 42%, rgba(255,168,56,0.35) 62%, transparent 78%)",
-                boxShadow: "0 0 16px rgba(255,199,88,0.68)",
-                transform: `translate(-50%, -50%) translate(${spark.x}px, ${spark.y}px)`,
+                  "linear-gradient(90deg, rgba(255,252,220,0.98) 0%, rgba(255,212,108,0.92) 36%, rgba(255,155,46,0.55) 72%, rgba(255,155,46,0) 100%)",
+                boxShadow: "0 0 18px rgba(255,195,82,0.88)",
+                transformOrigin: "left center",
+                rotate: `${spark.angle}deg`,
               }}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: [0.12, 1, 0.18], scale: [0.5, 1.2, 0.72] }}
+              initial={{ x: 0, y: 0, opacity: 0, scaleX: 0.3, scaleY: 0.6 }}
+              animate={{
+                x: [0, spark.x],
+                y: [0, spark.y],
+                opacity: [0, 1, 0],
+                scaleX: [0.28, 1.05, 0.38],
+                scaleY: [0.72, 1, 0.56],
+              }}
               transition={{
-                duration: 0.68,
+                duration: 0.52,
                 delay: spark.delay,
                 repeat: Infinity,
                 ease: "easeOut",
@@ -193,13 +218,26 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
               aria-hidden="true"
             />
           ))}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <motion.img
           src={coin.src}
           alt=""
           aria-label={coin.label}
           draggable={false}
           className="relative w-full h-auto select-none pointer-events-auto cursor-pointer"
+          animate={
+            hovered && !reduceMotion
+              ? {
+                  x: [0, -1.5, 2.5, -2, 1.5, 0],
+                  y: [0, 1.5, -2, 2, -1.5, 0],
+                  rotate: [0, -1.8, 1.6, -1.2, 0.8, 0],
+                }
+              : { x: 0, y: 0, rotate: 0 }
+          }
+          transition={
+            hovered && !reduceMotion
+              ? { duration: 0.42, repeat: Infinity, ease: "easeInOut" }
+              : { duration: 0.18 }
+          }
           style={{
             filter: baseFilter,
             transition: "filter 240ms ease-out",

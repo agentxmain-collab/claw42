@@ -62,14 +62,14 @@ export function HeroScene() {
   return (
     <section
       ref={stageRef}
-      className="relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden bg-gradient-to-b from-[#0a0a12] via-[#0f0a1f] to-black pt-[72px] md:pt-[80px]"
+      className="relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden bg-black pt-[72px] md:pt-[80px]"
     >
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(circle at 50% 44%, rgba(109, 86, 255, 0.78) 0%, rgba(92, 66, 224, 0.6) 20%, rgba(52, 28, 132, 0.42) 40%, rgba(10, 8, 26, 0) 72%),
-            radial-gradient(circle at 50% 58%, rgba(255, 255, 255, 0.16) 0%, rgba(196, 185, 255, 0.08) 18%, rgba(14, 9, 34, 0) 42%)
+            radial-gradient(circle at 50% 40%, rgba(115, 90, 255, 0.84) 0%, rgba(96, 70, 235, 0.64) 18%, rgba(58, 36, 150, 0.48) 36%, rgba(18, 12, 42, 0.18) 56%, rgba(0, 0, 0, 0) 74%),
+            radial-gradient(circle at 50% 54%, rgba(255, 255, 255, 0.12) 0%, rgba(198, 189, 255, 0.08) 14%, rgba(14, 9, 34, 0) 34%)
           `,
         }}
       />
@@ -77,7 +77,14 @@ export function HeroScene() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 125% 82% at 50% 50%, rgba(0,0,0,0) 48%, rgba(0,0,0,0.52) 76%, rgba(0,0,0,0.88) 100%)",
+            "linear-gradient(180deg, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.84) 10%, rgba(0,0,0,0.28) 24%, rgba(0,0,0,0.1) 34%, rgba(0,0,0,0.08) 66%, rgba(0,0,0,0.34) 80%, rgba(0,0,0,0.8) 92%, rgba(0,0,0,0.98) 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 128% 88% at 50% 50%, rgba(0,0,0,0) 46%, rgba(0,0,0,0.44) 74%, rgba(0,0,0,0.92) 100%)",
         }}
       />
 
