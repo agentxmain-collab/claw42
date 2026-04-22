@@ -15,7 +15,7 @@
 - `src/modules/landing/HeroScene/HeroScene.tsx` — 主容器（21/9 舞台 + z-index 分层）
 - `src/modules/landing/HeroScene/RobotLayer.tsx` — 机器人姿态状态机 + 面部覆盖层
 - `src/modules/landing/HeroScene/PedestalLayer.tsx` — 底座
-- `src/modules/landing/HeroScene/CoinsLayer.tsx` — 币种占位组件（stub，Spec D 会重写内部，本 task **只建空壳**）
+- `src/modules/landing/HeroScene/CoinsLayer.tsx` — 4 币种自由漂浮 + hover 交互（BTC / ETH / SOL / USDT）
 - `src/modules/landing/HeroScene/SpeechBubble.tsx` — 轮播气泡
 - `src/modules/landing/HeroScene/useMouseNormalized.ts` — 鼠标归一化坐标 Hook（相对舞台中心，范围 [-1, 1]）
 - `src/modules/landing/HeroScene/useRobotPose.ts` — 姿态状态机 Hook（center / looking-left / looking-right + 滞后）
@@ -89,7 +89,7 @@ robot-center.png（底层，带原始面部）
 | 10 | Pedestal | `pedestal.png`，绝对定位 `bottom: 20%`，水平居中，宽 `min(456px, 40vw)` | 0.10 |
 | 20 | Robot body | 三姿态图，绝对定位 `bottom: 28%`，水平居中，宽 `min(316px, 28vw)` | 0.30 |
 | 25 | Robot face overlay | `robot-face.png`，**仅在 center 姿态显示**，绝对定位到 robot 面部区 | 0.35 |
-| 30 | Coins layer | `<CoinsLayer />` 占位（本 task stub，Spec D 实现） | 0.70-1.00 |
+| 30 | Coins layer | `<CoinsLayer />` 4 币漂浮（BTC/ETH/SOL/USDT），各币独立 depth | 0.70-0.90 |
 | 40 | Speech bubble | 轮播气泡，绝对定位到 robot **右上**（desktop）/ robot **正上方**（mobile） | 0.50 |
 | 50 | Title overlay | Title + subtitle + 双 CTA，绝对定位到舞台 `bottom: 6%`，水平居中 | - |
 
@@ -222,10 +222,52 @@ interface RobotLayerProps {
 
 简单组件：渲染 `pedestal.png`，按 depth=0.1 做视差。空闲时加一层柔和的发光呼吸效果（`box-shadow` 或叠加 `radial-gradient` 层，`opacity: [0.4, 0.8, 0.4]` 3s 周期）。reduce-motion 时关闭呼吸。
 
-### 5. `CoinsLayer.tsx`（**本 task 只做 stub，Spec D 会重写**）
+### 5. `CoinsLayer.tsx`（4 币自由漂浮 + hover 交互）
+
+#### 币种锚点与参数
+
+4 个币围绕机器人散开。百分比绝对定位（相对舞台父容器）。
+
+| 币 | 桌面锚点 | 桌面直径 | 移动端直径 | 视差深度 | 漂浮半径 X / Y | 漂浮周期 | 相位偏移 |
+|---|---|---|---|---|---|---|---|
+| BTC | `top: 20%, left: 18%` | 76px | 44px | 0.80 | 38 / 22 | 7.2s | 0s |
+| ETH | `top: 15%, right: 19%` | 72px | 42px | 0.70 | 42 / 26 | 8.3s | 1.8s |
+| SOL | `top: 55%, left: 12%` | 64px | 40px | 0.90 | 34 / 20 | 6.8s | 3.1s |
+| USDT | `top: 48%, right: 13%` | 68px | 42px | 0.75 | 36 / 24 | 9.1s | 0.6s |
+
+移动端（`< md`）：漂浮半径减半（18-22 / 10-13），周期不变。
+
+#### 交互规格
+
+- **漂浮**：每个币椭圆轨道 infinite loop，各自周期和相位不同——不同步
+- **视差**：在漂浮之外叠加 `translate(mouseX * depth * 24, mouseY * depth * 14)`，过渡 220ms 柔和跟随
+- **Hover**：`scale: 1.3` + `rotateZ: 360` + 提 `zIndex: 10` + 上方显示 symbol 小气泡（BTC/ETH/SOL/USDT）
+  - scale 280ms ease-out，rotate 800ms ease-out（先变大再慢转）
+  - tooltip 样式：`rounded-full bg-black/80 text-white text-xs font-semibold`，淡入 150ms
+- **无点击跳转**：不加 onClick / href
+- **reduce-motion**：漂浮完全关停（固定在锚点），视差也关（设 0），hover 只保留 `scale: 1.15`，不转
+- **Aria**：`<img aria-label="Bitcoin|Ethereum|Solana|Tether">`，tooltip 加 `aria-hidden`
+
+#### 实现关键点（**必读，不然会踩坑**）
+
+1. **漂浮 animate 和 hover whileHover 必须拆到两层 motion.div**。放同一层，`whileHover` 触发时 `animate` 会 pause，币会瞬间回到 (0, 0) 再放大——视觉断裂。拆法：
+   ```
+   外层 div（视差 inline style transform）
+     └─ motion.div（漂浮 animate 的椭圆 keyframes）
+          └─ motion.div.group（whileHover 的 scale + rotate + zIndex）
+               ├─ img
+               └─ tooltip span（group-hover 触发）
+   ```
+2. **父层 `pointer-events-none`**（让鼠标穿透到舞台触发视差），**内层 hover motion.div 单独 `pointer-events-auto`**（接 hover 事件）
+3. **reduce-motion 时 transition 的 duration 设 `0`**，不是 `0.01` 或省略——彻底跳过动画
+4. 用原生 `<img>` 不用 `next/image`（绝对定位+嵌套 transform 场景下 next/image 更麻烦，本层是装饰资源不走 CDN 优化也无妨）
+
+#### 参考实现
 
 ```tsx
 "use client";
+
+import { motion } from "framer-motion";
 
 interface CoinsLayerProps {
   mouseX: number;
@@ -233,31 +275,143 @@ interface CoinsLayerProps {
   reduceMotion: boolean;
 }
 
-/**
- * Spec D 会实现 4 个币种的自由漂浮轨道 + hover 放大/旋转。
- * 本 task 只做空壳：渲染 4 个币种图的静态位置，作为占位（方便 F 看布局）。
- */
+interface CoinConfig {
+  symbol: "BTC" | "ETH" | "SOL" | "USDT";
+  label: string;
+  src: string;
+  anchor: { top: string; left?: string; right?: string };
+  sizeClass: string;
+  depth: number;
+  radiusX: number;
+  radiusY: number;
+  period: number;
+  phaseOffset: number;
+}
+
+const COINS: CoinConfig[] = [
+  {
+    symbol: "BTC",
+    label: "Bitcoin",
+    src: "/images/hero/coin-btc.png",
+    anchor: { top: "20%", left: "18%" },
+    sizeClass: "w-[44px] md:w-[76px]",
+    depth: 0.8,
+    radiusX: 38,
+    radiusY: 22,
+    period: 7.2,
+    phaseOffset: 0,
+  },
+  {
+    symbol: "ETH",
+    label: "Ethereum",
+    src: "/images/hero/coin-eth.png",
+    anchor: { top: "15%", right: "19%" },
+    sizeClass: "w-[42px] md:w-[72px]",
+    depth: 0.7,
+    radiusX: 42,
+    radiusY: 26,
+    period: 8.3,
+    phaseOffset: 1.8,
+  },
+  {
+    symbol: "SOL",
+    label: "Solana",
+    src: "/images/hero/coin-sol.png",
+    anchor: { top: "55%", left: "12%" },
+    sizeClass: "w-[40px] md:w-[64px]",
+    depth: 0.9,
+    radiusX: 34,
+    radiusY: 20,
+    period: 6.8,
+    phaseOffset: 3.1,
+  },
+  {
+    symbol: "USDT",
+    label: "Tether",
+    src: "/images/hero/coin-usdt.png",
+    anchor: { top: "48%", right: "13%" },
+    sizeClass: "w-[42px] md:w-[68px]",
+    depth: 0.75,
+    radiusX: 36,
+    radiusY: 24,
+    period: 9.1,
+    phaseOffset: 0.6,
+  },
+];
+
 export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
   return (
-    <div className="absolute inset-0 pointer-events-none" aria-hidden>
-      {/* BTC - 左上 */}
-      <img src="/images/hero/coin-btc.png" alt=""
-        className="absolute top-[18%] left-[22%] w-[60px] md:w-[80px] opacity-90" />
-      {/* ETH - 右上 */}
-      <img src="/images/hero/coin-eth.png" alt=""
-        className="absolute top-[14%] right-[20%] w-[56px] md:w-[76px] opacity-90" />
-      {/* SOL - 左中 */}
-      <img src="/images/hero/coin-sol.png" alt=""
-        className="absolute top-[44%] left-[14%] w-[50px] md:w-[68px] opacity-85" />
-      {/* USDT - 右中 */}
-      <img src="/images/hero/coin-usdt.png" alt=""
-        className="absolute top-[40%] right-[15%] w-[52px] md:w-[72px] opacity-85" />
+    <div className="absolute inset-0 pointer-events-none z-30">
+      {COINS.map((coin) => {
+        const parallaxX = reduceMotion ? 0 : mouseX * coin.depth * 24;
+        const parallaxY = reduceMotion ? 0 : mouseY * coin.depth * 14;
+
+        return (
+          <div
+            key={coin.symbol}
+            className="absolute"
+            style={{
+              top: coin.anchor.top,
+              left: coin.anchor.left,
+              right: coin.anchor.right,
+              transform: `translate(${parallaxX}px, ${parallaxY}px)`,
+              transition: "transform 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          >
+            <motion.div
+              animate={
+                reduceMotion
+                  ? { x: 0, y: 0 }
+                  : {
+                      x: [0, coin.radiusX, 0, -coin.radiusX, 0],
+                      y: [0, -coin.radiusY, 0, coin.radiusY, 0],
+                    }
+              }
+              transition={
+                reduceMotion
+                  ? { duration: 0 }
+                  : {
+                      duration: coin.period,
+                      delay: coin.phaseOffset,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }
+              }
+            >
+              <motion.div
+                className="group relative cursor-pointer pointer-events-auto"
+                whileHover={
+                  reduceMotion
+                    ? { scale: 1.15 }
+                    : { scale: 1.3, rotate: 360, zIndex: 10 }
+                }
+                transition={{
+                  scale: { duration: 0.28, ease: "easeOut" },
+                  rotate: { duration: 0.8, ease: "easeOut" },
+                }}
+              >
+                <img
+                  src={coin.src}
+                  alt=""
+                  aria-label={coin.label}
+                  className={`${coin.sizeClass} drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)] select-none`}
+                  draggable={false}
+                />
+                <span
+                  className="absolute left-1/2 -translate-x-1/2 -top-10 px-3 py-1 rounded-full bg-black/80 text-white text-xs font-semibold tracking-wide pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap"
+                  aria-hidden="true"
+                >
+                  {coin.symbol}
+                </span>
+              </motion.div>
+            </motion.div>
+          </div>
+        );
+      })}
     </div>
   );
 }
 ```
-
-**注意**：stub 里用 `<img>` 不用 `next/image`，因为是临时占位。Spec D 会替换整个文件。
 
 ### 6. `SpeechBubble.tsx`
 
@@ -374,7 +528,7 @@ export { HeroScene } from "./HeroScene";
 - 禁用鼠标视差和眼睛跟随（没鼠标）
 - 机器人姿态自动循环：每 8s 切 center → left → center → right → center（reduce-motion 时锁 center）
 - Speech bubble 放正上方，max-width 收窄到屏幕 70%
-- CoinsLayer stub 里的币种位置调整适配竖版（Spec D 会重新设计，本 task stub 可接受略粗糙）
+- CoinsLayer 的币尺寸用 `w-[40-44px]`（见 COINS 配置的 sizeClass），漂浮半径减半
 
 实现建议：用 `window.innerWidth < 768` 或 `useMediaQuery` 自建（不新增依赖）判断移动端，把 `useMouseNormalized` 返回固定 `{ x: 0, y: 0 }`，`useRobotPose` 替换为定时切换的内部 state 逻辑。
 
@@ -617,7 +771,10 @@ hero: {
 - [ ] `npm run lint` 无新增错误
 
 视觉/交互（桌面）：
-- [ ] 打开 `/` 或 `/en_US`，看到 21/9 舞台，robot + pedestal 居中、coins 在占位位置、title+CTA 在下部
+- [ ] 打开 `/` 或 `/en_US`，看到 21/9 舞台，robot + pedestal 居中、4 币漂浮在 robot 周围、title+CTA 在下部
+- [ ] 4 币各自椭圆漂浮，彼此不同步
+- [ ] 鼠标悬停任一币 → 放大 1.3x + 旋转 360° + 上方黑色小气泡显示 symbol（BTC/ETH/SOL/USDT）
+- [ ] 点击币无反应（无跳转、无报错）
 - [ ] 鼠标移到舞台左 1/3 → robot 切到 left 姿态（无面部）
 - [ ] 鼠标移到舞台右 1/3 → robot 切到 right 姿态（无面部）
 - [ ] 鼠标回中心 → robot 回 center 姿态，face overlay 显示
@@ -690,4 +847,3 @@ reduce-motion：
 *维护者: F（总调度）*
 *创建: 2026-04-22*
 *依赖 Task：02（已合并）*
-*后续依赖：Spec D（Codex 实现币种交互）将替换 `CoinsLayer.tsx` 内部*
