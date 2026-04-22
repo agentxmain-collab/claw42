@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -185,6 +186,118 @@ function WhySection() {
   );
 }
 
+function StackedLogoGlow() {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <span className="relative inline-block">
+      <Image
+        src="/images/brand/claw42-stacked.png"
+        alt="Claw 42"
+        width={220}
+        height={220}
+        className="w-28 md:w-36 h-auto object-contain"
+      />
+      {!reduceMotion && (
+        <>
+          <motion.span
+            className="absolute rounded-full"
+            style={{
+              left: "38.92%",
+              top: "28.05%",
+              width: "8.8%",
+              height: "8.8%",
+              transform: "translate(-50%, -50%)",
+              background:
+                "radial-gradient(circle, rgba(74,136,255,0.95) 0%, rgba(74,136,255,0.48) 34%, rgba(74,136,255,0.14) 56%, rgba(74,136,255,0) 76%)",
+              filter: "blur(2.4px)",
+            }}
+            animate={{
+              opacity: [0.46, 0.88, 0.58, 0.82, 0.46],
+              scale: [0.94, 1.12, 0.98, 1.06, 0.94],
+            }}
+            transition={{
+              duration: 2.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            aria-hidden="true"
+          />
+          <motion.span
+            className="absolute rounded-full"
+            style={{
+              left: "38.92%",
+              top: "28.05%",
+              width: "3.4%",
+              height: "3.4%",
+              transform: "translate(-50%, -50%)",
+              background:
+                "radial-gradient(circle, rgba(109,176,255,0.98) 0%, rgba(84,145,255,0.86) 38%, rgba(84,145,255,0.16) 70%, rgba(84,145,255,0) 100%)",
+              filter: "blur(0.55px)",
+            }}
+            animate={{
+              opacity: [0.72, 1, 0.8, 0.96, 0.72],
+              scale: [0.96, 1.08, 0.98, 1.04, 0.96],
+            }}
+            transition={{
+              duration: 2.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            aria-hidden="true"
+          />
+          <motion.span
+            className="absolute rounded-full"
+            style={{
+              left: "61.08%",
+              top: "28.05%",
+              width: "8.8%",
+              height: "8.8%",
+              transform: "translate(-50%, -50%)",
+              background:
+                "radial-gradient(circle, rgba(74,136,255,0.95) 0%, rgba(74,136,255,0.48) 34%, rgba(74,136,255,0.14) 56%, rgba(74,136,255,0) 76%)",
+              filter: "blur(2.4px)",
+            }}
+            animate={{
+              opacity: [0.46, 0.88, 0.58, 0.82, 0.46],
+              scale: [0.94, 1.12, 0.98, 1.06, 0.94],
+            }}
+            transition={{
+              duration: 2.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            aria-hidden="true"
+          />
+          <motion.span
+            className="absolute rounded-full"
+            style={{
+              left: "61.08%",
+              top: "28.05%",
+              width: "3.4%",
+              height: "3.4%",
+              transform: "translate(-50%, -50%)",
+              background:
+                "radial-gradient(circle, rgba(109,176,255,0.98) 0%, rgba(84,145,255,0.86) 38%, rgba(84,145,255,0.16) 70%, rgba(84,145,255,0) 100%)",
+              filter: "blur(0.55px)",
+            }}
+            animate={{
+              opacity: [0.72, 1, 0.8, 0.96, 0.72],
+              scale: [0.96, 1.08, 0.98, 1.04, 0.96],
+            }}
+            transition={{
+              duration: 2.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            aria-hidden="true"
+          />
+        </>
+      )}
+    </span>
+  );
+}
+
 function DisclaimerSection() {
   const { t } = useI18n();
 
@@ -204,6 +317,16 @@ function DisclaimerSection() {
             <p key={i}>{para}</p>
           ))}
         </div>
+
+        <div className="mt-10 flex justify-center">
+          <a
+            href="#top"
+            aria-label="Back to top"
+            className="group p-4 md:p-5 transition-transform duration-300 hover:scale-[1.03]"
+          >
+            <StackedLogoGlow />
+          </a>
+        </div>
       </div>
     </motion.section>
   );
@@ -211,7 +334,7 @@ function DisclaimerSection() {
 
 export default function Home() {
   return (
-    <main className="bg-black min-h-screen">
+    <main id="top" className="bg-black min-h-screen">
       <HeroScene />
       <QuickStartSection />
       <ScenariosSection />
