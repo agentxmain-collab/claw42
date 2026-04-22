@@ -7,7 +7,24 @@
     "title": "遇见你的 AI 交易伙伴",
     "subtitle": "全球首个专注加密货币交易的 AI Agent 竞技养成生态",
     "ctaPrimary": "立即开始",
-    "ctaSecondary": "API 文档"
+    "ctaSecondary": "API 文档",
+    "speechBubble": [
+      "42 出自《银河系漫游指南》——宇宙的终极答案。",
+      "42 = For two。为双向而生。",
+      "我是一只 AI 爪子。帮你抓住 market 的节奏。",
+      "爪子只做一件事：抓住别人没看到的信号。",
+      "Paws on, humans off.",
+      "你教它市场。它陪你成长。",
+      "For two：不是你用 AI，是你和 AI 一起跑。",
+      "人 ⇄ AI。进化是双向的。",
+      "共生、共训、共进化。",
+      "42 不是答案，是起点。",
+      "做交易不是赌博，是可以训练的习惯。",
+      "不做情绪化决策。我只听数据说话。",
+      "别问为什么是 42。懂的都懂。",
+      "42 秒前我还在读链上数据，现在轮到你问我问题。"
+    ],
+    "speechBubbleAriaLabel": "Claw 42 Agent 气泡提示"
   },
   "quickStart": {
     "title": "30 秒遇见你的第一个 AI Agent"

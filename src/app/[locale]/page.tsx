@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { ScenariosSection } from "@/modules/landing/ScenariosSection";
 import { SkillsEcoSection } from "@/modules/landing/SkillsEcoSection";
+import { HeroScene } from "@/modules/landing/HeroScene";
 import {
   fadeOnlyVariants,
   fadeScaleVariants,
@@ -62,68 +62,6 @@ function Section({
     >
       {children}
     </motion.section>
-  );
-}
-
-function HeroSection() {
-  const { t } = useI18n();
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <section className="relative pt-[72px] md:pt-[80px] pb-12">
-      <motion.div
-        animate={reduceMotion ? undefined : { y: [0, -8, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="relative w-full hero-fade mb-8 md:mb-12 aspect-[16/5] overflow-hidden"
-      >
-        <Image
-          src="/images/hero-robot-scene.png"
-          alt="Claw 42 AI Trading"
-          fill
-          sizes="100vw"
-          className="object-cover object-center"
-          priority
-        />
-      </motion.div>
-
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={motionViewport}
-        variants={fadeUpVariants(reduceMotion)}
-        transition={getFadeUpTransition()}
-        className="relative z-10 flex flex-col items-center text-center px-6 max-w-4xl mx-auto"
-      >
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
-          {t.hero.title}
-        </h1>
-        <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mb-8 leading-relaxed">
-          {t.hero.subtitle}
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <motion.a
-            href={COINW_SKILLS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={reduceMotion ? undefined : { scale: 1.05 }}
-            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
-          >
-            {t.hero.ctaPrimary}
-          </motion.a>
-          <motion.a
-            href={COINW_SKILLS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={reduceMotion ? undefined : { scale: 1.05 }}
-            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
-          >
-            {t.hero.ctaSecondary}
-          </motion.a>
-        </div>
-      </motion.div>
-    </section>
   );
 }
 
@@ -274,7 +212,7 @@ function DisclaimerSection() {
 export default function Home() {
   return (
     <main className="bg-black min-h-screen">
-      <HeroSection />
+      <HeroScene />
       <QuickStartSection />
       <ScenariosSection />
       <WhySection />

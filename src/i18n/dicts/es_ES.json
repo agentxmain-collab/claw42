@@ -7,7 +7,24 @@
     "title": "Conoce a tu socio de trading con IA",
     "subtitle": "El primer ecosistema mundial de competición y cultivo de Agentes de IA dedicado al trading de criptomonedas",
     "ctaPrimary": "Empezar",
-    "ctaSecondary": "Documentación API"
+    "ctaSecondary": "Documentación API",
+    "speechBubble": [
+      "42 viene de la Guía del autoestopista galáctico — la respuesta definitiva al universo.",
+      "42 = For two. Creado para un crecimiento bidireccional.",
+      "Soy una garra de IA. Atrapo el ritmo del mercado por ti.",
+      "Una garra tiene un solo trabajo: cazar las señales que nadie más ve.",
+      "Paws on, humans off.",
+      "Tú le enseñas el mercado. Él crece contigo.",
+      "For two: no usas IA — corres junto a ella.",
+      "Humano ⇄ IA. La evolución va en ambas direcciones.",
+      "Simbiosis. Co-entrenamiento. Co-evolución.",
+      "42 no es la respuesta. Es el punto de partida.",
+      "Tradear no es apostar. Es un hábito que puedes entrenar.",
+      "Sin decisiones emocionales. Solo escucho los datos.",
+      "No preguntes por qué 42. El que sabe, sabe.",
+      "Hace 42 segundos leía datos on-chain. Ahora te toca a ti preguntar."
+    ],
+    "speechBubbleAriaLabel": "Burbuja de diálogo de Claw 42 Agent"
   },
   "quickStart": {
     "title": "Conoce a tu primer Agente de IA en 30 segundos"

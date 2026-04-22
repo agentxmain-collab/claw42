@@ -7,7 +7,24 @@
     "title": "Meet Your AI Trading Partner",
     "subtitle": "The world's first AI Agent competitive cultivation ecosystem dedicated to cryptocurrency trading",
     "ctaPrimary": "Get Started",
-    "ctaSecondary": "API Docs"
+    "ctaSecondary": "API Docs",
+    "speechBubble": [
+      "42 is from The Hitchhiker's Guide to the Galaxy — the ultimate answer to the universe.",
+      "42 = For two. Built for bidirectional growth.",
+      "I'm an AI claw. Here to grip the market's rhythm for you.",
+      "A claw has one job: catch the signals no one else sees.",
+      "Paws on, humans off.",
+      "You teach it the market. It grows with you.",
+      "For two: you're not using AI — you're running alongside it.",
+      "Human ⇄ AI. Evolution goes both ways.",
+      "Symbiosis. Co-training. Co-evolution.",
+      "42 isn't the answer. It's the starting point.",
+      "Trading isn't gambling. It's a habit you can train.",
+      "No emotional trades. I only listen to data.",
+      "Don't ask why 42. If you know, you know.",
+      "42 seconds ago I was reading on-chain data. Now it's your turn to ask."
+    ],
+    "speechBubbleAriaLabel": "Claw 42 Agent speech bubble"
   },
   "quickStart": {
     "title": "Meet Your First AI Agent in 30 Seconds"

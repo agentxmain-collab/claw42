@@ -20,6 +20,8 @@ export interface Dict {
     subtitle: string;
     ctaPrimary: string;
     ctaSecondary: string;
+    speechBubble: string[];
+    speechBubbleAriaLabel: string;
   };
   quickStart: {
     title: string;
