@@ -4,6 +4,12 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { fadeUp, motionViewport } from "@/lib/motion";
 
+const STEP_ICON_SRCS = [
+  "/images/icons/step-key.png",
+  "/images/icons/step-authorize.png",
+  "/images/icons/step-launch.png",
+] as const;
+
 export function StartTradeSection() {
   const { t } = useI18n();
   const prefersReducedMotion = useReducedMotion();
@@ -58,10 +64,18 @@ export function StartTradeSection() {
               whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
               className="card-glow relative rounded-2xl border border-white/10 bg-[#111] p-6 md:p-8 min-h-[196px] overflow-hidden"
             >
-              <div className="relative mb-5">
+              <div className="relative mb-5 flex items-center justify-between">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/8 text-white text-sm font-bold border border-white/10">
                   {card.step}
                 </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={STEP_ICON_SRCS[index] ?? STEP_ICON_SRCS[0]}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  className="h-10 w-10 object-contain select-none pointer-events-none"
+                />
               </div>
 
               <h3 className="relative text-xl md:text-2xl font-bold text-white mb-3">

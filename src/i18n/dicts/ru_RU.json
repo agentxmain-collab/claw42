@@ -100,25 +100,24 @@
     ]
   },
   "startTrade": {
-    "eyebrow": "User: Launch AI Trading in 3 Steps",
-    "title": "Launch AI Trading in 3 Steps",
-    "subtitle": "Three simple steps to put your AI trading partner officially on duty.",
-    "helper": "No complex setup. Complete these 3 steps and your AI trading partner is ready to work.",
+    "title": "Запустите AI-трейдинг за 3 шага",
+    "subtitle": "От получения ключа до выхода AI на работу — три шага.",
+    "helper": "Эти 3 шага — и AI следит за рынком, предупреждает и совершает сделки вместо вас",
     "cards": [
       {
         "step": "1",
-        "title": "Create API Key",
-        "desc": "Create your CoinW API Key and enable the required permissions to hand your AI trading partner its first key."
+        "title": "Получите свой API-ключ",
+        "desc": "Возьмите API-ключ в CoinW — личный ключ вашего счёта"
       },
       {
         "step": "2",
-        "title": "Authorize AI Agent",
-        "desc": "Securely authorize Claw42 Agent so you and your AI can establish a trusted execution channel."
+        "title": "Авторизуйте AI-агента",
+        "desc": "Передайте ключ Claw42 Agent. Он исполняет — средств не касается"
       },
       {
         "step": "3",
-        "title": "Choose and Use Skill",
-        "desc": "Pick the right trading Skill and let AI begin analyzing, alerting, and executing for you."
+        "title": "Запустите авто-трейдинг AI",
+        "desc": "Выберите Skill — AI-партнёр выходит на смену: смотрит, торгует, отчитывается"
       }
     ]
   },
