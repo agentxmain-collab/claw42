@@ -48,8 +48,13 @@ const TRAIL_FOLLOW_AFTER_LEAVE_MS = 1000;
 
 /**
  * 尾焰粒子。按距离鼠标尖的偏移（offset，沿运动反方向）+ 垂直抖动（perp）分布。
- * 整体压缩：核心尖点 3.2px → 末端 0.22px，blur 控制在 0.2-0.55 之间，避免糊感。
- * 颜色层次：头部偏白偏暖 → 中段暖橙 → 尾部暗红淡出。
+ * 核心尖点 3.2px → 末端 0.1px，blur 0.2-0.7。
+ * v3 色梯：头部近白蓝 → 中段 logo 蓝 (#4A88FF / 74,136,255) → 尾部深蓝，和 logo 呼吸统一品牌色。
+ * 粒子分段：
+ *   HEAD (14 颗)   —— 主轨迹，鼠标尖到尾端
+ *   FORK (6 颗)    —— 末端 V 字散开，打散不对称（perp 和 offset 都扰动，不再镜像）
+ *   SPARK (6 颗)   —— 更远飞溅，脱离主轨迹
+ *   SCATTER (8 颗) —— 完全不规则脱轨粒子，两侧远近散落，size/alpha 极大反差（0.1~0.42 / 0.1~0.32）
  */
 const TRAIL_PARTICLES: ReadonlyArray<{
   offset: number;
@@ -61,34 +66,44 @@ const TRAIL_PARTICLES: ReadonlyArray<{
   mid: string;
   tail: string;
 }> = [
-  { offset: 0, perp: 0, size: 3.2, blur: 0.2, alpha: 1, core: "255,252,238", mid: "255,226,156", tail: "255,170,70" },
-  { offset: -5, perp: -1.6, size: 2.6, blur: 0.22, alpha: 0.97, core: "255,250,226", mid: "255,214,136", tail: "255,162,64" },
-  { offset: -10, perp: 2.0, size: 2.1, blur: 0.25, alpha: 0.94, core: "255,246,214", mid: "255,204,118", tail: "255,156,58" },
-  { offset: -15, perp: -2.8, size: 1.7, blur: 0.28, alpha: 0.9, core: "255,240,200", mid: "255,196,106", tail: "255,150,52" },
-  { offset: -20, perp: 3.4, size: 1.4, blur: 0.32, alpha: 0.85, core: "255,234,188", mid: "255,188,96", tail: "255,144,48" },
-  { offset: -26, perp: -4.0, size: 1.2, blur: 0.35, alpha: 0.8, core: "255,228,178", mid: "255,182,90", tail: "255,140,46" },
-  { offset: -32, perp: 4.4, size: 1.0, blur: 0.38, alpha: 0.74, core: "255,222,170", mid: "255,176,84", tail: "255,136,44" },
-  { offset: -38, perp: -4.6, size: 0.82, blur: 0.4, alpha: 0.68, core: "255,216,160", mid: "255,170,78", tail: "255,132,42" },
-  { offset: -44, perp: 4.4, size: 0.68, blur: 0.42, alpha: 0.62, core: "255,210,152", mid: "255,164,72", tail: "255,128,40" },
-  { offset: -50, perp: -4.0, size: 0.55, blur: 0.45, alpha: 0.56, core: "255,204,144", mid: "255,158,68", tail: "255,124,38" },
-  { offset: -56, perp: 3.4, size: 0.44, blur: 0.48, alpha: 0.5, core: "255,200,138", mid: "255,154,64", tail: "255,120,36" },
-  { offset: -62, perp: -2.8, size: 0.35, blur: 0.5, alpha: 0.44, core: "255,196,132", mid: "255,150,60", tail: "255,118,34" },
-  { offset: -68, perp: 2.2, size: 0.28, blur: 0.52, alpha: 0.38, core: "255,192,126", mid: "255,146,56", tail: "255,116,32" },
-  { offset: -74, perp: -1.6, size: 0.22, blur: 0.55, alpha: 0.32, core: "255,188,120", mid: "255,142,52", tail: "255,114,30" },
-  // FORK 段 —— 末端 V 字散开，相对 -60~-88 offset 区间放大 perp 到 ±8~12，形成分叉
-  { offset: -60, perp: 8.5, size: 0.5, blur: 0.5, alpha: 0.38, core: "255,202,146", mid: "255,156,66", tail: "255,122,38" },
-  { offset: -60, perp: -8.5, size: 0.5, blur: 0.5, alpha: 0.38, core: "255,202,146", mid: "255,156,66", tail: "255,122,38" },
-  { offset: -70, perp: 11.0, size: 0.38, blur: 0.55, alpha: 0.3, core: "255,194,134", mid: "255,148,58", tail: "255,118,34" },
-  { offset: -70, perp: -11.0, size: 0.38, blur: 0.55, alpha: 0.3, core: "255,194,134", mid: "255,148,58", tail: "255,118,34" },
-  { offset: -82, perp: 12.5, size: 0.28, blur: 0.6, alpha: 0.24, core: "255,188,126", mid: "255,142,52", tail: "255,114,30" },
-  { offset: -82, perp: -12.5, size: 0.28, blur: 0.6, alpha: 0.24, core: "255,188,126", mid: "255,142,52", tail: "255,114,30" },
-  // SPARK 段 —— 更远处飞溅，模拟火焰末端细碎火星脱离主轨迹
-  { offset: -92, perp: 6.0, size: 0.22, blur: 0.5, alpha: 0.22, core: "255,184,118", mid: "255,138,48", tail: "255,110,28" },
-  { offset: -92, perp: -6.0, size: 0.22, blur: 0.5, alpha: 0.22, core: "255,184,118", mid: "255,138,48", tail: "255,110,28" },
-  { offset: -98, perp: 14.0, size: 0.2, blur: 0.55, alpha: 0.18, core: "255,180,112", mid: "255,134,44", tail: "255,106,26" },
-  { offset: -98, perp: -14.0, size: 0.2, blur: 0.55, alpha: 0.18, core: "255,180,112", mid: "255,134,44", tail: "255,106,26" },
-  { offset: -106, perp: 9.5, size: 0.18, blur: 0.6, alpha: 0.15, core: "255,176,106", mid: "255,130,40", tail: "255,102,24" },
-  { offset: -106, perp: -9.5, size: 0.18, blur: 0.6, alpha: 0.15, core: "255,176,106", mid: "255,130,40", tail: "255,102,24" },
+  // HEAD 段 —— 主轨迹 14 颗
+  { offset: 0, perp: 0, size: 3.2, blur: 0.2, alpha: 1, core: "240,248,255", mid: "150,200,255", tail: "74,150,255" },
+  { offset: -5, perp: -1.6, size: 2.6, blur: 0.22, alpha: 0.97, core: "236,246,255", mid: "145,195,255", tail: "70,145,252" },
+  { offset: -10, perp: 2.0, size: 2.1, blur: 0.25, alpha: 0.94, core: "230,244,255", mid: "140,188,255", tail: "66,140,248" },
+  { offset: -15, perp: -2.8, size: 1.7, blur: 0.28, alpha: 0.9, core: "224,240,255", mid: "135,182,255", tail: "62,135,244" },
+  { offset: -20, perp: 3.4, size: 1.4, blur: 0.32, alpha: 0.85, core: "218,236,255", mid: "128,176,255", tail: "58,130,240" },
+  { offset: -26, perp: -4.0, size: 1.2, blur: 0.35, alpha: 0.8, core: "212,232,255", mid: "122,170,255", tail: "54,125,236" },
+  { offset: -32, perp: 4.4, size: 1.0, blur: 0.38, alpha: 0.74, core: "206,228,255", mid: "116,164,255", tail: "50,120,230" },
+  { offset: -38, perp: -4.6, size: 0.82, blur: 0.4, alpha: 0.68, core: "200,224,255", mid: "110,158,255", tail: "48,115,224" },
+  { offset: -44, perp: 4.4, size: 0.68, blur: 0.42, alpha: 0.62, core: "194,220,255", mid: "105,152,255", tail: "46,110,218" },
+  { offset: -50, perp: -4.0, size: 0.55, blur: 0.45, alpha: 0.56, core: "188,216,255", mid: "100,146,255", tail: "44,105,212" },
+  { offset: -56, perp: 3.4, size: 0.44, blur: 0.48, alpha: 0.5, core: "182,212,255", mid: "95,140,255", tail: "42,100,206" },
+  { offset: -62, perp: -2.8, size: 0.35, blur: 0.5, alpha: 0.44, core: "176,208,255", mid: "90,135,255", tail: "40,95,200" },
+  { offset: -68, perp: 2.2, size: 0.28, blur: 0.52, alpha: 0.38, core: "170,204,255", mid: "85,130,250", tail: "38,90,194" },
+  { offset: -74, perp: -1.6, size: 0.22, blur: 0.55, alpha: 0.32, core: "164,200,255", mid: "80,125,245", tail: "36,85,188" },
+  // FORK 段 —— 末端散开，offset/perp 不对称打散（不再镜像）
+  { offset: -58, perp: 9.2, size: 0.5, blur: 0.5, alpha: 0.38, core: "200,225,255", mid: "110,160,255", tail: "50,118,230" },
+  { offset: -64, perp: -7.8, size: 0.46, blur: 0.52, alpha: 0.36, core: "195,220,255", mid: "105,155,255", tail: "48,115,225" },
+  { offset: -71, perp: 12.6, size: 0.36, blur: 0.55, alpha: 0.3, core: "185,215,255", mid: "98,148,255", tail: "44,108,218" },
+  { offset: -75, perp: -10.4, size: 0.34, blur: 0.55, alpha: 0.28, core: "178,210,255", mid: "92,142,255", tail: "42,104,212" },
+  { offset: -83, perp: 13.8, size: 0.28, blur: 0.6, alpha: 0.24, core: "168,202,255", mid: "85,135,250", tail: "38,95,200" },
+  { offset: -86, perp: -11.2, size: 0.26, blur: 0.6, alpha: 0.22, core: "160,196,255", mid: "78,128,245", tail: "35,90,190" },
+  // SPARK 段 —— 更远飞溅，不对称
+  { offset: -90, perp: 6.3, size: 0.22, blur: 0.5, alpha: 0.22, core: "150,190,255", mid: "72,122,240", tail: "32,82,180" },
+  { offset: -95, perp: -5.1, size: 0.2, blur: 0.52, alpha: 0.2, core: "145,185,255", mid: "68,118,235", tail: "30,78,175" },
+  { offset: -99, perp: 13.2, size: 0.18, blur: 0.55, alpha: 0.18, core: "138,180,255", mid: "64,114,230", tail: "28,75,168" },
+  { offset: -104, perp: -9.8, size: 0.17, blur: 0.58, alpha: 0.16, core: "132,175,255", mid: "60,110,225", tail: "26,72,162" },
+  { offset: -108, perp: 7.2, size: 0.15, blur: 0.6, alpha: 0.14, core: "125,170,255", mid: "56,105,220", tail: "24,68,155" },
+  { offset: -112, perp: -14.5, size: 0.14, blur: 0.62, alpha: 0.13, core: "118,164,255", mid: "52,100,215", tail: "22,64,148" },
+  // SCATTER 段 —— 完全不规则脱轨飞溅，两侧远近散落，体积/亮度极大反差
+  { offset: -30, perp: 9.8, size: 0.42, blur: 0.45, alpha: 0.32, core: "185,216,255", mid: "98,150,255", tail: "44,108,218" },
+  { offset: -40, perp: -13.5, size: 0.38, blur: 0.48, alpha: 0.3, core: "175,210,255", mid: "90,142,252", tail: "38,95,200" },
+  { offset: -48, perp: 8.5, size: 0.32, blur: 0.5, alpha: 0.28, core: "170,205,255", mid: "85,135,250", tail: "35,90,195" },
+  { offset: -53, perp: -11.3, size: 0.24, blur: 0.55, alpha: 0.22, core: "162,198,255", mid: "78,128,245", tail: "32,85,185" },
+  { offset: -67, perp: 15.4, size: 0.2, blur: 0.6, alpha: 0.18, core: "155,192,255", mid: "72,120,240", tail: "30,80,175" },
+  { offset: -88, perp: -7.2, size: 0.28, blur: 0.52, alpha: 0.24, core: "148,186,255", mid: "66,112,232", tail: "28,75,165" },
+  { offset: -115, perp: 10.1, size: 0.14, blur: 0.65, alpha: 0.12, core: "140,180,255", mid: "60,105,225", tail: "26,70,155" },
+  { offset: -120, perp: -17.3, size: 0.1, blur: 0.7, alpha: 0.1, core: "132,172,255", mid: "54,98,218", tail: "24,65,145" },
 ];
 
 const COINS: CoinConfig[] = [

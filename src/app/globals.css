@@ -52,22 +52,28 @@ body {
 
 /*
  * Claw42 logo 蓝色呼吸发光。
- * 三层 drop-shadow 构造近-中-远三圈光晕，颜色锚定 logo 眼睛蓝 (#4A88FF)。
- * logo 的白色线条部分也会染上蓝光，整体视觉上蓝色眼睛区域光感最强，正是我们想要的。
+ * v2 架构：此 class 只挂在蓝色像素分离版 PNG（claw42-*-blue.png）上，完整 logo 在底层
+ *         独立渲染、不参与发光。saturate + brightness 让蓝色本身更饱和；三层 drop-shadow
+ *         近-中-远构造光晕。锚定蓝 #4A88FF（logo 眼睛原色）。
+ * v1 曾直接对整张 logo drop-shadow → 深灰线条跟着发光，已废弃。
+ * v2.1 加强亮度：低谷 alpha 0.55/0.4/0.2 → 高峰 1.0/0.75/0.4，半径从 5/14/30 → 12/26/48，
+ *       saturate 1.15→1.3，brightness 1.08→1.2，呼吸对比明显放大。
  */
 @keyframes claw42BlueBreathe {
   0%,
   100% {
     filter:
-      drop-shadow(0 0 4px rgba(74, 136, 255, 0.38))
-      drop-shadow(0 0 10px rgba(74, 136, 255, 0.26))
-      drop-shadow(0 0 22px rgba(74, 136, 255, 0.12));
+      saturate(1.15) brightness(1.08)
+      drop-shadow(0 0 5px rgba(74, 136, 255, 0.55))
+      drop-shadow(0 0 14px rgba(74, 136, 255, 0.4))
+      drop-shadow(0 0 30px rgba(74, 136, 255, 0.2));
   }
   50% {
     filter:
-      drop-shadow(0 0 8px rgba(74, 136, 255, 0.72))
-      drop-shadow(0 0 18px rgba(74, 136, 255, 0.5))
-      drop-shadow(0 0 36px rgba(74, 136, 255, 0.24));
+      saturate(1.3) brightness(1.2)
+      drop-shadow(0 0 12px rgba(74, 136, 255, 1))
+      drop-shadow(0 0 26px rgba(74, 136, 255, 0.75))
+      drop-shadow(0 0 48px rgba(74, 136, 255, 0.4));
   }
 }
 
@@ -88,8 +94,10 @@ body {
   .claw42-blue-breathe {
     animation: none;
     filter:
-      drop-shadow(0 0 6px rgba(74, 136, 255, 0.45))
-      drop-shadow(0 0 14px rgba(74, 136, 255, 0.28));
+      saturate(1.2) brightness(1.12)
+      drop-shadow(0 0 8px rgba(74, 136, 255, 0.75))
+      drop-shadow(0 0 20px rgba(74, 136, 255, 0.5))
+      drop-shadow(0 0 40px rgba(74, 136, 255, 0.25));
   }
 }
 
