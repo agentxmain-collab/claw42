@@ -24,13 +24,9 @@ function ClipboardIcon() {
   );
 }
 
-function TrendingUpIcon() {
-  return (
-    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-    </svg>
-  );
-}
+// WhySection 三张卡片按位置绑定品牌图标：
+// 0 → why-arena（竞技）, 1 → why-evolve（养成）, 2 → why-ecosystem（生态）
+const WHY_ICON_SLUGS = ["why-arena", "why-evolve", "why-ecosystem"] as const;
 
 function Section({
   children,
@@ -165,8 +161,15 @@ function WhySection() {
             whileHover={reduceMotion ? undefined : { y: -4 }}
             className="card-glow relative bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col overflow-hidden"
           >
-            <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-5 text-brand-purple">
-              <TrendingUpIcon />
+            <div className="w-14 h-14 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-5 overflow-hidden">
+              <Image
+                src={`/images/icons/${WHY_ICON_SLUGS[i] ?? WHY_ICON_SLUGS[0]}.png`}
+                alt=""
+                aria-hidden="true"
+                width={48}
+                height={48}
+                className="w-10 h-10 object-contain"
+              />
             </div>
             <h3 className="text-xl font-bold text-white mb-3">{card.title}</h3>
             <p className="text-gray-400 text-sm leading-relaxed flex-1">{card.desc}</p>
@@ -187,113 +190,26 @@ function WhySection() {
 }
 
 function StackedLogoGlow() {
-  const reduceMotion = useReducedMotion();
-
+  // 双层叠加：底层完整 logo（深灰线条 + 蓝色），顶层仅蓝色像素分离版加 drop-shadow 呼吸。
+  // 这样 glow 只从眼睛/嘴/42 这些蓝色部分发出，深灰线条不参与发光（修复 v1 全体发光问题）。
+  // 蓝色版 PNG 由色彩分离脚本生成（B > R+15 且 B > G+15）。
   return (
-    <span className="relative inline-block">
+    <span className="relative inline-block w-28 md:w-36">
       <Image
         src="/images/brand/claw42-stacked.png"
         alt="Claw 42"
         width={220}
         height={220}
-        className="w-28 md:w-36 h-auto object-contain"
+        className="relative w-full h-auto object-contain"
       />
-      {!reduceMotion && (
-        <>
-          <motion.span
-            className="absolute rounded-full"
-            style={{
-              left: "38.92%",
-              top: "28.05%",
-              width: "8.8%",
-              height: "8.8%",
-              transform: "translate(-50%, -50%)",
-              background:
-                "radial-gradient(circle, rgba(74,136,255,0.95) 0%, rgba(74,136,255,0.48) 34%, rgba(74,136,255,0.14) 56%, rgba(74,136,255,0) 76%)",
-              filter: "blur(2.4px)",
-            }}
-            animate={{
-              opacity: [0.46, 0.88, 0.58, 0.82, 0.46],
-              scale: [0.94, 1.12, 0.98, 1.06, 0.94],
-            }}
-            transition={{
-              duration: 2.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            aria-hidden="true"
-          />
-          <motion.span
-            className="absolute rounded-full"
-            style={{
-              left: "38.92%",
-              top: "28.05%",
-              width: "3.4%",
-              height: "3.4%",
-              transform: "translate(-50%, -50%)",
-              background:
-                "radial-gradient(circle, rgba(109,176,255,0.98) 0%, rgba(84,145,255,0.86) 38%, rgba(84,145,255,0.16) 70%, rgba(84,145,255,0) 100%)",
-              filter: "blur(0.55px)",
-            }}
-            animate={{
-              opacity: [0.72, 1, 0.8, 0.96, 0.72],
-              scale: [0.96, 1.08, 0.98, 1.04, 0.96],
-            }}
-            transition={{
-              duration: 2.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            aria-hidden="true"
-          />
-          <motion.span
-            className="absolute rounded-full"
-            style={{
-              left: "61.08%",
-              top: "28.05%",
-              width: "8.8%",
-              height: "8.8%",
-              transform: "translate(-50%, -50%)",
-              background:
-                "radial-gradient(circle, rgba(74,136,255,0.95) 0%, rgba(74,136,255,0.48) 34%, rgba(74,136,255,0.14) 56%, rgba(74,136,255,0) 76%)",
-              filter: "blur(2.4px)",
-            }}
-            animate={{
-              opacity: [0.46, 0.88, 0.58, 0.82, 0.46],
-              scale: [0.94, 1.12, 0.98, 1.06, 0.94],
-            }}
-            transition={{
-              duration: 2.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            aria-hidden="true"
-          />
-          <motion.span
-            className="absolute rounded-full"
-            style={{
-              left: "61.08%",
-              top: "28.05%",
-              width: "3.4%",
-              height: "3.4%",
-              transform: "translate(-50%, -50%)",
-              background:
-                "radial-gradient(circle, rgba(109,176,255,0.98) 0%, rgba(84,145,255,0.86) 38%, rgba(84,145,255,0.16) 70%, rgba(84,145,255,0) 100%)",
-              filter: "blur(0.55px)",
-            }}
-            animate={{
-              opacity: [0.72, 1, 0.8, 0.96, 0.72],
-              scale: [0.96, 1.08, 0.98, 1.04, 0.96],
-            }}
-            transition={{
-              duration: 2.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            aria-hidden="true"
-          />
-        </>
-      )}
+      <Image
+        src="/images/brand/claw42-stacked-blue.png"
+        alt=""
+        aria-hidden="true"
+        width={220}
+        height={220}
+        className="claw42-blue-breathe pointer-events-none absolute inset-0 w-full h-auto object-contain"
+      />
     </span>
   );
 }

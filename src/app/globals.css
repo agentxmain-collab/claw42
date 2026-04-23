@@ -50,6 +50,38 @@ body {
   mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
 }
 
+/*
+ * Claw42 logo 蓝色呼吸发光。
+ * v2 架构：此 class 只挂在蓝色像素分离版 PNG（claw42-*-blue.png）上，完整 logo 在底层
+ *         独立渲染、不参与发光。saturate + brightness 让蓝色本身更饱和；三层 drop-shadow
+ *         近-中-远构造光晕。锚定蓝 #4A88FF（logo 眼睛原色）。
+ * v1 曾直接对整张 logo drop-shadow → 深灰线条跟着发光，已废弃。
+ * v2.1 加强亮度：低谷 alpha 0.55/0.4/0.2 → 高峰 1.0/0.75/0.4，半径从 5/14/30 → 12/26/48，
+ *       saturate 1.15→1.3，brightness 1.08→1.2，呼吸对比明显放大。
+ */
+@keyframes claw42BlueBreathe {
+  0%,
+  100% {
+    filter:
+      saturate(1.15) brightness(1.08)
+      drop-shadow(0 0 5px rgba(74, 136, 255, 0.55))
+      drop-shadow(0 0 14px rgba(74, 136, 255, 0.4))
+      drop-shadow(0 0 30px rgba(74, 136, 255, 0.2));
+  }
+  50% {
+    filter:
+      saturate(1.3) brightness(1.2)
+      drop-shadow(0 0 12px rgba(74, 136, 255, 1))
+      drop-shadow(0 0 26px rgba(74, 136, 255, 0.75))
+      drop-shadow(0 0 48px rgba(74, 136, 255, 0.4));
+  }
+}
+
+.claw42-blue-breathe {
+  animation: claw42BlueBreathe 2.8s ease-in-out infinite;
+  will-change: filter;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -57,6 +89,15 @@ body {
 
   .card-glow:hover {
     transform: none;
+  }
+
+  .claw42-blue-breathe {
+    animation: none;
+    filter:
+      saturate(1.2) brightness(1.12)
+      drop-shadow(0 0 8px rgba(74, 136, 255, 0.75))
+      drop-shadow(0 0 20px rgba(74, 136, 255, 0.5))
+      drop-shadow(0 0 40px rgba(74, 136, 255, 0.25));
   }
 }
 

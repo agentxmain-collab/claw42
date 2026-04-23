@@ -1,9 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { fadeUp } from "@/lib/motion";
+
+// 按卡片位置绑定品牌图标：0 → eco-contract（合约）, 1 → eco-spot（现货）
+// card.icon 字段保留在 i18n dict 中以避免 breaking change，但此处改用 PNG 图标而非 emoji
+const ECO_ICON_SLUGS = ["eco-contract", "eco-spot"] as const;
 
 export function SkillsEcoSection() {
   const { t } = useI18n();
@@ -42,9 +47,15 @@ export function SkillsEcoSection() {
             whileTap={{ scale: 0.98 }}
             className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col"
           >
-            {/* Icon placeholder */}
-            <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-4 text-2xl">
-              {card.icon}
+            <div className="w-14 h-14 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-4 overflow-hidden">
+              <Image
+                src={`/images/icons/${ECO_ICON_SLUGS[i] ?? ECO_ICON_SLUGS[0]}.png`}
+                alt=""
+                aria-hidden="true"
+                width={48}
+                height={48}
+                className="w-10 h-10 object-contain"
+              />
             </div>
             <h3 className="text-xl md:text-2xl font-bold text-white mb-3">{card.title}</h3>
             <p className="text-gray-400 text-sm md:text-base leading-relaxed mb-5 flex-1">
