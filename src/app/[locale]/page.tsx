@@ -159,7 +159,7 @@ function WhySection() {
             viewport={motionViewport}
             variants={fadeUpVariants(reduceMotion)}
             transition={getFadeUpTransition(i * 0.08)}
-            whileHover={reduceMotion ? undefined : { y: -4 }}
+            whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
             className="card-glow relative bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col overflow-hidden"
           >
             <div className="w-14 h-14 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-5 overflow-hidden">

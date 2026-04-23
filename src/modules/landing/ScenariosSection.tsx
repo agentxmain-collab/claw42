@@ -90,8 +90,8 @@ function DailyReportCard({ delay }: { delay: number }) {
       viewport={motionViewport}
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
-      whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-      className="h-full bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 shadow-[0_0_40px_-10px_rgba(124,92,255,0.4),0_0_80px_-20px_rgba(255,138,212,0.2)] hover:shadow-[0_0_60px_-8px_rgba(124,92,255,0.6),0_0_120px_-20px_rgba(255,138,212,0.3)] transition-shadow duration-500"
+      whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
+      className="card-glow h-full bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 transition-[box-shadow,border-color,background-color] duration-500"
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 h-full">
         <div className="flex flex-col h-full">
@@ -190,8 +190,8 @@ function RealtimeMonitorCard({ delay }: { delay: number }) {
       viewport={motionViewport}
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
-      whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-      className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-5 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)] hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)] transition-shadow duration-500"
+      whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
+      className="card-glow flex-1 bg-[#111] border border-white/10 rounded-2xl p-5 transition-[box-shadow,border-color,background-color] duration-500"
     >
       <h3 className="text-base md:text-lg font-semibold text-white mb-2">
         {t.scenarios.realtime.title}
@@ -218,8 +218,8 @@ function AutoTradeCard({ delay }: { delay: number }) {
       viewport={motionViewport}
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
-      whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-      className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-5 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)] hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)] transition-shadow duration-500"
+      whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
+      className="card-glow flex-1 bg-[#111] border border-white/10 rounded-2xl p-5 transition-[box-shadow,border-color,background-color] duration-500"
     >
       <h3 className="text-base md:text-lg font-semibold text-white mb-2">
         {t.scenarios.autoTrade.title}

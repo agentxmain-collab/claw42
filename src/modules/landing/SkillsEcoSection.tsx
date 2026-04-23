@@ -43,7 +43,7 @@ export function SkillsEcoSection() {
           <motion.div
             key={i}
             {...cardVariants(i)}
-            whileHover={{ y: -4 }}
+            whileHover={prefersReducedMotion ? undefined : { y: -8, scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col"
           >
