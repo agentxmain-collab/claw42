@@ -100,25 +100,24 @@
     ]
   },
   "startTrade": {
-    "eyebrow": "User: Launch AI Trading in 3 Steps",
-    "title": "Launch AI Trading in 3 Steps",
-    "subtitle": "Three simple steps to put your AI trading partner officially on duty.",
-    "helper": "No complex setup. Complete these 3 steps and your AI trading partner is ready to work.",
+    "title": "3 ステップで AI トレード開始",
+    "subtitle": "鍵を受け取ったら、AI が即稼働。たった 3 ステップ。",
+    "helper": "この 3 ステップで、AI が相場を見張り、通知し、注文まで代行",
     "cards": [
       {
         "step": "1",
-        "title": "Create API Key",
-        "desc": "Create your CoinW API Key and enable the required permissions to hand your AI trading partner its first key."
+        "title": "専用 API キーを取得",
+        "desc": "CoinW で API キーを発行——あなたのアカウント専用の鍵"
       },
       {
         "step": "2",
-        "title": "Authorize AI Agent",
-        "desc": "Securely authorize Claw42 Agent so you and your AI can establish a trusted execution channel."
+        "title": "AI エージェントを認証",
+        "desc": "鍵を Claw42 Agent に渡す。実行はするが、資金には触れない"
       },
       {
         "step": "3",
-        "title": "Choose and Use Skill",
-        "desc": "Pick the right trading Skill and let AI begin analyzing, alerting, and executing for you."
+        "title": "AI 自動トレードを起動",
+        "desc": "Skill を選べば、AI パートナーが即出勤——見て、取引し、報告"
       }
     ]
   },

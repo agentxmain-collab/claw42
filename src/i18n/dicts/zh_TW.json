@@ -100,25 +100,24 @@
     ]
   },
   "startTrade": {
-    "eyebrow": "用戶：3步開啟 AI 交易",
-    "title": "3步開啟AI交易",
-    "subtitle": "三步，讓你的 AI 交易夥伴正式上崗。",
-    "helper": "無需複雜流程，完成這 3 步，你的 AI 交易夥伴就能正式開始工作。",
+    "title": "3 步開啟 AI 交易",
+    "subtitle": "從拿到鑰匙，到 AI 上崗。就 3 步。",
+    "helper": "完成這 3 步，你的 AI 就能替你盯盤、提醒、下單",
     "cards": [
       {
         "step": "1",
-        "title": "建立 API Key",
-        "desc": "在 CoinW 建立 API Key 並開啟必要權限，給你的 AI 交易夥伴第一把鑰匙。"
+        "title": "領取專屬 API Key",
+        "desc": "在 CoinW 拿一把 API Key——你帳戶的專屬鑰匙"
       },
       {
         "step": "2",
-        "title": "授權 AI Agent",
-        "desc": "將憑證安全授權給 Claw42 Agent，建立你與 AI 之間的協作與執行通道。"
+        "title": "授權你的 AI Agent",
+        "desc": "把鑰匙交給 Claw42 Agent。它替你執行，不碰你的錢"
       },
       {
         "step": "3",
-        "title": "選擇並使用 Skill",
-        "desc": "選擇適合你的交易 Skill，讓 AI 真正開始分析、提醒與執行。"
+        "title": "啟動 AI 自動交易",
+        "desc": "挑一個 Skill，AI 合夥人立刻上崗，看盤、下單、回報"
       }
     ]
   },

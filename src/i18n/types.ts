@@ -70,7 +70,6 @@ export interface Dict {
     }>;
   };
   startTrade: {
-    eyebrow: string;
     title: string;
     subtitle: string;
     helper: string;

@@ -100,25 +100,24 @@
     ]
   },
   "startTrade": {
-    "eyebrow": "User: Launch AI Trading in 3 Steps",
-    "title": "Launch AI Trading in 3 Steps",
-    "subtitle": "Three simple steps to put your AI trading partner officially on duty.",
-    "helper": "No complex setup. Complete these 3 steps and your AI trading partner is ready to work.",
+    "title": "ابدأ التداول بالذكاء الاصطناعي في 3 خطوات",
+    "subtitle": "من استلام المفتاح إلى دخول الذكاء الاصطناعي الخدمة — ثلاث خطوات.",
+    "helper": "أكمل هذه الخطوات الثلاث ليراقب الذكاء الاصطناعي السوق وينبّهك وينفّذ الصفقات نيابة عنك",
     "cards": [
       {
         "step": "1",
-        "title": "Create API Key",
-        "desc": "Create your CoinW API Key and enable the required permissions to hand your AI trading partner its first key."
+        "title": "احصل على مفتاح API الخاص بك",
+        "desc": "احصل على مفتاح API من CoinW — مفتاحك الشخصي لحسابك"
       },
       {
         "step": "2",
-        "title": "Authorize AI Agent",
-        "desc": "Securely authorize Claw42 Agent so you and your AI can establish a trusted execution channel."
+        "title": "فوّض وكيل الذكاء الاصطناعي",
+        "desc": "سلّم المفتاح إلى Claw42 Agent. ينفّذ الأوامر — دون أن يمسّ أموالك"
       },
       {
         "step": "3",
-        "title": "Choose and Use Skill",
-        "desc": "Pick the right trading Skill and let AI begin analyzing, alerting, and executing for you."
+        "title": "شغّل التداول الآلي بالذكاء الاصطناعي",
+        "desc": "اختر Skill لينطلق شريكك الذكي — يراقب، يتداول، ويُبلّغ"
       }
     ]
   },
