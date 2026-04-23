@@ -7,6 +7,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { ScenariosSection } from "@/modules/landing/ScenariosSection";
 import { SkillsEcoSection } from "@/modules/landing/SkillsEcoSection";
+import { StartTradeSection } from "@/modules/landing/StartTradeSection";
 import { HeroScene } from "@/modules/landing/HeroScene";
 import {
   fadeOnlyVariants,
@@ -256,6 +257,7 @@ export default function Home() {
       <ScenariosSection />
       <WhySection />
       <SkillsEcoSection />
+      <StartTradeSection />
       <DisclaimerSection />
     </main>
   );

@@ -99,6 +99,29 @@
       }
     ]
   },
+  "startTrade": {
+    "eyebrow": "用户：3步开启 AI 交易",
+    "title": "3步开启AI交易",
+    "subtitle": "三步，让你的 AI 交易合伙人正式上岗。",
+    "helper": "无需复杂流程，完成这 3 步，你的 AI 交易合伙人就能正式开始工作。",
+    "cards": [
+      {
+        "step": "1",
+        "title": "创建 API Key",
+        "desc": "在 CoinW 创建 API Key 并开启必要权限，给你的 AI 交易合伙人第一把钥匙。"
+      },
+      {
+        "step": "2",
+        "title": "授权 AI Agent",
+        "desc": "将凭证安全授权给 Claw42 Agent，建立你与 AI 之间的协作与执行通道。"
+      },
+      {
+        "step": "3",
+        "title": "选择并使用 Skill",
+        "desc": "选择适合你的交易 Skill，让 AI 真正开始分析、提醒与执行。"
+      }
+    ]
+  },
   "disclaimer": {
     "title": "免责声明",
     "paragraphs": [

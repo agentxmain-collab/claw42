@@ -69,6 +69,17 @@ export interface Dict {
       cta: string;
     }>;
   };
+  startTrade: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    helper: string;
+    cards: Array<{
+      step: string;
+      title: string;
+      desc: string;
+    }>;
+  };
   disclaimer: {
     title: string;
     paragraphs: string[];

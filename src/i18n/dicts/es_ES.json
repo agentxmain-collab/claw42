@@ -99,6 +99,29 @@
       }
     ]
   },
+  "startTrade": {
+    "eyebrow": "User: Launch AI Trading in 3 Steps",
+    "title": "Launch AI Trading in 3 Steps",
+    "subtitle": "Three simple steps to put your AI trading partner officially on duty.",
+    "helper": "No complex setup. Complete these 3 steps and your AI trading partner is ready to work.",
+    "cards": [
+      {
+        "step": "1",
+        "title": "Create API Key",
+        "desc": "Create your CoinW API Key and enable the required permissions to hand your AI trading partner its first key."
+      },
+      {
+        "step": "2",
+        "title": "Authorize AI Agent",
+        "desc": "Securely authorize Claw42 Agent so you and your AI can establish a trusted execution channel."
+      },
+      {
+        "step": "3",
+        "title": "Choose and Use Skill",
+        "desc": "Pick the right trading Skill and let AI begin analyzing, alerting, and executing for you."
+      }
+    ]
+  },
   "disclaimer": {
     "title": "Aviso legal",
     "paragraphs": [
