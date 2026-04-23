@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 
 interface CoinsLayerProps {
   mouseX: number;
@@ -75,6 +75,20 @@ const TRAIL_PARTICLES: ReadonlyArray<{
   { offset: -62, perp: -2.8, size: 0.35, blur: 0.5, alpha: 0.44, core: "255,196,132", mid: "255,150,60", tail: "255,118,34" },
   { offset: -68, perp: 2.2, size: 0.28, blur: 0.52, alpha: 0.38, core: "255,192,126", mid: "255,146,56", tail: "255,116,32" },
   { offset: -74, perp: -1.6, size: 0.22, blur: 0.55, alpha: 0.32, core: "255,188,120", mid: "255,142,52", tail: "255,114,30" },
+  // FORK 段 —— 末端 V 字散开，相对 -60~-88 offset 区间放大 perp 到 ±8~12，形成分叉
+  { offset: -60, perp: 8.5, size: 0.5, blur: 0.5, alpha: 0.38, core: "255,202,146", mid: "255,156,66", tail: "255,122,38" },
+  { offset: -60, perp: -8.5, size: 0.5, blur: 0.5, alpha: 0.38, core: "255,202,146", mid: "255,156,66", tail: "255,122,38" },
+  { offset: -70, perp: 11.0, size: 0.38, blur: 0.55, alpha: 0.3, core: "255,194,134", mid: "255,148,58", tail: "255,118,34" },
+  { offset: -70, perp: -11.0, size: 0.38, blur: 0.55, alpha: 0.3, core: "255,194,134", mid: "255,148,58", tail: "255,118,34" },
+  { offset: -82, perp: 12.5, size: 0.28, blur: 0.6, alpha: 0.24, core: "255,188,126", mid: "255,142,52", tail: "255,114,30" },
+  { offset: -82, perp: -12.5, size: 0.28, blur: 0.6, alpha: 0.24, core: "255,188,126", mid: "255,142,52", tail: "255,114,30" },
+  // SPARK 段 —— 更远处飞溅，模拟火焰末端细碎火星脱离主轨迹
+  { offset: -92, perp: 6.0, size: 0.22, blur: 0.5, alpha: 0.22, core: "255,184,118", mid: "255,138,48", tail: "255,110,28" },
+  { offset: -92, perp: -6.0, size: 0.22, blur: 0.5, alpha: 0.22, core: "255,184,118", mid: "255,138,48", tail: "255,110,28" },
+  { offset: -98, perp: 14.0, size: 0.2, blur: 0.55, alpha: 0.18, core: "255,180,112", mid: "255,134,44", tail: "255,106,26" },
+  { offset: -98, perp: -14.0, size: 0.2, blur: 0.55, alpha: 0.18, core: "255,180,112", mid: "255,134,44", tail: "255,106,26" },
+  { offset: -106, perp: 9.5, size: 0.18, blur: 0.6, alpha: 0.15, core: "255,176,106", mid: "255,130,40", tail: "255,102,24" },
+  { offset: -106, perp: -9.5, size: 0.18, blur: 0.6, alpha: 0.15, core: "255,176,106", mid: "255,130,40", tail: "255,102,24" },
 ];
 
 const COINS: CoinConfig[] = [
@@ -281,7 +295,10 @@ function CoinItem({
   onEngageTrail,
   onLingerTrail,
 }: CoinItemProps) {
-  const [burstId, setBurstId] = useState(0);
+  // v1 用 key=`${symbol}-burst-${burstId}` 每次 mouseenter 改 key → motion.div remount，
+  // remount 间隙 img 瞬态消失就是 Dan 看到的闪烁。
+  // v2 改用 useAnimationControls 手动 start keyframes，不 remount，不闪烁。
+  const controls = useAnimationControls();
   const [bursting, setBursting] = useState(false);
   const burstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -311,11 +328,19 @@ function CoinItem({
           transition: "transform 180ms ease-out",
         }}
         onMouseEnter={(event) => {
-          setBurstId((current) => current + 1);
           setBursting(true);
           if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
           burstTimerRef.current = setTimeout(() => setBursting(false), 900);
-          if (!reduceMotion) onEngageTrail(event.clientX, event.clientY);
+          if (!reduceMotion) {
+            controls.start({
+              x: [0, -2.6, 3.8, -2.1, 1.1, 0],
+              y: [0, 1.6, -2.2, 1.4, -0.7, 0],
+              rotate: [0, -2.2, 1.6, -0.9, 0.4, 0],
+              scale: [1, 1.05, 0.98, 1.03, 1],
+              transition: { duration: 0.34, ease: "easeOut" },
+            });
+            onEngageTrail(event.clientX, event.clientY);
+          }
         }}
         onMouseMove={(event) => {
           if (!reduceMotion) onEngageTrail(event.clientX, event.clientY);
@@ -324,25 +349,7 @@ function CoinItem({
           onLingerTrail();
         }}
       >
-        <motion.div
-          key={`${coin.symbol}-burst-${burstId}`}
-          initial={false}
-          animate={
-            bursting && !reduceMotion
-              ? {
-                  x: [0, -2.6, 3.8, -2.1, 1.1, 0],
-                  y: [0, 1.6, -2.2, 1.4, -0.7, 0],
-                  rotate: [0, -2.2, 1.6, -0.9, 0.4, 0],
-                  scale: [1, 1.05, 0.98, 1.03, 1],
-                }
-              : { x: 0, y: 0, rotate: 0, scale: 1 }
-          }
-          transition={
-            bursting && !reduceMotion
-              ? { duration: 0.34, ease: "easeOut" }
-              : { duration: 0.16 }
-          }
-        >
+        <motion.div animate={controls} initial={false}>
           <motion.img
             src={coin.src}
             alt=""

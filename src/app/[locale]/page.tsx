@@ -190,18 +190,25 @@ function WhySection() {
 }
 
 function StackedLogoGlow() {
-  // 原先用 4 个 motion.span 在百分比坐标上模拟眼睛定点发光，但坐标和 PNG 实际像素对不上，
-  // 发光点位置一直偏移。改为对整张 PNG 做蓝色 drop-shadow 呼吸（.claw42-blue-breathe，
-  // 定义在 globals.css）。PNG 的蓝色眼睛区域因本身为蓝色，在光晕中视觉最突出；
-  // 和上方 header logo 保持同一套动效。
+  // 双层叠加：底层完整 logo（深灰线条 + 蓝色），顶层仅蓝色像素分离版加 drop-shadow 呼吸。
+  // 这样 glow 只从眼睛/嘴/42 这些蓝色部分发出，深灰线条不参与发光（修复 v1 全体发光问题）。
+  // 蓝色版 PNG 由色彩分离脚本生成（B > R+15 且 B > G+15）。
   return (
-    <span className="relative inline-block">
+    <span className="relative inline-block w-28 md:w-36">
       <Image
         src="/images/brand/claw42-stacked.png"
         alt="Claw 42"
         width={220}
         height={220}
-        className="claw42-blue-breathe w-28 md:w-36 h-auto object-contain"
+        className="relative w-full h-auto object-contain"
+      />
+      <Image
+        src="/images/brand/claw42-stacked-blue.png"
+        alt=""
+        aria-hidden="true"
+        width={220}
+        height={220}
+        className="claw42-blue-breathe pointer-events-none absolute inset-0 w-full h-auto object-contain"
       />
     </span>
   );
