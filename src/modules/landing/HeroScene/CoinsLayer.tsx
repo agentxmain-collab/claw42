@@ -46,6 +46,37 @@ const TRAIL_POINT_THRESHOLD = 1.1;
 const MAX_TRAIL_POINTS = 40;
 const TRAIL_FOLLOW_AFTER_LEAVE_MS = 1000;
 
+/**
+ * 尾焰粒子。按距离鼠标尖的偏移（offset，沿运动反方向）+ 垂直抖动（perp）分布。
+ * 整体压缩：核心尖点 3.2px → 末端 0.22px，blur 控制在 0.2-0.55 之间，避免糊感。
+ * 颜色层次：头部偏白偏暖 → 中段暖橙 → 尾部暗红淡出。
+ */
+const TRAIL_PARTICLES: ReadonlyArray<{
+  offset: number;
+  perp: number;
+  size: number;
+  blur: number;
+  alpha: number;
+  core: string;
+  mid: string;
+  tail: string;
+}> = [
+  { offset: 0, perp: 0, size: 3.2, blur: 0.2, alpha: 1, core: "255,252,238", mid: "255,226,156", tail: "255,170,70" },
+  { offset: -5, perp: -1.6, size: 2.6, blur: 0.22, alpha: 0.97, core: "255,250,226", mid: "255,214,136", tail: "255,162,64" },
+  { offset: -10, perp: 2.0, size: 2.1, blur: 0.25, alpha: 0.94, core: "255,246,214", mid: "255,204,118", tail: "255,156,58" },
+  { offset: -15, perp: -2.8, size: 1.7, blur: 0.28, alpha: 0.9, core: "255,240,200", mid: "255,196,106", tail: "255,150,52" },
+  { offset: -20, perp: 3.4, size: 1.4, blur: 0.32, alpha: 0.85, core: "255,234,188", mid: "255,188,96", tail: "255,144,48" },
+  { offset: -26, perp: -4.0, size: 1.2, blur: 0.35, alpha: 0.8, core: "255,228,178", mid: "255,182,90", tail: "255,140,46" },
+  { offset: -32, perp: 4.4, size: 1.0, blur: 0.38, alpha: 0.74, core: "255,222,170", mid: "255,176,84", tail: "255,136,44" },
+  { offset: -38, perp: -4.6, size: 0.82, blur: 0.4, alpha: 0.68, core: "255,216,160", mid: "255,170,78", tail: "255,132,42" },
+  { offset: -44, perp: 4.4, size: 0.68, blur: 0.42, alpha: 0.62, core: "255,210,152", mid: "255,164,72", tail: "255,128,40" },
+  { offset: -50, perp: -4.0, size: 0.55, blur: 0.45, alpha: 0.56, core: "255,204,144", mid: "255,158,68", tail: "255,124,38" },
+  { offset: -56, perp: 3.4, size: 0.44, blur: 0.48, alpha: 0.5, core: "255,200,138", mid: "255,154,64", tail: "255,120,36" },
+  { offset: -62, perp: -2.8, size: 0.35, blur: 0.5, alpha: 0.44, core: "255,196,132", mid: "255,150,60", tail: "255,118,34" },
+  { offset: -68, perp: 2.2, size: 0.28, blur: 0.52, alpha: 0.38, core: "255,192,126", mid: "255,146,56", tail: "255,116,32" },
+  { offset: -74, perp: -1.6, size: 0.22, blur: 0.55, alpha: 0.32, core: "255,188,120", mid: "255,142,52", tail: "255,114,30" },
+];
+
 const COINS: CoinConfig[] = [
   {
     symbol: "BTC",
@@ -337,7 +368,8 @@ function TrailOverlay({ trail }: { trail: TrailPoint[] }) {
           const distance = Math.max(1, Math.hypot(point.dx, point.dy));
           const nx = point.dx / distance;
           const ny = point.dy / distance;
-          const drift = Math.max(18, Math.min(42, distance * 3.1 + 12));
+          // 整体 drift 略收紧，配合更小的粒子尺寸，尾迹看起来更精细而不是散糊
+          const drift = Math.max(14, Math.min(32, distance * 2.6 + 10));
 
           return (
             <motion.div
@@ -347,10 +379,10 @@ function TrailOverlay({ trail }: { trail: TrailPoint[] }) {
                 left: point.x,
                 top: point.y,
               }}
-              initial={{ opacity: 0.96, scale: 0.76 }}
+              initial={{ opacity: 0.96, scale: 0.82 }}
               animate={{
                 opacity: 0,
-                scale: 1.08,
+                scale: 1.04,
                 x: -nx * drift,
                 y: -ny * drift,
               }}
@@ -358,102 +390,26 @@ function TrailOverlay({ trail }: { trail: TrailPoint[] }) {
               transition={{ duration: TRAIL_LIFETIME_MS / 1000, ease: "easeOut" }}
               aria-hidden="true"
             >
-              <span
-                className="absolute rounded-full"
-                style={{
-                  left: -3.5,
-                  top: -3.5,
-                  width: 7,
-                  height: 7,
-                  background:
-                    "radial-gradient(circle, rgba(255,252,225,0.98) 0%, rgba(255,217,118,0.9) 38%, rgba(255,161,51,0.42) 72%, rgba(255,161,51,0) 100%)",
-                      filter: "blur(0.8px)",
-                    }}
-                  />
+              {TRAIL_PARTICLES.map((p, i) => {
+                // 粒子在鼠标运动反方向上延伸：offset 沿 (-nx, -ny) 方向，perp 沿垂直方向
+                const cx = nx * p.offset + -ny * p.perp;
+                const cy = ny * p.offset + nx * p.perp;
+                const half = p.size / 2;
+                return (
                   <span
+                    key={i}
                     className="absolute rounded-full"
                     style={{
-                      left: -nx * 10 - ny * 3 - 3.1,
-                      top: -ny * 10 + nx * 3 - 3.1,
-                      width: 6.2,
-                      height: 6.2,
-                      background:
-                        "radial-gradient(circle, rgba(255,248,216,0.92) 0%, rgba(255,204,98,0.68) 58%, rgba(255,150,45,0) 100%)",
-                      filter: "blur(1.1px)",
+                      left: cx - half,
+                      top: cy - half,
+                      width: p.size,
+                      height: p.size,
+                      background: `radial-gradient(circle, rgba(${p.core},${p.alpha}) 0%, rgba(${p.mid},${p.alpha * 0.72}) 50%, rgba(${p.tail},0) 100%)`,
+                      filter: `blur(${p.blur}px)`,
                     }}
                   />
-                  <span
-                    className="absolute rounded-full"
-                    style={{
-                      left: -nx * 16 + ny * 5 - 2.7,
-                      top: -ny * 16 - nx * 5 - 2.7,
-                      width: 5.4,
-                      height: 5.4,
-                      background:
-                        "radial-gradient(circle, rgba(255,246,210,0.88) 0%, rgba(255,196,82,0.6) 65%, rgba(255,145,40,0) 100%)",
-                      filter: "blur(1.2px)",
-                    }}
-                  />
-                  <span
-                    className="absolute rounded-full"
-                    style={{
-                      left: -nx * 22 - ny * 7 - 2.3,
-                      top: -ny * 22 + nx * 7 - 2.3,
-                      width: 4.6,
-                      height: 4.6,
-                      background:
-                        "radial-gradient(circle, rgba(255,241,196,0.82) 0%, rgba(255,184,72,0.5) 62%, rgba(255,142,38,0) 100%)",
-                      filter: "blur(1.25px)",
-                    }}
-                  />
-                  <span
-                    className="absolute rounded-full"
-                    style={{
-                      left: -nx * 28 + ny * 5 - 1.9,
-                      top: -ny * 28 - nx * 5 - 1.9,
-                      width: 3.8,
-                      height: 3.8,
-                      background:
-                        "radial-gradient(circle, rgba(255,245,210,0.76) 0%, rgba(255,190,78,0.44) 62%, rgba(255,142,38,0) 100%)",
-                      filter: "blur(1.2px)",
-                    }}
-                  />
-                  <span
-                    className="absolute rounded-full"
-                    style={{
-                      left: -nx * 34 - ny * 10 - 1.5,
-                      top: -ny * 34 + nx * 10 - 1.5,
-                      width: 3,
-                      height: 3,
-                      background:
-                        "radial-gradient(circle, rgba(255,248,220,0.72) 0%, rgba(255,196,82,0.4) 62%, rgba(255,145,40,0) 100%)",
-                      filter: "blur(1.1px)",
-                    }}
-                  />
-                  <span
-                    className="absolute rounded-full"
-                    style={{
-                      left: -nx * 42 + ny * 12 - 1.25,
-                      top: -ny * 42 - nx * 12 - 1.25,
-                      width: 2.5,
-                      height: 2.5,
-                      background:
-                        "radial-gradient(circle, rgba(255,248,220,0.72) 0%, rgba(255,196,82,0.34) 62%, rgba(255,145,40,0) 100%)",
-                      filter: "blur(1px)",
-                    }}
-                  />
-                  <span
-                    className="absolute rounded-full"
-                    style={{
-                      left: -nx * 48 - ny * 14 - 1.05,
-                      top: -ny * 48 + nx * 14 - 1.05,
-                      width: 2.1,
-                      height: 2.1,
-                      background:
-                        "radial-gradient(circle, rgba(255,249,228,0.68) 0%, rgba(255,196,82,0.3) 62%, rgba(255,145,40,0) 100%)",
-                      filter: "blur(0.9px)",
-                    }}
-                  />
+                );
+              })}
             </motion.div>
           );
         })}

@@ -24,13 +24,9 @@ function ClipboardIcon() {
   );
 }
 
-function TrendingUpIcon() {
-  return (
-    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-    </svg>
-  );
-}
+// WhySection 三张卡片按位置绑定品牌图标：
+// 0 → why-arena（竞技）, 1 → why-evolve（养成）, 2 → why-ecosystem（生态）
+const WHY_ICON_SLUGS = ["why-arena", "why-evolve", "why-ecosystem"] as const;
 
 function Section({
   children,
@@ -165,8 +161,15 @@ function WhySection() {
             whileHover={reduceMotion ? undefined : { y: -4 }}
             className="card-glow relative bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col overflow-hidden"
           >
-            <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-5 text-brand-purple">
-              <TrendingUpIcon />
+            <div className="w-14 h-14 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-5 overflow-hidden">
+              <Image
+                src={`/images/icons/${WHY_ICON_SLUGS[i] ?? WHY_ICON_SLUGS[0]}.png`}
+                alt=""
+                aria-hidden="true"
+                width={48}
+                height={48}
+                className="w-10 h-10 object-contain"
+              />
             </div>
             <h3 className="text-xl font-bold text-white mb-3">{card.title}</h3>
             <p className="text-gray-400 text-sm leading-relaxed flex-1">{card.desc}</p>
@@ -187,8 +190,10 @@ function WhySection() {
 }
 
 function StackedLogoGlow() {
-  const reduceMotion = useReducedMotion();
-
+  // 原先用 4 个 motion.span 在百分比坐标上模拟眼睛定点发光，但坐标和 PNG 实际像素对不上，
+  // 发光点位置一直偏移。改为对整张 PNG 做蓝色 drop-shadow 呼吸（.claw42-blue-breathe，
+  // 定义在 globals.css）。PNG 的蓝色眼睛区域因本身为蓝色，在光晕中视觉最突出；
+  // 和上方 header logo 保持同一套动效。
   return (
     <span className="relative inline-block">
       <Image
@@ -196,104 +201,8 @@ function StackedLogoGlow() {
         alt="Claw 42"
         width={220}
         height={220}
-        className="w-28 md:w-36 h-auto object-contain"
+        className="claw42-blue-breathe w-28 md:w-36 h-auto object-contain"
       />
-      {!reduceMotion && (
-        <>
-          <motion.span
-            className="absolute rounded-full"
-            style={{
-              left: "38.92%",
-              top: "28.05%",
-              width: "8.8%",
-              height: "8.8%",
-              transform: "translate(-50%, -50%)",
-              background:
-                "radial-gradient(circle, rgba(74,136,255,0.95) 0%, rgba(74,136,255,0.48) 34%, rgba(74,136,255,0.14) 56%, rgba(74,136,255,0) 76%)",
-              filter: "blur(2.4px)",
-            }}
-            animate={{
-              opacity: [0.46, 0.88, 0.58, 0.82, 0.46],
-              scale: [0.94, 1.12, 0.98, 1.06, 0.94],
-            }}
-            transition={{
-              duration: 2.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            aria-hidden="true"
-          />
-          <motion.span
-            className="absolute rounded-full"
-            style={{
-              left: "38.92%",
-              top: "28.05%",
-              width: "3.4%",
-              height: "3.4%",
-              transform: "translate(-50%, -50%)",
-              background:
-                "radial-gradient(circle, rgba(109,176,255,0.98) 0%, rgba(84,145,255,0.86) 38%, rgba(84,145,255,0.16) 70%, rgba(84,145,255,0) 100%)",
-              filter: "blur(0.55px)",
-            }}
-            animate={{
-              opacity: [0.72, 1, 0.8, 0.96, 0.72],
-              scale: [0.96, 1.08, 0.98, 1.04, 0.96],
-            }}
-            transition={{
-              duration: 2.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            aria-hidden="true"
-          />
-          <motion.span
-            className="absolute rounded-full"
-            style={{
-              left: "61.08%",
-              top: "28.05%",
-              width: "8.8%",
-              height: "8.8%",
-              transform: "translate(-50%, -50%)",
-              background:
-                "radial-gradient(circle, rgba(74,136,255,0.95) 0%, rgba(74,136,255,0.48) 34%, rgba(74,136,255,0.14) 56%, rgba(74,136,255,0) 76%)",
-              filter: "blur(2.4px)",
-            }}
-            animate={{
-              opacity: [0.46, 0.88, 0.58, 0.82, 0.46],
-              scale: [0.94, 1.12, 0.98, 1.06, 0.94],
-            }}
-            transition={{
-              duration: 2.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            aria-hidden="true"
-          />
-          <motion.span
-            className="absolute rounded-full"
-            style={{
-              left: "61.08%",
-              top: "28.05%",
-              width: "3.4%",
-              height: "3.4%",
-              transform: "translate(-50%, -50%)",
-              background:
-                "radial-gradient(circle, rgba(109,176,255,0.98) 0%, rgba(84,145,255,0.86) 38%, rgba(84,145,255,0.16) 70%, rgba(84,145,255,0) 100%)",
-              filter: "blur(0.55px)",
-            }}
-            animate={{
-              opacity: [0.72, 1, 0.8, 0.96, 0.72],
-              scale: [0.96, 1.08, 0.98, 1.04, 0.96],
-            }}
-            transition={{
-              duration: 2.4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            aria-hidden="true"
-          />
-        </>
-      )}
     </span>
   );
 }

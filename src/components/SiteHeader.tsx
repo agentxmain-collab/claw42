@@ -18,7 +18,7 @@ export function SiteHeader() {
             width={270}
             height={90}
             priority
-            className="h-14 md:h-[60px] lg:h-16 w-auto object-contain"
+            className="claw42-blue-breathe h-14 md:h-[60px] lg:h-16 w-auto object-contain"
           />
         </a>
 
