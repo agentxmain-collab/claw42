@@ -6,6 +6,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/locales";
 import type { Locale } from "@/i18n/types";
+import { trackEvent } from "@/lib/analytics";
 
 export function LocaleDropdown() {
   const { locale, switchLocale } = useI18n();
@@ -58,6 +59,7 @@ export function LocaleDropdown() {
     buttonRef.current?.focus();
 
     if (nextLocale !== locale) {
+      trackEvent("locale_select", { from: locale, to: nextLocale });
       switchLocale(nextLocale);
     }
   };
@@ -71,6 +73,7 @@ export function LocaleDropdown() {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       setActiveLocale(locale);
+      if (!isOpen) trackEvent("locale_dropdown_open", { locale });
       setIsOpen(true);
     }
   };
@@ -111,7 +114,13 @@ export function LocaleDropdown() {
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen((value) => !value)}
+        onClick={() =>
+          setIsOpen((value) => {
+            const nextIsOpen = !value;
+            if (nextIsOpen) trackEvent("locale_dropdown_open", { locale });
+            return nextIsOpen;
+          })
+        }
         onKeyDown={handleButtonKeyDown}
         aria-haspopup="listbox"
         aria-expanded={isOpen}

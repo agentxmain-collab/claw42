@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
+import { trackEvent } from "@/lib/analytics";
 import { ScenariosSection } from "@/modules/landing/ScenariosSection";
 import { SkillsEcoSection } from "@/modules/landing/SkillsEcoSection";
 import { StartTradeSection } from "@/modules/landing/StartTradeSection";
@@ -64,7 +65,7 @@ function Section({
 }
 
 function QuickStartSection() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const reduceMotion = useReducedMotion();
   const [copied, setCopied] = useState(false);
   const command = `npx skills add ${COINW_SKILLS_URL}`;
@@ -74,6 +75,7 @@ function QuickStartSection() {
       if (!navigator.clipboard) return;
 
       await navigator.clipboard.writeText(command);
+      trackEvent("quick_start_copy", { locale, surface: "quick_start" });
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -216,7 +218,7 @@ function StackedLogoGlow() {
 }
 
 function DisclaimerSection() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   return (
     <motion.section
@@ -239,6 +241,7 @@ function DisclaimerSection() {
           <a
             href="#top"
             aria-label="Back to top"
+            onClick={() => trackEvent("back_to_top_click", { locale })}
             className="group p-4 md:p-5 transition-transform duration-300 hover:scale-[1.03]"
           >
             <StackedLogoGlow />

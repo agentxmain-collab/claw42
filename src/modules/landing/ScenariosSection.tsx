@@ -3,10 +3,11 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { trackEvent } from "@/lib/analytics";
 import { fadeUpVariants, getFadeUpTransition, motionViewport } from "@/lib/motion";
 
 function DailyReportInput() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const reduceMotion = useReducedMotion();
   const [copied, setCopied] = useState(false);
 
@@ -15,6 +16,7 @@ function DailyReportInput() {
       if (!navigator.clipboard) return;
 
       await navigator.clipboard.writeText(t.scenarios.daily.defaultPrompt);
+      trackEvent("daily_prompt_copy", { locale, surface: "daily_input" });
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -79,7 +81,7 @@ function TypingDots() {
 }
 
 function DailyReportCard({ delay }: { delay: number }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const reduceMotion = useReducedMotion();
   const [ctaCopied, setCtaCopied] = useState(false);
 
@@ -88,6 +90,7 @@ function DailyReportCard({ delay }: { delay: number }) {
       if (!navigator.clipboard) return;
 
       await navigator.clipboard.writeText(t.scenarios.daily.ctaClipboard);
+      trackEvent("daily_cta_copy", { locale, surface: "daily_cta" });
       setCtaCopied(true);
       window.setTimeout(() => setCtaCopied(false), 2000);
     } catch (error) {

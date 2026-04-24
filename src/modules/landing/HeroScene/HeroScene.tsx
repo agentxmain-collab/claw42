@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
+import { trackEvent } from "@/lib/analytics";
 import { useMouseNormalized } from "./useMouseNormalized";
 import { useRobotPose, type Pose } from "./useRobotPose";
 import { RobotLayer } from "./RobotLayer";
@@ -44,7 +45,7 @@ function useMobilePoseCycle(isMobile: boolean, reduceMotion: boolean): Pose {
 }
 
 export function HeroScene() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const reduceMotion = useReducedMotion() ?? false;
   const stageRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -55,6 +56,7 @@ export function HeroScene() {
       if (!navigator.clipboard) return;
 
       await navigator.clipboard.writeText(t.hero.ctaPrimaryClipboard);
+      trackEvent("hero_cta_copy", { locale, surface: "hero_primary" });
       setHeroCopied(true);
       window.setTimeout(() => setHeroCopied(false), 2000);
     } catch (error) {
@@ -150,6 +152,12 @@ export function HeroScene() {
             href={COINW_SKILLS_URL}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() =>
+              trackEvent("hero_api_docs_click", {
+                locale,
+                surface: "hero_secondary",
+              })
+            }
             whileHover={reduceMotion ? undefined : { scale: 1.05 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
             className="px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
