@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AnalyticsPageView } from "@/components/AnalyticsPageView";
 import { SiteHeader } from "@/components/SiteHeader";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { HTML_LANG, LOCALES, RTL_LOCALES, isLocale } from "@/i18n/locales";
@@ -24,6 +25,7 @@ export default async function LocaleLayout({
   return (
     <div lang={HTML_LANG[typedLocale]} dir={dir}>
       <I18nProvider initialLocale={typedLocale}>
+        <AnalyticsPageView />
         <SiteHeader />
         {children}
       </I18nProvider>

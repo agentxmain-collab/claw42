@@ -7,6 +7,8 @@
     "title": "Meet Your AI Trading Partner",
     "subtitle": "The world's first AI Agent competitive cultivation ecosystem dedicated to cryptocurrency trading",
     "ctaPrimary": "Get Started",
+    "ctaPrimaryClipboard": "npx skills add GitHub - connectCoinw/coinw-skills",
+    "ctaPrimaryCopiedToast": "Copied to clipboard — send it to your Agent to unlock the crypto experience",
     "ctaSecondary": "API Docs",
     "speechBubble": [
       "42 is from The Hitchhiker's Guide to the Galaxy — the ultimate answer to the universe.",
@@ -40,6 +42,8 @@
       "defaultPrompt": "Generate today's crypto market report for me: scan 24h price moves of BTC/ETH/SOL, social sentiment shifts, major on-chain whale transfers and macro news, then deliver a structured report to start my trading day.",
       "copiedToast": "Copied to clipboard",
       "cta": "Try Now",
+      "ctaClipboard": "Use the skills from GitHub - connectCoinw/coinw-skills to send me a 24-hour crypto daily report every morning at 9:00 AM, including market data and major coin prices.",
+      "ctaCopiedToast": "Copied to clipboard — send it to your Agent to unlock the crypto experience",
       "chatSpeaker": "Claw 42 Agent",
       "chatTime": "just now",
       "chatTitle": "📊 Today's Crypto Market Report",

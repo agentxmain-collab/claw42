@@ -3,11 +3,11 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
-import { COINW_SKILLS_URL } from "@/lib/constants";
+import { trackEvent } from "@/lib/analytics";
 import { fadeUpVariants, getFadeUpTransition, motionViewport } from "@/lib/motion";
 
 function DailyReportInput() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const reduceMotion = useReducedMotion();
   const [copied, setCopied] = useState(false);
 
@@ -16,6 +16,7 @@ function DailyReportInput() {
       if (!navigator.clipboard) return;
 
       await navigator.clipboard.writeText(t.scenarios.daily.defaultPrompt);
+      trackEvent("daily_prompt_copy", { locale, surface: "daily_input" });
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -80,8 +81,22 @@ function TypingDots() {
 }
 
 function DailyReportCard({ delay }: { delay: number }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const reduceMotion = useReducedMotion();
+  const [ctaCopied, setCtaCopied] = useState(false);
+
+  const handleCtaClick = async () => {
+    try {
+      if (!navigator.clipboard) return;
+
+      await navigator.clipboard.writeText(t.scenarios.daily.ctaClipboard);
+      trackEvent("daily_cta_copy", { locale, surface: "daily_cta" });
+      setCtaCopied(true);
+      window.setTimeout(() => setCtaCopied(false), 2000);
+    } catch (error) {
+      console.warn("Clipboard API unavailable", error);
+    }
+  };
 
   return (
     <motion.div
@@ -109,16 +124,30 @@ function DailyReportCard({ delay }: { delay: number }) {
 
           <div className="mt-auto flex flex-col items-start gap-5">
             <DailyReportInput />
-            <motion.a
-              href={COINW_SKILLS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={reduceMotion ? undefined : { scale: 1.05 }}
-              whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-              className="px-5 py-3 bg-[#7c5cff] text-white text-sm font-semibold rounded-lg hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)] transition-all shrink-0 inline-flex items-center justify-center"
-            >
-              {t.scenarios.daily.cta}
-            </motion.a>
+            <div className="relative">
+              <motion.button
+                type="button"
+                onClick={handleCtaClick}
+                whileHover={reduceMotion ? undefined : { scale: 1.05 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                className="px-5 py-3 bg-[#7c5cff] text-white text-sm font-semibold rounded-lg hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)] transition-all shrink-0 inline-flex items-center justify-center"
+              >
+                {t.scenarios.daily.cta}
+              </motion.button>
+              <AnimatePresence>
+                {ctaCopied && (
+                  <motion.div
+                    initial={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
+                    transition={{ duration: 0.18 }}
+                    className="absolute -top-10 left-0 whitespace-nowrap px-3 py-1.5 rounded-md bg-[#7c5cff] text-white text-xs font-semibold shadow-lg z-10"
+                  >
+                    {t.scenarios.daily.ctaCopiedToast}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
+import { trackEvent } from "@/lib/analytics";
 import { useMouseNormalized } from "./useMouseNormalized";
 import { useRobotPose, type Pose } from "./useRobotPose";
 import { RobotLayer } from "./RobotLayer";
@@ -44,10 +45,24 @@ function useMobilePoseCycle(isMobile: boolean, reduceMotion: boolean): Pose {
 }
 
 export function HeroScene() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const reduceMotion = useReducedMotion() ?? false;
   const stageRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const [heroCopied, setHeroCopied] = useState(false);
+
+  const handleHeroCtaClick = async () => {
+    try {
+      if (!navigator.clipboard) return;
+
+      await navigator.clipboard.writeText(t.hero.ctaPrimaryClipboard);
+      trackEvent("hero_cta_copy", { locale, surface: "hero_primary" });
+      setHeroCopied(true);
+      window.setTimeout(() => setHeroCopied(false), 2000);
+    } catch (error) {
+      console.warn("Clipboard API unavailable", error);
+    }
+  };
 
   // Desktop: mouse-driven normalised coordinates. Mobile: always (0, 0).
   const rawMouse = useMouseNormalized(stageRef);
@@ -109,20 +124,40 @@ export function HeroScene() {
           {t.hero.subtitle}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 pointer-events-auto">
+          <div className="relative">
+            <motion.button
+              type="button"
+              onClick={handleHeroCtaClick}
+              whileHover={reduceMotion ? undefined : { scale: 1.05 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+              className="px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
+            >
+              {t.hero.ctaPrimary}
+            </motion.button>
+            <AnimatePresence>
+              {heroCopied && (
+                <motion.div
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
+                  transition={{ duration: 0.18 }}
+                  className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 rounded-md bg-[#7c5cff] text-white text-xs font-semibold shadow-lg z-10"
+                >
+                  {t.hero.ctaPrimaryCopiedToast}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <motion.a
             href={COINW_SKILLS_URL}
             target="_blank"
             rel="noopener noreferrer"
-            whileHover={reduceMotion ? undefined : { scale: 1.05 }}
-            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
-          >
-            {t.hero.ctaPrimary}
-          </motion.a>
-          <motion.a
-            href={COINW_SKILLS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={() =>
+              trackEvent("hero_api_docs_click", {
+                locale,
+                surface: "hero_secondary",
+              })
+            }
             whileHover={reduceMotion ? undefined : { scale: 1.05 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
             className="px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
