@@ -19,6 +19,8 @@ export interface Dict {
     title: string;
     subtitle: string;
     ctaPrimary: string;
+    ctaPrimaryClipboard: string;
+    ctaPrimaryCopiedToast: string;
     ctaSecondary: string;
     speechBubble: string[];
     speechBubbleAriaLabel: string;
@@ -37,6 +39,8 @@ export interface Dict {
       defaultPrompt: string;
       copiedToast: string;
       cta: string;
+      ctaClipboard: string;
+      ctaCopiedToast: string;
       chatSpeaker: string;
       chatTime: string;
       chatTitle: string;

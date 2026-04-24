@@ -7,6 +7,8 @@
     "title": "Conoce a tu socio de trading con IA",
     "subtitle": "El primer ecosistema mundial de competición y cultivo de Agentes de IA dedicado al trading de criptomonedas",
     "ctaPrimary": "Empezar",
+    "ctaPrimaryClipboard": "npx skills add GitHub - connectCoinw/coinw-skills",
+    "ctaPrimaryCopiedToast": "Copiado al portapapeles — envíalo a tu Agent para desbloquear la experiencia cripto",
     "ctaSecondary": "Documentación API",
     "speechBubble": [
       "42 viene de la Guía del autoestopista galáctico — la respuesta definitiva al universo.",
@@ -40,6 +42,8 @@
       "defaultPrompt": "Genera el informe cripto de hoy: escanea los movimientos de 24h de BTC/ETH/SOL, cambios de sentimiento en redes sociales, grandes transferencias on-chain y noticias macro — entrega un informe estructurado para arrancar mi día de trading.",
       "copiedToast": "Copiado al portapapeles",
       "cta": "Probar",
+      "ctaClipboard": "Usa los skills de GitHub - connectCoinw/coinw-skills para enviarme cada mañana a las 9:00 AM un informe diario cripto de las últimas 24 horas, incluyendo datos del mercado y precios de las principales monedas.",
+      "ctaCopiedToast": "Copiado al portapapeles — envíalo a tu Agent para desbloquear la experiencia cripto",
       "chatSpeaker": "Claw 42 Agent",
       "chatTime": "just now",
       "chatTitle": "📊 Informe del mercado cripto de hoy",

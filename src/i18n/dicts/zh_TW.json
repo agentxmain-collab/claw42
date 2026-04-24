@@ -7,6 +7,8 @@
     "title": "遇見你的 AI 交易夥伴",
     "subtitle": "全球首個專注加密貨幣交易的 AI Agent 競技養成生態",
     "ctaPrimary": "立即開始",
+    "ctaPrimaryClipboard": "npx skills add GitHub - connectCoinw/coinw-skills",
+    "ctaPrimaryCopiedToast": "已複製到剪貼簿，發給你的 Agent 開啟加密新體驗",
     "ctaSecondary": "API 文件",
     "speechBubble": [
       "42 出自《銀河便車指南》——宇宙的終極答案。",
@@ -40,6 +42,8 @@
       "defaultPrompt": "幫我生成今日加密貨幣市場日報:掃描 BTC/ETH/SOL 等主流幣種 24 小時價格波動、主要社交媒體的情緒變化、鏈上大額轉帳和宏觀新聞,輸出結構化的繁體中文日報,幫我開啟今天的交易。",
       "copiedToast": "已複製到剪貼簿",
       "cta": "立即試用",
+      "ctaClipboard": "使用 GitHub - connectCoinw/coinw-skills 中的 skills，在每天早上 9:00 發送給我過去 24 小時的加密日報，包含大盤數據、主流幣種行情。",
+      "ctaCopiedToast": "已複製到剪貼簿，發給你的 Agent 開啟加密新體驗",
       "chatSpeaker": "Claw 42 Agent",
       "chatTime": "just now",
       "chatTitle": "📊 今日加密貨幣市場日報",
