@@ -205,6 +205,13 @@ body {
     line-height: 1.04;
   }
 
+  [lang="zh-CN"] .claw42-hero-copy h1,
+  [lang="zh-TW"] .claw42-hero-copy h1 {
+    max-width: min(calc(100vw - 1rem), 24rem);
+    font-size: 2.125rem;
+    line-height: 1.12;
+  }
+
   .claw42-hero-copy p {
     max-width: 21rem;
     margin-bottom: 0;
@@ -277,6 +284,13 @@ body {
     margin-bottom: 0.625rem;
     font-size: 2rem;
     line-height: 1.04;
+  }
+
+  [lang="zh-CN"] .claw42-hero-copy h1,
+  [lang="zh-TW"] .claw42-hero-copy h1 {
+    max-width: min(calc(100vw - 0.75rem), 22rem);
+    font-size: 1.875rem;
+    line-height: 1.12;
   }
 
   .claw42-hero-copy p {
