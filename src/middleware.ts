@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { LOCALES, matchLocale } from "./i18n/locales";
+import { DEFAULT_LOCALE, LOCALES } from "./i18n/locales";
 
 const LOCALE_COOKIE = "claw42-locale";
 
@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
     cookieLocale && (LOCALES as readonly string[]).includes(cookieLocale);
   const locale = isValidCookie
     ? (cookieLocale as (typeof LOCALES)[number])
-    : matchLocale(request.headers.get("accept-language"));
+    : DEFAULT_LOCALE;
 
   const url = request.nextUrl.clone();
   url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;

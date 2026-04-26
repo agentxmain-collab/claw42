@@ -1,12 +1,12 @@
 import type { Locale } from "./types";
 
 export const LOCALES = [
-  "zh_CN",
-  "zh_TW",
   "en_US",
+  "ja_JP",
+  "zh_TW",
+  "zh_CN",
   "ru_RU",
   "uk_UA",
-  "ja_JP",
   "fr_FR",
   "es_ES",
   "ar_SA",

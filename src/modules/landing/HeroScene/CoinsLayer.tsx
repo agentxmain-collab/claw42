@@ -272,7 +272,7 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
   }, []);
 
   return (
-    <div ref={layerRef} className="absolute inset-0 z-30">
+    <div ref={layerRef} className="claw42-hero-coins absolute inset-0 z-30">
       {COINS.map((coin) => {
         const t = tick * coin.freqScale;
         const floatX = reduceMotion
@@ -337,7 +337,8 @@ function CoinItem({
       }}
     >
       <div
-        className={`${coin.sizeClass} relative pointer-events-auto cursor-pointer`}
+        className={`claw42-hero-coin ${coin.sizeClass} relative pointer-events-auto cursor-pointer`}
+        data-coin={coin.symbol}
         style={{
           transform: `translate(${translateX}px, ${translateY}px)`,
           transition: "transform 180ms ease-out",

@@ -8,7 +8,7 @@ export function SiteHeader() {
   const { locale } = useI18n();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 h-[72px] bg-black/80 backdrop-blur-xl border-b border-white/[0.06]">
+    <nav className="fixed top-0 left-0 right-0 z-[80] h-[72px] bg-black/80 backdrop-blur-xl border-b border-white/[0.06]">
       <div className="max-w-[1440px] mx-auto h-full flex items-center justify-between px-6 md:px-10 lg:px-16">
         <a href={`/${locale}`} className="flex items-center gap-3 shrink-0">
           {/*

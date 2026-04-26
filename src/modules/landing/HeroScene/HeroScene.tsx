@@ -77,7 +77,7 @@ export function HeroScene() {
   return (
     <section
       ref={stageRef}
-      className="relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden bg-black pt-[72px] md:pt-[80px]"
+      className="claw42-hero-scene relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden bg-black pt-[72px] md:pt-[80px]"
     >
       <div
         className="absolute inset-0 pointer-events-none"
@@ -116,14 +116,16 @@ export function HeroScene() {
       <div className="absolute inset-x-0 bottom-0 z-50 h-[42%] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
 
       {/* z-50 Title + CTA overlay */}
-      <div className="absolute inset-x-0 bottom-[6%] z-50 flex flex-col items-center text-center px-6 max-w-4xl mx-auto left-1/2 -translate-x-1/2">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
-          {t.hero.title}
-        </h1>
-        <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mb-8 leading-relaxed">
-          {t.hero.subtitle}
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 pointer-events-auto">
+      <div className="claw42-hero-copy absolute inset-x-0 bottom-[6%] z-50 flex flex-col items-center text-center px-6 max-w-4xl mx-auto left-1/2 -translate-x-1/2">
+        <div className="claw42-hero-text flex flex-col items-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
+            {t.hero.title}
+          </h1>
+          <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mb-8 leading-relaxed">
+            {t.hero.subtitle}
+          </p>
+        </div>
+        <div className="claw42-hero-actions flex flex-col sm:flex-row gap-4 pointer-events-auto">
           <div className="relative">
             <motion.button
               type="button"

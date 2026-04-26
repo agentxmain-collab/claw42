@@ -29,7 +29,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
   const parallaxY = reduceMotion ? 0 : mouseY * 0.1 * 12;
 
   return (
-    <>
+    <div className="claw42-hero-pedestal-layer absolute inset-0 pointer-events-none">
       <motion.div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
@@ -225,6 +225,6 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
           }
         />
       </div>
-    </>
+    </div>
   );
 }

@@ -66,10 +66,11 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
 
   return (
     <div
-      className="absolute z-40 left-1/2 bottom-[34%] md:bottom-[40%]"
+      className="claw42-hero-robot absolute z-40 left-1/2 bottom-[34%] md:bottom-[40%]"
       style={{
         transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
-        width: "min(316px, 28vw)",
+        bottom: "var(--claw42-hero-robot-bottom)",
+        width: "var(--claw42-hero-robot-width, min(316px, 28vw))",
         pointerEvents: "none",
       }}
     >

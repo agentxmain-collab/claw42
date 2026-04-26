@@ -157,7 +157,7 @@ export function LocaleDropdown() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: reduceMotion ? 0 : -4 }}
             transition={{ duration: reduceMotion ? 0 : 0.15 }}
-            className="absolute right-0 top-[calc(100%+8px)] min-w-[200px] max-h-[360px] overflow-y-auto py-2 rounded-xl bg-[#111] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] z-50 focus:outline-none"
+            className="absolute right-0 top-[calc(100%+8px)] min-w-[240px] max-h-[360px] overflow-y-auto py-2 rounded-xl bg-[#111] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] z-50 focus:outline-none"
           >
             {LOCALES.map((item) => {
               const isSelected = item === locale;
@@ -171,7 +171,7 @@ export function LocaleDropdown() {
                   aria-selected={isSelected}
                   onClick={() => handleSelect(item)}
                   onMouseEnter={() => setActiveLocale(item)}
-                  className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center justify-between gap-3 border-l-2 ${
+                  className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center justify-between gap-3 border-l-2 whitespace-nowrap ${
                     isSelected
                       ? "bg-[#7c5cff]/15 text-[#c4b0ff] border-[#7c5cff]"
                       : "text-white/80 hover:bg-white/5 hover:text-white border-transparent"

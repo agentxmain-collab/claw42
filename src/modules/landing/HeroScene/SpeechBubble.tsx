@@ -51,7 +51,7 @@ export function SpeechBubble({ visible, reduceMotion, side }: SpeechBubbleProps)
 
   return (
     <div
-      className="absolute pointer-events-none"
+      className="claw42-speech-bubble-root absolute pointer-events-none"
       style={{
         zIndex: 40,
         top: "66%",
@@ -68,7 +68,7 @@ export function SpeechBubble({ visible, reduceMotion, side }: SpeechBubbleProps)
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 6 }}
             transition={{ duration: reduceMotion ? 0 : 0.22, ease: "easeOut" }}
-            className="relative bg-white/95 text-gray-900 rounded-2xl px-4 py-3 text-[13px] md:text-[14px] font-medium font-mono leading-snug shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+            className="claw42-speech-bubble relative bg-white/95 text-gray-900 rounded-2xl px-4 py-3 text-[13px] md:text-[14px] font-medium font-mono leading-snug shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
             style={{ width: "min(82vw, 420px)" }}
             aria-label={t.hero.speechBubbleAriaLabel}
             role="status"
@@ -87,7 +87,7 @@ export function SpeechBubble({ visible, reduceMotion, side }: SpeechBubbleProps)
               />
             </span>
             <span
-              className="absolute w-3 h-3 bg-white/95 rotate-45"
+              className="claw42-speech-bubble-tail absolute w-3 h-3 bg-white/95 rotate-45"
               style={{
                 left: side === "right" ? "-6px" : undefined,
                 right: side === "left" ? "-6px" : undefined,
