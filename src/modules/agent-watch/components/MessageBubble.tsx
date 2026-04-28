@@ -2,20 +2,16 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_META } from "../agents";
 import type { AgentWatchMessage } from "../types";
-
-function formatTime(ts: number) {
-  const date = new Date(ts);
-  return `${date.getHours().toString().padStart(2, "0")}:${date
-    .getMinutes()
-    .toString()
-    .padStart(2, "0")}`;
-}
+import { formatAgentMessageTime } from "../utils/formatTime";
 
 export function MessageBubble({ message }: { message: AgentWatchMessage }) {
+  const { locale } = useI18n();
   const [liked, setLiked] = useState(false);
   const meta = AGENT_META[message.agentId];
+  const timeLabel = formatAgentMessageTime(message.timestamp, locale);
 
   return (
     <motion.div
@@ -38,7 +34,7 @@ export function MessageBubble({ message }: { message: AgentWatchMessage }) {
           <span className="rounded-full border border-[#7c5cff]/30 bg-[#7c5cff]/12 px-2 py-0.5 text-[10px] font-semibold text-[#b49cff]">
             LIVE
           </span>
-          <span className="font-mono text-[11px] text-white/35">{formatTime(message.timestamp)}</span>
+          <span className="font-mono text-[11px] text-white/35">{timeLabel}</span>
         </div>
         <div className="mt-1.5 rounded-2xl rounded-tl-sm border border-white/10 bg-black/35 px-4 py-3 transition-shadow hover:shadow-[0_0_24px_rgba(124,92,255,0.18)]">
           <p className="text-sm leading-relaxed text-white/82">{message.content}</p>
