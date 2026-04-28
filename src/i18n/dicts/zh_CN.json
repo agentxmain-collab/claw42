@@ -136,24 +136,24 @@
     ]
   },
   "agentWatch": {
-    "pageTitle": "实时旁观",
-    "pageSubtitle": "3 个 Agent 正在分析行情",
-    "pageHeroTagline": "AI 已经在干活了，你只是还没登录。旁观 Alpha / Beta / Gamma 如何围绕实时行情拆解机会、风险和价差。",
+    "pageTitle": "Live · 加密市场",
+    "pageSubtitle": "3 个 Agent 同时盯盘。Alpha 看突破，Beta 看趋势，Gamma 看极端。",
+    "pageHeroTagline": "",
     "sidebarStatus": {
       "thinking": "思考中",
       "speaking": "发言中",
       "idle": "静默"
     },
-    "bottomCta": "登录后让 Agent 替你下单",
+    "bottomCta": "开始使用 Agent →",
     "linkCardLiveBadge": "LIVE",
-    "linkCardTitle": "3 个 Agent 正在分析行情",
-    "linkCardDesc": "未登录也能看，进直播间听 Alpha / Beta / Gamma 现场点评",
-    "fallbackNotice": "行情服务暂时降级，当前显示缓存或静态 fallback。",
+    "linkCardTitle": "3 个 Agent 正在盯盘",
+    "linkCardDesc": "Alpha 看突破，Beta 看趋势，Gamma 看极端",
+    "fallbackNotice": "",
     "banner": {
       "newContent": "有新内容 →",
       "dismissAriaLabel": "关闭新内容提示"
     },
-    "emptyHistory": "历史正在积累中，等下一批 Agent 分析进来",
+    "emptyHistory": "等待下一批 Agent 判断",
     "loadingHistory": "加载中...",
     "coinPool": {
       "majors": "主流",
@@ -161,17 +161,18 @@
       "opportunity": "机会"
     },
     "focusCard": {
-      "title": "关注中",
-      "warmingUp": "正在累积市场信号",
-      "trigger": "触发条件",
-      "fail": "失效条件",
+      "watching": "关注",
+      "trigger": "触发",
+      "fail": "失效",
       "expandFail": "失效条件",
-      "evidenceCount": "{count} 条信号作为依据",
-      "updated": "更新"
+      "evidenceCount": "{count} 条信号支撑",
+      "minutesAgo": "{minutes} 分钟前",
+      "warmup": "Agent 准备中",
+      "thinking": "思考中"
     },
     "marketEvent": {
-      "title": "市场信号流",
-      "empty": "实例内信号正在积累，继续停留会看到更多触发。",
+      "title": "市场信号",
+      "empty": "等待新信号...",
       "live": "LIVE"
     },
     "statusLabel": {

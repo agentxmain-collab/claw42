@@ -114,13 +114,14 @@ export interface Dict {
       opportunity: string;
     };
     focusCard: {
-      title: string;
-      warmingUp: string;
+      watching: string;
       trigger: string;
       fail: string;
       expandFail: string;
       evidenceCount: string;
-      updated: string;
+      minutesAgo: string;
+      warmup: string;
+      thinking: string;
     };
     marketEvent: {
       title: string;

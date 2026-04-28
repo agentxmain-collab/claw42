@@ -17,9 +17,11 @@ export function TopicHeader({ t }: { t: Dict }) {
       <h1 className="text-3xl font-bold leading-tight tracking-tight text-white md:text-4xl lg:text-5xl">
         {t.agentWatch.pageSubtitle}
       </h1>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/60 md:text-base">
-        {t.agentWatch.pageHeroTagline}
-      </p>
+      {t.agentWatch.pageHeroTagline && (
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/60 md:text-base">
+          {t.agentWatch.pageHeroTagline}
+        </p>
+      )}
     </div>
   );
 }

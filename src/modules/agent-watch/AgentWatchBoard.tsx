@@ -9,7 +9,6 @@ import { useAgentHistory } from "./hooks/useAgentHistory";
 import { useMarketEventFeed } from "./hooks/useMarketEventFeed";
 import type { AgentId, AgentWatchMessage, HistoryMessageEntry } from "./types";
 import { AgentSidebar } from "./components/AgentSidebar";
-import { AgentFocusCard } from "./components/AgentFocusCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
 import { MarketEventFeed } from "./components/MarketEventFeed";
 import { MessageStream, type MessageStreamHandle } from "./components/MessageStream";
@@ -149,22 +148,13 @@ export function AgentWatchBoard() {
 
         <MarketEventFeed signals={marketSignals} labels={t.agentWatch.marketEvent} />
 
-        <div className="grid gap-4 xl:grid-cols-3">
-          {AGENT_ORDER.map((agentId) => (
-            <AgentFocusCard
-              key={agentId}
-              agentId={agentId}
-              focus={focusByAgent.get(agentId)}
-              labels={t.agentWatch.focusCard}
-            />
-          ))}
-        </div>
-
-        <div className="grid gap-4 md:flex md:items-stretch">
+        <div className="grid gap-4 lg:flex lg:items-stretch">
           <AgentSidebar
             activeAgent={typingAgent}
             speakingAgent={speakingAgent}
             labels={t.agentWatch.sidebarStatus}
+            focusByAgent={focusByAgent}
+            focusLabels={t.agentWatch.focusCard}
           />
           <MessageStream
             ref={messageStreamRef}
