@@ -132,11 +132,9 @@ export function AgentWatchBoard() {
         <CoinTickerStrip
           pool={data?.pool}
           tickers={data?.tickers}
-          isStale={data?.degraded}
-          source={data?.marketSource}
           labels={t.agentWatch.coinPool}
-          statusLabels={t.agentWatch.statusLabel}
         />
+        <MarketEventFeed signals={marketSignals} labels={t.agentWatch.marketEvent} />
         <TopicHeader t={t} />
         <NewContentBanner
           visible={hasNewContent}
@@ -145,8 +143,6 @@ export function AgentWatchBoard() {
             void handleJumpToLatest();
           }}
         />
-
-        <MarketEventFeed signals={marketSignals} labels={t.agentWatch.marketEvent} />
 
         <div className="grid gap-4 lg:flex lg:items-stretch">
           <AgentSidebar

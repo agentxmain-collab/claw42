@@ -172,15 +172,7 @@
     },
     "marketEvent": {
       "title": "市场信号",
-      "empty": "等待新信号...",
-      "live": "LIVE"
-    },
-    "statusLabel": {
-      "coinw": "CoinW 实盘K线",
-      "spotOnly": "仅现价",
-      "fallback": "降级数据",
-      "stale": "K线延迟",
-      "warmingUp": "预热中"
+      "empty": "等待新信号..."
     }
   },
   "coinModal": {

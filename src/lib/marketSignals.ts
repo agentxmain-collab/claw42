@@ -10,7 +10,7 @@ import type {
 
 const THRESHOLDS = {
   VOLUME_SPIKE_RATIO: 1.8,
-  NEAR_LEVEL_PCT: 0.015,
+  NEAR_LEVEL_PCT: 0.005,
   RANGE_CHANGE_PCT: 10,
 } as const;
 
@@ -50,7 +50,7 @@ function signalForRangeChange(coin: CoinTickerEntry, now: number): SignalRecord 
       change24h: coin.change24h,
       description: `${coin.symbol} 24h ${coin.change24h >= 0 ? "+" : ""}${coin.change24h.toFixed(
         1,
-      )}%`,
+      )}%（机会区异动）`,
     },
   };
 }
@@ -99,9 +99,7 @@ function pushKlineSignals(
       payload: {
         priceLevel: m5.high,
         distancePct: distHigh * 100,
-        description: `${coin.symbol} 接近前高 ${formatPrice(m5.high)}（距 ${(
-          distHigh * 100
-        ).toFixed(2)}%）`,
+        description: `${coin.symbol} 距前高 ${(distHigh * 100).toFixed(2)}%，正在测压`,
       },
     });
   }
@@ -116,9 +114,7 @@ function pushKlineSignals(
       payload: {
         priceLevel: m5.low,
         distancePct: distLow * 100,
-        description: `${coin.symbol} 接近前低 ${formatPrice(m5.low)}（距 ${(
-          distLow * 100
-        ).toFixed(2)}%）`,
+        description: `${coin.symbol} 距前低 ${(distLow * 100).toFixed(2)}%，下方止损单密集`,
       },
     });
   }
@@ -135,7 +131,7 @@ function pushKlineSignals(
       severity: "alert",
       payload: {
         priceLevel: lastM5.high,
-        description: `${coin.symbol} 5m 突破前高 ${formatPrice(lastM5.high)}`,
+        description: `${coin.symbol} 突破前高 ${formatPrice(lastM5.high)}`,
       },
     });
   } else if (m5.latestClose < lastM5.low) {
@@ -147,7 +143,7 @@ function pushKlineSignals(
       severity: "alert",
       payload: {
         priceLevel: lastM5.low,
-        description: `${coin.symbol} 5m 跌破前低 ${formatPrice(lastM5.low)}`,
+        description: `${coin.symbol} 跌破前低 ${formatPrice(lastM5.low)}`,
       },
     });
   }
@@ -161,7 +157,7 @@ function pushKlineSignals(
       severity: "watch",
       payload: {
         emaState: "golden_cross",
-        description: `${coin.symbol} 5m EMA12 重新站上 EMA13`,
+        description: `${coin.symbol} 5m EMA 金叉`,
       },
     });
   } else if (lastM5.trend !== m5.trend && m5.trend === "bearish") {
@@ -173,7 +169,7 @@ function pushKlineSignals(
       severity: "watch",
       payload: {
         emaState: "dead_cross",
-        description: `${coin.symbol} 5m EMA12 跌破 EMA13`,
+        description: `${coin.symbol} 5m EMA 死叉`,
       },
     });
   }

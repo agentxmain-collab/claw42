@@ -126,14 +126,6 @@ export interface Dict {
     marketEvent: {
       title: string;
       empty: string;
-      live: string;
-    };
-    statusLabel: {
-      coinw: string;
-      spotOnly: string;
-      fallback: string;
-      stale: string;
-      warmingUp: string;
     };
   };
   coinModal: {

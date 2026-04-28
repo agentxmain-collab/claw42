@@ -1,6 +1,6 @@
 "use client";
 
-import type { CoinPoolPayload, CoinTickerEntry, MarketDataSource, TickerMap } from "../types";
+import type { CoinPoolPayload, CoinTickerEntry, TickerMap } from "../types";
 
 const COINS = ["BTC", "ETH", "SOL", "USDT"] as const;
 
@@ -24,25 +24,14 @@ function majorsFromTickers(tickers?: TickerMap): CoinTickerEntry[] {
 export function CoinTickerStrip({
   pool,
   tickers,
-  isStale,
-  source,
   labels,
-  statusLabels,
 }: {
   pool?: CoinPoolPayload;
   tickers?: TickerMap;
-  isStale?: boolean;
-  source?: MarketDataSource;
   labels: {
     majors: string;
     trending: string;
     opportunity: string;
-  };
-  statusLabels: {
-    coinw: string;
-    spotOnly: string;
-    fallback: string;
-    stale: string;
   };
 }) {
   const majors = pool?.majors ?? majorsFromTickers(tickers);
@@ -51,15 +40,6 @@ export function CoinTickerStrip({
     { key: "trending", label: labels.trending, entries: pool?.trending ?? [] },
     { key: "opportunity", label: labels.opportunity, entries: pool?.opportunity ?? [] },
   ];
-  const dataSource = source ?? pool?.source;
-  const stale = isStale ?? pool?.isStale;
-  const sourceLabel =
-    dataSource === "coinw-kline"
-      ? statusLabels.coinw
-      : dataSource === "coingecko-ticker"
-        ? statusLabels.spotOnly
-        : statusLabels.fallback;
-  const statusLabel = dataSource === "coinw-kline" && stale ? statusLabels.stale : sourceLabel;
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#111]/90 px-4 py-3">
@@ -88,15 +68,6 @@ export function CoinTickerStrip({
               })}
             </div>
           ))}
-        <span
-          className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${
-            dataSource === "coinw-kline"
-              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
-              : "border-yellow-400/30 bg-yellow-400/10 text-yellow-200"
-          }`}
-        >
-          {statusLabel}
-        </span>
       </div>
     </div>
   );

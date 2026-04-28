@@ -172,15 +172,7 @@
     },
     "marketEvent": {
       "title": "Market Signals",
-      "empty": "Waiting for new signals...",
-      "live": "LIVE"
-    },
-    "statusLabel": {
-      "coinw": "CoinW live kline",
-      "spotOnly": "Price only",
-      "fallback": "Fallback data",
-      "stale": "Kline delayed",
-      "warmingUp": "Warming up"
+      "empty": "Waiting for new signals..."
     }
   },
   "coinModal": {
