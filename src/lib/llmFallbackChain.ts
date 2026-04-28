@@ -3,6 +3,7 @@ import betaSkill from "@/modules/agent-watch/skills/beta.json";
 import gammaSkill from "@/modules/agent-watch/skills/gamma.json";
 import { getCoinPool } from "@/lib/marketDataCache";
 import { triggerSignalGeneration } from "@/lib/marketSignals";
+import { getLastBatchSummary, recordSuccessfulPayload } from "@/lib/llmHistorySummary";
 import { buildSignalSummary, formatSummaryForPrompt } from "@/lib/signalSummary";
 import type {
   AgentFocus,
@@ -554,6 +555,10 @@ function buildPrompt(pool: CoinPoolPayload): string {
   const summary = buildSignalSummary();
   const summaryText = formatSummaryForPrompt(summary);
   const collectiveSignalText = formatCollectiveSignalBrief(summary);
+  const lastBatch = getLastBatchSummary();
+  const lastBatchText = lastBatch
+    ? `## 上轮 stream 摘要（${Math.max(1, Math.round(lastBatch.ageMs / 60_000))} 分钟前）\n${lastBatch.summary}`
+    : "## 上轮 stream 摘要\n暂无上一轮成功输出。";
 
   return `你扮演 3 个加密交易 Agent 同时基于累积市场信号做判断。三人必须像不同交易员在同一块屏幕前看盘：同一份实时行情，不同方法论、不同术语、不同判断重点。
 
@@ -574,6 +579,8 @@ ${formatCoinWContext(pool.source, pool.signals)}
 ${summaryText}
 
 ${collectiveSignalText}
+
+${lastBatchText}
 
 ## 写作总目标
 - 不是行情新闻摘要，而是实时看盘 Agent 的短判断。
@@ -654,34 +661,47 @@ ${skillPromptBlock("gamma")}
 - 不要输出英文，不要输出解释文字
 - 禁止 markdown 格式
 
-## 输出纪律（v1.2 修订，硬性遵守，违反则输出无效）
+## 输出纪律（task-11，硬性遵守，违反则输出无效）
 
-### 禁止套话开头
+### A 禁止套话开头
 - 禁止以“X 现价 $Y，24h Z%”开头
 - 禁止“ETH/BTC/SOL 强弱排序已拉开”
 - 禁止“目前 X 表现如何”
 - 禁止任何以行情概览或价格描述开头的句式
+- 开头必须直接进入判断：例如“BTC 前低被反复测试”“SOL 5m EMA 死叉后还没修复”
 
-### 禁止复读 Ticker
+### B 禁止复读 Ticker
 用户已经在顶部 Ticker 看到：4 主流币 + 3 热门 + 3 机会的当前价 + 24h 涨跌幅。
 - 不要在 stream content 或 focus.judgment 里再写“现价 $X”或“24h -X%”
 - 直接说判断、引用 buffer 信号事件、给触发/失效条件
 
-### 必须引用 buffer 信号事件
+### C 必须引用 buffer 信号事件
 每个 Agent 的 stream + focus 必须引用至少 1 条 buffer 摘要里具体的信号事件作为论据：
 - “BTC 接近前低 $75,677 已经第 3 次”——引用 NEAR_LOW
 - “ZKJ 24h +209% 已经飞起来”——引用 RANGE_CHANGE
 - “BCAP 5m 放量 2.1x + 突破 $103”——引用 VOLUME_SPIKE + BREAKOUT
 - 禁止只说“市场偏弱”“看着不太行”这类无具体信号的话
 
-### 集体信号检测（关键）
+### D 集体信号检测
 如果上方“集体信号检测”提示 BTC / ETH / SOL 同时出现同类型信号，3 Agent stream 至少 1 条必须引用这个集体信号：
 - Alpha 可以写“主流三个都接近前低，止损单密集，破一个就连环”
 - Beta 可以写“BTC ETH SOL 同步测前低，趋势已经偏弱了”
 - Gamma 可以写“三大主流同时进近期低位，集体极端信号出现”
 如果没有集体信号，3 Agent 各看各的币，可以分散视角
 
-### 句式风格（继续 task-07 人设约束）
+### E 派别口诀限频（任务 11 新增）
+- “突破派/趋势派/回归派”这类派别口号最多 1 条 stream 可以出现，且不能连续两轮重复同一句。
+- 优先输出具体动作，不要每条都复述人设。
+
+### F 上轮 stream 摘要避免连续重复（任务 11 新增）
+- 上方“上轮 stream 摘要”是上一批成功输出；本轮禁止复用同一开头、同一 symbol+同一结论、同一触发/失效描述。
+- 如果继续关注同一个 symbol，必须换一个新证据或新条件，而不是换词重说。
+
+### G 每条 stream 必须含具体币 symbol（继承 task-08）
+- 每条 stream 必须至少包含 1 个来自当前多币种池的 symbol。
+- 不能用“大盘”“主流”“机会币”替代具体币。
+
+### H 句式风格（继承 task-07）
 - Alpha 短促 + 江湖气，必须用突破派术语
 - Beta 中长 + 克制，必须用趋势派术语
 - Gamma 数据 + 谨慎，必须用回归派术语
@@ -751,8 +771,8 @@ const ACTIONABLE_MARKERS = [
   "极端",
 ];
 
-function hasMarketSymbol(content: string): boolean {
-  return COINS.some((symbol) => content.includes(symbol));
+function hasMarketSymbol(content: string, symbols: Set<string>): boolean {
+  return Array.from(symbols).some((symbol) => content.includes(symbol));
 }
 
 function hasNumericMarketData(content: string): boolean {
@@ -781,8 +801,12 @@ function hasBannedOutputPattern(content: string): boolean {
   return BANNED_OUTPUT_PATTERNS.some((pattern) => pattern.test(content.trim()));
 }
 
-function isActionableMarketNote(content: string): boolean {
-  return hasMarketSymbol(content) && hasNumericMarketData(content) && hasActionableMarker(content);
+function isActionableMarketNote(content: string, symbols: Set<string>): boolean {
+  return (
+    hasMarketSymbol(content, symbols) &&
+    hasNumericMarketData(content) &&
+    hasActionableMarker(content)
+  );
 }
 
 function hasAgentMessageShape(agentId: AgentId, content: string): boolean {
@@ -903,6 +927,7 @@ function validateAnalysis(
   const stream = raw.stream;
   const heroBubbles = raw.heroBubbles;
   const coinComments = raw.coinComments;
+  const symbols = buildPoolSymbolSet(pool);
 
   if (!Array.isArray(stream) || stream.length < 3) throw new Error("stream missing");
   if (!Array.isArray(heroBubbles) || heroBubbles.length < 3) {
@@ -915,7 +940,7 @@ function validateAnalysis(
     if (!found?.content || typeof found.content !== "string") {
       throw new Error(`${agentId} content missing`);
     }
-    if (!isActionableMarketNote(found.content)) {
+    if (!isActionableMarketNote(found.content, symbols)) {
       throw new Error(`${agentId} content too generic`);
     }
     if (!hasAgentTerminology(agentId, found.content)) {
@@ -1115,6 +1140,7 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
         staleUntil: generatedAt + STALE_TTL_MS,
       };
       pushHistoryFromBatch(value);
+      recordSuccessfulPayload(value);
       return value;
     } catch (error) {
       console.warn(
