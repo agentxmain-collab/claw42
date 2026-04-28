@@ -12,8 +12,9 @@ import type {
   TickerMap,
 } from "@/modules/agent-watch/types";
 
-const LLM_CACHE_TTL_MS = 60_000;
-const STALE_SUCCESS_TTL_MS = 5 * 60_000;
+const FRESH_TTL_MS = 5 * 60_000;
+const STALE_TTL_MS = 30 * 60_000;
+const PROVIDER_FAILURE_FALLBACK_TTL_MS = 30 * 60_000;
 const PROVIDER_TIMEOUT_MS = 5000;
 const COINS: CoinSymbol[] = ["BTC", "ETH", "SOL", "USDT"];
 const AGENTS: AgentId[] = ["alpha", "beta", "gamma"];
@@ -26,14 +27,20 @@ const SKILLS: Record<AgentId, AgentSkill> = {
 
 type ProviderName = "minimax" | "deepseek" | "claude";
 
-type CacheEntry = {
+type LiveCacheEntry = {
+  value: AgentAnalysisPayload;
+  freshUntil: number;
+  staleUntil: number;
+};
+
+type TimedCacheEntry = {
   value: AgentAnalysisPayload;
   expiresAt: number;
 };
 
-let liveCache: CacheEntry | null = null;
-let lastSuccessful: CacheEntry | null = null;
-let staticFallbackCache: CacheEntry | null = null;
+let liveCache: LiveCacheEntry | null = null;
+let backgroundRefreshInFlight = false;
+let staticFallbackCache: TimedCacheEntry | null = null;
 
 function pick<T>(items: T[], offset = 0): T {
   return items[Math.floor((Date.now() / 1000 + offset) % items.length)];
@@ -90,7 +97,7 @@ function buildStaticFallback(tickers: TickerMap): AgentAnalysisPayload {
     coinComments: buildFallbackComments(),
   };
 
-  staticFallbackCache = { value, expiresAt: now + STALE_SUCCESS_TTL_MS };
+  staticFallbackCache = { value, expiresAt: now + PROVIDER_FAILURE_FALLBACK_TTL_MS };
   return value;
 }
 
@@ -320,18 +327,28 @@ async function callClaude(prompt: string): Promise<string> {
   });
 }
 
-const PROVIDERS: Array<{ name: ProviderName; call: (prompt: string) => Promise<string> }> = [
-  { name: "minimax", call: callMiniMax },
-  { name: "deepseek", call: callDeepSeek },
-  { name: "claude", call: callClaude },
+type ProviderEntry = {
+  name: ProviderName;
+  call: (prompt: string) => Promise<string>;
+  envKey: string;
+};
+
+const ALL_PROVIDERS: ProviderEntry[] = [
+  { name: "minimax", call: callMiniMax, envKey: "MINIMAX_API_KEY" },
+  { name: "deepseek", call: callDeepSeek, envKey: "DEEPSEEK_API_KEY" },
+  { name: "claude", call: callClaude, envKey: "ANTHROPIC_API_KEY" },
 ];
 
-export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
-  const now = Date.now();
-  if (liveCache && liveCache.expiresAt > now) {
-    return { ...liveCache.value, source: "cache", ts: now };
-  }
+const PROVIDERS = ALL_PROVIDERS.filter((provider) => Boolean(process.env[provider.envKey]));
 
+if (PROVIDERS.length === 0) {
+  console.warn("[claw42] no LLM provider configured, will use static fallback only");
+} else {
+  console.info(`[claw42] LLM chain: ${PROVIDERS.map((provider) => provider.name).join(" -> ")}`);
+}
+
+async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
+  const now = Date.now();
   const { tickers } = await getMarketTickers();
   const prompt = buildPrompt(tickers);
 
@@ -343,8 +360,11 @@ export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
         ...validateAnalysis(parsed, tickers),
         source: provider.name,
       } satisfies AgentAnalysisPayload;
-      liveCache = { value, expiresAt: now + LLM_CACHE_TTL_MS };
-      lastSuccessful = { value, expiresAt: now + STALE_SUCCESS_TTL_MS };
+      liveCache = {
+        value,
+        freshUntil: now + FRESH_TTL_MS,
+        staleUntil: now + STALE_TTL_MS,
+      };
       return value;
     } catch (error) {
       console.warn(
@@ -354,11 +374,31 @@ export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
     }
   }
 
-  if (lastSuccessful && lastSuccessful.expiresAt > now) {
-    console.warn("[claw42] using cached analysis after provider chain failed");
-    return { ...lastSuccessful.value, source: "cache", ts: now, tickers };
+  if (liveCache) {
+    console.warn("[claw42] all providers failed, using last known cache");
+    return { ...liveCache.value, source: "cache", ts: now, tickers };
   }
 
   console.warn("[claw42] using static analysis fallback");
   return buildStaticFallback(tickers);
+}
+
+export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
+  const now = Date.now();
+
+  if (liveCache && liveCache.freshUntil > now) {
+    return { ...liveCache.value, source: "cache", ts: now };
+  }
+
+  if (liveCache && liveCache.staleUntil > now) {
+    if (!backgroundRefreshInFlight) {
+      backgroundRefreshInFlight = true;
+      void refreshAnalysis().finally(() => {
+        backgroundRefreshInFlight = false;
+      });
+    }
+    return { ...liveCache.value, source: "cache", ts: now };
+  }
+
+  return refreshAnalysis();
 }

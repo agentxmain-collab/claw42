@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchAgentAnalysis, fetchMarketTicker } from "../api/llmClient";
 import type { AgentAnalysisPayload, MarketTickerPayload } from "../types";
 
@@ -16,10 +16,12 @@ export function useAgentAnalysis({
   const [data, setData] = useState<AgentAnalysisPayload | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(enabled);
+  const intervalRef = useRef<number | null>(null);
+  const isVisibleRef = useRef(typeof document === "undefined" ? true : !document.hidden);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
-      if (!enabled) return;
+      if (!enabled || !isVisibleRef.current) return;
       setIsLoading(true);
       try {
         const next = await fetchAgentAnalysis(signal);
@@ -42,14 +44,39 @@ export function useAgentAnalysis({
     }
 
     const controller = new AbortController();
-    void load(controller.signal);
-    const timer = window.setInterval(() => {
-      void load();
-    }, intervalMs);
+    isVisibleRef.current = !document.hidden;
+
+    function startPolling() {
+      if (intervalRef.current !== null) return;
+      void load(controller.signal);
+      intervalRef.current = window.setInterval(() => {
+        void load();
+      }, intervalMs);
+    }
+
+    function stopPolling() {
+      if (intervalRef.current === null) return;
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    function onVisibilityChange() {
+      const visible = !document.hidden;
+      isVisibleRef.current = visible;
+      if (visible) {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    if (isVisibleRef.current) startPolling();
 
     return () => {
       controller.abort();
-      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      stopPolling();
     };
   }, [enabled, intervalMs, load]);
 
