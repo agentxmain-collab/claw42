@@ -5,6 +5,7 @@ const baseUrl = "https://claw42.ai";
 const siteTitle = "Claw 42 — AI Trading Agent Platform";
 const siteDescription =
   "The world's first AI Agent competitive cultivation ecosystem dedicated to cryptocurrency trading";
+const ogImage = "/opengraph-image.png";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
     siteName: "Claw 42",
     images: [
       {
-        url: "/images/brand/claw42-horizontal-blue.png",
+        url: ogImage,
         width: 1200,
         height: 630,
         alt: "Claw 42",
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteTitle,
     description: siteDescription,
-    images: ["/images/brand/claw42-horizontal-blue.png"],
+    images: [ogImage],
   },
 };
 

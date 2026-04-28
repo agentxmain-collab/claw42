@@ -14,6 +14,7 @@ const ECO_HREFS = [
   URLS.CLAW42_SKILLS_REPO_CONTRACT,
   URLS.CLAW42_SKILLS_REPO_SPOT,
 ] as const;
+const ECO_CARD_IDS = ["contract", "spot"] as const;
 
 export function SkillsEcoSection() {
   const { t, locale } = useI18n();
@@ -72,6 +73,7 @@ export function SkillsEcoSection() {
               rel="noopener noreferrer"
               onClick={() =>
                 trackEvent("skill_card_click", {
+                  card_id: ECO_CARD_IDS[i] ?? "unknown",
                   locale,
                   skill: card.title,
                   index: i,

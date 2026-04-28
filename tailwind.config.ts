@@ -17,7 +17,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-stack)"],
       },
       keyframes: {
         "fade-in-up": {
