@@ -3,13 +3,17 @@
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
-import { COINW_SKILLS_URL } from "@/lib/constants";
+import { URLS } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
 import { fadeUp } from "@/lib/motion";
 
 // 按卡片位置绑定品牌图标：0 → eco-contract（合约）, 1 → eco-spot（现货）
 // card.icon 字段保留在 i18n dict 中以避免 breaking change，但此处改用 PNG 图标而非 emoji
 const ECO_ICON_SLUGS = ["eco-contract", "eco-spot"] as const;
+const ECO_HREFS = [
+  URLS.CLAW42_SKILLS_REPO_CONTRACT,
+  URLS.CLAW42_SKILLS_REPO_SPOT,
+] as const;
 
 export function SkillsEcoSection() {
   const { t, locale } = useI18n();
@@ -63,7 +67,7 @@ export function SkillsEcoSection() {
               {card.desc}
             </p>
             <a
-              href={COINW_SKILLS_URL}
+              href={ECO_HREFS[i] ?? URLS.CLAW42_SKILLS_REPO}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() =>
