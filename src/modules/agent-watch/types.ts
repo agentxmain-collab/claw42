@@ -18,6 +18,14 @@ export type TickerMap = Record<CoinSymbol, TickerData>;
 export type MarketDataSource = "coinw-kline" | "coingecko-ticker" | "fallback";
 export type MajorCoinSymbol = CoinSymbol;
 export type CoinCategory = "majors" | "trending" | "opportunity";
+export type SignalType =
+  | "volume_spike"
+  | "near_high"
+  | "near_low"
+  | "breakout"
+  | "ema_cross"
+  | "range_change";
+export type SignalSeverity = "info" | "watch" | "alert";
 
 export interface MarketCandle {
   timestamp: number;
@@ -72,6 +80,26 @@ export interface CoinPoolPayload {
   isFallback?: boolean;
   error?: "ticker_unavailable" | string;
 }
+
+export interface SignalRecord {
+  id: string;
+  ts: number;
+  symbol: string;
+  type: SignalType;
+  severity: SignalSeverity;
+  payload: {
+    volumeRatio?: number;
+    priceLevel?: number;
+    distancePct?: number;
+    emaState?: "golden_cross" | "dead_cross" | "above" | "below";
+    change24h?: number;
+    description?: string;
+  };
+}
+
+export type WatchFeedItem =
+  | { type: "agent"; agentId: AgentId; content: string; timestamp: number; id: string }
+  | { type: "market-event"; signal: SignalRecord; id: string };
 
 export interface MarketTickerPayload {
   ts: number;
