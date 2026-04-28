@@ -16,6 +16,8 @@ export interface TickerData {
 
 export type TickerMap = Record<CoinSymbol, TickerData>;
 export type MarketDataSource = "coinw-kline" | "coingecko-ticker" | "fallback";
+export type MajorCoinSymbol = CoinSymbol;
+export type CoinCategory = "majors" | "trending" | "opportunity";
 
 export interface MarketCandle {
   timestamp: number;
@@ -50,10 +52,32 @@ export interface CoinMarketContext {
   h4: TimeframeSignal | null;
 }
 
+export interface CoinTickerEntry {
+  symbol: string;
+  name?: string;
+  price: number;
+  change24h: number;
+  category: CoinCategory;
+}
+
+export interface CoinPoolPayload {
+  ts: number;
+  tickers: TickerMap;
+  majors: CoinTickerEntry[];
+  trending: CoinTickerEntry[];
+  opportunity: CoinTickerEntry[];
+  signals?: Partial<Record<CoinSymbol, CoinMarketContext>>;
+  source: MarketDataSource;
+  isStale?: boolean;
+  isFallback?: boolean;
+  error?: "ticker_unavailable" | string;
+}
+
 export interface MarketTickerPayload {
   ts: number;
   tickers: TickerMap;
   source: MarketDataSource;
+  pool?: CoinPoolPayload;
   coinw?: Partial<Record<CoinSymbol, CoinMarketContext>>;
   isStale?: boolean;
   isFallback?: boolean;
@@ -73,6 +97,7 @@ export interface AgentAnalysisPayload {
   ttl: number;
   source: AnalysisSource;
   tickers: TickerMap;
+  pool?: CoinPoolPayload;
   marketSource: MarketDataSource;
   stream: StreamMessage[];
   heroBubbles: string[];
