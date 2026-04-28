@@ -86,11 +86,45 @@ function selectFallback(items: string[], seed: number): string {
   return items[fallbackIndex(seed, items.length)] ?? items[0] ?? "";
 }
 
+function formatLiveTickerBrief(tickers: TickerMap): string {
+  const [leader, runnerUp, laggard] = rankedRiskCoins(tickers);
+  return [
+    `${leader} ${formatMarketPrice(leader, tickers[leader].price)} ${formatMarketChange(
+      tickers[leader].change24h,
+    )}`,
+    `${runnerUp} ${formatMarketChange(tickers[runnerUp].change24h)}`,
+    `${laggard} ${formatMarketChange(tickers[laggard].change24h)}`,
+  ].join(" / ");
+}
+
+function buildFallbackStreamContent(agentId: AgentId, tickers: TickerMap, seed: number): string {
+  const [leader, runnerUp, laggard] = rankedRiskCoins(tickers);
+  const first = selectFallback(SKILLS[agentId].fallbacks.stream, seed);
+  const second = selectFallback(SKILLS[agentId].fallbacks.stream, seed + 17);
+
+  if (agentId === "alpha") {
+    return `${leader} ${formatMarketChange(tickers[leader].change24h)} 卡在 ${formatMarketPrice(
+      leader,
+      tickers[leader].price,
+    )}，${first}；${second}。`;
+  }
+
+  if (agentId === "beta") {
+    return `${leader} 现价 ${formatMarketPrice(leader, tickers[leader].price)}，24h ${formatMarketChange(
+      tickers[leader].change24h,
+    )}。${first}；${second}，仓位别一次打满。`;
+  }
+
+  return `${leader}/${runnerUp}/${laggard} 强弱排序已拉开，${leader} 24h ${formatMarketChange(
+    tickers[leader].change24h,
+  )}。${first}；${second}，先等偏离回到可量化区间。`;
+}
+
 function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
   const seed = fallbackSeed(tickers);
   return AGENTS.map((agentId, index) => ({
     agentId,
-    content: selectFallback(SKILLS[agentId].fallbacks.stream, seed + index * 11),
+    content: buildFallbackStreamContent(agentId, tickers, seed + index * 11),
   }));
 }
 
@@ -276,11 +310,17 @@ function skillPromptBlock(agentId: AgentId): string {
   const bannedPhrases = Array.from(
     new Set([...skill.style.bannedPhrases, ...CROSS_BANNED_PHRASES[agentId]]),
   );
+  const shape =
+    agentId === "alpha"
+      ? "35-55字，1句短刀式判断；可以凶，但必须有触发价/失效条件。"
+      : agentId === "beta"
+        ? "70-95字，必须2句；第一句读趋势和EMA，第二句给持有/减仓/观望动作。"
+        : "55-80字，必须2句；第一句报偏离/RSI/布林带位置，第二句给回归边界。";
   return [
     `### ${skill.displayName}（${skill.tagline}）`,
     `人设：${skill.persona}`,
     `语气：${skill.style.tone}`,
-    `长度：每条 <= ${skill.style.maxLength} 字`,
+    `句式和长度：${shape}`,
     `必须使用术语：${formatTerminology(skill)}`,
     `核心框架：${skill.analyticalFramework.coreLogic.join("；")}`,
     `禁用词/禁用风格：${bannedPhrases.join("、")}`,
@@ -302,6 +342,9 @@ function buildPrompt({
 ## 当前实时行情数据
 ${formatMarketLine(tickers)}
 
+## 当前强弱速写
+${formatLiveTickerBrief(tickers)}
+
 ## CoinW K线技术上下文
 ${formatCoinWContext(source, coinw)}
 
@@ -310,6 +353,7 @@ ${formatCoinWContext(source, coinw)}
 - 必须引用上方真实市场数据：币种代码、价格或 24h 涨跌幅、CoinW K线位置信息。
 - 每条都要给可观察条件：看哪个价位、哪条均线、哪个轨道、什么失效。
 - 不要三个人说同一套话。Alpha 看关键位突破，Beta 看 EMA 趋势，Gamma 看偏离和回归。
+- 三条 stream 不能同长度、不能同句式、不能都只有一句话。Beta 和 Gamma 必须是两句，Alpha 可以一刀短句。
 
 ## Agent 人设
 
@@ -323,9 +367,9 @@ ${skillPromptBlock("gamma")}
 
 {
   "stream": [
-    { "agentId": "alpha", "content": "<Alpha 1-2句，必须含币种、数字、突破/失效条件，并使用 Alpha 术语>" },
-    { "agentId": "beta", "content": "<Beta 1-2句，必须含币种、数字、EMA/趋势边界，并使用 Beta 术语>" },
-    { "agentId": "gamma", "content": "<Gamma 1-2句，必须含币种、数字、偏离/回归边界，并使用 Gamma 术语>" }
+    { "agentId": "alpha", "content": "<35-55字，1句，必须含币种、数字、突破/失效条件，并使用 Alpha 术语>" },
+    { "agentId": "beta", "content": "<70-95字，2句，必须含币种、数字、EMA/趋势边界，并使用 Beta 术语>" },
+    { "agentId": "gamma", "content": "<55-80字，2句，必须含币种、数字、偏离/回归边界，并使用 Gamma 术语>" }
   ],
   "heroBubbles": [
     "<Hero 机器人嘴里说的短句 1，<=40 字，必须含币种或数字，像实时看盘>",
@@ -348,6 +392,8 @@ ${skillPromptBlock("gamma")}
 - Beta 只能像趋势派：EMA12/13/144/169、多头/空头排列、回撤、共振、持有/减仓
 - Gamma 只能像回归派：布林带、RSI、偏离、上轨/下轨/中轨、超买/超卖、均值回归
 - 每个 Agent 的 stream 必须至少出现自己的强制术语 1 个；coinComments 也要尽量延续本 Agent 术语
+- 三个 Agent 的 stream 内容长度必须明显不同：Alpha 最短，Beta 最长，Gamma 居中
+- Beta 和 Gamma 必须各自输出两句，句号/分号分隔；不要把所有信息塞成一句
 - 如果 CoinW K线不可用，必须明确说“K线不足，只能看现价”，不能给入场/止盈/止损计划
 - 禁止只输出“强、弱、风险、仓位、机会、别追”这类口号；必须说明“看什么价位/什么变化后怎么处理”
 - coinComments 每条 40-80 字，同样要带币种和数字，不要复述 stream
@@ -450,6 +496,12 @@ function isActionableMarketNote(content: string): boolean {
   return hasMarketSymbol(content) && hasNumericMarketData(content) && hasActionableMarker(content);
 }
 
+function hasAgentMessageShape(agentId: AgentId, content: string): boolean {
+  if (agentId === "alpha") return content.length >= 28 && content.length <= 90;
+  if (agentId === "beta") return content.length >= 55 && /[。；;]/.test(content);
+  return content.length >= 45 && /[。；;]/.test(content);
+}
+
 function validateAnalysis(
   raw: ReturnType<typeof parseAnalysisJson>,
   tickers: TickerMap,
@@ -474,6 +526,9 @@ function validateAnalysis(
     }
     if (!hasAgentTerminology(agentId, found.content)) {
       throw new Error(`${agentId} terminology missing`);
+    }
+    if (!hasAgentMessageShape(agentId, found.content)) {
+      throw new Error(`${agentId} message shape too flat`);
     }
     return { agentId, content: found.content.slice(0, 180) };
   });

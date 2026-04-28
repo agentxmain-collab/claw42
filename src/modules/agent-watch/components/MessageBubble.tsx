@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_META } from "../agents";
@@ -10,7 +9,6 @@ import { AgentAvatar } from "./AgentAvatar";
 
 export function MessageBubble({ message }: { message: AgentWatchMessage }) {
   const { locale } = useI18n();
-  const [liked, setLiked] = useState(false);
   const meta = AGENT_META[message.agentId];
   const timeLabel = formatAgentMessageTime(message.timestamp, locale);
 
@@ -35,18 +33,6 @@ export function MessageBubble({ message }: { message: AgentWatchMessage }) {
         <div className="mt-1.5 rounded-2xl rounded-tl-sm border border-white/10 bg-black/35 px-4 py-3 transition-shadow hover:shadow-[0_0_24px_rgba(124,92,255,0.18)]">
           <p className="text-sm leading-relaxed text-white/82">{message.content}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setLiked((next) => !next)}
-          className={`mt-2 inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors ${
-            liked
-              ? "border-[#ff5f5f]/50 bg-[#ff5f5f]/15 text-[#ff9a9a]"
-              : "border-white/10 bg-white/[0.03] text-white/45 hover:text-white/70"
-          }`}
-        >
-          <span aria-hidden="true">{liked ? "♥" : "♡"}</span>
-          <span>{liked ? 43 : 42}</span>
-        </button>
       </div>
     </motion.div>
   );
