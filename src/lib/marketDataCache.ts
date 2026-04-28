@@ -168,55 +168,63 @@ function parseCoinWCandle(raw: unknown): MarketCandle | null {
   };
 }
 
-function normalizeCoinWCandles(payload: unknown): Record<string, MarketCandle[]> {
-  const result: Record<string, MarketCandle[]> = {};
+function parseCoinWArrayResponse(payload: unknown): MarketCandle[] {
   const source = payload as {
     data?: unknown;
+    result?: unknown;
   };
-  const data = source.data ?? payload;
+  const data = source.data ?? source.result ?? payload;
+  const candles = Array.isArray(data)
+    ? data
+    : data && typeof data === "object"
+      ? Object.values(data as Record<string, unknown>).find(Array.isArray)
+      : undefined;
 
-  if (Array.isArray(data)) {
-    result.default = data.map(parseCoinWCandle).filter((item): item is MarketCandle => Boolean(item));
-  } else if (data && typeof data === "object") {
-    Object.entries(data as Record<string, unknown>).forEach(([pair, value]) => {
-      if (!Array.isArray(value)) return;
-      result[pair.toUpperCase()] = value
-        .map(parseCoinWCandle)
-        .filter((item): item is MarketCandle => Boolean(item));
-    });
-  }
+  if (!Array.isArray(candles)) return [];
 
-  Object.keys(result).forEach((pair) => {
-    result[pair] = result[pair].sort((a, b) => a.timestamp - b.timestamp);
-  });
-
-  return result;
+  return candles
+    .map(parseCoinWCandle)
+    .filter((item): item is MarketCandle => Boolean(item))
+    .sort((a, b) => a.timestamp - b.timestamp);
 }
 
 async function fetchCoinWKlines(periodSec: number): Promise<Record<string, MarketCandle[]>> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), COINW_TIMEOUT_MS);
-  const end = Date.now();
-  const start = end - periodSec * COINW_TARGET_CANDLES * 1000;
-  const params = new URLSearchParams({
-    command: "returnChartData",
-    currencyPair: COINW_SYMBOLS.map(toCoinWPair).join(","),
-    period: String(periodSec),
-    start: String(start),
-    end: String(end),
-  });
+  const results = await Promise.all(
+    COINW_SYMBOLS.map(async (symbol) => {
+      const pair = toCoinWPair(symbol);
+      const end = Date.now();
+      const params = new URLSearchParams({
+        command: "returnChartData",
+        currencyPair: pair,
+        period: String(periodSec),
+        start: String(end - periodSec * COINW_TARGET_CANDLES * 1000),
+        end: String(end),
+      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), COINW_TIMEOUT_MS);
 
-  try {
-    const response = await fetch(`${COINW_PUBLIC_API_BASE_URL}/api/v1/public?${params}`, {
-      cache: "no-store",
-      signal: controller.signal,
-    });
+      try {
+        const response = await fetch(`${COINW_PUBLIC_API_BASE_URL}/api/v1/public?${params}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
 
-    if (!response.ok) throw new Error(`coinw ${response.status}`);
-    return normalizeCoinWCandles(await response.json());
-  } finally {
-    clearTimeout(timer);
-  }
+        if (!response.ok) throw new Error(`coinw ${pair} ${response.status}`);
+        const data = await response.json();
+        return [pair, parseCoinWArrayResponse(data)] as const;
+      } catch (error) {
+        console.warn(
+          "[claw42] coinw pair fallback",
+          error instanceof Error ? error.message : error,
+        );
+        return [pair, []] as const;
+      } finally {
+        clearTimeout(timer);
+      }
+    }),
+  );
+
+  return Object.fromEntries(results);
 }
 
 function ema(values: number[], period: number): number | null {
@@ -273,7 +281,7 @@ function buildTimeframeSignal(candles: MarketCandle[] | undefined, periodSec: nu
 
 function candlesForPair(candlesByPair: Record<string, MarketCandle[]>, symbol: Exclude<CoinSymbol, "USDT">) {
   const pair = toCoinWPair(symbol);
-  return candlesByPair[pair] ?? candlesByPair[pair.toLowerCase()] ?? candlesByPair.default;
+  return candlesByPair[pair] ?? candlesByPair[pair.toLowerCase()];
 }
 
 async function fetchCoinWContext(): Promise<Partial<Record<CoinSymbol, CoinMarketContext>>> {
