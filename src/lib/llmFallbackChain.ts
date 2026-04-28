@@ -1,11 +1,15 @@
 import alphaSkill from "@/modules/agent-watch/skills/alpha.json";
 import betaSkill from "@/modules/agent-watch/skills/beta.json";
 import gammaSkill from "@/modules/agent-watch/skills/gamma.json";
-import { getMarketAnalysisContext } from "@/lib/marketDataCache";
+import { getCoinPool } from "@/lib/marketDataCache";
+import { triggerSignalGeneration } from "@/lib/marketSignals";
+import { buildSignalSummary, formatSummaryForPrompt } from "@/lib/signalSummary";
 import type {
+  AgentFocus,
   AgentAnalysisPayload,
   AgentId,
   AgentSkill,
+  CoinPoolPayload,
   CoinComments,
   CoinMarketContext,
   CoinSymbol,
@@ -17,13 +21,81 @@ import type {
   TimeframeSignal,
 } from "@/modules/agent-watch/types";
 
-const FRESH_TTL_MS = 5 * 60_000;
+const FRESH_TTL_MS = 10 * 60_000;
 const STALE_TTL_MS = 30 * 60_000;
 const PROVIDER_FAILURE_FALLBACK_TTL_MS = 30 * 60_000;
 const PROVIDER_TIMEOUT_MS = 5000;
 const COINS: CoinSymbol[] = ["BTC", "ETH", "SOL", "USDT"];
 const RISK_COINS: CoinSymbol[] = ["BTC", "ETH", "SOL"];
 const AGENTS: AgentId[] = ["alpha", "beta", "gamma"];
+const FOCUS_TRIGGER_TYPES = new Set<AgentFocus["trigger"]["type"]>([
+  "breakout_with_volume",
+  "retest_hold",
+  "ema_cross",
+  "range_break",
+  "custom",
+]);
+const FOCUS_FAIL_TYPES = new Set<AgentFocus["fail"]["type"]>([
+  "price_break",
+  "volume_dry",
+  "ema_break",
+  "custom",
+]);
+const UNSUPPORTED_V1_DATA_MARKERS = [
+  "RSI",
+  "布林",
+  "KDJ",
+  "MACD",
+  "EMA144 偏离",
+  "EMA169 偏离",
+  "偏离 EMA144",
+  "偏离 EMA169",
+  "偏离EMA144",
+  "偏离EMA169",
+  "偏离均线",
+  "上轨",
+  "下轨",
+  "中轨",
+  "超买",
+  "超卖",
+];
+const GAMMA_V1_TERMS = ["极端", "均值回归", "近期高位", "近期低位", "高低位", "range_change"];
+const GAMMA_V1_FRAMEWORK = [
+  "24h 极端涨跌 + 接近近期高低位 = 回归观察区",
+  "range_change 连续出现时先等价格稳定，不接飞刀",
+  "回归判断只看现价、24h 涨跌和近期高低位，不引用 RSI / 布林带 / EMA144 偏离",
+];
+const GAMMA_V1_EXAMPLES = [
+  "BTC 24h 极端下跌才进观察区",
+  "接近近期低位先看是否停止扩散",
+  "极端涨幅后不追，等回归窗口",
+  "均值回归只在高低位失速后出手",
+];
+const GAMMA_V1_FALLBACKS = {
+  stream: [
+    "BTC 24h 极端涨跌才进观察区",
+    "近期高位失速比单根拉升更重要",
+    "接近近期低位先看是否停止扩散",
+    "树不会长到天上，极端涨幅后等回归",
+    "极端位置最怕接飞刀",
+    "range_change 连续出现时先缩小判断半径",
+    "回归不是反转，先等高低位重新确认",
+    "数字不会骗人，极端波动会骗人",
+  ],
+  heroBubbles: [
+    "极端涨跌才值得看",
+    "先等回归窗口",
+    "不接飞刀",
+    "近期高低位是锚",
+    "range_change 正在发酵",
+  ],
+  coinComments: {
+    BTC: "BTC 先看 24h 极端涨跌和近期高低位，没失速不做均值回归。",
+    ETH: "ETH 如果靠近近期高低位但波动收窄，Gamma 才会进入观察。",
+    SOL: "SOL 波动更大，只有极端涨跌后的失速才算回归窗口。",
+    USDT: "USDT 主要作稳定锚，不按极端涨跌逻辑处理。",
+  } satisfies Record<CoinSymbol, string>,
+};
 
 const SKILLS: Record<AgentId, AgentSkill> = {
   alpha: alphaSkill as AgentSkill,
@@ -86,6 +158,21 @@ function selectFallback(items: string[], seed: number): string {
   return items[fallbackIndex(seed, items.length)] ?? items[0] ?? "";
 }
 
+function selectAgentStreamFallback(agentId: AgentId, seed: number): string {
+  if (agentId === "gamma") return selectFallback(GAMMA_V1_FALLBACKS.stream, seed);
+  return selectFallback(SKILLS[agentId].fallbacks.stream, seed);
+}
+
+function selectAgentHeroBubble(agentId: AgentId, seed: number): string {
+  if (agentId === "gamma") return selectFallback(GAMMA_V1_FALLBACKS.heroBubbles, seed);
+  return selectFallback(SKILLS[agentId].fallbacks.heroBubbles, seed);
+}
+
+function fallbackCoinComment(agentId: AgentId, symbol: CoinSymbol): string {
+  if (agentId === "gamma") return GAMMA_V1_FALLBACKS.coinComments[symbol];
+  return SKILLS[agentId].fallbacks.coinComments[symbol];
+}
+
 function formatLiveTickerBrief(tickers: TickerMap): string {
   const [leader, runnerUp, laggard] = rankedRiskCoins(tickers);
   return [
@@ -99,8 +186,8 @@ function formatLiveTickerBrief(tickers: TickerMap): string {
 
 function buildFallbackStreamContent(agentId: AgentId, tickers: TickerMap, seed: number): string {
   const [leader, runnerUp, laggard] = rankedRiskCoins(tickers);
-  const first = selectFallback(SKILLS[agentId].fallbacks.stream, seed);
-  const second = selectFallback(SKILLS[agentId].fallbacks.stream, seed + 17);
+  const first = selectAgentStreamFallback(agentId, seed);
+  const second = selectAgentStreamFallback(agentId, seed + 17);
 
   if (agentId === "alpha") {
     return `${leader} ${formatMarketChange(tickers[leader].change24h)} 卡在 ${formatMarketPrice(
@@ -117,7 +204,7 @@ function buildFallbackStreamContent(agentId: AgentId, tickers: TickerMap, seed: 
 
   return `${leader}/${runnerUp}/${laggard} 强弱排序已拉开，${leader} 24h ${formatMarketChange(
     tickers[leader].change24h,
-  )}。${first}；${second}，先等偏离回到可量化区间。`;
+  )}。${first}；${second}，先等极端波动回到可观察区间。`;
 }
 
 function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
@@ -131,7 +218,7 @@ function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
 function buildFallbackHeroBubbles(tickers: TickerMap): string[] {
   const seed = fallbackSeed(tickers);
   return AGENTS.map((agentId, index) =>
-    selectFallback(SKILLS[agentId].fallbacks.heroBubbles, seed + index * 7),
+    selectAgentHeroBubble(agentId, seed + index * 7),
   );
 }
 
@@ -139,26 +226,111 @@ function buildFallbackComments(): CoinComments {
   return COINS.reduce((comments, symbol) => {
     comments[symbol] = {} as Record<AgentId, string>;
     for (const agentId of AGENTS) {
-      comments[symbol][agentId] = SKILLS[agentId].fallbacks.coinComments[symbol];
+      comments[symbol][agentId] = fallbackCoinComment(agentId, symbol);
     }
     return comments;
   }, {} as CoinComments);
 }
 
-function buildStaticFallback(tickers: TickerMap): AgentAnalysisPayload {
+function fallbackFocusForAgent(
+  agentId: AgentId,
+  pool: CoinPoolPayload,
+  generatedAt: number,
+): AgentFocus {
+  const sortedMajors = [...pool.majors].sort((a, b) => b.change24h - a.change24h);
+  const opportunity = pool.opportunity[0] ?? pool.trending[0] ?? sortedMajors[0];
+  const leader = sortedMajors[0] ?? pool.majors[0];
+  const laggard = [...pool.majors].sort((a, b) => a.change24h - b.change24h)[0] ?? leader;
+  const target = agentId === "alpha" ? opportunity : agentId === "beta" ? leader : laggard;
+  const symbol = target?.symbol ?? "BTC";
+  const priceLevel = Number.isFinite(target?.price) ? target.price : undefined;
+
+  if (agentId === "alpha") {
+    return {
+      agentId,
+      symbol,
+      judgment: `${symbol} 先看关键位和放量确认，没信号就不追。`,
+      trigger: {
+        type: "breakout_with_volume",
+        symbol,
+        priceLevel,
+        description: `${symbol} 放量突破并回踩不破后再确认。`,
+      },
+      fail: {
+        type: "volume_dry",
+        symbol,
+        priceLevel,
+        description: `${symbol} 缩量冲高或跌回当前区间，视为假突破。`,
+      },
+      evidenceCount: 0,
+      generatedAt,
+    };
+  }
+
+  if (agentId === "beta") {
+    return {
+      agentId,
+      symbol,
+      judgment: `${symbol} 趋势信号不足，先等 EMA12/13 共振再提高仓位。`,
+      trigger: {
+        type: "ema_cross",
+        symbol,
+        priceLevel,
+        description: `${symbol} EMA12 重新站上 EMA13 且价格不回落再持有。`,
+      },
+      fail: {
+        type: "ema_break",
+        symbol,
+        priceLevel,
+        description: `${symbol} 跌回 EMA13 下方，趋势判断降级。`,
+      },
+      evidenceCount: 0,
+      generatedAt,
+    };
+  }
+
+  return {
+    agentId,
+    symbol,
+    judgment: `${symbol} 还没到足够极端位置，回归派先等高低位失速。`,
+    trigger: {
+      type: "range_break",
+      symbol,
+      priceLevel,
+      description: `${symbol} 24h 涨跌进入极端区并靠近近期高低位再观察回归。`,
+    },
+    fail: {
+      type: "price_break",
+      symbol,
+      priceLevel,
+      description: `${symbol} 继续扩大区间并脱离当前锚点，回归判断失效。`,
+    },
+    evidenceCount: 0,
+    generatedAt,
+  };
+}
+
+function buildFallbackFocus(pool: CoinPoolPayload, generatedAt: number): AgentFocus[] {
+  return AGENTS.map((agentId) => fallbackFocusForAgent(agentId, pool, generatedAt));
+}
+
+function buildStaticFallback(pool: CoinPoolPayload): AgentAnalysisPayload {
   const now = Date.now();
   if (staticFallbackCache && staticFallbackCache.expiresAt > now) {
     return { ...staticFallbackCache.value, servedAt: now };
   }
+  const { tickers } = pool;
 
   const value: AgentAnalysisPayload = {
     generatedAt: now,
     servedAt: now,
     ttl: 60,
     source: "static-fallback",
-    marketSource: "fallback",
+    marketSource: pool.source,
     degraded: true,
     tickers,
+    pool,
+    focus: buildFallbackFocus(pool, now),
     stream: buildFallbackStream(tickers),
     heroBubbles: buildFallbackHeroBubbles(tickers),
     coinComments: buildFallbackComments(),
@@ -305,6 +477,11 @@ function formatTerminology(skill: AgentSkill): string {
   )}`;
 }
 
+function formatAgentTerminology(agentId: AgentId, skill: AgentSkill): string {
+  if (agentId === "gamma") return `每条至少 1 个：${GAMMA_V1_TERMS.join("、")}`;
+  return formatTerminology(skill);
+}
+
 function skillPromptBlock(agentId: AgentId): string {
   const skill = SKILLS[agentId];
   const bannedPhrases = Array.from(
@@ -315,45 +492,67 @@ function skillPromptBlock(agentId: AgentId): string {
       ? "35-55字，1句短刀式判断；可以凶，但必须有触发价/失效条件。"
       : agentId === "beta"
         ? "70-95字，必须2句；第一句读趋势和EMA，第二句给持有/减仓/观望动作。"
-        : "55-80字，必须2句；第一句报偏离/RSI/布林带位置，第二句给回归边界。";
+        : "55-80字，必须2句；第一句报24h极端涨跌或近期高低位，第二句给回归边界。";
+  const persona =
+    agentId === "gamma"
+      ? "你是 Gamma，加密交易均值回归派 Agent。v1 只用 24h 极端涨跌、近期高低位和 range_change 看回归窗口，不引用 RSI / 布林带 / EMA144 偏离。"
+      : skill.persona;
+  const coreLogic = agentId === "gamma" ? GAMMA_V1_FRAMEWORK : skill.analyticalFramework.coreLogic;
+  const examples = agentId === "gamma" ? GAMMA_V1_EXAMPLES : skill.style.examples;
   return [
     `### ${skill.displayName}（${skill.tagline}）`,
-    `人设：${skill.persona}`,
+    `人设：${persona}`,
     `语气：${skill.style.tone}`,
     `句式和长度：${shape}`,
-    `必须使用术语：${formatTerminology(skill)}`,
-    `核心框架：${skill.analyticalFramework.coreLogic.join("；")}`,
+    `必须使用术语：${formatAgentTerminology(agentId, skill)}`,
+    `核心框架：${coreLogic.join("；")}`,
     `禁用词/禁用风格：${bannedPhrases.join("、")}`,
-    `参考口吻：${skill.style.examples.join(" / ")}`,
+    `参考口吻：${examples.join(" / ")}`,
   ].join("\n");
 }
 
-function buildPrompt({
-  tickers,
-  source,
-  coinw,
-}: {
-  tickers: TickerMap;
-  source: MarketDataSource;
-  coinw?: Partial<Record<CoinSymbol, CoinMarketContext>>;
-}): string {
-  return `你扮演 3 个加密交易 Agent 同时点评当前市场。三人必须像不同交易员在同一块屏幕前看盘：同一份实时行情，不同方法论、不同术语、不同判断重点。
+function formatPoolGroup(label: string, entries: CoinPoolPayload["majors"]): string {
+  if (entries.length === 0) return `【${label}】暂无`;
+  return `【${label}】 ${entries
+    .map(
+      (entry) =>
+        `${entry.symbol} $${entry.price.toLocaleString("en-US", {
+          maximumFractionDigits: entry.price < 1 ? 6 : 2,
+        })} ${formatMarketChange(entry.change24h)}`,
+    )
+    .join("  ")}`;
+}
+
+function buildPrompt(pool: CoinPoolPayload): string {
+  const tickers = pool.tickers;
+  const summary = buildSignalSummary();
+  const summaryText = formatSummaryForPrompt(summary);
+
+  return `你扮演 3 个加密交易 Agent 同时基于累积市场信号做判断。三人必须像不同交易员在同一块屏幕前看盘：同一份实时行情，不同方法论、不同术语、不同判断重点。
 
 ## 当前实时行情数据
 ${formatMarketLine(tickers)}
+
+## 当前多币种池
+${formatPoolGroup("主流", pool.majors)}
+${formatPoolGroup("热门", pool.trending)}
+${formatPoolGroup("机会", pool.opportunity)}
 
 ## 当前强弱速写
 ${formatLiveTickerBrief(tickers)}
 
 ## CoinW K线技术上下文
-${formatCoinWContext(source, coinw)}
+${formatCoinWContext(pool.source, pool.signals)}
+
+${summaryText}
 
 ## 写作总目标
 - 不是行情新闻摘要，而是实时看盘 Agent 的短判断。
 - 必须引用上方真实市场数据：币种代码、价格或 24h 涨跌幅、CoinW K线位置信息。
-- 每条都要给可观察条件：看哪个价位、哪条均线、哪个轨道、什么失效。
-- 不要三个人说同一套话。Alpha 看关键位突破，Beta 看 EMA 趋势，Gamma 看偏离和回归。
+- 每条都要给可观察条件：看哪个价位、哪条均线、哪个区间、什么失效。
+- 不要三个人说同一套话。Alpha 看关键位突破，Beta 看 EMA 趋势，Gamma 看极端涨跌和回归。
 - 三条 stream 不能同长度、不能同句式、不能都只有一句话。Beta 和 Gamma 必须是两句，Alpha 可以一刀短句。
+- focus 必须基于上方“市场信号沉淀”，如果信号不足就明确写“观察中”，不要编造。
 
 ## Agent 人设
 
@@ -366,10 +565,33 @@ ${skillPromptBlock("gamma")}
 ## 输出格式（严格 JSON，不加任何 markdown 代码块）
 
 {
+  "focus": [
+    {
+      "agentId": "alpha",
+      "symbol": "<Alpha 当前关注币 symbol>",
+      "judgment": "<基于信号的当前判断，<=80字，必须含 Alpha 术语>",
+      "trigger": {
+        "type": "<breakout_with_volume|retest_hold|ema_cross|range_break|custom>",
+        "symbol": "<symbol>",
+        "priceLevel": <number 可选>,
+        "volumeRatio": <number 可选>,
+        "description": "<触发条件，自然语言，必须可验证>"
+      },
+      "fail": {
+        "type": "<price_break|volume_dry|ema_break|custom>",
+        "symbol": "<symbol>",
+        "priceLevel": <number 可选>,
+        "description": "<失效条件，自然语言，必须可验证>"
+      },
+      "evidenceCount": <引用了 buffer 里多少条 signal，0-10>
+    },
+    { "agentId": "beta", "...": "同结构" },
+    { "agentId": "gamma", "...": "同结构" }
+  ],
   "stream": [
     { "agentId": "alpha", "content": "<35-55字，1句，必须含币种、数字、突破/失效条件，并使用 Alpha 术语>" },
     { "agentId": "beta", "content": "<70-95字，2句，必须含币种、数字、EMA/趋势边界，并使用 Beta 术语>" },
-    { "agentId": "gamma", "content": "<55-80字，2句，必须含币种、数字、偏离/回归边界，并使用 Gamma 术语>" }
+    { "agentId": "gamma", "content": "<55-80字，2句，必须含币种、数字、极端涨跌/回归边界，并使用 Gamma 术语>" }
   ],
   "heroBubbles": [
     "<Hero 机器人嘴里说的短句 1，<=40 字，必须含币种或数字，像实时看盘>",
@@ -390,10 +612,12 @@ ${skillPromptBlock("gamma")}
 - stream 每条都必须同时包含：币种代码（BTC/ETH/SOL/USDT）、当前价格或 24h 涨跌幅数字、一个条件/触发/失效点
 - Alpha 只能像突破派：关键位、前高/前低、整数关口、放量、假突破、回踩确认
 - Beta 只能像趋势派：EMA12/13/144/169、多头/空头排列、回撤、共振、持有/减仓
-- Gamma 只能像回归派：布林带、RSI、偏离、上轨/下轨/中轨、超买/超卖、均值回归
+- Gamma 只能像回归派，但 v1 只能引用 24h 极端涨跌、近期高低位、range_change，不得引用 RSI 数值、布林带上下轨、EMA144 偏离百分比
 - 每个 Agent 的 stream 必须至少出现自己的强制术语 1 个；coinComments 也要尽量延续本 Agent 术语
 - 三个 Agent 的 stream 内容长度必须明显不同：Alpha 最短，Beta 最长，Gamma 居中
 - Beta 和 Gamma 必须各自输出两句，句号/分号分隔；不要把所有信息塞成一句
+- 当前 buffer 只有 6 类信号：volume_spike / near_high / near_low / breakout / ema_cross / range_change
+- 禁止编造 RSI、布林带、KDJ、MACD、EMA144 偏离百分比等 buffer 没有的数据
 - 如果 CoinW K线不可用，必须明确说“K线不足，只能看现价”，不能给入场/止盈/止损计划
 - 禁止只输出“强、弱、风险、仓位、机会、别追”这类口号；必须说明“看什么价位/什么变化后怎么处理”
 - coinComments 每条 40-80 字，同样要带币种和数字，不要复述 stream
@@ -416,6 +640,7 @@ function parseAnalysisJson(text: string) {
   const end = cleaned.lastIndexOf("}");
   if (start < 0 || end < start) throw new Error("json object not found");
   return JSON.parse(cleaned.slice(start, end + 1)) as {
+    focus?: AgentFocus[];
     stream?: StreamMessage[];
     heroBubbles?: string[];
     coinComments?: CoinComments;
@@ -460,15 +685,7 @@ const ACTIONABLE_MARKERS = [
   "空头排列",
   "共振",
   "持有",
-  "布林带",
-  "RSI",
-  "偏离",
   "均值回归",
-  "上轨",
-  "下轨",
-  "中轨",
-  "超买",
-  "超卖",
   "极端",
 ];
 
@@ -488,8 +705,14 @@ function hasAgentTerminology(agentId: AgentId, content: string): boolean {
   const terminology = SKILLS[agentId].terminology;
   if (!terminology || terminology.required.length === 0) return true;
 
-  const hits = terminology.required.filter((term) => content.includes(term)).length;
-  return hits >= terminology.minPerMessage;
+  const terms = agentId === "gamma" ? GAMMA_V1_TERMS : terminology.required;
+  const minPerMessage = agentId === "gamma" ? 1 : terminology.minPerMessage;
+  const hits = terms.filter((term) => content.includes(term)).length;
+  return hits >= minPerMessage;
+}
+
+function hasUnsupportedV1DataClaim(content: string): boolean {
+  return UNSUPPORTED_V1_DATA_MARKERS.some((marker) => content.includes(marker));
 }
 
 function isActionableMarketNote(content: string): boolean {
@@ -502,11 +725,112 @@ function hasAgentMessageShape(agentId: AgentId, content: string): boolean {
   return content.length >= 45 && /[。；;]/.test(content);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isFocusTriggerType(value: unknown): value is AgentFocus["trigger"]["type"] {
+  return typeof value === "string" && FOCUS_TRIGGER_TYPES.has(value as AgentFocus["trigger"]["type"]);
+}
+
+function isFocusFailType(value: unknown): value is AgentFocus["fail"]["type"] {
+  return typeof value === "string" && FOCUS_FAIL_TYPES.has(value as AgentFocus["fail"]["type"]);
+}
+
+function normalizeOptionalNumber(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return value;
+}
+
+function normalizeFocusText(value: unknown, field: string, maxLength: number): string {
+  if (typeof value !== "string" || value.trim().length < 4) {
+    throw new Error(`focus ${field} missing`);
+  }
+  const text = value.trim().slice(0, maxLength);
+  if (hasUnsupportedV1DataClaim(text)) {
+    throw new Error(`focus ${field} uses unsupported v1 indicator`);
+  }
+  return text;
+}
+
+function buildPoolSymbolSet(pool: CoinPoolPayload): Set<string> {
+  return new Set(
+    [...pool.majors, ...pool.trending, ...pool.opportunity].map((entry) =>
+      entry.symbol.toUpperCase(),
+    ),
+  );
+}
+
+function normalizePoolSymbol(value: unknown, symbols: Set<string>, field: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`${field} symbol missing`);
+  }
+  const symbol = value.trim().toUpperCase();
+  if (!symbols.has(symbol)) {
+    throw new Error(`${field} symbol outside pool`);
+  }
+  return symbol;
+}
+
+function normalizeEvidenceCount(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(10, Math.round(value)));
+}
+
+function normalizeFocus(
+  rawFocus: AgentFocus[] | undefined,
+  pool: CoinPoolPayload,
+  generatedAt: number,
+): AgentFocus[] {
+  if (!Array.isArray(rawFocus) || rawFocus.length < 3) throw new Error("focus missing");
+  const symbols = buildPoolSymbolSet(pool);
+
+  return AGENTS.map((agentId) => {
+    const found = rawFocus.find((item) => isRecord(item) && item.agentId === agentId);
+    if (!isRecord(found)) throw new Error(`${agentId} focus missing`);
+
+    const symbol = normalizePoolSymbol(found.symbol, symbols, `${agentId}.focus`);
+    const judgment = normalizeFocusText(found.judgment, `${agentId}.judgment`, 120);
+    const triggerRaw = found.trigger;
+    const failRaw = found.fail;
+    if (!isRecord(triggerRaw)) throw new Error(`${agentId}.trigger missing`);
+    if (!isRecord(failRaw)) throw new Error(`${agentId}.fail missing`);
+    if (!isFocusTriggerType(triggerRaw.type)) throw new Error(`${agentId}.trigger invalid`);
+    if (!isFocusFailType(failRaw.type)) throw new Error(`${agentId}.fail invalid`);
+
+    const triggerSymbol = normalizePoolSymbol(triggerRaw.symbol, symbols, `${agentId}.trigger`);
+    const failSymbol = normalizePoolSymbol(failRaw.symbol, symbols, `${agentId}.fail`);
+
+    return {
+      agentId,
+      symbol,
+      judgment,
+      trigger: {
+        type: triggerRaw.type,
+        symbol: triggerSymbol,
+        priceLevel: normalizeOptionalNumber(triggerRaw.priceLevel),
+        volumeRatio: normalizeOptionalNumber(triggerRaw.volumeRatio),
+        description: normalizeFocusText(triggerRaw.description, `${agentId}.trigger.description`, 140),
+      },
+      fail: {
+        type: failRaw.type,
+        symbol: failSymbol,
+        priceLevel: normalizeOptionalNumber(failRaw.priceLevel),
+        description: normalizeFocusText(failRaw.description, `${agentId}.fail.description`, 140),
+      },
+      evidenceCount: normalizeEvidenceCount(found.evidenceCount),
+      generatedAt,
+    };
+  });
+}
+
 function validateAnalysis(
   raw: ReturnType<typeof parseAnalysisJson>,
-  tickers: TickerMap,
-  marketSource: MarketDataSource,
+  pool: CoinPoolPayload,
+  generatedAt: number,
 ) {
+  const tickers = pool.tickers;
+  const marketSource = pool.source;
   const stream = raw.stream;
   const heroBubbles = raw.heroBubbles;
   const coinComments = raw.coinComments;
@@ -515,6 +839,7 @@ function validateAnalysis(
   if (!Array.isArray(heroBubbles) || heroBubbles.length < 3) {
     throw new Error("heroBubbles missing");
   }
+  const normalizedFocus = normalizeFocus(raw.focus, pool, generatedAt);
 
   const normalizedStream = AGENTS.map((agentId) => {
     const found = stream.find((item) => item.agentId === agentId);
@@ -530,7 +855,16 @@ function validateAnalysis(
     if (!hasAgentMessageShape(agentId, found.content)) {
       throw new Error(`${agentId} message shape too flat`);
     }
+    if (hasUnsupportedV1DataClaim(found.content)) {
+      throw new Error(`${agentId} uses unsupported v1 indicator`);
+    }
     return { agentId, content: found.content.slice(0, 180) };
+  });
+
+  const normalizedHeroBubbles = heroBubbles.slice(0, 3).map((item) => {
+    const content = String(item).slice(0, 100);
+    if (hasUnsupportedV1DataClaim(content)) throw new Error("hero bubble uses unsupported v1 indicator");
+    return content;
   });
 
   const normalizedComments = {} as CoinComments;
@@ -541,6 +875,9 @@ function validateAnalysis(
       if (!content || typeof content !== "string") {
         throw new Error(`${symbol}.${agentId} comment missing`);
       }
+      if (hasUnsupportedV1DataClaim(content)) {
+        throw new Error(`${symbol}.${agentId} comment uses unsupported v1 indicator`);
+      }
       normalizedComments[symbol][agentId] = content.slice(0, 160);
     }
   }
@@ -548,9 +885,11 @@ function validateAnalysis(
   return {
     ttl: 60,
     tickers,
+    pool,
+    focus: normalizedFocus,
     marketSource,
     stream: normalizedStream,
-    heroBubbles: heroBubbles.slice(0, 3).map((item) => String(item).slice(0, 100)),
+    heroBubbles: normalizedHeroBubbles,
     coinComments: normalizedComments,
   };
 }
@@ -580,7 +919,7 @@ async function callMiniMax(prompt: string): Promise<string> {
       body: JSON.stringify({
         model,
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 1000,
+        max_tokens: 1400,
         temperature: 0.78,
         top_p: 0.9,
       }),
@@ -608,7 +947,7 @@ async function callDeepSeek(prompt: string): Promise<string> {
       body: JSON.stringify({
         model: "deepseek-chat",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 1000,
+        max_tokens: 1400,
         temperature: 0.78,
         response_format: { type: "json_object" },
       }),
@@ -639,7 +978,7 @@ async function callClaude(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 1000,
+        max_tokens: 1400,
         temperature: 0.78,
         messages: [{ role: "user", content: prompt }],
       }),
@@ -678,9 +1017,9 @@ if (PROVIDERS.length === 0) {
 
 async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
   const now = Date.now();
-  const market = await getMarketAnalysisContext();
-  const { tickers } = market;
-  const prompt = buildPrompt(market);
+  const pool = (await triggerSignalGeneration()) ?? (await getCoinPool());
+  const { tickers } = pool;
+  const prompt = buildPrompt(pool);
 
   for (const provider of PROVIDERS) {
     try {
@@ -688,11 +1027,11 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
       const parsed = parseAnalysisJson(text);
       const generatedAt = Date.now();
       const value = {
-        ...validateAnalysis(parsed, tickers, market.source),
+        ...validateAnalysis(parsed, pool, generatedAt),
         generatedAt,
         servedAt: generatedAt,
         source: provider.name,
-        degraded: market.source !== "coinw-kline",
+        degraded: pool.source !== "coinw-kline",
       } satisfies AgentAnalysisPayload;
       liveCache = {
         value,
@@ -711,11 +1050,19 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
 
   if (liveCache) {
     console.warn("[claw42] all providers failed, using last known cache");
-    return { ...liveCache.value, source: "cache", servedAt: now, tickers };
+    return {
+      ...liveCache.value,
+      source: "cache",
+      servedAt: now,
+      tickers,
+      pool,
+      marketSource: pool.source,
+      degraded: pool.source !== "coinw-kline",
+    };
   }
 
   console.warn("[claw42] using static analysis fallback");
-  return buildStaticFallback(tickers);
+  return buildStaticFallback(pool);
 }
 
 export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {

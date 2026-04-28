@@ -97,6 +97,27 @@ export interface SignalRecord {
   };
 }
 
+export interface AgentFocus {
+  agentId: AgentId;
+  symbol: string;
+  judgment: string;
+  trigger: {
+    type: "breakout_with_volume" | "retest_hold" | "ema_cross" | "range_break" | "custom";
+    symbol: string;
+    priceLevel?: number;
+    volumeRatio?: number;
+    description: string;
+  };
+  fail: {
+    type: "price_break" | "volume_dry" | "ema_break" | "custom";
+    symbol: string;
+    priceLevel?: number;
+    description: string;
+  };
+  evidenceCount: number;
+  generatedAt: number;
+}
+
 export type WatchFeedItem =
   | { type: "agent"; agentId: AgentId; content: string; timestamp: number; id: string }
   | { type: "market-event"; signal: SignalRecord; id: string };
@@ -126,6 +147,7 @@ export interface AgentAnalysisPayload {
   source: AnalysisSource;
   tickers: TickerMap;
   pool?: CoinPoolPayload;
+  focus?: AgentFocus[];
   marketSource: MarketDataSource;
   stream: StreamMessage[];
   heroBubbles: string[];
