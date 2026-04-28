@@ -66,76 +66,49 @@ function rankedRiskCoins(tickers: TickerMap): CoinSymbol[] {
   return [...RISK_COINS].sort((a, b) => tickers[b].change24h - tickers[a].change24h);
 }
 
-function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
-  const [leader, , laggard] = rankedRiskCoins(tickers);
-  const leaderTicker = tickers[leader];
-  const laggardTicker = tickers[laggard];
-  const btcTicker = tickers.BTC;
-  const spread = (leaderTicker.change24h - laggardTicker.change24h).toFixed(2);
+function fallbackSeed(tickers: TickerMap): number {
+  const [leader, runnerUp, laggard] = rankedRiskCoins(tickers);
+  return (
+    Math.round(Date.now() / 60_000) +
+    Math.round(tickers[leader].change24h * 100) +
+    Math.round(tickers[runnerUp].price) -
+    Math.round(tickers[laggard].price)
+  );
+}
 
-  return [
-    {
-      agentId: "alpha",
-      content: `${leader} ${formatMarketChange(leaderTicker.change24h)} 领涨，若回踩守住 ${formatMarketPrice(
-        leader,
-        leaderTicker.price,
-      )} 附近，我才看突破延续。`,
-    },
-    {
-      agentId: "beta",
-      content: `BTC ${formatMarketChange(btcTicker.change24h)}，先按 ${formatMarketPrice(
-        "BTC",
-        btcTicker.price,
-      )} 附近做风控线；跌回去就降仓，不追情绪。`,
-    },
-    {
-      agentId: "gamma",
-      content: `${leader} 比 ${laggard} 强 ${spread}pct，价差窗口在强币；若差值收窄，轮动先降温。`,
-    },
-  ];
+function fallbackIndex(seed: number, length: number): number {
+  if (length <= 0) return 0;
+  return Math.abs(seed) % length;
+}
+
+function selectFallback(items: string[], seed: number): string {
+  if (items.length === 0) return "";
+  return items[fallbackIndex(seed, items.length)] ?? items[0] ?? "";
+}
+
+function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
+  const seed = fallbackSeed(tickers);
+  return AGENTS.map((agentId, index) => ({
+    agentId,
+    content: selectFallback(SKILLS[agentId].fallbacks.stream, seed + index * 11),
+  }));
 }
 
 function buildFallbackHeroBubbles(tickers: TickerMap): string[] {
-  const [leader, runnerUp, laggard] = rankedRiskCoins(tickers);
-  return [
-    `${leader} ${formatMarketChange(tickers[leader].change24h)}，先看回踩`,
-    `${runnerUp} 跟不跟量，是下一步信号`,
-    `${laggard} 偏弱，别急着补仓`,
-  ];
+  const seed = fallbackSeed(tickers);
+  return AGENTS.map((agentId, index) =>
+    selectFallback(SKILLS[agentId].fallbacks.heroBubbles, seed + index * 7),
+  );
 }
 
-function buildFallbackComments(tickers: TickerMap): CoinComments {
-  return {
-    BTC: {
-      alpha: `BTC ${formatMarketChange(tickers.BTC.change24h)}，站稳 ${formatMarketPrice(
-        "BTC",
-        tickers.BTC.price,
-      )} 上方才看突破延续。`,
-      beta: `BTC 当前价 ${formatMarketPrice("BTC", tickers.BTC.price)}，回踩不破再考虑加仓，跌破先降风险。`,
-      gamma: `BTC 是基准，24h ${formatMarketChange(tickers.BTC.change24h)} 决定主线强弱是否还成立。`,
-    },
-    ETH: {
-      alpha: `ETH ${formatMarketChange(tickers.ETH.change24h)}，只有放量越过 ${formatMarketPrice(
-        "ETH",
-        tickers.ETH.price,
-      )} 附近才算补涨。`,
-      beta: `ETH 若继续弱于 BTC，仓位应低一档；先等 ${formatMarketPrice("ETH", tickers.ETH.price)} 附近确认。`,
-      gamma: `ETH 24h ${formatMarketChange(tickers.ETH.change24h)}，重点看相对 BTC 的强弱差能否修复。`,
-    },
-    SOL: {
-      alpha: `SOL ${formatMarketChange(tickers.SOL.change24h)} 弹性最大，守住 ${formatMarketPrice(
-        "SOL",
-        tickers.SOL.price,
-      )} 才有短打空间。`,
-      beta: `SOL 波动高，靠近 ${formatMarketPrice("SOL", tickers.SOL.price)} 试错要小仓，止损先写清。`,
-      gamma: `SOL 24h ${formatMarketChange(tickers.SOL.change24h)}，价差机会更活跃，但滑点也要计入。`,
-    },
-    USDT: {
-      alpha: `USDT ${formatMarketPrice("USDT", tickers.USDT.price)}，弹药稳定就等强币回踩，不急着打光。`,
-      beta: `USDT 24h ${formatMarketChange(tickers.USDT.change24h)}，保留现金仓能避免被动扛波动。`,
-      gamma: `USDT 接近 ${formatMarketPrice("USDT", tickers.USDT.price)}，稳定币未异常，风险偏好暂未失控。`,
-    },
-  };
+function buildFallbackComments(): CoinComments {
+  return COINS.reduce((comments, symbol) => {
+    comments[symbol] = {} as Record<AgentId, string>;
+    for (const agentId of AGENTS) {
+      comments[symbol][agentId] = SKILLS[agentId].fallbacks.coinComments[symbol];
+    }
+    return comments;
+  }, {} as CoinComments);
 }
 
 function buildStaticFallback(tickers: TickerMap): AgentAnalysisPayload {
@@ -154,7 +127,7 @@ function buildStaticFallback(tickers: TickerMap): AgentAnalysisPayload {
     tickers,
     stream: buildFallbackStream(tickers),
     heroBubbles: buildFallbackHeroBubbles(tickers),
-    coinComments: buildFallbackComments(tickers),
+    coinComments: buildFallbackComments(),
   };
 
   staticFallbackCache = { value, expiresAt: now + PROVIDER_FAILURE_FALLBACK_TTL_MS };
@@ -258,15 +231,60 @@ function formatCoinWContext(
   }).join("\n\n");
 }
 
+const CROSS_BANNED_PHRASES: Record<AgentId, string[]> = {
+  alpha: [
+    "EMA12",
+    "EMA13",
+    "EMA144",
+    "EMA169",
+    "多头排列",
+    "空头排列",
+    "均值回归",
+    "布林带",
+    "RSI",
+    "超买",
+    "超卖",
+    "上轨",
+    "下轨",
+    "中轨",
+    "偏离均线",
+  ],
+  beta: ["突破", "起涨点", "假突破", "关键位", "前高", "前低", "布林带", "RSI", "超买", "超卖"],
+  gamma: [
+    "趋势是朋友",
+    "顺势",
+    "多头排列",
+    "空头排列",
+    "突破",
+    "起涨点",
+    "假突破",
+    "关键位",
+    "前高",
+    "前低",
+  ],
+};
+
+function formatTerminology(skill: AgentSkill): string {
+  if (!skill.terminology) return "无强制术语";
+  return `每条至少 ${skill.terminology.minPerMessage} 个：${skill.terminology.required.join(
+    "、",
+  )}`;
+}
+
 function skillPromptBlock(agentId: AgentId): string {
   const skill = SKILLS[agentId];
+  const bannedPhrases = Array.from(
+    new Set([...skill.style.bannedPhrases, ...CROSS_BANNED_PHRASES[agentId]]),
+  );
   return [
     `### ${skill.displayName}（${skill.tagline}）`,
-    skill.persona,
-    `风格：${skill.style.tone}`,
-    `框架：${skill.analyticalFramework.coreLogic.join("；")}`,
-    `禁用词：${skill.style.bannedPhrases.join("、")}`,
-    `参考：${skill.style.examples.join(" / ")}`,
+    `人设：${skill.persona}`,
+    `语气：${skill.style.tone}`,
+    `长度：每条 <= ${skill.style.maxLength} 字`,
+    `必须使用术语：${formatTerminology(skill)}`,
+    `核心框架：${skill.analyticalFramework.coreLogic.join("；")}`,
+    `禁用词/禁用风格：${bannedPhrases.join("、")}`,
+    `参考口吻：${skill.style.examples.join(" / ")}`,
   ].join("\n");
 }
 
@@ -279,7 +297,7 @@ function buildPrompt({
   source: MarketDataSource;
   coinw?: Partial<Record<CoinSymbol, CoinMarketContext>>;
 }): string {
-  return `你扮演 3 个加密交易 Agent 同时点评当前市场。每个 Agent 人设见下方。
+  return `你扮演 3 个加密交易 Agent 同时点评当前市场。三人必须像不同交易员在同一块屏幕前看盘：同一份实时行情，不同方法论、不同术语、不同判断重点。
 
 ## 当前实时行情数据
 ${formatMarketLine(tickers)}
@@ -287,11 +305,11 @@ ${formatMarketLine(tickers)}
 ## CoinW K线技术上下文
 ${formatCoinWContext(source, coinw)}
 
-## 可用交易 Skill 框架
-- 维加斯通道：EMA12/13 看短期通道，EMA144/169 看中期趋势，EMA576/676 若数据不足必须说明不可判定。
-- 龙虾趋势追踪：判断 5m/15m/4h 是否同向，回踩均线支撑后再给条件。
-- 龙虾均值回归：只有在价格明显偏离均线/区间高低位时讨论回归，不得凭感觉抄底摸顶。
-- 龙虾突破交易：必须给关键阻力/支撑、有效突破条件、失效点，影线刺破不算确认。
+## 写作总目标
+- 不是行情新闻摘要，而是实时看盘 Agent 的短判断。
+- 必须引用上方真实市场数据：币种代码、价格或 24h 涨跌幅、CoinW K线位置信息。
+- 每条都要给可观察条件：看哪个价位、哪条均线、哪个轨道、什么失效。
+- 不要三个人说同一套话。Alpha 看关键位突破，Beta 看 EMA 趋势，Gamma 看偏离和回归。
 
 ## Agent 人设
 
@@ -305,12 +323,12 @@ ${skillPromptBlock("gamma")}
 
 {
   "stream": [
-    { "agentId": "alpha", "content": "<Alpha 当前对市场的 1-2 句点评，60-90字，必须含币种、数字、条件/失效点>" },
-    { "agentId": "beta", "content": "<Beta 当前对市场的 1-2 句点评，60-90字，必须含币种、数字、风控动作>" },
-    { "agentId": "gamma", "content": "<Gamma 当前对市场的 1-2 句点评，60-90字，必须含币种、数字、强弱/价差判断>" }
+    { "agentId": "alpha", "content": "<Alpha 1-2句，必须含币种、数字、突破/失效条件，并使用 Alpha 术语>" },
+    { "agentId": "beta", "content": "<Beta 1-2句，必须含币种、数字、EMA/趋势边界，并使用 Beta 术语>" },
+    { "agentId": "gamma", "content": "<Gamma 1-2句，必须含币种、数字、偏离/回归边界，并使用 Gamma 术语>" }
   ],
   "heroBubbles": [
-    "<Hero 机器人嘴里说的短句 1，<=40 字，必须含币种或数字>",
+    "<Hero 机器人嘴里说的短句 1，<=40 字，必须含币种或数字，像实时看盘>",
     "<Hero 机器人嘴里说的短句 2>",
     "<Hero 机器人嘴里说的短句 3>"
   ],
@@ -325,13 +343,16 @@ ${skillPromptBlock("gamma")}
 硬性规则:
 - 全部中文输出
 - 直接输出 JSON，不加 markdown 代码块
-- 每条点评必须基于上面给的实时行情数据，不要泛泛而谈
 - stream 每条都必须同时包含：币种代码（BTC/ETH/SOL/USDT）、当前价格或 24h 涨跌幅数字、一个条件/触发/失效点
-- Alpha 给突破/追击条件；Beta 给仓位/回撤边界；Gamma 给相对强弱、价差或轮动结构
+- Alpha 只能像突破派：关键位、前高/前低、整数关口、放量、假突破、回踩确认
+- Beta 只能像趋势派：EMA12/13/144/169、多头/空头排列、回撤、共振、持有/减仓
+- Gamma 只能像回归派：布林带、RSI、偏离、上轨/下轨/中轨、超买/超卖、均值回归
+- 每个 Agent 的 stream 必须至少出现自己的强制术语 1 个；coinComments 也要尽量延续本 Agent 术语
 - 如果 CoinW K线不可用，必须明确说“K线不足，只能看现价”，不能给入场/止盈/止损计划
 - 禁止只输出“强、弱、风险、仓位、机会、别追”这类口号；必须说明“看什么价位/什么变化后怎么处理”
 - coinComments 每条 40-80 字，同样要带币种和数字，不要复述 stream
 - 禁用词: 综上所述、值得注意的是、赋能、leverage、moreover
+- 不要输出英文，不要输出解释文字
 - 禁止 markdown 格式`;
 }
 
@@ -380,6 +401,29 @@ const ACTIONABLE_MARKERS = [
   "价差",
   "强弱",
   "轮动",
+  "前高",
+  "前低",
+  "整数关口",
+  "盘整",
+  "关键位",
+  "EMA12",
+  "EMA13",
+  "EMA144",
+  "EMA169",
+  "多头排列",
+  "空头排列",
+  "共振",
+  "持有",
+  "布林带",
+  "RSI",
+  "偏离",
+  "均值回归",
+  "上轨",
+  "下轨",
+  "中轨",
+  "超买",
+  "超卖",
+  "极端",
 ];
 
 function hasMarketSymbol(content: string): boolean {
@@ -392,6 +436,14 @@ function hasNumericMarketData(content: string): boolean {
 
 function hasActionableMarker(content: string): boolean {
   return ACTIONABLE_MARKERS.some((marker) => content.includes(marker));
+}
+
+function hasAgentTerminology(agentId: AgentId, content: string): boolean {
+  const terminology = SKILLS[agentId].terminology;
+  if (!terminology || terminology.required.length === 0) return true;
+
+  const hits = terminology.required.filter((term) => content.includes(term)).length;
+  return hits >= terminology.minPerMessage;
 }
 
 function isActionableMarketNote(content: string): boolean {
@@ -419,6 +471,9 @@ function validateAnalysis(
     }
     if (!isActionableMarketNote(found.content)) {
       throw new Error(`${agentId} content too generic`);
+    }
+    if (!hasAgentTerminology(agentId, found.content)) {
+      throw new Error(`${agentId} terminology missing`);
     }
     return { agentId, content: found.content.slice(0, 180) };
   });

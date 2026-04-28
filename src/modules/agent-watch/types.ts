@@ -101,6 +101,10 @@ export interface AgentSkill {
     bannedPhrases: string[];
     examples: string[];
   };
+  terminology?: {
+    required: string[];
+    minPerMessage: number;
+  };
   analyticalFramework: {
     coreLogic: string[];
   };
