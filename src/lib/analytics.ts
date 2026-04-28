@@ -1,3 +1,5 @@
+import posthog from "posthog-js";
+
 export const ANALYTICS_EVENTS = [
   "page_view",
   "hero_cta_copy",
@@ -34,6 +36,34 @@ const UTM_KEYS = [
   "utm_content",
   "utm_term",
 ] as const;
+
+let posthogInited = false;
+
+function ensurePosthog() {
+  if (posthogInited || typeof window === "undefined") return;
+
+  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  if (!key) return;
+
+  posthog.init(key, {
+    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com",
+    autocapture: false,
+    capture_pageview: false,
+  });
+  posthogInited = true;
+}
+
+function capturePosthog(
+  event: AnalyticsEventName,
+  properties: AnalyticsProperties
+) {
+  try {
+    ensurePosthog();
+    if (posthogInited) posthog.capture(event, properties);
+  } catch {
+    // Analytics must never interrupt the user journey.
+  }
+}
 
 function getSafeReferrer() {
   if (!document.referrer) return undefined;
@@ -82,18 +112,23 @@ export function trackEvent(
   if (typeof window === "undefined") return;
 
   const body = JSON.stringify(buildPayload(event, properties));
+  capturePosthog(event, properties);
 
   if (navigator.sendBeacon) {
     const blob = new Blob([body], { type: "application/json" });
     if (navigator.sendBeacon("/api/analytics", blob)) return;
   }
 
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 3000);
+
   void fetch("/api/analytics", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body,
     keepalive: true,
+    signal: controller.signal,
   }).catch(() => {
     // Analytics must never interrupt the user journey.
-  });
+  }).finally(() => window.clearTimeout(timeoutId));
 }

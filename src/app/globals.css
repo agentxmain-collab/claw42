@@ -5,6 +5,8 @@
 :root {
   --brand-purple: #6c4fff;
   --brand-lime: #d1ff55;
+  --font-stack: var(--font-inter), var(--font-noto-sc), -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 html {
@@ -14,6 +16,7 @@ html {
 body {
   background: #000000;
   color: #ffffff;
+  font-family: var(--font-stack);
   overflow-x: hidden;
 }
 
