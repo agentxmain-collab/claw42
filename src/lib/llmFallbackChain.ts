@@ -334,8 +334,8 @@ type ProviderEntry = {
 };
 
 const ALL_PROVIDERS: ProviderEntry[] = [
-  { name: "minimax", call: callMiniMax, envKey: "MINIMAX_API_KEY" },
   { name: "deepseek", call: callDeepSeek, envKey: "DEEPSEEK_API_KEY" },
+  { name: "minimax", call: callMiniMax, envKey: "MINIMAX_API_KEY" },
   { name: "claude", call: callClaude, envKey: "ANTHROPIC_API_KEY" },
 ];
 
@@ -344,7 +344,7 @@ const PROVIDERS = ALL_PROVIDERS.filter((provider) => Boolean(process.env[provide
 if (PROVIDERS.length === 0) {
   console.warn("[claw42] no LLM provider configured, will use static fallback only");
 } else {
-  console.info(`[claw42] LLM chain: ${PROVIDERS.map((provider) => provider.name).join(" -> ")}`);
+  console.info(`[claw42] LLM chain: ${PROVIDERS.map((provider) => provider.name).join(" → ")}`);
 }
 
 async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
