@@ -16,17 +16,32 @@ export function useAgentAnalysis({
   const [data, setData] = useState<AgentAnalysisPayload | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(enabled);
+  const [hasNewContent, setHasNewContent] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const isVisibleRef = useRef(typeof document === "undefined" ? true : !document.hidden);
+  const lastSeenGeneratedAtRef = useRef<number | null>(null);
+  const latestGeneratedAtRef = useRef<number | null>(null);
+
+  const applyPayload = useCallback((payload: AgentAnalysisPayload) => {
+    latestGeneratedAtRef.current = payload.generatedAt;
+    setData(payload);
+    setError(null);
+  }, []);
 
   const load = useCallback(
-    async (signal?: AbortSignal) => {
+    async (signal?: AbortSignal, detectNewContent = false) => {
       if (!enabled || !isVisibleRef.current) return;
       setIsLoading(true);
       try {
         const next = await fetchAgentAnalysis(signal);
-        setData(next);
-        setError(null);
+        if (
+          detectNewContent &&
+          lastSeenGeneratedAtRef.current !== null &&
+          next.generatedAt > lastSeenGeneratedAtRef.current
+        ) {
+          setHasNewContent(true);
+        }
+        applyPayload(next);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(err instanceof Error ? err : new Error("agent analysis failed"));
@@ -34,7 +49,7 @@ export function useAgentAnalysis({
         setIsLoading(false);
       }
     },
-    [enabled],
+    [applyPayload, enabled],
   );
 
   useEffect(() => {
@@ -46,9 +61,9 @@ export function useAgentAnalysis({
     const controller = new AbortController();
     isVisibleRef.current = !document.hidden;
 
-    function startPolling() {
+    function startPolling(detectNewContent = false) {
       if (intervalRef.current !== null) return;
-      void load(controller.signal);
+      void load(controller.signal, detectNewContent);
       intervalRef.current = window.setInterval(() => {
         void load();
       }, intervalMs);
@@ -64,8 +79,11 @@ export function useAgentAnalysis({
       const visible = !document.hidden;
       isVisibleRef.current = visible;
       if (visible) {
-        startPolling();
+        startPolling(true);
       } else {
+        if (latestGeneratedAtRef.current !== null) {
+          lastSeenGeneratedAtRef.current = latestGeneratedAtRef.current;
+        }
         stopPolling();
       }
     }
@@ -80,7 +98,11 @@ export function useAgentAnalysis({
     };
   }, [enabled, intervalMs, load]);
 
-  return { data, error, isLoading, refresh: load };
+  const dismissNewContent = useCallback(() => {
+    setHasNewContent(false);
+  }, []);
+
+  return { data, error, isLoading, refresh: load, hasNewContent, dismissNewContent };
 }
 
 export function useMarketTicker({ enabled = true, intervalMs = 30_000 } = {}) {

@@ -102,6 +102,12 @@ export interface Dict {
     linkCardTitle: string;
     linkCardDesc: string;
     fallbackNotice: string;
+    banner: {
+      newContent: string;
+      dismissAriaLabel: string;
+    };
+    emptyHistory: string;
+    loadingHistory: string;
   };
   coinModal: {
     closeAriaLabel: string;

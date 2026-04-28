@@ -1,34 +1,50 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { AgentId, AgentWatchMessage } from "../types";
 import { MessageBubble } from "./MessageBubble";
 import { TypingIndicator } from "./TypingIndicator";
 
-export function MessageStream({
-  messages,
-  typingAgent,
-}: {
+export interface MessageStreamHandle {
+  scrollToLatest: () => void;
+}
+
+interface MessageStreamProps {
   messages: AgentWatchMessage[];
   typingAgent: AgentId | null;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
+  emptyLabel?: string;
+}
+
+export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>(function MessageStream(
+  { messages, typingAgent, emptyLabel },
+  forwardedRef,
+) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
 
   useEffect(() => {
     if (!autoScroll) return;
-    const el = ref.current;
+    const el = containerRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, typingAgent, autoScroll]);
 
+  useImperativeHandle(forwardedRef, () => ({
+    scrollToLatest: () => {
+      const el = containerRef.current;
+      if (!el) return;
+      setAutoScroll(true);
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    },
+  }));
+
   return (
     <div className="card-glow relative min-h-[560px] flex-1 overflow-hidden rounded-2xl border border-white/10 bg-[#111]">
       <div
-        ref={ref}
+        ref={containerRef}
         onScroll={() => {
-          const el = ref.current;
+          const el = containerRef.current;
           if (!el) return;
           setAutoScroll(el.scrollHeight - el.scrollTop - el.clientHeight < 96);
         }}
@@ -36,7 +52,7 @@ export function MessageStream({
       >
         {messages.length === 0 && !typingAgent && (
           <div className="flex h-full items-center justify-center text-sm text-white/40">
-            等待 Agent 开口...
+            {emptyLabel ?? "等待 Agent 开口..."}
           </div>
         )}
 
@@ -54,7 +70,10 @@ export function MessageStream({
           type="button"
           onClick={() => {
             setAutoScroll(true);
-            ref.current?.scrollTo({ top: ref.current.scrollHeight, behavior: "smooth" });
+            containerRef.current?.scrollTo({
+              top: containerRef.current.scrollHeight,
+              behavior: "smooth",
+            });
           }}
           className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-[#7c5cff] px-4 py-2 text-xs font-semibold text-white shadow-lg"
         >
@@ -63,4 +82,4 @@ export function MessageStream({
       )}
     </div>
   );
-}
+});

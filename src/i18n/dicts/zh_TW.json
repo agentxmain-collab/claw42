@@ -148,7 +148,13 @@
     "linkCardLiveBadge": "LIVE",
     "linkCardTitle": "3 Agents are analyzing the market",
     "linkCardDesc": "Currently optimized for Chinese; English experience coming soon.",
-    "fallbackNotice": ""
+    "fallbackNotice": "",
+    "banner": {
+      "newContent": "New content →",
+      "dismissAriaLabel": "Dismiss new content notice"
+    },
+    "emptyHistory": "History is building up. Wait for the next Agent analysis batch.",
+    "loadingHistory": "Loading..."
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",
