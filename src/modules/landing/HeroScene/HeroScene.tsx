@@ -10,6 +10,8 @@ import { useRobotPose, type Pose } from "./useRobotPose";
 import { RobotLayer } from "./RobotLayer";
 import { PedestalLayer } from "./PedestalLayer";
 import { CoinsLayer } from "./CoinsLayer";
+import { CoinModal } from "./components/CoinModal";
+import type { CoinSymbol } from "@/modules/agent-watch/types";
 
 /** Simple mobile detection without extra dependencies. */
 function useIsMobile() {
@@ -50,6 +52,7 @@ export function HeroScene() {
   const stageRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [heroCopied, setHeroCopied] = useState(false);
+  const [selectedCoin, setSelectedCoin] = useState<CoinSymbol | null>(null);
 
   const handleHeroCtaClick = async () => {
     try {
@@ -110,7 +113,12 @@ export function HeroScene() {
       <RobotLayer pose={pose} mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
 
       {/* z-30 Coins */}
-      <CoinsLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
+      <CoinsLayer
+        mouseX={mouseX}
+        mouseY={mouseY}
+        reduceMotion={reduceMotion}
+        onSelectCoin={setSelectedCoin}
+      />
 
       {/* z-50 Gradient scrim for title readability */}
       <div className="absolute inset-x-0 bottom-0 z-50 h-[42%] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
@@ -168,6 +176,11 @@ export function HeroScene() {
           </motion.a>
         </div>
       </div>
+      <AnimatePresence>
+        {selectedCoin && (
+          <CoinModal symbol={selectedCoin} onClose={() => setSelectedCoin(null)} />
+        )}
+      </AnimatePresence>
     </section>
   );
 }

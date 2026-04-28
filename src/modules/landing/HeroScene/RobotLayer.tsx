@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useAgentAnalysis } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import type { Pose } from "./useRobotPose";
 import { SpeechBubble } from "./SpeechBubble";
 
@@ -37,9 +39,16 @@ const MOUTH_OVERLAY = {
 };
 
 export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerProps) {
+  const { locale } = useI18n();
   const [blink, setBlink] = useState(false);
   const [hovered, setHovered] = useState(false);
   const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
+  const isZh = locale === "zh_CN";
+  const { data } = useAgentAnalysis({ enabled: isZh });
+  const dynamicLines =
+    isZh && data?.source !== "static-fallback" && data?.heroBubbles?.length
+      ? data.heroBubbles
+      : undefined;
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -182,6 +191,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
           visible={hovered}
           reduceMotion={reduceMotion}
           side={displayPose === "right" ? "left" : "right"}
+          lines={dynamicLines}
         />
       </motion.div>
     </div>

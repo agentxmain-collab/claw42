@@ -5,7 +5,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { LocaleDropdown } from "./LocaleDropdown";
 
 export function SiteHeader() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-[80] h-[72px] bg-black/80 backdrop-blur-xl border-b border-white/[0.06]">
@@ -37,7 +37,18 @@ export function SiteHeader() {
           </span>
         </a>
 
-        <LocaleDropdown />
+        <div className="flex items-center gap-3">
+          <a
+            href={`/${locale}/agent`}
+            className="hidden h-11 items-center rounded-full px-4 text-sm font-semibold text-white/80 transition-all hover:bg-white/[0.08] hover:text-white md:inline-flex"
+          >
+            <span className="relative flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-cw-green animate-pulse" />
+              {t.nav.agentLiveMenuItem}
+            </span>
+          </a>
+          <LocaleDropdown />
+        </div>
       </div>
     </nav>
   );

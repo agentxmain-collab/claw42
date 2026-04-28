@@ -1,0 +1,50 @@
+"use client";
+
+import type { TickerMap } from "../types";
+
+const COINS = ["BTC", "ETH", "SOL", "USDT"] as const;
+
+function formatPrice(symbol: (typeof COINS)[number], price: number) {
+  return `$${price.toLocaleString("en-US", {
+    minimumFractionDigits: symbol === "USDT" ? 4 : 0,
+    maximumFractionDigits: symbol === "USDT" ? 4 : 2,
+  })}`;
+}
+
+export function CoinTickerStrip({
+  tickers,
+  isStale,
+}: {
+  tickers?: TickerMap;
+  isStale?: boolean;
+}) {
+  return (
+    <div className="card-glow rounded-2xl border border-white/10 bg-[#111]/90 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+        {COINS.map((symbol) => {
+          const ticker = tickers?.[symbol];
+          const up = (ticker?.change24h ?? 0) >= 0;
+          return (
+            <div
+              key={symbol}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs md:text-sm"
+            >
+              <span className="font-bold text-white">{symbol}</span>
+              <span className="text-white/70">
+                {ticker ? formatPrice(symbol, ticker.price) : "--"}
+              </span>
+              <span className={up ? "text-cw-green" : "text-cw-red"}>
+                {ticker ? `${up ? "+" : ""}${ticker.change24h.toFixed(2)}%` : "--"}
+              </span>
+            </div>
+          );
+        })}
+        {isStale && (
+          <span className="rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-semibold text-yellow-200">
+            数据延迟
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}

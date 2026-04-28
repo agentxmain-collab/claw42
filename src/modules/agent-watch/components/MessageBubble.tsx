@@ -1,0 +1,61 @@
+"use client";
+
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { AGENT_META } from "../agents";
+import type { AgentWatchMessage } from "../types";
+
+function formatTime(ts: number) {
+  const date = new Date(ts);
+  return `${date.getHours().toString().padStart(2, "0")}:${date
+    .getMinutes()
+    .toString()
+    .padStart(2, "0")}`;
+}
+
+export function MessageBubble({ message }: { message: AgentWatchMessage }) {
+  const [liked, setLiked] = useState(false);
+  const meta = AGENT_META[message.agentId];
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.24 }}
+      className="flex gap-3 py-2"
+    >
+      <span
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-black"
+        style={{ backgroundColor: meta.color }}
+      >
+        {meta.avatar}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-bold text-white">{meta.name}</span>
+          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-white/45">
+            LIVE
+          </span>
+          <span className="font-mono text-[11px] text-white/35">{formatTime(message.timestamp)}</span>
+        </div>
+        <div className="mt-1.5 rounded-2xl rounded-tl-sm border border-white/10 bg-black/35 px-4 py-3">
+          <p className="text-sm leading-relaxed text-white/82">{message.content}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setLiked((next) => !next)}
+          className={`mt-2 inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors ${
+            liked
+              ? "border-[#ff6b6b]/50 bg-[#ff6b6b]/15 text-[#ff9a9a]"
+              : "border-white/10 bg-white/[0.03] text-white/45 hover:text-white/70"
+          }`}
+        >
+          <span aria-hidden="true">{liked ? "♥" : "♡"}</span>
+          <span>{liked ? 43 : 42}</span>
+        </button>
+      </div>
+    </motion.div>
+  );
+}

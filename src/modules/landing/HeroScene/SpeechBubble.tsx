@@ -8,11 +8,12 @@ interface SpeechBubbleProps {
   visible: boolean;
   reduceMotion: boolean;
   side: "left" | "right";
+  lines?: string[];
 }
 
-export function SpeechBubble({ visible, reduceMotion, side }: SpeechBubbleProps) {
+export function SpeechBubble({ visible, reduceMotion, side, lines }: SpeechBubbleProps) {
   const { t } = useI18n();
-  const pool = t.hero.speechBubble;
+  const pool = lines?.length ? lines : t.hero.speechBubble;
   const [selectedLine, setSelectedLine] = useState("");
   const [typedLine, setTypedLine] = useState("");
 

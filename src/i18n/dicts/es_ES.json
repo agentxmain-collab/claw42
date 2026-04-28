@@ -1,7 +1,8 @@
 {
   "nav": {
     "switchLangToEn": "EN",
-    "switchLangToZh": "中"
+    "switchLangToZh": "中",
+    "agentLiveMenuItem": "Agent Live"
   },
   "hero": {
     "title": "Conoce a tu socio de trading con IA",
@@ -133,5 +134,26 @@
       "3. Claw 42 no asume responsabilidad por pérdidas derivadas del uso o la imposibilidad de usar Claw 42 Skills. Claw 42 se reserva el derecho de terminar o restringir esta función a su entera discreción. Los precios de los activos digitales conllevan alto riesgo de mercado y volatilidad. El valor de su inversión puede bajar o subir, y puede que no recupere su capital. Usted es totalmente responsable de sus decisiones de inversión. Claw 42 no asume responsabilidad por ninguna pérdida que pueda sufrir.",
       "4. El rendimiento pasado no es un indicador fiable del rendimiento futuro. Antes de invertir, considere cuidadosamente su experiencia, situación financiera, objetivos de inversión y tolerancia al riesgo, y consulte a un asesor financiero independiente. Para más información, consulte nuestro Aviso de riesgo y Condiciones de uso."
     ]
+  },
+  "agentWatch": {
+    "pageTitle": "",
+    "pageSubtitle": "",
+    "pageHeroTagline": "",
+    "sidebarStatus": {
+      "thinking": "",
+      "speaking": "",
+      "idle": ""
+    },
+    "bottomCta": "",
+    "linkCardLiveBadge": "LIVE",
+    "linkCardTitle": "3 Agents are analyzing the market",
+    "linkCardDesc": "Currently optimized for Chinese; English experience coming soon.",
+    "fallbackNotice": ""
+  },
+  "coinModal": {
+    "closeAriaLabel": "Close market card",
+    "goToWatchCta": "Go to Agent Live",
+    "loadingPrice": "Loading market data",
+    "agentCommentMissing": "Agent commentary available in Chinese only"
   }
 }
