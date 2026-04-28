@@ -1,15 +1,15 @@
 "use client";
 
-import { AGENT_META, AGENT_ORDER } from "../agents";
+import { AGENT_COLOR_TOKEN, AGENT_META, AGENT_ORDER } from "../agents";
 import type { AgentId, AgentStatus } from "../types";
 
 function StatusDot({ status }: { status: AgentStatus }) {
   const cls =
     status === "thinking"
-      ? "bg-yellow-300 animate-pulse"
+      ? "bg-amber-400 animate-pulse"
       : status === "speaking"
-        ? "bg-cw-green"
-        : "bg-white/25";
+        ? "animate-pulse bg-[#b49cff] shadow-[0_0_8px_rgba(124,92,255,0.6)]"
+        : "bg-white/20";
   return <span className={`inline-block h-2 w-2 rounded-full ${cls}`} />;
 }
 
@@ -26,6 +26,7 @@ export function AgentSidebar({
     <aside className="grid gap-3 md:w-72 md:shrink-0">
       {AGENT_ORDER.map((id) => {
         const meta = AGENT_META[id];
+        const token = AGENT_COLOR_TOKEN[id];
         const status: AgentStatus =
           activeAgent === id ? "thinking" : speakingAgent === id ? "speaking" : "idle";
         const label =
@@ -38,11 +39,14 @@ export function AgentSidebar({
         return (
           <div
             key={id}
-            className="card-glow flex items-start gap-3 rounded-2xl border border-white/10 bg-[#111] p-4"
+            className="flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-[#0e0e10] p-4 transition-colors hover:bg-white/[0.03]"
           >
             <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-black text-black"
-              style={{ backgroundColor: meta.color }}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-black text-white"
+              style={{
+                background: `linear-gradient(135deg, ${token.primary} 0%, ${token.soft} 100%)`,
+                boxShadow: `0 0 18px ${token.glow}, inset 0 0 0 1px rgba(255,255,255,0.08)`,
+              }}
             >
               {meta.avatar}
             </span>

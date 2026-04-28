@@ -3,6 +3,27 @@ import betaSkill from "./skills/beta.json";
 import gammaSkill from "./skills/gamma.json";
 import type { AgentDisplayMeta, AgentId, AgentSkill } from "./types";
 
+export const AGENT_COLOR_TOKEN: Record<
+  AgentId,
+  { primary: string; soft: string; glow: string }
+> = {
+  alpha: {
+    primary: "#ff5f5f",
+    soft: "rgba(255, 95, 95, 0.18)",
+    glow: "rgba(255, 95, 95, 0.42)",
+  },
+  beta: {
+    primary: "#3a7bff",
+    soft: "rgba(58, 123, 255, 0.18)",
+    glow: "rgba(58, 123, 255, 0.42)",
+  },
+  gamma: {
+    primary: "#9b6bff",
+    soft: "rgba(155, 107, 255, 0.18)",
+    glow: "rgba(155, 107, 255, 0.42)",
+  },
+};
+
 const skillMap: Record<AgentId, AgentSkill> = {
   alpha: alphaSkill as AgentSkill,
   beta: betaSkill as AgentSkill,
@@ -14,21 +35,21 @@ export const AGENT_META: Record<AgentId, AgentDisplayMeta> = {
     id: "alpha",
     name: skillMap.alpha.displayName,
     tagline: skillMap.alpha.tagline,
-    color: skillMap.alpha.color,
+    color: AGENT_COLOR_TOKEN.alpha.primary,
     avatar: "A",
   },
   beta: {
     id: "beta",
     name: skillMap.beta.displayName,
     tagline: skillMap.beta.tagline,
-    color: skillMap.beta.color,
+    color: AGENT_COLOR_TOKEN.beta.primary,
     avatar: "B",
   },
   gamma: {
     id: "gamma",
     name: skillMap.gamma.displayName,
     tagline: skillMap.gamma.tagline,
-    color: skillMap.gamma.color,
+    color: AGENT_COLOR_TOKEN.gamma.primary,
     avatar: "G",
   },
 };

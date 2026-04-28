@@ -27,7 +27,7 @@ export function MessageBubble({ message }: { message: AgentWatchMessage }) {
       className="flex gap-3 py-2"
     >
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-black"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-white"
         style={{ backgroundColor: meta.color }}
       >
         {meta.avatar}
@@ -35,12 +35,12 @@ export function MessageBubble({ message }: { message: AgentWatchMessage }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-bold text-white">{meta.name}</span>
-          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-white/45">
+          <span className="rounded-full border border-[#7c5cff]/30 bg-[#7c5cff]/12 px-2 py-0.5 text-[10px] font-semibold text-[#b49cff]">
             LIVE
           </span>
           <span className="font-mono text-[11px] text-white/35">{formatTime(message.timestamp)}</span>
         </div>
-        <div className="mt-1.5 rounded-2xl rounded-tl-sm border border-white/10 bg-black/35 px-4 py-3">
+        <div className="mt-1.5 rounded-2xl rounded-tl-sm border border-white/10 bg-black/35 px-4 py-3 transition-shadow hover:shadow-[0_0_24px_rgba(124,92,255,0.18)]">
           <p className="text-sm leading-relaxed text-white/82">{message.content}</p>
         </div>
         <button
@@ -48,7 +48,7 @@ export function MessageBubble({ message }: { message: AgentWatchMessage }) {
           onClick={() => setLiked((next) => !next)}
           className={`mt-2 inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors ${
             liked
-              ? "border-[#ff6b6b]/50 bg-[#ff6b6b]/15 text-[#ff9a9a]"
+              ? "border-[#ff5f5f]/50 bg-[#ff5f5f]/15 text-[#ff9a9a]"
               : "border-white/10 bg-white/[0.03] text-white/45 hover:text-white/70"
           }`}
         >

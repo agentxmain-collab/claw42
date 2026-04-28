@@ -25,7 +25,7 @@ function keepFivePerAgent(messages: AgentWatchMessage[]) {
 export function AgentWatchBoard() {
   const { t } = useI18n();
   const reduceMotion = useReducedMotion();
-  const { data, error, isLoading } = useAgentAnalysis({ enabled: true });
+  const { data, isLoading } = useAgentAnalysis({ enabled: true });
   const processedTsRef = useRef<number | null>(null);
   const timersRef = useRef<number[]>([]);
   const [messages, setMessages] = useState<AgentWatchMessage[]>([]);
@@ -78,13 +78,7 @@ export function AgentWatchBoard() {
     >
       <div className="space-y-5">
         <CoinTickerStrip tickers={data?.tickers} isStale={data?.degraded} />
-        <TopicHeader t={t} source={data?.source} />
-
-        {(error || data?.degraded) && (
-          <div className="rounded-2xl border border-yellow-400/20 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-100">
-            {t.agentWatch.fallbackNotice}
-          </div>
-        )}
+        <TopicHeader t={t} />
 
         <div className="grid gap-4 md:flex md:items-stretch">
           <AgentSidebar
@@ -106,7 +100,7 @@ export function AgentWatchBoard() {
           className="card-glow flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/10 bg-[#111] p-5 md:flex-row md:items-center md:p-6"
         >
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-cw-green">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#b49cff]">
               Claw 42 Agent
             </p>
             <h2 className="mt-2 text-xl font-bold text-white md:text-2xl">

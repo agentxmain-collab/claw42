@@ -33,7 +33,7 @@ export function CoinTickerStrip({
               <span className="text-white/70">
                 {ticker ? formatPrice(symbol, ticker.price) : "--"}
               </span>
-              <span className={up ? "text-cw-green" : "text-cw-red"}>
+              <span className={up ? "text-[#b49cff]" : "text-[#ff5f5f]"}>
                 {ticker ? `${up ? "+" : ""}${ticker.change24h.toFixed(2)}%` : "--"}
               </span>
             </div>
