@@ -31,7 +31,14 @@ function severityForChange(change24h: number): SignalSeverity {
 }
 
 function signalForRangeChange(coin: CoinTickerEntry, now: number): SignalRecord | null {
-  if (Math.abs(coin.change24h) < THRESHOLDS.RANGE_CHANGE_PCT) return null;
+  if (
+    !(
+      Math.abs(coin.change24h) >= THRESHOLDS.RANGE_CHANGE_PCT &&
+      coin.category !== "majors"
+    )
+  ) {
+    return null;
+  }
 
   return {
     id: signalId(now, coin.symbol, "range_change"),
@@ -217,4 +224,3 @@ export async function triggerSignalGeneration(): Promise<CoinPoolPayload | null>
 
   return signalGenerationInFlight;
 }
-

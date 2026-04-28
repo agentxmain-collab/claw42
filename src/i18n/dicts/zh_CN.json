@@ -165,6 +165,7 @@
       "warmingUp": "正在累积市场信号",
       "trigger": "触发条件",
       "fail": "失效条件",
+      "expandFail": "失效条件",
       "evidenceCount": "{count} 条信号作为依据",
       "updated": "更新"
     },

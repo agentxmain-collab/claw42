@@ -16,6 +16,7 @@ import type {
   MarketDataSource,
   HistoryMessageEntry,
   ProviderSource,
+  SignalRecord,
   StreamMessage,
   TickerMap,
   TimeframeSignal,
@@ -58,6 +59,12 @@ const UNSUPPORTED_V1_DATA_MARKERS = [
   "中轨",
   "超买",
   "超卖",
+];
+const BANNED_OUTPUT_PATTERNS = [
+  /现价\s*\$?\d/i,
+  /强弱排序已拉开/,
+  /^目前.{0,12}表现/,
+  /^[A-Z0-9]{2,12}\s+24h\s*[+-]?\d/i,
 ];
 const GAMMA_V1_TERMS = ["极端", "均值回归", "近期高位", "近期低位", "高低位", "range_change"];
 const GAMMA_V1_FRAMEWORK = [
@@ -185,26 +192,19 @@ function formatLiveTickerBrief(tickers: TickerMap): string {
 }
 
 function buildFallbackStreamContent(agentId: AgentId, tickers: TickerMap, seed: number): string {
-  const [leader, runnerUp, laggard] = rankedRiskCoins(tickers);
+  const [leader, runnerUp] = rankedRiskCoins(tickers);
   const first = selectAgentStreamFallback(agentId, seed);
   const second = selectAgentStreamFallback(agentId, seed + 17);
 
   if (agentId === "alpha") {
-    return `${leader} ${formatMarketChange(tickers[leader].change24h)} 卡在 ${formatMarketPrice(
-      leader,
-      tickers[leader].price,
-    )}，${first}；${second}。`;
+    return `${leader} 先盯 5m 放量和前高反应，${first}；${second}，没回踩确认不追。`;
   }
 
   if (agentId === "beta") {
-    return `${leader} 现价 ${formatMarketPrice(leader, tickers[leader].price)}，24h ${formatMarketChange(
-      tickers[leader].change24h,
-    )}。${first}；${second}，仓位别一次打满。`;
+    return `${leader} 暂时只看 EMA12/13 是否重新共振。${first}；${second}，趋势没确认前仓位别一次打满。`;
   }
 
-  return `${leader}/${runnerUp}/${laggard} 强弱排序已拉开，${leader} 24h ${formatMarketChange(
-    tickers[leader].change24h,
-  )}。${first}；${second}，先等极端波动回到可观察区间。`;
+  return `${leader} 和 ${runnerUp} 都还没给出足够极端的回归窗口。${first}；${second}，先等近期高低位失速。`;
 }
 
 function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
@@ -523,10 +523,37 @@ function formatPoolGroup(label: string, entries: CoinPoolPayload["majors"]): str
     .join("  ")}`;
 }
 
+function formatCollectiveSignalBrief(summary: ReturnType<typeof buildSignalSummary>): string {
+  const collectiveTypes: SignalRecord["type"][] = [
+    "near_high",
+    "near_low",
+    "volume_spike",
+    "breakout",
+    "ema_cross",
+  ];
+  const lines = ["## 集体信号检测"];
+
+  for (const type of collectiveTypes) {
+    const symbols = RISK_COINS.filter((symbol) => summary.bySymbol[symbol]?.types.includes(type));
+    if (symbols.length >= 3) {
+      lines.push(
+        `- ${symbols.join(" / ")} 同时出现 ${type}，3 个 Agent 至少 1 条 stream 必须引用这个集体信号。`,
+      );
+    }
+  }
+
+  if (lines.length === 1) {
+    lines.push("- 暂无三大主流同类集体信号。Agent 可以分散关注不同币种。");
+  }
+
+  return lines.join("\n");
+}
+
 function buildPrompt(pool: CoinPoolPayload): string {
   const tickers = pool.tickers;
   const summary = buildSignalSummary();
   const summaryText = formatSummaryForPrompt(summary);
+  const collectiveSignalText = formatCollectiveSignalBrief(summary);
 
   return `你扮演 3 个加密交易 Agent 同时基于累积市场信号做判断。三人必须像不同交易员在同一块屏幕前看盘：同一份实时行情，不同方法论、不同术语、不同判断重点。
 
@@ -546,9 +573,11 @@ ${formatCoinWContext(pool.source, pool.signals)}
 
 ${summaryText}
 
+${collectiveSignalText}
+
 ## 写作总目标
 - 不是行情新闻摘要，而是实时看盘 Agent 的短判断。
-- 必须引用上方真实市场数据：币种代码、价格或 24h 涨跌幅、CoinW K线位置信息。
+- 必须引用上方真实市场数据：币种代码、buffer 信号事件、priceLevel / volumeRatio / distancePct / change24h 等具体数字。
 - 每条都要给可观察条件：看哪个价位、哪条均线、哪个区间、什么失效。
 - 不要三个人说同一套话。Alpha 看关键位突破，Beta 看 EMA 趋势，Gamma 看极端涨跌和回归。
 - 三条 stream 不能同长度、不能同句式、不能都只有一句话。Beta 和 Gamma 必须是两句，Alpha 可以一刀短句。
@@ -609,7 +638,7 @@ ${skillPromptBlock("gamma")}
 硬性规则:
 - 全部中文输出
 - 直接输出 JSON，不加 markdown 代码块
-- stream 每条都必须同时包含：币种代码（BTC/ETH/SOL/USDT）、当前价格或 24h 涨跌幅数字、一个条件/触发/失效点
+- stream 每条都必须同时包含：币种代码、来自 buffer 或 K 线的具体数字、一个条件/触发/失效点
 - Alpha 只能像突破派：关键位、前高/前低、整数关口、放量、假突破、回踩确认
 - Beta 只能像趋势派：EMA12/13/144/169、多头/空头排列、回撤、共振、持有/减仓
 - Gamma 只能像回归派，但 v1 只能引用 24h 极端涨跌、近期高低位、range_change，不得引用 RSI 数值、布林带上下轨、EMA144 偏离百分比
@@ -623,7 +652,40 @@ ${skillPromptBlock("gamma")}
 - coinComments 每条 40-80 字，同样要带币种和数字，不要复述 stream
 - 禁用词: 综上所述、值得注意的是、赋能、leverage、moreover
 - 不要输出英文，不要输出解释文字
-- 禁止 markdown 格式`;
+- 禁止 markdown 格式
+
+## 输出纪律（v1.2 修订，硬性遵守，违反则输出无效）
+
+### 禁止套话开头
+- 禁止以“X 现价 $Y，24h Z%”开头
+- 禁止“ETH/BTC/SOL 强弱排序已拉开”
+- 禁止“目前 X 表现如何”
+- 禁止任何以行情概览或价格描述开头的句式
+
+### 禁止复读 Ticker
+用户已经在顶部 Ticker 看到：4 主流币 + 3 热门 + 3 机会的当前价 + 24h 涨跌幅。
+- 不要在 stream content 或 focus.judgment 里再写“现价 $X”或“24h -X%”
+- 直接说判断、引用 buffer 信号事件、给触发/失效条件
+
+### 必须引用 buffer 信号事件
+每个 Agent 的 stream + focus 必须引用至少 1 条 buffer 摘要里具体的信号事件作为论据：
+- “BTC 接近前低 $75,677 已经第 3 次”——引用 NEAR_LOW
+- “ZKJ 24h +209% 已经飞起来”——引用 RANGE_CHANGE
+- “BCAP 5m 放量 2.1x + 突破 $103”——引用 VOLUME_SPIKE + BREAKOUT
+- 禁止只说“市场偏弱”“看着不太行”这类无具体信号的话
+
+### 集体信号检测（关键）
+如果上方“集体信号检测”提示 BTC / ETH / SOL 同时出现同类型信号，3 Agent stream 至少 1 条必须引用这个集体信号：
+- Alpha 可以写“主流三个都接近前低，止损单密集，破一个就连环”
+- Beta 可以写“BTC ETH SOL 同步测前低，趋势已经偏弱了”
+- Gamma 可以写“三大主流同时进近期低位，集体极端信号出现”
+如果没有集体信号，3 Agent 各看各的币，可以分散视角
+
+### 句式风格（继续 task-07 人设约束）
+- Alpha 短促 + 江湖气，必须用突破派术语
+- Beta 中长 + 克制，必须用趋势派术语
+- Gamma 数据 + 谨慎，必须用回归派术语
+- 3 Agent 气泡内容明显风格差异，用户能区分`;
 }
 
 function stripCodeFence(text: string): string {
@@ -715,6 +777,10 @@ function hasUnsupportedV1DataClaim(content: string): boolean {
   return UNSUPPORTED_V1_DATA_MARKERS.some((marker) => content.includes(marker));
 }
 
+function hasBannedOutputPattern(content: string): boolean {
+  return BANNED_OUTPUT_PATTERNS.some((pattern) => pattern.test(content.trim()));
+}
+
 function isActionableMarketNote(content: string): boolean {
   return hasMarketSymbol(content) && hasNumericMarketData(content) && hasActionableMarker(content);
 }
@@ -749,6 +815,9 @@ function normalizeFocusText(value: unknown, field: string, maxLength: number): s
   const text = value.trim().slice(0, maxLength);
   if (hasUnsupportedV1DataClaim(text)) {
     throw new Error(`focus ${field} uses unsupported v1 indicator`);
+  }
+  if (hasBannedOutputPattern(text)) {
+    throw new Error(`focus ${field} uses banned opener`);
   }
   return text;
 }
@@ -858,12 +927,16 @@ function validateAnalysis(
     if (hasUnsupportedV1DataClaim(found.content)) {
       throw new Error(`${agentId} uses unsupported v1 indicator`);
     }
+    if (hasBannedOutputPattern(found.content)) {
+      throw new Error(`${agentId} uses banned opener`);
+    }
     return { agentId, content: found.content.slice(0, 180) };
   });
 
   const normalizedHeroBubbles = heroBubbles.slice(0, 3).map((item) => {
     const content = String(item).slice(0, 100);
     if (hasUnsupportedV1DataClaim(content)) throw new Error("hero bubble uses unsupported v1 indicator");
+    if (hasBannedOutputPattern(content)) throw new Error("hero bubble uses banned opener");
     return content;
   });
 
@@ -877,6 +950,9 @@ function validateAnalysis(
       }
       if (hasUnsupportedV1DataClaim(content)) {
         throw new Error(`${symbol}.${agentId} comment uses unsupported v1 indicator`);
+      }
+      if (hasBannedOutputPattern(content)) {
+        throw new Error(`${symbol}.${agentId} comment uses banned opener`);
       }
       normalizedComments[symbol][agentId] = content.slice(0, 160);
     }

@@ -118,6 +118,7 @@ export interface Dict {
       warmingUp: string;
       trigger: string;
       fail: string;
+      expandFail: string;
       evidenceCount: string;
       updated: string;
     };

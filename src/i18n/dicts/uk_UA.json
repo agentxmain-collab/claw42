@@ -165,6 +165,7 @@
       "warmingUp": "Accumulating market signals",
       "trigger": "Trigger",
       "fail": "Invalidation",
+      "expandFail": "Invalidation",
       "evidenceCount": "{count} signals as evidence",
       "updated": "Updated"
     },

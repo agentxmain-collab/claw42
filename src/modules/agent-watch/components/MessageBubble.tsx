@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
-import { AGENT_META } from "../agents";
+import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import type { AgentWatchMessage } from "../types";
 import { formatAgentMessageTime } from "../utils/formatTime";
 import { AgentAvatar } from "./AgentAvatar";
@@ -10,6 +10,7 @@ import { AgentAvatar } from "./AgentAvatar";
 export function MessageBubble({ message }: { message: AgentWatchMessage }) {
   const { locale } = useI18n();
   const meta = AGENT_META[message.agentId];
+  const token = AGENT_COLOR_TOKEN[message.agentId];
   const timeLabel = formatAgentMessageTime(message.timestamp, locale);
 
   return (
@@ -30,7 +31,14 @@ export function MessageBubble({ message }: { message: AgentWatchMessage }) {
           </span>
           <span className="font-mono text-[11px] text-white/35">{timeLabel}</span>
         </div>
-        <div className="mt-1.5 rounded-2xl rounded-tl-sm border border-white/10 bg-black/35 px-4 py-3 transition-shadow hover:shadow-[0_0_24px_rgba(124,92,255,0.18)]">
+        <div
+          className="mt-1.5 rounded-2xl rounded-tl-sm border border-l-2 bg-black/35 px-4 py-3 transition-shadow"
+          style={{
+            borderColor: token.soft,
+            borderLeftColor: token.primary,
+            boxShadow: `0 0 0 1px ${token.soft}, 0 8px 24px ${token.glow}`,
+          }}
+        >
           <p className="text-sm leading-relaxed text-white/82">{message.content}</p>
         </div>
       </div>

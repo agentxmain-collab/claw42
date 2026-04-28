@@ -27,6 +27,7 @@ export function AgentFocusCard({
     warmingUp: string;
     trigger: string;
     fail: string;
+    expandFail: string;
     evidenceCount: string;
     updated: string;
   };
@@ -63,26 +64,35 @@ export function AgentFocusCard({
         </span>
       </div>
 
-      <p className="mt-4 min-h-[3rem] text-sm font-semibold leading-relaxed text-white">
+      <p className="mt-3 min-h-[2.5rem] text-sm font-semibold leading-relaxed text-white">
         {focus?.judgment ?? labels.warmingUp}
       </p>
 
-      <div className="mt-4 grid gap-3 text-xs md:grid-cols-2">
-        <div className="rounded-xl border border-white/[0.08] bg-black/25 p-3">
-          <p className="font-bold text-white/45">{labels.trigger}</p>
-          <p className="mt-1 leading-relaxed text-white/75">
-            {focus?.trigger.description ?? labels.warmingUp}
-          </p>
-        </div>
-        <div className="rounded-xl border border-white/[0.08] bg-black/25 p-3">
-          <p className="font-bold text-white/45">{labels.fail}</p>
-          <p className="mt-1 leading-relaxed text-white/75">
-            {focus?.fail.description ?? labels.warmingUp}
-          </p>
-        </div>
+      <div className="mt-3 flex items-start gap-2 border-t border-white/[0.06] pt-3 text-xs">
+        <span className="shrink-0 rounded bg-[#7c5cff]/15 px-1.5 py-0.5 font-semibold text-[#b49cff]">
+          {labels.trigger}
+        </span>
+        <span className="leading-relaxed text-white/70">
+          {focus?.trigger.description ?? labels.warmingUp}
+        </span>
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-[11px] text-white/35">
+      <details className="mt-2 text-xs">
+        <summary className="flex cursor-pointer select-none items-center gap-1 text-white/40 hover:text-white/60">
+          <span className="text-[10px]">▸</span>
+          {labels.expandFail}
+        </summary>
+        <div className="mt-1 flex items-start gap-2 pl-3">
+          <span className="shrink-0 rounded bg-[#ff5f5f]/15 px-1.5 py-0.5 font-semibold text-[#ff8a8a]">
+            {labels.fail}
+          </span>
+          <span className="leading-relaxed text-white/70">
+            {focus?.fail.description ?? labels.warmingUp}
+          </span>
+        </div>
+      </details>
+
+      <div className="mt-3 flex items-center justify-between text-[11px] text-white/35">
         <span>{formatEvidence(labels.evidenceCount, focus?.evidenceCount)}</span>
         <span className="font-mono">{focus?.trigger.type ?? "warming-up"}</span>
       </div>
