@@ -1,7 +1,8 @@
 {
   "nav": {
     "switchLangToEn": "EN",
-    "switchLangToZh": "中"
+    "switchLangToZh": "中",
+    "agentLiveMenuItem": "Agent Live"
   },
   "hero": {
     "title": "تعرّف على شريك التداول بالذكاء الاصطناعي",
@@ -133,5 +134,32 @@
       "3. لا تتحمّل Claw 42 أي مسؤولية عن أي خسارة ناتجة عن استخدام Claw 42 Skills أو عدم القدرة على استخدامها. تحتفظ Claw 42 بحقّها في إنهاء هذه الميزة أو تقييدها وفق تقديرها المطلق. تنطوي أسعار الأصول الرقمية على مخاطر سوق عالية وتقلّبات. قد تنخفض قيمة استثمارك كما قد ترتفع، وقد لا تستردّ أصل المبلغ. أنت المسؤول بالكامل عن قراراتك الاستثمارية. لا تتحمّل Claw 42 أي مسؤولية عن أي خسارة قد تتكبّدها.",
       "4. لا يُعدّ الأداء السابق مؤشّرًا موثوقًا للأداء المستقبلي. قبل اتخاذ أي قرار استثماري، ضع في الاعتبار بعناية خبرتك ووضعك المالي وأهدافك الاستثمارية وقدرتك على تحمّل المخاطر، واستشر مستشارًا ماليًا مستقلًّا. لمزيد من المعلومات، راجع إشعار المخاطر وشروط الاستخدام."
     ]
+  },
+  "agentWatch": {
+    "pageTitle": "",
+    "pageSubtitle": "",
+    "pageHeroTagline": "",
+    "sidebarStatus": {
+      "thinking": "",
+      "speaking": "",
+      "idle": ""
+    },
+    "bottomCta": "",
+    "linkCardLiveBadge": "LIVE",
+    "linkCardTitle": "3 Agents are analyzing the market",
+    "linkCardDesc": "Currently optimized for Chinese; English experience coming soon.",
+    "fallbackNotice": "",
+    "banner": {
+      "newContent": "New content →",
+      "dismissAriaLabel": "Dismiss new content notice"
+    },
+    "emptyHistory": "History is building up. Wait for the next Agent analysis batch.",
+    "loadingHistory": "Loading..."
+  },
+  "coinModal": {
+    "closeAriaLabel": "Close market card",
+    "goToWatchCta": "Go to Agent Live",
+    "loadingPrice": "Loading market data",
+    "agentCommentMissing": "Agent commentary available in Chinese only"
   }
 }

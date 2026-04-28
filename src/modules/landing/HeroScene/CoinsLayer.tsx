@@ -2,15 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
+import type { CoinSymbol } from "@/modules/agent-watch/types";
 
 interface CoinsLayerProps {
   mouseX: number;
   mouseY: number;
   reduceMotion: boolean;
+  onSelectCoin?: (symbol: CoinSymbol) => void;
 }
 
 interface CoinConfig {
-  symbol: "BTC" | "ETH" | "SOL" | "USDT";
+  symbol: CoinSymbol;
   label: string;
   src: string;
   anchor: { top: string; left?: string; right?: string };
@@ -30,6 +32,7 @@ interface CoinItemProps {
   reduceMotion: boolean;
   onEngageTrail: (clientX: number, clientY: number) => void;
   onLingerTrail: () => void;
+  onSelectCoin?: (symbol: CoinSymbol) => void;
 }
 
 interface TrailPoint {
@@ -161,7 +164,7 @@ const COINS: CoinConfig[] = [
   },
 ];
 
-export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
+export function CoinsLayer({ mouseX, mouseY, reduceMotion, onSelectCoin }: CoinsLayerProps) {
   void mouseX;
   void mouseY;
 
@@ -293,6 +296,7 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
             reduceMotion={reduceMotion}
             onEngageTrail={engageTrail}
             onLingerTrail={lingerTrail}
+            onSelectCoin={onSelectCoin}
           />
         );
       })}
@@ -309,6 +313,7 @@ function CoinItem({
   reduceMotion,
   onEngageTrail,
   onLingerTrail,
+  onSelectCoin,
 }: CoinItemProps) {
   // v1 用 key=`${symbol}-burst-${burstId}` 每次 mouseenter 改 key → motion.div remount，
   // remount 间隙 img 瞬态消失就是 Dan 看到的闪烁。
@@ -336,13 +341,20 @@ function CoinItem({
         right: coin.anchor.right,
       }}
     >
-      <div
+      <button
+        type="button"
         className={`claw42-hero-coin ${coin.sizeClass} relative pointer-events-auto cursor-pointer`}
         data-coin={coin.symbol}
         style={{
           transform: `translate(${translateX}px, ${translateY}px)`,
           transition: "transform 180ms ease-out",
+          appearance: "none",
+          border: 0,
+          padding: 0,
+          background: "transparent",
         }}
+        aria-label={`${coin.label} market card`}
+        onClick={() => onSelectCoin?.(coin.symbol)}
         onMouseEnter={(event) => {
           setBursting(true);
           if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
@@ -378,7 +390,7 @@ function CoinItem({
             }}
           />
         </motion.div>
-      </div>
+      </button>
     </div>
   );
 }

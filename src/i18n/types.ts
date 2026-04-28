@@ -14,6 +14,7 @@ export interface Dict {
   nav: {
     switchLangToEn: string; // 当前中文时按钮显示
     switchLangToZh: string; // 当前英文时按钮显示
+    agentLiveMenuItem: string;
   };
   hero: {
     title: string;
@@ -86,5 +87,32 @@ export interface Dict {
   disclaimer: {
     title: string;
     paragraphs: string[];
+  };
+  agentWatch: {
+    pageTitle: string;
+    pageSubtitle: string;
+    pageHeroTagline: string;
+    sidebarStatus: {
+      thinking: string;
+      speaking: string;
+      idle: string;
+    };
+    bottomCta: string;
+    linkCardLiveBadge: string;
+    linkCardTitle: string;
+    linkCardDesc: string;
+    fallbackNotice: string;
+    banner: {
+      newContent: string;
+      dismissAriaLabel: string;
+    };
+    emptyHistory: string;
+    loadingHistory: string;
+  };
+  coinModal: {
+    closeAriaLabel: string;
+    goToWatchCta: string;
+    loadingPrice: string;
+    agentCommentMissing: string;
   };
 }

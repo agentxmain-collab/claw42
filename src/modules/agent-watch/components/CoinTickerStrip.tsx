@@ -1,0 +1,60 @@
+"use client";
+
+import type { MarketDataSource, TickerMap } from "../types";
+
+const COINS = ["BTC", "ETH", "SOL", "USDT"] as const;
+
+function formatPrice(symbol: (typeof COINS)[number], price: number) {
+  return `$${price.toLocaleString("en-US", {
+    minimumFractionDigits: symbol === "USDT" ? 4 : 0,
+    maximumFractionDigits: symbol === "USDT" ? 4 : 2,
+  })}`;
+}
+
+export function CoinTickerStrip({
+  tickers,
+  isStale,
+  source,
+}: {
+  tickers?: TickerMap;
+  isStale?: boolean;
+  source?: MarketDataSource;
+}) {
+  const sourceLabel =
+    source === "coinw-kline" ? "CoinW 实盘K线" : source === "coingecko-ticker" ? "仅现价" : "降级数据";
+  const statusLabel = source === "coinw-kline" && isStale ? "K线延迟" : sourceLabel;
+
+  return (
+    <div className="card-glow rounded-2xl border border-white/10 bg-[#111]/90 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+        {COINS.map((symbol) => {
+          const ticker = tickers?.[symbol];
+          const up = (ticker?.change24h ?? 0) >= 0;
+          return (
+            <div
+              key={symbol}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs md:text-sm"
+            >
+              <span className="font-bold text-white">{symbol}</span>
+              <span className="text-white/70">
+                {ticker ? formatPrice(symbol, ticker.price) : "--"}
+              </span>
+              <span className={up ? "text-[#b49cff]" : "text-[#ff5f5f]"}>
+                {ticker ? `${up ? "+" : ""}${ticker.change24h.toFixed(2)}%` : "--"}
+              </span>
+            </div>
+          );
+        })}
+        <span
+          className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+            source === "coinw-kline"
+              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+              : "border-yellow-400/30 bg-yellow-400/10 text-yellow-200"
+          }`}
+        >
+          {statusLabel}
+        </span>
+      </div>
+    </div>
+  );
+}

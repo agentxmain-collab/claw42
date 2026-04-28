@@ -1,7 +1,8 @@
 {
   "nav": {
     "switchLangToEn": "EN",
-    "switchLangToZh": "中"
+    "switchLangToZh": "中",
+    "agentLiveMenuItem": "实时旁观"
   },
   "hero": {
     "title": "遇见你的AI交易伙伴",
@@ -133,5 +134,32 @@
       "3. 对于因使用或禁止使用 Claw 42 Skills 功能而导致的任何损失，Claw 42 概不负责。Claw 42 有权自行决定终止或限制此功能。数字资产价格具有高市场风险和波动性。您的投资价值可能下降也可能上涨，且可能无法收回投资本金。您应对自己的投资决策负全责。Claw 42 对您可能遭受的任何损失不承担责任。",
       "4. 记住过去的并非未来表现的可靠预测指标。在做出任何投资前，您应仔细考虑自己的投资经验、财务状况、投资目标和风险承受能力，并咨询独立财务顾问。更多信息请参阅我们的风险提示和使用条款。"
     ]
+  },
+  "agentWatch": {
+    "pageTitle": "实时旁观",
+    "pageSubtitle": "3 个 Agent 正在分析行情",
+    "pageHeroTagline": "AI 已经在干活了，你只是还没登录。旁观 Alpha / Beta / Gamma 如何围绕实时行情拆解机会、风险和价差。",
+    "sidebarStatus": {
+      "thinking": "思考中",
+      "speaking": "发言中",
+      "idle": "静默"
+    },
+    "bottomCta": "登录后让 Agent 替你下单",
+    "linkCardLiveBadge": "LIVE",
+    "linkCardTitle": "3 个 Agent 正在分析行情",
+    "linkCardDesc": "未登录也能看，进直播间听 Alpha / Beta / Gamma 现场点评",
+    "fallbackNotice": "行情服务暂时降级，当前显示缓存或静态 fallback。",
+    "banner": {
+      "newContent": "有新内容 →",
+      "dismissAriaLabel": "关闭新内容提示"
+    },
+    "emptyHistory": "历史正在积累中，等下一批 Agent 分析进来",
+    "loadingHistory": "加载中..."
+  },
+  "coinModal": {
+    "closeAriaLabel": "关闭行情卡",
+    "goToWatchCta": "去旁观秀听他们继续聊",
+    "loadingPrice": "行情数据获取中",
+    "agentCommentMissing": "Agent 点评暂时不可用"
   }
 }

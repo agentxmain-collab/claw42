@@ -1,7 +1,8 @@
 {
   "nav": {
     "switchLangToEn": "EN",
-    "switchLangToZh": "中"
+    "switchLangToZh": "中",
+    "agentLiveMenuItem": "Agent Live"
   },
   "hero": {
     "title": "Rencontrez votre partenaire de trading IA",
@@ -133,5 +134,32 @@
       "3. Claw 42 décline toute responsabilité pour toute perte découlant de l'utilisation ou de l'impossibilité d'utiliser Claw 42 Skills. Claw 42 se réserve le droit de résilier ou restreindre cette fonctionnalité à sa seule discrétion. Les prix des actifs numériques comportent un risque de marché et une volatilité élevés. La valeur de votre investissement peut baisser comme augmenter, et vous pouvez ne pas récupérer votre capital. Vous êtes entièrement responsable de vos décisions d'investissement. Claw 42 n'assume aucune responsabilité pour toute perte subie.",
       "4. Les performances passées ne préjugent pas des performances futures. Avant tout investissement, évaluez soigneusement votre expérience, votre situation financière, vos objectifs d'investissement et votre tolérance au risque, et consultez un conseiller financier indépendant. Pour plus d'informations, consultez notre Avis de risque et nos Conditions d'utilisation."
     ]
+  },
+  "agentWatch": {
+    "pageTitle": "",
+    "pageSubtitle": "",
+    "pageHeroTagline": "",
+    "sidebarStatus": {
+      "thinking": "",
+      "speaking": "",
+      "idle": ""
+    },
+    "bottomCta": "",
+    "linkCardLiveBadge": "LIVE",
+    "linkCardTitle": "3 Agents are analyzing the market",
+    "linkCardDesc": "Currently optimized for Chinese; English experience coming soon.",
+    "fallbackNotice": "",
+    "banner": {
+      "newContent": "New content →",
+      "dismissAriaLabel": "Dismiss new content notice"
+    },
+    "emptyHistory": "History is building up. Wait for the next Agent analysis batch.",
+    "loadingHistory": "Loading..."
+  },
+  "coinModal": {
+    "closeAriaLabel": "Close market card",
+    "goToWatchCta": "Go to Agent Live",
+    "loadingPrice": "Loading market data",
+    "agentCommentMissing": "Agent commentary available in Chinese only"
   }
 }

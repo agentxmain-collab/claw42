@@ -9,7 +9,16 @@ export function middleware(request: NextRequest) {
   const hasLocale = LOCALES.some(
     (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
   );
-  if (hasLocale) return NextResponse.next();
+  if (hasLocale) {
+    const [, locale, nextSegment] = pathname.split("/");
+    if (nextSegment === "agent" && locale !== "zh_CN") {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${locale}`;
+      return NextResponse.redirect(url, 302);
+    }
+
+    return NextResponse.next();
+  }
 
   const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
   const isValidCookie =
