@@ -19,6 +19,7 @@ const STALE_TTL_MS = 30 * 60_000;
 const PROVIDER_FAILURE_FALLBACK_TTL_MS = 30 * 60_000;
 const PROVIDER_TIMEOUT_MS = 5000;
 const COINS: CoinSymbol[] = ["BTC", "ETH", "SOL", "USDT"];
+const RISK_COINS: CoinSymbol[] = ["BTC", "ETH", "SOL"];
 const AGENTS: AgentId[] = ["alpha", "beta", "gamma"];
 
 const SKILLS: Record<AgentId, AgentSkill> = {
@@ -47,31 +48,89 @@ const HISTORY_BUFFER_MAX_MESSAGES = 200;
 let historyBuffer: HistoryMessageEntry[] = [];
 const seenHistoryIds = new Set<string>();
 
-function pick<T>(items: T[], offset = 0): T {
-  return items[Math.floor((Date.now() / 1000 + offset) % items.length)];
+function formatMarketPrice(symbol: CoinSymbol, price: number): string {
+  return `$${price.toLocaleString("en-US", {
+    maximumFractionDigits: symbol === "USDT" ? 4 : 2,
+  })}`;
 }
 
-function buildFallbackComments(): CoinComments {
+function formatMarketChange(change24h: number): string {
+  const sign = change24h >= 0 ? "+" : "";
+  return `${sign}${change24h.toFixed(2)}%`;
+}
+
+function rankedRiskCoins(tickers: TickerMap): CoinSymbol[] {
+  return [...RISK_COINS].sort((a, b) => tickers[b].change24h - tickers[a].change24h);
+}
+
+function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
+  const [leader, , laggard] = rankedRiskCoins(tickers);
+  const leaderTicker = tickers[leader];
+  const laggardTicker = tickers[laggard];
+  const btcTicker = tickers.BTC;
+  const spread = (leaderTicker.change24h - laggardTicker.change24h).toFixed(2);
+
+  return [
+    {
+      agentId: "alpha",
+      content: `${leader} ${formatMarketChange(leaderTicker.change24h)} 领涨，若回踩守住 ${formatMarketPrice(
+        leader,
+        leaderTicker.price,
+      )} 附近，我才看突破延续。`,
+    },
+    {
+      agentId: "beta",
+      content: `BTC ${formatMarketChange(btcTicker.change24h)}，先按 ${formatMarketPrice(
+        "BTC",
+        btcTicker.price,
+      )} 附近做风控线；跌回去就降仓，不追情绪。`,
+    },
+    {
+      agentId: "gamma",
+      content: `${leader} 比 ${laggard} 强 ${spread}pct，价差窗口在强币；若差值收窄，轮动先降温。`,
+    },
+  ];
+}
+
+function buildFallbackHeroBubbles(tickers: TickerMap): string[] {
+  const [leader, runnerUp, laggard] = rankedRiskCoins(tickers);
+  return [
+    `${leader} ${formatMarketChange(tickers[leader].change24h)}，先看回踩`,
+    `${runnerUp} 跟不跟量，是下一步信号`,
+    `${laggard} 偏弱，别急着补仓`,
+  ];
+}
+
+function buildFallbackComments(tickers: TickerMap): CoinComments {
   return {
     BTC: {
-      alpha: SKILLS.alpha.fallbacks.coinComments.BTC,
-      beta: SKILLS.beta.fallbacks.coinComments.BTC,
-      gamma: SKILLS.gamma.fallbacks.coinComments.BTC,
+      alpha: `BTC ${formatMarketChange(tickers.BTC.change24h)}，站稳 ${formatMarketPrice(
+        "BTC",
+        tickers.BTC.price,
+      )} 上方才看突破延续。`,
+      beta: `BTC 当前价 ${formatMarketPrice("BTC", tickers.BTC.price)}，回踩不破再考虑加仓，跌破先降风险。`,
+      gamma: `BTC 是基准，24h ${formatMarketChange(tickers.BTC.change24h)} 决定主线强弱是否还成立。`,
     },
     ETH: {
-      alpha: SKILLS.alpha.fallbacks.coinComments.ETH,
-      beta: SKILLS.beta.fallbacks.coinComments.ETH,
-      gamma: SKILLS.gamma.fallbacks.coinComments.ETH,
+      alpha: `ETH ${formatMarketChange(tickers.ETH.change24h)}，只有放量越过 ${formatMarketPrice(
+        "ETH",
+        tickers.ETH.price,
+      )} 附近才算补涨。`,
+      beta: `ETH 若继续弱于 BTC，仓位应低一档；先等 ${formatMarketPrice("ETH", tickers.ETH.price)} 附近确认。`,
+      gamma: `ETH 24h ${formatMarketChange(tickers.ETH.change24h)}，重点看相对 BTC 的强弱差能否修复。`,
     },
     SOL: {
-      alpha: SKILLS.alpha.fallbacks.coinComments.SOL,
-      beta: SKILLS.beta.fallbacks.coinComments.SOL,
-      gamma: SKILLS.gamma.fallbacks.coinComments.SOL,
+      alpha: `SOL ${formatMarketChange(tickers.SOL.change24h)} 弹性最大，守住 ${formatMarketPrice(
+        "SOL",
+        tickers.SOL.price,
+      )} 才有短打空间。`,
+      beta: `SOL 波动高，靠近 ${formatMarketPrice("SOL", tickers.SOL.price)} 试错要小仓，止损先写清。`,
+      gamma: `SOL 24h ${formatMarketChange(tickers.SOL.change24h)}，价差机会更活跃，但滑点也要计入。`,
     },
     USDT: {
-      alpha: SKILLS.alpha.fallbacks.coinComments.USDT,
-      beta: SKILLS.beta.fallbacks.coinComments.USDT,
-      gamma: SKILLS.gamma.fallbacks.coinComments.USDT,
+      alpha: `USDT ${formatMarketPrice("USDT", tickers.USDT.price)}，弹药稳定就等强币回踩，不急着打光。`,
+      beta: `USDT 24h ${formatMarketChange(tickers.USDT.change24h)}，保留现金仓能避免被动扛波动。`,
+      gamma: `USDT 接近 ${formatMarketPrice("USDT", tickers.USDT.price)}，稳定币未异常，风险偏好暂未失控。`,
     },
   };
 }
@@ -79,13 +138,8 @@ function buildFallbackComments(): CoinComments {
 function buildStaticFallback(tickers: TickerMap): AgentAnalysisPayload {
   const now = Date.now();
   if (staticFallbackCache && staticFallbackCache.expiresAt > now) {
-    return { ...staticFallbackCache.value, servedAt: now, tickers };
+    return { ...staticFallbackCache.value, servedAt: now };
   }
-
-  const stream: StreamMessage[] = AGENTS.map((agentId, index) => ({
-    agentId,
-    content: pick(SKILLS[agentId].fallbacks.stream, index * 7),
-  }));
 
   const value: AgentAnalysisPayload = {
     generatedAt: now,
@@ -94,13 +148,9 @@ function buildStaticFallback(tickers: TickerMap): AgentAnalysisPayload {
     source: "static-fallback",
     degraded: true,
     tickers,
-    stream,
-    heroBubbles: [
-      pick(SKILLS.alpha.fallbacks.heroBubbles, 0),
-      pick(SKILLS.beta.fallbacks.heroBubbles, 3),
-      pick(SKILLS.gamma.fallbacks.heroBubbles, 6),
-    ],
-    coinComments: buildFallbackComments(),
+    stream: buildFallbackStream(tickers),
+    heroBubbles: buildFallbackHeroBubbles(tickers),
+    coinComments: buildFallbackComments(tickers),
   };
 
   staticFallbackCache = { value, expiresAt: now + PROVIDER_FAILURE_FALLBACK_TTL_MS };
@@ -148,10 +198,9 @@ export function getNewestGeneratedAt(): number | null {
 function formatMarketLine(tickers: TickerMap): string {
   return COINS.map((symbol) => {
     const ticker = tickers[symbol];
-    const sign = ticker.change24h >= 0 ? "+" : "";
-    return `${symbol} $${ticker.price.toLocaleString("en-US", {
-      maximumFractionDigits: symbol === "USDT" ? 4 : 2,
-    })} ${sign}${ticker.change24h.toFixed(2)}%`;
+    return `${symbol} ${formatMarketPrice(symbol, ticker.price)} ${formatMarketChange(
+      ticker.change24h,
+    )}`;
   }).join("  ");
 }
 
@@ -185,12 +234,12 @@ ${skillPromptBlock("gamma")}
 
 {
   "stream": [
-    { "agentId": "alpha", "content": "<Alpha 当前对市场的 1-2 句点评，<=50字，基于上述行情真分析>" },
-    { "agentId": "beta", "content": "<Beta 当前对市场的 1-2 句点评>" },
-    { "agentId": "gamma", "content": "<Gamma 当前对市场的 1-2 句点评>" }
+    { "agentId": "alpha", "content": "<Alpha 当前对市场的 1-2 句点评，60-90字，必须含币种、数字、条件/失效点>" },
+    { "agentId": "beta", "content": "<Beta 当前对市场的 1-2 句点评，60-90字，必须含币种、数字、风控动作>" },
+    { "agentId": "gamma", "content": "<Gamma 当前对市场的 1-2 句点评，60-90字，必须含币种、数字、强弱/价差判断>" }
   ],
   "heroBubbles": [
-    "<Hero 机器人嘴里说的短句 1，<=40 字，行情相关>",
+    "<Hero 机器人嘴里说的短句 1，<=40 字，必须含币种或数字>",
     "<Hero 机器人嘴里说的短句 2>",
     "<Hero 机器人嘴里说的短句 3>"
   ],
@@ -206,6 +255,10 @@ ${skillPromptBlock("gamma")}
 - 全部中文输出
 - 直接输出 JSON，不加 markdown 代码块
 - 每条点评必须基于上面给的实时行情数据，不要泛泛而谈
+- stream 每条都必须同时包含：币种代码（BTC/ETH/SOL/USDT）、当前价格或 24h 涨跌幅数字、一个条件/触发/失效点
+- Alpha 给突破/追击条件；Beta 给仓位/回撤边界；Gamma 给相对强弱、价差或轮动结构
+- 禁止只输出“强、弱、风险、仓位、机会、别追”这类口号；必须说明“看什么价位/什么变化后怎么处理”
+- coinComments 每条 40-80 字，同样要带币种和数字，不要复述 stream
 - 禁用词: 综上所述、值得注意的是、赋能、leverage、moreover
 - 禁止 markdown 格式`;
 }
@@ -230,6 +283,49 @@ function parseAnalysisJson(text: string) {
   };
 }
 
+const ACTIONABLE_MARKERS = [
+  "若",
+  "如果",
+  "否则",
+  "站稳",
+  "跌破",
+  "回踩",
+  "放量",
+  "缩量",
+  "突破",
+  "失守",
+  "守住",
+  "确认",
+  "压力",
+  "支撑",
+  "风控",
+  "仓位",
+  "加仓",
+  "减仓",
+  "降仓",
+  "止损",
+  "跌回",
+  "价差",
+  "强弱",
+  "轮动",
+];
+
+function hasMarketSymbol(content: string): boolean {
+  return COINS.some((symbol) => content.includes(symbol));
+}
+
+function hasNumericMarketData(content: string): boolean {
+  return /[$+\-]?\d+(?:\.\d+)?%?/.test(content);
+}
+
+function hasActionableMarker(content: string): boolean {
+  return ACTIONABLE_MARKERS.some((marker) => content.includes(marker));
+}
+
+function isActionableMarketNote(content: string): boolean {
+  return hasMarketSymbol(content) && hasNumericMarketData(content) && hasActionableMarker(content);
+}
+
 function validateAnalysis(raw: ReturnType<typeof parseAnalysisJson>, tickers: TickerMap) {
   const stream = raw.stream;
   const heroBubbles = raw.heroBubbles;
@@ -245,7 +341,10 @@ function validateAnalysis(raw: ReturnType<typeof parseAnalysisJson>, tickers: Ti
     if (!found?.content || typeof found.content !== "string") {
       throw new Error(`${agentId} content missing`);
     }
-    return { agentId, content: found.content.slice(0, 120) };
+    if (!isActionableMarketNote(found.content)) {
+      throw new Error(`${agentId} content too generic`);
+    }
+    return { agentId, content: found.content.slice(0, 180) };
   });
 
   const normalizedComments = {} as CoinComments;

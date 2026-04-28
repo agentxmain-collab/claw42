@@ -37,6 +37,7 @@ export const AGENT_META: Record<AgentId, AgentDisplayMeta> = {
     tagline: skillMap.alpha.tagline,
     color: AGENT_COLOR_TOKEN.alpha.primary,
     avatar: "A",
+    avatarSrc: "/images/agents/alpha-120.png",
   },
   beta: {
     id: "beta",
@@ -44,6 +45,7 @@ export const AGENT_META: Record<AgentId, AgentDisplayMeta> = {
     tagline: skillMap.beta.tagline,
     color: AGENT_COLOR_TOKEN.beta.primary,
     avatar: "B",
+    avatarSrc: "/images/agents/beta-120.png",
   },
   gamma: {
     id: "gamma",
@@ -51,6 +53,7 @@ export const AGENT_META: Record<AgentId, AgentDisplayMeta> = {
     tagline: skillMap.gamma.tagline,
     color: AGENT_COLOR_TOKEN.gamma.primary,
     avatar: "G",
+    avatarSrc: "/images/agents/gamma-120.png",
   },
 };
 

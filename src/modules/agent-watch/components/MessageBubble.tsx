@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_META } from "../agents";
 import type { AgentWatchMessage } from "../types";
 import { formatAgentMessageTime } from "../utils/formatTime";
+import { AgentAvatar } from "./AgentAvatar";
 
 export function MessageBubble({ message }: { message: AgentWatchMessage }) {
   const { locale } = useI18n();
@@ -22,12 +23,7 @@ export function MessageBubble({ message }: { message: AgentWatchMessage }) {
       transition={{ duration: 0.24 }}
       className="flex gap-3 py-2"
     >
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-white"
-        style={{ backgroundColor: meta.color }}
-      >
-        {meta.avatar}
-      </span>
+      <AgentAvatar agentId={message.agentId} size="message" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-bold text-white">{meta.name}</span>

@@ -1,7 +1,8 @@
 "use client";
 
-import { AGENT_COLOR_TOKEN, AGENT_META, AGENT_ORDER } from "../agents";
+import { AGENT_META, AGENT_ORDER } from "../agents";
 import type { AgentId, AgentStatus } from "../types";
+import { AgentAvatar } from "./AgentAvatar";
 
 function StatusDot({ status }: { status: AgentStatus }) {
   const cls =
@@ -26,7 +27,6 @@ export function AgentSidebar({
     <aside className="grid gap-3 md:w-72 md:shrink-0">
       {AGENT_ORDER.map((id) => {
         const meta = AGENT_META[id];
-        const token = AGENT_COLOR_TOKEN[id];
         const status: AgentStatus =
           activeAgent === id ? "thinking" : speakingAgent === id ? "speaking" : "idle";
         const label =
@@ -41,15 +41,7 @@ export function AgentSidebar({
             key={id}
             className="flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-[#0e0e10] p-4 transition-colors hover:bg-white/[0.03]"
           >
-            <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-black text-white"
-              style={{
-                background: `linear-gradient(135deg, ${token.primary} 0%, ${token.soft} 100%)`,
-                boxShadow: `0 0 18px ${token.glow}, inset 0 0 0 1px rgba(255,255,255,0.08)`,
-              }}
-            >
-              {meta.avatar}
-            </span>
+            <AgentAvatar agentId={id} size="sidebar" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="truncate text-sm font-bold text-white">{meta.name}</span>

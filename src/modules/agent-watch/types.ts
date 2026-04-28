@@ -80,6 +80,7 @@ export interface AgentDisplayMeta {
   tagline: string;
   color: string;
   avatar: string;
+  avatarSrc: string;
 }
 
 export interface AgentWatchMessage {
