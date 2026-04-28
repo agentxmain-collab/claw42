@@ -122,7 +122,11 @@ export function AgentWatchBoard() {
       className="mx-auto min-h-[calc(100vh-72px)] w-full max-w-7xl px-4 pb-16 pt-24 md:px-8 md:pt-28"
     >
       <div className="space-y-5">
-        <CoinTickerStrip tickers={data?.tickers} isStale={data?.degraded} />
+        <CoinTickerStrip
+          tickers={data?.tickers}
+          isStale={data?.degraded}
+          source={data?.marketSource}
+        />
         <TopicHeader t={t} />
         <NewContentBanner
           visible={hasNewContent}

@@ -1,17 +1,20 @@
 import alphaSkill from "@/modules/agent-watch/skills/alpha.json";
 import betaSkill from "@/modules/agent-watch/skills/beta.json";
 import gammaSkill from "@/modules/agent-watch/skills/gamma.json";
-import { getMarketTickers } from "@/lib/marketDataCache";
+import { getMarketAnalysisContext } from "@/lib/marketDataCache";
 import type {
   AgentAnalysisPayload,
   AgentId,
   AgentSkill,
   CoinComments,
+  CoinMarketContext,
   CoinSymbol,
+  MarketDataSource,
   HistoryMessageEntry,
   ProviderSource,
   StreamMessage,
   TickerMap,
+  TimeframeSignal,
 } from "@/modules/agent-watch/types";
 
 const FRESH_TTL_MS = 5 * 60_000;
@@ -146,6 +149,7 @@ function buildStaticFallback(tickers: TickerMap): AgentAnalysisPayload {
     servedAt: now,
     ttl: 60,
     source: "static-fallback",
+    marketSource: "fallback",
     degraded: true,
     tickers,
     stream: buildFallbackStream(tickers),
@@ -204,6 +208,56 @@ function formatMarketLine(tickers: TickerMap): string {
   }).join("  ");
 }
 
+function formatNullablePrice(value: number | null): string {
+  if (value === null) return "N/A";
+  return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+}
+
+function formatNullableRatio(value: number | null): string {
+  if (value === null) return "N/A";
+  return `${value.toFixed(2)}x`;
+}
+
+function formatTimeframeSignal(label: string, signal: TimeframeSignal | null): string {
+  if (!signal) return `${label}: K线不足`;
+  return [
+    `${label}: close ${formatNullablePrice(signal.latestClose)}`,
+    `change ${formatMarketChange(signal.changePct)}`,
+    `trend ${signal.trend}`,
+    `support ${formatNullablePrice(signal.support)}`,
+    `resistance ${formatNullablePrice(signal.resistance)}`,
+    `EMA12 ${formatNullablePrice(signal.ema12)}`,
+    `EMA13 ${formatNullablePrice(signal.ema13)}`,
+    `EMA144 ${formatNullablePrice(signal.ema144)}`,
+    `EMA169 ${formatNullablePrice(signal.ema169)}`,
+    `vol ${formatNullableRatio(signal.volumeRatio)}`,
+    `candles ${signal.candleCount}`,
+  ].join(" | ");
+}
+
+function formatCoinWContext(
+  source: MarketDataSource,
+  context?: Partial<Record<CoinSymbol, CoinMarketContext>>,
+): string {
+  if (source !== "coinw-kline" || !context) {
+    return [
+      "CoinW K线: 不可用，当前只有现价/24h涨跌。",
+      "此状态下不得声称完成维加斯通道、趋势追踪、均值回归或突破体系，只能提示需要 K 线确认。",
+    ].join("\n");
+  }
+
+  return RISK_COINS.map((symbol) => {
+    const item = context[symbol];
+    if (!item) return `${symbol}: CoinW K线不足`;
+    return [
+      `### ${symbol} (${item.pair})`,
+      formatTimeframeSignal("5m", item.m5),
+      formatTimeframeSignal("15m", item.m15),
+      formatTimeframeSignal("4h", item.h4),
+    ].join("\n");
+  }).join("\n\n");
+}
+
 function skillPromptBlock(agentId: AgentId): string {
   const skill = SKILLS[agentId];
   return [
@@ -216,11 +270,28 @@ function skillPromptBlock(agentId: AgentId): string {
   ].join("\n");
 }
 
-function buildPrompt(tickers: TickerMap): string {
+function buildPrompt({
+  tickers,
+  source,
+  coinw,
+}: {
+  tickers: TickerMap;
+  source: MarketDataSource;
+  coinw?: Partial<Record<CoinSymbol, CoinMarketContext>>;
+}): string {
   return `你扮演 3 个加密交易 Agent 同时点评当前市场。每个 Agent 人设见下方。
 
-## 当前行情数据
+## 当前实时行情数据
 ${formatMarketLine(tickers)}
+
+## CoinW K线技术上下文
+${formatCoinWContext(source, coinw)}
+
+## 可用交易 Skill 框架
+- 维加斯通道：EMA12/13 看短期通道，EMA144/169 看中期趋势，EMA576/676 若数据不足必须说明不可判定。
+- 龙虾趋势追踪：判断 5m/15m/4h 是否同向，回踩均线支撑后再给条件。
+- 龙虾均值回归：只有在价格明显偏离均线/区间高低位时讨论回归，不得凭感觉抄底摸顶。
+- 龙虾突破交易：必须给关键阻力/支撑、有效突破条件、失效点，影线刺破不算确认。
 
 ## Agent 人设
 
@@ -257,6 +328,7 @@ ${skillPromptBlock("gamma")}
 - 每条点评必须基于上面给的实时行情数据，不要泛泛而谈
 - stream 每条都必须同时包含：币种代码（BTC/ETH/SOL/USDT）、当前价格或 24h 涨跌幅数字、一个条件/触发/失效点
 - Alpha 给突破/追击条件；Beta 给仓位/回撤边界；Gamma 给相对强弱、价差或轮动结构
+- 如果 CoinW K线不可用，必须明确说“K线不足，只能看现价”，不能给入场/止盈/止损计划
 - 禁止只输出“强、弱、风险、仓位、机会、别追”这类口号；必须说明“看什么价位/什么变化后怎么处理”
 - coinComments 每条 40-80 字，同样要带币种和数字，不要复述 stream
 - 禁用词: 综上所述、值得注意的是、赋能、leverage、moreover
@@ -326,7 +398,11 @@ function isActionableMarketNote(content: string): boolean {
   return hasMarketSymbol(content) && hasNumericMarketData(content) && hasActionableMarker(content);
 }
 
-function validateAnalysis(raw: ReturnType<typeof parseAnalysisJson>, tickers: TickerMap) {
+function validateAnalysis(
+  raw: ReturnType<typeof parseAnalysisJson>,
+  tickers: TickerMap,
+  marketSource: MarketDataSource,
+) {
   const stream = raw.stream;
   const heroBubbles = raw.heroBubbles;
   const coinComments = raw.coinComments;
@@ -362,6 +438,7 @@ function validateAnalysis(raw: ReturnType<typeof parseAnalysisJson>, tickers: Ti
   return {
     ttl: 60,
     tickers,
+    marketSource,
     stream: normalizedStream,
     heroBubbles: heroBubbles.slice(0, 3).map((item) => String(item).slice(0, 100)),
     coinComments: normalizedComments,
@@ -491,8 +568,9 @@ if (PROVIDERS.length === 0) {
 
 async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
   const now = Date.now();
-  const { tickers } = await getMarketTickers();
-  const prompt = buildPrompt(tickers);
+  const market = await getMarketAnalysisContext();
+  const { tickers } = market;
+  const prompt = buildPrompt(market);
 
   for (const provider of PROVIDERS) {
     try {
@@ -500,10 +578,11 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
       const parsed = parseAnalysisJson(text);
       const generatedAt = Date.now();
       const value = {
-        ...validateAnalysis(parsed, tickers),
+        ...validateAnalysis(parsed, tickers, market.source),
         generatedAt,
         servedAt: generatedAt,
         source: provider.name,
+        degraded: market.source !== "coinw-kline",
       } satisfies AgentAnalysisPayload;
       liveCache = {
         value,

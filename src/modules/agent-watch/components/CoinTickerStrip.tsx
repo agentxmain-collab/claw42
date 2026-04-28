@@ -1,6 +1,6 @@
 "use client";
 
-import type { TickerMap } from "../types";
+import type { MarketDataSource, TickerMap } from "../types";
 
 const COINS = ["BTC", "ETH", "SOL", "USDT"] as const;
 
@@ -14,10 +14,16 @@ function formatPrice(symbol: (typeof COINS)[number], price: number) {
 export function CoinTickerStrip({
   tickers,
   isStale,
+  source,
 }: {
   tickers?: TickerMap;
   isStale?: boolean;
+  source?: MarketDataSource;
 }) {
+  const sourceLabel =
+    source === "coinw-kline" ? "CoinW 实盘K线" : source === "coingecko-ticker" ? "仅现价" : "降级数据";
+  const statusLabel = source === "coinw-kline" && isStale ? "K线延迟" : sourceLabel;
+
   return (
     <div className="card-glow rounded-2xl border border-white/10 bg-[#111]/90 px-4 py-3">
       <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
@@ -39,11 +45,15 @@ export function CoinTickerStrip({
             </div>
           );
         })}
-        {isStale && (
-          <span className="rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-semibold text-yellow-200">
-            数据延迟
-          </span>
-        )}
+        <span
+          className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+            source === "coinw-kline"
+              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+              : "border-yellow-400/30 bg-yellow-400/10 text-yellow-200"
+          }`}
+        >
+          {statusLabel}
+        </span>
       </div>
     </div>
   );
