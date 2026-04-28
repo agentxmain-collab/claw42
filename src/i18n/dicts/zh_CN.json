@@ -154,7 +154,32 @@
       "dismissAriaLabel": "关闭新内容提示"
     },
     "emptyHistory": "历史正在积累中，等下一批 Agent 分析进来",
-    "loadingHistory": "加载中..."
+    "loadingHistory": "加载中...",
+    "coinPool": {
+      "majors": "主流",
+      "trending": "热门",
+      "opportunity": "机会"
+    },
+    "focusCard": {
+      "title": "关注中",
+      "warmingUp": "正在累积市场信号",
+      "trigger": "触发条件",
+      "fail": "失效条件",
+      "evidenceCount": "{count} 条信号作为依据",
+      "updated": "更新"
+    },
+    "marketEvent": {
+      "title": "市场信号流",
+      "empty": "实例内信号正在积累，继续停留会看到更多触发。",
+      "live": "LIVE"
+    },
+    "statusLabel": {
+      "coinw": "CoinW 实盘K线",
+      "spotOnly": "仅现价",
+      "fallback": "降级数据",
+      "stale": "K线延迟",
+      "warmingUp": "预热中"
+    }
   },
   "coinModal": {
     "closeAriaLabel": "关闭行情卡",

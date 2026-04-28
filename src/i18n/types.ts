@@ -108,6 +108,31 @@ export interface Dict {
     };
     emptyHistory: string;
     loadingHistory: string;
+    coinPool: {
+      majors: string;
+      trending: string;
+      opportunity: string;
+    };
+    focusCard: {
+      title: string;
+      warmingUp: string;
+      trigger: string;
+      fail: string;
+      evidenceCount: string;
+      updated: string;
+    };
+    marketEvent: {
+      title: string;
+      empty: string;
+      live: string;
+    };
+    statusLabel: {
+      coinw: string;
+      spotOnly: string;
+      fallback: string;
+      stale: string;
+      warmingUp: string;
+    };
   };
   coinModal: {
     closeAriaLabel: string;

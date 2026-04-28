@@ -154,7 +154,32 @@
       "dismissAriaLabel": "Dismiss new content notice"
     },
     "emptyHistory": "History is building up. Wait for the next Agent analysis batch.",
-    "loadingHistory": "Loading..."
+    "loadingHistory": "Loading...",
+    "coinPool": {
+      "majors": "Majors",
+      "trending": "Trending",
+      "opportunity": "Opportunity"
+    },
+    "focusCard": {
+      "title": "Focus",
+      "warmingUp": "Accumulating market signals",
+      "trigger": "Trigger",
+      "fail": "Invalidation",
+      "evidenceCount": "{count} signals as evidence",
+      "updated": "Updated"
+    },
+    "marketEvent": {
+      "title": "Market Signal Feed",
+      "empty": "Instance-local signals are building up. Stay on this page to see more triggers.",
+      "live": "LIVE"
+    },
+    "statusLabel": {
+      "coinw": "CoinW live kline",
+      "spotOnly": "Price only",
+      "fallback": "Fallback data",
+      "stale": "Kline delayed",
+      "warmingUp": "Warming up"
+    }
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",

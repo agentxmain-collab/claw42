@@ -133,6 +133,12 @@ export interface MarketTickerPayload {
   error?: "ticker_unavailable";
 }
 
+export interface MarketEventPayload {
+  servedAt: number;
+  count: number;
+  signals: SignalRecord[];
+}
+
 export interface StreamMessage {
   agentId: AgentId;
   content: string;

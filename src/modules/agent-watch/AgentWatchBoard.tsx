@@ -6,9 +6,12 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_ORDER } from "./agents";
 import { useAgentAnalysis } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
+import { useMarketEventFeed } from "./hooks/useMarketEventFeed";
 import type { AgentId, AgentWatchMessage, HistoryMessageEntry } from "./types";
 import { AgentSidebar } from "./components/AgentSidebar";
+import { AgentFocusCard } from "./components/AgentFocusCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
+import { MarketEventFeed } from "./components/MarketEventFeed";
 import { MessageStream, type MessageStreamHandle } from "./components/MessageStream";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
@@ -52,6 +55,7 @@ export function AgentWatchBoard() {
   const { data, isLoading, hasNewContent, dismissNewContent } = useAgentAnalysis({
     enabled: isZh,
   });
+  const { signals: marketSignals } = useMarketEventFeed({ enabled: isZh, limit: 12 });
   const processedGeneratedAtRef = useRef<number | null>(null);
   const messageStreamRef = useRef<MessageStreamHandle>(null);
   const timersRef = useRef<number[]>([]);
@@ -105,6 +109,10 @@ export function AgentWatchBoard() {
     () => mergeHistoryAndLive(historyMessages, liveQueue),
     [historyMessages, liveQueue],
   );
+  const focusByAgent = useMemo(
+    () => new Map(data?.focus?.map((focus) => [focus.agentId, focus]) ?? []),
+    [data?.focus],
+  );
 
   const handleDismissNewContent = useCallback(() => {
     dismissNewContent();
@@ -123,9 +131,12 @@ export function AgentWatchBoard() {
     >
       <div className="space-y-5">
         <CoinTickerStrip
+          pool={data?.pool}
           tickers={data?.tickers}
           isStale={data?.degraded}
           source={data?.marketSource}
+          labels={t.agentWatch.coinPool}
+          statusLabels={t.agentWatch.statusLabel}
         />
         <TopicHeader t={t} />
         <NewContentBanner
@@ -135,6 +146,19 @@ export function AgentWatchBoard() {
             void handleJumpToLatest();
           }}
         />
+
+        <MarketEventFeed signals={marketSignals} labels={t.agentWatch.marketEvent} />
+
+        <div className="grid gap-4 xl:grid-cols-3">
+          {AGENT_ORDER.map((agentId) => (
+            <AgentFocusCard
+              key={agentId}
+              agentId={agentId}
+              focus={focusByAgent.get(agentId)}
+              labels={t.agentWatch.focusCard}
+            />
+          ))}
+        </div>
 
         <div className="grid gap-4 md:flex md:items-stretch">
           <AgentSidebar
