@@ -7,6 +7,7 @@ export type AnalysisSource =
   | "claude"
   | "cache"
   | "static-fallback";
+export type ProviderSource = "minimax" | "deepseek" | "claude";
 
 export interface TickerData {
   price: number;
@@ -31,7 +32,8 @@ export interface StreamMessage {
 export type CoinComments = Record<CoinSymbol, Record<AgentId, string>>;
 
 export interface AgentAnalysisPayload {
-  ts: number;
+  generatedAt: number;
+  servedAt: number;
   ttl: number;
   source: AnalysisSource;
   tickers: TickerMap;
@@ -39,6 +41,15 @@ export interface AgentAnalysisPayload {
   heroBubbles: string[];
   coinComments: CoinComments;
   degraded?: boolean;
+}
+
+export interface HistoryMessageEntry {
+  id: string;
+  generatedAt: number;
+  agentId: AgentId;
+  content: string;
+  tickerSnapshot: TickerMap;
+  source: ProviderSource;
 }
 
 export interface AgentSkill {

@@ -8,6 +8,8 @@ import type {
   AgentSkill,
   CoinComments,
   CoinSymbol,
+  HistoryMessageEntry,
+  ProviderSource,
   StreamMessage,
   TickerMap,
 } from "@/modules/agent-watch/types";
@@ -41,6 +43,9 @@ type TimedCacheEntry = {
 let liveCache: LiveCacheEntry | null = null;
 let backgroundRefreshInFlight = false;
 let staticFallbackCache: TimedCacheEntry | null = null;
+const HISTORY_BUFFER_MAX_MESSAGES = 200;
+let historyBuffer: HistoryMessageEntry[] = [];
+const seenHistoryIds = new Set<string>();
 
 function pick<T>(items: T[], offset = 0): T {
   return items[Math.floor((Date.now() / 1000 + offset) % items.length)];
@@ -74,7 +79,7 @@ function buildFallbackComments(): CoinComments {
 function buildStaticFallback(tickers: TickerMap): AgentAnalysisPayload {
   const now = Date.now();
   if (staticFallbackCache && staticFallbackCache.expiresAt > now) {
-    return { ...staticFallbackCache.value, ts: now, tickers };
+    return { ...staticFallbackCache.value, servedAt: now, tickers };
   }
 
   const stream: StreamMessage[] = AGENTS.map((agentId, index) => ({
@@ -83,7 +88,8 @@ function buildStaticFallback(tickers: TickerMap): AgentAnalysisPayload {
   }));
 
   const value: AgentAnalysisPayload = {
-    ts: now,
+    generatedAt: now,
+    servedAt: now,
     ttl: 60,
     source: "static-fallback",
     degraded: true,
@@ -99,6 +105,44 @@ function buildStaticFallback(tickers: TickerMap): AgentAnalysisPayload {
 
   staticFallbackCache = { value, expiresAt: now + PROVIDER_FAILURE_FALLBACK_TTL_MS };
   return value;
+}
+
+function pushHistoryFromBatch(payload: AgentAnalysisPayload) {
+  if (payload.source === "cache" || payload.source === "static-fallback") return;
+
+  payload.stream.forEach((item, index) => {
+    const id = `${payload.generatedAt}-${item.agentId}-${index}`;
+    if (seenHistoryIds.has(id)) return;
+
+    const entry: HistoryMessageEntry = {
+      id,
+      generatedAt: payload.generatedAt,
+      agentId: item.agentId,
+      content: item.content,
+      tickerSnapshot: payload.tickers,
+      source: payload.source as ProviderSource,
+    };
+
+    historyBuffer.push(entry);
+    seenHistoryIds.add(id);
+  });
+
+  if (historyBuffer.length > HISTORY_BUFFER_MAX_MESSAGES) {
+    const trimCount = historyBuffer.length - HISTORY_BUFFER_MAX_MESSAGES;
+    const removed = historyBuffer.slice(0, trimCount);
+    historyBuffer = historyBuffer.slice(trimCount);
+    removed.forEach((entry) => seenHistoryIds.delete(entry.id));
+  }
+}
+
+export function getHistoryMessages(limit: number): HistoryMessageEntry[] {
+  const safeLimit = Math.max(1, Math.min(limit, HISTORY_BUFFER_MAX_MESSAGES));
+  return historyBuffer.slice(-safeLimit);
+}
+
+export function getNewestGeneratedAt(): number | null {
+  if (historyBuffer.length === 0) return null;
+  return historyBuffer[historyBuffer.length - 1].generatedAt;
 }
 
 function formatMarketLine(tickers: TickerMap): string {
@@ -217,7 +261,6 @@ function validateAnalysis(raw: ReturnType<typeof parseAnalysisJson>, tickers: Ti
   }
 
   return {
-    ts: Date.now(),
     ttl: 60,
     tickers,
     stream: normalizedStream,
@@ -356,15 +399,19 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
     try {
       const text = await provider.call(prompt);
       const parsed = parseAnalysisJson(text);
+      const generatedAt = Date.now();
       const value = {
         ...validateAnalysis(parsed, tickers),
+        generatedAt,
+        servedAt: generatedAt,
         source: provider.name,
       } satisfies AgentAnalysisPayload;
       liveCache = {
         value,
-        freshUntil: now + FRESH_TTL_MS,
-        staleUntil: now + STALE_TTL_MS,
+        freshUntil: generatedAt + FRESH_TTL_MS,
+        staleUntil: generatedAt + STALE_TTL_MS,
       };
+      pushHistoryFromBatch(value);
       return value;
     } catch (error) {
       console.warn(
@@ -376,7 +423,7 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
 
   if (liveCache) {
     console.warn("[claw42] all providers failed, using last known cache");
-    return { ...liveCache.value, source: "cache", ts: now, tickers };
+    return { ...liveCache.value, source: "cache", servedAt: now, tickers };
   }
 
   console.warn("[claw42] using static analysis fallback");
@@ -387,7 +434,7 @@ export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
   const now = Date.now();
 
   if (liveCache && liveCache.freshUntil > now) {
-    return { ...liveCache.value, source: "cache", ts: now };
+    return { ...liveCache.value, source: "cache", servedAt: now };
   }
 
   if (liveCache && liveCache.staleUntil > now) {
@@ -397,7 +444,7 @@ export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
         backgroundRefreshInFlight = false;
       });
     }
-    return { ...liveCache.value, source: "cache", ts: now };
+    return { ...liveCache.value, source: "cache", servedAt: now };
   }
 
   return refreshAnalysis();

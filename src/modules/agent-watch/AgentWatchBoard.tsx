@@ -26,15 +26,15 @@ export function AgentWatchBoard() {
   const { t } = useI18n();
   const reduceMotion = useReducedMotion();
   const { data, isLoading } = useAgentAnalysis({ enabled: true });
-  const processedTsRef = useRef<number | null>(null);
+  const processedGeneratedAtRef = useRef<number | null>(null);
   const timersRef = useRef<number[]>([]);
   const [messages, setMessages] = useState<AgentWatchMessage[]>([]);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
 
   useEffect(() => {
-    if (!data || processedTsRef.current === data.ts) return;
-    processedTsRef.current = data.ts;
+    if (!data || processedGeneratedAtRef.current === data.generatedAt) return;
+    processedGeneratedAtRef.current = data.generatedAt;
 
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
     timersRef.current = [];
@@ -44,17 +44,16 @@ export function AgentWatchBoard() {
         setTypingAgent(item.agentId);
       }, index * 1600);
       const appendTimer = window.setTimeout(() => {
-        const timestamp = Date.now();
         setTypingAgent(null);
         setSpeakingAgent(item.agentId);
         setMessages((current) =>
           keepFivePerAgent([
             ...current,
             {
-              id: `${data.ts}-${item.agentId}-${index}`,
+              id: `${data.generatedAt}-${item.agentId}-${index}`,
               agentId: item.agentId,
               content: item.content,
-              timestamp,
+              timestamp: data.generatedAt,
             },
           ]),
         );
