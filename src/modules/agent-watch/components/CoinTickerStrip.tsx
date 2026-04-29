@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import type { CoinPoolPayload, CoinTickerEntry, TickerMap } from "../types";
 import { priceDeltaColor } from "../utils/priceDeltaColor";
 
@@ -59,6 +59,46 @@ function writeFoldState(expanded: Record<FoldableGroupKey, boolean>) {
   }
 }
 
+function TickerChip({
+  ticker,
+  groupKey,
+  highlightedSymbol,
+  tickerRefs,
+}: {
+  ticker: CoinTickerEntry;
+  groupKey: string;
+  highlightedSymbol: string | null;
+  tickerRefs: MutableRefObject<Map<string, HTMLDivElement>>;
+}) {
+  const up = ticker.change24h >= 0;
+
+  return (
+    <div
+      key={`${groupKey}-${ticker.symbol}`}
+      ref={(node) => {
+        const symbol = ticker.symbol.toUpperCase();
+        if (node && !tickerRefs.current.has(symbol)) {
+          tickerRefs.current.set(symbol, node);
+        } else if (!node) {
+          tickerRefs.current.delete(symbol);
+        }
+      }}
+      data-ticker-symbol={ticker.symbol.toUpperCase()}
+      className={`flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs md:text-sm ${
+        highlightedSymbol === ticker.symbol.toUpperCase()
+          ? "animate-[claw42TickerHighlight_1.5s_ease-out]"
+          : ""
+      }`}
+    >
+      <span className="font-bold text-white">{ticker.symbol}</span>
+      <span className="text-white/70">{formatPrice(ticker.symbol, ticker.price)}</span>
+      <span className={priceDeltaColor(ticker.change24h)}>
+        {`${up ? "+" : ""}${ticker.change24h.toFixed(2)}%`}
+      </span>
+    </div>
+  );
+}
+
 export function CoinTickerStrip({
   pool,
   tickers,
@@ -86,13 +126,11 @@ export function CoinTickerStrip({
   );
   const tickerRefs = useRef(new Map<string, HTMLDivElement>());
   const [highlightedSymbol, setHighlightedSymbol] = useState<string | null>(null);
-  const visibleGroups = groups.filter((group) => {
-    if (group.key === "majors") return group.entries.length > 0;
-    if (group.key === "trending" || group.key === "opportunity") {
-      return expandedGroups[group.key] && group.entries.length > 0;
-    }
-    return group.entries.length > 0;
-  });
+  const majorsGroup = groups.find((group) => group.key === "majors");
+  const foldableGroups = groups.filter(
+    (group): group is { key: FoldableGroupKey; label: string; entries: CoinTickerEntry[] } =>
+      group.key === "trending" || group.key === "opportunity",
+  );
   const symbolKey = groups
     .flatMap((group) => group.entries.map((entry) => entry.symbol.toUpperCase()))
     .join("|");
@@ -147,61 +185,53 @@ export function CoinTickerStrip({
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#111]/90 px-4 py-3">
-      <div className="flex flex-col gap-3">
-        {visibleGroups
-          .filter((group) => group.entries.length > 0)
-          .map((group) => (
-            <div key={group.key} className="flex flex-wrap items-center gap-2">
-              <span className="w-12 shrink-0 text-xs font-bold text-white/40">{group.label}</span>
-              {group.entries.map((ticker) => {
-                const up = ticker.change24h >= 0;
-                return (
-                  <div
-                    key={`${group.key}-${ticker.symbol}`}
-                    ref={(node) => {
-                      const symbol = ticker.symbol.toUpperCase();
-                      if (node && !tickerRefs.current.has(symbol)) {
-                        tickerRefs.current.set(symbol, node);
-                      } else if (!node) {
-                        tickerRefs.current.delete(symbol);
-                      }
-                    }}
-                    data-ticker-symbol={ticker.symbol.toUpperCase()}
-                    className={`flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs md:text-sm ${
-                      highlightedSymbol === ticker.symbol.toUpperCase()
-                        ? "animate-[claw42TickerHighlight_1.5s_ease-out]"
-                        : ""
-                    }`}
-                  >
-                    <span className="font-bold text-white">{ticker.symbol}</span>
-                    <span className="text-white/70">
-                      {formatPrice(ticker.symbol, ticker.price)}
-                    </span>
-                    <span className={priceDeltaColor(ticker.change24h)}>
-                      {`${up ? "+" : ""}${ticker.change24h.toFixed(2)}%`}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="w-10 shrink-0 text-xs font-bold text-white/40">
+            {majorsGroup?.label ?? labels.majors}
+          </span>
+          {(majorsGroup?.entries ?? []).map((ticker) => (
+            <TickerChip
+              key={`majors-${ticker.symbol}`}
+              ticker={ticker}
+              groupKey="majors"
+              highlightedSymbol={highlightedSymbol}
+              tickerRefs={tickerRefs}
+            />
           ))}
 
-        {(["trending", "opportunity"] as const).map((key) => {
-          const group = groups.find((item) => item.key === key);
-          if (!group || group.entries.length === 0) return null;
-          const expanded = expandedGroups[key];
+          {foldableGroups.map((group, index) => {
+            if (group.entries.length === 0) return null;
+            const expanded = expandedGroups[group.key];
+            return (
+              <button
+                key={`toggle-${group.key}`}
+                type="button"
+                onClick={() => toggleGroup(group.key)}
+                className={`rounded-md border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-xs text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white/82 ${
+                  index === 0 ? "ml-2" : ""
+                }`}
+              >
+                {group.label}({group.entries.length}) {expanded ? "▴" : "▾"}
+              </button>
+            );
+          })}
+        </div>
+
+        {foldableGroups.map((group) => {
+          if (!expandedGroups[group.key] || group.entries.length === 0) return null;
           return (
-            <button
-              key={`toggle-${key}`}
-              type="button"
-              onClick={() => toggleGroup(key)}
-              className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/62 transition-colors hover:bg-white/[0.04] hover:text-white/82"
-            >
-              <span>
-                {expanded ? "收起" : "展开"} {group.label}
-              </span>
-              <span className="font-mono text-xs text-white/40">{group.entries.length}</span>
-            </button>
+            <div key={`expanded-${group.key}`} className="flex flex-wrap items-center gap-2 pl-12">
+              {group.entries.map((ticker) => (
+                <TickerChip
+                  key={`${group.key}-${ticker.symbol}`}
+                  ticker={ticker}
+                  groupKey={group.key}
+                  highlightedSymbol={highlightedSymbol}
+                  tickerRefs={tickerRefs}
+                />
+              ))}
+            </div>
           );
         })}
       </div>
