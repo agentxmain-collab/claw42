@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { trackEvent } from "@/lib/analytics";
 import { fadeUpVariants, getFadeUpTransition, motionViewport } from "@/lib/motion";
+import DailyBriefCard from "@/modules/landing/DailyBriefCard";
 
 function DailyReportInput() {
   const { t, locale } = useI18n();
@@ -47,35 +48,6 @@ function DailyReportInput() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function TypingDots() {
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <div className="flex gap-1 items-end pb-0.5">
-      {[0, 1, 2].map((i) =>
-        reduceMotion ? (
-          <span
-            key={i}
-            className="w-1.5 h-1.5 rounded-full bg-[#a78bfa] opacity-50"
-          />
-        ) : (
-          <motion.span
-            key={i}
-            className="w-1.5 h-1.5 rounded-full bg-[#a78bfa]"
-            animate={{ y: [0, -3, 0], opacity: [0.3, 1, 0.3] }}
-            transition={{
-              duration: 1.2,
-              repeat: Infinity,
-              delay: i * 0.15,
-              ease: "easeInOut",
-            }}
-          />
-        )
-      )}
     </div>
   );
 }
@@ -151,63 +123,7 @@ function DailyReportCard({ delay }: { delay: number }) {
           </div>
         </div>
 
-        <ChatPreviewCard delay={delay + 0.08} />
-      </div>
-    </motion.div>
-  );
-}
-
-function ChatPreviewCard({ delay }: { delay: number }) {
-  const { t } = useI18n();
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <motion.div
-      initial="hidden"
-      whileInView="visible"
-      viewport={motionViewport}
-      variants={fadeUpVariants(reduceMotion)}
-      transition={getFadeUpTransition(delay)}
-      whileHover={reduceMotion ? undefined : { scale: 1.015 }}
-      className="scenario-agent-frame group h-full min-h-[260px]"
-    >
-      <div className="scenario-agent-frame-glow" />
-      <div className="scenario-agent-frame-white" />
-      <div className="scenario-agent-frame-dark" />
-      <div className="scenario-agent-frame-border" />
-
-      <div className="scenario-agent-frame-inner h-full p-5 transition-colors duration-500 group-hover:bg-[#0f0a1a]">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8ad4] via-[#a78bfa] to-[#7c5cff] flex items-center justify-center shadow-[0_0_12px_rgba(167,139,250,0.5)]">
-            <span className="text-sm">✨</span>
-          </div>
-          <span className="text-sm font-semibold text-white">
-            {t.scenarios.daily.chatSpeaker}
-          </span>
-          <TypingDots />
-          <span className="text-xs text-gray-500 ml-auto">
-            {t.scenarios.daily.chatTime}
-          </span>
-        </div>
-
-        <div className="space-y-2 text-sm text-gray-300">
-          <p className="font-semibold text-white text-sm mb-2">
-            {t.scenarios.daily.chatTitle}
-          </p>
-          <div className="space-y-1.5 text-xs md:text-sm">
-            {t.scenarios.daily.chatBullets.map((line, i) => (
-              <motion.p
-                key={line}
-                initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={motionViewport}
-                transition={getFadeUpTransition(0.3 + i * 0.06)}
-              >
-                • {line}
-              </motion.p>
-            ))}
-          </div>
-        </div>
+        <DailyBriefCard delay={delay + 0.08} />
       </div>
     </motion.div>
   );

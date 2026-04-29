@@ -46,15 +46,23 @@
       "ctaClipboard": "GitHub - connectCoinw/coinw-skills の skills を使って、毎朝 9:00 に過去 24 時間の暗号通貨デイリーレポート（相場データ、主要通貨の動向を含む）を送ってください。",
       "ctaCopiedToast": "クリップボードにコピーしました——あなたの Agent に送って新しい暗号体験へ",
       "chatSpeaker": "Claw 42 Agent",
-      "chatTime": "just now",
-      "chatTitle": "📊 本日の暗号資産マーケットレポート",
-      "chatBullets": [
-        "BTC: $67,432 (+2.3%) — 重要なレジスタンスを突破",
-        "ETH: $3,521 (+1.8%) — Layer 2 TVL が過去最高を更新",
-        "SOL: $178 (-0.5%) — ミームコインの熱狂が沈静化",
-        "センチメント: 強欲 72",
-        "オンチェーン大口取引: 1000 BTC 超の送金が 3 件"
-      ]
+      "dailyBrief": {
+        "title": "Daily crypto market brief",
+        "realtimeLabel": "Realtime data",
+        "sentimentLabel": "Market sentiment",
+        "sentimentNeutral": "Neutral",
+        "sentimentExtremeFear": "Extreme Fear",
+        "sentimentFear": "Fear",
+        "sentimentGreed": "Greed",
+        "sentimentExtremeGreed": "Extreme Greed",
+        "todayMoverLabel": "Today's mover",
+        "tierOpportunity": "Opportunity",
+        "tierHot": "Hot",
+        "tierMajors": "Major",
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago",
+        "unavailable": "—"
+      }
     },
     "realtime": {
       "title": "リアルタイム相場モニター",

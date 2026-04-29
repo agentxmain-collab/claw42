@@ -46,15 +46,23 @@
       "ctaClipboard": "Usa los skills de GitHub - connectCoinw/coinw-skills para enviarme cada mañana a las 9:00 AM un informe diario cripto de las últimas 24 horas, incluyendo datos del mercado y precios de las principales monedas.",
       "ctaCopiedToast": "Copiado al portapapeles — envíalo a tu Agent para desbloquear la experiencia cripto",
       "chatSpeaker": "Claw 42 Agent",
-      "chatTime": "just now",
-      "chatTitle": "📊 Informe del mercado cripto de hoy",
-      "chatBullets": [
-        "BTC: $67 432 (+2,3 %) — Rompe resistencia clave",
-        "ETH: $3 521 (+1,8 %) — TVL de Layer 2 en máximos",
-        "SOL: $178 (-0,5 %) — El furor meme coin se enfría",
-        "Sentimiento: Codicia 72",
-        "Grandes movimientos on-chain: 3 transferencias > 1000 BTC"
-      ]
+      "dailyBrief": {
+        "title": "Daily crypto market brief",
+        "realtimeLabel": "Realtime data",
+        "sentimentLabel": "Market sentiment",
+        "sentimentNeutral": "Neutral",
+        "sentimentExtremeFear": "Extreme Fear",
+        "sentimentFear": "Fear",
+        "sentimentGreed": "Greed",
+        "sentimentExtremeGreed": "Extreme Greed",
+        "todayMoverLabel": "Today's mover",
+        "tierOpportunity": "Opportunity",
+        "tierHot": "Hot",
+        "tierMajors": "Major",
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago",
+        "unavailable": "—"
+      }
     },
     "realtime": {
       "title": "Monitor de mercado en tiempo real",
