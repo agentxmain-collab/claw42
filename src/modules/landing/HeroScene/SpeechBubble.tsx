@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -13,16 +13,28 @@ interface SpeechBubbleProps {
 
 export function SpeechBubble({ visible, reduceMotion, side, lines }: SpeechBubbleProps) {
   const { t } = useI18n();
-  const pool = lines?.length ? lines : t.hero.speechBubble;
+  const pool = useMemo(() => {
+    const cleaned = lines?.map((line) => line.trim()).filter(Boolean);
+    return cleaned?.length ? cleaned : t.hero.speechBubble;
+  }, [lines, t.hero.speechBubble]);
+  const poolKey = pool.join("\u0001");
+  const lastLineRef = useRef("");
   const [selectedLine, setSelectedLine] = useState("");
   const [typedLine, setTypedLine] = useState("");
 
   useEffect(() => {
     if (visible) {
-      const idx = Math.floor(Math.random() * pool.length);
-      setSelectedLine(pool[idx]);
+      let nextLine = pool[Math.floor(Math.random() * pool.length)] ?? "";
+      if (pool.length > 1 && nextLine === lastLineRef.current) {
+        const nextIndex =
+          (pool.indexOf(nextLine) + 1 + Math.floor(Math.random() * (pool.length - 1))) %
+          pool.length;
+        nextLine = pool[nextIndex] ?? nextLine;
+      }
+      lastLineRef.current = nextLine;
+      setSelectedLine(nextLine);
     }
-  }, [visible, pool]);
+  }, [visible, pool, poolKey]);
 
   useEffect(() => {
     if (!visible) {
