@@ -46,15 +46,23 @@
       "ctaClipboard": "استخدم مهارات GitHub - connectCoinw/coinw-skills لإرسال تقرير يومي عن العملات المشفرة لآخر 24 ساعة إليّ كل صباح الساعة 9:00، بما في ذلك بيانات السوق وأسعار العملات الرئيسية.",
       "ctaCopiedToast": "تم النسخ إلى الحافظة — أرسله إلى وكيلك الذكي لفتح تجربة التشفير الجديدة",
       "chatSpeaker": "Claw 42 Agent",
-      "chatTime": "just now",
-      "chatTitle": "📊 تقرير سوق العملات المشفّرة اليوم",
-      "chatBullets": [
-        "BTC: $67,432 (+2.3%) — اختراق مقاومة رئيسية",
-        "ETH: $3,521 (+1.8%) — TVL لـ Layer 2 يسجّل أعلى مستوى",
-        "SOL: $178 (-0.5%) — حماس عملات الميم يتراجع",
-        "المشاعر: جشع 72",
-        "تحويلات كبيرة على السلسلة: 3 تحويلات > 1000 BTC"
-      ]
+      "dailyBrief": {
+        "title": "Daily crypto market brief",
+        "realtimeLabel": "Realtime data",
+        "sentimentLabel": "Market sentiment",
+        "sentimentNeutral": "Neutral",
+        "sentimentExtremeFear": "Extreme Fear",
+        "sentimentFear": "Fear",
+        "sentimentGreed": "Greed",
+        "sentimentExtremeGreed": "Extreme Greed",
+        "todayMoverLabel": "Today's mover",
+        "tierOpportunity": "Opportunity",
+        "tierHot": "Hot",
+        "tierMajors": "Major",
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago",
+        "unavailable": "—"
+      }
     },
     "realtime": {
       "title": "مراقبة السوق في الوقت الفعلي",

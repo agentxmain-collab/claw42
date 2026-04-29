@@ -46,15 +46,23 @@
       "ctaClipboard": "С помощью skills из GitHub - connectCoinw/coinw-skills присылай мне каждое утро в 9:00 ежедневный крипто-отчёт за последние 24 часа с данными рынка и котировками основных монет.",
       "ctaCopiedToast": "Скопировано в буфер обмена — отправьте своему Agent, чтобы открыть новый крипто-опыт",
       "chatSpeaker": "Claw 42 Agent",
-      "chatTime": "just now",
-      "chatTitle": "📊 Сегодняшний отчёт крипто-рынка",
-      "chatBullets": [
-        "BTC: $67 432 (+2,3%) — пробой ключевого сопротивления",
-        "ETH: $3 521 (+1,8%) — TVL Layer 2 на новом максимуме",
-        "SOL: $178 (-0,5%) — интерес к мем-коинам остывает",
-        "Настроение: Жадность 72",
-        "Крупные он-чейн переводы: 3 транзакции > 1000 BTC"
-      ]
+      "dailyBrief": {
+        "title": "Daily crypto market brief",
+        "realtimeLabel": "Realtime data",
+        "sentimentLabel": "Market sentiment",
+        "sentimentNeutral": "Neutral",
+        "sentimentExtremeFear": "Extreme Fear",
+        "sentimentFear": "Fear",
+        "sentimentGreed": "Greed",
+        "sentimentExtremeGreed": "Extreme Greed",
+        "todayMoverLabel": "Today's mover",
+        "tierOpportunity": "Opportunity",
+        "tierHot": "Hot",
+        "tierMajors": "Major",
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago",
+        "unavailable": "—"
+      }
     },
     "realtime": {
       "title": "Мониторинг рынка в реальном времени",

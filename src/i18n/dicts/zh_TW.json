@@ -46,15 +46,23 @@
       "ctaClipboard": "使用 GitHub - connectCoinw/coinw-skills 中的 skills，在每天早上 9:00 發送給我過去 24 小時的加密日報，包含大盤數據、主流幣種行情。",
       "ctaCopiedToast": "已複製到剪貼簿，發給你的 Agent 開啟加密新體驗",
       "chatSpeaker": "Claw 42 Agent",
-      "chatTime": "just now",
-      "chatTitle": "📊 今日加密貨幣市場日報",
-      "chatBullets": [
-        "BTC: $67,432 (+2.3%) — 突破關鍵阻力位",
-        "ETH: $3,521 (+1.8%) — Layer2 TVL 創新高",
-        "SOL: $178 (-0.5%) — Meme 幣熱度回落",
-        "市場情緒: 貪婪 72",
-        "鏈上大額轉帳: 3 筆 > 1000 BTC"
-      ]
+      "dailyBrief": {
+        "title": "今日加密貨幣市場日報",
+        "realtimeLabel": "即時數據",
+        "sentimentLabel": "市場情緒",
+        "sentimentNeutral": "中性",
+        "sentimentExtremeFear": "極度恐慌",
+        "sentimentFear": "恐慌",
+        "sentimentGreed": "貪婪",
+        "sentimentExtremeGreed": "極度貪婪",
+        "todayMoverLabel": "今日異動",
+        "tierOpportunity": "機會區",
+        "tierHot": "熱門區",
+        "tierMajors": "主流區",
+        "justNow": "剛剛",
+        "minutesAgo": "{n} 分鐘前",
+        "unavailable": "—"
+      }
     },
     "realtime": {
       "title": "即時行情監控",
