@@ -174,6 +174,32 @@
     "marketEvent": {
       "title": "市场信号",
       "empty": "等待新信号..."
+    },
+    "agentCard": {
+      "statusSilent": "静默",
+      "statusObserving": "观察中",
+      "statusSpeaking": "发言中",
+      "statusAlert": "高警戒",
+      "focusLabel": "当前关注",
+      "triggerLabel": "触发",
+      "invalidationLabel": "失效条件",
+      "updateAtSuffix": "更新"
+    },
+    "stageFocus": {
+      "typeCollective": "集体信号",
+      "typeHighSeverity": "关键事件",
+      "typeFactionConflict": "派别分歧",
+      "folded": "暂无焦点 · 静默 {minutes}min",
+      "primaryLabel": "主响应",
+      "echoLabel": "补充视角"
+    },
+    "history": {
+      "expandLabel": "展开历史",
+      "collapseLabel": "收起历史",
+      "tabTimeline": "时间流",
+      "tabFaction": "派别聚合",
+      "emptyTimeline": "暂无历史发言",
+      "emptyFaction": "暂无派别聚合"
     }
   },
   "coinModal": {

@@ -124,6 +124,32 @@ export interface Dict {
       warmup: string;
       thinking: string;
     };
+    agentCard: {
+      statusSilent: string;
+      statusObserving: string;
+      statusSpeaking: string;
+      statusAlert: string;
+      focusLabel: string;
+      triggerLabel: string;
+      invalidationLabel: string;
+      updateAtSuffix: string;
+    };
+    stageFocus: {
+      typeCollective: string;
+      typeHighSeverity: string;
+      typeFactionConflict: string;
+      folded: string;
+      primaryLabel: string;
+      echoLabel: string;
+    };
+    history: {
+      expandLabel: string;
+      collapseLabel: string;
+      tabTimeline: string;
+      tabFaction: string;
+      emptyTimeline: string;
+      emptyFaction: string;
+    };
     marketEvent: {
       title: string;
       empty: string;
