@@ -33,7 +33,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
-          bottom: "11%",
+          bottom: "20%",
           width: "min(340px, 29vw)",
           height: "min(230px, 19vw)",
           transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
@@ -59,7 +59,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
-          bottom: "18%",
+          bottom: "27%",
           width: "min(206px, 17vw)",
           height: "min(286px, 24vw)",
           transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
@@ -80,7 +80,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none overflow-visible"
         style={{
-          bottom: "19%",
+          bottom: "28%",
           width: "min(232px, 19vw)",
           height: "min(292px, 24vw)",
           transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
@@ -153,7 +153,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
-          bottom: "24%",
+          bottom: "33%",
           width: "min(260px, 22vw)",
           height: "min(132px, 10vw)",
           transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
@@ -173,7 +173,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
-          bottom: "23%",
+          bottom: "32%",
           width: "min(196px, 16vw)",
           height: "min(196px, 16vw)",
           transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
@@ -193,7 +193,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <div
         className="absolute left-1/2 pointer-events-none"
         style={{
-          bottom: "9%",
+          bottom: "20%",
           width: "min(456px, 40vw)",
           transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
           zIndex: 10,

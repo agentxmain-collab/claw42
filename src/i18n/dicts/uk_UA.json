@@ -136,25 +136,45 @@
     ]
   },
   "agentWatch": {
-    "pageTitle": "",
-    "pageSubtitle": "",
+    "pageTitle": "Live · Crypto Market",
+    "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
     "pageHeroTagline": "",
     "sidebarStatus": {
       "thinking": "",
       "speaking": "",
       "idle": ""
     },
-    "bottomCta": "",
+    "bottomCta": "Open Agent →",
     "linkCardLiveBadge": "LIVE",
-    "linkCardTitle": "3 Agents are analyzing the market",
-    "linkCardDesc": "Currently optimized for Chinese; English experience coming soon.",
+    "linkCardTitle": "3 Agents are watching the market",
+    "linkCardDesc": "Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
     "fallbackNotice": "",
     "banner": {
       "newContent": "New content →",
       "dismissAriaLabel": "Dismiss new content notice"
     },
-    "emptyHistory": "History is building up. Wait for the next Agent analysis batch.",
-    "loadingHistory": "Loading..."
+    "emptyHistory": "Waiting for the next Agent batch.",
+    "loadingHistory": "Loading...",
+    "coinPool": {
+      "majors": "Majors",
+      "trending": "Trending",
+      "opportunity": "Opportunity"
+    },
+    "focusCard": {
+      "watching": "Зараз стежить",
+      "trigger": "Trigger",
+      "fail": "Invalidation",
+      "expandFail": "Invalidation",
+      "evidenceCount": "{count} signals as evidence",
+      "minutesAgo": "{minutes} min ago",
+      "warmup": "Agent warming up",
+      "thinking": "Thinking",
+      "focusLabel": "Зараз стежить"
+    },
+    "marketEvent": {
+      "title": "Market Signals",
+      "empty": "Waiting for new signals..."
+    }
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",

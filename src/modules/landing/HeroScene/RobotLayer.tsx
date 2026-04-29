@@ -12,6 +12,7 @@ interface RobotLayerProps {
   mouseX: number;
   mouseY: number;
   reduceMotion: boolean;
+  onOpenWatch: () => void;
 }
 
 const POSE_SRC: Record<"left" | "right", string> = {
@@ -38,17 +39,29 @@ const MOUTH_OVERLAY = {
   width: "33.9%",
 };
 
-export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerProps) {
-  const { locale } = useI18n();
+export function RobotLayer({
+  pose,
+  mouseX,
+  mouseY,
+  reduceMotion,
+  onOpenWatch,
+}: RobotLayerProps) {
+  const { t, locale } = useI18n();
   const [blink, setBlink] = useState(false);
   const [hovered, setHovered] = useState(false);
   const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
   const isZh = locale === "zh_CN";
   const { data } = useAgentAnalysis({ enabled: isZh });
-  const dynamicLines =
-    isZh && data?.source !== "static-fallback" && data?.heroBubbles?.length
-      ? data.heroBubbles
-      : undefined;
+  const liveHeroLines =
+    data?.source !== "static-fallback" ? data?.heroBubbles?.filter(Boolean) : undefined;
+  const fallbackAnalysisLines = data?.stream?.map((message) => message.content).filter(Boolean);
+  const dynamicLines = isZh
+    ? liveHeroLines?.length
+      ? liveHeroLines
+      : fallbackAnalysisLines?.length
+        ? fallbackAnalysisLines
+        : [t.coinModal.loadingPrice]
+    : undefined;
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -78,15 +91,25 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
       className="claw42-hero-robot absolute z-40 left-1/2 bottom-[34%] md:bottom-[40%]"
       style={{
         transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
-        bottom: "var(--claw42-hero-robot-bottom)",
+        bottom: "var(--claw42-hero-robot-bottom, 41%)",
         width: "var(--claw42-hero-robot-width, min(316px, 28vw))",
         pointerEvents: "none",
       }}
     >
       <motion.div
-        className="relative pointer-events-auto"
+        className="relative pointer-events-auto cursor-pointer"
+        role="button"
+        tabIndex={0}
+        aria-label={t.hero.speechBubbleAriaLabel}
+        onClick={onOpenWatch}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          onOpenWatch();
+        }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        whileTap={reduceMotion ? undefined : { scale: 0.98 }}
         animate={reduceMotion ? { y: 0 } : { y: [0, -12, 0] }}
         transition={
           reduceMotion

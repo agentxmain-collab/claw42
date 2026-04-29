@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
+import { useMarketTicker } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import { useMouseNormalized } from "./useMouseNormalized";
 import { useRobotPose, type Pose } from "./useRobotPose";
 import { RobotLayer } from "./RobotLayer";
 import { PedestalLayer } from "./PedestalLayer";
 import { CoinsLayer } from "./CoinsLayer";
-import { CoinModal } from "./components/CoinModal";
 import type { CoinSymbol } from "@/modules/agent-watch/types";
 
 /** Simple mobile detection without extra dependencies. */
@@ -48,11 +49,12 @@ function useMobilePoseCycle(isMobile: boolean, reduceMotion: boolean): Pose {
 
 export function HeroScene() {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const reduceMotion = useReducedMotion() ?? false;
   const stageRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [heroCopied, setHeroCopied] = useState(false);
-  const [selectedCoin, setSelectedCoin] = useState<CoinSymbol | null>(null);
+  const { data: tickerData } = useMarketTicker({ enabled: true, intervalMs: 60_000 });
 
   const handleHeroCtaClick = async () => {
     try {
@@ -76,6 +78,15 @@ export function HeroScene() {
   const desktopPose = useRobotPose(mouseX, reduceMotion);
   const mobilePose = useMobilePoseCycle(isMobile, reduceMotion);
   const pose = isMobile ? mobilePose : desktopPose;
+  const watchPath = `/${locale}/agent`;
+  const handleOpenWatch = () => {
+    trackEvent("hero_agent_watch_click", { locale, surface: "hero_robot" });
+    router.push(watchPath);
+  };
+  const handleOpenCoinWatch = (symbol: CoinSymbol) => {
+    trackEvent("hero_coin_watch_click", { locale, symbol, surface: "hero_coin" });
+    router.push(`${watchPath}#${symbol}`);
+  };
 
   return (
     <section
@@ -110,21 +121,28 @@ export function HeroScene() {
       <PedestalLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
 
       {/* z-20/25 Robot */}
-      <RobotLayer pose={pose} mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
+      <RobotLayer
+        pose={pose}
+        mouseX={mouseX}
+        mouseY={mouseY}
+        reduceMotion={reduceMotion}
+        onOpenWatch={handleOpenWatch}
+      />
 
       {/* z-30 Coins */}
       <CoinsLayer
         mouseX={mouseX}
         mouseY={mouseY}
         reduceMotion={reduceMotion}
-        onSelectCoin={setSelectedCoin}
+        tickers={tickerData?.tickers}
+        onSelectCoin={handleOpenCoinWatch}
       />
 
       {/* z-50 Gradient scrim for title readability */}
       <div className="absolute inset-x-0 bottom-0 z-50 h-[42%] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
 
       {/* z-50 Title + CTA overlay */}
-      <div className="claw42-hero-copy absolute inset-x-0 bottom-[6%] z-50 flex flex-col items-center text-center px-6 max-w-4xl mx-auto left-1/2 -translate-x-1/2">
+      <div className="claw42-hero-copy absolute bottom-[6%] left-1/2 z-50 flex w-full max-w-4xl -translate-x-1/2 flex-col items-center px-6 text-center">
         <div className="claw42-hero-text flex flex-col items-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
             {t.hero.title}
@@ -133,14 +151,14 @@ export function HeroScene() {
             {t.hero.subtitle}
           </p>
         </div>
-        <div className="claw42-hero-actions flex flex-col sm:flex-row gap-4 pointer-events-auto">
+        <div className="claw42-hero-actions flex flex-col items-center justify-center gap-4 pointer-events-auto sm:flex-row">
           <div className="relative">
             <motion.button
               type="button"
               onClick={handleHeroCtaClick}
               whileHover={reduceMotion ? undefined : { scale: 1.05 }}
               whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-              className="px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
+              className="min-w-[11rem] px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
             >
               {t.hero.ctaPrimary}
             </motion.button>
@@ -170,17 +188,12 @@ export function HeroScene() {
             }
             whileHover={reduceMotion ? undefined : { scale: 1.05 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
+            className="min-w-[11rem] px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
           >
             {t.hero.ctaSecondary}
           </motion.a>
         </div>
       </div>
-      <AnimatePresence>
-        {selectedCoin && (
-          <CoinModal symbol={selectedCoin} onClose={() => setSelectedCoin(null)} />
-        )}
-      </AnimatePresence>
     </section>
   );
 }

@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
-import type { CoinSymbol } from "@/modules/agent-watch/types";
+import type { CoinSymbol, TickerData, TickerMap } from "@/modules/agent-watch/types";
 
 interface CoinsLayerProps {
   mouseX: number;
   mouseY: number;
   reduceMotion: boolean;
+  tickers?: TickerMap;
   onSelectCoin?: (symbol: CoinSymbol) => void;
 }
 
@@ -30,6 +31,7 @@ interface CoinItemProps {
   translateX: number;
   translateY: number;
   reduceMotion: boolean;
+  ticker?: TickerData;
   onEngageTrail: (clientX: number, clientY: number) => void;
   onLingerTrail: () => void;
   onSelectCoin?: (symbol: CoinSymbol) => void;
@@ -114,7 +116,7 @@ const COINS: CoinConfig[] = [
     symbol: "BTC",
     label: "Bitcoin",
     src: "/images/hero/coin-btc.png",
-    anchor: { top: "24%", left: "27%" },
+    anchor: { top: "25%", left: "30%" },
     sizeClass: "w-[60px] md:w-[108px]",
     depth: 0.8,
     phaseX1: 0,
@@ -127,7 +129,7 @@ const COINS: CoinConfig[] = [
     symbol: "ETH",
     label: "Ethereum",
     src: "/images/hero/coin-eth.png",
-    anchor: { top: "24%", right: "27%" },
+    anchor: { top: "25%", right: "30%" },
     sizeClass: "w-[58px] md:w-[104px]",
     depth: 0.7,
     phaseX1: 1.9,
@@ -140,7 +142,7 @@ const COINS: CoinConfig[] = [
     symbol: "SOL",
     label: "Solana",
     src: "/images/hero/coin-sol.png",
-    anchor: { top: "65%", left: "24%" },
+    anchor: { top: "54%", left: "28%" },
     sizeClass: "w-[54px] md:w-[96px]",
     depth: 0.9,
     phaseX1: 2.7,
@@ -153,7 +155,7 @@ const COINS: CoinConfig[] = [
     symbol: "USDT",
     label: "Tether",
     src: "/images/hero/coin-usdt.png",
-    anchor: { top: "65%", right: "24%" },
+    anchor: { top: "54%", right: "28%" },
     sizeClass: "w-[56px] md:w-[100px]",
     depth: 0.75,
     phaseX1: 0.8,
@@ -164,7 +166,24 @@ const COINS: CoinConfig[] = [
   },
 ];
 
-export function CoinsLayer({ mouseX, mouseY, reduceMotion, onSelectCoin }: CoinsLayerProps) {
+function formatTickerPrice(price: number) {
+  return `$${price.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: price < 1 ? 6 : 2,
+  })}`;
+}
+
+function formatTickerChange(change24h: number) {
+  return `${change24h >= 0 ? "+" : ""}${change24h.toFixed(2)}%`;
+}
+
+export function CoinsLayer({
+  mouseX,
+  mouseY,
+  reduceMotion,
+  tickers,
+  onSelectCoin,
+}: CoinsLayerProps) {
   void mouseX;
   void mouseY;
 
@@ -294,6 +313,7 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion, onSelectCoin }: Coins
             translateX={floatX}
             translateY={floatY}
             reduceMotion={reduceMotion}
+            ticker={tickers?.[coin.symbol]}
             onEngageTrail={engageTrail}
             onLingerTrail={lingerTrail}
             onSelectCoin={onSelectCoin}
@@ -311,6 +331,7 @@ function CoinItem({
   translateX,
   translateY,
   reduceMotion,
+  ticker,
   onEngageTrail,
   onLingerTrail,
   onSelectCoin,
@@ -320,17 +341,22 @@ function CoinItem({
   // v2 改用 useAnimationControls 手动 start keyframes，不 remount，不闪烁。
   const controls = useAnimationControls();
   const [bursting, setBursting] = useState(false);
+  const [tooltipVisible, setTooltipVisible] = useState(false);
   const burstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
       if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
+      if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
     };
   }, []);
 
   const baseFilter = bursting
     ? "drop-shadow(0 0 12px rgba(255,205,98,0.52)) saturate(1.08)"
     : "drop-shadow(0 0 18px rgba(124,92,255,0.35))";
+  const tooltipPlacement =
+    Number.parseFloat(coin.anchor.top) > 50 ? "bottom-full mb-2" : "top-full mt-2";
 
   return (
     <div
@@ -343,10 +369,10 @@ function CoinItem({
     >
       <button
         type="button"
-        className={`claw42-hero-coin ${coin.sizeClass} relative pointer-events-auto cursor-pointer`}
+        className={`claw42-hero-coin ${coin.sizeClass} relative pointer-events-auto cursor-pointer hover:scale-105 focus-visible:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c5cff]/70`}
         data-coin={coin.symbol}
         style={{
-          transform: `translate(${translateX}px, ${translateY}px)`,
+          transform: `translate(${translateX}px, ${translateY}px) scale(${tooltipVisible ? 1.05 : 1})`,
           transition: "transform 180ms ease-out",
           appearance: "none",
           border: 0,
@@ -356,6 +382,8 @@ function CoinItem({
         aria-label={`${coin.label} market card`}
         onClick={() => onSelectCoin?.(coin.symbol)}
         onMouseEnter={(event) => {
+          if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+          tooltipTimerRef.current = setTimeout(() => setTooltipVisible(true), 150);
           setBursting(true);
           if (burstTimerRef.current) clearTimeout(burstTimerRef.current);
           burstTimerRef.current = setTimeout(() => setBursting(false), 900);
@@ -374,6 +402,8 @@ function CoinItem({
           if (!reduceMotion) onEngageTrail(event.clientX, event.clientY);
         }}
         onMouseLeave={() => {
+          if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+          setTooltipVisible(false);
           onLingerTrail();
         }}
       >
@@ -390,6 +420,29 @@ function CoinItem({
             }}
           />
         </motion.div>
+        <AnimatePresence>
+          {tooltipVisible && ticker && (
+            <motion.div
+              initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 4, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4, scale: 0.96 }}
+              transition={{ duration: reduceMotion ? 0 : 0.16 }}
+              className={`pointer-events-none absolute left-1/2 z-50 min-w-[132px] -translate-x-1/2 rounded-xl border border-white/10 bg-black/85 px-3 py-2 text-left shadow-[0_14px_36px_rgba(0,0,0,0.42)] backdrop-blur-md ${tooltipPlacement}`}
+            >
+              <div className="font-mono text-xs font-bold text-white">{coin.symbol}</div>
+              <div className="mt-0.5 font-mono text-xs text-white/75">
+                {formatTickerPrice(ticker.price)}
+              </div>
+              <div
+                className={`mt-0.5 font-mono text-xs ${
+                  ticker.change24h >= 0 ? "text-[#27d980]" : "text-[#ff5f5f]"
+                }`}
+              >
+                {formatTickerChange(ticker.change24h)} (24h)
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </button>
     </div>
   );

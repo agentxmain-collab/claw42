@@ -6,12 +6,60 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_ORDER } from "./agents";
 import { useAgentAnalysis } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
-import type { AgentId, AgentWatchMessage, HistoryMessageEntry } from "./types";
-import { AgentSidebar } from "./components/AgentSidebar";
+import { useMarketEventFeed } from "./hooks/useMarketEventFeed";
+import type {
+  AgentId,
+  AgentStatus,
+  AgentWatchMessage,
+  HistoryMessageEntry,
+} from "./types";
+import { AgentRowCard } from "./components/AgentRowCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
+import { MarketEventFeed } from "./components/MarketEventFeed";
 import { MessageStream, type MessageStreamHandle } from "./components/MessageStream";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
+
+const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
+
+function warnDuplicateMessage(reason: string, message: AgentWatchMessage) {
+  if (process.env.NODE_ENV === "production") return;
+  console.warn("[claw42] duplicate watch message skipped", {
+    reason,
+    id: message.id,
+    agentId: message.agentId,
+    timestamp: message.timestamp,
+  });
+}
+
+function dedupeAgentMessages(messages: AgentWatchMessage[]) {
+  const seenIds = new Set<string>();
+  const recentContent = new Map<string, number>();
+  const unique: AgentWatchMessage[] = [];
+
+  for (const message of messages) {
+    if (seenIds.has(message.id)) {
+      warnDuplicateMessage("id", message);
+      continue;
+    }
+
+    const contentKey = `${message.agentId}:${message.content.trim()}`;
+    const lastTimestamp = recentContent.get(contentKey);
+    if (
+      lastTimestamp !== undefined &&
+      Math.abs(message.timestamp - lastTimestamp) <= DUPLICATE_CONTENT_WINDOW_MS
+    ) {
+      warnDuplicateMessage("content", message);
+      continue;
+    }
+
+    seenIds.add(message.id);
+    recentContent.set(contentKey, message.timestamp);
+    unique.push(message);
+  }
+
+  return unique;
+}
 
 function keepFivePerAgent(messages: AgentWatchMessage[]) {
   const kept = new Set<string>();
@@ -37,7 +85,7 @@ function mergeHistoryAndLive(
       content: entry.content,
       timestamp: entry.generatedAt,
     }));
-  return [...historyAsMessages, ...live];
+  return dedupeAgentMessages([...historyAsMessages, ...live]);
 }
 
 export function AgentWatchBoard() {
@@ -52,6 +100,7 @@ export function AgentWatchBoard() {
   const { data, isLoading, hasNewContent, dismissNewContent } = useAgentAnalysis({
     enabled: isZh,
   });
+  const { signals: marketSignals } = useMarketEventFeed({ enabled: isZh, limit: 12 });
   const processedGeneratedAtRef = useRef<number | null>(null);
   const messageStreamRef = useRef<MessageStreamHandle>(null);
   const timersRef = useRef<number[]>([]);
@@ -78,15 +127,17 @@ export function AgentWatchBoard() {
         setTypingAgent(null);
         setSpeakingAgent(item.agentId);
         setLiveQueue((current) =>
-          keepFivePerAgent([
-            ...current,
-            {
-              id: `${data.generatedAt}-${item.agentId}-${index}`,
-              agentId: item.agentId,
-              content: item.content,
-              timestamp: data.generatedAt,
-            },
-          ]),
+          keepFivePerAgent(
+            dedupeAgentMessages([
+              ...current,
+              {
+                id: `${data.generatedAt}-${item.agentId}-${index}`,
+                agentId: item.agentId,
+                content: item.content,
+                timestamp: data.generatedAt,
+              },
+            ]),
+          ),
         );
       }, index * 1600 + 800);
       const clearSpeakingTimer = window.setTimeout(() => {
@@ -105,6 +156,10 @@ export function AgentWatchBoard() {
     () => mergeHistoryAndLive(historyMessages, liveQueue),
     [historyMessages, liveQueue],
   );
+  const focusByAgent = useMemo(
+    () => new Map(data?.focus?.map((focus) => [focus.agentId, focus]) ?? []),
+    [data?.focus],
+  );
 
   const handleDismissNewContent = useCallback(() => {
     dismissNewContent();
@@ -115,6 +170,11 @@ export function AgentWatchBoard() {
     messageStreamRef.current?.scrollToLatest();
     dismissNewContent();
   }, [dismissNewContent, refreshHistory]);
+  const statusForAgent = useCallback(
+    (agentId: AgentId): AgentStatus =>
+      typingAgent === agentId ? "thinking" : speakingAgent === agentId ? "speaking" : "idle",
+    [speakingAgent, typingAgent],
+  );
 
   return (
     <section
@@ -122,12 +182,27 @@ export function AgentWatchBoard() {
       className="mx-auto min-h-[calc(100vh-72px)] w-full max-w-7xl px-4 pb-16 pt-24 md:px-8 md:pt-28"
     >
       <div className="space-y-5">
-        <CoinTickerStrip
-          tickers={data?.tickers}
-          isStale={data?.degraded}
-          source={data?.marketSource}
-        />
         <TopicHeader t={t} />
+        <CoinTickerStrip
+          pool={data?.pool}
+          tickers={data?.tickers}
+          labels={t.agentWatch.coinPool}
+        />
+        <MarketEventFeed signals={marketSignals} labels={t.agentWatch.marketEvent} />
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {AGENT_ORDER.map((agentId) => (
+            <AgentRowCard
+              key={agentId}
+              agentId={agentId}
+              focus={focusByAgent.get(agentId) ?? null}
+              status={statusForAgent(agentId)}
+              statusLabels={t.agentWatch.sidebarStatus}
+              focusLabels={t.agentWatch.focusCard}
+            />
+          ))}
+        </div>
+
         <NewContentBanner
           visible={hasNewContent}
           onDismiss={handleDismissNewContent}
@@ -136,19 +211,12 @@ export function AgentWatchBoard() {
           }}
         />
 
-        <div className="grid gap-4 md:flex md:items-stretch">
-          <AgentSidebar
-            activeAgent={typingAgent}
-            speakingAgent={speakingAgent}
-            labels={t.agentWatch.sidebarStatus}
-          />
-          <MessageStream
-            ref={messageStreamRef}
-            messages={combinedMessages}
-            typingAgent={typingAgent}
-            emptyLabel={t.agentWatch.emptyHistory}
-          />
-        </div>
+        <MessageStream
+          ref={messageStreamRef}
+          messages={combinedMessages}
+          typingAgent={typingAgent}
+          emptyLabel={t.agentWatch.emptyHistory}
+        />
 
         {(isLoading || isHistoryLoading) && combinedMessages.length === 0 && (
           <p className="text-center text-sm text-white/35">{t.agentWatch.loadingHistory}</p>

@@ -1,5 +1,7 @@
 import fallbackTickerData from "@/modules/agent-watch/skills/fallback-tickers.json";
 import type {
+  CoinPoolPayload,
+  CoinTickerEntry,
   CoinMarketContext,
   CoinSymbol,
   MarketCandle,
@@ -18,9 +20,18 @@ let lastKnownTickers: MarketTickerPayload | null = null;
 
 const TICKER_CACHE_KEY = "coingecko:ticker:v1";
 const MARKET_CONTEXT_CACHE_KEY = "coinw:market-context:v1";
+const TRENDING_CACHE_KEY = "coingecko:trending:v1";
+const OPPORTUNITY_CACHE_KEY = "coingecko:opportunity:v1";
+const TRENDING_TTL_MS = 5 * 60_000;
+const OPPORTUNITY_TTL_MS = 5 * 60_000;
 const COINGECKO_URL =
   "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,tether&vs_currencies=usd&include_24hr_change=true";
+const COINGECKO_TRENDING_URL = "https://api.coingecko.com/api/v3/search/trending";
+const COINGECKO_MARKETS_URL =
+  "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&price_change_percentage=24h";
 const COINW_PUBLIC_API_BASE_URL = process.env.COINW_PUBLIC_API_BASE_URL || "https://api.coinw.com";
+const MAJORS_SYMBOLS: CoinSymbol[] = ["BTC", "ETH", "SOL"];
+const POOL_EXCLUDED_SYMBOLS = new Set<string>([...MAJORS_SYMBOLS, "USDT"]);
 const COINW_SYMBOLS: Array<Exclude<CoinSymbol, "USDT">> = ["BTC", "ETH", "SOL"];
 const COINW_PERIODS = {
   m5: 300,
@@ -51,6 +62,11 @@ function fallbackTickers(): MarketTickerPayload {
     isFallback: true,
     error: "ticker_unavailable",
   };
+}
+
+function coinGeckoHeaders(): HeadersInit {
+  if (!process.env.COINGECKO_API_KEY) return {};
+  return { "x-cg-demo-api-key": process.env.COINGECKO_API_KEY };
 }
 
 function normalizeCoinGeckoPayload(payload: unknown): TickerMap {
@@ -88,13 +104,8 @@ async function fetchCoinGeckoTickers(): Promise<MarketTickerPayload> {
   const timer = setTimeout(() => controller.abort(), 5000);
 
   try {
-    const headers: HeadersInit = {};
-    if (process.env.COINGECKO_API_KEY) {
-      headers["x-cg-demo-api-key"] = process.env.COINGECKO_API_KEY;
-    }
-
     const response = await fetch(COINGECKO_URL, {
-      headers,
+      headers: coinGeckoHeaders(),
       signal: controller.signal,
       cache: "no-store",
     });
@@ -112,6 +123,125 @@ async function fetchCoinGeckoTickers(): Promise<MarketTickerPayload> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchWithTimeout(url: string, timeoutMs = 5000): Promise<unknown> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      headers: coinGeckoHeaders(),
+      signal: controller.signal,
+      cache: "no-store",
+    });
+
+    if (!response.ok) throw new Error(`coingecko ${response.status}`);
+    return response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function normalizePoolEntry({
+  symbol,
+  name,
+  price,
+  change24h,
+  category,
+}: {
+  symbol: string;
+  name?: string;
+  price: unknown;
+  change24h: unknown;
+  category: CoinTickerEntry["category"];
+}): CoinTickerEntry | null {
+  const normalizedPrice = Number(price);
+  const normalizedChange = Number(change24h);
+  const normalizedSymbol = symbol.trim().toUpperCase();
+
+  if (!normalizedSymbol || !Number.isFinite(normalizedPrice)) return null;
+
+  return {
+    symbol: normalizedSymbol,
+    name,
+    price: normalizedPrice,
+    change24h: Number.isFinite(normalizedChange) ? normalizedChange : 0,
+    category,
+  };
+}
+
+async function fetchTrendingPool(): Promise<CoinTickerEntry[]> {
+  const payload = (await fetchWithTimeout(COINGECKO_TRENDING_URL)) as {
+    coins?: Array<{ item?: { id?: string; symbol?: string; name?: string } }>;
+  };
+  const topCoins = (payload.coins ?? [])
+    .map((item) => item.item)
+    .filter((item): item is { id: string; symbol: string; name?: string } =>
+      Boolean(item?.id && item.symbol),
+    )
+    .filter((item) => !POOL_EXCLUDED_SYMBOLS.has(item.symbol.toUpperCase()))
+    .slice(0, 3);
+
+  if (topCoins.length === 0) return [];
+
+  const ids = topCoins.map((item) => item.id).join(",");
+  const pricePayload = (await fetchWithTimeout(
+    `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(
+      ids,
+    )}&vs_currencies=usd&include_24hr_change=true`,
+  )) as Record<string, { usd?: number; usd_24h_change?: number }>;
+
+  return topCoins
+    .map((item) =>
+      normalizePoolEntry({
+        symbol: item.symbol,
+        name: item.name,
+        price: pricePayload[item.id]?.usd,
+        change24h: pricePayload[item.id]?.usd_24h_change,
+        category: "trending",
+      }),
+    )
+    .filter((item): item is CoinTickerEntry => Boolean(item));
+}
+
+async function fetchOpportunityPool(): Promise<CoinTickerEntry[]> {
+  const payload = (await fetchWithTimeout(COINGECKO_MARKETS_URL)) as Array<{
+    symbol?: string;
+    name?: string;
+    current_price?: number;
+    price_change_percentage_24h?: number;
+  }>;
+  if (!Array.isArray(payload)) return [];
+
+  const filtered = payload.filter((item) => {
+    const symbol = item.symbol?.toUpperCase();
+    return symbol && !POOL_EXCLUDED_SYMBOLS.has(symbol);
+  });
+  const sorted = [...filtered].sort(
+    (a, b) =>
+      Number(b.price_change_percentage_24h ?? 0) -
+      Number(a.price_change_percentage_24h ?? 0),
+  );
+  const candidates = [...sorted.slice(0, 2), ...sorted.slice(-1)];
+  const seen = new Set<string>();
+
+  return candidates
+    .map((item) =>
+      normalizePoolEntry({
+        symbol: item.symbol ?? "",
+        name: item.name,
+        price: item.current_price,
+        change24h: item.price_change_percentage_24h,
+        category: "opportunity",
+      }),
+    )
+    .filter((item): item is CoinTickerEntry => {
+      if (!item || seen.has(item.symbol)) return false;
+      seen.add(item.symbol);
+      return true;
+    })
+    .slice(0, 3);
 }
 
 export async function getMarketTickers(): Promise<MarketTickerPayload> {
@@ -345,4 +475,50 @@ export async function getMarketAnalysisContext(): Promise<MarketTickerPayload> {
     console.warn("[claw42] coinw kline fallback", error instanceof Error ? error.message : error);
     return tickerPayload;
   }
+}
+
+function majorsFromTickers(tickers: TickerMap): CoinTickerEntry[] {
+  return MAJORS_SYMBOLS.map((symbol) => ({
+    symbol,
+    price: tickers[symbol].price,
+    change24h: tickers[symbol].change24h,
+    category: "majors",
+  }));
+}
+
+export async function getCoinPool(): Promise<CoinPoolPayload> {
+  const analysisContext = await getMarketAnalysisContext();
+
+  const [trendingResult, opportunityResult] = await Promise.allSettled([
+    getCached(TRENDING_CACHE_KEY, TRENDING_TTL_MS, fetchTrendingPool),
+    getCached(OPPORTUNITY_CACHE_KEY, OPPORTUNITY_TTL_MS, fetchOpportunityPool),
+  ]);
+
+  if (trendingResult.status === "rejected") {
+    console.warn(
+      "[claw42] trending fallback",
+      trendingResult.reason instanceof Error ? trendingResult.reason.message : trendingResult.reason,
+    );
+  }
+  if (opportunityResult.status === "rejected") {
+    console.warn(
+      "[claw42] opportunity fallback",
+      opportunityResult.reason instanceof Error
+        ? opportunityResult.reason.message
+        : opportunityResult.reason,
+    );
+  }
+
+  return {
+    ts: Date.now(),
+    tickers: analysisContext.tickers,
+    majors: majorsFromTickers(analysisContext.tickers),
+    trending: trendingResult.status === "fulfilled" ? trendingResult.value : [],
+    opportunity: opportunityResult.status === "fulfilled" ? opportunityResult.value : [],
+    signals: analysisContext.coinw,
+    source: analysisContext.source,
+    isStale: analysisContext.isStale,
+    isFallback: analysisContext.isFallback,
+    error: analysisContext.error,
+  };
 }
