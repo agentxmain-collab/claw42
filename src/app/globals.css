@@ -429,9 +429,27 @@ body {
   will-change: filter;
 }
 
+@keyframes claw42-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.claw42-marquee-track {
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  .claw42-marquee-track {
+    animation: none !important;
+    transform: translateX(0) !important;
   }
 
   .card-glow:hover {

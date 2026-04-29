@@ -7,8 +7,15 @@ import { AGENT_ORDER } from "./agents";
 import { useAgentAnalysis } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
 import { useMarketEventFeed } from "./hooks/useMarketEventFeed";
-import type { AgentId, AgentWatchMessage, HistoryMessageEntry } from "./types";
-import { AgentSidebar } from "./components/AgentSidebar";
+import type {
+  AgentId,
+  AgentStatus,
+  AgentWatchMessage,
+  HistoryMessageEntry,
+  SignalRecord,
+  WatchFeedItem,
+} from "./types";
+import { AgentRowCard } from "./components/AgentRowCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
 import { MarketEventFeed } from "./components/MarketEventFeed";
 import { MessageStream, type MessageStreamHandle } from "./components/MessageStream";
@@ -40,6 +47,51 @@ function mergeHistoryAndLive(
       timestamp: entry.generatedAt,
     }));
   return [...historyAsMessages, ...live];
+}
+
+function feedItemTs(item: WatchFeedItem): number {
+  return item.type === "agent" ? item.timestamp : item.signal.ts;
+}
+
+function dedupeSystemSignals(signals: SignalRecord[], windowMs: number): SignalRecord[] {
+  const result: SignalRecord[] = [];
+  const lastBySymbol = new Map<string, { index: number; ts: number }>();
+
+  for (const signal of [...signals].sort((a, b) => a.ts - b.ts)) {
+    const last = lastBySymbol.get(signal.symbol);
+    if (last && signal.ts - last.ts < windowMs) {
+      result[last.index] = signal;
+      lastBySymbol.set(signal.symbol, { index: last.index, ts: signal.ts });
+      continue;
+    }
+
+    result.push(signal);
+    lastBySymbol.set(signal.symbol, { index: result.length - 1, ts: signal.ts });
+  }
+
+  return result.sort((a, b) => a.ts - b.ts);
+}
+
+function buildFeedItems(
+  messages: AgentWatchMessage[],
+  signals: SignalRecord[],
+): WatchFeedItem[] {
+  const agentItems: WatchFeedItem[] = messages.map((message) => ({
+    type: "agent",
+    agentId: message.agentId,
+    content: message.content,
+    timestamp: message.timestamp,
+    id: message.id,
+  }));
+  const systemItems: WatchFeedItem[] = dedupeSystemSignals(signals, 60_000)
+    .slice(-12)
+    .map((signal) => ({
+      type: "market-event",
+      signal,
+      id: `sys-${signal.id}`,
+    }));
+
+  return [...agentItems, ...systemItems].sort((a, b) => feedItemTs(a) - feedItemTs(b));
 }
 
 export function AgentWatchBoard() {
@@ -112,6 +164,10 @@ export function AgentWatchBoard() {
     () => new Map(data?.focus?.map((focus) => [focus.agentId, focus]) ?? []),
     [data?.focus],
   );
+  const feedItems = useMemo(
+    () => buildFeedItems(combinedMessages, marketSignals),
+    [combinedMessages, marketSignals],
+  );
 
   const handleDismissNewContent = useCallback(() => {
     dismissNewContent();
@@ -122,6 +178,11 @@ export function AgentWatchBoard() {
     messageStreamRef.current?.scrollToLatest();
     dismissNewContent();
   }, [dismissNewContent, refreshHistory]);
+  const statusForAgent = useCallback(
+    (agentId: AgentId): AgentStatus =>
+      typingAgent === agentId ? "thinking" : speakingAgent === agentId ? "speaking" : "idle",
+    [speakingAgent, typingAgent],
+  );
 
   return (
     <section
@@ -129,13 +190,27 @@ export function AgentWatchBoard() {
       className="mx-auto min-h-[calc(100vh-72px)] w-full max-w-7xl px-4 pb-16 pt-24 md:px-8 md:pt-28"
     >
       <div className="space-y-5">
+        <TopicHeader t={t} />
         <CoinTickerStrip
           pool={data?.pool}
           tickers={data?.tickers}
           labels={t.agentWatch.coinPool}
         />
         <MarketEventFeed signals={marketSignals} labels={t.agentWatch.marketEvent} />
-        <TopicHeader t={t} />
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {AGENT_ORDER.map((agentId) => (
+            <AgentRowCard
+              key={agentId}
+              agentId={agentId}
+              focus={focusByAgent.get(agentId) ?? null}
+              status={statusForAgent(agentId)}
+              statusLabels={t.agentWatch.sidebarStatus}
+              focusLabels={t.agentWatch.focusCard}
+            />
+          ))}
+        </div>
+
         <NewContentBanner
           visible={hasNewContent}
           onDismiss={handleDismissNewContent}
@@ -144,23 +219,14 @@ export function AgentWatchBoard() {
           }}
         />
 
-        <div className="grid gap-4 lg:flex lg:items-stretch">
-          <AgentSidebar
-            activeAgent={typingAgent}
-            speakingAgent={speakingAgent}
-            labels={t.agentWatch.sidebarStatus}
-            focusByAgent={focusByAgent}
-            focusLabels={t.agentWatch.focusCard}
-          />
-          <MessageStream
-            ref={messageStreamRef}
-            messages={combinedMessages}
-            typingAgent={typingAgent}
-            emptyLabel={t.agentWatch.emptyHistory}
-          />
-        </div>
+        <MessageStream
+          ref={messageStreamRef}
+          items={feedItems}
+          typingAgent={typingAgent}
+          emptyLabel={t.agentWatch.emptyHistory}
+        />
 
-        {(isLoading || isHistoryLoading) && combinedMessages.length === 0 && (
+        {(isLoading || isHistoryLoading) && feedItems.length === 0 && (
           <p className="text-center text-sm text-white/35">{t.agentWatch.loadingHistory}</p>
         )}
 

@@ -2,8 +2,9 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import type { AgentId, AgentWatchMessage } from "../types";
+import type { AgentId, WatchFeedItem } from "../types";
 import { MessageBubble } from "./MessageBubble";
+import { SystemSignalBubble } from "./SystemSignalBubble";
 import { TypingIndicator } from "./TypingIndicator";
 
 export interface MessageStreamHandle {
@@ -11,13 +12,13 @@ export interface MessageStreamHandle {
 }
 
 interface MessageStreamProps {
-  messages: AgentWatchMessage[];
+  items: WatchFeedItem[];
   typingAgent: AgentId | null;
   emptyLabel?: string;
 }
 
 export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>(function MessageStream(
-  { messages, typingAgent, emptyLabel },
+  { items, typingAgent, emptyLabel },
   forwardedRef,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,7 +29,7 @@ export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>
     const el = containerRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [messages, typingAgent, autoScroll]);
+  }, [items, typingAgent, autoScroll]);
 
   useImperativeHandle(forwardedRef, () => ({
     scrollToLatest: () => {
@@ -40,7 +41,7 @@ export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>
   }));
 
   return (
-    <div className="card-glow relative min-h-[560px] flex-1 overflow-hidden rounded-2xl border border-white/10 bg-[#111]">
+    <div className="card-glow relative min-h-[560px] w-full overflow-hidden rounded-2xl border border-white/10 bg-[#111]">
       <div
         ref={containerRef}
         onScroll={() => {
@@ -50,16 +51,20 @@ export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>
         }}
         className="h-[560px] overflow-y-auto px-4 py-4 md:px-6"
       >
-        {messages.length === 0 && !typingAgent && (
+        {items.length === 0 && !typingAgent && (
           <div className="flex h-full items-center justify-center text-sm text-white/40">
             {emptyLabel ?? "等待 Agent 开口..."}
           </div>
         )}
 
         <AnimatePresence initial={false}>
-          {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))}
+          {items.map((item) =>
+            item.type === "agent" ? (
+              <MessageBubble key={item.id} message={item} />
+            ) : (
+              <SystemSignalBubble key={item.id} signal={item.signal} />
+            ),
+          )}
         </AnimatePresence>
 
         {typingAgent && <TypingIndicator agentId={typingAgent} />}
