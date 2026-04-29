@@ -224,14 +224,14 @@ function buildFallbackStreamContent(agentId: AgentId, tickers: TickerMap, seed: 
   const second = selectAgentStreamFallback(agentId, seed + 17);
 
   if (agentId === "alpha") {
-    return `${leader} 先盯 5m 放量和前高反应，${first}；${second}，没回踩确认不追。`;
+    return `触发：${leader} 先盯 5m 放量和前高反应，${first}；失效：${second}，没回踩确认不追。`;
   }
 
   if (agentId === "beta") {
-    return `${leader} 暂时只看 EMA12/13 是否重新共振。${first}；${second}，趋势没确认前仓位别一次打满。`;
+    return `趋势：${leader} 暂时只看 EMA12/13 是否重新共振，${first}。动作：${second}，趋势没确认前仓位别一次打满。`;
   }
 
-  return `${leader} 和 ${runnerUp} 都还没给出足够极端的回归窗口。${first}；${second}，先等近期高低位失速。`;
+  return `极端：${leader} 和 ${runnerUp} 24h 都还没给出足够极端的回归窗口。边界：${first}；${second}，先等近期高低位失速。`;
 }
 
 function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
@@ -681,10 +681,10 @@ function skillPromptBlock(agentId: AgentId): string {
   );
   const shape =
     agentId === "alpha"
-      ? "35-55字，1句短刀式判断；可以凶，但必须有触发价/失效条件。"
+      ? "35-60字，必须用“触发：...；失效：...”结构；短刀式判断，可以凶，但必须有触发价/失效条件。"
       : agentId === "beta"
-        ? "70-95字，必须2句；第一句读趋势和EMA，第二句给持有/减仓/观望动作。"
-        : "55-80字，必须2句；第一句报24h极端涨跌或近期高低位，第二句给回归边界。";
+        ? "70-100字，必须用“趋势：...。动作：...”结构；第一句读趋势和EMA，第二句给持有/减仓/观望动作。"
+        : "55-85字，必须用“极端：...。边界：...”结构；第一句报24h极端涨跌或近期高低位，第二句给回归边界。";
   const persona =
     agentId === "gamma"
       ? "你是 Gamma，加密交易均值回归派 Agent。v1 只用 24h 极端涨跌、近期高低位和波动区间变化看回归窗口，不引用 RSI / 布林带 / EMA144 偏离。"
@@ -778,7 +778,7 @@ ${lastBatchText}
 - 必须引用上方真实市场数据：币种代码、buffer 信号事件、priceLevel / volumeRatio / distancePct / change24h 等具体数字。
 - 每条都要给可观察条件：看哪个价位、哪条均线、哪个区间、什么失效。
 - 不要三个人说同一套话。Alpha 看关键位突破，Beta 看 EMA 趋势，Gamma 看极端涨跌和回归。
-- 三条 stream 不能同长度、不能同句式、不能都只有一句话。Beta 和 Gamma 必须是两句，Alpha 可以一刀短句。
+- 三条 stream 必须使用不同结构：Alpha=“触发/失效”，Beta=“趋势/动作”，Gamma=“极端/边界”。不能同长度、不能同句式。
 - focus 必须基于上方“市场信号沉淀”，如果信号不足就明确写“观察中”，不要编造。
 
 ## Agent 人设
@@ -816,9 +816,9 @@ ${skillPromptBlock("gamma")}
     { "agentId": "gamma", "...": "同结构" }
   ],
   "stream": [
-    { "agentId": "alpha", "content": "<35-55字，1句，必须含币种、数字、突破/失效条件，并使用 Alpha 术语>" },
-    { "agentId": "beta", "content": "<70-95字，2句，必须含币种、数字、EMA/趋势边界，并使用 Beta 术语>" },
-    { "agentId": "gamma", "content": "<55-80字，2句，必须含币种、数字、极端涨跌/回归边界，并使用 Gamma 术语>" }
+    { "agentId": "alpha", "content": "<触发：...；失效：...。35-60字，必须含币种、数字、突破/失效条件，并使用 Alpha 术语>" },
+    { "agentId": "beta", "content": "<趋势：...。动作：...。70-100字，必须含币种、数字、EMA/趋势边界，并使用 Beta 术语>" },
+    { "agentId": "gamma", "content": "<极端：...。边界：...。55-85字，必须含币种、数字、极端涨跌/回归边界，并使用 Gamma 术语>" }
   ],
   "heroBubbles": [
     "<Hero 机器人嘴里说的短句 1，<=40 字，必须含币种或数字，像实时看盘>",
@@ -843,6 +843,7 @@ ${skillPromptBlock("gamma")}
 - Gamma 的 focus.symbol 只能从热门/机会栏里选 24h 绝对波动最大的非主流币，禁止选 BTC/ETH/SOL/USDT
 - 每个 Agent 的 stream 必须至少出现自己的强制术语 1 个；coinComments 也要尽量延续本 Agent 术语
 - 三个 Agent 的 stream 内容长度必须明显不同：Alpha 最短，Beta 最长，Gamma 居中
+- stream 结构硬约束：Alpha 必须含“触发：”和“失效：”；Beta 必须含“趋势：”和“动作：”；Gamma 必须含“极端：”和“边界：”
 - Beta 和 Gamma 必须各自输出两句，句号/分号分隔；不要把所有信息塞成一句
 - 当前 buffer 只有 6 类信号：放量异动 / 接近近期高位 / 接近近期低位 / 突破信号 / EMA 共振变化 / 波动区间变化
 - 禁止编造 RSI、布林带、KDJ、MACD、EMA144 偏离百分比等 buffer 没有的数据
