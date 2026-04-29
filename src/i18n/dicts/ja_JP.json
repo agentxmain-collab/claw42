@@ -27,7 +27,8 @@
       "なぜ 42 か、訊かないで。分かる人には分かる。",
       "42 秒前までオンチェーンを読んでた。次は君の番だ。"
     ],
-    "speechBubbleAriaLabel": "Claw 42 Agent 吹き出し"
+    "speechBubbleAriaLabel": "Claw 42 Agent 吹き出し",
+    "robotWatchTooltip": "3体のAI Agent · リアルタイム監視\nクリックして見る"
   },
   "quickStart": {
     "title": "30 秒で最初の AI Agent に出会う"
@@ -161,7 +162,7 @@
       "opportunity": "Opportunity"
     },
     "focusCard": {
-      "watching": "Watching",
+      "watching": "現在ウォッチ",
       "trigger": "Trigger",
       "fail": "Invalidation",
       "expandFail": "Invalidation",
@@ -169,8 +170,7 @@
       "minutesAgo": "{minutes} min ago",
       "warmup": "Agent warming up",
       "thinking": "Thinking",
-      "focusLabel": "Watching",
-      "focusTooltip": "Agent's current primary target, rotates with market signals"
+      "focusLabel": "現在ウォッチ"
     },
     "marketEvent": {
       "title": "Market Signals",

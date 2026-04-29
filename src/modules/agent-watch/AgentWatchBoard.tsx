@@ -20,6 +20,47 @@ import { MessageStream, type MessageStreamHandle } from "./components/MessageStr
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
 
+const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
+
+function warnDuplicateMessage(reason: string, message: AgentWatchMessage) {
+  if (process.env.NODE_ENV === "production") return;
+  console.warn("[claw42] duplicate watch message skipped", {
+    reason,
+    id: message.id,
+    agentId: message.agentId,
+    timestamp: message.timestamp,
+  });
+}
+
+function dedupeAgentMessages(messages: AgentWatchMessage[]) {
+  const seenIds = new Set<string>();
+  const recentContent = new Map<string, number>();
+  const unique: AgentWatchMessage[] = [];
+
+  for (const message of messages) {
+    if (seenIds.has(message.id)) {
+      warnDuplicateMessage("id", message);
+      continue;
+    }
+
+    const contentKey = `${message.agentId}:${message.content.trim()}`;
+    const lastTimestamp = recentContent.get(contentKey);
+    if (
+      lastTimestamp !== undefined &&
+      Math.abs(message.timestamp - lastTimestamp) <= DUPLICATE_CONTENT_WINDOW_MS
+    ) {
+      warnDuplicateMessage("content", message);
+      continue;
+    }
+
+    seenIds.add(message.id);
+    recentContent.set(contentKey, message.timestamp);
+    unique.push(message);
+  }
+
+  return unique;
+}
+
 function keepFivePerAgent(messages: AgentWatchMessage[]) {
   const kept = new Set<string>();
   for (const agentId of AGENT_ORDER) {
@@ -44,7 +85,7 @@ function mergeHistoryAndLive(
       content: entry.content,
       timestamp: entry.generatedAt,
     }));
-  return [...historyAsMessages, ...live];
+  return dedupeAgentMessages([...historyAsMessages, ...live]);
 }
 
 export function AgentWatchBoard() {
@@ -86,15 +127,17 @@ export function AgentWatchBoard() {
         setTypingAgent(null);
         setSpeakingAgent(item.agentId);
         setLiveQueue((current) =>
-          keepFivePerAgent([
-            ...current,
-            {
-              id: `${data.generatedAt}-${item.agentId}-${index}`,
-              agentId: item.agentId,
-              content: item.content,
-              timestamp: data.generatedAt,
-            },
-          ]),
+          keepFivePerAgent(
+            dedupeAgentMessages([
+              ...current,
+              {
+                id: `${data.generatedAt}-${item.agentId}-${index}`,
+                agentId: item.agentId,
+                content: item.content,
+                timestamp: data.generatedAt,
+              },
+            ]),
+          ),
         );
       }, index * 1600 + 800);
       const clearSpeakingTimer = window.setTimeout(() => {

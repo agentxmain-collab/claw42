@@ -127,7 +127,9 @@ type TimedCacheEntry = {
 let liveCache: LiveCacheEntry | null = null;
 let backgroundRefreshInFlight = false;
 let staticFallbackCache: TimedCacheEntry | null = null;
+let analysisRefreshInFlight: Promise<AgentAnalysisPayload> | null = null;
 const HISTORY_BUFFER_MAX_MESSAGES = 200;
+const HISTORY_DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 let historyBuffer: HistoryMessageEntry[] = [];
 const seenHistoryIds = new Set<string>();
 
@@ -241,8 +243,15 @@ function fallbackFocusForAgent(
   const sortedMajors = [...pool.majors].sort((a, b) => b.change24h - a.change24h);
   const opportunity = pool.opportunity[0] ?? pool.trending[0] ?? sortedMajors[0];
   const leader = sortedMajors[0] ?? pool.majors[0];
-  const laggard = [...pool.majors].sort((a, b) => a.change24h - b.change24h)[0] ?? leader;
-  const target = agentId === "alpha" ? opportunity : agentId === "beta" ? leader : laggard;
+  const extremeCandidate = [...pool.opportunity, ...pool.trending]
+    .filter((coin) => !RISK_COINS.includes(coin.symbol as CoinSymbol) && coin.symbol !== "USDT")
+    .sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))[0];
+  const target =
+    agentId === "alpha"
+      ? opportunity
+      : agentId === "beta"
+        ? leader
+        : extremeCandidate ?? null;
   const symbol = target?.symbol ?? "BTC";
   const priceLevel = Number.isFinite(target?.price) ? target.price : undefined;
 
@@ -284,6 +293,26 @@ function fallbackFocusForAgent(
         symbol,
         priceLevel,
         description: `${symbol} 跌回 EMA13 下方，趋势判断降级。`,
+      },
+      evidenceCount: 0,
+      generatedAt,
+    };
+  }
+
+  if (!target) {
+    return {
+      agentId,
+      symbol: "—",
+      judgment: "机会/热门栏还没有足够极端的波动，Gamma 等待信号。",
+      trigger: {
+        type: "custom",
+        symbol: "—",
+        description: "机会/热门栏出现明显 24h 极端涨跌后再进入回归观察。",
+      },
+      fail: {
+        type: "custom",
+        symbol: "—",
+        description: "没有极端波动就不做回归判断。",
       },
       evidenceCount: 0,
       generatedAt,
@@ -347,6 +376,14 @@ function pushHistoryFromBatch(payload: AgentAnalysisPayload) {
   payload.stream.forEach((item, index) => {
     const id = `${payload.generatedAt}-${item.agentId}-${index}`;
     if (seenHistoryIds.has(id)) return;
+    const duplicateContent = historyBuffer.some(
+      (entry) =>
+        entry.agentId === item.agentId &&
+        entry.content === item.content &&
+        Math.abs(payload.generatedAt - entry.generatedAt) <=
+          HISTORY_DUPLICATE_CONTENT_WINDOW_MS,
+    );
+    if (duplicateContent) return;
 
     const entry: HistoryMessageEntry = {
       id,
@@ -649,6 +686,7 @@ ${skillPromptBlock("gamma")}
 - Alpha 只能像突破派：关键位、前高/前低、整数关口、放量、假突破、回踩确认
 - Beta 只能像趋势派：EMA12/13/144/169、多头/空头排列、回撤、共振、持有/减仓
 - Gamma 只能像回归派，但 v1 只能引用 24h 极端涨跌、近期高低位、range_change，不得引用 RSI 数值、布林带上下轨、EMA144 偏离百分比
+- Gamma 的 focus.symbol 只能从热门/机会栏里选 24h 绝对波动最大的非主流币，禁止选 BTC/ETH/SOL/USDT
 - 每个 Agent 的 stream 必须至少出现自己的强制术语 1 个；coinComments 也要尽量延续本 Agent 术语
 - 三个 Agent 的 stream 内容长度必须明显不同：Alpha 最短，Beta 最长，Gamma 居中
 - Beta 和 Gamma 必须各自输出两句，句号/分号分隔；不要把所有信息塞成一句
@@ -883,6 +921,9 @@ function normalizeFocus(
     if (!isRecord(found)) throw new Error(`${agentId} focus missing`);
 
     const symbol = normalizePoolSymbol(found.symbol, symbols, `${agentId}.focus`);
+    if (agentId === "gamma" && (RISK_COINS.includes(symbol as CoinSymbol) || symbol === "USDT")) {
+      throw new Error("gamma focus must use non-major extreme coin");
+    }
     const judgment = normalizeFocusText(found.judgment, `${agentId}.judgment`, 120);
     const triggerRaw = found.trigger;
     const failRaw = found.fail;
@@ -1167,6 +1208,16 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
   return buildStaticFallback(pool);
 }
 
+function refreshAnalysisOnce(): Promise<AgentAnalysisPayload> {
+  if (analysisRefreshInFlight) return analysisRefreshInFlight;
+
+  analysisRefreshInFlight = refreshAnalysis().finally(() => {
+    analysisRefreshInFlight = null;
+  });
+
+  return analysisRefreshInFlight;
+}
+
 export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
   const now = Date.now();
 
@@ -1177,12 +1228,12 @@ export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
   if (liveCache && liveCache.staleUntil > now) {
     if (!backgroundRefreshInFlight) {
       backgroundRefreshInFlight = true;
-      void refreshAnalysis().finally(() => {
+      void refreshAnalysisOnce().finally(() => {
         backgroundRefreshInFlight = false;
       });
     }
     return { ...liveCache.value, source: "cache", servedAt: now };
   }
 
-  return refreshAnalysis();
+  return refreshAnalysisOnce();
 }

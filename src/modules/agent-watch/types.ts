@@ -16,7 +16,7 @@ export interface TickerData {
 
 export type TickerMap = Record<CoinSymbol, TickerData>;
 export type MarketDataSource = "coinw-kline" | "coingecko-ticker" | "fallback";
-export type MajorCoinSymbol = CoinSymbol;
+export type MajorCoinSymbol = Exclude<CoinSymbol, "USDT">;
 export type CoinCategory = "majors" | "trending" | "opportunity";
 export type SignalType =
   | "volume_spike"

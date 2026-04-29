@@ -27,7 +27,8 @@
       "別問為什麼是 42。懂的都懂。",
       "42 秒前我還在讀鏈上資料，現在輪到你問我問題。"
     ],
-    "speechBubbleAriaLabel": "Claw 42 Agent 氣泡提示"
+    "speechBubbleAriaLabel": "Claw 42 Agent 氣泡提示",
+    "robotWatchTooltip": "3 個 AI Agent · 即時盯盤\n點擊查看"
   },
   "quickStart": {
     "title": "30 秒遇見你的第一個 AI Agent"
@@ -161,7 +162,7 @@
       "opportunity": "Opportunity"
     },
     "focusCard": {
-      "watching": "Watching",
+      "watching": "當前關注",
       "trigger": "Trigger",
       "fail": "Invalidation",
       "expandFail": "Invalidation",
@@ -169,8 +170,7 @@
       "minutesAgo": "{minutes} min ago",
       "warmup": "Agent warming up",
       "thinking": "Thinking",
-      "focusLabel": "Watching",
-      "focusTooltip": "Agent's current primary target, rotates with market signals"
+      "focusLabel": "當前關注"
     },
     "marketEvent": {
       "title": "Market Signals",

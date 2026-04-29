@@ -34,7 +34,7 @@ body {
 
 @media (max-width: 1024px) {
   .claw42-app-surface .claw42-hero-scene {
-    --claw42-hero-robot-bottom: 43%;
+    --claw42-hero-robot-bottom: 40%;
     --claw42-hero-robot-width: min(232px, 46vw);
     aspect-ratio: auto;
     min-height: 100svh;
@@ -125,7 +125,7 @@ body {
 
 @media (max-width: 1024px) and (max-height: 700px) {
   .claw42-app-surface .claw42-hero-scene {
-    --claw42-hero-robot-bottom: 41%;
+    --claw42-hero-robot-bottom: 39%;
     --claw42-hero-robot-width: min(178px, 40vw);
   }
 
@@ -169,7 +169,7 @@ body {
 
 @media (max-width: 767px) {
   .claw42-hero-scene {
-    --claw42-hero-robot-bottom: 43%;
+    --claw42-hero-robot-bottom: 40%;
     --claw42-hero-robot-width: min(232px, 46vw);
     aspect-ratio: auto;
     min-height: 100svh;
@@ -267,7 +267,7 @@ body {
 
 @media (max-width: 767px) and (max-height: 700px) {
   .claw42-hero-scene {
-    --claw42-hero-robot-bottom: 41%;
+    --claw42-hero-robot-bottom: 39%;
     --claw42-hero-robot-width: min(178px, 40vw);
   }
 
@@ -435,6 +435,23 @@ body {
   }
   to {
     transform: translateX(-50%);
+  }
+}
+
+@keyframes claw42TickerHighlight {
+  0% {
+    border-color: rgba(124, 92, 255, 0.9);
+    box-shadow: 0 0 0 0 rgba(124, 92, 255, 0.42);
+  }
+  45% {
+    border-color: rgba(124, 92, 255, 1);
+    box-shadow:
+      0 0 0 5px rgba(124, 92, 255, 0.2),
+      0 0 22px rgba(124, 92, 255, 0.32);
+  }
+  100% {
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 0 rgba(124, 92, 255, 0);
   }
 }
 

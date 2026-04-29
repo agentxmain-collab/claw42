@@ -28,7 +28,6 @@ export function AgentRowCard({
   focusLabels: {
     watching: string;
     focusLabel: string;
-    focusTooltip: string;
     trigger: string;
     fail: string;
     expandFail: string;
@@ -66,7 +65,6 @@ export function AgentRowCard({
         {focus && (
           <button
             type="button"
-            title={focusLabels.focusTooltip}
             className="shrink-0 rounded-md border border-white/[0.08] bg-white/[0.06] px-2.5 py-1 text-left transition-colors hover:bg-white/[0.08]"
           >
             <span className="mr-1 text-[10px] font-bold uppercase text-white/45">

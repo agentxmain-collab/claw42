@@ -27,7 +27,8 @@
       "Ne demande pas pourquoi 42. Qui sait, sait.",
       "Il y a 42 secondes je lisais des données on-chain. Maintenant c'est ton tour."
     ],
-    "speechBubbleAriaLabel": "Bulle de dialogue Claw 42 Agent"
+    "speechBubbleAriaLabel": "Bulle de dialogue Claw 42 Agent",
+    "robotWatchTooltip": "3 Agents IA · marché en direct\nCliquez pour voir"
   },
   "quickStart": {
     "title": "Rencontrez votre premier Agent IA en 30 secondes"
@@ -161,7 +162,7 @@
       "opportunity": "Opportunity"
     },
     "focusCard": {
-      "watching": "Watching",
+      "watching": "Suit actuellement",
       "trigger": "Trigger",
       "fail": "Invalidation",
       "expandFail": "Invalidation",
@@ -169,8 +170,7 @@
       "minutesAgo": "{minutes} min ago",
       "warmup": "Agent warming up",
       "thinking": "Thinking",
-      "focusLabel": "Watching",
-      "focusTooltip": "Agent's current primary target, rotates with market signals"
+      "focusLabel": "Suit actuellement"
     },
     "marketEvent": {
       "title": "Market Signals",

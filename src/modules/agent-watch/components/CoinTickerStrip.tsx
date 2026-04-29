@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CoinPoolPayload, CoinTickerEntry, TickerMap } from "../types";
 import { priceDeltaColor } from "../utils/priceDeltaColor";
 
-const COINS = ["BTC", "ETH", "SOL", "USDT"] as const;
+const COINS = ["BTC", "ETH", "SOL"] as const;
 
 function formatPrice(symbol: string, price: number) {
   return `$${price.toLocaleString("en-US", {
@@ -36,11 +37,47 @@ export function CoinTickerStrip({
   };
 }) {
   const majors = pool?.majors ?? majorsFromTickers(tickers);
-  const groups: Array<{ key: string; label: string; entries: CoinTickerEntry[] }> = [
-    { key: "majors", label: labels.majors, entries: majors },
-    { key: "trending", label: labels.trending, entries: pool?.trending ?? [] },
-    { key: "opportunity", label: labels.opportunity, entries: pool?.opportunity ?? [] },
-  ];
+  const groups = useMemo<Array<{ key: string; label: string; entries: CoinTickerEntry[] }>>(
+    () => [
+      { key: "majors", label: labels.majors, entries: majors },
+      { key: "trending", label: labels.trending, entries: pool?.trending ?? [] },
+      { key: "opportunity", label: labels.opportunity, entries: pool?.opportunity ?? [] },
+    ],
+    [labels.majors, labels.opportunity, labels.trending, majors, pool?.opportunity, pool?.trending],
+  );
+  const tickerRefs = useRef(new Map<string, HTMLDivElement>());
+  const [highlightedSymbol, setHighlightedSymbol] = useState<string | null>(null);
+  const symbolKey = groups
+    .flatMap((group) => group.entries.map((entry) => entry.symbol.toUpperCase()))
+    .join("|");
+
+  useEffect(() => {
+    let clearTimer: number | null = null;
+
+    function scrollToHashSymbol() {
+      const symbol = decodeURIComponent(window.location.hash.replace(/^#/, "")).toUpperCase();
+      if (!symbol) return;
+
+      const node = tickerRefs.current.get(symbol);
+      if (!node) return;
+
+      node.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+      setHighlightedSymbol(symbol);
+      if (clearTimer !== null) window.clearTimeout(clearTimer);
+      clearTimer = window.setTimeout(() => {
+        setHighlightedSymbol((current) => (current === symbol ? null : current));
+      }, 1500);
+    }
+
+    const initialTimer = window.setTimeout(scrollToHashSymbol, 120);
+    window.addEventListener("hashchange", scrollToHashSymbol);
+
+    return () => {
+      window.clearTimeout(initialTimer);
+      if (clearTimer !== null) window.clearTimeout(clearTimer);
+      window.removeEventListener("hashchange", scrollToHashSymbol);
+    };
+  }, [symbolKey]);
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#111]/90 px-4 py-3">
@@ -55,7 +92,20 @@ export function CoinTickerStrip({
                 return (
                   <div
                     key={`${group.key}-${ticker.symbol}`}
-                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs md:text-sm"
+                    ref={(node) => {
+                      const symbol = ticker.symbol.toUpperCase();
+                      if (node && !tickerRefs.current.has(symbol)) {
+                        tickerRefs.current.set(symbol, node);
+                      } else if (!node) {
+                        tickerRefs.current.delete(symbol);
+                      }
+                    }}
+                    data-ticker-symbol={ticker.symbol.toUpperCase()}
+                    className={`flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs md:text-sm ${
+                      highlightedSymbol === ticker.symbol.toUpperCase()
+                        ? "animate-[claw42TickerHighlight_1.5s_ease-out]"
+                        : ""
+                    }`}
                   >
                     <span className="font-bold text-white">{ticker.symbol}</span>
                     <span className="text-white/70">

@@ -30,7 +30,8 @@ const COINGECKO_TRENDING_URL = "https://api.coingecko.com/api/v3/search/trending
 const COINGECKO_MARKETS_URL =
   "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&price_change_percentage=24h";
 const COINW_PUBLIC_API_BASE_URL = process.env.COINW_PUBLIC_API_BASE_URL || "https://api.coinw.com";
-const MAJORS_SYMBOLS: CoinSymbol[] = ["BTC", "ETH", "SOL", "USDT"];
+const MAJORS_SYMBOLS: CoinSymbol[] = ["BTC", "ETH", "SOL"];
+const POOL_EXCLUDED_SYMBOLS = new Set<string>([...MAJORS_SYMBOLS, "USDT"]);
 const COINW_SYMBOLS: Array<Exclude<CoinSymbol, "USDT">> = ["BTC", "ETH", "SOL"];
 const COINW_PERIODS = {
   m5: 300,
@@ -179,6 +180,7 @@ async function fetchTrendingPool(): Promise<CoinTickerEntry[]> {
     .filter((item): item is { id: string; symbol: string; name?: string } =>
       Boolean(item?.id && item.symbol),
     )
+    .filter((item) => !POOL_EXCLUDED_SYMBOLS.has(item.symbol.toUpperCase()))
     .slice(0, 3);
 
   if (topCoins.length === 0) return [];
@@ -212,10 +214,9 @@ async function fetchOpportunityPool(): Promise<CoinTickerEntry[]> {
   }>;
   if (!Array.isArray(payload)) return [];
 
-  const majorSet = new Set(MAJORS_SYMBOLS);
   const filtered = payload.filter((item) => {
     const symbol = item.symbol?.toUpperCase();
-    return symbol && !majorSet.has(symbol as CoinSymbol);
+    return symbol && !POOL_EXCLUDED_SYMBOLS.has(symbol);
   });
   const sorted = [...filtered].sort(
     (a, b) =>

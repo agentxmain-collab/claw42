@@ -27,7 +27,8 @@
       "Не спрашивай, почему 42. Кто в теме — тот в теме.",
       "42 секунды назад я читал ончейн-данные. Теперь твой ход."
     ],
-    "speechBubbleAriaLabel": "Всплывающее сообщение Claw 42 Agent"
+    "speechBubbleAriaLabel": "Всплывающее сообщение Claw 42 Agent",
+    "robotWatchTooltip": "3 AI Agent · рынок в реальном времени\nНажмите, чтобы открыть"
   },
   "quickStart": {
     "title": "Встретьте своего первого AI-агента за 30 секунд"
@@ -161,7 +162,7 @@
       "opportunity": "Opportunity"
     },
     "focusCard": {
-      "watching": "Watching",
+      "watching": "Сейчас следит за",
       "trigger": "Trigger",
       "fail": "Invalidation",
       "expandFail": "Invalidation",
@@ -169,8 +170,7 @@
       "minutesAgo": "{minutes} min ago",
       "warmup": "Agent warming up",
       "thinking": "Thinking",
-      "focusLabel": "Watching",
-      "focusTooltip": "Agent's current primary target, rotates with market signals"
+      "focusLabel": "Сейчас следит за"
     },
     "marketEvent": {
       "title": "Market Signals",

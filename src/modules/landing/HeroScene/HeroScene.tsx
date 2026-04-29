@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
+import { useMarketTicker } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import { useMouseNormalized } from "./useMouseNormalized";
 import { useRobotPose, type Pose } from "./useRobotPose";
 import { RobotLayer } from "./RobotLayer";
 import { PedestalLayer } from "./PedestalLayer";
 import { CoinsLayer } from "./CoinsLayer";
-import { CoinModal } from "./components/CoinModal";
 import type { CoinSymbol } from "@/modules/agent-watch/types";
 
 /** Simple mobile detection without extra dependencies. */
@@ -48,11 +49,12 @@ function useMobilePoseCycle(isMobile: boolean, reduceMotion: boolean): Pose {
 
 export function HeroScene() {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const reduceMotion = useReducedMotion() ?? false;
   const stageRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [heroCopied, setHeroCopied] = useState(false);
-  const [selectedCoin, setSelectedCoin] = useState<CoinSymbol | null>(null);
+  const { data: tickerData } = useMarketTicker({ enabled: true, intervalMs: 60_000 });
 
   const handleHeroCtaClick = async () => {
     try {
@@ -76,6 +78,15 @@ export function HeroScene() {
   const desktopPose = useRobotPose(mouseX, reduceMotion);
   const mobilePose = useMobilePoseCycle(isMobile, reduceMotion);
   const pose = isMobile ? mobilePose : desktopPose;
+  const watchPath = `/${locale}/agent`;
+  const handleOpenWatch = () => {
+    trackEvent("hero_agent_watch_click", { locale, surface: "hero_robot" });
+    router.push(watchPath);
+  };
+  const handleOpenCoinWatch = (symbol: CoinSymbol) => {
+    trackEvent("hero_coin_watch_click", { locale, symbol, surface: "hero_coin" });
+    router.push(`${watchPath}#${symbol}`);
+  };
 
   return (
     <section
@@ -110,14 +121,22 @@ export function HeroScene() {
       <PedestalLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
 
       {/* z-20/25 Robot */}
-      <RobotLayer pose={pose} mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
+      <RobotLayer
+        pose={pose}
+        mouseX={mouseX}
+        mouseY={mouseY}
+        reduceMotion={reduceMotion}
+        onOpenWatch={handleOpenWatch}
+        watchTooltip={t.hero.robotWatchTooltip}
+      />
 
       {/* z-30 Coins */}
       <CoinsLayer
         mouseX={mouseX}
         mouseY={mouseY}
         reduceMotion={reduceMotion}
-        onSelectCoin={setSelectedCoin}
+        tickers={tickerData?.tickers}
+        onSelectCoin={handleOpenCoinWatch}
       />
 
       {/* z-50 Gradient scrim for title readability */}
@@ -176,11 +195,6 @@ export function HeroScene() {
           </motion.a>
         </div>
       </div>
-      <AnimatePresence>
-        {selectedCoin && (
-          <CoinModal symbol={selectedCoin} onClose={() => setSelectedCoin(null)} />
-        )}
-      </AnimatePresence>
     </section>
   );
 }
