@@ -142,7 +142,7 @@ export function HeroScene() {
       <div className="absolute inset-x-0 bottom-0 z-50 h-[42%] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
 
       {/* z-50 Title + CTA overlay */}
-      <div className="claw42-hero-copy absolute inset-x-0 bottom-[6%] z-50 flex flex-col items-center text-center px-6 max-w-4xl mx-auto left-1/2 -translate-x-1/2">
+      <div className="claw42-hero-copy absolute bottom-[6%] left-1/2 z-50 flex w-full max-w-4xl -translate-x-1/2 flex-col items-center px-6 text-center">
         <div className="claw42-hero-text flex flex-col items-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
             {t.hero.title}
@@ -151,7 +151,7 @@ export function HeroScene() {
             {t.hero.subtitle}
           </p>
         </div>
-        <div className="claw42-hero-actions flex flex-col sm:flex-row gap-4 pointer-events-auto">
+        <div className="claw42-hero-actions flex flex-col items-center justify-center gap-4 pointer-events-auto sm:flex-row">
           <div className="relative">
             <motion.button
               type="button"
