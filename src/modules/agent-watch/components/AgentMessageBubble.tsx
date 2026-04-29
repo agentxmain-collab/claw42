@@ -20,7 +20,7 @@ export function AgentMessageBubble({ message }: { message: AgentMessage }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.24 }}
-      className="flex gap-2 py-2"
+      className="animate-stream-in flex gap-2 py-2"
     >
       <AgentAvatar agentId={message.agentId} size="message" className="mt-1" />
       <div className="min-w-0 flex-1">

@@ -23,6 +23,7 @@ import { TopicHeader } from "./components/TopicHeader";
 
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 const STREAM_MAX_ENTRIES = 48;
+const STREAM_ENTRY_GAP_MS = 400;
 
 function isAgentMessage(entry: StreamEntry): entry is AgentMessage {
   return entry.kind === "agent_message";
@@ -116,6 +117,10 @@ function streamEntriesFromPayload(data: NonNullable<ReturnType<typeof useAgentAn
   );
 }
 
+function randomThinkDurationMs() {
+  return 800 + Math.round(Math.random() * 1200);
+}
+
 export function AgentWatchBoard() {
   const { t, locale } = useI18n();
   const isZh = locale === "zh_CN";
@@ -149,11 +154,13 @@ export function AgentWatchBoard() {
 
     const entries = streamEntriesFromPayload(data);
 
-    entries.forEach((entry, index) => {
+    let nextDelay = 0;
+    entries.forEach((entry) => {
       const agentId = isAgentMessage(entry) ? entry.agentId : null;
+      const thinkDuration = randomThinkDurationMs();
       const typingTimer = window.setTimeout(() => {
         setTypingAgent(agentId);
-      }, index * 1600);
+      }, nextDelay);
       const appendTimer = window.setTimeout(() => {
         setTypingAgent(null);
         setSpeakingAgent(agentId);
@@ -165,11 +172,12 @@ export function AgentWatchBoard() {
             ]),
           ),
         );
-      }, index * 1600 + 800);
+      }, nextDelay + thinkDuration);
       const clearSpeakingTimer = window.setTimeout(() => {
         setSpeakingAgent((current) => (current === agentId ? null : current));
-      }, index * 1600 + 1900);
+      }, nextDelay + thinkDuration + 1100);
       timersRef.current.push(typingTimer, appendTimer, clearSpeakingTimer);
+      nextDelay += thinkDuration + STREAM_ENTRY_GAP_MS;
     });
 
     return () => {

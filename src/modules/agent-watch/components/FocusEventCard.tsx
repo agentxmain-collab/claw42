@@ -30,7 +30,7 @@ export function FocusEventCard({ event }: { event: FocusEvent }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.24 }}
-      className="rounded-2xl border border-[#ff5f5f]/25 bg-[#ff5f5f]/[0.055] p-4"
+      className="animate-stream-in rounded-2xl border border-[#ff5f5f]/25 bg-[#ff5f5f]/[0.055] p-4"
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full border border-[#ff5f5f]/25 bg-[#ff5f5f]/10 px-2 py-1 text-xs font-semibold text-[#ffb4b4]">

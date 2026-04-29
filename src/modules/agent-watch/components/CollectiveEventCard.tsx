@@ -48,7 +48,7 @@ export function CollectiveEventCard({ event }: { event: CollectiveEvent }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.24 }}
-      className="rounded-2xl border border-white/[0.09] bg-white/[0.035] p-4"
+      className="animate-stream-in rounded-2xl border border-white/[0.09] bg-white/[0.035] p-4"
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-xs font-semibold text-white/82">

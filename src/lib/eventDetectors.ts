@@ -10,6 +10,9 @@ import type {
 } from "@/modules/agent-watch/types";
 
 export const COLLECTIVE_EVENT_WINDOW_MS = 60_000;
+const EVENT_DEDUP_WINDOW_MS = 5 * 60_000;
+const EVENT_HASH_TTL_MS = 30 * 60_000;
+const recentEventHashes = new Map<string, number>();
 
 const SIGNAL_TYPE_LABELS: Record<SignalType, string> = {
   volume_spike: "放量异动",
@@ -43,9 +46,29 @@ function signalDirection(signal: SignalRecord): SignalDirection {
   return "neutral";
 }
 
-function eventId(kind: string, ts: number, parts: string[]) {
-  const bucket = Math.floor(ts / COLLECTIVE_EVENT_WINDOW_MS);
-  return `${kind}-${bucket}-${parts.join("-")}`;
+function pruneEventHashes(now: number) {
+  const cutoff = now - EVENT_HASH_TTL_MS;
+  for (const [hash, ts] of Array.from(recentEventHashes.entries())) {
+    if (ts < cutoff) recentEventHashes.delete(hash);
+  }
+}
+
+function claimEventHash(hash: string, now: number): boolean {
+  pruneEventHashes(now);
+  const lastTs = recentEventHashes.get(hash) ?? 0;
+  if (now - lastTs < EVENT_DEDUP_WINDOW_MS) {
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[claw42] skipped duplicate stream event ${hash}`);
+    }
+    return false;
+  }
+  recentEventHashes.set(hash, now);
+  return true;
+}
+
+function eventId(kind: string, ts: number, hash: string) {
+  const bucket = Math.floor(ts / EVENT_DEDUP_WINDOW_MS);
+  return `${kind}-${bucket}-${hash}`;
 }
 
 function emptyResponse(agentId: AgentId): StreamResponse {
@@ -86,10 +109,17 @@ export function detectCollectiveEvent(
 
   const candidate = candidates[0];
   if (!candidate) return null;
+  const eventHash = [
+    "collective",
+    candidate.signalType,
+    candidate.direction,
+    ...candidate.symbols.slice().sort(),
+  ].join(":");
+  if (!claimEventHash(eventHash, now)) return null;
 
   return {
     kind: "collective_event",
-    id: eventId("collective", now, [candidate.signalType, candidate.direction, ...candidate.symbols]),
+    id: eventId("collective", now, eventHash),
     ts: now,
     symbols: candidate.symbols,
     direction: candidate.direction,
@@ -108,10 +138,12 @@ export function detectFocusEvent(signals: SignalRecord[], now = Date.now()): Foc
     .sort((a, b) => b.ts - a.ts)[0];
 
   if (!focusSignal) return null;
+  const eventHash = `focus:${focusSignal.symbol}:${focusSignal.type}:${focusSignal.severity}`;
+  if (!claimEventHash(eventHash, now)) return null;
 
   return {
     kind: "focus_event",
-    id: eventId("focus", now, [focusSignal.symbol, focusSignal.type, focusSignal.id]),
+    id: eventId("focus", now, eventHash),
     ts: now,
     symbol: focusSignal.symbol,
     signalType: focusSignal.type,
@@ -143,10 +175,12 @@ export function detectConflictEvent(focus: AgentFocus[], now = Date.now()): Conf
     const first = agents[0] as AgentId;
     const second = agents.find((agentId) => agentId !== first) as AgentId | undefined;
     if (!second) continue;
+    const eventHash = `conflict:${symbol}:${[first, second].slice().sort().join(":")}`;
+    if (!claimEventHash(eventHash, now)) return null;
 
     return {
       kind: "conflict_event",
-      id: eventId("conflict", now, [symbol, first, second]),
+      id: eventId("conflict", now, eventHash),
       ts: now,
       symbol,
       description: `${symbol} 同时被趋势/突破视角和回归视角盯上，条件冲突需要拆开看。`,

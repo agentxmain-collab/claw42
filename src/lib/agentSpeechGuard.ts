@@ -2,6 +2,12 @@ import type { AgentId, SignalRecord, SignalSeverity, SignalType } from "@/module
 
 export const AGENT_SPEECH_RATE_LIMIT_MS = 60_000;
 
+const lastSpokeAt: Record<AgentId, number> = {
+  alpha: 0,
+  beta: 0,
+  gamma: 0,
+};
+
 const AGENT_SIGNAL_MATCH: Record<AgentId, Set<SignalType>> = {
   alpha: new Set<SignalType>(["breakout", "near_high", "near_low", "volume_spike"]),
   beta: new Set<SignalType>(["ema_cross"]),
@@ -36,15 +42,15 @@ function sortSignalsByUrgency(a: SignalRecord, b: SignalRecord): number {
 export function checkAgentSpeech(
   agentId: AgentId,
   recentSignals: SignalRecord[],
-  lastSpokeAt: number | null,
   now = Date.now(),
 ): AgentSpeechDecision {
-  if (lastSpokeAt !== null && now - lastSpokeAt < AGENT_SPEECH_RATE_LIMIT_MS) {
+  const agentLastSpokeAt = lastSpokeAt[agentId] ?? 0;
+  if (agentLastSpokeAt > 0 && now - agentLastSpokeAt < AGENT_SPEECH_RATE_LIMIT_MS) {
     return {
       agentId,
       shouldSpeak: false,
       reason: "rate_limit",
-      nextAllowedAt: lastSpokeAt + AGENT_SPEECH_RATE_LIMIT_MS,
+      nextAllowedAt: agentLastSpokeAt + AGENT_SPEECH_RATE_LIMIT_MS,
     };
   }
 
@@ -66,4 +72,11 @@ export function checkAgentSpeech(
     reason: `${triggerSignal.symbol}:${triggerSignal.type}:${triggerSignal.severity}`,
     triggerSignal,
   };
+}
+
+export function recordAgentSpoke(agentId: AgentId, ts = Date.now()) {
+  lastSpokeAt[agentId] = ts;
+  if (process.env.NODE_ENV !== "production") {
+    console.info(`[claw42] recordAgentSpoke ${agentId} ${new Date(ts).toISOString()}`);
+  }
 }

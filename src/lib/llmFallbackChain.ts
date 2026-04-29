@@ -6,7 +6,7 @@ import { triggerSignalGeneration } from "@/lib/marketSignals";
 import { getSignalsByWindow } from "@/lib/signalBuffer";
 import { getLastBatchSummary, recordSuccessfulPayload } from "@/lib/llmHistorySummary";
 import { buildSignalSummary, formatSummaryForPrompt } from "@/lib/signalSummary";
-import { checkAgentSpeech } from "@/lib/agentSpeechGuard";
+import { checkAgentSpeech, recordAgentSpoke } from "@/lib/agentSpeechGuard";
 import {
   COLLECTIVE_EVENT_WINDOW_MS,
   detectCollectiveEvent,
@@ -156,8 +156,6 @@ const HISTORY_BUFFER_MAX_MESSAGES = 200;
 const HISTORY_DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 let historyBuffer: HistoryMessageEntry[] = [];
 const seenHistoryIds = new Set<string>();
-const lastAgentSpokeAt: Partial<Record<AgentId, number>> = {};
-const seenStreamEventIds = new Map<string, number>();
 
 function formatMarketPrice(symbol: CoinSymbol, price: number): string {
   return `$${price.toLocaleString("en-US", {
@@ -283,16 +281,24 @@ function stripModelText(text: string): string {
     .trim();
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function sanitizeAgentMessage(content: string, symbol: string): string {
+  const symbolPrefix = new RegExp(`^(?:${escapeRegExp(symbol)}\\s+)+`, "i");
+  return content.replace(symbolPrefix, "").trim();
+}
+
 function normalizeSpeechText(agentId: AgentId, signal: SignalRecord, text: string): string {
-  const content = stripModelText(text).slice(0, 180);
+  const content = sanitizeAgentMessage(stripModelText(text), signal.symbol).slice(0, 180);
   if (
     content.length < 10 ||
-    !content.includes(signal.symbol) ||
     hasUnsupportedV1DataClaim(content) ||
     hasBannedOutputPattern(content) ||
     !hasAgentTerminology(agentId, content)
   ) {
-    return fallbackSignalSpeech(agentId, signal);
+    return sanitizeAgentMessage(fallbackSignalSpeech(agentId, signal), signal.symbol);
   }
   return content;
 }
@@ -312,7 +318,8 @@ ${formatPoolGroup("机会", pool.opportunity)}
 
 要求：
 - 只输出一句或两句中文纯文本，不要 JSON，不要 markdown。
-- 必须包含 ${signal.symbol} 和触发信号里的具体数字/条件。
+- ${signal.symbol} 已经在卡片头部展示，正文不要用 ${signal.symbol} 开头。
+- 必须引用触发信号里的具体数字/条件；如果正文中间需要引用 ${signal.symbol} 可以保留。
 - 必须给可观察条件：突破/回踩/EMA/极端回归边界之一。
 - 不要复述“我是某派”，不要写行情新闻摘要。
 - 禁止编造 RSI、布林带、MACD、KDJ 或未给出的指标。`;
@@ -337,6 +344,7 @@ ${formatPoolGroup("机会", pool.opportunity)}
 
 要求：
 - 只输出中文纯文本，不要 JSON，不要 markdown。
+- 事件卡头部已经展示 symbol，正文不要用 symbol 开头。
 - 必须引用事件中的币种或条件。
 - 直接给判断和下一步观察条件。
 - 禁止套话、禁止复读 Ticker、禁止编造未给出的指标。`;
@@ -362,20 +370,6 @@ function agentForSignal(signal: SignalRecord): AgentId {
   if (signal.type === "ema_cross") return "beta";
   if (signal.type === "range_change") return "gamma";
   return "alpha";
-}
-
-function pruneSeenStreamEvents(now: number) {
-  const cutoff = now - 5 * 60_000;
-  for (const [id, ts] of Array.from(seenStreamEventIds.entries())) {
-    if (ts < cutoff) seenStreamEventIds.delete(id);
-  }
-}
-
-function claimStreamEvent(id: string, now: number): boolean {
-  pruneSeenStreamEvents(now);
-  if (seenStreamEventIds.has(id)) return false;
-  seenStreamEventIds.set(id, now);
-  return true;
 }
 
 function buildFallbackHeroBubbles(tickers: TickerMap): string[] {
@@ -1209,6 +1203,14 @@ async function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<
   }
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function randomThinkDelayMs(): number {
+  return Math.round(800 + Math.random() * 1200);
+}
+
 async function callMiniMax(prompt: string, mode: ProviderMode = "json"): Promise<string> {
   const apiKey = process.env.MINIMAX_API_KEY;
   if (!apiKey) throw new Error("missing MINIMAX_API_KEY");
@@ -1325,6 +1327,7 @@ if (PROVIDERS.length === 0) {
 async function callTextProvider(prompt: string): Promise<{ text: string; source: ProviderSource } | null> {
   for (const provider of PROVIDERS) {
     try {
+      await sleep(randomThinkDelayMs());
       const text = await provider.call(prompt, "text");
       return { text, source: provider.name };
     } catch (error) {
@@ -1442,6 +1445,21 @@ async function hydrateConflictEvent(
   };
 }
 
+function recordEventSpeakers(entry: StreamEntry, ts: number) {
+  const responses =
+    entry.kind === "collective_event"
+      ? [entry.primaryResponse, ...entry.echoResponses]
+      : entry.kind === "focus_event"
+        ? [entry.primaryResponse]
+        : entry.kind === "conflict_event"
+          ? entry.responses
+          : [];
+
+  responses.forEach((response) => {
+    if (response.content.trim().length > 0) recordAgentSpoke(response.agentId, ts);
+  });
+}
+
 async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
   const pool = (await triggerSignalGeneration()) ?? (await getCoinPool());
   const { tickers } = pool;
@@ -1451,8 +1469,32 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
   const streamEntries: StreamEntry[] = [];
   const providerSources: ProviderSource[] = [];
 
+  const collectiveEvent = detectCollectiveEvent(recentSignals, generatedAt);
+  if (collectiveEvent) {
+    const hydrated = await hydrateCollectiveEvent(collectiveEvent, pool);
+    streamEntries.push(hydrated.event);
+    recordEventSpeakers(hydrated.event, generatedAt);
+    if (hydrated.source) providerSources.push(hydrated.source);
+  }
+
+  const focusEvent = detectFocusEvent(recentSignals, generatedAt);
+  if (focusEvent) {
+    const hydrated = await hydrateFocusEvent(focusEvent, pool);
+    streamEntries.push(hydrated.event);
+    recordEventSpeakers(hydrated.event, generatedAt);
+    if (hydrated.source) providerSources.push(hydrated.source);
+  }
+
+  const conflictEvent = recentSignals.length > 0 ? detectConflictEvent(focus, generatedAt) : null;
+  if (conflictEvent) {
+    const hydrated = await hydrateConflictEvent(conflictEvent, pool);
+    streamEntries.push(hydrated.event);
+    recordEventSpeakers(hydrated.event, generatedAt);
+    if (hydrated.source) providerSources.push(hydrated.source);
+  }
+
   const speechDecisions = AGENTS.map((agentId) =>
-    checkAgentSpeech(agentId, recentSignals, lastAgentSpokeAt[agentId] ?? null, generatedAt),
+    checkAgentSpeech(agentId, recentSignals, generatedAt),
   );
 
   if (process.env.NODE_ENV !== "production") {
@@ -1463,27 +1505,6 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
         }`,
       );
     });
-  }
-
-  const collectiveEvent = detectCollectiveEvent(recentSignals, generatedAt);
-  if (collectiveEvent && claimStreamEvent(collectiveEvent.id, generatedAt)) {
-    const hydrated = await hydrateCollectiveEvent(collectiveEvent, pool);
-    streamEntries.push(hydrated.event);
-    if (hydrated.source) providerSources.push(hydrated.source);
-  }
-
-  const focusEvent = detectFocusEvent(recentSignals, generatedAt);
-  if (focusEvent && claimStreamEvent(focusEvent.id, generatedAt)) {
-    const hydrated = await hydrateFocusEvent(focusEvent, pool);
-    streamEntries.push(hydrated.event);
-    if (hydrated.source) providerSources.push(hydrated.source);
-  }
-
-  const conflictEvent = recentSignals.length > 0 ? detectConflictEvent(focus, generatedAt) : null;
-  if (conflictEvent && claimStreamEvent(conflictEvent.id, generatedAt)) {
-    const hydrated = await hydrateConflictEvent(conflictEvent, pool);
-    streamEntries.push(hydrated.event);
-    if (hydrated.source) providerSources.push(hydrated.source);
   }
 
   const agentMessageResults = await Promise.all(
@@ -1501,7 +1522,7 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
 
   for (const result of agentMessageResults) {
     streamEntries.push(result.entry);
-    lastAgentSpokeAt[result.entry.agentId] = generatedAt;
+    recordAgentSpoke(result.entry.agentId, generatedAt);
     if (result.source) providerSources.push(result.source);
   }
 
