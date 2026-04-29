@@ -18,13 +18,13 @@ function formatTime(ts: number): string {
 
 export function SystemSignalBubble({ signal }: { signal: SignalRecord }) {
   return (
-    <div className="my-2 flex items-center justify-center">
-      <div className="inline-flex max-w-[88%] items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.04] px-3 py-1">
+    <div className="my-2 flex justify-center">
+      <div className="flex w-full max-w-md items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.04] px-3 py-1.5">
         <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[signal.severity]}`} />
         <span className="shrink-0 font-mono text-[10px] text-white/40">
           {formatTime(signal.ts)}
         </span>
-        <span className="truncate text-xs text-white/55">
+        <span className="min-w-0 flex-1 truncate text-xs text-white/55">
           {signal.payload.description ?? `${signal.symbol} ${signal.type}`}
         </span>
       </div>
