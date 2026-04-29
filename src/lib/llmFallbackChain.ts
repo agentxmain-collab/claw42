@@ -3,22 +3,36 @@ import betaSkill from "@/modules/agent-watch/skills/beta.json";
 import gammaSkill from "@/modules/agent-watch/skills/gamma.json";
 import { getCoinPool } from "@/lib/marketDataCache";
 import { triggerSignalGeneration } from "@/lib/marketSignals";
+import { getSignalsByWindow } from "@/lib/signalBuffer";
 import { getLastBatchSummary, recordSuccessfulPayload } from "@/lib/llmHistorySummary";
 import { buildSignalSummary, formatSummaryForPrompt } from "@/lib/signalSummary";
+import { checkAgentSpeech } from "@/lib/agentSpeechGuard";
+import {
+  COLLECTIVE_EVENT_WINDOW_MS,
+  detectCollectiveEvent,
+  detectConflictEvent,
+  detectFocusEvent,
+} from "@/lib/eventDetectors";
 import type {
   AgentFocus,
   AgentAnalysisPayload,
   AgentId,
+  AgentMessage,
   AgentSkill,
   CoinPoolPayload,
   CoinComments,
   CoinMarketContext,
   CoinSymbol,
+  CollectiveEvent,
+  ConflictEvent,
+  FocusEvent,
   MarketDataSource,
   HistoryMessageEntry,
   ProviderSource,
   SignalRecord,
+  StreamEntry,
   StreamMessage,
+  StreamResponse,
   TickerMap,
   TimeframeSignal,
 } from "@/modules/agent-watch/types";
@@ -121,6 +135,7 @@ const SKILLS: Record<AgentId, AgentSkill> = {
 };
 
 type ProviderName = "minimax" | "deepseek" | "claude";
+type ProviderMode = "json" | "text";
 
 type LiveCacheEntry = {
   value: AgentAnalysisPayload;
@@ -141,6 +156,8 @@ const HISTORY_BUFFER_MAX_MESSAGES = 200;
 const HISTORY_DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 let historyBuffer: HistoryMessageEntry[] = [];
 const seenHistoryIds = new Set<string>();
+const lastAgentSpokeAt: Partial<Record<AgentId, number>> = {};
+const seenStreamEventIds = new Map<string, number>();
 
 function formatMarketPrice(symbol: CoinSymbol, price: number): string {
   return `$${price.toLocaleString("en-US", {
@@ -225,6 +242,140 @@ function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
     agentId,
     content: buildFallbackStreamContent(agentId, tickers, seed + index * 11),
   }));
+}
+
+function signalDescription(signal: SignalRecord): string {
+  const parts = [signal.payload.description ?? `${signal.symbol} ${SIGNAL_TYPE_LABELS[signal.type]}`];
+  if (typeof signal.payload.volumeRatio === "number") {
+    parts.push(`volumeRatio ${signal.payload.volumeRatio.toFixed(2)}x`);
+  }
+  if (typeof signal.payload.priceLevel === "number") {
+    parts.push(`priceLevel ${formatMarketPrice("BTC", signal.payload.priceLevel)}`);
+  }
+  if (typeof signal.payload.distancePct === "number") {
+    parts.push(`distance ${signal.payload.distancePct.toFixed(2)}%`);
+  }
+  if (typeof signal.payload.change24h === "number") {
+    parts.push(`24h ${formatMarketChange(signal.payload.change24h)}`);
+  }
+  if (signal.payload.emaState) {
+    parts.push(`emaState ${signal.payload.emaState}`);
+  }
+  return parts.join(" | ");
+}
+
+function fallbackSignalSpeech(agentId: AgentId, signal: SignalRecord): string {
+  const brief = signal.payload.description ?? signalDescription(signal);
+  if (agentId === "alpha") {
+    return `${signal.symbol} ${brief}，关键位先看回踩确认；量缩就是假突破。`;
+  }
+  if (agentId === "beta") {
+    return `${signal.symbol} ${brief}，先看 EMA12/13 是否共振。趋势没确认前只观察，跌回 EMA13 下方就不做持有。`;
+  }
+  return `${signal.symbol} ${brief}，极端位置只进观察区。均值回归要等近期高低位失速，不接飞刀。`;
+}
+
+function stripModelText(text: string): string {
+  return stripCodeFence(text)
+    .replace(/^["'“”]+|["'“”]+$/g, "")
+    .replace(/^\s*[-*]\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeSpeechText(agentId: AgentId, signal: SignalRecord, text: string): string {
+  const content = stripModelText(text).slice(0, 180);
+  if (
+    content.length < 10 ||
+    !content.includes(signal.symbol) ||
+    hasUnsupportedV1DataClaim(content) ||
+    hasBannedOutputPattern(content) ||
+    !hasAgentTerminology(agentId, content)
+  ) {
+    return fallbackSignalSpeech(agentId, signal);
+  }
+  return content;
+}
+
+function buildAgentSpeechPrompt(agentId: AgentId, signal: SignalRecord, pool: CoinPoolPayload): string {
+  return `你是 Claw42 的实时看盘 Agent。只基于下面这一条真实信号发言，不要补充不存在的数据。
+
+${skillPromptBlock(agentId)}
+
+## 触发信号
+${signalDescription(signal)}
+
+## 当前多币种池
+${formatPoolGroup("主流", pool.majors)}
+${formatPoolGroup("热门", pool.trending)}
+${formatPoolGroup("机会", pool.opportunity)}
+
+要求：
+- 只输出一句或两句中文纯文本，不要 JSON，不要 markdown。
+- 必须包含 ${signal.symbol} 和触发信号里的具体数字/条件。
+- 必须给可观察条件：突破/回踩/EMA/极端回归边界之一。
+- 不要复述“我是某派”，不要写行情新闻摘要。
+- 禁止编造 RSI、布林带、MACD、KDJ 或未给出的指标。`;
+}
+
+function buildEventPrompt(
+  agentId: AgentId,
+  eventDescription: string,
+  pool: CoinPoolPayload,
+): string {
+  return `你是 Claw42 的 ${SKILLS[agentId].displayName}。只针对这个实时事件给一句看盘回应。
+
+${skillPromptBlock(agentId)}
+
+## 实时事件
+${eventDescription}
+
+## 当前多币种池
+${formatPoolGroup("主流", pool.majors)}
+${formatPoolGroup("热门", pool.trending)}
+${formatPoolGroup("机会", pool.opportunity)}
+
+要求：
+- 只输出中文纯文本，不要 JSON，不要 markdown。
+- 必须引用事件中的币种或条件。
+- 直接给判断和下一步观察条件。
+- 禁止套话、禁止复读 Ticker、禁止编造未给出的指标。`;
+}
+
+function buildAgentMessageEntry(
+  agentId: AgentId,
+  signal: SignalRecord,
+  content: string,
+  generatedAt: number,
+): AgentMessage {
+  return {
+    kind: "agent_message",
+    id: `${generatedAt}-${agentId}-${signal.id}`,
+    ts: generatedAt,
+    agentId,
+    content,
+    triggerSignalId: signal.id,
+  };
+}
+
+function agentForSignal(signal: SignalRecord): AgentId {
+  if (signal.type === "ema_cross") return "beta";
+  if (signal.type === "range_change") return "gamma";
+  return "alpha";
+}
+
+function pruneSeenStreamEvents(now: number) {
+  const cutoff = now - 5 * 60_000;
+  for (const [id, ts] of Array.from(seenStreamEventIds.entries())) {
+    if (ts < cutoff) seenStreamEventIds.delete(id);
+  }
+}
+
+function claimStreamEvent(id: string, now: number): boolean {
+  pruneSeenStreamEvents(now);
+  if (seenStreamEventIds.has(id)) return false;
+  seenStreamEventIds.set(id, now);
+  return true;
 }
 
 function buildFallbackHeroBubbles(tickers: TickerMap): string[] {
@@ -1055,7 +1206,7 @@ async function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<
   }
 }
 
-async function callMiniMax(prompt: string): Promise<string> {
+async function callMiniMax(prompt: string, mode: ProviderMode = "json"): Promise<string> {
   const apiKey = process.env.MINIMAX_API_KEY;
   if (!apiKey) throw new Error("missing MINIMAX_API_KEY");
 
@@ -1070,7 +1221,7 @@ async function callMiniMax(prompt: string): Promise<string> {
       body: JSON.stringify({
         model,
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 1400,
+        max_tokens: mode === "text" ? 260 : 1400,
         temperature: 0.78,
         top_p: 0.9,
       }),
@@ -1087,21 +1238,23 @@ async function callMiniMax(prompt: string): Promise<string> {
   });
 }
 
-async function callDeepSeek(prompt: string): Promise<string> {
+async function callDeepSeek(prompt: string, mode: ProviderMode = "json"): Promise<string> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error("missing DEEPSEEK_API_KEY");
 
   return withTimeout(async (signal) => {
+    const body: Record<string, unknown> = {
+      model: "deepseek-chat",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: mode === "text" ? 260 : 1400,
+      temperature: 0.78,
+    };
+    if (mode === "json") body.response_format = { type: "json_object" };
+
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 1400,
-        temperature: 0.78,
-        response_format: { type: "json_object" },
-      }),
+      body: JSON.stringify(body),
       signal,
     });
 
@@ -1115,7 +1268,7 @@ async function callDeepSeek(prompt: string): Promise<string> {
   });
 }
 
-async function callClaude(prompt: string): Promise<string> {
+async function callClaude(prompt: string, mode: ProviderMode = "json"): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("missing ANTHROPIC_API_KEY");
 
@@ -1129,7 +1282,7 @@ async function callClaude(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 1400,
+        max_tokens: mode === "text" ? 260 : 1400,
         temperature: 0.78,
         messages: [{ role: "user", content: prompt }],
       }),
@@ -1148,7 +1301,7 @@ async function callClaude(prompt: string): Promise<string> {
 
 type ProviderEntry = {
   name: ProviderName;
-  call: (prompt: string) => Promise<string>;
+  call: (prompt: string, mode?: ProviderMode) => Promise<string>;
   envKey: string;
 };
 
@@ -1166,55 +1319,223 @@ if (PROVIDERS.length === 0) {
   console.info(`[claw42] LLM chain: ${PROVIDERS.map((provider) => provider.name).join(" → ")}`);
 }
 
-async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
-  const now = Date.now();
-  const pool = (await triggerSignalGeneration()) ?? (await getCoinPool());
-  const { tickers } = pool;
-  const prompt = buildPrompt(pool);
-
+async function callTextProvider(prompt: string): Promise<{ text: string; source: ProviderSource } | null> {
   for (const provider of PROVIDERS) {
     try {
-      const text = await provider.call(prompt);
-      const parsed = parseAnalysisJson(text);
-      const generatedAt = Date.now();
-      const value = {
-        ...validateAnalysis(parsed, pool, generatedAt),
-        generatedAt,
-        servedAt: generatedAt,
-        source: provider.name,
-        degraded: pool.source !== "coinw-kline",
-      } satisfies AgentAnalysisPayload;
-      liveCache = {
-        value,
-        freshUntil: generatedAt + FRESH_TTL_MS,
-        staleUntil: generatedAt + STALE_TTL_MS,
-      };
-      pushHistoryFromBatch(value);
-      recordSuccessfulPayload(value);
-      return value;
+      const text = await provider.call(prompt, "text");
+      return { text, source: provider.name };
     } catch (error) {
       console.warn(
-        `[claw42] ${provider.name} analysis fallback`,
+        `[claw42] ${provider.name} speech fallback`,
         error instanceof Error ? error.message : error,
       );
     }
   }
 
-  if (liveCache) {
-    console.warn("[claw42] all providers failed, using last known cache");
-    return {
-      ...liveCache.value,
-      source: "cache",
-      servedAt: now,
-      tickers,
-      pool,
-      marketSource: pool.source,
-      degraded: pool.source !== "coinw-kline",
-    };
+  return null;
+}
+
+async function generateAgentMessageFromSignal(
+  agentId: AgentId,
+  signal: SignalRecord,
+  pool: CoinPoolPayload,
+  generatedAt: number,
+): Promise<{ entry: AgentMessage; source: ProviderSource | null }> {
+  const fallback = fallbackSignalSpeech(agentId, signal);
+  const providerResult = await callTextProvider(buildAgentSpeechPrompt(agentId, signal, pool));
+  const content = providerResult
+    ? normalizeSpeechText(agentId, signal, providerResult.text)
+    : fallback;
+
+  return {
+    entry: buildAgentMessageEntry(agentId, signal, content, generatedAt),
+    source: providerResult?.source ?? null,
+  };
+}
+
+async function generateEventResponse(
+  agentId: AgentId,
+  eventDescription: string,
+  pool: CoinPoolPayload,
+): Promise<{ response: StreamResponse; source: ProviderSource | null }> {
+  const fallbackSignal: SignalRecord = {
+    id: `event-${agentId}-${Date.now()}`,
+    ts: Date.now(),
+    symbol: eventDescription.match(/\b[A-Z0-9]{2,12}\b/)?.[0] ?? "BTC",
+    type: agentId === "beta" ? "ema_cross" : agentId === "gamma" ? "range_change" : "breakout",
+    severity: "watch",
+    payload: { description: eventDescription },
+  };
+  const fallback = fallbackSignalSpeech(agentId, fallbackSignal);
+  const providerResult = await callTextProvider(buildEventPrompt(agentId, eventDescription, pool));
+  const content = providerResult
+    ? normalizeSpeechText(agentId, fallbackSignal, providerResult.text)
+    : fallback;
+  return {
+    response: { agentId, content },
+    source: providerResult?.source ?? null,
+  };
+}
+
+async function hydrateCollectiveEvent(
+  event: CollectiveEvent,
+  pool: CoinPoolPayload,
+): Promise<{ event: CollectiveEvent; source: ProviderSource | null }> {
+  const sources: ProviderSource[] = [];
+  const agents: AgentId[] = ["alpha", "beta", "gamma"];
+  const responses = await Promise.all(
+    agents.map((agentId) => generateEventResponse(agentId, event.description, pool)),
+  );
+
+  responses.forEach((result) => {
+    if (result.source) sources.push(result.source);
+  });
+
+  return {
+    event: {
+      ...event,
+      primaryResponse: responses[0].response,
+      echoResponses: [responses[1].response, responses[2].response],
+    },
+    source: sources[0] ?? null,
+  };
+}
+
+async function hydrateFocusEvent(
+  event: FocusEvent,
+  pool: CoinPoolPayload,
+): Promise<{ event: FocusEvent; source: ProviderSource | null }> {
+  const agentId = agentForSignal({
+    id: event.id,
+    ts: event.ts,
+    symbol: event.symbol,
+    type: event.signalType,
+    severity: event.severity,
+    payload: { description: event.description },
+  });
+  const result = await generateEventResponse(agentId, event.description, pool);
+  return {
+    event: {
+      ...event,
+      primaryResponse: result.response,
+    },
+    source: result.source,
+  };
+}
+
+async function hydrateConflictEvent(
+  event: ConflictEvent,
+  pool: CoinPoolPayload,
+): Promise<{ event: ConflictEvent; source: ProviderSource | null }> {
+  const responses = await Promise.all(
+    event.conflictingAgents.map((agentId) => generateEventResponse(agentId, event.description, pool)),
+  );
+  return {
+    event: {
+      ...event,
+      responses: responses.map((result) => result.response),
+    },
+    source: responses.find((result) => result.source)?.source ?? null,
+  };
+}
+
+async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
+  const pool = (await triggerSignalGeneration()) ?? (await getCoinPool());
+  const { tickers } = pool;
+  const generatedAt = Date.now();
+  const recentSignals = getSignalsByWindow(COLLECTIVE_EVENT_WINDOW_MS);
+  const focus = buildFallbackFocus(pool, generatedAt);
+  const streamEntries: StreamEntry[] = [];
+  const providerSources: ProviderSource[] = [];
+
+  const speechDecisions = AGENTS.map((agentId) =>
+    checkAgentSpeech(agentId, recentSignals, lastAgentSpokeAt[agentId] ?? null, generatedAt),
+  );
+
+  if (process.env.NODE_ENV !== "production") {
+    speechDecisions.forEach((decision) => {
+      console.info(
+        `[claw42] speechGuard ${decision.agentId}: ${decision.shouldSpeak ? "speak" : "hold"} ${
+          decision.reason
+        }`,
+      );
+    });
   }
 
-  console.warn("[claw42] using static analysis fallback");
-  return buildStaticFallback(pool);
+  const collectiveEvent = detectCollectiveEvent(recentSignals, generatedAt);
+  if (collectiveEvent && claimStreamEvent(collectiveEvent.id, generatedAt)) {
+    const hydrated = await hydrateCollectiveEvent(collectiveEvent, pool);
+    streamEntries.push(hydrated.event);
+    if (hydrated.source) providerSources.push(hydrated.source);
+  }
+
+  const focusEvent = detectFocusEvent(recentSignals, generatedAt);
+  if (focusEvent && claimStreamEvent(focusEvent.id, generatedAt)) {
+    const hydrated = await hydrateFocusEvent(focusEvent, pool);
+    streamEntries.push(hydrated.event);
+    if (hydrated.source) providerSources.push(hydrated.source);
+  }
+
+  const conflictEvent = recentSignals.length > 0 ? detectConflictEvent(focus, generatedAt) : null;
+  if (conflictEvent && claimStreamEvent(conflictEvent.id, generatedAt)) {
+    const hydrated = await hydrateConflictEvent(conflictEvent, pool);
+    streamEntries.push(hydrated.event);
+    if (hydrated.source) providerSources.push(hydrated.source);
+  }
+
+  const agentMessageResults = await Promise.all(
+    speechDecisions
+      .filter((decision) => decision.shouldSpeak && decision.triggerSignal)
+      .map((decision) =>
+        generateAgentMessageFromSignal(
+          decision.agentId,
+          decision.triggerSignal as SignalRecord,
+          pool,
+          generatedAt,
+        ),
+      ),
+  );
+
+  for (const result of agentMessageResults) {
+    streamEntries.push(result.entry);
+    lastAgentSpokeAt[result.entry.agentId] = generatedAt;
+    if (result.source) providerSources.push(result.source);
+  }
+
+  const stream = streamEntries
+    .filter((entry): entry is AgentMessage => entry.kind === "agent_message")
+    .map((entry) => ({ agentId: entry.agentId, content: entry.content }));
+
+  const source: AgentAnalysisPayload["source"] =
+    providerSources.length > 0 ? providerSources[0] : "static-fallback";
+  const value: AgentAnalysisPayload = {
+    generatedAt,
+    servedAt: generatedAt,
+    ttl: 60,
+    source,
+    degraded: source === "static-fallback" || pool.source !== "coinw-kline",
+    tickers,
+    pool,
+    focus,
+    marketSource: pool.source,
+    stream,
+    streamEntries,
+    heroBubbles: buildFallbackHeroBubbles(tickers),
+    coinComments: buildFallbackComments(),
+  };
+
+  liveCache = {
+    value,
+    freshUntil: generatedAt + FRESH_TTL_MS,
+    staleUntil: generatedAt + STALE_TTL_MS,
+  };
+
+  pushHistoryFromBatch(value);
+  if (stream.length > 0 || streamEntries.some((entry) => entry.kind !== "agent_message")) {
+    recordSuccessfulPayload(value);
+  }
+
+  return value;
 }
 
 function refreshAnalysisOnce(): Promise<AgentAnalysisPayload> {
@@ -1229,9 +1550,15 @@ function refreshAnalysisOnce(): Promise<AgentAnalysisPayload> {
 
 export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
   const now = Date.now();
+  const cached = liveCache;
+  const hasUnseenRecentSignal = cached
+    ? getSignalsByWindow(COLLECTIVE_EVENT_WINDOW_MS).some(
+        (signal) => signal.ts > cached.value.generatedAt,
+      )
+    : false;
 
-  if (liveCache && liveCache.freshUntil > now) {
-    return { ...liveCache.value, source: "cache", servedAt: now };
+  if (cached && cached.freshUntil > now && !hasUnseenRecentSignal) {
+    return { ...cached.value, source: "cache", servedAt: now };
   }
 
   if (liveCache && liveCache.staleUntil > now) {
