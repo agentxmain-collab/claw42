@@ -151,6 +151,19 @@ const COINS: CoinConfig[] = [
     phaseY2: 1.5,
     freqScale: 0.88,
   },
+  {
+    symbol: "USDT",
+    label: "Tether",
+    src: "/images/hero/coin-usdt.png",
+    anchor: { top: "65%", right: "24%" },
+    sizeClass: "w-[56px] md:w-[100px]",
+    depth: 0.75,
+    phaseX1: 0.8,
+    phaseX2: 2.5,
+    phaseY1: 3.1,
+    phaseY2: 0.2,
+    freqScale: 1.27,
+  },
 ];
 
 function formatTickerPrice(price: number) {

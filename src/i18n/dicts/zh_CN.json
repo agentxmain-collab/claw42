@@ -27,8 +27,7 @@
       "别问为什么是 42。懂的都懂。",
       "42 秒前我还在读链上数据，现在轮到你问我问题。"
     ],
-    "speechBubbleAriaLabel": "Claw 42 Agent 气泡提示",
-    "robotWatchTooltip": "3 个 AI Agent · 实时盯盘\n点击查看"
+    "speechBubbleAriaLabel": "Claw 42 Agent 气泡提示"
   },
   "quickStart": {
     "title": "30 秒遇见你的第一个 AI Agent"

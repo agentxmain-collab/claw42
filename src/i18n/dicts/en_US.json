@@ -27,8 +27,7 @@
       "Don't ask why 42. If you know, you know.",
       "42 seconds ago I was reading on-chain data. Now it's your turn to ask."
     ],
-    "speechBubbleAriaLabel": "Claw 42 Agent speech bubble",
-    "robotWatchTooltip": "3 AI Agents · Live market watch\nClick to view"
+    "speechBubbleAriaLabel": "Claw 42 Agent speech bubble"
   },
   "quickStart": {
     "title": "Meet Your First AI Agent in 30 Seconds"

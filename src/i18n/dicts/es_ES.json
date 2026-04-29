@@ -27,8 +27,7 @@
       "No preguntes por qué 42. El que sabe, sabe.",
       "Hace 42 segundos leía datos on-chain. Ahora te toca a ti preguntar."
     ],
-    "speechBubbleAriaLabel": "Burbuja de diálogo de Claw 42 Agent",
-    "robotWatchTooltip": "3 Agentes IA · mercado en vivo\nHaz clic para ver"
+    "speechBubbleAriaLabel": "Burbuja de diálogo de Claw 42 Agent"
   },
   "quickStart": {
     "title": "Conoce a tu primer Agente de IA en 30 segundos"

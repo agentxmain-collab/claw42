@@ -23,7 +23,6 @@ export interface Dict {
     ctaPrimaryClipboard: string;
     ctaPrimaryCopiedToast: string;
     ctaSecondary: string;
-    robotWatchTooltip: string;
     speechBubble: string[];
     speechBubbleAriaLabel: string;
   };

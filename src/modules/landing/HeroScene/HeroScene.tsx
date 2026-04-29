@@ -127,7 +127,6 @@ export function HeroScene() {
         mouseY={mouseY}
         reduceMotion={reduceMotion}
         onOpenWatch={handleOpenWatch}
-        watchTooltip={t.hero.robotWatchTooltip}
       />
 
       {/* z-30 Coins */}
@@ -159,7 +158,7 @@ export function HeroScene() {
               onClick={handleHeroCtaClick}
               whileHover={reduceMotion ? undefined : { scale: 1.05 }}
               whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-              className="px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
+              className="min-w-[11rem] px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
             >
               {t.hero.ctaPrimary}
             </motion.button>
@@ -189,7 +188,7 @@ export function HeroScene() {
             }
             whileHover={reduceMotion ? undefined : { scale: 1.05 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
+            className="min-w-[11rem] px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
           >
             {t.hero.ctaSecondary}
           </motion.a>

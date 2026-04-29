@@ -27,8 +27,7 @@
       "なぜ 42 か、訊かないで。分かる人には分かる。",
       "42 秒前までオンチェーンを読んでた。次は君の番だ。"
     ],
-    "speechBubbleAriaLabel": "Claw 42 Agent 吹き出し",
-    "robotWatchTooltip": "3体のAI Agent · リアルタイム監視\nクリックして見る"
+    "speechBubbleAriaLabel": "Claw 42 Agent 吹き出し"
   },
   "quickStart": {
     "title": "30 秒で最初の AI Agent に出会う"

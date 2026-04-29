@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useAgentAnalysis } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import type { Pose } from "./useRobotPose";
 import { SpeechBubble } from "./SpeechBubble";
 
@@ -11,7 +13,6 @@ interface RobotLayerProps {
   mouseY: number;
   reduceMotion: boolean;
   onOpenWatch: () => void;
-  watchTooltip: string;
 }
 
 const POSE_SRC: Record<"left" | "right", string> = {
@@ -44,11 +45,17 @@ export function RobotLayer({
   mouseY,
   reduceMotion,
   onOpenWatch,
-  watchTooltip,
 }: RobotLayerProps) {
+  const { t, locale } = useI18n();
   const [blink, setBlink] = useState(false);
   const [hovered, setHovered] = useState(false);
   const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
+  const isZh = locale === "zh_CN";
+  const { data } = useAgentAnalysis({ enabled: isZh });
+  const dynamicLines =
+    isZh && data?.source !== "static-fallback" && data?.heroBubbles?.length
+      ? data.heroBubbles
+      : undefined;
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -72,7 +79,6 @@ export function RobotLayer({
 
   const parallaxX = reduceMotion ? 0 : mouseX * 0.3 * 20;
   const parallaxY = reduceMotion ? 0 : mouseY * 0.3 * 12;
-  const tooltipLines = [watchTooltip];
 
   return (
     <div
@@ -88,7 +94,7 @@ export function RobotLayer({
         className="relative pointer-events-auto cursor-pointer"
         role="button"
         tabIndex={0}
-        aria-label={watchTooltip.replace(/\n/g, " ")}
+        aria-label={t.hero.speechBubbleAriaLabel}
         onClick={onOpenWatch}
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
@@ -97,7 +103,6 @@ export function RobotLayer({
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        whileHover={reduceMotion ? undefined : { scale: 1.05 }}
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
         animate={reduceMotion ? { y: 0 } : { y: [0, -12, 0] }}
         transition={
@@ -203,7 +208,7 @@ export function RobotLayer({
           visible={hovered}
           reduceMotion={reduceMotion}
           side={displayPose === "right" ? "left" : "right"}
-          lines={tooltipLines}
+          lines={dynamicLines}
         />
       </motion.div>
     </div>
