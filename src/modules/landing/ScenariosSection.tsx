@@ -169,9 +169,14 @@ function ChatPreviewCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { scale: 1.015 }}
-      className="group h-full min-h-[260px] rounded-xl p-[1.5px] bg-gradient-to-br from-[#7c5cff] via-[#ff8ad4] to-[#d1ff55] shadow-[0_0_32px_-4px_rgba(124,92,255,0.35)] hover:shadow-[0_0_56px_-2px_rgba(124,92,255,0.65),0_0_100px_-10px_rgba(255,138,212,0.45)] transition-shadow duration-500"
+      className="scenario-agent-frame group h-full min-h-[260px]"
     >
-      <div className="h-full bg-[#0a0a0a] rounded-[10px] p-5 transition-colors duration-500 group-hover:bg-[#0f0a1a]">
+      <div className="scenario-agent-frame-glow" />
+      <div className="scenario-agent-frame-white" />
+      <div className="scenario-agent-frame-dark" />
+      <div className="scenario-agent-frame-border" />
+
+      <div className="scenario-agent-frame-inner h-full p-5 transition-colors duration-500 group-hover:bg-[#0f0a1a]">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8ad4] via-[#a78bfa] to-[#7c5cff] flex items-center justify-center shadow-[0_0_12px_rgba(167,139,250,0.5)]">
             <span className="text-sm">✨</span>

@@ -95,47 +95,63 @@ function QuickStartSection() {
         viewport={motionViewport}
         variants={fadeScaleVariants(reduceMotion)}
         transition={getFadeUpTransition()}
-        className="w-full max-w-2xl terminal-glow rounded-xl overflow-hidden border border-white/10 bg-[#1a1a1a]"
+        className="quickstart-terminal-card w-full max-w-3xl"
       >
-        <div className="flex items-center justify-between px-4 py-3 bg-[#111] border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
-            <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
-            <span className="w-3 h-3 rounded-full bg-[#28c840]" />
-            <span className="ml-3 text-xs text-gray-500 font-mono uppercase tracking-wider">
-              Quick Start Terminal
-            </span>
+        <div className="quickstart-terminal-wrap">
+          <div className="quickstart-terminal">
+            <div className="quickstart-terminal-head">
+              <div className="quickstart-terminal-title">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M7 8.5 10.5 12 7 15.5M12 16h5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M4.75 5.75h14.5v12.5H4.75z"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>
+                  Quick Start Terminal
+                </span>
+              </div>
+              <motion.button
+                onClick={handleCopy}
+                whileHover={reduceMotion ? undefined : { scale: 1.05 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                className="quickstart-copy-toggle copy-btn"
+                title="Copy to clipboard"
+              >
+                {copied ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                ) : (
+                  <ClipboardIcon />
+                )}
+              </motion.button>
+            </div>
+            <div className="quickstart-terminal-body">
+              <div className="quickstart-terminal-pre" aria-label={command}>
+                <code>$&nbsp;</code>
+                <span className="quickstart-terminal-cmd">
+                  <span className="quickstart-token-npx">npx&nbsp;</span>
+                  <span className="quickstart-token-skill">skills add&nbsp;</span>
+                  <span className="quickstart-token-url">{COINW_SKILLS_URL}</span>
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center justify-between p-5 font-mono text-xs md:text-sm">
-          <div className="flex-1 leading-relaxed whitespace-nowrap min-w-0">
-            <span className="text-gray-500">$ </span>
-            <span className="text-white">npx </span>
-            <span className="text-green-400">skills add</span>
-            <span className="text-white"> </span>
-            <span className="text-[#7c5cff]">{COINW_SKILLS_URL}</span>
-          </div>
-          <motion.button
-            onClick={handleCopy}
-            whileHover={reduceMotion ? undefined : { scale: 1.05 }}
-            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="relative ml-4 p-2 text-gray-400 hover:text-white transition-colors shrink-0 copy-btn"
-            title="Copy to clipboard"
-          >
-            {copied ? (
-              <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-            ) : (
-              <ClipboardIcon />
-            )}
-          </motion.button>
         </div>
       </motion.div>
     </Section>
   );
 }
-
 function WhySection() {
   const { t } = useI18n();
   const reduceMotion = useReducedMotion();
