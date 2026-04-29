@@ -7,7 +7,7 @@ import type { AgentId } from "../types";
 const AVATAR_SIZE = {
   card: { className: "h-14 w-14", pixels: 56 },
   sidebar: { className: "h-12 w-12", pixels: 48 },
-  message: { className: "h-14 w-14", pixels: 56 },
+  message: { className: "h-6 w-6", pixels: 24 },
   typing: { className: "h-10 w-10", pixels: 40 },
 } as const;
 
@@ -28,7 +28,7 @@ export function AgentAvatar({
     <span
       aria-hidden="true"
       className={`relative inline-flex shrink-0 items-center justify-center overflow-visible ${avatarSize.className} ${className}`}
-      style={{ filter: `drop-shadow(0 0 14px ${token.glow})` }}
+      style={{ filter: `drop-shadow(0 0 12px ${token.soft})` }}
     >
       <Image
         src={meta.avatarSrc}

@@ -1196,6 +1196,9 @@ function validateAnalysis(
   };
 }
 
+const LEGACY_JSON_PIPELINE = [buildStaticFallback, buildPrompt, parseAnalysisJson, validateAnalysis] as const;
+void LEGACY_JSON_PIPELINE;
+
 async function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);

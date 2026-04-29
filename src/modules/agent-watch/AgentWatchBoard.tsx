@@ -8,84 +8,112 @@ import { useAgentAnalysis } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
 import { useMarketEventFeed } from "./hooks/useMarketEventFeed";
 import type {
+  AgentMessage,
   AgentId,
   AgentStatus,
-  AgentWatchMessage,
   HistoryMessageEntry,
+  StreamEntry,
 } from "./types";
 import { AgentRowCard } from "./components/AgentRowCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
 import { MarketEventFeed } from "./components/MarketEventFeed";
-import { MessageStream, type MessageStreamHandle } from "./components/MessageStream";
+import { Stream, type StreamHandle } from "./components/Stream";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
 
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
+const STREAM_MAX_ENTRIES = 48;
 
-function warnDuplicateMessage(reason: string, message: AgentWatchMessage) {
+function isAgentMessage(entry: StreamEntry): entry is AgentMessage {
+  return entry.kind === "agent_message";
+}
+
+function warnDuplicateEntry(reason: string, entry: StreamEntry) {
   if (process.env.NODE_ENV === "production") return;
-  console.warn("[claw42] duplicate watch message skipped", {
+  console.warn("[claw42] duplicate watch stream entry skipped", {
     reason,
-    id: message.id,
-    agentId: message.agentId,
-    timestamp: message.timestamp,
+    id: entry.id,
+    kind: entry.kind,
+    agentId: isAgentMessage(entry) ? entry.agentId : null,
+    timestamp: entry.ts,
   });
 }
 
-function dedupeAgentMessages(messages: AgentWatchMessage[]) {
+function dedupeStreamEntries(entries: StreamEntry[]) {
   const seenIds = new Set<string>();
   const recentContent = new Map<string, number>();
-  const unique: AgentWatchMessage[] = [];
+  const unique: StreamEntry[] = [];
 
-  for (const message of messages) {
-    if (seenIds.has(message.id)) {
-      warnDuplicateMessage("id", message);
+  for (const entry of entries) {
+    if (seenIds.has(entry.id)) {
+      warnDuplicateEntry("id", entry);
       continue;
     }
 
-    const contentKey = `${message.agentId}:${message.content.trim()}`;
-    const lastTimestamp = recentContent.get(contentKey);
-    if (
-      lastTimestamp !== undefined &&
-      Math.abs(message.timestamp - lastTimestamp) <= DUPLICATE_CONTENT_WINDOW_MS
-    ) {
-      warnDuplicateMessage("content", message);
-      continue;
+    if (isAgentMessage(entry)) {
+      const contentKey = `${entry.agentId}:${entry.content.trim()}`;
+      const lastTimestamp = recentContent.get(contentKey);
+      if (
+        lastTimestamp !== undefined &&
+        Math.abs(entry.ts - lastTimestamp) <= DUPLICATE_CONTENT_WINDOW_MS
+      ) {
+        warnDuplicateEntry("content", entry);
+        continue;
+      }
+      recentContent.set(contentKey, entry.ts);
     }
 
-    seenIds.add(message.id);
-    recentContent.set(contentKey, message.timestamp);
-    unique.push(message);
+    seenIds.add(entry.id);
+    unique.push(entry);
   }
 
   return unique;
 }
 
-function keepFivePerAgent(messages: AgentWatchMessage[]) {
-  const kept = new Set<string>();
+function trimStreamEntries(entries: StreamEntry[]) {
+  const keptAgentMessages = new Set<string>();
   for (const agentId of AGENT_ORDER) {
-    messages
-      .filter((message) => message.agentId === agentId)
+    entries
+      .filter((entry): entry is AgentMessage => isAgentMessage(entry) && entry.agentId === agentId)
       .slice(-5)
-      .forEach((message) => kept.add(message.id));
+      .forEach((entry) => keptAgentMessages.add(entry.id));
   }
-  return messages.filter((message) => kept.has(message.id));
+  return entries
+    .filter((entry) => !isAgentMessage(entry) || keptAgentMessages.has(entry.id))
+    .slice(-STREAM_MAX_ENTRIES);
 }
 
 function mergeHistoryAndLive(
   history: HistoryMessageEntry[],
-  live: AgentWatchMessage[],
-): AgentWatchMessage[] {
-  const liveIds = new Set(live.map((message) => message.id));
-  const historyAsMessages: AgentWatchMessage[] = history
+  live: StreamEntry[],
+): StreamEntry[] {
+  const liveIds = new Set(live.map((entry) => entry.id));
+  const historyAsMessages: AgentMessage[] = history
     .filter((entry) => !liveIds.has(entry.id))
     .map((entry) => ({
+      kind: "agent_message",
       id: entry.id,
+      ts: entry.generatedAt,
       agentId: entry.agentId,
       content: entry.content,
-      timestamp: entry.generatedAt,
+      triggerSignalId: entry.triggerSignalId ?? `history-${entry.id}`,
     }));
-  return dedupeAgentMessages([...historyAsMessages, ...live]);
+  return trimStreamEntries(dedupeStreamEntries([...historyAsMessages, ...live]));
+}
+
+function streamEntriesFromPayload(data: NonNullable<ReturnType<typeof useAgentAnalysis>["data"]>) {
+  if (data.streamEntries?.length) return data.streamEntries;
+
+  return data.stream.map(
+    (item, index): AgentMessage => ({
+      kind: "agent_message",
+      id: `${data.generatedAt}-${item.agentId}-${index}`,
+      ts: data.generatedAt,
+      agentId: item.agentId,
+      content: item.content,
+      triggerSignalId: `legacy-${data.generatedAt}-${item.agentId}-${index}`,
+    }),
+  );
 }
 
 export function AgentWatchBoard() {
@@ -102,9 +130,9 @@ export function AgentWatchBoard() {
   });
   const { signals: marketSignals } = useMarketEventFeed({ enabled: isZh, limit: 12 });
   const processedGeneratedAtRef = useRef<number | null>(null);
-  const messageStreamRef = useRef<MessageStreamHandle>(null);
+  const streamRef = useRef<StreamHandle>(null);
   const timersRef = useRef<number[]>([]);
-  const [liveQueue, setLiveQueue] = useState<AgentWatchMessage[]>([]);
+  const [liveQueue, setLiveQueue] = useState<StreamEntry[]>([]);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
 
@@ -119,29 +147,27 @@ export function AgentWatchBoard() {
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
     timersRef.current = [];
 
-    data.stream.forEach((item, index) => {
+    const entries = streamEntriesFromPayload(data);
+
+    entries.forEach((entry, index) => {
+      const agentId = isAgentMessage(entry) ? entry.agentId : null;
       const typingTimer = window.setTimeout(() => {
-        setTypingAgent(item.agentId);
+        setTypingAgent(agentId);
       }, index * 1600);
       const appendTimer = window.setTimeout(() => {
         setTypingAgent(null);
-        setSpeakingAgent(item.agentId);
+        setSpeakingAgent(agentId);
         setLiveQueue((current) =>
-          keepFivePerAgent(
-            dedupeAgentMessages([
+          trimStreamEntries(
+            dedupeStreamEntries([
               ...current,
-              {
-                id: `${data.generatedAt}-${item.agentId}-${index}`,
-                agentId: item.agentId,
-                content: item.content,
-                timestamp: data.generatedAt,
-              },
+              entry,
             ]),
           ),
         );
       }, index * 1600 + 800);
       const clearSpeakingTimer = window.setTimeout(() => {
-        setSpeakingAgent((current) => (current === item.agentId ? null : current));
+        setSpeakingAgent((current) => (current === agentId ? null : current));
       }, index * 1600 + 1900);
       timersRef.current.push(typingTimer, appendTimer, clearSpeakingTimer);
     });
@@ -152,7 +178,7 @@ export function AgentWatchBoard() {
     };
   }, [data]);
 
-  const combinedMessages = useMemo(
+  const combinedEntries = useMemo(
     () => mergeHistoryAndLive(historyMessages, liveQueue),
     [historyMessages, liveQueue],
   );
@@ -167,7 +193,7 @@ export function AgentWatchBoard() {
 
   const handleJumpToLatest = useCallback(async () => {
     await refreshHistory();
-    messageStreamRef.current?.scrollToLatest();
+    streamRef.current?.scrollToLatest();
     dismissNewContent();
   }, [dismissNewContent, refreshHistory]);
   const statusForAgent = useCallback(
@@ -181,7 +207,7 @@ export function AgentWatchBoard() {
       data-agent-watch-board
       className="mx-auto min-h-[calc(100vh-72px)] w-full max-w-7xl px-4 pb-16 pt-24 md:px-8 md:pt-28"
     >
-      <div className="space-y-5">
+      <div className="space-y-7">
         <TopicHeader t={t} />
         <CoinTickerStrip
           pool={data?.pool}
@@ -190,7 +216,7 @@ export function AgentWatchBoard() {
         />
         <MarketEventFeed signals={marketSignals} labels={t.agentWatch.marketEvent} />
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {AGENT_ORDER.map((agentId) => (
             <AgentRowCard
               key={agentId}
@@ -211,14 +237,14 @@ export function AgentWatchBoard() {
           }}
         />
 
-        <MessageStream
-          ref={messageStreamRef}
-          messages={combinedMessages}
+        <Stream
+          ref={streamRef}
+          entries={combinedEntries}
           typingAgent={typingAgent}
           emptyLabel={t.agentWatch.emptyHistory}
         />
 
-        {(isLoading || isHistoryLoading) && combinedMessages.length === 0 && (
+        {(isLoading || isHistoryLoading) && combinedEntries.length === 0 && (
           <p className="text-center text-sm text-white/35">{t.agentWatch.loadingHistory}</p>
         )}
 
@@ -226,10 +252,10 @@ export function AgentWatchBoard() {
           href="#"
           title="敬请期待"
           whileHover={reduceMotion ? undefined : { y: -3 }}
-          className="card-glow flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/10 bg-[#111] p-5 md:flex-row md:items-center md:p-6"
+          className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/10 bg-[#111] p-6 md:flex-row md:items-center md:p-7"
         >
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#b49cff]">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/45">
               Claw 42 Agent
             </p>
             <h2 className="mt-2 text-xl font-bold text-white md:text-2xl">

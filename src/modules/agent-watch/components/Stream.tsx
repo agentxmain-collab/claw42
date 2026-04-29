@@ -2,47 +2,57 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import type { AgentId, AgentWatchMessage } from "../types";
-import { MessageBubble } from "./MessageBubble";
+import type { AgentId, StreamEntry } from "../types";
+import { AgentMessageBubble } from "./AgentMessageBubble";
+import { CollectiveEventCard } from "./CollectiveEventCard";
+import { ConflictEventCard } from "./ConflictEventCard";
+import { FocusEventCard } from "./FocusEventCard";
 import { TypingIndicator } from "./TypingIndicator";
 
-export interface MessageStreamHandle {
+export interface StreamHandle {
   scrollToLatest: () => void;
 }
 
-interface MessageStreamProps {
-  messages: AgentWatchMessage[];
+interface StreamProps {
+  entries: StreamEntry[];
   typingAgent: AgentId | null;
   emptyLabel?: string;
 }
 
-export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>(function MessageStream(
-  { messages, typingAgent, emptyLabel },
+function StreamEntryView({ entry }: { entry: StreamEntry }) {
+  if (entry.kind === "agent_message") return <AgentMessageBubble message={entry} />;
+  if (entry.kind === "collective_event") return <CollectiveEventCard event={entry} />;
+  if (entry.kind === "focus_event") return <FocusEventCard event={entry} />;
+  return <ConflictEventCard event={entry} />;
+}
+
+export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
+  { entries, typingAgent, emptyLabel },
   forwardedRef,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
-  const uniqueMessages = useMemo(() => {
+  const uniqueEntries = useMemo(() => {
     const seen = new Set<string>();
-    return messages.filter((message) => {
-      if (!seen.has(message.id)) {
-        seen.add(message.id);
+    return entries.filter((entry) => {
+      if (!seen.has(entry.id)) {
+        seen.add(entry.id);
         return true;
       }
 
       if (process.env.NODE_ENV !== "production") {
-        console.warn("[claw42] duplicate message id in stream render", message.id);
+        console.warn("[claw42] duplicate stream entry id in render", entry.id);
       }
       return false;
     });
-  }, [messages]);
+  }, [entries]);
 
   useEffect(() => {
     if (!autoScroll) return;
     const el = containerRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [uniqueMessages, typingAgent, autoScroll]);
+  }, [uniqueEntries, typingAgent, autoScroll]);
 
   useImperativeHandle(forwardedRef, () => ({
     scrollToLatest: () => {
@@ -54,7 +64,7 @@ export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>
   }));
 
   return (
-    <div className="card-glow relative min-h-[560px] w-full overflow-hidden rounded-2xl border border-white/10 bg-[#111]">
+    <div className="relative min-h-[560px] w-full overflow-hidden rounded-2xl border border-white/10 bg-[#111]">
       <div
         ref={containerRef}
         onScroll={() => {
@@ -64,15 +74,15 @@ export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>
         }}
         className="h-[560px] overflow-y-auto px-4 py-4 md:px-6"
       >
-        {uniqueMessages.length === 0 && !typingAgent && (
+        {uniqueEntries.length === 0 && !typingAgent && (
           <div className="flex h-full items-center justify-center text-sm text-white/40">
             {emptyLabel ?? "等待 Agent 开口..."}
           </div>
         )}
 
         <AnimatePresence initial={false}>
-          {uniqueMessages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+          {uniqueEntries.map((entry) => (
+            <StreamEntryView key={entry.id} entry={entry} />
           ))}
         </AnimatePresence>
 
@@ -89,7 +99,7 @@ export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>
               behavior: "smooth",
             });
           }}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-[#7c5cff] px-4 py-2 text-xs font-semibold text-white shadow-lg"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md"
         >
           回到最新
         </button>

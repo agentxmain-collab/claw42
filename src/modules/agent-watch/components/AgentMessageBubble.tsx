@@ -3,15 +3,15 @@
 import { motion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
-import type { AgentWatchMessage } from "../types";
+import type { AgentMessage } from "../types";
 import { formatAgentMessageTime } from "../utils/formatTime";
 import { AgentAvatar } from "./AgentAvatar";
 
-export function MessageBubble({ message }: { message: AgentWatchMessage }) {
+export function AgentMessageBubble({ message }: { message: AgentMessage }) {
   const { locale } = useI18n();
   const meta = AGENT_META[message.agentId];
   const token = AGENT_COLOR_TOKEN[message.agentId];
-  const timeLabel = formatAgentMessageTime(message.timestamp, locale);
+  const timeLabel = formatAgentMessageTime(message.ts, locale);
 
   return (
     <motion.div
@@ -20,23 +20,18 @@ export function MessageBubble({ message }: { message: AgentWatchMessage }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.24 }}
-      className="flex gap-3 py-2"
+      className="flex gap-2 py-2"
     >
-      <AgentAvatar agentId={message.agentId} size="message" />
+      <AgentAvatar agentId={message.agentId} size="message" className="mt-1" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-bold text-white">{meta.name}</span>
-          <span className="rounded-full border border-[#7c5cff]/30 bg-[#7c5cff]/12 px-2 py-0.5 text-[10px] font-semibold text-[#b49cff]">
-            LIVE
-          </span>
-          <span className="font-mono text-[11px] text-white/35">{timeLabel}</span>
+          <span className="font-mono text-xs text-white/35">{timeLabel}</span>
         </div>
         <div
-          className="mt-1.5 rounded-2xl rounded-tl-sm border border-l-2 bg-black/35 px-4 py-3 transition-shadow"
+          className="mt-1.5 rounded-2xl rounded-tl-sm border border-l-2 border-white/[0.08] bg-black/30 px-4 py-3"
           style={{
-            borderColor: token.soft,
             borderLeftColor: token.primary,
-            boxShadow: `0 0 0 1px ${token.soft}, 0 8px 24px ${token.glow}`,
           }}
         >
           <p className="text-sm leading-relaxed text-white/82">{message.content}</p>

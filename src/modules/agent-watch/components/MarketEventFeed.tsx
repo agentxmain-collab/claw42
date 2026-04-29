@@ -15,7 +15,7 @@ const SIGNAL_TYPE_LABEL: Record<SignalRecord["type"], string> = {
 
 const SEVERITY_DOT: Record<SignalRecord["severity"], string> = {
   alert: "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.55)]",
-  watch: "bg-[#b49cff] shadow-[0_0_8px_rgba(124,92,255,0.45)]",
+  watch: "bg-white/65 shadow-[0_0_8px_rgba(255,255,255,0.22)]",
   info: "bg-white/35",
 };
 
@@ -56,7 +56,7 @@ function SignalChip({ signal }: { signal: SignalRecord }) {
       <span className="shrink-0 font-mono text-[10px] font-bold text-white/65">
         {signal.symbol}
       </span>
-      <span className="shrink-0 text-[10px] font-bold text-[#b49cff]/80">
+      <span className="shrink-0 text-[10px] font-bold text-white/58">
         {SIGNAL_TYPE_LABEL[signal.type]}
       </span>
       <span className={`whitespace-nowrap text-xs ${descriptionClass}`}>
@@ -85,8 +85,8 @@ export function MarketEventFeed({
     return (
       <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-white/40">
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#b49cff] opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-[#7c5cff]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-35" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-white/70" />
         </span>
         <span>{labels.title}：</span>
         <span>{labels.empty}</span>
@@ -98,8 +98,8 @@ export function MarketEventFeed({
     <div className="flex items-center gap-3">
       <div className="flex shrink-0 items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-white/50">
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#b49cff] opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-[#7c5cff]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-35" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-white/70" />
         </span>
         {labels.title}
       </div>
