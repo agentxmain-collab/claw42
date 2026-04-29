@@ -116,8 +116,8 @@ const COINS: CoinConfig[] = [
     symbol: "BTC",
     label: "Bitcoin",
     src: "/images/hero/coin-btc.png",
-    anchor: { top: "25%", left: "30%" },
-    sizeClass: "w-[60px] md:w-[108px]",
+    anchor: { top: "17%", left: "31%" },
+    sizeClass: "w-[64px] md:w-[96px] lg:w-[106px]",
     depth: 0.8,
     phaseX1: 0,
     phaseX2: 1.2,
@@ -129,8 +129,8 @@ const COINS: CoinConfig[] = [
     symbol: "ETH",
     label: "Ethereum",
     src: "/images/hero/coin-eth.png",
-    anchor: { top: "25%", right: "30%" },
-    sizeClass: "w-[58px] md:w-[104px]",
+    anchor: { top: "18%", right: "31%" },
+    sizeClass: "w-[56px] md:w-[80px] lg:w-[88px]",
     depth: 0.7,
     phaseX1: 1.9,
     phaseX2: 3.0,
@@ -142,8 +142,8 @@ const COINS: CoinConfig[] = [
     symbol: "SOL",
     label: "Solana",
     src: "/images/hero/coin-sol.png",
-    anchor: { top: "54%", left: "28%" },
-    sizeClass: "w-[54px] md:w-[96px]",
+    anchor: { top: "42%", left: "37%" },
+    sizeClass: "w-[60px] md:w-[88px] lg:w-[96px]",
     depth: 0.9,
     phaseX1: 2.7,
     phaseX2: 0.4,
@@ -155,8 +155,8 @@ const COINS: CoinConfig[] = [
     symbol: "USDT",
     label: "Tether",
     src: "/images/hero/coin-usdt.png",
-    anchor: { top: "54%", right: "28%" },
-    sizeClass: "w-[56px] md:w-[100px]",
+    anchor: { top: "42%", right: "37%" },
+    sizeClass: "w-[60px] md:w-[88px] lg:w-[96px]",
     depth: 0.75,
     phaseX1: 0.8,
     phaseX2: 2.5,
@@ -299,12 +299,12 @@ export function CoinsLayer({
         const t = tick * coin.freqScale;
         const floatX = reduceMotion
           ? 0
-          : Math.sin(t * 0.6 + coin.phaseX1) * 30 +
-            Math.sin(t * 0.23 + coin.phaseX2) * 18;
+          : Math.sin(t * 0.6 + coin.phaseX1) * 12 +
+            Math.sin(t * 0.23 + coin.phaseX2) * 8;
         const floatY = reduceMotion
           ? 0
-          : Math.cos(t * 0.5 + coin.phaseY1) * 22 +
-            Math.sin(t * 0.31 + coin.phaseY2) * 14;
+          : Math.cos(t * 0.5 + coin.phaseY1) * 8 +
+            Math.sin(t * 0.31 + coin.phaseY2) * 6;
 
         return (
           <CoinItem
@@ -357,14 +357,19 @@ function CoinItem({
     : "drop-shadow(0 0 18px rgba(124,92,255,0.35))";
   const tooltipPlacement =
     Number.parseFloat(coin.anchor.top) > 50 ? "bottom-full mb-2" : "top-full mt-2";
+  const coinKey = coin.symbol.toLowerCase();
 
   return (
     <div
       className="absolute"
       style={{
-        top: coin.anchor.top,
-        left: coin.anchor.left,
-        right: coin.anchor.right,
+        top: `var(--claw42-hero-coin-${coinKey}-top, ${coin.anchor.top})`,
+        left: coin.anchor.left
+          ? `var(--claw42-hero-coin-${coinKey}-left, ${coin.anchor.left})`
+          : undefined,
+        right: coin.anchor.right
+          ? `var(--claw42-hero-coin-${coinKey}-right, ${coin.anchor.right})`
+          : undefined,
       }}
     >
       <button
