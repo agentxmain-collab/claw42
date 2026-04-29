@@ -26,6 +26,8 @@ export type SignalType =
   | "ema_cross"
   | "range_change";
 export type SignalSeverity = "info" | "watch" | "alert";
+export type AgentCardStatus = "silent" | "observing" | "speaking" | "alert";
+export type FocusEventType = "collective" | "high_severity" | "faction_conflict";
 
 export interface MarketCandle {
   timestamp: number;
@@ -116,6 +118,34 @@ export interface AgentFocus {
   };
   evidenceCount: number;
   generatedAt: number;
+}
+
+export interface AgentCardView {
+  agentId: AgentId;
+  status: AgentCardStatus;
+  currentSymbol: string;
+  judgment: string;
+  trigger: string;
+  invalidation: string;
+  lastUpdateAt: number;
+  evidenceSignalIds: string[];
+}
+
+export interface FocusEventEcho {
+  agentId: AgentId;
+  content: string;
+}
+
+export interface FocusEvent {
+  id: string;
+  type: FocusEventType;
+  ts: number;
+  summary: string;
+  primaryAgent: AgentId;
+  primaryContent: string;
+  echoes: FocusEventEcho[];
+  signalIds: string[];
+  symbols: string[];
 }
 
 export interface MarketTickerPayload {

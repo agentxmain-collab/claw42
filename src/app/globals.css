@@ -36,6 +36,22 @@ body {
   .claw42-app-surface .claw42-hero-scene {
     --claw42-hero-robot-bottom: 43%;
     --claw42-hero-robot-width: min(232px, 46vw);
+    --claw42-hero-pedestal-bottom: 20%;
+    --claw42-hero-pedestal-width: min(456px, 40vw);
+    --claw42-hero-pedestal-glow-bottom: 20%;
+    --claw42-hero-pedestal-glow-width: min(340px, 29vw);
+    --claw42-hero-pedestal-beam-bottom: 27%;
+    --claw42-hero-pedestal-rays-bottom: 28%;
+    --claw42-hero-pedestal-top-glow-bottom: 33%;
+    --claw42-hero-pedestal-orb-bottom: 32%;
+    --claw42-hero-coin-btc-top: 25%;
+    --claw42-hero-coin-btc-left: 30%;
+    --claw42-hero-coin-eth-top: 25%;
+    --claw42-hero-coin-eth-right: 30%;
+    --claw42-hero-coin-sol-top: 54%;
+    --claw42-hero-coin-sol-left: 28%;
+    --claw42-hero-coin-usdt-top: 54%;
+    --claw42-hero-coin-usdt-right: 28%;
     aspect-ratio: auto;
     min-height: 100svh;
   }
@@ -171,6 +187,22 @@ body {
   .claw42-hero-scene {
     --claw42-hero-robot-bottom: 43%;
     --claw42-hero-robot-width: min(232px, 46vw);
+    --claw42-hero-pedestal-bottom: 20%;
+    --claw42-hero-pedestal-width: min(456px, 40vw);
+    --claw42-hero-pedestal-glow-bottom: 20%;
+    --claw42-hero-pedestal-glow-width: min(340px, 29vw);
+    --claw42-hero-pedestal-beam-bottom: 27%;
+    --claw42-hero-pedestal-rays-bottom: 28%;
+    --claw42-hero-pedestal-top-glow-bottom: 33%;
+    --claw42-hero-pedestal-orb-bottom: 32%;
+    --claw42-hero-coin-btc-top: 25%;
+    --claw42-hero-coin-btc-left: 30%;
+    --claw42-hero-coin-eth-top: 25%;
+    --claw42-hero-coin-eth-right: 30%;
+    --claw42-hero-coin-sol-top: 54%;
+    --claw42-hero-coin-sol-left: 28%;
+    --claw42-hero-coin-usdt-top: 54%;
+    --claw42-hero-coin-usdt-right: 28%;
     aspect-ratio: auto;
     min-height: 100svh;
   }
@@ -784,6 +816,25 @@ body {
   }
 }
 
+.claw42-pulse-border {
+  animation: claw42PulseBorder 600ms ease-out;
+}
+
+@keyframes claw42PulseBorder {
+  0% {
+    border-color: var(--agent-color-soft);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+  50% {
+    border-color: var(--agent-color);
+    box-shadow: 0 0 18px var(--agent-color-glow);
+  }
+  100% {
+    border-color: var(--agent-color-soft);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
 .claw42-marquee-track {
   will-change: transform;
 }
@@ -796,6 +847,10 @@ body {
   .claw42-marquee-track {
     animation: none !important;
     transform: translateX(0) !important;
+  }
+
+  .claw42-pulse-border {
+    animation: none !important;
   }
 
   .card-glow:hover {

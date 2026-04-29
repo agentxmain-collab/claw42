@@ -8,6 +8,7 @@ import { buildSignalSummary, formatSummaryForPrompt } from "@/lib/signalSummary"
 import type {
   AgentFocus,
   AgentAnalysisPayload,
+  AgentCardView,
   AgentId,
   AgentSkill,
   CoinPoolPayload,
@@ -17,6 +18,7 @@ import type {
   MarketDataSource,
   HistoryMessageEntry,
   ProviderSource,
+  FocusEvent,
   SignalRecord,
   StreamMessage,
   TickerMap,
@@ -753,6 +755,121 @@ ${skillPromptBlock("gamma")}
 - Beta 中长 + 克制，必须用趋势派术语
 - Gamma 数据 + 谨慎，必须用回归派术语
 - 3 Agent 气泡内容明显风格差异，用户能区分`;
+}
+
+function formatSignalForStagePrompt(signal: SignalRecord): string {
+  return [
+    `id: ${signal.id}`,
+    `type: ${SIGNAL_TYPE_LABELS[signal.type]}`,
+    `symbol: ${signal.symbol}`,
+    `severity: ${signal.severity}`,
+    signal.payload.description ? `description: ${signal.payload.description}` : null,
+    typeof signal.payload.priceLevel === "number" ? `priceLevel: ${signal.payload.priceLevel}` : null,
+    typeof signal.payload.volumeRatio === "number" ? `volumeRatio: ${signal.payload.volumeRatio}` : null,
+    typeof signal.payload.distancePct === "number" ? `distancePct: ${signal.payload.distancePct}` : null,
+    typeof signal.payload.change24h === "number" ? `change24h: ${signal.payload.change24h}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function formatCardViewForStagePrompt(view?: AgentCardView): string {
+  if (!view) return "暂无上一条 currentView。";
+  return [
+    `symbol: ${view.currentSymbol}`,
+    `judgment: ${view.judgment}`,
+    `trigger: ${view.trigger}`,
+    `invalidation: ${view.invalidation}`,
+    `lastUpdateAt: ${new Date(view.lastUpdateAt).toISOString()}`,
+    `evidenceSignalIds: ${view.evidenceSignalIds.join(", ") || "none"}`,
+  ].join("\n");
+}
+
+export function buildCardViewPrompt({
+  agentId,
+  signal,
+  previousView,
+  marketContext,
+}: {
+  agentId: AgentId;
+  signal: SignalRecord;
+  previousView?: AgentCardView;
+  marketContext: string;
+}): string {
+  const skill = SKILLS[agentId];
+  return `你是 ${skill.displayName}，${skill.tagline}。基于以下输入，生成你对当前市场的最新 currentView。
+
+## 新信号
+${formatSignalForStagePrompt(signal)}
+
+## 你上一条 currentView
+${formatCardViewForStagePrompt(previousView)}
+
+## 全局市场上下文
+${marketContext}
+
+请输出 JSON：
+{
+  "currentSymbol": "...",
+  "judgment": "1-2 句主判断，必须基于实际信号",
+  "trigger": "1 句触发条件",
+  "invalidation": "1 句失效条件",
+  "evidenceSignalIds": ["${signal.id}"]
+}
+
+约束：
+- 不能脱口而出“可能”“建议”“或许”
+- judgment 必须引用具体 symbol 和数据点，不能空谈
+- 派别人设保持稳定：Alpha 突破，Beta 趋势，Gamma 极端回归
+- 不要输出 markdown，只输出 JSON`;
+}
+
+export function buildFocusPrimaryPrompt({
+  event,
+  primaryView,
+}: {
+  event: FocusEvent;
+  primaryView: AgentCardView;
+}): string {
+  const skill = SKILLS[event.primaryAgent];
+  return `你是 ${skill.displayName}，焦点事件触发你出来主讲。
+
+## 焦点事件
+type: ${event.type}
+symbols: ${event.symbols.join(", ")}
+description: ${event.summary}
+signalIds: ${event.signalIds.join(", ") || "none"}
+
+## 你的 currentView
+${formatCardViewForStagePrompt(primaryView)}
+
+请输出 3-5 句主判断，80-150 字，必须引用具体信号 ids，给出明确观点，不要输出 markdown。`;
+}
+
+export function buildFocusEchoPrompt({
+  agentId,
+  event,
+  primaryContent,
+  currentView,
+}: {
+  agentId: AgentId;
+  event: FocusEvent;
+  primaryContent: string;
+  currentView: AgentCardView;
+}): string {
+  const skill = SKILLS[agentId];
+  return `你是 ${skill.displayName}，${event.primaryAgent} 刚说完话，你补 1-2 句。
+
+## 焦点事件
+${event.summary}
+
+## 主响应
+${primaryContent}
+
+## 你的 currentView
+${formatCardViewForStagePrompt(currentView)}
+
+请输出 20-40 字副响应，必须不复读主响应，给出本派别独特角度。格式：「${skill.displayName} · 短判断」。不要输出 markdown。`;
 }
 
 function stripCodeFence(text: string): string {
