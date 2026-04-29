@@ -18,6 +18,7 @@ interface CoinConfig {
   src: string;
   anchor: { top: string; left?: string; right?: string };
   sizeClass: string;
+  calloutSide: "left" | "right";
   depth: number;
   phaseX1: number;
   phaseX2: number;
@@ -118,6 +119,7 @@ const COINS: CoinConfig[] = [
     src: "/images/hero/coin-btc.png",
     anchor: { top: "17%", left: "31%" },
     sizeClass: "w-[64px] md:w-[96px] lg:w-[106px]",
+    calloutSide: "left",
     depth: 0.8,
     phaseX1: 0,
     phaseX2: 1.2,
@@ -131,6 +133,7 @@ const COINS: CoinConfig[] = [
     src: "/images/hero/coin-eth.png",
     anchor: { top: "18%", right: "31%" },
     sizeClass: "w-[56px] md:w-[80px] lg:w-[88px]",
+    calloutSide: "right",
     depth: 0.7,
     phaseX1: 1.9,
     phaseX2: 3.0,
@@ -144,6 +147,7 @@ const COINS: CoinConfig[] = [
     src: "/images/hero/coin-sol.png",
     anchor: { top: "42%", left: "37%" },
     sizeClass: "w-[60px] md:w-[88px] lg:w-[96px]",
+    calloutSide: "left",
     depth: 0.9,
     phaseX1: 2.7,
     phaseX2: 0.4,
@@ -157,6 +161,7 @@ const COINS: CoinConfig[] = [
     src: "/images/hero/coin-usdt.png",
     anchor: { top: "42%", right: "37%" },
     sizeClass: "w-[60px] md:w-[88px] lg:w-[96px]",
+    calloutSide: "right",
     depth: 0.75,
     phaseX1: 0.8,
     phaseX2: 2.5,
@@ -175,6 +180,73 @@ function formatTickerPrice(price: number) {
 
 function formatTickerChange(change24h: number) {
   return `${change24h >= 0 ? "+" : ""}${change24h.toFixed(2)}%`;
+}
+
+function MarketCallout({
+  coin,
+  ticker,
+  reduceMotion,
+}: {
+  coin: CoinConfig;
+  ticker: TickerData;
+  reduceMotion: boolean;
+}) {
+  const isLeft = coin.calloutSide === "left";
+  const isPositive = ticker.change24h >= 0;
+  const accent = isPositive ? "rgb(39,217,128)" : "rgb(255,95,95)";
+  const lineGradient = isLeft
+    ? `linear-gradient(90deg, rgba(255,255,255,0), ${accent})`
+    : `linear-gradient(90deg, ${accent}, rgba(255,255,255,0))`;
+  const sideClass = isLeft
+    ? "right-[calc(100%+0.75rem)] flex-row"
+    : "left-[calc(100%+0.75rem)] flex-row-reverse";
+  const textAlignClass = isLeft ? "text-right items-end" : "text-left items-start";
+  const lineMarginClass = isLeft ? "ml-3" : "mr-3";
+
+  return (
+    <motion.div
+      initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 4, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4, scale: 0.98 }}
+      transition={{ duration: reduceMotion ? 0 : 0.16 }}
+      className={`pointer-events-none absolute top-1/2 z-50 hidden -translate-y-1/2 items-center md:flex ${sideClass}`}
+    >
+      <div className={`flex min-w-[8.75rem] flex-col gap-0.5 ${textAlignClass}`}>
+        <div className="font-mono text-[12px] font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]">
+          {coin.symbol}
+        </div>
+        <div className="font-mono text-[13px] font-semibold tracking-[0.08em] text-white/72 drop-shadow-[0_0_8px_rgba(124,92,255,0.45)]">
+          {formatTickerPrice(ticker.price)}
+        </div>
+        <div
+          className="font-mono text-[12px] font-bold tracking-[0.12em]"
+          style={{
+            color: accent,
+            textShadow: `0 0 10px ${isPositive ? "rgba(39,217,128,0.38)" : "rgba(255,95,95,0.38)"}`,
+          }}
+        >
+          {formatTickerChange(ticker.change24h)} / 24H
+        </div>
+      </div>
+
+      <div className={`relative h-px w-16 ${lineMarginClass}`} style={{ background: lineGradient }}>
+        <span
+          className={`absolute top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full ${
+            isLeft ? "right-0 translate-x-1/2" : "left-0 -translate-x-1/2"
+          }`}
+          style={{
+            background: accent,
+            boxShadow: `0 0 10px ${accent}`,
+          }}
+        />
+        <span
+          className={`absolute top-1/2 h-5 w-px -translate-y-1/2 bg-white/28 ${
+            isLeft ? "left-0" : "right-0"
+          }`}
+        />
+      </div>
+    </motion.div>
+  );
 }
 
 export function CoinsLayer({
@@ -355,8 +427,6 @@ function CoinItem({
   const baseFilter = bursting
     ? "drop-shadow(0 0 12px rgba(255,205,98,0.52)) saturate(1.08)"
     : "drop-shadow(0 0 18px rgba(124,92,255,0.35))";
-  const tooltipPlacement =
-    Number.parseFloat(coin.anchor.top) > 50 ? "bottom-full mb-2" : "top-full mt-2";
   const coinKey = coin.symbol.toLowerCase();
 
   return (
@@ -411,6 +481,11 @@ function CoinItem({
           setTooltipVisible(false);
           onLingerTrail();
         }}
+        onFocus={() => {
+          if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+          setTooltipVisible(true);
+        }}
+        onBlur={() => setTooltipVisible(false)}
       >
         <motion.div animate={controls} initial={false}>
           <motion.img
@@ -427,25 +502,7 @@ function CoinItem({
         </motion.div>
         <AnimatePresence>
           {tooltipVisible && ticker && (
-            <motion.div
-              initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 4, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4, scale: 0.96 }}
-              transition={{ duration: reduceMotion ? 0 : 0.16 }}
-              className={`pointer-events-none absolute left-1/2 z-50 min-w-[132px] -translate-x-1/2 rounded-xl border border-white/10 bg-black/85 px-3 py-2 text-left shadow-[0_14px_36px_rgba(0,0,0,0.42)] backdrop-blur-md ${tooltipPlacement}`}
-            >
-              <div className="font-mono text-xs font-bold text-white">{coin.symbol}</div>
-              <div className="mt-0.5 font-mono text-xs text-white/75">
-                {formatTickerPrice(ticker.price)}
-              </div>
-              <div
-                className={`mt-0.5 font-mono text-xs ${
-                  ticker.change24h >= 0 ? "text-[#27d980]" : "text-[#ff5f5f]"
-                }`}
-              >
-                {formatTickerChange(ticker.change24h)} (24h)
-              </div>
-            </motion.div>
+            <MarketCallout coin={coin} ticker={ticker} reduceMotion={reduceMotion} />
           )}
         </AnimatePresence>
       </button>
