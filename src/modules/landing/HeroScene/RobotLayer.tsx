@@ -52,10 +52,16 @@ export function RobotLayer({
   const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
   const isZh = locale === "zh_CN";
   const { data } = useAgentAnalysis({ enabled: isZh });
-  const dynamicLines =
-    isZh && data?.source !== "static-fallback" && data?.heroBubbles?.length
-      ? data.heroBubbles
-      : undefined;
+  const liveHeroLines =
+    data?.source !== "static-fallback" ? data?.heroBubbles?.filter(Boolean) : undefined;
+  const fallbackAnalysisLines = data?.stream?.map((message) => message.content).filter(Boolean);
+  const dynamicLines = isZh
+    ? liveHeroLines?.length
+      ? liveHeroLines
+      : fallbackAnalysisLines?.length
+        ? fallbackAnalysisLines
+        : [t.coinModal.loadingPrice]
+    : undefined;
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -85,7 +91,7 @@ export function RobotLayer({
       className="claw42-hero-robot absolute z-40 left-1/2 bottom-[34%] md:bottom-[40%]"
       style={{
         transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
-        bottom: "var(--claw42-hero-robot-bottom)",
+        bottom: "var(--claw42-hero-robot-bottom, 32%)",
         width: "var(--claw42-hero-robot-width, min(316px, 28vw))",
         pointerEvents: "none",
       }}
