@@ -12,8 +12,6 @@ import type {
   AgentStatus,
   AgentWatchMessage,
   HistoryMessageEntry,
-  SignalRecord,
-  WatchFeedItem,
 } from "./types";
 import { AgentRowCard } from "./components/AgentRowCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
@@ -49,51 +47,6 @@ function mergeHistoryAndLive(
   return [...historyAsMessages, ...live];
 }
 
-function feedItemTs(item: WatchFeedItem): number {
-  return item.type === "agent" ? item.timestamp : item.signal.ts;
-}
-
-function dedupeSystemSignals(signals: SignalRecord[], windowMs: number): SignalRecord[] {
-  const result: SignalRecord[] = [];
-  const lastBySymbol = new Map<string, { index: number; ts: number }>();
-
-  for (const signal of [...signals].sort((a, b) => a.ts - b.ts)) {
-    const last = lastBySymbol.get(signal.symbol);
-    if (last && signal.ts - last.ts < windowMs) {
-      result[last.index] = signal;
-      lastBySymbol.set(signal.symbol, { index: last.index, ts: signal.ts });
-      continue;
-    }
-
-    result.push(signal);
-    lastBySymbol.set(signal.symbol, { index: result.length - 1, ts: signal.ts });
-  }
-
-  return result.sort((a, b) => a.ts - b.ts);
-}
-
-function buildFeedItems(
-  messages: AgentWatchMessage[],
-  signals: SignalRecord[],
-): WatchFeedItem[] {
-  const agentItems: WatchFeedItem[] = messages.map((message) => ({
-    type: "agent",
-    agentId: message.agentId,
-    content: message.content,
-    timestamp: message.timestamp,
-    id: message.id,
-  }));
-  const systemItems: WatchFeedItem[] = dedupeSystemSignals(signals, 60_000)
-    .slice(-12)
-    .map((signal) => ({
-      type: "market-event",
-      signal,
-      id: `sys-${signal.id}`,
-    }));
-
-  return [...agentItems, ...systemItems].sort((a, b) => feedItemTs(a) - feedItemTs(b));
-}
-
 export function AgentWatchBoard() {
   const { t, locale } = useI18n();
   const isZh = locale === "zh_CN";
@@ -110,67 +63,13 @@ export function AgentWatchBoard() {
   const processedGeneratedAtRef = useRef<number | null>(null);
   const messageStreamRef = useRef<MessageStreamHandle>(null);
   const timersRef = useRef<number[]>([]);
-  const signalTimersRef = useRef<number[]>([]);
-  const visibleSignalIdsRef = useRef<Set<string>>(new Set());
-  const scheduledSignalIdsRef = useRef<Set<string>>(new Set());
   const [liveQueue, setLiveQueue] = useState<AgentWatchMessage[]>([]);
-  const [visibleSignalIds, setVisibleSignalIds] = useState<Set<string>>(() => new Set());
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
 
   useEffect(() => {
     if (hasNewContent) void refreshHistory();
   }, [hasNewContent, refreshHistory]);
-
-  useEffect(() => {
-    visibleSignalIdsRef.current = visibleSignalIds;
-  }, [visibleSignalIds]);
-
-  useEffect(() => {
-    if (!marketSignals.length) return;
-    const visibleSignalIds = visibleSignalIdsRef.current;
-    const scheduledSignalIds = scheduledSignalIdsRef.current;
-
-    const pendingSignals = marketSignals
-      .filter(
-        (signal) =>
-          !visibleSignalIds.has(signal.id) &&
-          !scheduledSignalIds.has(signal.id),
-      )
-      .sort((a, b) => a.ts - b.ts);
-    if (pendingSignals.length === 0) return;
-
-    const timers: number[] = [];
-    const scheduledThisRun: string[] = [];
-
-    pendingSignals.forEach((signal, index) => {
-      scheduledSignalIds.add(signal.id);
-      scheduledThisRun.push(signal.id);
-
-      const timer = window.setTimeout(() => {
-        setVisibleSignalIds((current) => {
-          if (current.has(signal.id)) return current;
-          const next = new Set(current);
-          next.add(signal.id);
-          visibleSignalIdsRef.current = next;
-          return next;
-        });
-        scheduledSignalIds.delete(signal.id);
-      }, index * 1500);
-
-      timers.push(timer);
-    });
-
-    signalTimersRef.current.push(...timers);
-
-    return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
-      signalTimersRef.current = signalTimersRef.current.filter((timer) => !timers.includes(timer));
-      scheduledThisRun.forEach((id) => {
-        if (!visibleSignalIdsRef.current.has(id)) scheduledSignalIds.delete(id);
-      });
-    };
-  }, [marketSignals]);
 
   useEffect(() => {
     if (!data || processedGeneratedAtRef.current === data.generatedAt) return;
@@ -214,17 +113,9 @@ export function AgentWatchBoard() {
     () => mergeHistoryAndLive(historyMessages, liveQueue),
     [historyMessages, liveQueue],
   );
-  const visibleSignals = useMemo(
-    () => marketSignals.filter((signal) => visibleSignalIds.has(signal.id)),
-    [marketSignals, visibleSignalIds],
-  );
   const focusByAgent = useMemo(
     () => new Map(data?.focus?.map((focus) => [focus.agentId, focus]) ?? []),
     [data?.focus],
-  );
-  const feedItems = useMemo(
-    () => buildFeedItems(combinedMessages, visibleSignals),
-    [combinedMessages, visibleSignals],
   );
 
   const handleDismissNewContent = useCallback(() => {
@@ -279,12 +170,12 @@ export function AgentWatchBoard() {
 
         <MessageStream
           ref={messageStreamRef}
-          items={feedItems}
+          messages={combinedMessages}
           typingAgent={typingAgent}
           emptyLabel={t.agentWatch.emptyHistory}
         />
 
-        {(isLoading || isHistoryLoading) && feedItems.length === 0 && (
+        {(isLoading || isHistoryLoading) && combinedMessages.length === 0 && (
           <p className="text-center text-sm text-white/35">{t.agentWatch.loadingHistory}</p>
         )}
 

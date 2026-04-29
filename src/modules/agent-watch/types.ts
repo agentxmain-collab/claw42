@@ -118,10 +118,6 @@ export interface AgentFocus {
   generatedAt: number;
 }
 
-export type WatchFeedItem =
-  | { type: "agent"; agentId: AgentId; content: string; timestamp: number; id: string }
-  | { type: "market-event"; signal: SignalRecord; id: string };
-
 export interface MarketTickerPayload {
   ts: number;
   tickers: TickerMap;

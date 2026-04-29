@@ -168,7 +168,9 @@
       "evidenceCount": "{count} signals as evidence",
       "minutesAgo": "{minutes} min ago",
       "warmup": "Agent warming up",
-      "thinking": "Thinking"
+      "thinking": "Thinking",
+      "focusLabel": "Watching",
+      "focusTooltip": "Agent's current primary target, rotates with market signals"
     },
     "marketEvent": {
       "title": "Market Signals",

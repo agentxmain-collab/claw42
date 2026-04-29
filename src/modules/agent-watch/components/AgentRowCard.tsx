@@ -27,6 +27,8 @@ export function AgentRowCard({
   statusLabels: { thinking: string; speaking: string; idle: string };
   focusLabels: {
     watching: string;
+    focusLabel: string;
+    focusTooltip: string;
     trigger: string;
     fail: string;
     expandFail: string;
@@ -52,7 +54,7 @@ export function AgentRowCard({
       }}
     >
       <div className="flex items-center gap-2">
-        <AgentAvatar agentId={agentId} size="typing" />
+        <AgentAvatar agentId={agentId} size="card" />
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
             <span className="truncate text-sm font-bold text-white">{meta.name}</span>
@@ -62,12 +64,16 @@ export function AgentRowCard({
           <div className="mt-0.5 text-[10px] font-medium text-white/30">{statusLabel}</div>
         </div>
         {focus && (
-          <div className="shrink-0 rounded-md border border-white/[0.08] bg-white/[0.06] px-2 py-0.5">
+          <button
+            type="button"
+            title={focusLabels.focusTooltip}
+            className="shrink-0 rounded-md border border-white/[0.08] bg-white/[0.06] px-2.5 py-1 text-left transition-colors hover:bg-white/[0.08]"
+          >
             <span className="mr-1 text-[10px] font-bold uppercase text-white/45">
-              {focusLabels.watching}
+              {focusLabels.focusLabel}
             </span>
             <span className="font-mono text-xs font-bold text-white">{focus.symbol}</span>
-          </div>
+          </button>
         )}
       </div>
 

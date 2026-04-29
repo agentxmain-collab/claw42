@@ -1,6 +1,7 @@
 "use client";
 
 import type { CoinPoolPayload, CoinTickerEntry, TickerMap } from "../types";
+import { priceDeltaColor } from "../utils/priceDeltaColor";
 
 const COINS = ["BTC", "ETH", "SOL", "USDT"] as const;
 
@@ -60,7 +61,7 @@ export function CoinTickerStrip({
                     <span className="text-white/70">
                       {formatPrice(ticker.symbol, ticker.price)}
                     </span>
-                    <span className={up ? "text-[#b49cff]" : "text-[#ff5f5f]"}>
+                    <span className={priceDeltaColor(ticker.change24h)}>
                       {`${up ? "+" : ""}${ticker.change24h.toFixed(2)}%`}
                     </span>
                   </div>

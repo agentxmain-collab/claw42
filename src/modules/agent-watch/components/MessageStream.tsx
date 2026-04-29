@@ -2,9 +2,8 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import type { AgentId, WatchFeedItem } from "../types";
+import type { AgentId, AgentWatchMessage } from "../types";
 import { MessageBubble } from "./MessageBubble";
-import { SystemSignalBubble } from "./SystemSignalBubble";
 import { TypingIndicator } from "./TypingIndicator";
 
 export interface MessageStreamHandle {
@@ -12,13 +11,13 @@ export interface MessageStreamHandle {
 }
 
 interface MessageStreamProps {
-  items: WatchFeedItem[];
+  messages: AgentWatchMessage[];
   typingAgent: AgentId | null;
   emptyLabel?: string;
 }
 
 export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>(function MessageStream(
-  { items, typingAgent, emptyLabel },
+  { messages, typingAgent, emptyLabel },
   forwardedRef,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,7 +28,7 @@ export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>
     const el = containerRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [items, typingAgent, autoScroll]);
+  }, [messages, typingAgent, autoScroll]);
 
   useImperativeHandle(forwardedRef, () => ({
     scrollToLatest: () => {
@@ -51,20 +50,16 @@ export const MessageStream = forwardRef<MessageStreamHandle, MessageStreamProps>
         }}
         className="h-[560px] overflow-y-auto px-4 py-4 md:px-6"
       >
-        {items.length === 0 && !typingAgent && (
+        {messages.length === 0 && !typingAgent && (
           <div className="flex h-full items-center justify-center text-sm text-white/40">
             {emptyLabel ?? "等待 Agent 开口..."}
           </div>
         )}
 
         <AnimatePresence initial={false}>
-          {items.map((item) =>
-            item.type === "agent" ? (
-              <MessageBubble key={item.id} message={item} />
-            ) : (
-              <SystemSignalBubble key={item.id} signal={item.signal} />
-            ),
-          )}
+          {messages.map((message) => (
+            <MessageBubble key={message.id} message={message} />
+          ))}
         </AnimatePresence>
 
         {typingAgent && <TypingIndicator agentId={typingAgent} />}

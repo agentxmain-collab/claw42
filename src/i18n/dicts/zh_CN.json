@@ -161,14 +161,16 @@
       "opportunity": "机会"
     },
     "focusCard": {
-      "watching": "关注",
+      "watching": "盯防",
       "trigger": "触发",
       "fail": "失效",
       "expandFail": "失效条件",
       "evidenceCount": "{count} 条信号支撑",
       "minutesAgo": "{minutes} 分钟前",
       "warmup": "Agent 准备中",
-      "thinking": "思考中"
+      "thinking": "思考中",
+      "focusLabel": "盯防",
+      "focusTooltip": "Agent 当前重点观察的标的，会随市场信号变化"
     },
     "marketEvent": {
       "title": "市场信号",

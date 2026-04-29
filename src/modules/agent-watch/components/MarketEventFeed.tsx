@@ -2,6 +2,7 @@
 
 import { useReducedMotion } from "framer-motion";
 import type { SignalRecord } from "../types";
+import { priceDeltaColor } from "../utils/priceDeltaColor";
 
 const SIGNAL_TYPE_LABEL: Record<SignalRecord["type"], string> = {
   volume_spike: "VOLUME",
@@ -13,9 +14,21 @@ const SIGNAL_TYPE_LABEL: Record<SignalRecord["type"], string> = {
 };
 
 const SEVERITY_DOT: Record<SignalRecord["severity"], string> = {
-  alert: "bg-[#ff5f5f] shadow-[0_0_8px_rgba(255,95,95,0.55)]",
+  alert: "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.55)]",
   watch: "bg-[#b49cff] shadow-[0_0_8px_rgba(124,92,255,0.45)]",
   info: "bg-white/35",
+};
+
+const SEVERITY_CHIP: Record<SignalRecord["severity"], string> = {
+  alert: "border-l-2 border-l-amber-400/70 bg-white/[0.06]",
+  watch: "",
+  info: "bg-white/[0.025]",
+};
+
+const SEVERITY_TEXT: Record<SignalRecord["severity"], string> = {
+  alert: "text-white/85",
+  watch: "text-white/55",
+  info: "text-white/40",
 };
 
 function formatTime(ts: number): string {
@@ -27,8 +40,15 @@ function formatTime(ts: number): string {
 }
 
 function SignalChip({ signal }: { signal: SignalRecord }) {
+  const descriptionClass =
+    typeof signal.payload.change24h === "number"
+      ? priceDeltaColor(signal.payload.change24h)
+      : SEVERITY_TEXT[signal.severity];
+
   return (
-    <div className="flex shrink-0 items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.04] px-2.5 py-1.5 transition-colors hover:bg-white/[0.06]">
+    <div
+      className={`flex shrink-0 items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.04] px-2.5 py-1.5 transition-colors hover:bg-white/[0.06] ${SEVERITY_CHIP[signal.severity]}`}
+    >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[signal.severity]}`} />
       <span className="shrink-0 font-mono text-[10px] text-white/40">
         {formatTime(signal.ts)}
@@ -39,7 +59,7 @@ function SignalChip({ signal }: { signal: SignalRecord }) {
       <span className="shrink-0 text-[10px] font-bold text-[#b49cff]/80">
         {SIGNAL_TYPE_LABEL[signal.type]}
       </span>
-      <span className="whitespace-nowrap text-xs text-white/85">
+      <span className={`whitespace-nowrap text-xs ${descriptionClass}`}>
         {signal.payload.description ?? `${signal.symbol} ${signal.type}`}
       </span>
     </div>

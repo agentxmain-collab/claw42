@@ -5,6 +5,7 @@ import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import type { AgentId } from "../types";
 
 const AVATAR_SIZE = {
+  card: { className: "h-14 w-14", pixels: 56 },
   sidebar: { className: "h-12 w-12", pixels: 48 },
   message: { className: "h-14 w-14", pixels: 56 },
   typing: { className: "h-10 w-10", pixels: 40 },

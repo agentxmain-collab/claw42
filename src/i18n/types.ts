@@ -115,6 +115,8 @@ export interface Dict {
     };
     focusCard: {
       watching: string;
+      focusLabel: string;
+      focusTooltip: string;
       trigger: string;
       fail: string;
       expandFail: string;
