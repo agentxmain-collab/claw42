@@ -2,7 +2,7 @@
   "nav": {
     "switchLangToEn": "EN",
     "switchLangToZh": "中",
-    "agentLiveMenuItem": "实时旁观"
+    "agentLiveMenuItem": "实时分析"
   },
   "hero": {
     "title": "遇见你的AI交易伙伴",
@@ -178,7 +178,7 @@
   },
   "coinModal": {
     "closeAriaLabel": "关闭行情卡",
-    "goToWatchCta": "去旁观秀听他们继续聊",
+    "goToWatchCta": "去实时分析看他们继续聊",
     "loadingPrice": "行情数据获取中",
     "agentCommentMissing": "Agent 点评暂时不可用"
   }
