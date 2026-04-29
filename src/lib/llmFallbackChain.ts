@@ -66,11 +66,20 @@ const BANNED_OUTPUT_PATTERNS = [
   /强弱排序已拉开/,
   /^目前.{0,12}表现/,
   /^[A-Z0-9]{2,12}\s+24h\s*[+-]?\d/i,
+  /\b(?:volume_spike|near_high|near_low|breakout|ema_cross|range_change)\b/,
 ];
-const GAMMA_V1_TERMS = ["极端", "均值回归", "近期高位", "近期低位", "高低位", "range_change"];
+const SIGNAL_TYPE_LABELS: Record<SignalRecord["type"], string> = {
+  volume_spike: "放量异动",
+  near_high: "接近近期高位",
+  near_low: "接近近期低位",
+  breakout: "突破信号",
+  ema_cross: "EMA 共振变化",
+  range_change: "波动区间变化",
+};
+const GAMMA_V1_TERMS = ["极端", "均值回归", "近期高位", "近期低位", "高低位", "波动区间变化"];
 const GAMMA_V1_FRAMEWORK = [
   "24h 极端涨跌 + 接近近期高低位 = 回归观察区",
-  "range_change 连续出现时先等价格稳定，不接飞刀",
+  "波动区间连续变化时先等价格稳定，不接飞刀",
   "回归判断只看现价、24h 涨跌和近期高低位，不引用 RSI / 布林带 / EMA144 偏离",
 ];
 const GAMMA_V1_EXAMPLES = [
@@ -86,7 +95,7 @@ const GAMMA_V1_FALLBACKS = {
     "接近近期低位先看是否停止扩散",
     "树不会长到天上，极端涨幅后等回归",
     "极端位置最怕接飞刀",
-    "range_change 连续出现时先缩小判断半径",
+    "波动区间连续变化时先缩小判断半径",
     "回归不是反转，先等高低位重新确认",
     "数字不会骗人，极端波动会骗人",
   ],
@@ -95,7 +104,7 @@ const GAMMA_V1_FALLBACKS = {
     "先等回归窗口",
     "不接飞刀",
     "近期高低位是锚",
-    "range_change 正在发酵",
+    "波动区间正在变化",
   ],
   coinComments: {
     BTC: "BTC 先看 24h 极端涨跌和近期高低位，没失速不做均值回归。",
@@ -533,7 +542,7 @@ function skillPromptBlock(agentId: AgentId): string {
         : "55-80字，必须2句；第一句报24h极端涨跌或近期高低位，第二句给回归边界。";
   const persona =
     agentId === "gamma"
-      ? "你是 Gamma，加密交易均值回归派 Agent。v1 只用 24h 极端涨跌、近期高低位和 range_change 看回归窗口，不引用 RSI / 布林带 / EMA144 偏离。"
+      ? "你是 Gamma，加密交易均值回归派 Agent。v1 只用 24h 极端涨跌、近期高低位和波动区间变化看回归窗口，不引用 RSI / 布林带 / EMA144 偏离。"
       : skill.persona;
   const coreLogic = agentId === "gamma" ? GAMMA_V1_FRAMEWORK : skill.analyticalFramework.coreLogic;
   const examples = agentId === "gamma" ? GAMMA_V1_EXAMPLES : skill.style.examples;
@@ -575,7 +584,7 @@ function formatCollectiveSignalBrief(summary: ReturnType<typeof buildSignalSumma
     const symbols = RISK_COINS.filter((symbol) => summary.bySymbol[symbol]?.types.includes(type));
     if (symbols.length >= 3) {
       lines.push(
-        `- ${symbols.join(" / ")} 同时出现 ${type}，3 个 Agent 至少 1 条 stream 必须引用这个集体信号。`,
+        `- ${symbols.join(" / ")} 同时出现${SIGNAL_TYPE_LABELS[type]}，3 个 Agent 至少 1 条 stream 必须引用这个集体信号。`,
       );
     }
   }
@@ -685,12 +694,12 @@ ${skillPromptBlock("gamma")}
 - stream 每条都必须同时包含：币种代码、来自 buffer 或 K 线的具体数字、一个条件/触发/失效点
 - Alpha 只能像突破派：关键位、前高/前低、整数关口、放量、假突破、回踩确认
 - Beta 只能像趋势派：EMA12/13/144/169、多头/空头排列、回撤、共振、持有/减仓
-- Gamma 只能像回归派，但 v1 只能引用 24h 极端涨跌、近期高低位、range_change，不得引用 RSI 数值、布林带上下轨、EMA144 偏离百分比
+- Gamma 只能像回归派，但 v1 只能引用 24h 极端涨跌、近期高低位、波动区间变化，不得引用 RSI 数值、布林带上下轨、EMA144 偏离百分比
 - Gamma 的 focus.symbol 只能从热门/机会栏里选 24h 绝对波动最大的非主流币，禁止选 BTC/ETH/SOL/USDT
 - 每个 Agent 的 stream 必须至少出现自己的强制术语 1 个；coinComments 也要尽量延续本 Agent 术语
 - 三个 Agent 的 stream 内容长度必须明显不同：Alpha 最短，Beta 最长，Gamma 居中
 - Beta 和 Gamma 必须各自输出两句，句号/分号分隔；不要把所有信息塞成一句
-- 当前 buffer 只有 6 类信号：volume_spike / near_high / near_low / breakout / ema_cross / range_change
+- 当前 buffer 只有 6 类信号：放量异动 / 接近近期高位 / 接近近期低位 / 突破信号 / EMA 共振变化 / 波动区间变化
 - 禁止编造 RSI、布林带、KDJ、MACD、EMA144 偏离百分比等 buffer 没有的数据
 - 如果 CoinW K线不可用，必须明确说“K线不足，只能看现价”，不能给入场/止盈/止损计划
 - 禁止只输出“强、弱、风险、仓位、机会、别追”这类口号；必须说明“看什么价位/什么变化后怎么处理”

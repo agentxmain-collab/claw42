@@ -208,37 +208,6 @@ function WhySection() {
   );
 }
 
-function AgentLiveLinkCard() {
-  const { t, locale } = useI18n();
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <motion.a
-      href={`/${locale}/agent`}
-      whileHover={reduceMotion ? undefined : { y: -4 }}
-      className="block max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8"
-    >
-      <div className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-cw-green animate-pulse" />
-            <span className="text-xs font-semibold text-cw-green uppercase tracking-wider">
-              {t.agentWatch.linkCardLiveBadge}
-            </span>
-          </div>
-          <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            {t.agentWatch.linkCardTitle}
-          </h3>
-          <p className="text-gray-400 text-sm md:text-base">
-            {t.agentWatch.linkCardDesc}
-          </p>
-        </div>
-        <span className="text-3xl text-white/65">→</span>
-      </div>
-    </motion.a>
-  );
-}
-
 function StackedLogoGlow() {
   // 双层叠加：底层完整 logo（深灰线条 + 蓝色），顶层仅蓝色像素分离版加 drop-shadow 呼吸。
   // 这样 glow 只从眼睛/嘴/42 这些蓝色部分发出，深灰线条不参与发光（修复 v1 全体发光问题）。
@@ -305,7 +274,6 @@ export default function Home() {
       <HeroScene />
       <QuickStartSection />
       <ScenariosSection />
-      <AgentLiveLinkCard />
       <WhySection />
       <SkillsEcoSection />
       <StartTradeSection />

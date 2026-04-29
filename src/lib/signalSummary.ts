@@ -2,6 +2,14 @@ import { getSignalsByWindow } from "@/lib/signalBuffer";
 import type { SignalRecord } from "@/modules/agent-watch/types";
 
 const SUMMARY_WINDOW_MS = 2 * 60 * 60_000;
+const SIGNAL_TYPE_LABELS: Record<SignalRecord["type"], string> = {
+  volume_spike: "放量异动",
+  near_high: "接近近期高位",
+  near_low: "接近近期低位",
+  breakout: "突破信号",
+  ema_cross: "EMA 共振变化",
+  range_change: "波动区间变化",
+};
 
 export interface BufferSummary {
   windowMs: number;
@@ -61,8 +69,9 @@ export function formatSummaryForPrompt(summary: BufferSummary): string {
   }
 
   for (const [symbol, entry] of entries) {
+    const typeLabels = entry.types.map((type) => SIGNAL_TYPE_LABELS[type] ?? type);
     lines.push("");
-    lines.push(`### ${symbol}（${entry.count} 条信号，类型：${entry.types.join("/")}）`);
+    lines.push(`### ${symbol}（${entry.count} 条信号，类型：${typeLabels.join(" / ")}）`);
     entry.descriptions.forEach((description) => lines.push(`- ${description}`));
   }
 
@@ -72,7 +81,7 @@ export function formatSummaryForPrompt(summary: BufferSummary): string {
     summary.topAlerts.forEach((alert) => {
       lines.push(
         `- [${new Date(alert.ts).toISOString().slice(11, 16)}] ${
-          alert.payload.description ?? `${alert.symbol} ${alert.type}`
+          alert.payload.description ?? `${alert.symbol} ${SIGNAL_TYPE_LABELS[alert.type] ?? alert.type}`
         }`,
       );
     });
@@ -80,4 +89,3 @@ export function formatSummaryForPrompt(summary: BufferSummary): string {
 
   return lines.join("\n");
 }
-
