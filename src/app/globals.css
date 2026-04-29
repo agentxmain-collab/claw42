@@ -784,6 +784,25 @@ body {
   }
 }
 
+.claw42-pulse-border {
+  animation: claw42PulseBorder 600ms ease-out;
+}
+
+@keyframes claw42PulseBorder {
+  0% {
+    border-color: var(--agent-color-soft);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+  50% {
+    border-color: var(--agent-color);
+    box-shadow: 0 0 18px var(--agent-color-glow);
+  }
+  100% {
+    border-color: var(--agent-color-soft);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
 .claw42-marquee-track {
   will-change: transform;
 }
@@ -796,6 +815,10 @@ body {
   .claw42-marquee-track {
     animation: none !important;
     transform: translateX(0) !important;
+  }
+
+  .claw42-pulse-border {
+    animation: none !important;
   }
 
   .card-glow:hover {
