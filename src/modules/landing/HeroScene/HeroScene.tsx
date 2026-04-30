@@ -8,6 +8,8 @@ import { COINW_SKILLS_URL } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
 import { useMarketTicker } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import { useMouseNormalized } from "./useMouseNormalized";
+import { heroStageCssVars } from "./heroStageMotion";
+import { useHeroScrollDepth } from "./useHeroScrollDepth";
 import { useRobotPose, type Pose } from "./useRobotPose";
 import { RobotLayer } from "./RobotLayer";
 import { PedestalLayer } from "./PedestalLayer";
@@ -55,6 +57,11 @@ export function HeroScene() {
   const isMobile = useIsMobile();
   const [heroCopied, setHeroCopied] = useState(false);
   const { data: tickerData } = useMarketTicker({ enabled: true, intervalMs: 60_000 });
+  const scrollDepth = useHeroScrollDepth(stageRef, reduceMotion);
+  const stageStyle = {
+    ...heroStageCssVars(scrollDepth),
+    "--claw42-hero-backdrop-lift": isMobile ? "0px" : "clamp(42px, 6.5vh, 84px)",
+  };
 
   const handleHeroCtaClick = async () => {
     try {
@@ -92,13 +99,15 @@ export function HeroScene() {
     <section
       ref={stageRef}
       className="claw42-hero-scene relative w-full aspect-[4/5] overflow-hidden bg-black pt-[72px] md:aspect-auto md:h-screen md:min-h-[760px] md:max-h-[920px] md:pt-[80px]"
+      style={stageStyle}
     >
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
-          backgroundPosition: "center bottom",
+          backgroundPosition: "center calc(100% - var(--claw42-hero-backdrop-lift, 0px))",
           backgroundSize: "cover",
+          transform: "translate3d(0, var(--claw42-hero-depth-bg-y, 0px), 0)",
         }}
       />
       <div
@@ -119,10 +128,11 @@ export function HeroScene() {
         className="absolute inset-0 z-[8] pointer-events-none"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
-          backgroundPosition: "center bottom",
+          backgroundPosition: "center calc(100% - var(--claw42-hero-backdrop-lift, 0px))",
           backgroundSize: "cover",
           filter: "brightness(1.22) saturate(1.18)",
           mixBlendMode: "screen",
+          transform: "translate3d(0, var(--claw42-hero-depth-horizon-y, 0px), 0)",
           WebkitMaskImage:
             "linear-gradient(180deg, transparent 38%, black 47%, black 66%, transparent 74%)",
           maskImage:

@@ -448,7 +448,7 @@ function CoinItem({
         className={`claw42-hero-coin ${coin.sizeClass} relative pointer-events-auto cursor-pointer hover:scale-105 focus-visible:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c5cff]/70`}
         data-coin={coin.symbol}
         style={{
-          transform: `translate(${translateX}px, ${translateY}px) scale(${tooltipVisible ? 1.05 : 1})`,
+          transform: `translate(${translateX}px, calc(${translateY}px + var(--claw42-hero-depth-coin-y, 0px))) scale(${tooltipVisible ? 1.05 : 1})`,
           transition: "transform 180ms ease-out",
           appearance: "none",
           border: 0,
