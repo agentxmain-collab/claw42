@@ -191,6 +191,7 @@ export type WatchUpdateType =
   | "market_digest"
   | "focus_update"
   | "condition_update"
+  | "agent_heartbeat"
   | "quiet_observation";
 
 export interface WatchUpdateEntry {

@@ -185,11 +185,37 @@ const discussion = buildWatchSupplementalEntry({
   focus,
   signals: [],
   existingEntries: [],
-  preferredKind: "agent_discussion" as never,
+  preferredKind: "agent_discussion",
 });
 assert.ok(discussion);
 assert.equal(discussion.kind, "agent_discussion");
 assert.equal(discussion.responses.length, 3);
 assert.match(discussion.topic, /\$DOGE|\$BTC|\$AI/);
+
+const heartbeat = buildWatchSupplementalEntry({
+  now: 1_714_000_210_000,
+  pool,
+  focus,
+  signals: [],
+  existingEntries: [],
+  preferredKind: "agent_heartbeat",
+});
+assert.ok(heartbeat);
+assert.equal(heartbeat.kind, "watch_update");
+assert.equal(heartbeat.updateType, "agent_heartbeat");
+assert.match(heartbeat.content, /巡检|复核|扫描/);
+assert.match(heartbeat.content, /\$DOGE|\$BTC|\$AI/);
+
+const heartbeatDuringPriority = buildWatchSupplementalEntry({
+  now: 1_714_000_210_000,
+  pool,
+  focus,
+  signals: [],
+  existingEntries: [highEvent],
+  preferredKind: "agent_heartbeat",
+});
+assert.ok(heartbeatDuringPriority);
+assert.equal(heartbeatDuringPriority.kind, "watch_update");
+assert.equal(heartbeatDuringPriority.updateType, "agent_heartbeat");
 
 console.log("agent watch display tests passed");

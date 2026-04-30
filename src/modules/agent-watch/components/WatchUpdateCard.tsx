@@ -11,6 +11,7 @@ const UPDATE_LABEL: Record<WatchUpdateEntry["updateType"], string> = {
   market_digest: "市场摘要",
   focus_update: "关注变化",
   condition_update: "等待条件",
+  agent_heartbeat: "巡检心跳",
   quiet_observation: "观察状态",
 };
 
@@ -18,6 +19,7 @@ const UPDATE_STYLE: Record<WatchUpdateEntry["updateType"], string> = {
   market_digest: "border-[#3a7bff]/22 bg-[#3a7bff]/[0.045]",
   focus_update: "border-[#965eff]/22 bg-[#965eff]/[0.045]",
   condition_update: "border-white/[0.09] bg-white/[0.035]",
+  agent_heartbeat: "border-[#7c5cff]/18 bg-[#7c5cff]/[0.035]",
   quiet_observation: "border-white/[0.07] bg-black/20",
 };
 

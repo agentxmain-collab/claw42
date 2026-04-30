@@ -213,20 +213,37 @@ export function AgentWatchBoard() {
     if (now - lastSupplementalAtRef.current < 25_000) return;
 
     const existingEntries = streamEntriesFromPayload(data);
-    const entry = buildWatchSupplementalEntry({
-      now,
-      pool: data.pool,
-      focus: data.focus,
-      signals: marketSignals,
-      existingEntries,
-      preferredKind: existingEntries.some(isPriorityEvent) ? "agent_discussion" : undefined,
-    });
-    if (!entry) return;
-
     const cutoff = now - DUPLICATE_CONTENT_WINDOW_MS * 2;
     for (const [key, ts] of Array.from(supplementalClaimRef.current.entries())) {
       if (ts < cutoff) supplementalClaimRef.current.delete(key);
     }
+
+    const preferredKinds = existingEntries.some(isPriorityEvent)
+      ? (["agent_discussion", "agent_heartbeat"] as const)
+      : ([undefined, "agent_heartbeat"] as const);
+    let entry: ReturnType<typeof buildWatchSupplementalEntry> = null;
+
+    for (const preferredKind of preferredKinds) {
+      const candidate = buildWatchSupplementalEntry({
+        now,
+        pool: data.pool,
+        focus: data.focus,
+        signals: marketSignals,
+        existingEntries,
+        preferredKind,
+      });
+      if (!candidate) continue;
+
+      const lastClaimedAt = supplementalClaimRef.current.get(candidate.dedupeKey);
+      if (lastClaimedAt !== undefined && now - lastClaimedAt <= DUPLICATE_CONTENT_WINDOW_MS) {
+        continue;
+      }
+
+      entry = candidate;
+      break;
+    }
+
+    if (!entry) return;
 
     const lastClaimedAt = supplementalClaimRef.current.get(entry.dedupeKey);
     if (lastClaimedAt !== undefined && now - lastClaimedAt <= DUPLICATE_CONTENT_WINDOW_MS) return;

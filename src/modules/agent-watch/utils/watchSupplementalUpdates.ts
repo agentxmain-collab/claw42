@@ -15,6 +15,7 @@ import { formatCoinSymbol, prefixLeadingCoinSymbol } from "./symbolFormat";
 const HIGH_EVENT_SUPPRESS_MS = 90_000;
 const WATCH_UPDATE_BUCKET_MS = 5 * 60_000;
 const AGENT_DISCUSSION_KIND = "agent_discussion";
+const AGENT_HEARTBEAT_KIND = "agent_heartbeat";
 type SupplementalUpdateKind = WatchUpdateType | typeof AGENT_DISCUSSION_KIND;
 
 const AGENT_NAME: Record<AgentId, string> = {
@@ -31,7 +32,26 @@ const AGENT_DISCUSSION_LABEL: Record<AgentId, string> = {
   gamma: "回归视角",
 };
 
+const AGENT_HEARTBEAT_LINES: Record<AgentId, string[]> = {
+  alpha: [
+    "巡检：复核 {symbol} 的关键位和放量条件，未确认前不追。",
+    "扫描：{symbol} 还缺少量价同步，继续等待突破确认。",
+    "复核：{symbol} 未触发突破条件，报警线继续贴近近期高点。",
+  ],
+  beta: [
+    "巡检：重新检查 {symbol} 的 EMA12/13 结构，未共振前不升级。",
+    "扫描：{symbol} 趋势仍需回撤质量确认，暂不把反弹当趋势。",
+    "复核：{symbol} 顺势条件不足，继续观察高位能否重新抬升。",
+  ],
+  gamma: [
+    "巡检：继续盯 {symbol} 的极端波动和高低位失速，未确认前不介入。",
+    "扫描：{symbol} 还在极端区附近，先等价格停止扩散。",
+    "复核：{symbol} 回归窗口未完全打开，继续等近期高低位失速。",
+  ],
+};
+
 const UPDATE_ROTATION: SupplementalUpdateKind[] = [
+  AGENT_HEARTBEAT_KIND,
   "market_digest",
   "focus_update",
   "condition_update",
@@ -185,6 +205,37 @@ function buildQuietObservation(
   });
 }
 
+function buildAgentHeartbeat(
+  now: number,
+  pool: CoinPoolPayload,
+  focus: AgentFocus[],
+): WatchUpdateEntry | null {
+  const tickers = allTickers(pool);
+  const fallbackTicker = tickers.sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))[0] ?? null;
+  const focusIndex = Math.abs(Math.floor(now / 30_000)) % Math.max(focus.length, 1);
+  const item = focus[focusIndex] ?? null;
+  const agentId = item?.agentId ?? DISCUSSION_AGENT_ORDER[focusIndex % DISCUSSION_AGENT_ORDER.length] ?? "alpha";
+  const symbol = item?.symbol ?? fallbackTicker?.symbol;
+  if (!symbol) return null;
+
+  const phraseIndex = Math.abs(Math.floor(now / 30_000)) % AGENT_HEARTBEAT_LINES[agentId].length;
+  const displaySymbol = formatCoinSymbol(symbol);
+  const content = `${AGENT_NAME[agentId]} ${AGENT_HEARTBEAT_LINES[agentId][phraseIndex].replace("{symbol}", displaySymbol)}`;
+
+  return entry(
+    AGENT_HEARTBEAT_KIND,
+    now,
+    `heartbeat:${agentId}:${symbol}:${phraseIndex}`,
+    "巡检心跳",
+    content,
+    {
+      agentId,
+      symbol,
+      symbols: [symbol],
+    },
+  );
+}
+
 function uniqueSymbols(symbols: Array<string | undefined>): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -278,6 +329,7 @@ function buildByKind(
   if (kind === "market_digest") return buildMarketDigest(now, pool);
   if (kind === "focus_update") return buildFocusUpdate(now, focus);
   if (kind === "condition_update") return buildConditionUpdate(now, focus);
+  if (kind === AGENT_HEARTBEAT_KIND) return buildAgentHeartbeat(now, pool, focus);
   if (kind === AGENT_DISCUSSION_KIND) return buildAgentDiscussion(now, pool, focus, signals);
   return buildQuietObservation(now, focus, signals);
 }
@@ -298,7 +350,11 @@ export function buildWatchSupplementalEntry({
   preferredKind?: SupplementalUpdateKind;
 }): WatchUpdateEntry | AgentDiscussionEntry | null {
   if (!pool) return null;
-  if (hasFreshPriorityEvent(existingEntries, now) && preferredKind !== AGENT_DISCUSSION_KIND) {
+  if (
+    hasFreshPriorityEvent(existingEntries, now) &&
+    preferredKind !== AGENT_DISCUSSION_KIND &&
+    preferredKind !== AGENT_HEARTBEAT_KIND
+  ) {
     return null;
   }
 
