@@ -155,6 +155,17 @@ const skipped = buildWatchSupplementalEntry({
 });
 assert.equal(skipped, null);
 
+const discussionDuringPriority = buildWatchSupplementalEntry({
+  now: 1_714_000_020_000,
+  pool,
+  focus,
+  signals: [],
+  existingEntries: [highEvent],
+  preferredKind: "agent_discussion" as never,
+});
+assert.ok(discussionDuringPriority);
+assert.equal(discussionDuringPriority.kind, "agent_discussion");
+
 const heroLines = buildHeroSpeechLines(
   {
     source: "coinw-kline",

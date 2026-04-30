@@ -40,6 +40,10 @@ function isAgentDiscussion(entry: StreamEntry): entry is AgentDiscussionEntry {
   return entry.kind === "agent_discussion";
 }
 
+function isPriorityEvent(entry: StreamEntry) {
+  return entry.kind === "collective_event" || entry.kind === "focus_event" || entry.kind === "conflict_event";
+}
+
 function warnDuplicateEntry(reason: string, entry: StreamEntry) {
   if (process.env.NODE_ENV === "production") return;
   console.warn("[claw42] duplicate watch stream entry skipped", {
@@ -215,6 +219,7 @@ export function AgentWatchBoard() {
       focus: data.focus,
       signals: marketSignals,
       existingEntries,
+      preferredKind: existingEntries.some(isPriorityEvent) ? "agent_discussion" : undefined,
     });
     if (!entry) return;
 

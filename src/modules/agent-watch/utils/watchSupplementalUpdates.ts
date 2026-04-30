@@ -297,7 +297,10 @@ export function buildWatchSupplementalEntry({
   existingEntries: StreamEntry[];
   preferredKind?: SupplementalUpdateKind;
 }): WatchUpdateEntry | AgentDiscussionEntry | null {
-  if (!pool || hasFreshPriorityEvent(existingEntries, now)) return null;
+  if (!pool) return null;
+  if (hasFreshPriorityEvent(existingEntries, now) && preferredKind !== AGENT_DISCUSSION_KIND) {
+    return null;
+  }
 
   const safeFocus = focus ?? [];
   const rotatedKind = preferredKind ?? UPDATE_ROTATION[Math.abs(Math.floor(now / 60_000)) % UPDATE_ROTATION.length];
