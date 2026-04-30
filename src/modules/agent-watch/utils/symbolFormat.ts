@@ -17,6 +17,7 @@ export function formatCoinSymbol(symbol: string): string {
 export function prefixLeadingCoinSymbol(text: string, symbol: string): string {
   const normalized = normalizeCoinSymbol(symbol);
   if (!normalized) return text;
+  if (normalized === "AI" && /^\s*\$?AI\s+Agent\b/i.test(text)) return text;
 
   const leadingSymbol = new RegExp(`^\\s*\\$?${escapeRegExp(normalized)}(?=\\b|\\s|\\d|[-+/(（:：])`, "i");
   return text.replace(leadingSymbol, formatCoinSymbol(normalized));

@@ -1,9 +1,11 @@
 import type {
+  AgentDiscussionEntry,
   AgentFocus,
   AgentId,
   CoinPoolPayload,
   CoinTickerEntry,
   SignalRecord,
+  StreamResponse,
   StreamEntry,
   WatchUpdateEntry,
   WatchUpdateType,
@@ -12,6 +14,8 @@ import { formatCoinSymbol, prefixLeadingCoinSymbol } from "./symbolFormat";
 
 const HIGH_EVENT_SUPPRESS_MS = 90_000;
 const WATCH_UPDATE_BUCKET_MS = 5 * 60_000;
+const AGENT_DISCUSSION_KIND = "agent_discussion";
+type SupplementalUpdateKind = WatchUpdateType | typeof AGENT_DISCUSSION_KIND;
 
 const AGENT_NAME: Record<AgentId, string> = {
   alpha: "Alpha",
@@ -19,10 +23,19 @@ const AGENT_NAME: Record<AgentId, string> = {
   gamma: "Gamma",
 };
 
-const UPDATE_ROTATION: WatchUpdateType[] = [
+const DISCUSSION_AGENT_ORDER: AgentId[] = ["alpha", "beta", "gamma"];
+
+const AGENT_DISCUSSION_LABEL: Record<AgentId, string> = {
+  alpha: "突破视角",
+  beta: "趋势视角",
+  gamma: "回归视角",
+};
+
+const UPDATE_ROTATION: SupplementalUpdateKind[] = [
   "market_digest",
   "focus_update",
   "condition_update",
+  AGENT_DISCUSSION_KIND,
   "quiet_observation",
 ];
 
@@ -48,7 +61,7 @@ function sanitizeKey(value: string): string {
   return value.replace(/[^a-zA-Z0-9:_-]+/g, "-").replace(/-+/g, "-");
 }
 
-function updateId(type: WatchUpdateType, semanticKey: string, now: number): string {
+function updateId(type: SupplementalUpdateKind, semanticKey: string, now: number): string {
   const bucket = Math.floor(now / WATCH_UPDATE_BUCKET_MS);
   return `watch-${type}-${bucket}-${sanitizeKey(semanticKey)}`;
 }
@@ -172,16 +185,100 @@ function buildQuietObservation(
   });
 }
 
-function buildByKind(
-  kind: WatchUpdateType,
+function uniqueSymbols(symbols: Array<string | undefined>): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const symbol of symbols) {
+    const normalized = symbol?.trim().toUpperCase();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(normalized);
+  }
+  return result;
+}
+
+function topMover(pool: CoinPoolPayload): CoinTickerEntry | null {
+  return allTickers(pool).sort(
+    (a, b) => Math.abs(b.change24h) - Math.abs(a.change24h),
+  )[0] ?? null;
+}
+
+function fallbackAgentLine(agentId: AgentId, symbol: string, change24h?: number): string {
+  const displaySymbol = formatCoinSymbol(symbol);
+  if (agentId === "alpha") {
+    return `${displaySymbol} 先看关键位和放量是否同步，没确认不追。`;
+  }
+  if (agentId === "beta") {
+    return `${displaySymbol} 趋势要看 EMA12/13 能否同向，回撤不破才算强。`;
+  }
+  const moveText = Number.isFinite(change24h)
+    ? `24h ${formatChange(change24h ?? 0)} 后`
+    : "波动放大后";
+  return `${displaySymbol} ${moveText}先看高低位是否失速，极端区不接第一刀。`;
+}
+
+function buildAgentDiscussion(
   now: number,
   pool: CoinPoolPayload,
   focus: AgentFocus[],
   signals: SignalRecord[],
-): WatchUpdateEntry | null {
+): AgentDiscussionEntry | null {
+  const focusByAgent = new Map(focus.map((item) => [item.agentId, item]));
+  const latestSignal = [...signals].sort((a, b) => b.ts - a.ts)[0] ?? null;
+  const mover = topMover(pool);
+  const fallbackSymbol = latestSignal?.symbol ?? mover?.symbol ?? focus[0]?.symbol;
+  if (!fallbackSymbol) return null;
+
+  const symbols = uniqueSymbols([
+    ...DISCUSSION_AGENT_ORDER.map((agentId) => focusByAgent.get(agentId)?.symbol),
+    fallbackSymbol,
+  ]).slice(0, 3);
+  const topic = symbols.map(formatCoinSymbol).join(" / ");
+  const tickerBySymbol = new Map(allTickers(pool).map((ticker) => [ticker.symbol.toUpperCase(), ticker]));
+
+  const responses: StreamResponse[] = DISCUSSION_AGENT_ORDER.map((agentId) => {
+    const item = focusByAgent.get(agentId);
+    const symbol = item?.symbol ?? fallbackSymbol;
+    const ticker = tickerBySymbol.get(symbol.toUpperCase());
+    const source = item
+      ? firstSentence(item.judgment || item.trigger.description)
+      : fallbackAgentLine(agentId, symbol, ticker?.change24h);
+    const content = `${AGENT_DISCUSSION_LABEL[agentId]}：${prefixLeadingCoinSymbol(source, symbol)}`;
+    return { agentId, content };
+  });
+
+  const semanticKey = [
+    symbols.join(":"),
+    ...responses.map((response) => `${response.agentId}:${firstSentence(response.content)}`),
+  ].join("|");
+  const hasWatchMove = mover ? Math.abs(mover.change24h) >= 12 : false;
+  const hasWatchSignal = signals.some((signal) => signal.severity === "alert" || signal.severity === "watch");
+
+  return {
+    kind: "agent_discussion",
+    id: updateId(AGENT_DISCUSSION_KIND, semanticKey, now),
+    ts: now,
+    topic,
+    summary: `三方会诊：Alpha 看突破，Beta 看趋势，Gamma 看极端；当前围绕 ${topic} 等确认。`,
+    dedupeKey: `agent_discussion:${semanticKey}`,
+    symbol: symbols[0],
+    symbols,
+    responses,
+    severity: hasWatchMove || hasWatchSignal ? "watch" : "neutral",
+  };
+}
+
+function buildByKind(
+  kind: SupplementalUpdateKind,
+  now: number,
+  pool: CoinPoolPayload,
+  focus: AgentFocus[],
+  signals: SignalRecord[],
+): WatchUpdateEntry | AgentDiscussionEntry | null {
   if (kind === "market_digest") return buildMarketDigest(now, pool);
   if (kind === "focus_update") return buildFocusUpdate(now, focus);
   if (kind === "condition_update") return buildConditionUpdate(now, focus);
+  if (kind === AGENT_DISCUSSION_KIND) return buildAgentDiscussion(now, pool, focus, signals);
   return buildQuietObservation(now, focus, signals);
 }
 
@@ -198,8 +295,8 @@ export function buildWatchSupplementalEntry({
   focus?: AgentFocus[];
   signals: SignalRecord[];
   existingEntries: StreamEntry[];
-  preferredKind?: WatchUpdateType;
-}): WatchUpdateEntry | null {
+  preferredKind?: SupplementalUpdateKind;
+}): WatchUpdateEntry | AgentDiscussionEntry | null {
   if (!pool || hasFreshPriorityEvent(existingEntries, now)) return null;
 
   const safeFocus = focus ?? [];

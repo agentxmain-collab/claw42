@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import type { CoinSymbol, TickerData, TickerMap } from "@/modules/agent-watch/types";
+import { formatCoinSymbol } from "@/modules/agent-watch/utils/symbolFormat";
 
 interface CoinsLayerProps {
   mouseX: number;
@@ -213,7 +214,7 @@ function MarketCallout({
     >
       <div className={`flex min-w-[8.75rem] flex-col gap-0.5 ${textAlignClass}`}>
         <div className="font-mono text-[12px] font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]">
-          {coin.symbol}
+          {formatCoinSymbol(coin.symbol)}
         </div>
         <div className="font-mono text-[13px] font-semibold tracking-[0.08em] text-white/72 drop-shadow-[0_0_8px_rgba(124,92,255,0.45)]">
           {formatTickerPrice(ticker.price)}

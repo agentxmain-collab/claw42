@@ -8,6 +8,7 @@ import { useAgentAnalysis } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
 import { useMarketEventFeed } from "./hooks/useMarketEventFeed";
 import type {
+  AgentDiscussionEntry,
   AgentMessage,
   AgentId,
   AgentStatus,
@@ -35,6 +36,10 @@ function isWatchUpdate(entry: StreamEntry): entry is WatchUpdateEntry {
   return entry.kind === "watch_update";
 }
 
+function isAgentDiscussion(entry: StreamEntry): entry is AgentDiscussionEntry {
+  return entry.kind === "agent_discussion";
+}
+
 function warnDuplicateEntry(reason: string, entry: StreamEntry) {
   if (process.env.NODE_ENV === "production") return;
   console.warn("[claw42] duplicate watch stream entry skipped", {
@@ -57,10 +62,12 @@ function dedupeStreamEntries(entries: StreamEntry[]) {
       continue;
     }
 
-    if (isAgentMessage(entry) || isWatchUpdate(entry)) {
+    if (isAgentMessage(entry) || isWatchUpdate(entry) || isAgentDiscussion(entry)) {
       const contentKey = isAgentMessage(entry)
         ? `agent:${entry.agentId}:${entry.content.trim()}`
-        : `watch:${entry.dedupeKey}:${entry.content.trim()}`;
+        : isWatchUpdate(entry)
+          ? `watch:${entry.dedupeKey}:${entry.content.trim()}`
+          : `discussion:${entry.dedupeKey}:${entry.responses.map((response) => response.content.trim()).join("|")}`;
       const lastTimestamp = recentContent.get(contentKey);
       if (
         lastTimestamp !== undefined &&

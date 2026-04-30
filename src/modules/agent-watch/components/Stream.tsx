@@ -3,6 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { AgentId, StreamEntry } from "../types";
+import { AgentDiscussionCard } from "./AgentDiscussionCard";
 import { AgentMessageBubble } from "./AgentMessageBubble";
 import { CollectiveEventCard } from "./CollectiveEventCard";
 import { ConflictEventCard } from "./ConflictEventCard";
@@ -25,6 +26,7 @@ function StreamEntryView({ entry }: { entry: StreamEntry }) {
   if (entry.kind === "collective_event") return <CollectiveEventCard event={entry} />;
   if (entry.kind === "focus_event") return <FocusEventCard event={entry} />;
   if (entry.kind === "watch_update") return <WatchUpdateCard entry={entry} />;
+  if (entry.kind === "agent_discussion") return <AgentDiscussionCard entry={entry} />;
   return <ConflictEventCard event={entry} />;
 }
 

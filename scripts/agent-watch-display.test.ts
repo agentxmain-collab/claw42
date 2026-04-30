@@ -4,6 +4,7 @@ import {
   prefixLeadingCoinSymbol,
 } from "../src/modules/agent-watch/utils/symbolFormat";
 import { buildWatchSupplementalEntry } from "../src/modules/agent-watch/utils/watchSupplementalUpdates";
+import { buildHeroSpeechLines } from "../src/modules/landing/HeroScene/heroSpeechLines";
 import type {
   AgentFocus,
   CoinPoolPayload,
@@ -106,6 +107,7 @@ assert.equal(formatCoinSymbol("$eth"), "$ETH");
 assert.equal(formatCoinSymbol("—"), "—");
 assert.equal(prefixLeadingCoinSymbol("AI 24h -41.1%（机会区异动）", "AI"), "$AI 24h -41.1%（机会区异动）");
 assert.equal(prefixLeadingCoinSymbol("AI Agent 正在分析", "BTC"), "AI Agent 正在分析");
+assert.equal(prefixLeadingCoinSymbol("AI Agent 正在分析", "AI"), "AI Agent 正在分析");
 
 const digest = buildWatchSupplementalEntry({
   now: 1_714_000_020_000,
@@ -139,6 +141,7 @@ const focusUpdate = buildWatchSupplementalEntry({
   preferredKind: "focus_update",
 });
 assert.ok(focusUpdate);
+assert.equal(focusUpdate.kind, "watch_update");
 assert.equal(focusUpdate.agentId, "alpha");
 assert.match(focusUpdate.content, /\$DOGE/);
 
@@ -151,5 +154,31 @@ const skipped = buildWatchSupplementalEntry({
   preferredKind: "market_digest",
 });
 assert.equal(skipped, null);
+
+const heroLines = buildHeroSpeechLines(
+  {
+    source: "coinw-kline",
+    pool: {
+      majors: [],
+      trending: [],
+      opportunity: [{ symbol: "AI", change24h: -44.7 }],
+    },
+  },
+  true,
+);
+assert.ok(heroLines?.some((line) => line.startsWith("$AI 24h -44.7%")));
+
+const discussion = buildWatchSupplementalEntry({
+  now: 1_714_000_180_000,
+  pool,
+  focus,
+  signals: [],
+  existingEntries: [],
+  preferredKind: "agent_discussion" as never,
+});
+assert.ok(discussion);
+assert.equal(discussion.kind, "agent_discussion");
+assert.equal(discussion.responses.length, 3);
+assert.match(discussion.topic, /\$DOGE|\$BTC|\$AI/);
 
 console.log("agent watch display tests passed");

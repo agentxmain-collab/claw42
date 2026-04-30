@@ -1,3 +1,9 @@
+import {
+  formatCoinSymbol,
+  normalizeCoinSymbol,
+  prefixKnownLeadingSymbol,
+} from "../../agent-watch/utils/symbolFormat";
+
 type HeroSpeechMessage = {
   content?: string;
 };
@@ -10,12 +16,15 @@ type HeroSpeechEntry = {
   kind?: string;
   content?: string;
   triggerSignalId?: string;
+  symbol?: string;
+  symbols?: string[];
   primaryResponse?: HeroSpeechResponse;
   echoResponses?: HeroSpeechResponse[];
   responses?: HeroSpeechResponse[];
 };
 
 type HeroSpeechFocus = {
+  symbol?: string;
   judgment?: string;
   trigger?: {
     description?: string;
@@ -61,25 +70,52 @@ function uniqueUsableLines(lines: string[]): string[] {
   );
 }
 
+function lineWithSymbolContext(content: string, symbols: string[]): string {
+  const normalizedSymbols = symbols.map(normalizeCoinSymbol).filter(Boolean);
+  if (normalizedSymbols.length === 0) return content;
+
+  const prefixed = prefixKnownLeadingSymbol(content, normalizedSymbols);
+  if (prefixed !== content) return prefixed;
+
+  const [primarySymbol] = normalizedSymbols;
+  if (primarySymbol === "AI" && /^\s*\$?AI\s+Agent\b/i.test(content)) return content;
+
+  const hasKnownSymbol = normalizedSymbols.some((symbol) => {
+    const pattern = new RegExp(`(^|[^$A-Za-z0-9_])\\$?${symbol}(?=$|[^A-Za-z0-9_])`, "i");
+    return pattern.test(content);
+  });
+  if (hasKnownSymbol) return content;
+
+  return `${formatCoinSymbol(primarySymbol)} ${content}`;
+}
+
+function responseLinesWithContext(
+  responses: Array<HeroSpeechResponse | undefined>,
+  symbols: string[],
+): string[] {
+  return responses
+    .map((response) => response?.content)
+    .filter((content): content is string => Boolean(content))
+    .map((content) => lineWithSymbolContext(content, symbols));
+}
+
 function signalBackedEntryLines(entry: HeroSpeechEntry): string[] {
+  const symbols = entry.symbols?.length ? entry.symbols : entry.symbol ? [entry.symbol] : [];
+
   if (entry.kind === "agent_message" && entry.triggerSignalId && entry.content) {
-    return [entry.content];
+    return [lineWithSymbolContext(entry.content, symbols)];
   }
 
   if (entry.kind === "collective_event") {
-    return [entry.primaryResponse, ...(entry.echoResponses ?? [])]
-      .map((response) => response?.content)
-      .filter((content): content is string => Boolean(content));
+    return responseLinesWithContext([entry.primaryResponse, ...(entry.echoResponses ?? [])], symbols);
   }
 
   if (entry.kind === "focus_event") {
-    return entry.primaryResponse?.content ? [entry.primaryResponse.content] : [];
+    return responseLinesWithContext([entry.primaryResponse], symbols);
   }
 
   if (entry.kind === "conflict_event") {
-    return (entry.responses ?? [])
-      .map((response) => response.content)
-      .filter((content): content is string => Boolean(content));
+    return responseLinesWithContext(entry.responses ?? [], symbols);
   }
 
   return [];
@@ -91,9 +127,11 @@ function formatSignedPercent(value: number): string {
 
 function focusSupplementLines(data: HeroSpeechPayload): string[] {
   return (data.focus ?? []).flatMap((item) => [
-    item.trigger?.description,
+    item.trigger?.description
+      ? lineWithSymbolContext(item.trigger.description, item.symbol ? [item.symbol] : [])
+      : undefined,
     item.judgment && !/(没信号|信号不足|还没有足够|等待信号)/.test(item.judgment)
-      ? item.judgment
+      ? lineWithSymbolContext(item.judgment, item.symbol ? [item.symbol] : [])
       : undefined,
   ]).filter((content): content is string => Boolean(content));
 }
@@ -119,7 +157,7 @@ function poolSupplementLines(data: HeroSpeechPayload): string[] {
           : change >= 0
             ? "强势延续看回踩能否守住"
             : "弱势先看近期低位能否止跌";
-      return `${coin.symbol} 24h ${formatSignedPercent(change)}，${bias}`;
+      return `${formatCoinSymbol(coin.symbol ?? "")} 24h ${formatSignedPercent(change)}，${bias}`;
     });
 }
 

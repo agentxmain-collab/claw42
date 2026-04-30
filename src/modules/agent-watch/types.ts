@@ -207,12 +207,26 @@ export interface WatchUpdateEntry {
   severity: "neutral" | "watch";
 }
 
+export interface AgentDiscussionEntry {
+  kind: "agent_discussion";
+  id: string;
+  ts: number;
+  topic: string;
+  summary: string;
+  dedupeKey: string;
+  symbol?: string;
+  symbols: string[];
+  responses: StreamResponse[];
+  severity: "neutral" | "watch";
+}
+
 export type StreamEntry =
   | AgentMessage
   | CollectiveEvent
   | FocusEvent
   | ConflictEvent
-  | WatchUpdateEntry;
+  | WatchUpdateEntry
+  | AgentDiscussionEntry;
 
 export type CoinComments = Record<CoinSymbol, Record<AgentId, string>>;
 
