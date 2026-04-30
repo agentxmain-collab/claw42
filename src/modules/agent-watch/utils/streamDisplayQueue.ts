@@ -8,6 +8,9 @@ import type {
 const PRIORITY_THINK_MS = { min: 900, max: 1400 };
 const DISCUSSION_THINK_MS = { min: 1400, max: 2200 };
 const DEFAULT_THINK_MS = { min: 1800, max: 3000 };
+const PRIORITY_GAP_MS = 1100;
+const DISCUSSION_GAP_MS = 1300;
+const DEFAULT_GAP_MS = 900;
 
 function isWatchUpdate(entry: StreamEntry): entry is WatchUpdateEntry {
   return entry.kind === "watch_update";
@@ -98,4 +101,16 @@ export function thinkDurationForStreamEntry(
   }
 
   return boundedJitter(key, DEFAULT_THINK_MS.min, DEFAULT_THINK_MS.max);
+}
+
+export function gapDurationAfterStreamEntry(
+  entry: StreamEntry,
+  reduceMotion = false,
+): number {
+  if (reduceMotion) return 120;
+  if (entry.kind === "focus_event" || entry.kind === "collective_event" || entry.kind === "conflict_event") {
+    return PRIORITY_GAP_MS;
+  }
+  if (isAgentDiscussion(entry)) return DISCUSSION_GAP_MS;
+  return DEFAULT_GAP_MS;
 }

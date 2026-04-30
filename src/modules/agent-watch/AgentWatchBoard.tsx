@@ -12,7 +12,6 @@ import type {
   AgentMessage,
   AgentId,
   AgentStatus,
-  HistoryMessageEntry,
   StreamEntry,
   WatchUpdateEntry,
 } from "./types";
@@ -24,15 +23,24 @@ import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
 import {
   displayScheduleStartDelay,
+  gapDurationAfterStreamEntry,
   speakerForStreamEntry,
   splitStreamEntryForDisplay,
   thinkDurationForStreamEntry,
 } from "./utils/streamDisplayQueue";
 import { buildWatchSupplementalEntry } from "./utils/watchSupplementalUpdates";
+import {
+  buildWatchDirectorOpening,
+  directorModeForVisit,
+  readWatchDirectorMemory,
+  rememberDirectorEntries,
+  type WatchDirectorMemory,
+  type WatchDirectorMode,
+  writeWatchDirectorMemory,
+} from "./utils/watchSessionDirector";
 
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 const STREAM_MAX_ENTRIES = 48;
-const STREAM_ENTRY_GAP_MS = 360;
 
 function isAgentMessage(entry: StreamEntry): entry is AgentMessage {
   return entry.kind === "agent_message";
@@ -127,24 +135,6 @@ function trimStreamEntries(entries: StreamEntry[]) {
     .slice(-STREAM_MAX_ENTRIES);
 }
 
-function mergeHistoryAndLive(
-  history: HistoryMessageEntry[],
-  live: StreamEntry[],
-): StreamEntry[] {
-  const liveIds = new Set(live.map((entry) => entry.id));
-  const historyAsMessages: AgentMessage[] = history
-    .filter((entry) => !liveIds.has(entry.id))
-    .map((entry) => ({
-      kind: "agent_message",
-      id: entry.id,
-      ts: entry.generatedAt,
-      agentId: entry.agentId,
-      content: entry.content,
-      triggerSignalId: entry.triggerSignalId ?? `history-${entry.id}`,
-    }));
-  return trimStreamEntries(dedupeStreamEntries([...historyAsMessages, ...live]));
-}
-
 function streamEntriesFromPayload(data: NonNullable<ReturnType<typeof useAgentAnalysis>["data"]>) {
   if (data.streamEntries?.length) return data.streamEntries;
 
@@ -165,7 +155,6 @@ export function AgentWatchBoard() {
   const isZh = locale === "zh_CN";
   const reduceMotion = useReducedMotion();
   const {
-    entries: historyMessages,
     isLoading: isHistoryLoading,
     refreshHistory,
   } = useAgentHistory({ enabled: isZh, initialLimit: 60 });
@@ -177,11 +166,40 @@ export function AgentWatchBoard() {
   const streamRef = useRef<StreamHandle>(null);
   const timersRef = useRef<number[]>([]);
   const scheduledUntilRef = useRef(0);
+  const marketSignalsRef = useRef(marketSignals);
+  const directorMemoryRef = useRef<WatchDirectorMemory | null>(null);
+  const directorModeRef = useRef<WatchDirectorMode | null>(null);
   const supplementalClaimRef = useRef(new Map<string, number>());
   const lastSupplementalAtRef = useRef(0);
   const [liveQueue, setLiveQueue] = useState<StreamEntry[]>([]);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
+
+  useEffect(() => {
+    marketSignalsRef.current = marketSignals;
+  }, [marketSignals]);
+
+  const ensureDirectorMemory = useCallback((now: number) => {
+    if (directorMemoryRef.current === null) {
+      const storage = typeof window === "undefined" ? undefined : window.localStorage;
+      const memory = readWatchDirectorMemory(storage);
+      directorMemoryRef.current = memory;
+      directorModeRef.current = directorModeForVisit(now, memory.lastVisitAt);
+    }
+
+    return {
+      memory: directorMemoryRef.current,
+      mode: directorModeRef.current ?? "fresh",
+    };
+  }, []);
+
+  const rememberScheduledEntries = useCallback((entries: StreamEntry[], now: number) => {
+    const { memory } = ensureDirectorMemory(now);
+    const nextMemory = rememberDirectorEntries(memory, entries, now);
+    directorMemoryRef.current = nextMemory;
+    const storage = typeof window === "undefined" ? undefined : window.localStorage;
+    writeWatchDirectorMemory(storage, nextMemory);
+  }, [ensureDirectorMemory]);
 
   const scheduleStreamEntries = useCallback(
     (entries: StreamEntry[], options: { clearPending?: boolean } = {}) => {
@@ -236,7 +254,7 @@ export function AgentWatchBoard() {
           timersRef.current.push(clearSpeakingTimer);
         }
 
-        nextDelay += thinkDuration + STREAM_ENTRY_GAP_MS;
+        nextDelay += thinkDuration + gapDurationAfterStreamEntry(entry, Boolean(reduceMotion));
       });
 
       scheduledUntilRef.current = scheduledAt + nextDelay;
@@ -248,8 +266,21 @@ export function AgentWatchBoard() {
     if (!data || processedGeneratedAtRef.current === data.generatedAt) return;
     processedGeneratedAtRef.current = data.generatedAt;
 
+    const now = Date.now();
     const entries = streamEntriesFromPayload(data);
-    scheduleStreamEntries(entries, { clearPending: true });
+    const { memory, mode } = ensureDirectorMemory(now);
+    const opening = buildWatchDirectorOpening({
+      now,
+      mode,
+      pool: data.pool,
+      focus: data.focus,
+      signals: marketSignalsRef.current,
+      analysisEntries: entries,
+      memory,
+    });
+    const directorEntries = opening.entries.length > 0 ? opening.entries : entries;
+    rememberScheduledEntries(directorEntries, now);
+    scheduleStreamEntries(directorEntries, { clearPending: true });
 
     return () => {
       timersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -258,7 +289,7 @@ export function AgentWatchBoard() {
       setTypingAgent(null);
       setSpeakingAgent(null);
     };
-  }, [data, scheduleStreamEntries]);
+  }, [data, ensureDirectorMemory, rememberScheduledEntries, scheduleStreamEntries]);
 
   useEffect(() => {
     if (!data?.pool) return;
@@ -311,12 +342,13 @@ export function AgentWatchBoard() {
 
     supplementalClaimRef.current.set(entry.dedupeKey, now);
     lastSupplementalAtRef.current = now;
+    rememberScheduledEntries([entry], now);
     scheduleStreamEntries([entry]);
-  }, [data, liveQueue, marketSignals, scheduleStreamEntries]);
+  }, [data, liveQueue, marketSignals, rememberScheduledEntries, scheduleStreamEntries]);
 
   const combinedEntries = useMemo(
-    () => mergeHistoryAndLive(historyMessages, liveQueue),
-    [historyMessages, liveQueue],
+    () => liveQueue,
+    [liveQueue],
   );
   const focusByAgent = useMemo(
     () => new Map(data?.focus?.map((focus) => [focus.agentId, focus]) ?? []),

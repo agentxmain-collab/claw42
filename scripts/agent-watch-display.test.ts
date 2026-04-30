@@ -7,10 +7,16 @@ import { buildWatchSupplementalEntry } from "../src/modules/agent-watch/utils/wa
 import { buildStreamChatMessages } from "../src/modules/agent-watch/utils/streamChatMessages";
 import {
   displayScheduleStartDelay,
+  gapDurationAfterStreamEntry,
   speakerForStreamEntry,
   splitStreamEntryForDisplay,
   thinkDurationForStreamEntry,
 } from "../src/modules/agent-watch/utils/streamDisplayQueue";
+import {
+  buildWatchDirectorOpening,
+  directorModeForVisit,
+  rememberDirectorEntries,
+} from "../src/modules/agent-watch/utils/watchSessionDirector";
 import { buildHeroSpeechLines } from "../src/modules/landing/HeroScene/heroSpeechLines";
 import type {
   AgentFocus,
@@ -250,6 +256,8 @@ assert.ok(thinkDurationForStreamEntry(highEvent, 0) < thinkDurationForStreamEntr
 assert.ok(thinkDurationForStreamEntry(highEvent, 0) >= 900);
 assert.ok(thinkDurationForStreamEntry(discussionDisplayEntries[0], 0) >= 1400);
 assert.ok(thinkDurationForStreamEntry(heartbeat, 0) >= 1800);
+assert.ok(gapDurationAfterStreamEntry(discussionDisplayEntries[0]) > 900);
+assert.ok(gapDurationAfterStreamEntry(heartbeat) > 700);
 assert.equal(displayScheduleStartDelay(10_000, 13_500), 3_500);
 assert.equal(displayScheduleStartDelay(10_000, 9_500), 0);
 assert.equal(displayScheduleStartDelay(10_000, 13_500, true), 0);
@@ -269,5 +277,47 @@ assert.equal(liveAgentChat.length, 1);
 assert.equal(liveAgentChat[0].symbols[0], "BTC");
 assert.match(liveAgentChat[0].content, /\$BTC/);
 assert.ok(liveAgentChat[0].points.some((point) => point.label === "突破观察" && point.value !== "未形成"));
+
+assert.equal(directorModeForVisit(100_000, null), "fresh");
+assert.equal(directorModeForVisit(100_000, 90_000), "resume");
+assert.equal(directorModeForVisit(10 * 60_000, 4 * 60_000), "recheck");
+assert.equal(directorModeForVisit(100_000, 0), "fresh");
+
+const directorOpening = buildWatchDirectorOpening({
+  now: 1_714_000_240_000,
+  mode: "fresh",
+  pool,
+  focus,
+  signals: [],
+  analysisEntries: [],
+  memory: { seenKeys: [], lastVisitAt: null },
+});
+assert.ok(directorOpening.entries.length >= 2);
+assert.ok(directorOpening.entries.some((entry) => entry.kind === "agent_discussion"));
+const directorOpeningMessages = directorOpening.entries.flatMap((entry) => buildStreamChatMessages(entry, pool));
+assert.ok(new Set(directorOpeningMessages.map((message) => message.agentId)).size >= 3);
+
+const remembered = rememberDirectorEntries(
+  { seenKeys: [], lastVisitAt: null },
+  directorOpening.entries,
+  1_714_000_240_000,
+);
+assert.ok(remembered.seenKeys.length > 0);
+assert.equal(remembered.lastVisitAt, 1_714_000_240_000);
+
+const resumeOpening = buildWatchDirectorOpening({
+  now: 1_714_000_260_000,
+  mode: "resume",
+  pool,
+  focus,
+  signals: [],
+  analysisEntries: [],
+  memory: remembered,
+});
+assert.ok(resumeOpening.entries.length >= 1);
+assert.notDeepEqual(
+  resumeOpening.entries.map((entry) => entry.id),
+  directorOpening.entries.map((entry) => entry.id),
+);
 
 console.log("agent watch display tests passed");
