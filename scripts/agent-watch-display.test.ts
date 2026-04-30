@@ -246,6 +246,9 @@ assert.equal(focusChat[0].tag, "高优信号");
 assert.equal(focusChat[0].symbols[0], "AI");
 assert.ok(focusChat[0].points.some((point) => point.label === "现价" && point.value !== "未形成"));
 assert.ok(thinkDurationForStreamEntry(highEvent, 0) < thinkDurationForStreamEntry(heartbeat, 0));
+assert.ok(thinkDurationForStreamEntry(highEvent, 0) >= 900);
+assert.ok(thinkDurationForStreamEntry(discussionDisplayEntries[0], 0) >= 1400);
+assert.ok(thinkDurationForStreamEntry(heartbeat, 0) >= 1800);
 
 const liveAgentMessage: AgentMessage = {
   kind: "agent_message",

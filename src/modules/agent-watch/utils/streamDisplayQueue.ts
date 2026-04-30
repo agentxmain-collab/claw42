@@ -5,9 +5,9 @@ import type {
   WatchUpdateEntry,
 } from "../types";
 
-const PRIORITY_THINK_MS = { min: 520, max: 920 };
-const DISCUSSION_THINK_MS = { min: 760, max: 1120 };
-const DEFAULT_THINK_MS = { min: 980, max: 1620 };
+const PRIORITY_THINK_MS = { min: 900, max: 1400 };
+const DISCUSSION_THINK_MS = { min: 1400, max: 2200 };
+const DEFAULT_THINK_MS = { min: 1800, max: 3000 };
 
 function isWatchUpdate(entry: StreamEntry): entry is WatchUpdateEntry {
   return entry.kind === "watch_update";
