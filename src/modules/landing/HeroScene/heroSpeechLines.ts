@@ -15,10 +15,30 @@ type HeroSpeechEntry = {
   responses?: HeroSpeechResponse[];
 };
 
+type HeroSpeechFocus = {
+  judgment?: string;
+  trigger?: {
+    description?: string;
+  };
+};
+
+type HeroSpeechCoin = {
+  symbol?: string;
+  change24h?: number;
+};
+
+type HeroSpeechPool = {
+  majors?: HeroSpeechCoin[];
+  trending?: HeroSpeechCoin[];
+  opportunity?: HeroSpeechCoin[];
+};
+
 type HeroSpeechPayload = {
   source?: string;
   stream?: HeroSpeechMessage[];
   streamEntries?: HeroSpeechEntry[];
+  focus?: HeroSpeechFocus[];
+  pool?: HeroSpeechPool;
 };
 
 export function cleanRobotAnalysisLine(content: string): string {
@@ -65,6 +85,51 @@ function signalBackedEntryLines(entry: HeroSpeechEntry): string[] {
   return [];
 }
 
+function formatSignedPercent(value: number): string {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+function focusSupplementLines(data: HeroSpeechPayload): string[] {
+  return (data.focus ?? []).flatMap((item) => [
+    item.trigger?.description,
+    item.judgment && !/(没信号|信号不足|还没有足够|等待信号)/.test(item.judgment)
+      ? item.judgment
+      : undefined,
+  ]).filter((content): content is string => Boolean(content));
+}
+
+function poolSupplementLines(data: HeroSpeechPayload): string[] {
+  const pool = data.pool;
+  if (!pool) return [];
+
+  const coins = [
+    ...(pool.majors ?? []),
+    ...(pool.trending ?? []),
+    ...(pool.opportunity ?? []),
+  ].filter((coin) => coin.symbol && Number.isFinite(coin.change24h));
+
+  return coins
+    .sort((a, b) => Math.abs(b.change24h ?? 0) - Math.abs(a.change24h ?? 0))
+    .slice(0, 3)
+    .map((coin) => {
+      const change = coin.change24h ?? 0;
+      const bias =
+        Math.abs(change) >= 10
+          ? "极端波动先等高低位失速"
+          : change >= 0
+            ? "强势延续看回踩能否守住"
+            : "弱势先看近期低位能否止跌";
+      return `${coin.symbol} 24h ${formatSignedPercent(change)}，${bias}`;
+    });
+}
+
+function supplementLines(data: HeroSpeechPayload): string[] {
+  return uniqueUsableLines([
+    ...focusSupplementLines(data),
+    ...poolSupplementLines(data),
+  ]);
+}
+
 export function buildHeroSpeechLines(
   data: HeroSpeechPayload | null | undefined,
   isZh: boolean,
@@ -74,10 +139,13 @@ export function buildHeroSpeechLines(
   const signalBackedLines = uniqueUsableLines(
     (data.streamEntries ?? []).flatMap(signalBackedEntryLines),
   );
-  if (signalBackedLines.length > 0) return signalBackedLines;
+  if (signalBackedLines.length > 0) {
+    return Array.from(new Set([...signalBackedLines, ...supplementLines(data)])).slice(0, 5);
+  }
 
   if (data.source === "static-fallback") return undefined;
 
   const streamLines = uniqueUsableLines((data.stream ?? []).map((message) => message.content ?? ""));
-  return streamLines.length > 0 ? streamLines : undefined;
+  const lines = Array.from(new Set([...streamLines, ...supplementLines(data)])).slice(0, 5);
+  return lines.length > 0 ? lines : undefined;
 }
