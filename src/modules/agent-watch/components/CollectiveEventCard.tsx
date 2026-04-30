@@ -17,7 +17,13 @@ const SIGNAL_LABEL: Record<CollectiveEvent["signalType"], string> = {
   range_change: "异动",
 };
 
-function ResponseRow({ response }: { response: StreamResponse }) {
+function ResponseRow({
+  response,
+  symbols,
+}: {
+  response: StreamResponse;
+  symbols: string[];
+}) {
   const meta = AGENT_META[response.agentId];
   const token = AGENT_COLOR_TOKEN[response.agentId];
 
@@ -28,7 +34,9 @@ function ResponseRow({ response }: { response: StreamResponse }) {
         <div className="text-xs font-semibold text-white" style={{ color: token.primary }}>
           {meta.name}
         </div>
-        <p className="mt-1 text-sm leading-relaxed text-white/76">{response.content}</p>
+        <p className="mt-1 text-sm leading-relaxed text-white/76">
+          {prefixCoinSymbolsInText(response.content, symbols)}
+        </p>
       </div>
     </div>
   );
@@ -82,7 +90,7 @@ export function CollectiveEventCard({ event }: { event: CollectiveEvent }) {
       {responses.length > 0 && (
         <div className="mt-3 grid gap-2 lg:grid-cols-3">
           {responses.map((response) => (
-            <ResponseRow key={response.agentId} response={response} />
+            <ResponseRow key={response.agentId} response={response} symbols={event.symbols} />
           ))}
         </div>
       )}

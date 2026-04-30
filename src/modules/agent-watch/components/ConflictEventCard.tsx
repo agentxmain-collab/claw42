@@ -8,7 +8,13 @@ import { formatAgentMessageTime } from "../utils/formatTime";
 import { formatCoinSymbol, prefixLeadingCoinSymbol } from "../utils/symbolFormat";
 import { AgentAvatar } from "./AgentAvatar";
 
-function ResponsePanel({ response }: { response: StreamResponse }) {
+function ResponsePanel({
+  response,
+  symbol,
+}: {
+  response: StreamResponse;
+  symbol: string;
+}) {
   const meta = AGENT_META[response.agentId];
   const token = AGENT_COLOR_TOKEN[response.agentId];
 
@@ -19,7 +25,9 @@ function ResponsePanel({ response }: { response: StreamResponse }) {
         <div className="text-xs font-semibold" style={{ color: token.primary }}>
           {meta.name}
         </div>
-        <p className="mt-1 text-sm leading-relaxed text-white/76">{response.content}</p>
+        <p className="mt-1 text-sm leading-relaxed text-white/76">
+          {prefixLeadingCoinSymbol(response.content, symbol)}
+        </p>
       </div>
     </div>
   );
@@ -56,7 +64,7 @@ export function ConflictEventCard({ event }: { event: ConflictEvent }) {
       {responses.length > 0 && (
         <div className="mt-3 grid gap-2 md:grid-cols-2">
           {responses.map((response) => (
-            <ResponsePanel key={response.agentId} response={response} />
+            <ResponsePanel key={response.agentId} response={response} symbol={event.symbol} />
           ))}
         </div>
       )}

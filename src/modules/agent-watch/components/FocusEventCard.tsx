@@ -56,7 +56,7 @@ export function FocusEventCard({ event }: { event: FocusEvent }) {
               {meta.name}
             </div>
             <p className="mt-1 text-sm leading-relaxed text-white/76">
-              {event.primaryResponse.content}
+              {prefixLeadingCoinSymbol(event.primaryResponse.content, event.symbol)}
             </p>
           </div>
         </div>

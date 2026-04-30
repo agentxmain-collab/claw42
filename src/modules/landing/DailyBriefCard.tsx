@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { priceDeltaColor } from "@/modules/agent-watch/utils/priceDeltaColor";
+import { formatCoinSymbol } from "@/modules/agent-watch/utils/symbolFormat";
 import { fadeUpVariants, getFadeUpTransition, motionViewport } from "@/lib/motion";
 import type { DailyBriefData, DailyBriefMajor, DailyBriefMover } from "@/lib/dailyBrief";
 
@@ -76,7 +77,7 @@ function BriefRow({
   return (
     <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       <span className="text-white/40">•</span>
-      <span className="font-mono font-semibold text-white">{major.symbol}:</span>
+      <span className="font-mono font-semibold text-white">{formatCoinSymbol(major.symbol)}:</span>
       <span className="font-mono text-white/85">{formatPrice(major.price)}</span>
       <span className={changeClassName(major.change24h)}>({change})</span>
       <span className="text-white/35">-</span>
@@ -98,7 +99,7 @@ function MoverRow({
     <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       <span className="text-white/40">•</span>
       <span className="text-white/70">{label}:</span>
-      <span className="font-mono font-semibold text-white">{mover.symbol}</span>
+      <span className="font-mono font-semibold text-white">{formatCoinSymbol(mover.symbol)}</span>
       <span className="font-mono text-white/60">24h</span>
       <span className={priceDeltaColor(mover.change24h)}>{formatMoverChange(mover.change24h)}</span>
       <span className="text-xs text-white/45">({tierLabel})</span>
