@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { useAgentAnalysis } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import type { Pose } from "./useRobotPose";
 import { SpeechBubble } from "./SpeechBubble";
+import { buildHeroSpeechLines } from "./heroSpeechLines";
 
 interface RobotLayerProps {
   pose: Pose;
@@ -39,16 +40,6 @@ const MOUTH_OVERLAY = {
   width: "33.9%",
 };
 
-function cleanRobotAnalysisLine(content: string): string {
-  const cleaned = content
-    .replace(/\s+/g, " ")
-    .replace(/^(触发|失效|趋势|动作|极端|边界)[：:]\s*/g, "")
-    .trim();
-  const [firstClause] = cleaned.split(/[。；;]/);
-  const line = (firstClause || cleaned).trim();
-  return Array.from(line).slice(0, 42).join("");
-}
-
 export function RobotLayer({
   pose,
   mouseX,
@@ -62,19 +53,7 @@ export function RobotLayer({
   const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
   const isZh = locale === "zh_CN";
   const { data } = useAgentAnalysis({ enabled: isZh });
-  const dynamicLines = useMemo(() => {
-    if (!isZh || !data || data.source === "static-fallback") return undefined;
-
-    const analysisLines = Array.from(
-      new Set(
-        data.stream
-          .map((message) => cleanRobotAnalysisLine(message.content))
-          .filter((line) => line.length >= 8),
-      ),
-    );
-
-    return analysisLines.length >= 2 ? analysisLines : undefined;
-  }, [data, isZh]);
+  const dynamicLines = useMemo(() => buildHeroSpeechLines(data, isZh), [data, isZh]);
 
   useEffect(() => {
     if (reduceMotion) return;
