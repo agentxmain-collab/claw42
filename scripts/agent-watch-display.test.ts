@@ -6,6 +6,7 @@ import {
 import { buildWatchSupplementalEntry } from "../src/modules/agent-watch/utils/watchSupplementalUpdates";
 import { buildStreamChatMessages } from "../src/modules/agent-watch/utils/streamChatMessages";
 import {
+  displayScheduleStartDelay,
   speakerForStreamEntry,
   splitStreamEntryForDisplay,
   thinkDurationForStreamEntry,
@@ -249,6 +250,9 @@ assert.ok(thinkDurationForStreamEntry(highEvent, 0) < thinkDurationForStreamEntr
 assert.ok(thinkDurationForStreamEntry(highEvent, 0) >= 900);
 assert.ok(thinkDurationForStreamEntry(discussionDisplayEntries[0], 0) >= 1400);
 assert.ok(thinkDurationForStreamEntry(heartbeat, 0) >= 1800);
+assert.equal(displayScheduleStartDelay(10_000, 13_500), 3_500);
+assert.equal(displayScheduleStartDelay(10_000, 9_500), 0);
+assert.equal(displayScheduleStartDelay(10_000, 13_500, true), 0);
 
 const liveAgentMessage: AgentMessage = {
   kind: "agent_message",

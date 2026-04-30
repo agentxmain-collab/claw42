@@ -31,6 +31,15 @@ function boundedJitter(key: string, min: number, max: number): number {
   return min + (hashString(key) % (span + 1));
 }
 
+export function displayScheduleStartDelay(
+  now: number,
+  scheduledUntil: number,
+  clearPending = false,
+): number {
+  if (clearPending) return 0;
+  return Math.max(0, scheduledUntil - now);
+}
+
 export function splitStreamEntryForDisplay(entry: StreamEntry): StreamEntry[] {
   if (entry.kind === "collective_event") {
     const responses = [entry.primaryResponse, ...entry.echoResponses]

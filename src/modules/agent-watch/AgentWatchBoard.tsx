@@ -23,6 +23,7 @@ import { Stream, type StreamHandle } from "./components/Stream";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
 import {
+  displayScheduleStartDelay,
   speakerForStreamEntry,
   splitStreamEntryForDisplay,
   thinkDurationForStreamEntry,
@@ -175,6 +176,7 @@ export function AgentWatchBoard() {
   const processedGeneratedAtRef = useRef<number | null>(null);
   const streamRef = useRef<StreamHandle>(null);
   const timersRef = useRef<number[]>([]);
+  const scheduledUntilRef = useRef(0);
   const supplementalClaimRef = useRef(new Map<string, number>());
   const lastSupplementalAtRef = useRef(0);
   const [liveQueue, setLiveQueue] = useState<StreamEntry[]>([]);
@@ -186,10 +188,18 @@ export function AgentWatchBoard() {
       if (options.clearPending) {
         timersRef.current.forEach((timer) => window.clearTimeout(timer));
         timersRef.current = [];
+        scheduledUntilRef.current = Date.now();
+        setTypingAgent(null);
+        setSpeakingAgent(null);
       }
 
       const displayEntries = entries.flatMap(splitStreamEntryForDisplay);
-      let nextDelay = 0;
+      const scheduledAt = Date.now();
+      let nextDelay = displayScheduleStartDelay(
+        scheduledAt,
+        scheduledUntilRef.current,
+        options.clearPending,
+      );
 
       displayEntries.forEach((entry, index) => {
         const agentId = speakerForStreamEntry(entry);
@@ -228,13 +238,11 @@ export function AgentWatchBoard() {
 
         nextDelay += thinkDuration + STREAM_ENTRY_GAP_MS;
       });
+
+      scheduledUntilRef.current = scheduledAt + nextDelay;
     },
     [reduceMotion],
   );
-
-  useEffect(() => {
-    if (hasNewContent) void refreshHistory();
-  }, [hasNewContent, refreshHistory]);
 
   useEffect(() => {
     if (!data || processedGeneratedAtRef.current === data.generatedAt) return;
@@ -246,6 +254,9 @@ export function AgentWatchBoard() {
     return () => {
       timersRef.current.forEach((timer) => window.clearTimeout(timer));
       timersRef.current = [];
+      scheduledUntilRef.current = Date.now();
+      setTypingAgent(null);
+      setSpeakingAgent(null);
     };
   }, [data, scheduleStreamEntries]);
 
