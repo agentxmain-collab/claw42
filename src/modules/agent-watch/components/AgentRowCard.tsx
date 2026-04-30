@@ -2,6 +2,7 @@
 
 import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import type { AgentFocus, AgentId, AgentStatus } from "../types";
+import { formatCoinSymbol, prefixLeadingCoinSymbol } from "../utils/symbolFormat";
 import { AgentAvatar } from "./AgentAvatar";
 
 function StatusDot({ status, label }: { status: AgentStatus; label: string }) {
@@ -62,13 +63,15 @@ export function AgentRowCard({
         {focus && (
           <button
             type="button"
-            title={`${focusLabels.focusLabel}: ${focus.symbol}`}
+            title={`${focusLabels.focusLabel}: ${formatCoinSymbol(focus.symbol)}`}
             className="shrink-0 rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-1.5 text-left transition-colors hover:bg-white/[0.08]"
           >
             <span className="mr-1 text-xs font-bold text-white/45">
               {focusLabels.focusLabel}
             </span>
-            <span className="font-mono text-sm font-bold text-white">{focus.symbol}</span>
+            <span className="font-mono text-sm font-bold text-white">
+              {formatCoinSymbol(focus.symbol)}
+            </span>
           </button>
         )}
       </div>
@@ -76,7 +79,7 @@ export function AgentRowCard({
       {focus ? (
         <>
           <p className="line-clamp-3 text-sm font-semibold leading-relaxed text-white/86">
-            {focus.judgment}
+            {prefixLeadingCoinSymbol(focus.judgment, focus.symbol)}
           </p>
           <details className="rounded-xl border border-white/[0.07] bg-black/20 px-3 py-2 text-sm">
             <summary className="flex cursor-pointer select-none items-center gap-2 text-xs font-semibold text-white/45 hover:text-white/65">
@@ -87,13 +90,13 @@ export function AgentRowCard({
                 <span className="mr-2 rounded bg-white/[0.06] px-2 py-0.5 font-semibold text-white/60">
                   {focusLabels.trigger}
                 </span>
-                {focus.trigger.description}
+                {prefixLeadingCoinSymbol(focus.trigger.description, focus.symbol)}
               </div>
               <div>
                 <span className="mr-2 rounded bg-[#ff5f5f]/15 px-2 py-0.5 font-semibold text-[#ff8a8a]">
                   {focusLabels.fail}
                 </span>
-                {focus.fail.description}
+                {prefixLeadingCoinSymbol(focus.fail.description, focus.symbol)}
               </div>
             </div>
           </details>

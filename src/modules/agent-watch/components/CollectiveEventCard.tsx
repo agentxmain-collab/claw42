@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import type { CollectiveEvent, StreamResponse } from "../types";
 import { formatAgentMessageTime } from "../utils/formatTime";
+import { formatCoinSymbol, prefixCoinSymbolsInText } from "../utils/symbolFormat";
 import { AgentAvatar } from "./AgentAvatar";
 
 const SIGNAL_LABEL: Record<CollectiveEvent["signalType"], string> = {
@@ -66,7 +67,7 @@ export function CollectiveEventCard({ event }: { event: CollectiveEvent }) {
             key={symbol}
             className="rounded-lg border border-white/10 bg-black/30 px-2 py-1 font-mono text-xs font-semibold text-white"
           >
-            {symbol}
+            {formatCoinSymbol(symbol)}
           </span>
         ))}
         <span className="rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-xs text-white/62">
@@ -74,7 +75,9 @@ export function CollectiveEventCard({ event }: { event: CollectiveEvent }) {
         </span>
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed text-white/76">{event.description}</p>
+      <p className="mt-3 text-sm leading-relaxed text-white/76">
+        {prefixCoinSymbolsInText(event.description, event.symbols)}
+      </p>
 
       {responses.length > 0 && (
         <div className="mt-3 grid gap-2 lg:grid-cols-3">

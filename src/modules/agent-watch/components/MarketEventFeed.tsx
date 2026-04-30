@@ -3,6 +3,7 @@
 import { useReducedMotion } from "framer-motion";
 import type { SignalRecord } from "../types";
 import { priceDeltaColor } from "../utils/priceDeltaColor";
+import { formatCoinSymbol, prefixLeadingCoinSymbol } from "../utils/symbolFormat";
 
 const SIGNAL_TYPE_LABEL: Record<SignalRecord["type"], string> = {
   volume_spike: "VOLUME",
@@ -44,6 +45,9 @@ function SignalChip({ signal }: { signal: SignalRecord }) {
     typeof signal.payload.change24h === "number"
       ? priceDeltaColor(signal.payload.change24h)
       : SEVERITY_TEXT[signal.severity];
+  const description = signal.payload.description
+    ? prefixLeadingCoinSymbol(signal.payload.description, signal.symbol)
+    : `${formatCoinSymbol(signal.symbol)} ${signal.type}`;
 
   return (
     <div
@@ -54,13 +58,13 @@ function SignalChip({ signal }: { signal: SignalRecord }) {
         {formatTime(signal.ts)}
       </span>
       <span className="shrink-0 font-mono text-[10px] font-bold text-white/65">
-        {signal.symbol}
+        {formatCoinSymbol(signal.symbol)}
       </span>
       <span className="shrink-0 text-[10px] font-bold text-white/58">
         {SIGNAL_TYPE_LABEL[signal.type]}
       </span>
       <span className={`whitespace-nowrap text-xs ${descriptionClass}`}>
-        {signal.payload.description ?? `${signal.symbol} ${signal.type}`}
+        {description}
       </span>
     </div>
   );

@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import type { FocusEvent } from "../types";
 import { formatAgentMessageTime } from "../utils/formatTime";
+import { formatCoinSymbol, prefixLeadingCoinSymbol } from "../utils/symbolFormat";
 import { AgentAvatar } from "./AgentAvatar";
 
 const SIGNAL_LABEL: Record<FocusEvent["signalType"], string> = {
@@ -37,13 +38,15 @@ export function FocusEventCard({ event }: { event: FocusEvent }) {
           高优信号
         </span>
         <span className="rounded-lg border border-white/10 bg-black/30 px-2 py-1 font-mono text-xs font-semibold text-white">
-          {event.symbol}
+          {formatCoinSymbol(event.symbol)}
         </span>
         <span className="text-xs text-white/55">{SIGNAL_LABEL[event.signalType]}</span>
         <span className="font-mono text-xs text-white/35">{timeLabel}</span>
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed text-white/80">{event.description}</p>
+      <p className="mt-3 text-sm leading-relaxed text-white/80">
+        {prefixLeadingCoinSymbol(event.description, event.symbol)}
+      </p>
 
       {event.primaryResponse.content.trim().length > 0 && (
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-white/[0.08] bg-black/28 px-3 py-2">

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import type { CoinPoolPayload, CoinTickerEntry, TickerMap } from "../types";
 import { priceDeltaColor } from "../utils/priceDeltaColor";
+import { formatCoinSymbol } from "../utils/symbolFormat";
 
 const COINS = ["BTC", "ETH", "SOL"] as const;
 const FOLD_STORAGE_KEY = "claw42:watch:ticker-fold:v1";
@@ -90,7 +91,7 @@ function TickerChip({
           : ""
       }`}
     >
-      <span className="font-bold text-white">{ticker.symbol}</span>
+      <span className="font-bold text-white">{formatCoinSymbol(ticker.symbol)}</span>
       <span className="text-white/70">{formatPrice(ticker.symbol, ticker.price)}</span>
       <span className={priceDeltaColor(ticker.change24h)}>
         {`${up ? "+" : ""}${ticker.change24h.toFixed(2)}%`}

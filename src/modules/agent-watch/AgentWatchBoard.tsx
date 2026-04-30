@@ -13,6 +13,7 @@ import type {
   AgentStatus,
   HistoryMessageEntry,
   StreamEntry,
+  WatchUpdateEntry,
 } from "./types";
 import { AgentRowCard } from "./components/AgentRowCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
@@ -20,6 +21,7 @@ import { MarketEventFeed } from "./components/MarketEventFeed";
 import { Stream, type StreamHandle } from "./components/Stream";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
+import { buildWatchSupplementalEntry } from "./utils/watchSupplementalUpdates";
 
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 const STREAM_MAX_ENTRIES = 48;
@@ -27,6 +29,10 @@ const STREAM_ENTRY_GAP_MS = 400;
 
 function isAgentMessage(entry: StreamEntry): entry is AgentMessage {
   return entry.kind === "agent_message";
+}
+
+function isWatchUpdate(entry: StreamEntry): entry is WatchUpdateEntry {
+  return entry.kind === "watch_update";
 }
 
 function warnDuplicateEntry(reason: string, entry: StreamEntry) {
@@ -51,8 +57,10 @@ function dedupeStreamEntries(entries: StreamEntry[]) {
       continue;
     }
 
-    if (isAgentMessage(entry)) {
-      const contentKey = `${entry.agentId}:${entry.content.trim()}`;
+    if (isAgentMessage(entry) || isWatchUpdate(entry)) {
+      const contentKey = isAgentMessage(entry)
+        ? `agent:${entry.agentId}:${entry.content.trim()}`
+        : `watch:${entry.dedupeKey}:${entry.content.trim()}`;
       const lastTimestamp = recentContent.get(contentKey);
       if (
         lastTimestamp !== undefined &&
@@ -137,6 +145,8 @@ export function AgentWatchBoard() {
   const processedGeneratedAtRef = useRef<number | null>(null);
   const streamRef = useRef<StreamHandle>(null);
   const timersRef = useRef<number[]>([]);
+  const supplementalClaimRef = useRef(new Map<string, number>());
+  const lastSupplementalAtRef = useRef(0);
   const [liveQueue, setLiveQueue] = useState<StreamEntry[]>([]);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
@@ -185,6 +195,41 @@ export function AgentWatchBoard() {
       timersRef.current = [];
     };
   }, [data]);
+
+  useEffect(() => {
+    if (!data?.pool) return;
+    const now = Date.now();
+    if (now - lastSupplementalAtRef.current < 25_000) return;
+
+    const existingEntries = streamEntriesFromPayload(data);
+    const entry = buildWatchSupplementalEntry({
+      now,
+      pool: data.pool,
+      focus: data.focus,
+      signals: marketSignals,
+      existingEntries,
+    });
+    if (!entry) return;
+
+    const cutoff = now - DUPLICATE_CONTENT_WINDOW_MS * 2;
+    for (const [key, ts] of Array.from(supplementalClaimRef.current.entries())) {
+      if (ts < cutoff) supplementalClaimRef.current.delete(key);
+    }
+
+    const lastClaimedAt = supplementalClaimRef.current.get(entry.dedupeKey);
+    if (lastClaimedAt !== undefined && now - lastClaimedAt <= DUPLICATE_CONTENT_WINDOW_MS) return;
+
+    supplementalClaimRef.current.set(entry.dedupeKey, now);
+    lastSupplementalAtRef.current = now;
+    setLiveQueue((current) =>
+      trimStreamEntries(
+        dedupeStreamEntries([
+          ...current,
+          entry,
+        ]),
+      ),
+    );
+  }, [data, marketSignals]);
 
   const combinedEntries = useMemo(
     () => mergeHistoryAndLive(historyMessages, liveQueue),

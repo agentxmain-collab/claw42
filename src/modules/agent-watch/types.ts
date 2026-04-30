@@ -187,7 +187,32 @@ export interface ConflictEvent {
   responses: StreamResponse[];
 }
 
-export type StreamEntry = AgentMessage | CollectiveEvent | FocusEvent | ConflictEvent;
+export type WatchUpdateType =
+  | "market_digest"
+  | "focus_update"
+  | "condition_update"
+  | "quiet_observation";
+
+export interface WatchUpdateEntry {
+  kind: "watch_update";
+  id: string;
+  ts: number;
+  updateType: WatchUpdateType;
+  title: string;
+  content: string;
+  dedupeKey: string;
+  agentId?: AgentId;
+  symbol?: string;
+  symbols?: string[];
+  severity: "neutral" | "watch";
+}
+
+export type StreamEntry =
+  | AgentMessage
+  | CollectiveEvent
+  | FocusEvent
+  | ConflictEvent
+  | WatchUpdateEntry;
 
 export type CoinComments = Record<CoinSymbol, Record<AgentId, string>>;
 

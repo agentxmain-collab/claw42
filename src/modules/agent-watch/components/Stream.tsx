@@ -8,6 +8,7 @@ import { CollectiveEventCard } from "./CollectiveEventCard";
 import { ConflictEventCard } from "./ConflictEventCard";
 import { FocusEventCard } from "./FocusEventCard";
 import { TypingIndicator } from "./TypingIndicator";
+import { WatchUpdateCard } from "./WatchUpdateCard";
 
 export interface StreamHandle {
   scrollToLatest: () => void;
@@ -23,6 +24,7 @@ function StreamEntryView({ entry }: { entry: StreamEntry }) {
   if (entry.kind === "agent_message") return <AgentMessageBubble message={entry} />;
   if (entry.kind === "collective_event") return <CollectiveEventCard event={entry} />;
   if (entry.kind === "focus_event") return <FocusEventCard event={entry} />;
+  if (entry.kind === "watch_update") return <WatchUpdateCard entry={entry} />;
   return <ConflictEventCard event={entry} />;
 }
 

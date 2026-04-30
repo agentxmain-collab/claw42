@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import type { ConflictEvent, StreamResponse } from "../types";
 import { formatAgentMessageTime } from "../utils/formatTime";
+import { formatCoinSymbol, prefixLeadingCoinSymbol } from "../utils/symbolFormat";
 import { AgentAvatar } from "./AgentAvatar";
 
 function ResponsePanel({ response }: { response: StreamResponse }) {
@@ -43,12 +44,14 @@ export function ConflictEventCard({ event }: { event: ConflictEvent }) {
           观点分歧
         </span>
         <span className="rounded-lg border border-white/10 bg-black/30 px-2 py-1 font-mono text-xs font-semibold text-white">
-          {event.symbol}
+          {formatCoinSymbol(event.symbol)}
         </span>
         <span className="font-mono text-xs text-white/35">{timeLabel}</span>
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed text-white/78">{event.description}</p>
+      <p className="mt-3 text-sm leading-relaxed text-white/78">
+        {prefixLeadingCoinSymbol(event.description, event.symbol)}
+      </p>
 
       {responses.length > 0 && (
         <div className="mt-3 grid gap-2 md:grid-cols-2">
