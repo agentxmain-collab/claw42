@@ -2,14 +2,10 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import type { AgentId, StreamEntry } from "../types";
-import { AgentDiscussionCard } from "./AgentDiscussionCard";
-import { AgentMessageBubble } from "./AgentMessageBubble";
-import { CollectiveEventCard } from "./CollectiveEventCard";
-import { ConflictEventCard } from "./ConflictEventCard";
-import { FocusEventCard } from "./FocusEventCard";
+import type { AgentId, CoinPoolPayload, StreamEntry } from "../types";
+import { buildStreamChatMessages } from "../utils/streamChatMessages";
+import { AgentChatBubble } from "./AgentChatBubble";
 import { TypingIndicator } from "./TypingIndicator";
-import { WatchUpdateCard } from "./WatchUpdateCard";
 
 export interface StreamHandle {
   scrollToLatest: () => void;
@@ -18,20 +14,30 @@ export interface StreamHandle {
 interface StreamProps {
   entries: StreamEntry[];
   typingAgent: AgentId | null;
+  pool?: CoinPoolPayload;
   emptyLabel?: string;
 }
 
-function StreamEntryView({ entry }: { entry: StreamEntry }) {
-  if (entry.kind === "agent_message") return <AgentMessageBubble message={entry} />;
-  if (entry.kind === "collective_event") return <CollectiveEventCard event={entry} />;
-  if (entry.kind === "focus_event") return <FocusEventCard event={entry} />;
-  if (entry.kind === "watch_update") return <WatchUpdateCard entry={entry} />;
-  if (entry.kind === "agent_discussion") return <AgentDiscussionCard entry={entry} />;
-  return <ConflictEventCard event={entry} />;
+function StreamEntryView({
+  entry,
+  pool,
+}: {
+  entry: StreamEntry;
+  pool?: CoinPoolPayload;
+}) {
+  const messages = buildStreamChatMessages(entry, pool);
+
+  return (
+    <div className="space-y-3 py-1">
+      {messages.map((message) => (
+        <AgentChatBubble key={message.id} message={message} />
+      ))}
+    </div>
+  );
 }
 
 export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
-  { entries, typingAgent, emptyLabel },
+  { entries, typingAgent, pool, emptyLabel },
   forwardedRef,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -86,7 +92,7 @@ export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
 
         <AnimatePresence initial={false}>
           {uniqueEntries.map((entry) => (
-            <StreamEntryView key={entry.id} entry={entry} />
+            <StreamEntryView key={entry.id} entry={entry} pool={pool} />
           ))}
         </AnimatePresence>
 

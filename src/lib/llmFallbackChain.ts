@@ -362,6 +362,8 @@ function buildAgentMessageEntry(
     ts: generatedAt,
     agentId,
     content,
+    symbol: signal.symbol,
+    symbols: [signal.symbol],
     triggerSignalId: signal.id,
   };
 }

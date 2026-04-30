@@ -4,9 +4,11 @@ import {
   prefixLeadingCoinSymbol,
 } from "../src/modules/agent-watch/utils/symbolFormat";
 import { buildWatchSupplementalEntry } from "../src/modules/agent-watch/utils/watchSupplementalUpdates";
+import { buildStreamChatMessages } from "../src/modules/agent-watch/utils/streamChatMessages";
 import { buildHeroSpeechLines } from "../src/modules/landing/HeroScene/heroSpeechLines";
 import type {
   AgentFocus,
+  AgentMessage,
   CoinPoolPayload,
   FocusEvent,
   TickerMap,
@@ -217,5 +219,33 @@ const heartbeatDuringPriority = buildWatchSupplementalEntry({
 assert.ok(heartbeatDuringPriority);
 assert.equal(heartbeatDuringPriority.kind, "watch_update");
 assert.equal(heartbeatDuringPriority.updateType, "agent_heartbeat");
+
+const discussionChat = buildStreamChatMessages(discussion, pool);
+assert.equal(discussionChat.length, 3);
+assert.deepEqual(discussionChat.map((item) => item.agentId), ["alpha", "beta", "gamma"]);
+assert.ok(discussionChat.every((item) => item.tag === "三方会诊"));
+assert.ok(discussionChat.every((item) => item.points.length >= 3));
+
+const focusChat = buildStreamChatMessages(highEvent, pool);
+assert.equal(focusChat.length, 1);
+assert.equal(focusChat[0].tag, "高优信号");
+assert.equal(focusChat[0].symbols[0], "AI");
+assert.ok(focusChat[0].points.some((point) => point.label === "现价" && point.value !== "未形成"));
+
+const liveAgentMessage: AgentMessage = {
+  kind: "agent_message",
+  id: "agent-live-1",
+  ts: 1_714_000_000_000,
+  agentId: "alpha",
+  content: "BTC 先看放量突破，没量不追。",
+  symbol: "BTC",
+  symbols: ["BTC"],
+  triggerSignalId: "signal-1",
+};
+const liveAgentChat = buildStreamChatMessages(liveAgentMessage, pool);
+assert.equal(liveAgentChat.length, 1);
+assert.equal(liveAgentChat[0].symbols[0], "BTC");
+assert.match(liveAgentChat[0].content, /\$BTC/);
+assert.ok(liveAgentChat[0].points.some((point) => point.label === "突破观察" && point.value !== "未形成"));
 
 console.log("agent watch display tests passed");

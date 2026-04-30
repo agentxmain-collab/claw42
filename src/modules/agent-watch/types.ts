@@ -151,6 +151,8 @@ export interface AgentMessage {
   ts: number;
   agentId: AgentId;
   content: string;
+  symbol?: string;
+  symbols?: string[];
   triggerSignalId: string;
 }
 

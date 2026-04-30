@@ -323,8 +323,13 @@ export function AgentWatchBoard() {
           ref={streamRef}
           entries={combinedEntries}
           typingAgent={typingAgent}
+          pool={data?.pool}
           emptyLabel={t.agentWatch.emptyHistory}
         />
+
+        <p className="rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3 text-xs leading-relaxed text-white/42">
+          风险提示：本页面内容由 AI 根据公开行情数据自动生成，仅用于信息展示，不构成投资建议。请结合自身风险承受能力判断，交易决策由用户自行承担。
+        </p>
 
         {(isLoading || isHistoryLoading) && combinedEntries.length === 0 && (
           <p className="text-center text-sm text-white/35">{t.agentWatch.loadingHistory}</p>
