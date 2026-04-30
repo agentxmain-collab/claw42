@@ -44,6 +44,24 @@ function isPriorityEvent(entry: StreamEntry) {
   return entry.kind === "collective_event" || entry.kind === "focus_event" || entry.kind === "conflict_event";
 }
 
+function speakerIdsForEntry(entry: StreamEntry): AgentId[] {
+  if (isAgentMessage(entry)) return [entry.agentId];
+  if (isWatchUpdate(entry)) return entry.agentId ? [entry.agentId] : [];
+  if (isAgentDiscussion(entry)) return entry.responses.map((response) => response.agentId);
+  if (entry.kind === "focus_event") return [entry.primaryResponse.agentId];
+  if (entry.kind === "collective_event") {
+    return [entry.primaryResponse, ...entry.echoResponses].map((response) => response.agentId);
+  }
+  if (entry.kind === "conflict_event") return entry.responses.map((response) => response.agentId);
+  return [];
+}
+
+function needsAgentDiversity(entries: StreamEntry[]) {
+  const recentSpeakers = entries.slice(-4).flatMap(speakerIdsForEntry);
+  if (recentSpeakers.length === 0) return false;
+  return new Set(recentSpeakers).size < 2;
+}
+
 function warnDuplicateEntry(reason: string, entry: StreamEntry) {
   if (process.env.NODE_ENV === "production") return;
   console.warn("[claw42] duplicate watch stream entry skipped", {
@@ -213,14 +231,22 @@ export function AgentWatchBoard() {
     if (now - lastSupplementalAtRef.current < 25_000) return;
 
     const existingEntries = streamEntriesFromPayload(data);
+    const visibleEntries = trimStreamEntries(
+      dedupeStreamEntries([
+        ...existingEntries,
+        ...liveQueue,
+      ]),
+    );
     const cutoff = now - DUPLICATE_CONTENT_WINDOW_MS * 2;
     for (const [key, ts] of Array.from(supplementalClaimRef.current.entries())) {
       if (ts < cutoff) supplementalClaimRef.current.delete(key);
     }
 
-    const preferredKinds = existingEntries.some(isPriorityEvent)
+    const preferredKinds = needsAgentDiversity(visibleEntries)
       ? (["agent_discussion", "agent_heartbeat"] as const)
-      : ([undefined, "agent_heartbeat"] as const);
+      : visibleEntries.some(isPriorityEvent)
+        ? (["agent_discussion", "agent_heartbeat"] as const)
+        : ([undefined, "agent_heartbeat"] as const);
     let entry: ReturnType<typeof buildWatchSupplementalEntry> = null;
 
     for (const preferredKind of preferredKinds) {
@@ -229,7 +255,7 @@ export function AgentWatchBoard() {
         pool: data.pool,
         focus: data.focus,
         signals: marketSignals,
-        existingEntries,
+        existingEntries: visibleEntries,
         preferredKind,
       });
       if (!candidate) continue;
@@ -258,7 +284,7 @@ export function AgentWatchBoard() {
         ]),
       ),
     );
-  }, [data, marketSignals]);
+  }, [data, liveQueue, marketSignals]);
 
   const combinedEntries = useMemo(
     () => mergeHistoryAndLive(historyMessages, liveQueue),
