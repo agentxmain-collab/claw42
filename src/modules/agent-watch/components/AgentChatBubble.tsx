@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import type { AgentChatMessage } from "../utils/streamChatMessages";
@@ -10,6 +10,7 @@ import { AgentAvatar } from "./AgentAvatar";
 
 export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
   const { locale } = useI18n();
+  const reduceMotion = useReducedMotion();
   const meta = AGENT_META[message.agentId];
   const token = AGENT_COLOR_TOKEN[message.agentId];
   const timeLabel = formatAgentMessageTime(message.ts, locale);
@@ -17,11 +18,15 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
   return (
     <motion.article
       layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.22 }}
-      className="animate-stream-in flex items-start gap-3 py-1"
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.96 }}
+      animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.98 }}
+      transition={
+        reduceMotion
+          ? { duration: 0.01 }
+          : { type: "spring", stiffness: 420, damping: 28, mass: 0.8 }
+      }
+      className="flex origin-top-left items-start gap-3 py-1"
     >
       <AgentAvatar agentId={message.agentId} size="typing" className="mt-5" />
       <div className="min-w-0 max-w-[min(100%,980px)]">

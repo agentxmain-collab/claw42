@@ -5,6 +5,11 @@ import {
 } from "../src/modules/agent-watch/utils/symbolFormat";
 import { buildWatchSupplementalEntry } from "../src/modules/agent-watch/utils/watchSupplementalUpdates";
 import { buildStreamChatMessages } from "../src/modules/agent-watch/utils/streamChatMessages";
+import {
+  speakerForStreamEntry,
+  splitStreamEntryForDisplay,
+  thinkDurationForStreamEntry,
+} from "../src/modules/agent-watch/utils/streamDisplayQueue";
 import { buildHeroSpeechLines } from "../src/modules/landing/HeroScene/heroSpeechLines";
 import type {
   AgentFocus,
@@ -226,11 +231,21 @@ assert.deepEqual(discussionChat.map((item) => item.agentId), ["alpha", "beta", "
 assert.ok(discussionChat.every((item) => item.tag === "三方会诊"));
 assert.ok(discussionChat.every((item) => item.points.length >= 3));
 
+const discussionDisplayEntries = splitStreamEntryForDisplay(discussion);
+assert.equal(discussionDisplayEntries.length, 3);
+assert.deepEqual(discussionDisplayEntries.map(speakerForStreamEntry), ["alpha", "beta", "gamma"]);
+assert.ok(
+  discussionDisplayEntries.every(
+    (entry) => entry.kind === "agent_discussion" && entry.responses.length === 1,
+  ),
+);
+
 const focusChat = buildStreamChatMessages(highEvent, pool);
 assert.equal(focusChat.length, 1);
 assert.equal(focusChat[0].tag, "高优信号");
 assert.equal(focusChat[0].symbols[0], "AI");
 assert.ok(focusChat[0].points.some((point) => point.label === "现价" && point.value !== "未形成"));
+assert.ok(thinkDurationForStreamEntry(highEvent, 0) < thinkDurationForStreamEntry(heartbeat, 0));
 
 const liveAgentMessage: AgentMessage = {
   kind: "agent_message",

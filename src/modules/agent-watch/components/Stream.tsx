@@ -96,7 +96,9 @@ export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
           ))}
         </AnimatePresence>
 
-        {typingAgent && <TypingIndicator agentId={typingAgent} />}
+        <AnimatePresence initial={false}>
+          {typingAgent && <TypingIndicator key={`typing-${typingAgent}`} agentId={typingAgent} />}
+        </AnimatePresence>
       </div>
 
       {!autoScroll && (

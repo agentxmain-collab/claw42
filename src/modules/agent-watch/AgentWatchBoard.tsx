@@ -22,11 +22,16 @@ import { MarketEventFeed } from "./components/MarketEventFeed";
 import { Stream, type StreamHandle } from "./components/Stream";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
+import {
+  speakerForStreamEntry,
+  splitStreamEntryForDisplay,
+  thinkDurationForStreamEntry,
+} from "./utils/streamDisplayQueue";
 import { buildWatchSupplementalEntry } from "./utils/watchSupplementalUpdates";
 
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 const STREAM_MAX_ENTRIES = 48;
-const STREAM_ENTRY_GAP_MS = 400;
+const STREAM_ENTRY_GAP_MS = 360;
 
 function isAgentMessage(entry: StreamEntry): entry is AgentMessage {
   return entry.kind === "agent_message";
@@ -154,10 +159,6 @@ function streamEntriesFromPayload(data: NonNullable<ReturnType<typeof useAgentAn
   );
 }
 
-function randomThinkDurationMs() {
-  return 800 + Math.round(Math.random() * 1200);
-}
-
 export function AgentWatchBoard() {
   const { t, locale } = useI18n();
   const isZh = locale === "zh_CN";
@@ -180,6 +181,57 @@ export function AgentWatchBoard() {
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
 
+  const scheduleStreamEntries = useCallback(
+    (entries: StreamEntry[], options: { clearPending?: boolean } = {}) => {
+      if (options.clearPending) {
+        timersRef.current.forEach((timer) => window.clearTimeout(timer));
+        timersRef.current = [];
+      }
+
+      const displayEntries = entries.flatMap(splitStreamEntryForDisplay);
+      let nextDelay = 0;
+
+      displayEntries.forEach((entry, index) => {
+        const agentId = speakerForStreamEntry(entry);
+        const thinkDuration = thinkDurationForStreamEntry(entry, index, Boolean(reduceMotion));
+
+        if (agentId && thinkDuration > 0) {
+          const typingTimer = window.setTimeout(() => {
+            setTypingAgent(agentId);
+          }, nextDelay);
+          timersRef.current.push(typingTimer);
+        }
+
+        const appendTimer = window.setTimeout(() => {
+          if (agentId) {
+            setTypingAgent((current) => (current === agentId ? null : current));
+            setSpeakingAgent(agentId);
+          }
+          setLiveQueue((current) =>
+            trimStreamEntries(
+              dedupeStreamEntries([
+                ...current,
+                entry,
+              ]),
+            ),
+          );
+        }, nextDelay + thinkDuration);
+
+        timersRef.current.push(appendTimer);
+
+        if (agentId) {
+          const clearSpeakingTimer = window.setTimeout(() => {
+            setSpeakingAgent((current) => (current === agentId ? null : current));
+          }, nextDelay + thinkDuration + 1100);
+          timersRef.current.push(clearSpeakingTimer);
+        }
+
+        nextDelay += thinkDuration + STREAM_ENTRY_GAP_MS;
+      });
+    },
+    [reduceMotion],
+  );
+
   useEffect(() => {
     if (hasNewContent) void refreshHistory();
   }, [hasNewContent, refreshHistory]);
@@ -188,42 +240,14 @@ export function AgentWatchBoard() {
     if (!data || processedGeneratedAtRef.current === data.generatedAt) return;
     processedGeneratedAtRef.current = data.generatedAt;
 
-    timersRef.current.forEach((timer) => window.clearTimeout(timer));
-    timersRef.current = [];
-
     const entries = streamEntriesFromPayload(data);
-
-    let nextDelay = 0;
-    entries.forEach((entry) => {
-      const agentId = isAgentMessage(entry) ? entry.agentId : null;
-      const thinkDuration = randomThinkDurationMs();
-      const typingTimer = window.setTimeout(() => {
-        setTypingAgent(agentId);
-      }, nextDelay);
-      const appendTimer = window.setTimeout(() => {
-        setTypingAgent(null);
-        setSpeakingAgent(agentId);
-        setLiveQueue((current) =>
-          trimStreamEntries(
-            dedupeStreamEntries([
-              ...current,
-              entry,
-            ]),
-          ),
-        );
-      }, nextDelay + thinkDuration);
-      const clearSpeakingTimer = window.setTimeout(() => {
-        setSpeakingAgent((current) => (current === agentId ? null : current));
-      }, nextDelay + thinkDuration + 1100);
-      timersRef.current.push(typingTimer, appendTimer, clearSpeakingTimer);
-      nextDelay += thinkDuration + STREAM_ENTRY_GAP_MS;
-    });
+    scheduleStreamEntries(entries, { clearPending: true });
 
     return () => {
       timersRef.current.forEach((timer) => window.clearTimeout(timer));
       timersRef.current = [];
     };
-  }, [data]);
+  }, [data, scheduleStreamEntries]);
 
   useEffect(() => {
     if (!data?.pool) return;
@@ -276,15 +300,8 @@ export function AgentWatchBoard() {
 
     supplementalClaimRef.current.set(entry.dedupeKey, now);
     lastSupplementalAtRef.current = now;
-    setLiveQueue((current) =>
-      trimStreamEntries(
-        dedupeStreamEntries([
-          ...current,
-          entry,
-        ]),
-      ),
-    );
-  }, [data, liveQueue, marketSignals]);
+    scheduleStreamEntries([entry]);
+  }, [data, liveQueue, marketSignals, scheduleStreamEntries]);
 
   const combinedEntries = useMemo(
     () => mergeHistoryAndLive(historyMessages, liveQueue),

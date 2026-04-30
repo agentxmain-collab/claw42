@@ -1,14 +1,26 @@
 "use client";
 
+import { motion, useReducedMotion } from "framer-motion";
 import { AGENT_META } from "../agents";
 import type { AgentId } from "../types";
 import { AgentAvatar } from "./AgentAvatar";
 
 export function TypingIndicator({ agentId }: { agentId: AgentId }) {
+  const reduceMotion = useReducedMotion();
   const meta = AGENT_META[agentId];
 
   return (
-    <div className="flex items-start gap-3 py-1">
+    <motion.div
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.98 }}
+      animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.99 }}
+      transition={
+        reduceMotion
+          ? { duration: 0.01 }
+          : { type: "spring", stiffness: 360, damping: 30, mass: 0.8 }
+      }
+      className="flex origin-top-left items-start gap-3 py-1"
+    >
       <AgentAvatar agentId={agentId} size="typing" className="mt-5 opacity-70" />
       <div className="min-w-0">
         <div className="min-h-5 px-1 text-sm font-bold text-white/45">{meta.name}</div>
@@ -25,6 +37,6 @@ export function TypingIndicator({ agentId }: { agentId: AgentId }) {
           </span>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
