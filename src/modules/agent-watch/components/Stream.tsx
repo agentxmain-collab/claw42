@@ -3,6 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { AgentId, CoinPoolPayload, StreamEntry } from "../types";
+import type { AgentWatchLocale } from "../locale";
 import { buildStreamChatMessages } from "../utils/streamChatMessages";
 import { AgentChatBubble } from "./AgentChatBubble";
 import { TypingIndicator } from "./TypingIndicator";
@@ -16,16 +17,19 @@ interface StreamProps {
   typingAgent: AgentId | null;
   pool?: CoinPoolPayload;
   emptyLabel?: string;
+  locale?: AgentWatchLocale;
 }
 
 function StreamEntryView({
   entry,
   pool,
+  locale = "zh_CN",
 }: {
   entry: StreamEntry;
   pool?: CoinPoolPayload;
+  locale?: AgentWatchLocale;
 }) {
-  const messages = buildStreamChatMessages(entry, pool);
+  const messages = buildStreamChatMessages(entry, pool, locale);
 
   return (
     <div className="space-y-3 py-1">
@@ -37,7 +41,7 @@ function StreamEntryView({
 }
 
 export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
-  { entries, typingAgent, pool, emptyLabel },
+  { entries, typingAgent, pool, emptyLabel, locale = "zh_CN" },
   forwardedRef,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,12 +96,14 @@ export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
 
         <AnimatePresence initial={false}>
           {uniqueEntries.map((entry) => (
-            <StreamEntryView key={entry.id} entry={entry} pool={pool} />
+            <StreamEntryView key={entry.id} entry={entry} pool={pool} locale={locale} />
           ))}
         </AnimatePresence>
 
         <AnimatePresence initial={false}>
-          {typingAgent && <TypingIndicator key={`typing-${typingAgent}`} agentId={typingAgent} />}
+          {typingAgent && (
+            <TypingIndicator key={`typing-${typingAgent}`} agentId={typingAgent} locale={locale} />
+          )}
         </AnimatePresence>
       </div>
 
@@ -113,7 +119,7 @@ export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
           }}
           className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md"
         >
-          回到最新
+          {locale === "en_US" ? "Back to latest" : "回到最新"}
         </button>
       )}
     </div>

@@ -6,6 +6,7 @@ import type {
   StreamResponse,
   StreamEntry,
 } from "../types";
+import type { AgentWatchLocale } from "../locale";
 import { formatCoinSymbol, prefixCoinSymbolsInText, prefixLeadingCoinSymbol } from "./symbolFormat";
 
 export interface AgentPointLevel {
@@ -39,11 +40,57 @@ const SIGNAL_LABEL = {
   range_change: "波动区间变化",
 } as const;
 
+const SIGNAL_LABEL_EN: Record<keyof typeof SIGNAL_LABEL, string> = {
+  volume_spike: "volume spike",
+  near_high: "near recent high",
+  near_low: "near recent low",
+  breakout: "breakout signal",
+  ema_cross: "EMA resonance",
+  range_change: "range change",
+};
+
+const POINT_LABELS: Record<AgentWatchLocale, Record<AgentId, string[]>> = {
+  zh_CN: {
+    alpha: ["现价", "突破观察", "回踩确认", "失效"],
+    beta: ["现价", "趋势确认", "EMA12", "结构失效"],
+    gamma: ["现价", "近期低位", "近期高位", "回归确认"],
+  },
+  en_US: {
+    alpha: ["Current", "Breakout watch", "Retest confirm", "Invalidation"],
+    beta: ["Current", "Trend confirm", "EMA12", "Structure invalid"],
+    gamma: ["Current", "Recent low", "Recent high", "Reversion confirm"],
+  },
+};
+
+const TAG_COPY: Record<AgentWatchLocale, Record<string, string>> = {
+  zh_CN: {
+    discussion: "三方会诊",
+    collective: "集体信号",
+    focus: "高优信号",
+    conflict: "观点分歧",
+    heartbeat: "巡检心跳",
+  },
+  en_US: {
+    discussion: "Agent huddle",
+    collective: "Collective signal",
+    focus: "High-priority signal",
+    conflict: "View conflict",
+    heartbeat: "Agent check-in",
+  },
+};
+
 function formatPrice(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return "未形成";
   return value.toLocaleString("en-US", {
     maximumFractionDigits: value >= 1000 ? 0 : value >= 1 ? 4 : 6,
   });
+}
+
+function formatPointPrice(value: number | null | undefined, locale: AgentWatchLocale): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return locale === "en_US" ? "Not formed" : "未形成";
+  }
+  return formatPrice(value);
 }
 
 function tickerForSymbol(pool: CoinPoolPayload | undefined, symbol: string): CoinTickerEntry | null {
@@ -87,34 +134,36 @@ function pointLevelsForAgent(
   agentId: AgentId,
   symbols: string[],
   pool?: CoinPoolPayload,
+  locale: AgentWatchLocale = "zh_CN",
 ): AgentPointLevel[] {
   const [symbol] = symbols;
   if (!symbol) return [];
 
   const anchor = priceAnchor(pool, symbol);
+  const labels = POINT_LABELS[locale][agentId];
   if (agentId === "alpha") {
     return [
-      { label: "现价", value: formatPrice(anchor) },
-      { label: "突破观察", value: formatPrice(levelFromContext(pool, symbol, "resistance") ?? derivedLevel(anchor, 1.018)) },
-      { label: "回踩确认", value: formatPrice(anchor) },
-      { label: "失效", value: formatPrice(levelFromContext(pool, symbol, "support") ?? derivedLevel(anchor, 0.982)) },
+      { label: labels[0], value: formatPointPrice(anchor, locale) },
+      { label: labels[1], value: formatPointPrice(levelFromContext(pool, symbol, "resistance") ?? derivedLevel(anchor, 1.018), locale) },
+      { label: labels[2], value: formatPointPrice(anchor, locale) },
+      { label: labels[3], value: formatPointPrice(levelFromContext(pool, symbol, "support") ?? derivedLevel(anchor, 0.982), locale) },
     ];
   }
 
   if (agentId === "beta") {
     return [
-      { label: "现价", value: formatPrice(anchor) },
-      { label: "趋势确认", value: formatPrice(levelFromContext(pool, symbol, "ema13") ?? derivedLevel(anchor, 1.012)) },
-      { label: "EMA12", value: formatPrice(levelFromContext(pool, symbol, "ema12")) },
-      { label: "结构失效", value: formatPrice(levelFromContext(pool, symbol, "support") ?? derivedLevel(anchor, 0.985)) },
+      { label: labels[0], value: formatPointPrice(anchor, locale) },
+      { label: labels[1], value: formatPointPrice(levelFromContext(pool, symbol, "ema13") ?? derivedLevel(anchor, 1.012), locale) },
+      { label: labels[2], value: formatPointPrice(levelFromContext(pool, symbol, "ema12"), locale) },
+      { label: labels[3], value: formatPointPrice(levelFromContext(pool, symbol, "support") ?? derivedLevel(anchor, 0.985), locale) },
     ];
   }
 
   return [
-    { label: "现价", value: formatPrice(anchor) },
-    { label: "近期低位", value: formatPrice(levelFromContext(pool, symbol, "low") ?? derivedLevel(anchor, 0.97)) },
-    { label: "近期高位", value: formatPrice(levelFromContext(pool, symbol, "high") ?? derivedLevel(anchor, 1.03)) },
-    { label: "回归确认", value: formatPrice(derivedLevel(anchor, 1.035)) },
+    { label: labels[0], value: formatPointPrice(anchor, locale) },
+    { label: labels[1], value: formatPointPrice(levelFromContext(pool, symbol, "low") ?? derivedLevel(anchor, 0.97), locale) },
+    { label: labels[2], value: formatPointPrice(levelFromContext(pool, symbol, "high") ?? derivedLevel(anchor, 1.03), locale) },
+    { label: labels[3], value: formatPointPrice(derivedLevel(anchor, 1.035), locale) },
   ];
 }
 
@@ -148,6 +197,7 @@ function message({
   symbols,
   tag,
   pool,
+  locale = "zh_CN",
 }: {
   id: string;
   ts: number;
@@ -156,6 +206,7 @@ function message({
   symbols: string[];
   tag?: string;
   pool?: CoinPoolPayload;
+  locale?: AgentWatchLocale;
 }): AgentChatMessage {
   const safeSymbols = uniqueSymbols(symbols);
   return {
@@ -165,13 +216,18 @@ function message({
     content: prefixCoinSymbolsInText(content, safeSymbols),
     symbols: safeSymbols,
     tag,
-    points: pointLevelsForAgent(agentId, safeSymbols, pool),
+    points: pointLevelsForAgent(agentId, safeSymbols, pool, locale),
   };
+}
+
+function joinDescription(locale: AgentWatchLocale, description: string, content: string): string {
+  return locale === "en_US" ? content : `${description}。${content}`;
 }
 
 export function buildStreamChatMessages(
   entry: StreamEntry,
   pool?: CoinPoolPayload,
+  locale: AgentWatchLocale = "zh_CN",
 ): AgentChatMessage[] {
   if (entry.kind === "agent_message") {
     return [
@@ -182,6 +238,7 @@ export function buildStreamChatMessages(
         content: entry.content,
         symbols: entry.symbols?.length ? entry.symbols : entry.symbol ? [entry.symbol] : [],
         pool,
+        locale,
       }),
     ];
   }
@@ -194,8 +251,9 @@ export function buildStreamChatMessages(
         agentId: response.agentId,
         content: response.content,
         symbols: discussionSymbolsForResponse(entry.symbols, response),
-        tag: "三方会诊",
+        tag: TAG_COPY[locale].discussion,
         pool,
+        locale,
       }),
     );
   }
@@ -203,7 +261,9 @@ export function buildStreamChatMessages(
   if (entry.kind === "collective_event") {
     const responses = [entry.primaryResponse, ...entry.echoResponses]
       .filter((response) => response.content.trim().length > 0);
-    const fallbackContent = `${entry.symbols.map(formatCoinSymbol).join(" / ")} 出现${SIGNAL_LABEL[entry.signalType]}，${entry.description}`;
+    const fallbackContent = locale === "en_US"
+      ? `${entry.symbols.map(formatCoinSymbol).join(" / ")} show ${SIGNAL_LABEL_EN[entry.signalType]}.`
+      : `${entry.symbols.map(formatCoinSymbol).join(" / ")} 出现${SIGNAL_LABEL[entry.signalType]}，${entry.description}`;
     const source = responses.length > 0
       ? responses
       : [{ agentId: FALLBACK_AGENT.collective_event, content: fallbackContent }];
@@ -212,10 +272,11 @@ export function buildStreamChatMessages(
         id: `${entry.id}-${response.agentId}`,
         ts: entry.ts,
         agentId: response.agentId,
-        content: `${entry.description}。${response.content}`,
+        content: joinDescription(locale, entry.description, response.content),
         symbols: entry.symbols,
-        tag: "集体信号",
+        tag: TAG_COPY[locale].collective,
         pool,
+        locale,
       }),
     );
   }
@@ -227,10 +288,11 @@ export function buildStreamChatMessages(
         id: `${entry.id}-${agentId}`,
         ts: entry.ts,
         agentId,
-        content: `${entry.description}。${prefixLeadingCoinSymbol(entry.primaryResponse.content, entry.symbol)}`,
+        content: joinDescription(locale, entry.description, prefixLeadingCoinSymbol(entry.primaryResponse.content, entry.symbol)),
         symbols: [entry.symbol],
-        tag: "高优信号",
+        tag: TAG_COPY[locale].focus,
         pool,
+        locale,
       }),
     ];
   }
@@ -245,10 +307,11 @@ export function buildStreamChatMessages(
         id: `${entry.id}-${response.agentId}`,
         ts: entry.ts,
         agentId: response.agentId,
-        content: `${entry.description}。${prefixLeadingCoinSymbol(response.content, entry.symbol)}`,
+        content: joinDescription(locale, entry.description, prefixLeadingCoinSymbol(response.content, entry.symbol)),
         symbols: [entry.symbol],
-        tag: "观点分歧",
+        tag: TAG_COPY[locale].conflict,
         pool,
+        locale,
       }),
     );
   }
@@ -260,8 +323,9 @@ export function buildStreamChatMessages(
       agentId: entry.agentId ?? FALLBACK_AGENT.watch_update,
       content: entry.content,
       symbols: entry.symbols?.length ? entry.symbols : entry.symbol ? [entry.symbol] : [],
-      tag: entry.updateType === "agent_heartbeat" ? "巡检心跳" : entry.title,
+      tag: entry.updateType === "agent_heartbeat" ? TAG_COPY[locale].heartbeat : entry.title,
       pool,
+      locale,
     }),
   ];
 }

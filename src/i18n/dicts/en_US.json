@@ -148,9 +148,9 @@
     "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
     "pageHeroTagline": "",
     "sidebarStatus": {
-      "thinking": "",
-      "speaking": "",
-      "idle": ""
+      "thinking": "Thinking",
+      "speaking": "Speaking",
+      "idle": "Idle"
     },
     "bottomCta": "Open Agent →",
     "linkCardLiveBadge": "LIVE",

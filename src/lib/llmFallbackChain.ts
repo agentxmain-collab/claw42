@@ -7,6 +7,7 @@ import { getSignalsByWindow } from "@/lib/signalBuffer";
 import { getLastBatchSummary, recordSuccessfulPayload } from "@/lib/llmHistorySummary";
 import { buildSignalSummary, formatSummaryForPrompt } from "@/lib/signalSummary";
 import { checkAgentSpeech, recordAgentSpoke } from "@/lib/agentSpeechGuard";
+import type { AgentWatchLocale } from "@/modules/agent-watch/locale";
 import {
   COLLECTIVE_EVENT_WINDOW_MS,
   detectCollectiveEvent,
@@ -128,6 +129,56 @@ const GAMMA_V1_FALLBACKS = {
   } satisfies Record<CoinSymbol, string>,
 };
 
+const EN_AGENT_STREAM_FALLBACKS: Record<AgentId, string[]> = {
+  alpha: [
+    "key level first, no confirmation means no chase",
+    "volume must confirm before any breakout matters",
+    "failed retest turns the move into a fake breakout",
+    "front-run risk stays high until the prior high holds",
+  ],
+  beta: [
+    "EMA12/13 alignment is still the first trend filter",
+    "a pullback is useful only if structure stays intact",
+    "trend exposure waits for highs to lift again",
+    "without resonance, the move stays on watch only",
+  ],
+  gamma: [
+    "extreme moves need exhaustion before mean reversion opens",
+    "recent high and low still define the observation window",
+    "range expansion is not a reversal signal by itself",
+    "do not catch the first knife near an extreme zone",
+  ],
+};
+
+const EN_AGENT_HERO_BUBBLES: Record<AgentId, string[]> = {
+  alpha: ["Watching breakout volume", "No confirmation, no chase", "Retest decides it"],
+  beta: ["EMA structure on watch", "Trend needs resonance", "Pullback quality matters"],
+  gamma: ["Waiting for extremes", "Mean reversion needs exhaustion", "Range still expanding"],
+};
+
+const EN_COIN_COMMENTS: Record<CoinSymbol, Record<AgentId, string>> = {
+  BTC: {
+    alpha: "$BTC needs a clean key-level break plus volume; otherwise Alpha treats it as noise.",
+    beta: "$BTC trend view stays on EMA12/13 alignment and whether pullbacks hold structure.",
+    gamma: "$BTC is a major anchor; Gamma waits for high-low exhaustion before calling reversion.",
+  },
+  ETH: {
+    alpha: "$ETH breakout only matters after volume and retest confirmation.",
+    beta: "$ETH trend needs EMA12/13 resonance before Beta upgrades the view.",
+    gamma: "$ETH reversion watch opens only after the recent high or low starts to stall.",
+  },
+  SOL: {
+    alpha: "$SOL moves fast; Alpha waits for volume to confirm the key level before chasing.",
+    beta: "$SOL trend stays conditional until EMA structure stops flipping.",
+    gamma: "$SOL volatility can fake extremes; Gamma waits for expansion to slow first.",
+  },
+  USDT: {
+    alpha: "$USDT is a stability anchor, not a breakout target for Alpha.",
+    beta: "$USDT is used as a market reference while Beta tracks trend structure elsewhere.",
+    gamma: "$USDT is a stable anchor and is not handled as an extreme-volatility target.",
+  },
+};
+
 const SKILLS: Record<AgentId, AgentSkill> = {
   alpha: alphaSkill as AgentSkill,
   beta: betaSkill as AgentSkill,
@@ -148,10 +199,10 @@ type TimedCacheEntry = {
   expiresAt: number;
 };
 
-let liveCache: LiveCacheEntry | null = null;
-let backgroundRefreshInFlight = false;
-let staticFallbackCache: TimedCacheEntry | null = null;
-let analysisRefreshInFlight: Promise<AgentAnalysisPayload> | null = null;
+const liveCaches: Partial<Record<AgentWatchLocale, LiveCacheEntry>> = {};
+const backgroundRefreshInFlight: Partial<Record<AgentWatchLocale, boolean>> = {};
+const staticFallbackCaches: Partial<Record<AgentWatchLocale, TimedCacheEntry>> = {};
+const analysisRefreshInFlight: Partial<Record<AgentWatchLocale, Promise<AgentAnalysisPayload>>> = {};
 const HISTORY_BUFFER_MAX_MESSAGES = 200;
 const HISTORY_DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 let historyBuffer: HistoryMessageEntry[] = [];
@@ -192,17 +243,32 @@ function selectFallback(items: string[], seed: number): string {
   return items[fallbackIndex(seed, items.length)] ?? items[0] ?? "";
 }
 
-function selectAgentStreamFallback(agentId: AgentId, seed: number): string {
+function selectAgentStreamFallback(
+  agentId: AgentId,
+  seed: number,
+  locale: AgentWatchLocale = "zh_CN",
+): string {
+  if (locale === "en_US") return selectFallback(EN_AGENT_STREAM_FALLBACKS[agentId], seed);
   if (agentId === "gamma") return selectFallback(GAMMA_V1_FALLBACKS.stream, seed);
   return selectFallback(SKILLS[agentId].fallbacks.stream, seed);
 }
 
-function selectAgentHeroBubble(agentId: AgentId, seed: number): string {
+function selectAgentHeroBubble(
+  agentId: AgentId,
+  seed: number,
+  locale: AgentWatchLocale = "zh_CN",
+): string {
+  if (locale === "en_US") return selectFallback(EN_AGENT_HERO_BUBBLES[agentId], seed);
   if (agentId === "gamma") return selectFallback(GAMMA_V1_FALLBACKS.heroBubbles, seed);
   return selectFallback(SKILLS[agentId].fallbacks.heroBubbles, seed);
 }
 
-function fallbackCoinComment(agentId: AgentId, symbol: CoinSymbol): string {
+function fallbackCoinComment(
+  agentId: AgentId,
+  symbol: CoinSymbol,
+  locale: AgentWatchLocale = "zh_CN",
+): string {
+  if (locale === "en_US") return EN_COIN_COMMENTS[symbol][agentId];
   if (agentId === "gamma") return GAMMA_V1_FALLBACKS.coinComments[symbol];
   return SKILLS[agentId].fallbacks.coinComments[symbol];
 }
@@ -218,10 +284,27 @@ function formatLiveTickerBrief(tickers: TickerMap): string {
   ].join(" / ");
 }
 
-function buildFallbackStreamContent(agentId: AgentId, tickers: TickerMap, seed: number): string {
+function buildFallbackStreamContent(
+  agentId: AgentId,
+  tickers: TickerMap,
+  seed: number,
+  locale: AgentWatchLocale = "zh_CN",
+): string {
   const [leader, runnerUp] = rankedRiskCoins(tickers);
-  const first = selectAgentStreamFallback(agentId, seed);
-  const second = selectAgentStreamFallback(agentId, seed + 17);
+  const first = selectAgentStreamFallback(agentId, seed, locale);
+  const second = selectAgentStreamFallback(agentId, seed + 17, locale);
+
+  if (locale === "en_US") {
+    if (agentId === "alpha") {
+      return `Trigger: ${leader} first needs 5m volume and reaction near the prior high, ${first}; invalidation: ${second}.`;
+    }
+
+    if (agentId === "beta") {
+      return `Trend: ${leader} only upgrades after EMA12/13 resonance returns, ${first}. Action: ${second}; no full position before confirmation.`;
+    }
+
+    return `Extreme: ${leader} and ${runnerUp} have not opened a clean mean-reversion window yet. Boundary: ${first}; ${second}.`;
+  }
 
   if (agentId === "alpha") {
     return `触发：${leader} 先盯 5m 放量和前高反应，${first}；失效：${second}，没回踩确认不追。`;
@@ -234,11 +317,14 @@ function buildFallbackStreamContent(agentId: AgentId, tickers: TickerMap, seed: 
   return `极端：${leader} 和 ${runnerUp} 24h 都还没给出足够极端的回归窗口。边界：${first}；${second}，先等近期高低位失速。`;
 }
 
-function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
+function buildFallbackStream(
+  tickers: TickerMap,
+  locale: AgentWatchLocale = "zh_CN",
+): StreamMessage[] {
   const seed = fallbackSeed(tickers);
   return AGENTS.map((agentId, index) => ({
     agentId,
-    content: buildFallbackStreamContent(agentId, tickers, seed + index * 11),
+    content: buildFallbackStreamContent(agentId, tickers, seed + index * 11, locale),
   }));
 }
 
@@ -262,8 +348,39 @@ function signalDescription(signal: SignalRecord): string {
   return parts.join(" | ");
 }
 
-function fallbackSignalSpeech(agentId: AgentId, signal: SignalRecord): string {
+function signalDescriptionEn(signal: SignalRecord): string {
+  if (typeof signal.payload.change24h === "number") {
+    return `24h ${formatMarketChange(signal.payload.change24h)}`;
+  }
+  if (typeof signal.payload.volumeRatio === "number") {
+    return `5m volume ${signal.payload.volumeRatio.toFixed(1)}x`;
+  }
+  if (typeof signal.payload.distancePct === "number") {
+    return `${signal.payload.distancePct.toFixed(2)}% from the watched level`;
+  }
+  if (typeof signal.payload.priceLevel === "number") {
+    return `level ${formatMarketPrice("BTC", signal.payload.priceLevel)}`;
+  }
+  return signal.type.replace("_", " ");
+}
+
+function fallbackSignalSpeech(
+  agentId: AgentId,
+  signal: SignalRecord,
+  locale: AgentWatchLocale = "zh_CN",
+): string {
   const brief = signal.payload.description ?? signalDescription(signal);
+  if (locale === "en_US") {
+    const briefEn = signalDescriptionEn(signal);
+    if (agentId === "alpha") {
+      return `${signal.symbol} ${briefEn}; Alpha waits for retest confirmation, no chase without volume.`;
+    }
+    if (agentId === "beta") {
+      return `${signal.symbol} ${briefEn}; Beta waits for EMA12/13 alignment before upgrading the trend view.`;
+    }
+    return `${signal.symbol} ${briefEn}; Gamma only watches the extreme zone and waits for high-low exhaustion.`;
+  }
+
   if (agentId === "alpha") {
     return `${signal.symbol} ${brief}，关键位先看回踩确认；量缩就是假突破。`;
   }
@@ -374,18 +491,21 @@ function agentForSignal(signal: SignalRecord): AgentId {
   return "alpha";
 }
 
-function buildFallbackHeroBubbles(tickers: TickerMap): string[] {
+function buildFallbackHeroBubbles(
+  tickers: TickerMap,
+  locale: AgentWatchLocale = "zh_CN",
+): string[] {
   const seed = fallbackSeed(tickers);
   return AGENTS.map((agentId, index) =>
-    selectAgentHeroBubble(agentId, seed + index * 7),
+    selectAgentHeroBubble(agentId, seed + index * 7, locale),
   );
 }
 
-function buildFallbackComments(): CoinComments {
+function buildFallbackComments(locale: AgentWatchLocale = "zh_CN"): CoinComments {
   return COINS.reduce((comments, symbol) => {
     comments[symbol] = {} as Record<AgentId, string>;
     for (const agentId of AGENTS) {
-      comments[symbol][agentId] = fallbackCoinComment(agentId, symbol);
+      comments[symbol][agentId] = fallbackCoinComment(agentId, symbol, locale);
     }
     return comments;
   }, {} as CoinComments);
@@ -395,6 +515,7 @@ function fallbackFocusForAgent(
   agentId: AgentId,
   pool: CoinPoolPayload,
   generatedAt: number,
+  locale: AgentWatchLocale = "zh_CN",
 ): AgentFocus {
   const sortedMajors = [...pool.majors].sort((a, b) => b.change24h - a.change24h);
   const opportunity = pool.opportunity[0] ?? pool.trending[0] ?? sortedMajors[0];
@@ -412,6 +533,28 @@ function fallbackFocusForAgent(
   const priceLevel = Number.isFinite(target?.price) ? target.price : undefined;
 
   if (agentId === "alpha") {
+    if (locale === "en_US") {
+      return {
+        agentId,
+        symbol,
+        judgment: `${symbol} needs key-level and volume confirmation; no signal, no chase.`,
+        trigger: {
+          type: "breakout_with_volume",
+          symbol,
+          priceLevel,
+          description: `${symbol} confirms only after a volume breakout and a clean retest hold.`,
+        },
+        fail: {
+          type: "volume_dry",
+          symbol,
+          priceLevel,
+          description: `${symbol} loses the setup if volume dries up or price falls back into the range.`,
+        },
+        evidenceCount: 0,
+        generatedAt,
+      };
+    }
+
     return {
       agentId,
       symbol,
@@ -434,6 +577,28 @@ function fallbackFocusForAgent(
   }
 
   if (agentId === "beta") {
+    if (locale === "en_US") {
+      return {
+        agentId,
+        symbol,
+        judgment: `${symbol} trend signal is not enough; wait for EMA12/13 resonance before upgrading exposure.`,
+        trigger: {
+          type: "ema_cross",
+          symbol,
+          priceLevel,
+          description: `${symbol} upgrades only if EMA12 regains EMA13 and price holds above it.`,
+        },
+        fail: {
+          type: "ema_break",
+          symbol,
+          priceLevel,
+          description: `${symbol} drops below EMA13 and the trend read is downgraded.`,
+        },
+        evidenceCount: 0,
+        generatedAt,
+      };
+    }
+
     return {
       agentId,
       symbol,
@@ -456,6 +621,26 @@ function fallbackFocusForAgent(
   }
 
   if (!target) {
+    if (locale === "en_US") {
+      return {
+        agentId,
+        symbol: "—",
+        judgment: "No opportunity or hot coin is extreme enough yet; Gamma keeps waiting.",
+        trigger: {
+          type: "custom",
+          symbol: "—",
+          description: "A hot or opportunity coin must show a clear 24h extreme before mean-reversion watch opens.",
+        },
+        fail: {
+          type: "custom",
+          symbol: "—",
+          description: "Without an extreme move, Gamma does not make a reversion call.",
+        },
+        evidenceCount: 0,
+        generatedAt,
+      };
+    }
+
     return {
       agentId,
       symbol: "—",
@@ -469,6 +654,28 @@ function fallbackFocusForAgent(
         type: "custom",
         symbol: "—",
         description: "没有极端波动就不做回归判断。",
+      },
+      evidenceCount: 0,
+      generatedAt,
+    };
+  }
+
+  if (locale === "en_US") {
+    return {
+      agentId,
+      symbol,
+      judgment: `${symbol} is not extreme enough yet; Gamma waits for high-low exhaustion.`,
+      trigger: {
+        type: "range_break",
+        symbol,
+        priceLevel,
+        description: `${symbol} enters mean-reversion watch only after a 24h extreme near recent high or low.`,
+      },
+      fail: {
+        type: "price_break",
+        symbol,
+        priceLevel,
+        description: `${symbol} keeps expanding away from the anchor and the reversion read is invalidated.`,
       },
       evidenceCount: 0,
       generatedAt,
@@ -496,14 +703,22 @@ function fallbackFocusForAgent(
   };
 }
 
-function buildFallbackFocus(pool: CoinPoolPayload, generatedAt: number): AgentFocus[] {
-  return AGENTS.map((agentId) => fallbackFocusForAgent(agentId, pool, generatedAt));
+function buildFallbackFocus(
+  pool: CoinPoolPayload,
+  generatedAt: number,
+  locale: AgentWatchLocale = "zh_CN",
+): AgentFocus[] {
+  return AGENTS.map((agentId) => fallbackFocusForAgent(agentId, pool, generatedAt, locale));
 }
 
-function buildStaticFallback(pool: CoinPoolPayload): AgentAnalysisPayload {
+function buildStaticFallback(
+  pool: CoinPoolPayload,
+  locale: AgentWatchLocale = "zh_CN",
+): AgentAnalysisPayload {
   const now = Date.now();
-  if (staticFallbackCache && staticFallbackCache.expiresAt > now) {
-    return { ...staticFallbackCache.value, servedAt: now };
+  const cached = staticFallbackCaches[locale];
+  if (cached && cached.expiresAt > now) {
+    return { ...cached.value, servedAt: now };
   }
   const { tickers } = pool;
 
@@ -516,13 +731,13 @@ function buildStaticFallback(pool: CoinPoolPayload): AgentAnalysisPayload {
     degraded: true,
     tickers,
     pool,
-    focus: buildFallbackFocus(pool, now),
-    stream: buildFallbackStream(tickers),
-    heroBubbles: buildFallbackHeroBubbles(tickers),
-    coinComments: buildFallbackComments(),
+    focus: buildFallbackFocus(pool, now, locale),
+    stream: buildFallbackStream(tickers, locale),
+    heroBubbles: buildFallbackHeroBubbles(tickers, locale),
+    coinComments: buildFallbackComments(locale),
   };
 
-  staticFallbackCache = { value, expiresAt: now + PROVIDER_FAILURE_FALLBACK_TTL_MS };
+  staticFallbackCaches[locale] = { value, expiresAt: now + PROVIDER_FAILURE_FALLBACK_TTL_MS };
   return value;
 }
 
@@ -1349,8 +1564,16 @@ async function generateAgentMessageFromSignal(
   signal: SignalRecord,
   pool: CoinPoolPayload,
   generatedAt: number,
+  locale: AgentWatchLocale,
 ): Promise<{ entry: AgentMessage; source: ProviderSource | null }> {
-  const fallback = fallbackSignalSpeech(agentId, signal);
+  const fallback = fallbackSignalSpeech(agentId, signal, locale);
+  if (locale === "en_US") {
+    return {
+      entry: buildAgentMessageEntry(agentId, signal, fallback, generatedAt),
+      source: null,
+    };
+  }
+
   const providerResult = await callTextProvider(buildAgentSpeechPrompt(agentId, signal, pool));
   const content = providerResult
     ? normalizeSpeechText(agentId, signal, providerResult.text)
@@ -1366,6 +1589,7 @@ async function generateEventResponse(
   agentId: AgentId,
   eventDescription: string,
   pool: CoinPoolPayload,
+  locale: AgentWatchLocale,
 ): Promise<{ response: StreamResponse; source: ProviderSource | null }> {
   const fallbackSignal: SignalRecord = {
     id: `event-${agentId}-${Date.now()}`,
@@ -1375,7 +1599,14 @@ async function generateEventResponse(
     severity: "watch",
     payload: { description: eventDescription },
   };
-  const fallback = fallbackSignalSpeech(agentId, fallbackSignal);
+  const fallback = fallbackSignalSpeech(agentId, fallbackSignal, locale);
+  if (locale === "en_US") {
+    return {
+      response: { agentId, content: fallback, symbol: fallbackSignal.symbol },
+      source: null,
+    };
+  }
+
   const providerResult = await callTextProvider(buildEventPrompt(agentId, eventDescription, pool));
   const content = providerResult
     ? normalizeSpeechText(agentId, fallbackSignal, providerResult.text)
@@ -1389,11 +1620,12 @@ async function generateEventResponse(
 async function hydrateCollectiveEvent(
   event: CollectiveEvent,
   pool: CoinPoolPayload,
+  locale: AgentWatchLocale,
 ): Promise<{ event: CollectiveEvent; source: ProviderSource | null }> {
   const sources: ProviderSource[] = [];
   const agents: AgentId[] = ["alpha", "beta", "gamma"];
   const responses = await Promise.all(
-    agents.map((agentId) => generateEventResponse(agentId, event.description, pool)),
+    agents.map((agentId) => generateEventResponse(agentId, event.description, pool, locale)),
   );
 
   responses.forEach((result) => {
@@ -1413,6 +1645,7 @@ async function hydrateCollectiveEvent(
 async function hydrateFocusEvent(
   event: FocusEvent,
   pool: CoinPoolPayload,
+  locale: AgentWatchLocale,
 ): Promise<{ event: FocusEvent; source: ProviderSource | null }> {
   const agentId = agentForSignal({
     id: event.id,
@@ -1422,7 +1655,7 @@ async function hydrateFocusEvent(
     severity: event.severity,
     payload: { description: event.description },
   });
-  const result = await generateEventResponse(agentId, event.description, pool);
+  const result = await generateEventResponse(agentId, event.description, pool, locale);
   return {
     event: {
       ...event,
@@ -1435,9 +1668,10 @@ async function hydrateFocusEvent(
 async function hydrateConflictEvent(
   event: ConflictEvent,
   pool: CoinPoolPayload,
+  locale: AgentWatchLocale,
 ): Promise<{ event: ConflictEvent; source: ProviderSource | null }> {
   const responses = await Promise.all(
-    event.conflictingAgents.map((agentId) => generateEventResponse(agentId, event.description, pool)),
+    event.conflictingAgents.map((agentId) => generateEventResponse(agentId, event.description, pool, locale)),
   );
   return {
     event: {
@@ -1463,18 +1697,18 @@ function recordEventSpeakers(entry: StreamEntry, ts: number) {
   });
 }
 
-async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
+async function refreshAnalysis(locale: AgentWatchLocale): Promise<AgentAnalysisPayload> {
   const pool = (await triggerSignalGeneration()) ?? (await getCoinPool());
   const { tickers } = pool;
   const generatedAt = Date.now();
   const recentSignals = getSignalsByWindow(COLLECTIVE_EVENT_WINDOW_MS);
-  const focus = buildFallbackFocus(pool, generatedAt);
+  const focus = buildFallbackFocus(pool, generatedAt, locale);
   const streamEntries: StreamEntry[] = [];
   const providerSources: ProviderSource[] = [];
 
   const collectiveEvent = detectCollectiveEvent(recentSignals, generatedAt);
   if (collectiveEvent) {
-    const hydrated = await hydrateCollectiveEvent(collectiveEvent, pool);
+    const hydrated = await hydrateCollectiveEvent(collectiveEvent, pool, locale);
     streamEntries.push(hydrated.event);
     recordEventSpeakers(hydrated.event, generatedAt);
     if (hydrated.source) providerSources.push(hydrated.source);
@@ -1482,7 +1716,7 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
 
   const focusEvent = detectFocusEvent(recentSignals, generatedAt);
   if (focusEvent) {
-    const hydrated = await hydrateFocusEvent(focusEvent, pool);
+    const hydrated = await hydrateFocusEvent(focusEvent, pool, locale);
     streamEntries.push(hydrated.event);
     recordEventSpeakers(hydrated.event, generatedAt);
     if (hydrated.source) providerSources.push(hydrated.source);
@@ -1490,7 +1724,7 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
 
   const conflictEvent = recentSignals.length > 0 ? detectConflictEvent(focus, generatedAt) : null;
   if (conflictEvent) {
-    const hydrated = await hydrateConflictEvent(conflictEvent, pool);
+    const hydrated = await hydrateConflictEvent(conflictEvent, pool, locale);
     streamEntries.push(hydrated.event);
     recordEventSpeakers(hydrated.event, generatedAt);
     if (hydrated.source) providerSources.push(hydrated.source);
@@ -1519,6 +1753,7 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
           decision.triggerSignal as SignalRecord,
           pool,
           generatedAt,
+          locale,
         ),
       ),
   );
@@ -1547,11 +1782,11 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
     marketSource: pool.source,
     stream,
     streamEntries,
-    heroBubbles: buildFallbackHeroBubbles(tickers),
-    coinComments: buildFallbackComments(),
+    heroBubbles: buildFallbackHeroBubbles(tickers, locale),
+    coinComments: buildFallbackComments(locale),
   };
 
-  liveCache = {
+  liveCaches[locale] = {
     value,
     freshUntil: generatedAt + FRESH_TTL_MS,
     staleUntil: generatedAt + STALE_TTL_MS,
@@ -1565,19 +1800,21 @@ async function refreshAnalysis(): Promise<AgentAnalysisPayload> {
   return value;
 }
 
-function refreshAnalysisOnce(): Promise<AgentAnalysisPayload> {
-  if (analysisRefreshInFlight) return analysisRefreshInFlight;
+function refreshAnalysisOnce(locale: AgentWatchLocale): Promise<AgentAnalysisPayload> {
+  const inFlight = analysisRefreshInFlight[locale];
+  if (inFlight) return inFlight;
 
-  analysisRefreshInFlight = refreshAnalysis().finally(() => {
-    analysisRefreshInFlight = null;
+  const promise = refreshAnalysis(locale).finally(() => {
+    delete analysisRefreshInFlight[locale];
   });
+  analysisRefreshInFlight[locale] = promise;
 
-  return analysisRefreshInFlight;
+  return promise;
 }
 
-export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
+export async function getAgentAnalysis(locale: AgentWatchLocale = "zh_CN"): Promise<AgentAnalysisPayload> {
   const now = Date.now();
-  const cached = liveCache;
+  const cached = liveCaches[locale];
   const hasUnseenRecentSignal = cached
     ? getSignalsByWindow(COLLECTIVE_EVENT_WINDOW_MS).some(
         (signal) => signal.ts > cached.value.generatedAt,
@@ -1588,15 +1825,16 @@ export async function getAgentAnalysis(): Promise<AgentAnalysisPayload> {
     return { ...cached.value, source: "cache", servedAt: now };
   }
 
-  if (liveCache && liveCache.staleUntil > now) {
-    if (!backgroundRefreshInFlight) {
-      backgroundRefreshInFlight = true;
-      void refreshAnalysisOnce().finally(() => {
-        backgroundRefreshInFlight = false;
+  const staleCache = liveCaches[locale];
+  if (staleCache && staleCache.staleUntil > now) {
+    if (!backgroundRefreshInFlight[locale]) {
+      backgroundRefreshInFlight[locale] = true;
+      void refreshAnalysisOnce(locale).finally(() => {
+        backgroundRefreshInFlight[locale] = false;
       });
     }
-    return { ...liveCache.value, source: "cache", servedAt: now };
+    return { ...staleCache.value, source: "cache", servedAt: now };
   }
 
-  return refreshAnalysisOnce();
+  return refreshAnalysisOnce(locale);
 }

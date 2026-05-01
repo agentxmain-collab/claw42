@@ -3,15 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchAgentAnalysis, fetchMarketTicker } from "../api/llmClient";
 import type { AgentAnalysisPayload, MarketTickerPayload } from "../types";
+import type { AgentWatchLocale } from "../locale";
 
 interface UseAgentAnalysisOptions {
   enabled?: boolean;
   intervalMs?: number;
+  locale?: AgentWatchLocale;
 }
 
 export function useAgentAnalysis({
   enabled = true,
   intervalMs = 60_000,
+  locale = "zh_CN",
 }: UseAgentAnalysisOptions = {}) {
   const [data, setData] = useState<AgentAnalysisPayload | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -33,7 +36,7 @@ export function useAgentAnalysis({
       if (!enabled || !isVisibleRef.current) return;
       setIsLoading(true);
       try {
-        const next = await fetchAgentAnalysis(signal);
+        const next = await fetchAgentAnalysis(signal, locale);
         if (
           detectNewContent &&
           lastSeenGeneratedAtRef.current !== null &&
@@ -49,7 +52,7 @@ export function useAgentAnalysis({
         setIsLoading(false);
       }
     },
-    [applyPayload, enabled],
+    [applyPayload, enabled, locale],
   );
 
   useEffect(() => {

@@ -7,6 +7,7 @@ import type {
   StreamEntry,
   WatchUpdateEntry,
 } from "../types";
+import type { AgentWatchLocale } from "../locale";
 import { buildWatchSupplementalEntry } from "./watchSupplementalUpdates";
 
 export const WATCH_DIRECTOR_MEMORY_KEY = "claw42.watch.director.v1";
@@ -40,6 +41,7 @@ export interface WatchDirectorOpeningInput {
   signals: SignalRecord[];
   analysisEntries: StreamEntry[];
   memory: WatchDirectorMemory;
+  locale?: AgentWatchLocale;
 }
 
 export interface WatchDirectorOpening {
@@ -159,6 +161,7 @@ function buildSupplemental(
     signals: input.signals,
     existingEntries,
     preferredKind: kind as never,
+    locale: input.locale,
   });
 }
 

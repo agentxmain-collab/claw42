@@ -10,6 +10,7 @@ import type {
   WatchUpdateEntry,
   WatchUpdateType,
 } from "../types";
+import type { AgentWatchLocale } from "../locale";
 import { formatCoinSymbol, prefixLeadingCoinSymbol } from "./symbolFormat";
 
 const HIGH_EVENT_SUPPRESS_MS = 90_000;
@@ -32,6 +33,12 @@ const AGENT_DISCUSSION_LABEL: Record<AgentId, string> = {
   gamma: "回归视角",
 };
 
+const AGENT_DISCUSSION_LABEL_EN: Record<AgentId, string> = {
+  alpha: "Breakout view",
+  beta: "Trend view",
+  gamma: "Mean-reversion view",
+};
+
 const AGENT_HEARTBEAT_LINES: Record<AgentId, string[]> = {
   alpha: [
     "巡检：复核 {symbol} 的关键位和放量条件，未确认前不追。",
@@ -48,6 +55,41 @@ const AGENT_HEARTBEAT_LINES: Record<AgentId, string[]> = {
     "扫描：{symbol} 还在极端区附近，先等价格停止扩散。",
     "复核：{symbol} 回归窗口未完全打开，继续等近期高低位失速。",
   ],
+};
+
+const AGENT_HEARTBEAT_LINES_EN: Record<AgentId, string[]> = {
+  alpha: [
+    "Scan: rechecking {symbol} key levels and volume; no confirmation, no chase.",
+    "Review: {symbol} still lacks price-volume alignment; waiting for breakout confirmation.",
+    "Check: {symbol} has not triggered breakout rules; alert line stays near the recent high.",
+  ],
+  beta: [
+    "Scan: checking {symbol} EMA12/13 structure again; no upgrade before resonance.",
+    "Review: {symbol} trend still needs pullback quality; a bounce is not a trend yet.",
+    "Check: {symbol} trend conditions remain thin; wait for highs to lift again.",
+  ],
+  gamma: [
+    "Scan: watching {symbol} extreme volatility and high-low exhaustion; no early entry.",
+    "Review: {symbol} is still near an extreme area; wait for price expansion to stop.",
+    "Check: {symbol} mean-reversion window is not fully open; wait for high-low exhaustion.",
+  ],
+};
+
+const TITLE_COPY: Record<AgentWatchLocale, Record<WatchUpdateType, string>> = {
+  zh_CN: {
+    market_digest: "市场摘要",
+    focus_update: "关注变化",
+    condition_update: "等待条件",
+    agent_heartbeat: "巡检心跳",
+    quiet_observation: "观察状态",
+  },
+  en_US: {
+    market_digest: "Market digest",
+    focus_update: "Focus update",
+    condition_update: "Condition watch",
+    agent_heartbeat: "Agent check-in",
+    quiet_observation: "Observation",
+  },
 };
 
 const UPDATE_ROTATION: SupplementalUpdateKind[] = [
@@ -121,7 +163,11 @@ function entry(
   };
 }
 
-function buildMarketDigest(now: number, pool: CoinPoolPayload): WatchUpdateEntry | null {
+function buildMarketDigest(
+  now: number,
+  pool: CoinPoolPayload,
+  locale: AgentWatchLocale,
+): WatchUpdateEntry | null {
   const topMover = allTickers(pool).sort(
     (a, b) => Math.abs(b.change24h) - Math.abs(a.change24h),
   )[0];
@@ -129,41 +175,59 @@ function buildMarketDigest(now: number, pool: CoinPoolPayload): WatchUpdateEntry
 
   const symbol = formatCoinSymbol(topMover.symbol);
   const direction = topMover.change24h >= 0 ? "走强" : "走弱";
-  const content = `市场摘要：${symbol} 24h ${formatChange(topMover.change24h)}，是当前波动最大的观察点，先看是否扩散到同组币种。`;
+  const directionEn = topMover.change24h >= 0 ? "strengthening" : "weakening";
+  const content =
+    locale === "en_US"
+      ? `Market digest: ${symbol} is ${formatChange(topMover.change24h)} over 24h, currently the largest volatility marker. Watch whether the move spreads to peers.`
+      : `市场摘要：${symbol} 24h ${formatChange(topMover.change24h)}，是当前波动最大的观察点，先看是否扩散到同组币种。`;
 
-  return entry("market_digest", now, `mover:${topMover.symbol}:${Math.round(topMover.change24h * 10)}`, "市场摘要", content, {
+  return entry("market_digest", now, `mover:${topMover.symbol}:${Math.round(topMover.change24h * 10)}`, TITLE_COPY[locale].market_digest, content, {
     symbol: topMover.symbol,
     symbols: [topMover.symbol],
     severity: Math.abs(topMover.change24h) >= 12 ? "watch" : "neutral",
-    title: `${symbol} ${direction}`,
+    title: locale === "en_US" ? `${symbol} ${directionEn}` : `${symbol} ${direction}`,
   });
 }
 
-function buildFocusUpdate(now: number, focus: AgentFocus[]): WatchUpdateEntry | null {
+function buildFocusUpdate(
+  now: number,
+  focus: AgentFocus[],
+  locale: AgentWatchLocale,
+): WatchUpdateEntry | null {
   const item = focusByRotation(focus, now);
   if (!item) return null;
 
   const symbol = formatCoinSymbol(item.symbol);
   const judgment = prefixLeadingCoinSymbol(firstSentence(item.judgment), item.symbol);
-  const content = `${AGENT_NAME[item.agentId]} 当前盯防 ${symbol}：${judgment}`;
+  const content =
+    locale === "en_US"
+      ? `${AGENT_NAME[item.agentId]} is watching ${symbol}: ${judgment}`
+      : `${AGENT_NAME[item.agentId]} 当前盯防 ${symbol}：${judgment}`;
 
-  return entry("focus_update", now, `focus:${item.agentId}:${item.symbol}:${judgment}`, "关注变化", content, {
+  return entry("focus_update", now, `focus:${item.agentId}:${item.symbol}:${judgment}`, TITLE_COPY[locale].focus_update, content, {
     agentId: item.agentId,
     symbol: item.symbol,
     symbols: [item.symbol],
   });
 }
 
-function buildConditionUpdate(now: number, focus: AgentFocus[]): WatchUpdateEntry | null {
+function buildConditionUpdate(
+  now: number,
+  focus: AgentFocus[],
+  locale: AgentWatchLocale,
+): WatchUpdateEntry | null {
   const item = focusByRotation(focus, now + 60_000);
   if (!item) return null;
 
   const symbol = formatCoinSymbol(item.symbol);
   const trigger = prefixLeadingCoinSymbol(firstSentence(item.trigger.description), item.symbol);
   const fail = prefixLeadingCoinSymbol(firstSentence(item.fail.description), item.symbol);
-  const content = `等待条件：${symbol} 触发看「${trigger}」；失效看「${fail}」。`;
+  const content =
+    locale === "en_US"
+      ? `Condition watch: ${symbol} trigger is "${trigger}"; invalidation is "${fail}".`
+      : `等待条件：${symbol} 触发看「${trigger}」；失效看「${fail}」。`;
 
-  return entry("condition_update", now, `condition:${item.agentId}:${item.symbol}:${trigger}:${fail}`, "等待条件", content, {
+  return entry("condition_update", now, `condition:${item.agentId}:${item.symbol}:${trigger}:${fail}`, TITLE_COPY[locale].condition_update, content, {
     agentId: item.agentId,
     symbol: item.symbol,
     symbols: [item.symbol],
@@ -174,6 +238,7 @@ function buildQuietObservation(
   now: number,
   focus: AgentFocus[],
   signals: SignalRecord[],
+  locale: AgentWatchLocale,
 ): WatchUpdateEntry | null {
   const latestSignal = [...signals].sort((a, b) => b.ts - a.ts)[0];
   if (latestSignal) {
@@ -181,12 +246,16 @@ function buildQuietObservation(
     const description = latestSignal.payload.description
       ? prefixLeadingCoinSymbol(latestSignal.payload.description, latestSignal.symbol)
       : `${symbol} 出现 ${latestSignal.type}`;
+    const content =
+      locale === "en_US"
+        ? `Observation: latest signal is on ${symbol}; wait for confirmation before upgrading.`
+        : `观察状态：最新市场信号在 ${symbol}，${description}，未升级时先等待确认。`;
     return entry(
       "quiet_observation",
       now,
       `signal:${latestSignal.symbol}:${latestSignal.type}:${latestSignal.severity}`,
-      "观察状态",
-      `观察状态：最新市场信号在 ${symbol}，${description}，未升级时先等待确认。`,
+      TITLE_COPY[locale].quiet_observation,
+      content,
       {
         symbol: latestSignal.symbol,
         symbols: [latestSignal.symbol],
@@ -196,11 +265,16 @@ function buildQuietObservation(
 
   const symbols = focus.map((item) => item.symbol).filter(Boolean);
   const displaySymbols = symbols.slice(0, 3).map(formatCoinSymbol).join(" / ");
-  const content = displaySymbols
-    ? `观察状态：暂无新的高优触发，3 个 Agent 继续盯防 ${displaySymbols} 的条件变化。`
-    : "观察状态：暂无新的高优触发，3 个 Agent 继续等待可确认的市场信号。";
+  const content =
+    locale === "en_US"
+      ? displaySymbols
+        ? `Observation: no new high-priority trigger. The 3 Agents keep watching ${displaySymbols} for condition changes.`
+        : "Observation: no new high-priority trigger. The 3 Agents are waiting for confirmable market signals."
+      : displaySymbols
+        ? `观察状态：暂无新的高优触发，3 个 Agent 继续盯防 ${displaySymbols} 的条件变化。`
+        : "观察状态：暂无新的高优触发，3 个 Agent 继续等待可确认的市场信号。";
 
-  return entry("quiet_observation", now, `quiet:${symbols.join(":") || "empty"}`, "观察状态", content, {
+  return entry("quiet_observation", now, `quiet:${symbols.join(":") || "empty"}`, TITLE_COPY[locale].quiet_observation, content, {
     symbols,
   });
 }
@@ -209,6 +283,7 @@ function buildAgentHeartbeat(
   now: number,
   pool: CoinPoolPayload,
   focus: AgentFocus[],
+  locale: AgentWatchLocale,
 ): WatchUpdateEntry | null {
   const tickers = allTickers(pool);
   const fallbackTicker = tickers.sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))[0] ?? null;
@@ -220,13 +295,14 @@ function buildAgentHeartbeat(
 
   const phraseIndex = Math.abs(Math.floor(now / 30_000)) % AGENT_HEARTBEAT_LINES[agentId].length;
   const displaySymbol = formatCoinSymbol(symbol);
-  const content = `${AGENT_NAME[agentId]} ${AGENT_HEARTBEAT_LINES[agentId][phraseIndex].replace("{symbol}", displaySymbol)}`;
+  const lineSet = locale === "en_US" ? AGENT_HEARTBEAT_LINES_EN : AGENT_HEARTBEAT_LINES;
+  const content = `${AGENT_NAME[agentId]} ${lineSet[agentId][phraseIndex].replace("{symbol}", displaySymbol)}`;
 
   return entry(
     AGENT_HEARTBEAT_KIND,
     now,
     `heartbeat:${agentId}:${symbol}:${phraseIndex}`,
-    "巡检心跳",
+    TITLE_COPY[locale].agent_heartbeat,
     content,
     {
       agentId,
@@ -268,11 +344,26 @@ function fallbackAgentLine(agentId: AgentId, symbol: string, change24h?: number)
   return `${displaySymbol} ${moveText}先看高低位是否失速，极端区不接第一刀。`;
 }
 
+function fallbackAgentLineEn(agentId: AgentId, symbol: string, change24h?: number): string {
+  const displaySymbol = formatCoinSymbol(symbol);
+  if (agentId === "alpha") {
+    return `${displaySymbol} needs key-level and volume confirmation; no signal, no chase.`;
+  }
+  if (agentId === "beta") {
+    return `${displaySymbol} needs EMA12/13 alignment; only a clean pullback keeps the trend valid.`;
+  }
+  const moveText = Number.isFinite(change24h)
+    ? `after a 24h ${formatChange(change24h ?? 0)} move`
+    : "after volatility expands";
+  return `${displaySymbol} ${moveText}, watch whether the high-low range stalls before mean reversion.`;
+}
+
 function buildAgentDiscussion(
   now: number,
   pool: CoinPoolPayload,
   focus: AgentFocus[],
   signals: SignalRecord[],
+  locale: AgentWatchLocale,
 ): AgentDiscussionEntry | null {
   const focusByAgent = new Map(focus.map((item) => [item.agentId, item]));
   const latestSignal = [...signals].sort((a, b) => b.ts - a.ts)[0] ?? null;
@@ -291,10 +382,14 @@ function buildAgentDiscussion(
     const item = focusByAgent.get(agentId);
     const symbol = item?.symbol ?? fallbackSymbol;
     const ticker = tickerBySymbol.get(symbol.toUpperCase());
-    const source = item
-      ? firstSentence(item.judgment || item.trigger.description)
-      : fallbackAgentLine(agentId, symbol, ticker?.change24h);
-    const content = `${AGENT_DISCUSSION_LABEL[agentId]}：${prefixLeadingCoinSymbol(source, symbol)}`;
+    const source = locale === "en_US"
+      ? fallbackAgentLineEn(agentId, symbol, ticker?.change24h)
+      : item
+        ? firstSentence(item.judgment || item.trigger.description)
+        : fallbackAgentLine(agentId, symbol, ticker?.change24h);
+    const label = locale === "en_US" ? AGENT_DISCUSSION_LABEL_EN[agentId] : AGENT_DISCUSSION_LABEL[agentId];
+    const separator = locale === "en_US" ? ": " : "：";
+    const content = `${label}${separator}${prefixLeadingCoinSymbol(source, symbol)}`;
     return { agentId, content, symbol };
   });
 
@@ -310,7 +405,9 @@ function buildAgentDiscussion(
     id: updateId(AGENT_DISCUSSION_KIND, semanticKey, now),
     ts: now,
     topic,
-    summary: `三方会诊：Alpha 看突破，Beta 看趋势，Gamma 看极端；当前围绕 ${topic} 等确认。`,
+    summary: locale === "en_US"
+      ? `Agent huddle: Alpha watches breakouts, Beta watches trends, Gamma watches extremes; current checks focus on ${topic}.`
+      : `三方会诊：Alpha 看突破，Beta 看趋势，Gamma 看极端；当前围绕 ${topic} 等确认。`,
     dedupeKey: `agent_discussion:${semanticKey}`,
     symbol: symbols[0],
     symbols,
@@ -325,13 +422,14 @@ function buildByKind(
   pool: CoinPoolPayload,
   focus: AgentFocus[],
   signals: SignalRecord[],
+  locale: AgentWatchLocale,
 ): WatchUpdateEntry | AgentDiscussionEntry | null {
-  if (kind === "market_digest") return buildMarketDigest(now, pool);
-  if (kind === "focus_update") return buildFocusUpdate(now, focus);
-  if (kind === "condition_update") return buildConditionUpdate(now, focus);
-  if (kind === AGENT_HEARTBEAT_KIND) return buildAgentHeartbeat(now, pool, focus);
-  if (kind === AGENT_DISCUSSION_KIND) return buildAgentDiscussion(now, pool, focus, signals);
-  return buildQuietObservation(now, focus, signals);
+  if (kind === "market_digest") return buildMarketDigest(now, pool, locale);
+  if (kind === "focus_update") return buildFocusUpdate(now, focus, locale);
+  if (kind === "condition_update") return buildConditionUpdate(now, focus, locale);
+  if (kind === AGENT_HEARTBEAT_KIND) return buildAgentHeartbeat(now, pool, focus, locale);
+  if (kind === AGENT_DISCUSSION_KIND) return buildAgentDiscussion(now, pool, focus, signals, locale);
+  return buildQuietObservation(now, focus, signals, locale);
 }
 
 export function buildWatchSupplementalEntry({
@@ -341,6 +439,7 @@ export function buildWatchSupplementalEntry({
   signals,
   existingEntries,
   preferredKind,
+  locale = "zh_CN",
 }: {
   now: number;
   pool?: CoinPoolPayload;
@@ -348,6 +447,7 @@ export function buildWatchSupplementalEntry({
   signals: SignalRecord[];
   existingEntries: StreamEntry[];
   preferredKind?: SupplementalUpdateKind;
+  locale?: AgentWatchLocale;
 }): WatchUpdateEntry | AgentDiscussionEntry | null {
   if (!pool) return null;
   if (
@@ -366,7 +466,7 @@ export function buildWatchSupplementalEntry({
   ];
 
   for (const kind of orderedKinds) {
-    const update = buildByKind(kind, now, pool, safeFocus, signals);
+    const update = buildByKind(kind, now, pool, safeFocus, signals, locale);
     if (update) return update;
   }
 

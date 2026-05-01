@@ -17,6 +17,10 @@ import {
   directorModeForVisit,
   rememberDirectorEntries,
 } from "../src/modules/agent-watch/utils/watchSessionDirector";
+import {
+  agentWatchRedirectPath,
+  resolveAgentWatchLocale,
+} from "../src/modules/agent-watch/locale";
 import { buildHeroSpeechLines } from "../src/modules/landing/HeroScene/heroSpeechLines";
 import type {
   AgentFocus,
@@ -122,6 +126,12 @@ assert.equal(formatCoinSymbol("—"), "—");
 assert.equal(prefixLeadingCoinSymbol("AI 24h -41.1%（机会区异动）", "AI"), "$AI 24h -41.1%（机会区异动）");
 assert.equal(prefixLeadingCoinSymbol("AI Agent 正在分析", "BTC"), "AI Agent 正在分析");
 assert.equal(prefixLeadingCoinSymbol("AI Agent 正在分析", "AI"), "AI Agent 正在分析");
+assert.equal(resolveAgentWatchLocale("zh_CN"), "zh_CN");
+assert.equal(resolveAgentWatchLocale("en_US"), "en_US");
+assert.equal(resolveAgentWatchLocale("ja_JP"), "en_US");
+assert.equal(agentWatchRedirectPath("zh_CN"), null);
+assert.equal(agentWatchRedirectPath("en_US"), null);
+assert.equal(agentWatchRedirectPath("zh_TW"), "/en_US/agent");
 
 const digest = buildWatchSupplementalEntry({
   now: 1_714_000_020_000,
@@ -249,6 +259,23 @@ assert.deepEqual(
     { agentId: "gamma", symbol: "AI", current: "0.12" },
   ],
 );
+
+const englishDiscussion = buildWatchSupplementalEntry({
+  now: 1_714_000_180_000,
+  pool,
+  focus,
+  signals: [],
+  existingEntries: [],
+  preferredKind: "agent_discussion",
+  locale: "en_US",
+});
+assert.ok(englishDiscussion);
+assert.equal(englishDiscussion.kind, "agent_discussion");
+assert.match(englishDiscussion.summary, /Alpha watches breakouts/);
+const englishDiscussionChat = buildStreamChatMessages(englishDiscussion, pool, "en_US");
+assert.equal(englishDiscussionChat[0].tag, "Agent huddle");
+assert.equal(englishDiscussionChat[0].points[0].label, "Current");
+assert.ok(englishDiscussionChat.every((item) => !/[\u4e00-\u9fff]/.test(item.content)));
 
 const discussionDisplayEntries = splitStreamEntryForDisplay(discussion);
 assert.equal(discussionDisplayEntries.length, 3);

@@ -2,6 +2,7 @@
 
 import { useReducedMotion } from "framer-motion";
 import type { SignalRecord } from "../types";
+import type { AgentWatchLocale } from "../locale";
 import { priceDeltaColor } from "../utils/priceDeltaColor";
 import { formatCoinSymbol, prefixLeadingCoinSymbol } from "../utils/symbolFormat";
 
@@ -12,6 +13,15 @@ const SIGNAL_TYPE_LABEL: Record<SignalRecord["type"], string> = {
   breakout: "BREAKOUT",
   ema_cross: "EMA",
   range_change: "RANGE",
+};
+
+const SIGNAL_DESCRIPTION_EN: Record<SignalRecord["type"], string> = {
+  volume_spike: "5m volume spike",
+  near_high: "testing recent high",
+  near_low: "testing recent low",
+  breakout: "breakout move",
+  ema_cross: "EMA structure changed",
+  range_change: "24h range change",
 };
 
 const SEVERITY_DOT: Record<SignalRecord["severity"], string> = {
@@ -40,14 +50,38 @@ function formatTime(ts: number): string {
   )}`;
 }
 
-function SignalChip({ signal }: { signal: SignalRecord }) {
+function signalDescription(signal: SignalRecord, locale: AgentWatchLocale): string {
+  if (locale === "en_US") {
+    const symbol = formatCoinSymbol(signal.symbol);
+    if (typeof signal.payload.change24h === "number") {
+      return `${symbol} 24h ${signal.payload.change24h >= 0 ? "+" : ""}${signal.payload.change24h.toFixed(1)}%`;
+    }
+    if (typeof signal.payload.volumeRatio === "number") {
+      return `${symbol} ${SIGNAL_DESCRIPTION_EN[signal.type]} ${signal.payload.volumeRatio.toFixed(1)}x`;
+    }
+    if (typeof signal.payload.distancePct === "number") {
+      return `${symbol} ${SIGNAL_DESCRIPTION_EN[signal.type]} ${signal.payload.distancePct.toFixed(2)}% away`;
+    }
+    return `${symbol} ${SIGNAL_DESCRIPTION_EN[signal.type]}`;
+  }
+
+  return signal.payload.description
+    ? prefixLeadingCoinSymbol(signal.payload.description, signal.symbol)
+    : `${formatCoinSymbol(signal.symbol)} ${signal.type}`;
+}
+
+function SignalChip({
+  signal,
+  locale,
+}: {
+  signal: SignalRecord;
+  locale: AgentWatchLocale;
+}) {
   const descriptionClass =
     typeof signal.payload.change24h === "number"
       ? priceDeltaColor(signal.payload.change24h)
       : SEVERITY_TEXT[signal.severity];
-  const description = signal.payload.description
-    ? prefixLeadingCoinSymbol(signal.payload.description, signal.symbol)
-    : `${formatCoinSymbol(signal.symbol)} ${signal.type}`;
+  const description = signalDescription(signal, locale);
 
   return (
     <div
@@ -73,12 +107,14 @@ function SignalChip({ signal }: { signal: SignalRecord }) {
 export function MarketEventFeed({
   signals,
   labels,
+  locale = "zh_CN",
 }: {
   signals: SignalRecord[];
   labels: {
     title: string;
     empty: string;
   };
+  locale?: AgentWatchLocale;
 }) {
   const reduceMotion = useReducedMotion();
   const latest = [...signals].sort((a, b) => b.ts - a.ts).slice(0, 12);
@@ -123,6 +159,7 @@ export function MarketEventFeed({
             <SignalChip
               key={`${signal.id}-${index < latest.length ? "a" : "b"}`}
               signal={signal}
+              locale={locale}
             />
           ))}
         </div>
