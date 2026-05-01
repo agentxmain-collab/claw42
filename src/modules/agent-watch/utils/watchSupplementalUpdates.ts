@@ -295,7 +295,7 @@ function buildAgentDiscussion(
       ? firstSentence(item.judgment || item.trigger.description)
       : fallbackAgentLine(agentId, symbol, ticker?.change24h);
     const content = `${AGENT_DISCUSSION_LABEL[agentId]}：${prefixLeadingCoinSymbol(source, symbol)}`;
-    return { agentId, content };
+    return { agentId, content, symbol };
   });
 
   const semanticKey = [

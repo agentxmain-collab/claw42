@@ -3,6 +3,7 @@ import type {
   CoinMarketContext,
   CoinPoolPayload,
   CoinTickerEntry,
+  StreamResponse,
   StreamEntry,
 } from "../types";
 import { formatCoinSymbol, prefixCoinSymbolsInText, prefixLeadingCoinSymbol } from "./symbolFormat";
@@ -129,6 +130,16 @@ function uniqueSymbols(symbols: Array<string | undefined>): string[] {
   return result;
 }
 
+function discussionSymbolsForResponse(
+  entrySymbols: string[],
+  response: StreamResponse,
+): string[] {
+  const mentionedSymbol = entrySymbols.find((symbol) =>
+    response.content.includes(formatCoinSymbol(symbol)),
+  );
+  return uniqueSymbols([response.symbol, mentionedSymbol, entrySymbols[0]]).slice(0, 1);
+}
+
 function message({
   id,
   ts,
@@ -182,7 +193,7 @@ export function buildStreamChatMessages(
         ts: entry.ts,
         agentId: response.agentId,
         content: response.content,
-        symbols: entry.symbols,
+        symbols: discussionSymbolsForResponse(entry.symbols, response),
         tag: "三方会诊",
         pool,
       }),

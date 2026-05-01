@@ -143,6 +143,7 @@ export interface StreamMessage {
 export interface StreamResponse {
   agentId: AgentId;
   content: string;
+  symbol?: string;
 }
 
 export interface AgentMessage {

@@ -237,6 +237,18 @@ assert.equal(discussionChat.length, 3);
 assert.deepEqual(discussionChat.map((item) => item.agentId), ["alpha", "beta", "gamma"]);
 assert.ok(discussionChat.every((item) => item.tag === "三方会诊"));
 assert.ok(discussionChat.every((item) => item.points.length >= 3));
+assert.deepEqual(
+  discussionChat.map((item) => ({
+    agentId: item.agentId,
+    symbol: item.symbols[0],
+    current: item.points.find((point) => point.label === "现价")?.value,
+  })),
+  [
+    { agentId: "alpha", symbol: "DOGE", current: "0.18" },
+    { agentId: "beta", symbol: "BTC", current: "75,818" },
+    { agentId: "gamma", symbol: "AI", current: "0.12" },
+  ],
+);
 
 const discussionDisplayEntries = splitStreamEntryForDisplay(discussion);
 assert.equal(discussionDisplayEntries.length, 3);
