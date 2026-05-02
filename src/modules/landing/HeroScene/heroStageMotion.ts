@@ -6,11 +6,11 @@ interface StageRectLike {
 }
 
 const DEPTH_MAX_OFFSET = {
-  bg: 30,
-  horizon: 22,
+  bg: 0,
+  horizon: 0,
   robot: -6,
   coin: -10,
-  pedestal: 6,
+  pedestal: 0,
 } as const;
 
 function clamp(value: number, min: number, max: number) {

@@ -58,10 +58,7 @@ export function HeroScene() {
   const [heroCopied, setHeroCopied] = useState(false);
   const { data: tickerData } = useMarketTicker({ enabled: true, intervalMs: 60_000 });
   const scrollDepth = useHeroScrollDepth(stageRef, reduceMotion);
-  const stageStyle = {
-    ...heroStageCssVars(scrollDepth),
-    "--claw42-hero-backdrop-lift": isMobile ? "0px" : "clamp(42px, 6.5vh, 84px)",
-  };
+  const stageStyle = heroStageCssVars(scrollDepth);
 
   const handleHeroCtaClick = async () => {
     try {
@@ -105,7 +102,7 @@ export function HeroScene() {
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
-          backgroundPosition: "center calc(100% - var(--claw42-hero-backdrop-lift, 0px))",
+          backgroundPosition: "center bottom",
           backgroundSize: "cover",
           transform: "translate3d(0, var(--claw42-hero-depth-bg-y, 0px), 0)",
         }}
@@ -128,7 +125,7 @@ export function HeroScene() {
         className="absolute inset-0 z-[8] pointer-events-none"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
-          backgroundPosition: "center calc(100% - var(--claw42-hero-backdrop-lift, 0px))",
+          backgroundPosition: "center bottom",
           backgroundSize: "cover",
           filter: "brightness(1.22) saturate(1.18)",
           mixBlendMode: "screen",
