@@ -59,6 +59,38 @@ function normalizeHeroSpeechLocale(locale: boolean | HeroSpeechLocale): HeroSpee
   return locale;
 }
 
+function trimLineAtBoundary(line: string, limit: number): string {
+  const chars = Array.from(line);
+  if (chars.length <= limit) return line;
+
+  const withoutTrailingParenthetical = line
+    .replace(/\s*[（(][^）)]*[）)]\s*$/, "")
+    .replace(/\s*[（(][^）)]*$/, "")
+    .trim();
+  if (
+    withoutTrailingParenthetical &&
+    withoutTrailingParenthetical !== line &&
+    Array.from(withoutTrailingParenthetical).length >= 8
+  ) {
+    return withoutTrailingParenthetical;
+  }
+
+  const limited = chars.slice(0, limit).join("").trim();
+  const boundary = Math.max(
+    limited.lastIndexOf("。"),
+    limited.lastIndexOf("；"),
+    limited.lastIndexOf(";"),
+    limited.lastIndexOf("，"),
+    limited.lastIndexOf(","),
+  );
+
+  if (boundary >= Math.min(18, Math.floor(limit * 0.45))) {
+    return limited.slice(0, boundary).trim();
+  }
+
+  return limited.replace(/\s*[（(][^）)]*$/, "").trim();
+}
+
 export function cleanRobotAnalysisLine(
   content: string,
   locale: HeroSpeechLocale = "zh_CN",
@@ -70,7 +102,7 @@ export function cleanRobotAnalysisLine(
     .trim();
   const [firstClause] = cleaned.split(/[。；;]/);
   const line = (firstClause || cleaned).trim();
-  return Array.from(line).slice(0, locale === "en_US" ? 72 : 42).join("");
+  return trimLineAtBoundary(line, locale === "en_US" ? 88 : 56);
 }
 
 function uniqueUsableLines(lines: string[], locale: HeroSpeechLocale): string[] {

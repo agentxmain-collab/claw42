@@ -23,6 +23,7 @@ import {
 } from "../src/modules/agent-watch/locale";
 import {
   buildHeroSpeechLines,
+  cleanRobotAnalysisLine,
   mergeHeroSpeechLinePools,
 } from "../src/modules/landing/HeroScene/heroSpeechLines";
 import type {
@@ -205,6 +206,12 @@ const heroLines = buildHeroSpeechLines(
   true,
 );
 assert.ok(heroLines?.some((line) => line.startsWith("$AI 24h -44.7%")));
+
+const compactHeroLine = cleanRobotAnalysisLine(
+  "BTC、ETH、SOL同步接近近期高位，但24h涨跌极窄（BTC+0.09%、ETH+0.12%、SOL-0.03%）",
+  "zh_CN",
+);
+assert.equal(compactHeroLine, "BTC、ETH、SOL同步接近近期高位，但24h涨跌极窄");
 
 const englishHeroLines = buildHeroSpeechLines(
   {
