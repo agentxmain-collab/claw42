@@ -4,11 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchMarketEvents } from "../api/llmClient";
 import type { SignalRecord } from "../types";
 
-export function useMarketEventFeed({
-  enabled = true,
-  intervalMs = 30_000,
-  limit = 12,
-} = {}) {
+export function useMarketEventFeed({ enabled = true, intervalMs = 30_000, limit = 12 } = {}) {
   const [signals, setSignals] = useState<SignalRecord[]>([]);
   const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<Error | null>(null);

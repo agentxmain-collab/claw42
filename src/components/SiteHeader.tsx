@@ -8,9 +8,9 @@ export function SiteHeader() {
   const { locale, t } = useI18n();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-[80] h-[72px] bg-black/80 backdrop-blur-xl border-b border-white/[0.06]">
-      <div className="max-w-[1440px] mx-auto h-full flex items-center justify-between px-6 md:px-10 lg:px-16">
-        <a href={`/${locale}`} className="flex items-center gap-3 shrink-0">
+    <nav className="fixed left-0 right-0 top-0 z-[80] h-[72px] border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
+      <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between px-6 md:px-10 lg:px-16">
+        <a href={`/${locale}`} className="flex shrink-0 items-center gap-3">
           {/*
            * 双层叠加：底层完整 logo（深灰线条 + 蓝色），顶层仅蓝色像素分离版加 drop-shadow 呼吸。
            * glow 只从眼睛/嘴/42 这些蓝色部分发出，深灰线条不参与发光。
@@ -43,7 +43,7 @@ export function SiteHeader() {
             className="hidden h-11 items-center rounded-full px-4 text-sm font-semibold text-white/80 transition-all hover:bg-white/[0.08] hover:text-white md:inline-flex"
           >
             <span className="relative flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-cw-green animate-pulse" />
+              <span className="bg-cw-green h-2 w-2 animate-pulse rounded-full" />
               {t.nav.agentLiveMenuItem}
             </span>
           </a>

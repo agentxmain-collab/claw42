@@ -3,10 +3,7 @@ import betaSkill from "./skills/beta.json";
 import gammaSkill from "./skills/gamma.json";
 import type { AgentDisplayMeta, AgentId, AgentSkill } from "./types";
 
-export const AGENT_COLOR_TOKEN: Record<
-  AgentId,
-  { primary: string; soft: string; glow: string }
-> = {
+export const AGENT_COLOR_TOKEN: Record<AgentId, { primary: string; soft: string; glow: string }> = {
   alpha: {
     primary: "#ff5f5f",
     soft: "rgba(255, 95, 95, 0.18)",

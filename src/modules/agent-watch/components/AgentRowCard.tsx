@@ -45,7 +45,7 @@ export function AgentRowCard({
 
   return (
     <div
-      className="flex min-h-[180px] max-h-[220px] flex-col gap-2 overflow-hidden rounded-2xl bg-[#111] p-4 transition-colors hover:bg-white/[0.03]"
+      className="flex max-h-[220px] min-h-[180px] flex-col gap-2 overflow-hidden rounded-2xl bg-[#111] p-4 transition-colors hover:bg-white/[0.03]"
       style={{
         border: `1px solid ${token.soft}`,
         borderLeft: `2px solid ${token.primary}`,

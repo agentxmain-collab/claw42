@@ -52,10 +52,7 @@ export function I18nProvider({
       document.cookie = `claw42-locale=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
 
       const segments = pathname.split("/").filter(Boolean);
-      if (
-        segments.length > 0 &&
-        (LOCALES as readonly string[]).includes(segments[0])
-      ) {
+      if (segments.length > 0 && (LOCALES as readonly string[]).includes(segments[0])) {
         segments[0] = next;
       } else {
         segments.unshift(next);
@@ -63,7 +60,7 @@ export function I18nProvider({
 
       router.push("/" + segments.join("/"));
     },
-    [pathname, router]
+    [pathname, router],
   );
 
   return (

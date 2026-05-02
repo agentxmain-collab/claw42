@@ -73,4 +73,3 @@ export function getSignalCount(): number {
   pruneBuffer();
   return signalBuffer.length;
 }
-

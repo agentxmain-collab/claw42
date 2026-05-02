@@ -24,13 +24,7 @@ function formatPrice(symbol: CoinSymbol, tickers?: TickerMap) {
   })}`;
 }
 
-export function CoinModal({
-  symbol,
-  onClose,
-}: {
-  symbol: CoinSymbol;
-  onClose: () => void;
-}) {
+export function CoinModal({ symbol, onClose }: { symbol: CoinSymbol; onClose: () => void }) {
   const { locale, t } = useI18n();
   const isZh = locale === "zh_CN";
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -122,8 +116,11 @@ export function CoinModal({
         <div className="mt-6 space-y-3">
           {isZh && comments ? (
             AGENT_ORDER.map((agentId) => (
-              <div key={agentId} className="rounded-xl border border-white/10 bg-black/25 px-4 py-3">
-                <p className="text-sm leading-relaxed text-white/78">
+              <div
+                key={agentId}
+                className="rounded-xl border border-white/10 bg-black/25 px-4 py-3"
+              >
+                <p className="text-white/78 text-sm leading-relaxed">
                   <span style={{ color: AGENT_META[agentId].color }} className="font-bold">
                     {AGENT_META[agentId].name}：
                   </span>
@@ -148,7 +145,7 @@ export function CoinModal({
           </button>
           <a
             href={`/${locale}/agent`}
-            className="h-11 flex-1 rounded-xl bg-[#7c5cff] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#8e6bff] inline-flex items-center justify-center"
+            className="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-[#7c5cff] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#8e6bff]"
           >
             {t.coinModal.goToWatchCta} →
           </a>

@@ -81,7 +81,8 @@ export function formatSummaryForPrompt(summary: BufferSummary): string {
     summary.topAlerts.forEach((alert) => {
       lines.push(
         `- [${new Date(alert.ts).toISOString().slice(11, 16)}] ${
-          alert.payload.description ?? `${alert.symbol} ${SIGNAL_TYPE_LABELS[alert.type] ?? alert.type}`
+          alert.payload.description ??
+          `${alert.symbol} ${SIGNAL_TYPE_LABELS[alert.type] ?? alert.type}`
         }`,
       );
     });

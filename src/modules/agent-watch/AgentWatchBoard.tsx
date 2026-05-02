@@ -7,12 +7,7 @@ import { AGENT_ORDER } from "./agents";
 import { useAgentAnalysis } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
 import { useMarketEventFeed } from "./hooks/useMarketEventFeed";
-import type {
-  AgentId,
-  AgentStatus,
-  AgentWatchMessage,
-  HistoryMessageEntry,
-} from "./types";
+import type { AgentId, AgentStatus, AgentWatchMessage, HistoryMessageEntry } from "./types";
 import { AgentRowCard } from "./components/AgentRowCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
 import { MarketEventFeed } from "./components/MarketEventFeed";
@@ -123,26 +118,32 @@ export function AgentWatchBoard() {
       const typingTimer = window.setTimeout(() => {
         setTypingAgent(item.agentId);
       }, index * 1600);
-      const appendTimer = window.setTimeout(() => {
-        setTypingAgent(null);
-        setSpeakingAgent(item.agentId);
-        setLiveQueue((current) =>
-          keepFivePerAgent(
-            dedupeAgentMessages([
-              ...current,
-              {
-                id: `${data.generatedAt}-${item.agentId}-${index}`,
-                agentId: item.agentId,
-                content: item.content,
-                timestamp: data.generatedAt,
-              },
-            ]),
-          ),
-        );
-      }, index * 1600 + 800);
-      const clearSpeakingTimer = window.setTimeout(() => {
-        setSpeakingAgent((current) => (current === item.agentId ? null : current));
-      }, index * 1600 + 1900);
+      const appendTimer = window.setTimeout(
+        () => {
+          setTypingAgent(null);
+          setSpeakingAgent(item.agentId);
+          setLiveQueue((current) =>
+            keepFivePerAgent(
+              dedupeAgentMessages([
+                ...current,
+                {
+                  id: `${data.generatedAt}-${item.agentId}-${index}`,
+                  agentId: item.agentId,
+                  content: item.content,
+                  timestamp: data.generatedAt,
+                },
+              ]),
+            ),
+          );
+        },
+        index * 1600 + 800,
+      );
+      const clearSpeakingTimer = window.setTimeout(
+        () => {
+          setSpeakingAgent((current) => (current === item.agentId ? null : current));
+        },
+        index * 1600 + 1900,
+      );
       timersRef.current.push(typingTimer, appendTimer, clearSpeakingTimer);
     });
 
@@ -183,11 +184,7 @@ export function AgentWatchBoard() {
     >
       <div className="space-y-5">
         <TopicHeader t={t} />
-        <CoinTickerStrip
-          pool={data?.pool}
-          tickers={data?.tickers}
-          labels={t.agentWatch.coinPool}
-        />
+        <CoinTickerStrip pool={data?.pool} tickers={data?.tickers} labels={t.agentWatch.coinPool} />
         <MarketEventFeed signals={marketSignals} labels={t.agentWatch.marketEvent} />
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

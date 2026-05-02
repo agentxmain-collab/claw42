@@ -50,9 +50,7 @@ function SignalChip({ signal }: { signal: SignalRecord }) {
       className={`flex shrink-0 items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.04] px-2.5 py-1.5 transition-colors hover:bg-white/[0.06] ${SEVERITY_CHIP[signal.severity]}`}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[signal.severity]}`} />
-      <span className="shrink-0 font-mono text-[10px] text-white/40">
-        {formatTime(signal.ts)}
-      </span>
+      <span className="shrink-0 font-mono text-[10px] text-white/40">{formatTime(signal.ts)}</span>
       <span className="shrink-0 font-mono text-[10px] font-bold text-white/65">
         {signal.symbol}
       </span>
@@ -79,7 +77,8 @@ export function MarketEventFeed({
   const reduceMotion = useReducedMotion();
   const latest = [...signals].sort((a, b) => b.ts - a.ts).slice(0, 12);
   const marqueeSignals = reduceMotion || latest.length <= 1 ? latest : [...latest, ...latest];
-  const animation = reduceMotion || latest.length <= 1 ? "none" : "claw42-marquee 60s linear infinite";
+  const animation =
+    reduceMotion || latest.length <= 1 ? "none" : "claw42-marquee 60s linear infinite";
 
   if (latest.length === 0) {
     return (
@@ -116,10 +115,7 @@ export function MarketEventFeed({
           }}
         >
           {marqueeSignals.map((signal, index) => (
-            <SignalChip
-              key={`${signal.id}-${index < latest.length ? "a" : "b"}`}
-              signal={signal}
-            />
+            <SignalChip key={`${signal.id}-${index < latest.length ? "a" : "b"}`} signal={signal} />
           ))}
         </div>
       </div>

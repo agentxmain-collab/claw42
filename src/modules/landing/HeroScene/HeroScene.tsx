@@ -91,10 +91,10 @@ export function HeroScene() {
   return (
     <section
       ref={stageRef}
-      className="claw42-hero-scene relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden bg-black pt-[72px] md:pt-[80px]"
+      className="claw42-hero-scene relative aspect-[4/5] w-full overflow-hidden bg-black pt-[72px] md:aspect-[21/9] md:pt-[80px]"
     >
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background: `
             radial-gradient(circle at 50% 40%, rgba(115, 90, 255, 0.84) 0%, rgba(96, 70, 235, 0.64) 18%, rgba(58, 36, 150, 0.48) 36%, rgba(18, 12, 42, 0.18) 56%, rgba(0, 0, 0, 0) 74%),
@@ -103,14 +103,14 @@ export function HeroScene() {
         }}
       />
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             "linear-gradient(180deg, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.84) 10%, rgba(0,0,0,0.28) 24%, rgba(0,0,0,0.1) 34%, rgba(0,0,0,0.08) 66%, rgba(0,0,0,0.34) 80%, rgba(0,0,0,0.8) 92%, rgba(0,0,0,0.98) 100%)",
         }}
       />
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             "radial-gradient(ellipse 128% 88% at 50% 50%, rgba(0,0,0,0) 46%, rgba(0,0,0,0.44) 74%, rgba(0,0,0,0.92) 100%)",
@@ -139,26 +139,26 @@ export function HeroScene() {
       />
 
       {/* z-50 Gradient scrim for title readability */}
-      <div className="absolute inset-x-0 bottom-0 z-50 h-[42%] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-50 h-[42%] bg-gradient-to-t from-black via-black/80 to-transparent" />
 
       {/* z-50 Title + CTA overlay */}
       <div className="claw42-hero-copy absolute bottom-[6%] left-1/2 z-50 flex w-full max-w-4xl -translate-x-1/2 flex-col items-center px-6 text-center">
         <div className="claw42-hero-text flex flex-col items-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
+          <h1 className="mb-4 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[56px]">
             {t.hero.title}
           </h1>
-          <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mb-8 leading-relaxed">
+          <p className="mb-8 max-w-2xl text-sm leading-relaxed text-gray-400 sm:text-base md:text-lg">
             {t.hero.subtitle}
           </p>
         </div>
-        <div className="claw42-hero-actions flex flex-col items-center justify-center gap-4 pointer-events-auto sm:flex-row">
+        <div className="claw42-hero-actions pointer-events-auto flex flex-col items-center justify-center gap-4 sm:flex-row">
           <div className="relative">
             <motion.button
               type="button"
               onClick={handleHeroCtaClick}
               whileHover={reduceMotion ? undefined : { scale: 1.05 }}
               whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-              className="min-w-[11rem] px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
+              className="inline-flex min-w-[11rem] items-center justify-center rounded-xl bg-[#7c5cff] px-8 py-3 text-base font-semibold text-white transition-all hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)]"
             >
               {t.hero.ctaPrimary}
             </motion.button>
@@ -169,7 +169,7 @@ export function HeroScene() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
                   transition={{ duration: 0.18 }}
-                  className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 rounded-md bg-[#7c5cff] text-white text-xs font-semibold shadow-lg z-10"
+                  className="absolute -top-10 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#7c5cff] px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
                 >
                   {t.hero.ctaPrimaryCopiedToast}
                 </motion.div>
@@ -188,7 +188,7 @@ export function HeroScene() {
             }
             whileHover={reduceMotion ? undefined : { scale: 1.05 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="min-w-[11rem] px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
+            className="inline-flex min-w-[11rem] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-8 py-3 text-base font-semibold text-white transition-all hover:bg-white/15"
           >
             {t.hero.ctaSecondary}
           </motion.a>

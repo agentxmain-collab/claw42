@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# claw42
 
-## Getting Started
+加密货币 AI Agent 竞技养成生态对外产品站。
 
-First, run the development server:
+🌐 **Production**: https://claw42.ai
+
+## 技术栈
+
+- Next.js 14.2 (App Router) + React 18 + TypeScript 5
+- Tailwind CSS 3.4 + framer-motion
+- 部署：Vercel
+
+## 开发
+
+### 前置
+
+- Node.js >= 20.0.0（见 `.nvmrc`）
+- npm 10.x（见 `package.json` packageManager）
+
+### 启动
 
 ```bash
+nvm use
+npm install
+cp .env.local.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+开发服务器默认运行在 http://localhost:3000。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Env 变量
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`.env.local` 必填（见 `.env.local.example`）：
 
-## Learn More
+- `DEEPSEEK_API_KEY` — 主 LLM provider
+- `MINIMAX_API_KEY` — 备用 LLM provider
+- `ANTHROPIC_API_KEY` — 第三 fallback
+- `COINGECKO_API_KEY` — 行情数据（demo key 即可）
 
-To learn more about Next.js, take a look at the following resources:
+### 验证
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run verify
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+PR 提交前必须 verify 通过。
 
-## Deploy on Vercel
+## 目录结构
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+见 `ARCHITECTURE.md`。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 文档
+
+- `ARCHITECTURE.md` — 架构 + 禁止路径
+- `dependency-policy.md` — 依赖变更流程
+- `docs/adr/` — 架构决策记录
+- `docs/airy-tasks/` — 任务 spec（按 task-NN 命名）
+- `docs/codex-specs/` — Codex 派发 spec
+- `docs/reviews/` — 评审记录
+
+## 协作
+
+本项目代码主要由 AI（Claude/Codex）写，Dan 路由 + 验收。
+AI 不允许触碰 `ARCHITECTURE.md § 9` 列出的禁止路径，必须显式 Dan 批准。
+
+## License
+
+Private. Owned by Dan.

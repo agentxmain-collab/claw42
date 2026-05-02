@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { ANALYTICS_EVENTS, type AnalyticsValue } from "@/lib/analytics";
+import { rateLimit } from "@/lib/rateLimit";
 
 const MAX_BODY_LENGTH = 4096;
 const MAX_PROPERTY_KEYS = 24;
@@ -37,8 +38,13 @@ function getDeviceType(userAgent: string) {
   return "desktop";
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    if (!rateLimit(`analytics:${ip}`, 60, 60_000)) {
+      return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    }
+
     const rawBody = await request.text();
     if (rawBody.length > MAX_BODY_LENGTH) {
       return NextResponse.json({ ok: false }, { status: 413 });
@@ -60,18 +66,9 @@ export async function POST(request: Request) {
       event: payload.event,
       ts: new Date().toISOString(),
       path: typeof context.path === "string" ? context.path.slice(0, 240) : undefined,
-      referrer:
-        typeof context.referrer === "string"
-          ? context.referrer.slice(0, 240)
-          : undefined,
-      viewport:
-        typeof context.viewport === "string"
-          ? context.viewport.slice(0, 40)
-          : undefined,
-      language:
-        typeof context.language === "string"
-          ? context.language.slice(0, 40)
-          : undefined,
+      referrer: typeof context.referrer === "string" ? context.referrer.slice(0, 240) : undefined,
+      viewport: typeof context.viewport === "string" ? context.viewport.slice(0, 40) : undefined,
+      language: typeof context.language === "string" ? context.language.slice(0, 40) : undefined,
       device: getDeviceType(userAgent),
       utm: cleanProperties(context.utm),
       properties: cleanProperties(payload.properties),
