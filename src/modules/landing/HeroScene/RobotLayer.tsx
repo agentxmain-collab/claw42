@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useAgentAnalysis } from "@/modules/agent-watch/hooks/useAgentAnalysis";
+import { resolveAgentWatchLocale } from "@/modules/agent-watch/locale";
 import type { Pose } from "./useRobotPose";
 import { SpeechBubble } from "./SpeechBubble";
-import { buildHeroSpeechLines } from "./heroSpeechLines";
+import { buildHeroSpeechLines, mergeHeroSpeechLinePools } from "./heroSpeechLines";
 
 interface RobotLayerProps {
   pose: Pose;
@@ -40,6 +41,11 @@ const MOUTH_OVERLAY = {
   width: "33.9%",
 };
 
+const LIVE_LOADING_LINES = {
+  zh_CN: ["正在读取实时市场信号", "Agent 正在扫描行情异动"],
+  en_US: ["Reading live market signals", "Agents are scanning market shifts"],
+};
+
 export function RobotLayer({
   pose,
   mouseX,
@@ -51,9 +57,16 @@ export function RobotLayer({
   const [blink, setBlink] = useState(false);
   const [hovered, setHovered] = useState(false);
   const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
-  const isZh = locale === "zh_CN";
-  const { data } = useAgentAnalysis({ enabled: isZh });
-  const dynamicLines = useMemo(() => buildHeroSpeechLines(data, isZh), [data, isZh]);
+  const agentWatchLocale = resolveAgentWatchLocale(locale);
+  const { data } = useAgentAnalysis({ enabled: true, locale: agentWatchLocale });
+  const liveLines = useMemo(
+    () => buildHeroSpeechLines(data, agentWatchLocale) ?? LIVE_LOADING_LINES[agentWatchLocale],
+    [data, agentWatchLocale],
+  );
+  const dynamicLines = useMemo(
+    () => mergeHeroSpeechLinePools(liveLines, t.hero.speechBubble, locale !== agentWatchLocale),
+    [liveLines, locale, agentWatchLocale, t.hero.speechBubble],
+  );
 
   useEffect(() => {
     if (reduceMotion) return;

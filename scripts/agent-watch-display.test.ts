@@ -21,7 +21,10 @@ import {
   agentWatchRedirectPath,
   resolveAgentWatchLocale,
 } from "../src/modules/agent-watch/locale";
-import { buildHeroSpeechLines } from "../src/modules/landing/HeroScene/heroSpeechLines";
+import {
+  buildHeroSpeechLines,
+  mergeHeroSpeechLinePools,
+} from "../src/modules/landing/HeroScene/heroSpeechLines";
 import type {
   AgentFocus,
   AgentMessage,
@@ -202,6 +205,39 @@ const heroLines = buildHeroSpeechLines(
   true,
 );
 assert.ok(heroLines?.some((line) => line.startsWith("$AI 24h -44.7%")));
+
+const englishHeroLines = buildHeroSpeechLines(
+  {
+    source: "static-fallback",
+    pool: {
+      majors: [],
+      trending: [],
+      opportunity: [{ symbol: "AI", change24h: -44.7 }],
+    },
+    heroBubbles: ["Watching breakout volume"],
+  },
+  "en_US",
+);
+assert.ok(englishHeroLines?.some((line) => line.startsWith("$AI 24h -44.7%")));
+assert.ok(englishHeroLines?.every((line) => !/[\u4e00-\u9fff]/.test(line)));
+
+const mixedLocaleHeroLines = mergeHeroSpeechLinePools(
+  ["$AI 24h -44.7%; extreme move; wait for high-low exhaustion"],
+  [
+    "42 is from The Hitchhiker's Guide to the Galaxy — the ultimate answer to the universe.",
+    "Every candle leaves a clue.",
+    "Claws out when volatility wakes up.",
+  ],
+  true,
+);
+assert.deepEqual(mixedLocaleHeroLines?.slice(0, 2), [
+  "$AI 24h -44.7%; extreme move; wait for high-low exhaustion",
+  "42 is from The Hitchhiker's Guide to the Galaxy — the ultimate answer to the universe.",
+]);
+assert.equal(
+  mergeHeroSpeechLinePools(["$BTC 24h +1.3%; trend needs resonance"], ["Every candle leaves a clue."], false)?.length,
+  1,
+);
 
 const discussion = buildWatchSupplementalEntry({
   now: 1_714_000_180_000,
