@@ -34,9 +34,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // The dynamic locale root owns <body>; it applies the Inter + Noto_Sans_SC font stack.
   return children;
 }

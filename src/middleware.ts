@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const hasLocale = LOCALES.some(
-    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
   );
   if (hasLocale) {
     const [, locale, nextSegment] = pathname.split("/");
@@ -21,8 +21,7 @@ export function middleware(request: NextRequest) {
   }
 
   const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
-  const isValidCookie =
-    cookieLocale && (LOCALES as readonly string[]).includes(cookieLocale);
+  const isValidCookie = cookieLocale && (LOCALES as readonly string[]).includes(cookieLocale);
   const locale = isValidCookie
     ? (cookieLocale as (typeof LOCALES)[number])
     : matchLocale(request.headers.get("accept-language"));

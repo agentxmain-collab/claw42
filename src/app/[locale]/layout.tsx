@@ -36,9 +36,7 @@ export async function generateMetadata({
   return {
     alternates: {
       canonical: `${baseUrl}/${locale}`,
-      languages: Object.fromEntries(
-        LOCALES.map((item) => [HTML_LANG[item], `${baseUrl}/${item}`]),
-      ),
+      languages: Object.fromEntries(LOCALES.map((item) => [HTML_LANG[item], `${baseUrl}/${item}`])),
     },
   };
 }

@@ -31,13 +31,7 @@ interface AnalyticsPayload {
   };
 }
 
-const UTM_KEYS = [
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_content",
-  "utm_term",
-] as const;
+const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
 let posthogInited = false;
 
@@ -55,10 +49,7 @@ function ensurePosthog() {
   posthogInited = true;
 }
 
-function capturePosthog(
-  event: AnalyticsEventName,
-  properties: AnalyticsProperties
-) {
+function capturePosthog(event: AnalyticsEventName, properties: AnalyticsProperties) {
   try {
     ensurePosthog();
     if (posthogInited) posthog.capture(event, properties);
@@ -92,7 +83,7 @@ function getUtmProperties(): AnalyticsProperties | undefined {
 
 function buildPayload(
   event: AnalyticsEventName,
-  properties: AnalyticsProperties
+  properties: AnalyticsProperties,
 ): AnalyticsPayload {
   return {
     event,
@@ -107,10 +98,7 @@ function buildPayload(
   };
 }
 
-export function trackEvent(
-  event: AnalyticsEventName,
-  properties: AnalyticsProperties = {}
-) {
+export function trackEvent(event: AnalyticsEventName, properties: AnalyticsProperties = {}) {
   if (typeof window === "undefined") return;
 
   const body = JSON.stringify(buildPayload(event, properties));
@@ -130,7 +118,9 @@ export function trackEvent(
     body,
     keepalive: true,
     signal: controller.signal,
-  }).catch(() => {
-    // Analytics must never interrupt the user journey.
-  }).finally(() => window.clearTimeout(timeoutId));
+  })
+    .catch(() => {
+      // Analytics must never interrupt the user journey.
+    })
+    .finally(() => window.clearTimeout(timeoutId));
 }

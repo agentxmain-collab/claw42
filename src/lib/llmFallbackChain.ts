@@ -229,9 +229,7 @@ function buildFallbackStream(tickers: TickerMap): StreamMessage[] {
 
 function buildFallbackHeroBubbles(tickers: TickerMap): string[] {
   const seed = fallbackSeed(tickers);
-  return AGENTS.map((agentId, index) =>
-    selectAgentHeroBubble(agentId, seed + index * 7),
-  );
+  return AGENTS.map((agentId, index) => selectAgentHeroBubble(agentId, seed + index * 7));
 }
 
 function buildFallbackComments(): CoinComments {
@@ -256,11 +254,7 @@ function fallbackFocusForAgent(
     .filter((coin) => !RISK_COINS.includes(coin.symbol as CoinSymbol) && coin.symbol !== "USDT")
     .sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))[0];
   const target =
-    agentId === "alpha"
-      ? opportunity
-      : agentId === "beta"
-        ? leader
-        : extremeCandidate ?? null;
+    agentId === "alpha" ? opportunity : agentId === "beta" ? leader : (extremeCandidate ?? null);
   const symbol = target?.symbol ?? "BTC";
   const priceLevel = Number.isFinite(target?.price) ? target.price : undefined;
 
@@ -389,8 +383,7 @@ function pushHistoryFromBatch(payload: AgentAnalysisPayload) {
       (entry) =>
         entry.agentId === item.agentId &&
         entry.content === item.content &&
-        Math.abs(payload.generatedAt - entry.generatedAt) <=
-          HISTORY_DUPLICATE_CONTENT_WINDOW_MS,
+        Math.abs(payload.generatedAt - entry.generatedAt) <= HISTORY_DUPLICATE_CONTENT_WINDOW_MS,
     );
     if (duplicateContent) return;
 
@@ -519,9 +512,7 @@ const CROSS_BANNED_PHRASES: Record<AgentId, string[]> = {
 
 function formatTerminology(skill: AgentSkill): string {
   if (!skill.terminology) return "无强制术语";
-  return `每条至少 ${skill.terminology.minPerMessage} 个：${skill.terminology.required.join(
-    "、",
-  )}`;
+  return `每条至少 ${skill.terminology.minPerMessage} 个：${skill.terminology.required.join("、")}`;
 }
 
 function formatAgentTerminology(agentId: AgentId, skill: AgentSkill): string {
@@ -867,7 +858,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isFocusTriggerType(value: unknown): value is AgentFocus["trigger"]["type"] {
-  return typeof value === "string" && FOCUS_TRIGGER_TYPES.has(value as AgentFocus["trigger"]["type"]);
+  return (
+    typeof value === "string" && FOCUS_TRIGGER_TYPES.has(value as AgentFocus["trigger"]["type"])
+  );
 }
 
 function isFocusFailType(value: unknown): value is AgentFocus["fail"]["type"] {
@@ -953,7 +946,11 @@ function normalizeFocus(
         symbol: triggerSymbol,
         priceLevel: normalizeOptionalNumber(triggerRaw.priceLevel),
         volumeRatio: normalizeOptionalNumber(triggerRaw.volumeRatio),
-        description: normalizeFocusText(triggerRaw.description, `${agentId}.trigger.description`, 140),
+        description: normalizeFocusText(
+          triggerRaw.description,
+          `${agentId}.trigger.description`,
+          140,
+        ),
       },
       fail: {
         type: failRaw.type,
@@ -1010,7 +1007,8 @@ function validateAnalysis(
 
   const normalizedHeroBubbles = heroBubbles.slice(0, 3).map((item) => {
     const content = String(item).slice(0, 100);
-    if (hasUnsupportedV1DataClaim(content)) throw new Error("hero bubble uses unsupported v1 indicator");
+    if (hasUnsupportedV1DataClaim(content))
+      throw new Error("hero bubble uses unsupported v1 indicator");
     if (hasBannedOutputPattern(content)) throw new Error("hero bubble uses banned opener");
     return content;
   });

@@ -31,12 +31,7 @@ function severityForChange(change24h: number): SignalSeverity {
 }
 
 function signalForRangeChange(coin: CoinTickerEntry, now: number): SignalRecord | null {
-  if (
-    !(
-      Math.abs(coin.change24h) >= THRESHOLDS.RANGE_CHANGE_PCT &&
-      coin.category !== "majors"
-    )
-  ) {
+  if (!(Math.abs(coin.change24h) >= THRESHOLDS.RANGE_CHANGE_PCT && coin.category !== "majors")) {
     return null;
   }
 

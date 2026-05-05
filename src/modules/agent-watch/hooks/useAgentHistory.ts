@@ -28,7 +28,9 @@ export function useAgentHistory({
     if (!enabled) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/agents/history?limit=${initialLimit}`, { cache: "no-store" });
+      const response = await fetch(`/api/agents/history?limit=${initialLimit}`, {
+        cache: "no-store",
+      });
       if (!response.ok) throw new Error(`history ${response.status}`);
       const data = (await response.json()) as { entries: HistoryMessageEntry[] };
       if (!cancelledRef.current) {

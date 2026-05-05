@@ -50,9 +50,7 @@ export function isLocale(x: string): x is Locale {
 export function matchLocale(acceptLanguage: string | null): Locale {
   if (!acceptLanguage) return DEFAULT_LOCALE;
 
-  const prefs = acceptLanguage
-    .split(",")
-    .map((s) => s.trim().split(";")[0].toLowerCase());
+  const prefs = acceptLanguage.split(",").map((s) => s.trim().split(";")[0].toLowerCase());
 
   for (const pref of prefs) {
     const normalized = pref.replace("-", "_");

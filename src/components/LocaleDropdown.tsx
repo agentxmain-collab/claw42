@@ -126,11 +126,11 @@ export function LocaleDropdown() {
         aria-expanded={isOpen}
         aria-label="Select language"
         aria-controls={isOpen ? listboxId : undefined}
-        className="h-11 pl-4 pr-9 rounded-full bg-white/[0.08] border border-white/[0.12] hover:bg-white/[0.15] transition-all text-white/90 hover:text-white text-sm font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#7c5cff]/50 relative inline-flex items-center"
+        className="relative inline-flex h-11 cursor-pointer items-center rounded-full border border-white/[0.12] bg-white/[0.08] pl-4 pr-9 text-sm font-semibold text-white/90 transition-all hover:bg-white/[0.15] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#7c5cff]/50"
       >
         <span>{LOCALE_LABELS[locale].native}</span>
         <svg
-          className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70 transition-transform ${
+          className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 transition-transform ${
             isOpen ? "rotate-180" : ""
           } ${reduceMotion ? "transition-none" : ""}`}
           fill="none"
@@ -157,7 +157,7 @@ export function LocaleDropdown() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: reduceMotion ? 0 : -4 }}
             transition={{ duration: reduceMotion ? 0 : 0.15 }}
-            className="absolute right-0 top-[calc(100%+8px)] min-w-[240px] max-h-[360px] overflow-y-auto py-2 rounded-xl bg-[#111] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] z-50 focus:outline-none"
+            className="absolute right-0 top-[calc(100%+8px)] z-50 max-h-[360px] min-w-[240px] overflow-y-auto rounded-xl border border-white/10 bg-[#111] py-2 shadow-[0_20px_60px_rgba(0,0,0,0.6)] focus:outline-none"
           >
             {LOCALES.map((item) => {
               const isSelected = item === locale;
@@ -171,16 +171,14 @@ export function LocaleDropdown() {
                   aria-selected={isSelected}
                   onClick={() => handleSelect(item)}
                   onMouseEnter={() => setActiveLocale(item)}
-                  className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center justify-between gap-3 border-l-2 whitespace-nowrap ${
+                  className={`flex cursor-pointer items-center justify-between gap-3 whitespace-nowrap border-l-2 px-4 py-2.5 text-sm transition-colors ${
                     isSelected
-                      ? "bg-[#7c5cff]/15 text-[#c4b0ff] border-[#7c5cff]"
-                      : "text-white/80 hover:bg-white/5 hover:text-white border-transparent"
+                      ? "border-[#7c5cff] bg-[#7c5cff]/15 text-[#c4b0ff]"
+                      : "border-transparent text-white/80 hover:bg-white/5 hover:text-white"
                   } ${isActive && !isSelected ? "bg-white/5 text-white" : ""}`}
                 >
                   <span className="font-medium">{LOCALE_LABELS[item].native}</span>
-                  <span className="text-xs text-white/40 shrink-0">
-                    {LOCALE_LABELS[item].en}
-                  </span>
+                  <span className="shrink-0 text-xs text-white/40">{LOCALE_LABELS[item].en}</span>
                 </li>
               );
             })}

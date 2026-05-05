@@ -1,12 +1,7 @@
 export type CoinSymbol = "BTC" | "ETH" | "SOL" | "USDT";
 export type AgentId = "alpha" | "beta" | "gamma";
 export type AgentStatus = "thinking" | "speaking" | "idle";
-export type AnalysisSource =
-  | "minimax"
-  | "deepseek"
-  | "claude"
-  | "cache"
-  | "static-fallback";
+export type AnalysisSource = "minimax" | "deepseek" | "claude" | "cache" | "static-fallback";
 export type ProviderSource = "minimax" | "deepseek" | "claude";
 
 export interface TickerData {

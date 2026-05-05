@@ -26,7 +26,7 @@ export function MessageBubble({ message }: { message: AgentWatchMessage }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-bold text-white">{meta.name}</span>
-          <span className="rounded-full border border-[#7c5cff]/30 bg-[#7c5cff]/12 px-2 py-0.5 text-[10px] font-semibold text-[#b49cff]">
+          <span className="bg-[#7c5cff]/12 rounded-full border border-[#7c5cff]/30 px-2 py-0.5 text-[10px] font-semibold text-[#b49cff]">
             LIVE
           </span>
           <span className="font-mono text-[11px] text-white/35">{timeLabel}</span>
@@ -39,7 +39,7 @@ export function MessageBubble({ message }: { message: AgentWatchMessage }) {
             boxShadow: `0 0 0 1px ${token.soft}, 0 8px 24px ${token.glow}`,
           }}
         >
-          <p className="text-sm leading-relaxed text-white/82">{message.content}</p>
+          <p className="text-white/82 text-sm leading-relaxed">{message.content}</p>
         </div>
       </div>
     </motion.div>
