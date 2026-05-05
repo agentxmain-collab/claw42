@@ -1,7 +1,11 @@
 import type { AgentAnalysisPayload, MarketEventPayload, MarketTickerPayload } from "../types";
+import type { AgentWatchLocale } from "../locale";
 
-export async function fetchAgentAnalysis(signal?: AbortSignal): Promise<AgentAnalysisPayload> {
-  const response = await fetch("/api/agents/analysis", {
+export async function fetchAgentAnalysis(
+  signal?: AbortSignal,
+  locale: AgentWatchLocale = "zh_CN",
+): Promise<AgentAnalysisPayload> {
+  const response = await fetch(`/api/agents/analysis?locale=${locale}`, {
     method: "GET",
     headers: { Accept: "application/json" },
     cache: "no-store",

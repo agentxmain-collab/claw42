@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { trackEvent } from "@/lib/analytics";
 import { fadeUpVariants, getFadeUpTransition, motionViewport } from "@/lib/motion";
+import DailyBriefCard from "@/modules/landing/DailyBriefCard";
 
 function DailyReportInput() {
   const { t, locale } = useI18n();
@@ -30,7 +31,7 @@ function DailyReportInput() {
         type="button"
         onClick={handleClick}
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-        className="min-h-[48px] w-full cursor-pointer rounded-lg border border-white/10 bg-[#0a0a0a] px-4 py-3 text-left text-sm text-gray-400 transition-colors hover:border-[#7c5cff]/40 hover:text-gray-300"
+        className="w-full min-h-[48px] text-left bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3 text-sm text-gray-400 hover:border-[#7c5cff]/40 hover:text-gray-300 transition-colors cursor-pointer"
       >
         {t.scenarios.daily.inputPlaceholder}
       </motion.button>
@@ -41,38 +42,12 @@ function DailyReportInput() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
             transition={{ duration: 0.18 }}
-            className="absolute -top-10 left-0 rounded-md bg-[#7c5cff] px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
+            className="absolute -top-10 left-0 px-3 py-1.5 rounded-md bg-[#7c5cff] text-white text-xs font-semibold shadow-lg"
           >
             {t.scenarios.daily.copiedToast}
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function TypingDots() {
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <div className="flex items-end gap-1 pb-0.5">
-      {[0, 1, 2].map((i) =>
-        reduceMotion ? (
-          <span key={i} className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] opacity-50" />
-        ) : (
-          <motion.span
-            key={i}
-            className="h-1.5 w-1.5 rounded-full bg-[#a78bfa]"
-            animate={{ y: [0, -3, 0], opacity: [0.3, 1, 0.3] }}
-            transition={{
-              duration: 1.2,
-              repeat: Infinity,
-              delay: i * 0.15,
-              ease: "easeInOut",
-            }}
-          />
-        ),
-      )}
     </div>
   );
 }
@@ -103,17 +78,19 @@ function DailyReportCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-      className="card-glow h-full rounded-2xl border border-white/10 bg-[#111] p-6 transition-[box-shadow,border-color,background-color] duration-500 md:p-8"
+      className="card-glow h-full bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 transition-[box-shadow,border-color,background-color] duration-500"
     >
-      <div className="grid h-full grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2">
-        <div className="flex h-full flex-col">
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <h3 className="text-xl font-bold text-white md:text-2xl">{t.scenarios.daily.title}</h3>
-            <span className="rounded-full border border-[#7c5cff]/30 bg-[#7c5cff]/20 px-2.5 py-1 text-xs font-bold text-[#d7ccff]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 h-full">
+        <div className="flex flex-col h-full">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <h3 className="text-xl md:text-2xl font-bold text-white">
+              {t.scenarios.daily.title}
+            </h3>
+            <span className="px-2.5 py-1 text-xs font-bold bg-[#7c5cff]/20 text-[#d7ccff] rounded-full border border-[#7c5cff]/30">
               {t.scenarios.daily.badge}
             </span>
           </div>
-          <p className="mb-6 text-sm leading-relaxed text-gray-400 md:text-base">
+          <p className="text-gray-400 text-sm md:text-base leading-relaxed mb-6">
             {t.scenarios.daily.desc}
           </p>
 
@@ -125,7 +102,7 @@ function DailyReportCard({ delay }: { delay: number }) {
                 onClick={handleCtaClick}
                 whileHover={reduceMotion ? undefined : { scale: 1.05 }}
                 whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#7c5cff] px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)]"
+                className="px-5 py-3 bg-[#7c5cff] text-white text-sm font-semibold rounded-lg hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)] transition-all shrink-0 inline-flex items-center justify-center"
               >
                 {t.scenarios.daily.cta}
               </motion.button>
@@ -136,7 +113,7 @@ function DailyReportCard({ delay }: { delay: number }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
                     transition={{ duration: 0.18 }}
-                    className="absolute -top-10 left-0 z-10 whitespace-nowrap rounded-md bg-[#7c5cff] px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
+                    className="absolute -top-10 left-0 whitespace-nowrap px-3 py-1.5 rounded-md bg-[#7c5cff] text-white text-xs font-semibold shadow-lg z-10"
                   >
                     {t.scenarios.daily.ctaCopiedToast}
                   </motion.div>
@@ -146,57 +123,7 @@ function DailyReportCard({ delay }: { delay: number }) {
           </div>
         </div>
 
-        <ChatPreviewCard delay={delay + 0.08} />
-      </div>
-    </motion.div>
-  );
-}
-
-function ChatPreviewCard({ delay }: { delay: number }) {
-  const { t } = useI18n();
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <motion.div
-      initial="hidden"
-      whileInView="visible"
-      viewport={motionViewport}
-      variants={fadeUpVariants(reduceMotion)}
-      transition={getFadeUpTransition(delay)}
-      whileHover={reduceMotion ? undefined : { scale: 1.015 }}
-      className="scenario-agent-frame group h-full min-h-[260px]"
-    >
-      <div className="scenario-agent-frame-glow" />
-      <div className="scenario-agent-frame-white" />
-      <div className="scenario-agent-frame-dark" />
-      <div className="scenario-agent-frame-border" />
-
-      <div className="scenario-agent-frame-inner h-full p-5 transition-colors duration-500 group-hover:bg-[#0f0a1a]">
-        <div className="mb-3 flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff8ad4] via-[#a78bfa] to-[#7c5cff] shadow-[0_0_12px_rgba(167,139,250,0.5)]">
-            <span className="text-sm">✨</span>
-          </div>
-          <span className="text-sm font-semibold text-white">{t.scenarios.daily.chatSpeaker}</span>
-          <TypingDots />
-          <span className="ml-auto text-xs text-gray-500">{t.scenarios.daily.chatTime}</span>
-        </div>
-
-        <div className="space-y-2 text-sm text-gray-300">
-          <p className="mb-2 text-sm font-semibold text-white">{t.scenarios.daily.chatTitle}</p>
-          <div className="space-y-1.5 text-xs md:text-sm">
-            {t.scenarios.daily.chatBullets.map((line, i) => (
-              <motion.p
-                key={line}
-                initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={motionViewport}
-                transition={getFadeUpTransition(0.3 + i * 0.06)}
-              >
-                • {line}
-              </motion.p>
-            ))}
-          </div>
-        </div>
+        <DailyBriefCard delay={delay + 0.08} />
       </div>
     </motion.div>
   );
@@ -214,16 +141,16 @@ function RealtimeMonitorCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-      className="card-glow flex-1 rounded-2xl border border-white/10 bg-[#111] p-5 transition-[box-shadow,border-color,background-color] duration-500"
+      className="card-glow flex-1 bg-[#111] border border-white/10 rounded-2xl p-5 transition-[box-shadow,border-color,background-color] duration-500"
     >
-      <h3 className="mb-2 text-base font-semibold text-white md:text-lg">
+      <h3 className="text-base md:text-lg font-semibold text-white mb-2">
         {t.scenarios.realtime.title}
       </h3>
-      <p className="text-xs leading-relaxed text-gray-400 md:text-sm">
+      <p className="text-gray-400 text-xs md:text-sm leading-relaxed">
         {t.scenarios.realtime.desc}
       </p>
-      <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-gray-300">
-        <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" />
+      <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-mono text-gray-300">
+        <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" />
         {t.scenarios.realtime.ticker}
       </div>
     </motion.div>
@@ -242,12 +169,12 @@ function AutoTradeCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-      className="card-glow flex-1 rounded-2xl border border-white/10 bg-[#111] p-5 transition-[box-shadow,border-color,background-color] duration-500"
+      className="card-glow flex-1 bg-[#111] border border-white/10 rounded-2xl p-5 transition-[box-shadow,border-color,background-color] duration-500"
     >
-      <h3 className="mb-2 text-base font-semibold text-white md:text-lg">
+      <h3 className="text-base md:text-lg font-semibold text-white mb-2">
         {t.scenarios.autoTrade.title}
       </h3>
-      <p className="text-xs leading-relaxed text-gray-400 md:text-sm">
+      <p className="text-gray-400 text-xs md:text-sm leading-relaxed">
         {t.scenarios.autoTrade.desc}
       </p>
       <span className="mt-4 inline-flex text-xs font-semibold text-[#d1ff55]">
@@ -268,27 +195,27 @@ export function ScenariosSection() {
       viewport={motionViewport}
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition()}
-      className="relative mx-auto max-w-7xl px-6 py-16 md:px-12 md:py-20 lg:px-20"
+      className="relative max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-16 md:py-20"
     >
-      <div className="pointer-events-none absolute inset-0 -z-10 opacity-60">
+      <div className="absolute inset-0 pointer-events-none -z-10 opacity-60">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,92,255,0.15),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,138,212,0.08),transparent_50%)]" />
       </div>
 
-      <div className="mb-10 text-center">
-        <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl lg:text-5xl">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-white">
           {t.scenarios.sectionTitle}
         </h2>
-        <p className="mx-auto max-w-3xl text-base leading-relaxed text-gray-400 md:text-lg">
+        <p className="text-gray-400 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
           {t.scenarios.sectionSubtitle}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-3">
-        <div className="h-full lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        <div className="lg:col-span-2 h-full">
           <DailyReportCard delay={0} />
         </div>
-        <div className="flex h-full flex-col gap-4">
+        <div className="flex flex-col gap-4 h-full">
           <RealtimeMonitorCard delay={0.16} />
           <AutoTradeCard delay={0.24} />
         </div>

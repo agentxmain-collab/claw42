@@ -135,6 +135,98 @@ export interface StreamMessage {
   content: string;
 }
 
+export interface StreamResponse {
+  agentId: AgentId;
+  content: string;
+  symbol?: string;
+}
+
+export interface AgentMessage {
+  kind: "agent_message";
+  id: string;
+  ts: number;
+  agentId: AgentId;
+  content: string;
+  symbol?: string;
+  symbols?: string[];
+  triggerSignalId: string;
+}
+
+export interface CollectiveEvent {
+  kind: "collective_event";
+  id: string;
+  ts: number;
+  symbols: string[];
+  direction: "up" | "down";
+  signalType: SignalType;
+  description: string;
+  primaryResponse: StreamResponse;
+  echoResponses: StreamResponse[];
+}
+
+export interface FocusEvent {
+  kind: "focus_event";
+  id: string;
+  ts: number;
+  symbol: string;
+  signalType: SignalType;
+  severity: "alert";
+  description: string;
+  primaryResponse: StreamResponse;
+}
+
+export interface ConflictEvent {
+  kind: "conflict_event";
+  id: string;
+  ts: number;
+  symbol: string;
+  description: string;
+  conflictingAgents: [AgentId, AgentId];
+  responses: StreamResponse[];
+}
+
+export type WatchUpdateType =
+  | "market_digest"
+  | "focus_update"
+  | "condition_update"
+  | "agent_heartbeat"
+  | "quiet_observation";
+
+export interface WatchUpdateEntry {
+  kind: "watch_update";
+  id: string;
+  ts: number;
+  updateType: WatchUpdateType;
+  title: string;
+  content: string;
+  dedupeKey: string;
+  agentId?: AgentId;
+  symbol?: string;
+  symbols?: string[];
+  severity: "neutral" | "watch";
+}
+
+export interface AgentDiscussionEntry {
+  kind: "agent_discussion";
+  id: string;
+  ts: number;
+  topic: string;
+  summary: string;
+  dedupeKey: string;
+  symbol?: string;
+  symbols: string[];
+  responses: StreamResponse[];
+  severity: "neutral" | "watch";
+}
+
+export type StreamEntry =
+  | AgentMessage
+  | CollectiveEvent
+  | FocusEvent
+  | ConflictEvent
+  | WatchUpdateEntry
+  | AgentDiscussionEntry;
+
 export type CoinComments = Record<CoinSymbol, Record<AgentId, string>>;
 
 export interface AgentAnalysisPayload {
@@ -147,6 +239,7 @@ export interface AgentAnalysisPayload {
   focus?: AgentFocus[];
   marketSource: MarketDataSource;
   stream: StreamMessage[];
+  streamEntries?: StreamEntry[];
   heroBubbles: string[];
   coinComments: CoinComments;
   degraded?: boolean;
@@ -159,6 +252,7 @@ export interface HistoryMessageEntry {
   content: string;
   tickerSnapshot: TickerMap;
   source: ProviderSource;
+  triggerSignalId?: string;
 }
 
 export interface AgentSkill {
@@ -201,4 +295,5 @@ export interface AgentWatchMessage {
   agentId: AgentId;
   content: string;
   timestamp: number;
+  triggerSignalId?: string;
 }

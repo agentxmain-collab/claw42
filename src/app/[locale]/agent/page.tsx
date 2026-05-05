@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import { AgentWatchBoard } from "@/modules/agent-watch/AgentWatchBoard";
+import { agentWatchRedirectPath } from "@/modules/agent-watch/locale";
 
 export default async function AgentPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  if (locale !== "zh_CN") redirect(`/${locale}`);
+  const redirectPath = agentWatchRedirectPath(locale);
+  if (redirectPath) redirect(redirectPath);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">

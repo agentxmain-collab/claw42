@@ -43,9 +43,23 @@ export interface Dict {
       ctaClipboard: string;
       ctaCopiedToast: string;
       chatSpeaker: string;
-      chatTime: string;
-      chatTitle: string;
-      chatBullets: string[];
+      dailyBrief: {
+        title: string;
+        realtimeLabel: string;
+        sentimentLabel: string;
+        sentimentNeutral: string;
+        sentimentExtremeFear: string;
+        sentimentFear: string;
+        sentimentGreed: string;
+        sentimentExtremeGreed: string;
+        todayMoverLabel: string;
+        tierOpportunity: string;
+        tierHot: string;
+        tierMajors: string;
+        justNow: string;
+        minutesAgo: string;
+        unavailable: string;
+      };
     };
     realtime: {
       title: string;

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAgentAnalysis } from "@/lib/llmFallbackChain";
 import { rateLimit } from "@/lib/rateLimit";
+import { resolveAgentWatchLocale } from "@/modules/agent-watch/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
-  const payload = await getAgentAnalysis();
+  const url = new URL(request.url);
+  const locale = resolveAgentWatchLocale(url.searchParams.get("locale") ?? "");
+  const payload = await getAgentAnalysis(locale);
   return NextResponse.json(payload);
 }

@@ -2,7 +2,7 @@
   "nav": {
     "switchLangToEn": "EN",
     "switchLangToZh": "中",
-    "agentLiveMenuItem": "实时旁观"
+    "agentLiveMenuItem": "实时分析"
   },
   "hero": {
     "title": "遇见你的AI交易伙伴",
@@ -40,21 +40,29 @@
       "badge": "推荐场景",
       "desc": "一键唤醒 AI 获取全球市场动态。AI 将自动扫描主流币种波动、热门社交媒体情绪、重要链上数据与宏观新闻，输出结构化的中文研报，助你开启每日交易。",
       "inputPlaceholder": "点击复制内容，发送给你的 agent 即可体验",
-      "defaultPrompt": "帮我生成今日加密货币市场日报：扫描 BTC/ETH/SOL 等主流币种 24 小时价格波动、主要社交媒体的情绪变化、链上大额转账和宏观新闻，输出结构化的中文日报，帮我开启今天的交易。",
+      "defaultPrompt": "帮我生成今日加密货币市场日报：扫描 BTC/ETH/SOL 等主流币种 24 小时价格波动、主要社交媒体的情绪变化、热门币异动和宏观新闻，输出结构化的中文日报，帮我开启今天的交易。",
       "copiedToast": "已复制到剪贴板",
       "cta": "立即试用",
       "ctaClipboard": "使用 GitHub - connectCoinw/coinw-skills 中的 skills，在每天早上 9:00 发送给我过去 24 小时的加密日报，包含大盘数据、主流币种行情。",
       "ctaCopiedToast": "已复制到剪贴板，发给你的 Agent 开启加密新体验",
       "chatSpeaker": "Claw 42 Agent",
-      "chatTime": "just now",
-      "chatTitle": "📊 今日加密货币市场日报",
-      "chatBullets": [
-        "BTC: $67,432 (+2.3%) — 突破关键阻力位",
-        "ETH: $3,521 (+1.8%) — Layer2 TVL 创新高",
-        "SOL: $178 (-0.5%) — Meme 币热度回落",
-        "市场情绪: 贪婪 72",
-        "链上大额转账: 3 笔 > 1000 BTC"
-      ]
+      "dailyBrief": {
+        "title": "今日加密货币市场日报",
+        "realtimeLabel": "实时数据",
+        "sentimentLabel": "市场情绪",
+        "sentimentNeutral": "中性",
+        "sentimentExtremeFear": "极度恐慌",
+        "sentimentFear": "恐慌",
+        "sentimentGreed": "贪婪",
+        "sentimentExtremeGreed": "极度贪婪",
+        "todayMoverLabel": "今日异动",
+        "tierOpportunity": "机会区",
+        "tierHot": "热门区",
+        "tierMajors": "主流区",
+        "justNow": "刚刚",
+        "minutesAgo": "{n} 分钟前",
+        "unavailable": "—"
+      }
     },
     "realtime": {
       "title": "实时行情监控",
@@ -178,7 +186,7 @@
   },
   "coinModal": {
     "closeAriaLabel": "关闭行情卡",
-    "goToWatchCta": "去旁观秀听他们继续聊",
+    "goToWatchCta": "去实时分析看他们继续聊",
     "loadingPrice": "行情数据获取中",
     "agentCommentMissing": "Agent 点评暂时不可用"
   }

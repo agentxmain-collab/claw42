@@ -7,155 +7,356 @@ import { AGENT_ORDER } from "./agents";
 import { useAgentAnalysis } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
 import { useMarketEventFeed } from "./hooks/useMarketEventFeed";
-import type { AgentId, AgentStatus, AgentWatchMessage, HistoryMessageEntry } from "./types";
+import type {
+  AgentDiscussionEntry,
+  AgentMessage,
+  AgentId,
+  AgentStatus,
+  StreamEntry,
+  WatchUpdateEntry,
+} from "./types";
 import { AgentRowCard } from "./components/AgentRowCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
 import { MarketEventFeed } from "./components/MarketEventFeed";
-import { MessageStream, type MessageStreamHandle } from "./components/MessageStream";
+import { Stream, type StreamHandle } from "./components/Stream";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
+import {
+  displayScheduleStartDelay,
+  gapDurationAfterStreamEntry,
+  speakerForStreamEntry,
+  splitStreamEntryForDisplay,
+  thinkDurationForStreamEntry,
+} from "./utils/streamDisplayQueue";
+import { buildWatchSupplementalEntry } from "./utils/watchSupplementalUpdates";
+import { isAgentWatchLocale, resolveAgentWatchLocale } from "./locale";
+import {
+  buildWatchDirectorOpening,
+  directorModeForVisit,
+  readWatchDirectorMemory,
+  rememberDirectorEntries,
+  type WatchDirectorMemory,
+  type WatchDirectorMode,
+  writeWatchDirectorMemory,
+} from "./utils/watchSessionDirector";
 
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
+const STREAM_MAX_ENTRIES = 48;
 
-function warnDuplicateMessage(reason: string, message: AgentWatchMessage) {
+function isAgentMessage(entry: StreamEntry): entry is AgentMessage {
+  return entry.kind === "agent_message";
+}
+
+function isWatchUpdate(entry: StreamEntry): entry is WatchUpdateEntry {
+  return entry.kind === "watch_update";
+}
+
+function isAgentDiscussion(entry: StreamEntry): entry is AgentDiscussionEntry {
+  return entry.kind === "agent_discussion";
+}
+
+function isPriorityEvent(entry: StreamEntry) {
+  return entry.kind === "collective_event" || entry.kind === "focus_event" || entry.kind === "conflict_event";
+}
+
+function speakerIdsForEntry(entry: StreamEntry): AgentId[] {
+  if (isAgentMessage(entry)) return [entry.agentId];
+  if (isWatchUpdate(entry)) return entry.agentId ? [entry.agentId] : [];
+  if (isAgentDiscussion(entry)) return entry.responses.map((response) => response.agentId);
+  if (entry.kind === "focus_event") return [entry.primaryResponse.agentId];
+  if (entry.kind === "collective_event") {
+    return [entry.primaryResponse, ...entry.echoResponses].map((response) => response.agentId);
+  }
+  if (entry.kind === "conflict_event") return entry.responses.map((response) => response.agentId);
+  return [];
+}
+
+function needsAgentDiversity(entries: StreamEntry[]) {
+  const recentSpeakers = entries.slice(-4).flatMap(speakerIdsForEntry);
+  if (recentSpeakers.length === 0) return false;
+  return new Set(recentSpeakers).size < 2;
+}
+
+function warnDuplicateEntry(reason: string, entry: StreamEntry) {
   if (process.env.NODE_ENV === "production") return;
-  console.warn("[claw42] duplicate watch message skipped", {
+  console.warn("[claw42] duplicate watch stream entry skipped", {
     reason,
-    id: message.id,
-    agentId: message.agentId,
-    timestamp: message.timestamp,
+    id: entry.id,
+    kind: entry.kind,
+    agentId: isAgentMessage(entry) ? entry.agentId : null,
+    timestamp: entry.ts,
   });
 }
 
-function dedupeAgentMessages(messages: AgentWatchMessage[]) {
+function dedupeStreamEntries(entries: StreamEntry[]) {
   const seenIds = new Set<string>();
   const recentContent = new Map<string, number>();
-  const unique: AgentWatchMessage[] = [];
+  const unique: StreamEntry[] = [];
 
-  for (const message of messages) {
-    if (seenIds.has(message.id)) {
-      warnDuplicateMessage("id", message);
+  for (const entry of entries) {
+    if (seenIds.has(entry.id)) {
+      warnDuplicateEntry("id", entry);
       continue;
     }
 
-    const contentKey = `${message.agentId}:${message.content.trim()}`;
-    const lastTimestamp = recentContent.get(contentKey);
-    if (
-      lastTimestamp !== undefined &&
-      Math.abs(message.timestamp - lastTimestamp) <= DUPLICATE_CONTENT_WINDOW_MS
-    ) {
-      warnDuplicateMessage("content", message);
-      continue;
+    if (isAgentMessage(entry) || isWatchUpdate(entry) || isAgentDiscussion(entry)) {
+      const contentKey = isAgentMessage(entry)
+        ? `agent:${entry.agentId}:${entry.content.trim()}`
+        : isWatchUpdate(entry)
+          ? `watch:${entry.dedupeKey}:${entry.content.trim()}`
+          : `discussion:${entry.dedupeKey}:${entry.responses.map((response) => response.content.trim()).join("|")}`;
+      const lastTimestamp = recentContent.get(contentKey);
+      if (
+        lastTimestamp !== undefined &&
+        Math.abs(entry.ts - lastTimestamp) <= DUPLICATE_CONTENT_WINDOW_MS
+      ) {
+        warnDuplicateEntry("content", entry);
+        continue;
+      }
+      recentContent.set(contentKey, entry.ts);
     }
 
-    seenIds.add(message.id);
-    recentContent.set(contentKey, message.timestamp);
-    unique.push(message);
+    seenIds.add(entry.id);
+    unique.push(entry);
   }
 
   return unique;
 }
 
-function keepFivePerAgent(messages: AgentWatchMessage[]) {
-  const kept = new Set<string>();
+function trimStreamEntries(entries: StreamEntry[]) {
+  const keptAgentMessages = new Set<string>();
   for (const agentId of AGENT_ORDER) {
-    messages
-      .filter((message) => message.agentId === agentId)
+    entries
+      .filter((entry): entry is AgentMessage => isAgentMessage(entry) && entry.agentId === agentId)
       .slice(-5)
-      .forEach((message) => kept.add(message.id));
+      .forEach((entry) => keptAgentMessages.add(entry.id));
   }
-  return messages.filter((message) => kept.has(message.id));
+  return entries
+    .filter((entry) => !isAgentMessage(entry) || keptAgentMessages.has(entry.id))
+    .slice(-STREAM_MAX_ENTRIES);
 }
 
-function mergeHistoryAndLive(
-  history: HistoryMessageEntry[],
-  live: AgentWatchMessage[],
-): AgentWatchMessage[] {
-  const liveIds = new Set(live.map((message) => message.id));
-  const historyAsMessages: AgentWatchMessage[] = history
-    .filter((entry) => !liveIds.has(entry.id))
-    .map((entry) => ({
-      id: entry.id,
-      agentId: entry.agentId,
-      content: entry.content,
-      timestamp: entry.generatedAt,
-    }));
-  return dedupeAgentMessages([...historyAsMessages, ...live]);
+function streamEntriesFromPayload(data: NonNullable<ReturnType<typeof useAgentAnalysis>["data"]>) {
+  if (data.streamEntries?.length) return data.streamEntries;
+
+  return data.stream.map(
+    (item, index): AgentMessage => ({
+      kind: "agent_message",
+      id: `${data.generatedAt}-${item.agentId}-${index}`,
+      ts: data.generatedAt,
+      agentId: item.agentId,
+      content: item.content,
+      triggerSignalId: `legacy-${data.generatedAt}-${item.agentId}-${index}`,
+    }),
+  );
 }
 
 export function AgentWatchBoard() {
   const { t, locale } = useI18n();
-  const isZh = locale === "zh_CN";
+  const agentWatchLocale = resolveAgentWatchLocale(locale);
+  const isSupportedAgentWatchLocale = isAgentWatchLocale(locale);
   const reduceMotion = useReducedMotion();
   const {
-    entries: historyMessages,
     isLoading: isHistoryLoading,
     refreshHistory,
-  } = useAgentHistory({ enabled: isZh, initialLimit: 60 });
+  } = useAgentHistory({ enabled: isSupportedAgentWatchLocale, initialLimit: 60 });
   const { data, isLoading, hasNewContent, dismissNewContent } = useAgentAnalysis({
-    enabled: isZh,
+    enabled: isSupportedAgentWatchLocale,
+    locale: agentWatchLocale,
   });
-  const { signals: marketSignals } = useMarketEventFeed({ enabled: isZh, limit: 12 });
+  const { signals: marketSignals } = useMarketEventFeed({
+    enabled: isSupportedAgentWatchLocale,
+    limit: 12,
+  });
   const processedGeneratedAtRef = useRef<number | null>(null);
-  const messageStreamRef = useRef<MessageStreamHandle>(null);
+  const streamRef = useRef<StreamHandle>(null);
   const timersRef = useRef<number[]>([]);
-  const [liveQueue, setLiveQueue] = useState<AgentWatchMessage[]>([]);
+  const scheduledUntilRef = useRef(0);
+  const marketSignalsRef = useRef(marketSignals);
+  const directorMemoryRef = useRef<WatchDirectorMemory | null>(null);
+  const directorModeRef = useRef<WatchDirectorMode | null>(null);
+  const supplementalClaimRef = useRef(new Map<string, number>());
+  const lastSupplementalAtRef = useRef(0);
+  const [liveQueue, setLiveQueue] = useState<StreamEntry[]>([]);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
 
   useEffect(() => {
-    if (hasNewContent) void refreshHistory();
-  }, [hasNewContent, refreshHistory]);
+    marketSignalsRef.current = marketSignals;
+  }, [marketSignals]);
+
+  const ensureDirectorMemory = useCallback((now: number) => {
+    if (directorMemoryRef.current === null) {
+      const storage = typeof window === "undefined" ? undefined : window.localStorage;
+      const memory = readWatchDirectorMemory(storage);
+      directorMemoryRef.current = memory;
+      directorModeRef.current = directorModeForVisit(now, memory.lastVisitAt);
+    }
+
+    return {
+      memory: directorMemoryRef.current,
+      mode: directorModeRef.current ?? "fresh",
+    };
+  }, []);
+
+  const rememberScheduledEntries = useCallback((entries: StreamEntry[], now: number) => {
+    const { memory } = ensureDirectorMemory(now);
+    const nextMemory = rememberDirectorEntries(memory, entries, now);
+    directorMemoryRef.current = nextMemory;
+    const storage = typeof window === "undefined" ? undefined : window.localStorage;
+    writeWatchDirectorMemory(storage, nextMemory);
+  }, [ensureDirectorMemory]);
+
+  const scheduleStreamEntries = useCallback(
+    (entries: StreamEntry[], options: { clearPending?: boolean } = {}) => {
+      if (options.clearPending) {
+        timersRef.current.forEach((timer) => window.clearTimeout(timer));
+        timersRef.current = [];
+        scheduledUntilRef.current = Date.now();
+        setTypingAgent(null);
+        setSpeakingAgent(null);
+      }
+
+      const displayEntries = entries.flatMap(splitStreamEntryForDisplay);
+      const scheduledAt = Date.now();
+      let nextDelay = displayScheduleStartDelay(
+        scheduledAt,
+        scheduledUntilRef.current,
+        options.clearPending,
+      );
+
+      displayEntries.forEach((entry, index) => {
+        const agentId = speakerForStreamEntry(entry);
+        const thinkDuration = thinkDurationForStreamEntry(entry, index, Boolean(reduceMotion));
+
+        if (agentId && thinkDuration > 0) {
+          const typingTimer = window.setTimeout(() => {
+            setTypingAgent(agentId);
+          }, nextDelay);
+          timersRef.current.push(typingTimer);
+        }
+
+        const appendTimer = window.setTimeout(() => {
+          if (agentId) {
+            setTypingAgent((current) => (current === agentId ? null : current));
+            setSpeakingAgent(agentId);
+          }
+          setLiveQueue((current) =>
+            trimStreamEntries(
+              dedupeStreamEntries([
+                ...current,
+                entry,
+              ]),
+            ),
+          );
+        }, nextDelay + thinkDuration);
+
+        timersRef.current.push(appendTimer);
+
+        if (agentId) {
+          const clearSpeakingTimer = window.setTimeout(() => {
+            setSpeakingAgent((current) => (current === agentId ? null : current));
+          }, nextDelay + thinkDuration + 1100);
+          timersRef.current.push(clearSpeakingTimer);
+        }
+
+        nextDelay += thinkDuration + gapDurationAfterStreamEntry(entry, Boolean(reduceMotion));
+      });
+
+      scheduledUntilRef.current = scheduledAt + nextDelay;
+    },
+    [reduceMotion],
+  );
 
   useEffect(() => {
     if (!data || processedGeneratedAtRef.current === data.generatedAt) return;
     processedGeneratedAtRef.current = data.generatedAt;
 
-    timersRef.current.forEach((timer) => window.clearTimeout(timer));
-    timersRef.current = [];
-
-    data.stream.forEach((item, index) => {
-      const typingTimer = window.setTimeout(() => {
-        setTypingAgent(item.agentId);
-      }, index * 1600);
-      const appendTimer = window.setTimeout(
-        () => {
-          setTypingAgent(null);
-          setSpeakingAgent(item.agentId);
-          setLiveQueue((current) =>
-            keepFivePerAgent(
-              dedupeAgentMessages([
-                ...current,
-                {
-                  id: `${data.generatedAt}-${item.agentId}-${index}`,
-                  agentId: item.agentId,
-                  content: item.content,
-                  timestamp: data.generatedAt,
-                },
-              ]),
-            ),
-          );
-        },
-        index * 1600 + 800,
-      );
-      const clearSpeakingTimer = window.setTimeout(
-        () => {
-          setSpeakingAgent((current) => (current === item.agentId ? null : current));
-        },
-        index * 1600 + 1900,
-      );
-      timersRef.current.push(typingTimer, appendTimer, clearSpeakingTimer);
+    const now = Date.now();
+    const entries = streamEntriesFromPayload(data);
+    const { memory, mode } = ensureDirectorMemory(now);
+    const opening = buildWatchDirectorOpening({
+      now,
+      mode,
+      pool: data.pool,
+      focus: data.focus,
+      signals: marketSignalsRef.current,
+      analysisEntries: entries,
+      memory,
+      locale: agentWatchLocale,
     });
+    const directorEntries = opening.entries.length > 0 ? opening.entries : entries;
+    rememberScheduledEntries(directorEntries, now);
+    scheduleStreamEntries(directorEntries, { clearPending: true });
 
     return () => {
       timersRef.current.forEach((timer) => window.clearTimeout(timer));
       timersRef.current = [];
+      scheduledUntilRef.current = Date.now();
+      setTypingAgent(null);
+      setSpeakingAgent(null);
     };
-  }, [data]);
+  }, [agentWatchLocale, data, ensureDirectorMemory, rememberScheduledEntries, scheduleStreamEntries]);
 
-  const combinedMessages = useMemo(
-    () => mergeHistoryAndLive(historyMessages, liveQueue),
-    [historyMessages, liveQueue],
+  useEffect(() => {
+    if (!data?.pool) return;
+    const now = Date.now();
+    if (now - lastSupplementalAtRef.current < 25_000) return;
+
+    const existingEntries = streamEntriesFromPayload(data);
+    const visibleEntries = trimStreamEntries(
+      dedupeStreamEntries([
+        ...existingEntries,
+        ...liveQueue,
+      ]),
+    );
+    const cutoff = now - DUPLICATE_CONTENT_WINDOW_MS * 2;
+    for (const [key, ts] of Array.from(supplementalClaimRef.current.entries())) {
+      if (ts < cutoff) supplementalClaimRef.current.delete(key);
+    }
+
+    const preferredKinds = needsAgentDiversity(visibleEntries)
+      ? (["agent_discussion", "agent_heartbeat"] as const)
+      : visibleEntries.some(isPriorityEvent)
+        ? (["agent_discussion", "agent_heartbeat"] as const)
+        : ([undefined, "agent_heartbeat"] as const);
+    let entry: ReturnType<typeof buildWatchSupplementalEntry> = null;
+
+    for (const preferredKind of preferredKinds) {
+      const candidate = buildWatchSupplementalEntry({
+        now,
+        pool: data.pool,
+        focus: data.focus,
+        signals: marketSignals,
+        existingEntries: visibleEntries,
+        preferredKind,
+        locale: agentWatchLocale,
+      });
+      if (!candidate) continue;
+
+      const lastClaimedAt = supplementalClaimRef.current.get(candidate.dedupeKey);
+      if (lastClaimedAt !== undefined && now - lastClaimedAt <= DUPLICATE_CONTENT_WINDOW_MS) {
+        continue;
+      }
+
+      entry = candidate;
+      break;
+    }
+
+    if (!entry) return;
+
+    const lastClaimedAt = supplementalClaimRef.current.get(entry.dedupeKey);
+    if (lastClaimedAt !== undefined && now - lastClaimedAt <= DUPLICATE_CONTENT_WINDOW_MS) return;
+
+    supplementalClaimRef.current.set(entry.dedupeKey, now);
+    lastSupplementalAtRef.current = now;
+    rememberScheduledEntries([entry], now);
+    scheduleStreamEntries([entry]);
+  }, [agentWatchLocale, data, liveQueue, marketSignals, rememberScheduledEntries, scheduleStreamEntries]);
+
+  const combinedEntries = useMemo(
+    () => liveQueue,
+    [liveQueue],
   );
   const focusByAgent = useMemo(
     () => new Map(data?.focus?.map((focus) => [focus.agentId, focus]) ?? []),
@@ -168,7 +369,7 @@ export function AgentWatchBoard() {
 
   const handleJumpToLatest = useCallback(async () => {
     await refreshHistory();
-    messageStreamRef.current?.scrollToLatest();
+    streamRef.current?.scrollToLatest();
     dismissNewContent();
   }, [dismissNewContent, refreshHistory]);
   const statusForAgent = useCallback(
@@ -182,12 +383,20 @@ export function AgentWatchBoard() {
       data-agent-watch-board
       className="mx-auto min-h-[calc(100vh-72px)] w-full max-w-7xl px-4 pb-16 pt-24 md:px-8 md:pt-28"
     >
-      <div className="space-y-5">
+      <div className="space-y-7">
         <TopicHeader t={t} />
-        <CoinTickerStrip pool={data?.pool} tickers={data?.tickers} labels={t.agentWatch.coinPool} />
-        <MarketEventFeed signals={marketSignals} labels={t.agentWatch.marketEvent} />
+        <CoinTickerStrip
+          pool={data?.pool}
+          tickers={data?.tickers}
+          labels={t.agentWatch.coinPool}
+        />
+        <MarketEventFeed
+          signals={marketSignals}
+          labels={t.agentWatch.marketEvent}
+          locale={agentWatchLocale}
+        />
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {AGENT_ORDER.map((agentId) => (
             <AgentRowCard
               key={agentId}
@@ -208,25 +417,33 @@ export function AgentWatchBoard() {
           }}
         />
 
-        <MessageStream
-          ref={messageStreamRef}
-          messages={combinedMessages}
+        <Stream
+          ref={streamRef}
+          entries={combinedEntries}
           typingAgent={typingAgent}
+          pool={data?.pool}
           emptyLabel={t.agentWatch.emptyHistory}
+          locale={agentWatchLocale}
         />
 
-        {(isLoading || isHistoryLoading) && combinedMessages.length === 0 && (
+        <p className="rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3 text-xs leading-relaxed text-white/42">
+          {agentWatchLocale === "en_US"
+            ? "Risk notice: This page is generated by AI from public market data for information display only and does not constitute investment advice. Please make trading decisions based on your own risk tolerance."
+            : "风险提示：本页面内容由 AI 根据公开行情数据自动生成，仅用于信息展示，不构成投资建议。请结合自身风险承受能力判断，交易决策由用户自行承担。"}
+        </p>
+
+        {(isLoading || isHistoryLoading) && combinedEntries.length === 0 && (
           <p className="text-center text-sm text-white/35">{t.agentWatch.loadingHistory}</p>
         )}
 
         <motion.a
           href="#"
-          title="敬请期待"
+          title={agentWatchLocale === "en_US" ? "Coming soon" : "敬请期待"}
           whileHover={reduceMotion ? undefined : { y: -3 }}
-          className="card-glow flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/10 bg-[#111] p-5 md:flex-row md:items-center md:p-6"
+          className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-white/10 bg-[#111] p-6 md:flex-row md:items-center md:p-7"
         >
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#b49cff]">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/45">
               Claw 42 Agent
             </p>
             <h2 className="mt-2 text-xl font-bold text-white md:text-2xl">

@@ -40,21 +40,29 @@
       "badge": "Recommended",
       "desc": "Wake up your AI with one click to capture global market dynamics. The AI scans price action of major coins, social sentiment, on-chain signals and macro news, then delivers a structured report to kick off your trading day.",
       "inputPlaceholder": "Click to copy, then send to your agent to try it out",
-      "defaultPrompt": "Generate today's crypto market report for me: scan 24h price moves of BTC/ETH/SOL, social sentiment shifts, major on-chain whale transfers and macro news, then deliver a structured report to start my trading day.",
+      "defaultPrompt": "Generate today's crypto market report for me: scan 24h price moves of BTC/ETH/SOL, social sentiment shifts, hot-coin movers and macro news, then deliver a structured report to start my trading day.",
       "copiedToast": "Copied to clipboard",
       "cta": "Try Now",
       "ctaClipboard": "Use the skills from GitHub - connectCoinw/coinw-skills to send me a 24-hour crypto daily report every morning at 9:00 AM, including market data and major coin prices.",
       "ctaCopiedToast": "Copied to clipboard — send it to your Agent to unlock the crypto experience",
       "chatSpeaker": "Claw 42 Agent",
-      "chatTime": "just now",
-      "chatTitle": "📊 Today's Crypto Market Report",
-      "chatBullets": [
-        "BTC: $67,432 (+2.3%) — Breaking key resistance",
-        "ETH: $3,521 (+1.8%) — Layer 2 TVL hits new high",
-        "SOL: $178 (-0.5%) — Meme coin heat cooling",
-        "Sentiment: Greed 72",
-        "On-chain whale moves: 3 transfers > 1000 BTC"
-      ]
+      "dailyBrief": {
+        "title": "Daily crypto market brief",
+        "realtimeLabel": "Realtime data",
+        "sentimentLabel": "Market sentiment",
+        "sentimentNeutral": "Neutral",
+        "sentimentExtremeFear": "Extreme Fear",
+        "sentimentFear": "Fear",
+        "sentimentGreed": "Greed",
+        "sentimentExtremeGreed": "Extreme Greed",
+        "todayMoverLabel": "Today's mover",
+        "tierOpportunity": "Opportunity",
+        "tierHot": "Hot",
+        "tierMajors": "Major",
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago",
+        "unavailable": "—"
+      }
     },
     "realtime": {
       "title": "Real-Time Market Monitor",

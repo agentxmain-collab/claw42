@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useAgentAnalysis } from "@/modules/agent-watch/hooks/useAgentAnalysis";
+import { resolveAgentWatchLocale } from "@/modules/agent-watch/locale";
 import type { Pose } from "./useRobotPose";
 import { SpeechBubble } from "./SpeechBubble";
+import { buildHeroSpeechLines, mergeHeroSpeechLinePools } from "./heroSpeechLines";
 
 interface RobotLayerProps {
   pose: Pose;
@@ -39,23 +41,32 @@ const MOUTH_OVERLAY = {
   width: "33.9%",
 };
 
-export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: RobotLayerProps) {
+const LIVE_LOADING_LINES = {
+  zh_CN: ["正在读取实时市场信号", "Agent 正在扫描行情异动"],
+  en_US: ["Reading live market signals", "Agents are scanning market shifts"],
+};
+
+export function RobotLayer({
+  pose,
+  mouseX,
+  mouseY,
+  reduceMotion,
+  onOpenWatch,
+}: RobotLayerProps) {
   const { t, locale } = useI18n();
   const [blink, setBlink] = useState(false);
   const [hovered, setHovered] = useState(false);
   const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
-  const isZh = locale === "zh_CN";
-  const { data } = useAgentAnalysis({ enabled: isZh });
-  const liveHeroLines =
-    data?.source !== "static-fallback" ? data?.heroBubbles?.filter(Boolean) : undefined;
-  const fallbackAnalysisLines = data?.stream?.map((message) => message.content).filter(Boolean);
-  const dynamicLines = isZh
-    ? liveHeroLines?.length
-      ? liveHeroLines
-      : fallbackAnalysisLines?.length
-        ? fallbackAnalysisLines
-        : [t.coinModal.loadingPrice]
-    : undefined;
+  const agentWatchLocale = resolveAgentWatchLocale(locale);
+  const { data } = useAgentAnalysis({ enabled: true, locale: agentWatchLocale });
+  const liveLines = useMemo(
+    () => buildHeroSpeechLines(data, agentWatchLocale) ?? LIVE_LOADING_LINES[agentWatchLocale],
+    [data, agentWatchLocale],
+  );
+  const dynamicLines = useMemo(
+    () => mergeHeroSpeechLinePools(liveLines, t.hero.speechBubble, locale !== agentWatchLocale),
+    [liveLines, locale, agentWatchLocale, t.hero.speechBubble],
+  );
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -63,14 +74,11 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
     let closeId: ReturnType<typeof setTimeout> | undefined;
 
     const scheduleBlink = () => {
-      blinkId = setTimeout(
-        () => {
-          setBlink(true);
-          closeId = setTimeout(() => setBlink(false), 150);
-          scheduleBlink();
-        },
-        3000 + Math.random() * 2000,
-      );
+      blinkId = setTimeout(() => {
+        setBlink(true);
+        closeId = setTimeout(() => setBlink(false), 150);
+        scheduleBlink();
+      }, 3000 + Math.random() * 2000);
     };
 
     scheduleBlink();
@@ -85,16 +93,16 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
 
   return (
     <div
-      className="claw42-hero-robot absolute bottom-[34%] left-1/2 z-40 md:bottom-[40%]"
+      className="claw42-hero-robot absolute z-40 left-1/2 bottom-[34%] md:bottom-[40%]"
       style={{
-        transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
-        bottom: "var(--claw42-hero-robot-bottom, 41%)",
-        width: "var(--claw42-hero-robot-width, min(316px, 28vw))",
+        transform: `translate(-50%, 0) translate(${parallaxX}px, calc(${parallaxY}px + var(--claw42-hero-depth-robot-y, 0px)))`,
+        bottom: "var(--claw42-hero-robot-bottom, 58%)",
+        width: "var(--claw42-hero-robot-width, min(316px, 18vw))",
         pointerEvents: "none",
       }}
     >
       <motion.div
-        className="pointer-events-auto relative cursor-pointer"
+        className="relative pointer-events-auto cursor-pointer"
         role="button"
         tabIndex={0}
         aria-label={t.hero.speechBubbleAriaLabel}
@@ -109,7 +117,9 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
         animate={reduceMotion ? { y: 0 } : { y: [0, -12, 0] }}
         transition={
-          reduceMotion ? { duration: 0 } : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
+          reduceMotion
+            ? { duration: 0 }
+            : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
         }
       >
         {/*
@@ -123,7 +133,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
             alt=""
             aria-label="Claw 42 robot"
             draggable={false}
-            className="block h-auto w-full cursor-pointer select-none"
+            className="w-full h-auto select-none block cursor-pointer"
             style={{ pointerEvents: displayPose === "left" ? "auto" : "none" }}
             initial={false}
             animate={{ opacity: displayPose === "left" ? 1 : 0 }}
@@ -134,7 +144,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
             alt=""
             aria-hidden="true"
             draggable={false}
-            className="absolute inset-0 block h-auto w-full cursor-pointer select-none"
+            className="w-full h-auto select-none block cursor-pointer absolute inset-0"
             style={{ pointerEvents: displayPose === "right" ? "auto" : "none" }}
             initial={false}
             animate={{ opacity: displayPose === "right" ? 1 : 0 }}
@@ -143,7 +153,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
         </div>
 
         <div
-          className="pointer-events-none absolute select-none"
+          className="absolute select-none pointer-events-none"
           style={{
             top: EYES_OVERLAY.top,
             left: FACE_LAYOUT[displayPose].x,
@@ -157,7 +167,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
             alt=""
             aria-hidden="true"
             draggable={false}
-            className="block h-auto w-full"
+            className="w-full h-auto block"
             animate={blink ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
             transition={{ duration: 0.15 }}
             style={{
@@ -168,7 +178,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
         </div>
 
         <div
-          className="pointer-events-none absolute select-none"
+          className="absolute select-none pointer-events-none"
           style={{
             top: MOUTH_OVERLAY.top,
             left: FACE_LAYOUT[displayPose].x,
@@ -197,7 +207,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
               alt=""
               aria-hidden="true"
               draggable={false}
-              className="block h-auto w-full"
+              className="w-full h-auto block"
               style={{
                 filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
               }}

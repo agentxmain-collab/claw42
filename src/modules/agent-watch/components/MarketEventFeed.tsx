@@ -2,7 +2,9 @@
 
 import { useReducedMotion } from "framer-motion";
 import type { SignalRecord } from "../types";
+import type { AgentWatchLocale } from "../locale";
 import { priceDeltaColor } from "../utils/priceDeltaColor";
+import { formatCoinSymbol, prefixLeadingCoinSymbol } from "../utils/symbolFormat";
 
 const SIGNAL_TYPE_LABEL: Record<SignalRecord["type"], string> = {
   volume_spike: "VOLUME",
@@ -13,9 +15,18 @@ const SIGNAL_TYPE_LABEL: Record<SignalRecord["type"], string> = {
   range_change: "RANGE",
 };
 
+const SIGNAL_DESCRIPTION_EN: Record<SignalRecord["type"], string> = {
+  volume_spike: "5m volume spike",
+  near_high: "testing recent high",
+  near_low: "testing recent low",
+  breakout: "breakout move",
+  ema_cross: "EMA structure changed",
+  range_change: "24h range change",
+};
+
 const SEVERITY_DOT: Record<SignalRecord["severity"], string> = {
   alert: "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.55)]",
-  watch: "bg-[#b49cff] shadow-[0_0_8px_rgba(124,92,255,0.45)]",
+  watch: "bg-white/65 shadow-[0_0_8px_rgba(255,255,255,0.22)]",
   info: "bg-white/35",
 };
 
@@ -39,26 +50,55 @@ function formatTime(ts: number): string {
   )}`;
 }
 
-function SignalChip({ signal }: { signal: SignalRecord }) {
+function signalDescription(signal: SignalRecord, locale: AgentWatchLocale): string {
+  if (locale === "en_US") {
+    const symbol = formatCoinSymbol(signal.symbol);
+    if (typeof signal.payload.change24h === "number") {
+      return `${symbol} 24h ${signal.payload.change24h >= 0 ? "+" : ""}${signal.payload.change24h.toFixed(1)}%`;
+    }
+    if (typeof signal.payload.volumeRatio === "number") {
+      return `${symbol} ${SIGNAL_DESCRIPTION_EN[signal.type]} ${signal.payload.volumeRatio.toFixed(1)}x`;
+    }
+    if (typeof signal.payload.distancePct === "number") {
+      return `${symbol} ${SIGNAL_DESCRIPTION_EN[signal.type]} ${signal.payload.distancePct.toFixed(2)}% away`;
+    }
+    return `${symbol} ${SIGNAL_DESCRIPTION_EN[signal.type]}`;
+  }
+
+  return signal.payload.description
+    ? prefixLeadingCoinSymbol(signal.payload.description, signal.symbol)
+    : `${formatCoinSymbol(signal.symbol)} ${signal.type}`;
+}
+
+function SignalChip({
+  signal,
+  locale,
+}: {
+  signal: SignalRecord;
+  locale: AgentWatchLocale;
+}) {
   const descriptionClass =
     typeof signal.payload.change24h === "number"
       ? priceDeltaColor(signal.payload.change24h)
       : SEVERITY_TEXT[signal.severity];
+  const description = signalDescription(signal, locale);
 
   return (
     <div
       className={`flex shrink-0 items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.04] px-2.5 py-1.5 transition-colors hover:bg-white/[0.06] ${SEVERITY_CHIP[signal.severity]}`}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[signal.severity]}`} />
-      <span className="shrink-0 font-mono text-[10px] text-white/40">{formatTime(signal.ts)}</span>
-      <span className="shrink-0 font-mono text-[10px] font-bold text-white/65">
-        {signal.symbol}
+      <span className="shrink-0 font-mono text-[10px] text-white/40">
+        {formatTime(signal.ts)}
       </span>
-      <span className="shrink-0 text-[10px] font-bold text-[#b49cff]/80">
+      <span className="shrink-0 font-mono text-[10px] font-bold text-white/65">
+        {formatCoinSymbol(signal.symbol)}
+      </span>
+      <span className="shrink-0 text-[10px] font-bold text-white/58">
         {SIGNAL_TYPE_LABEL[signal.type]}
       </span>
       <span className={`whitespace-nowrap text-xs ${descriptionClass}`}>
-        {signal.payload.description ?? `${signal.symbol} ${signal.type}`}
+        {description}
       </span>
     </div>
   );
@@ -67,25 +107,26 @@ function SignalChip({ signal }: { signal: SignalRecord }) {
 export function MarketEventFeed({
   signals,
   labels,
+  locale = "zh_CN",
 }: {
   signals: SignalRecord[];
   labels: {
     title: string;
     empty: string;
   };
+  locale?: AgentWatchLocale;
 }) {
   const reduceMotion = useReducedMotion();
   const latest = [...signals].sort((a, b) => b.ts - a.ts).slice(0, 12);
   const marqueeSignals = reduceMotion || latest.length <= 1 ? latest : [...latest, ...latest];
-  const animation =
-    reduceMotion || latest.length <= 1 ? "none" : "claw42-marquee 60s linear infinite";
+  const animation = reduceMotion || latest.length <= 1 ? "none" : "claw42-marquee 60s linear infinite";
 
   if (latest.length === 0) {
     return (
       <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-white/40">
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#b49cff] opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-[#7c5cff]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-35" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-white/70" />
         </span>
         <span>{labels.title}：</span>
         <span>{labels.empty}</span>
@@ -97,8 +138,8 @@ export function MarketEventFeed({
     <div className="flex items-center gap-3">
       <div className="flex shrink-0 items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-white/50">
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#b49cff] opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-[#7c5cff]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-35" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-white/70" />
         </span>
         {labels.title}
       </div>
@@ -115,7 +156,11 @@ export function MarketEventFeed({
           }}
         >
           {marqueeSignals.map((signal, index) => (
-            <SignalChip key={`${signal.id}-${index < latest.length ? "a" : "b"}`} signal={signal} />
+            <SignalChip
+              key={`${signal.id}-${index < latest.length ? "a" : "b"}`}
+              signal={signal}
+              locale={locale}
+            />
           ))}
         </div>
       </div>
