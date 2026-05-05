@@ -25,7 +25,7 @@ export interface AgentChatMessage {
 }
 
 const FALLBACK_AGENT: Record<
-  Exclude<StreamEntry["kind"], "agent_message" | "agent_discussion">,
+  Exclude<StreamEntry["kind"], "agent_message" | "agent_discussion" | "news_debate">,
   AgentId
 > = {
   collective_event: "beta",
@@ -376,6 +376,8 @@ export function buildStreamChatMessages(
       }),
     );
   }
+
+  if (entry.kind === "news_debate") return [];
 
   return [
     message({

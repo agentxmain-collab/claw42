@@ -14,6 +14,7 @@ import {
   detectConflictEvent,
   detectFocusEvent,
 } from "@/lib/eventDetectors";
+import type { NewsDebate } from "@/lib/types";
 import type {
   AgentFocus,
   AgentAnalysisPayload,
@@ -1734,6 +1735,31 @@ function recordEventSpeakers(entry: StreamEntry, ts: number) {
   });
 }
 
+async function buildNewsDebates(now: number): Promise<NewsDebate[]> {
+  try {
+    const [{ fetchCryptoPanicNews }, { tryOrchestrateNewsDebate }] = await Promise.all([
+      import("@/lib/api/cryptopanic"),
+      import("@/lib/debateOrchestrator"),
+    ]);
+    const { items } = await fetchCryptoPanicNews({ limit: 6 });
+    const debates: NewsDebate[] = [];
+
+    for (const item of items) {
+      const debate = await tryOrchestrateNewsDebate(item, now + debates.length * 1000);
+      if (!debate) continue;
+      debates.push(debate);
+      if (debates.length >= 1) break;
+    }
+
+    return debates;
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[claw42] news debate generation skipped", error);
+    }
+    return [];
+  }
+}
+
 async function refreshAnalysis(locale: AgentWatchLocale): Promise<AgentAnalysisPayload> {
   const pool = (await triggerSignalGeneration()) ?? (await getCoinPool());
   const { tickers } = pool;
@@ -1801,6 +1827,16 @@ async function refreshAnalysis(locale: AgentWatchLocale): Promise<AgentAnalysisP
     if (result.source) providerSources.push(result.source);
   }
 
+  const newsDebates = await buildNewsDebates(generatedAt);
+  newsDebates.forEach((debate) => {
+    streamEntries.unshift({
+      kind: "news_debate",
+      id: debate.id,
+      ts: debate.ts,
+      debate,
+    });
+  });
+
   const stream = streamEntries
     .filter((entry): entry is AgentMessage => entry.kind === "agent_message")
     .map((entry) => ({ agentId: entry.agentId, content: entry.content }));
@@ -1819,6 +1855,7 @@ async function refreshAnalysis(locale: AgentWatchLocale): Promise<AgentAnalysisP
     marketSource: pool.source,
     stream,
     streamEntries,
+    newsDebates,
     heroBubbles: buildFallbackHeroBubbles(tickers, locale),
     coinComments: buildFallbackComments(locale),
   };

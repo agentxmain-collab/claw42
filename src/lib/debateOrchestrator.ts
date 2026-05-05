@@ -229,8 +229,11 @@ function intensityScore(rounds: DebateRound[]): NewsDebate["intensityScore"] {
   return Math.min(5, Math.max(1, Math.ceil(spice / 2))) as NewsDebate["intensityScore"];
 }
 
-export async function orchestrateNewsDebate(news: NewsItem, now = Date.now()): Promise<NewsDebate> {
-  const trigger = classifyNewsTrigger(news, now);
+async function buildNewsDebate(
+  news: NewsItem,
+  trigger: ReturnType<typeof classifyNewsTrigger>,
+  now: number,
+): Promise<NewsDebate> {
   const pacing = debatePacingForSeverity(trigger.severity);
   const factionIds = getFactionIds();
   const r1 = await Promise.all(factionIds.map((agentId) => generateR1(agentId, news, now)));
@@ -280,6 +283,20 @@ export async function orchestrateNewsDebate(news: NewsItem, now = Date.now()): P
   };
   debateStore.set(debate.id, debate);
   return debate;
+}
+
+export async function tryOrchestrateNewsDebate(
+  news: NewsItem,
+  now = Date.now(),
+): Promise<NewsDebate | null> {
+  const trigger = classifyNewsTrigger(news, now);
+  if (!trigger.shouldAutoDebate) return null;
+  return buildNewsDebate(news, trigger, now);
+}
+
+export async function orchestrateNewsDebate(news: NewsItem, now = Date.now()): Promise<NewsDebate> {
+  const trigger = classifyNewsTrigger(news, now);
+  return buildNewsDebate(news, trigger, now);
 }
 
 export function listNewsDebates(limit = 20): NewsDebate[] {

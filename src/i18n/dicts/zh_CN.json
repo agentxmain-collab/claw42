@@ -182,6 +182,34 @@
     "marketEvent": {
       "title": "市场信号",
       "empty": "等待新信号..."
+    },
+    "newsDebate": {
+      "liveBadge": "LIVE 辩论",
+      "criticalBadge": "重大插播",
+      "source": "来源",
+      "original": "原文",
+      "intensity": "激烈度",
+      "roundIndependent": "Round 1 · 独立观点",
+      "roundRebuttal": "Round 2 · 反驳追问",
+      "roundConsensus": "Round 3 · 共识收敛",
+      "finalStrategy": "用户策略",
+      "consensus": "共识",
+      "entry": "入场",
+      "stopLoss": "止损",
+      "takeProfit": "止盈",
+      "dissent": "保留意见",
+      "risk": "风险",
+      "follow": "已跟单",
+      "watching": "人在看",
+      "expired": "已失效",
+      "expiresIn": "后失效",
+      "followLong": "一键跟多",
+      "followShort": "一键跟空",
+      "waitSignal": "等待信号",
+      "share": "分享",
+      "replay": "复盘",
+      "newsTab": "新闻",
+      "noNews": "暂无新闻"
     }
   },
   "coinModal": {

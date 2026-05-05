@@ -182,6 +182,34 @@
     "marketEvent": {
       "title": "Market Signals",
       "empty": "Waiting for new signals..."
+    },
+    "newsDebate": {
+      "liveBadge": "LIVE Debate",
+      "criticalBadge": "Breaking",
+      "source": "Source",
+      "original": "Original",
+      "intensity": "Intensity",
+      "roundIndependent": "Round 1 · Independent takes",
+      "roundRebuttal": "Round 2 · Rebuttals",
+      "roundConsensus": "Round 3 · Consensus",
+      "finalStrategy": "User strategy",
+      "consensus": "Consensus",
+      "entry": "Entry",
+      "stopLoss": "Stop loss",
+      "takeProfit": "Take profit",
+      "dissent": "Dissent",
+      "risk": "Risk",
+      "follow": "followers",
+      "watching": "watching",
+      "expired": "Expired",
+      "expiresIn": "left",
+      "followLong": "Follow long",
+      "followShort": "Follow short",
+      "waitSignal": "Wait for signal",
+      "share": "Share",
+      "replay": "Replay",
+      "newsTab": "News",
+      "noNews": "No news yet"
     }
   },
   "coinModal": {
