@@ -21,9 +21,7 @@ export default function GlobalError({
       >
         <div style={{ padding: "24px", textAlign: "center" }}>
           <h1>Application error</h1>
-          <p style={{ color: "#888", margin: "16px 0" }}>
-            A critical error occurred.
-          </p>
+          <p style={{ color: "#888", margin: "16px 0" }}>A critical error occurred.</p>
           <button
             type="button"
             onClick={reset}

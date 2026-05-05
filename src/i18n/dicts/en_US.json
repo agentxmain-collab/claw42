@@ -1,7 +1,8 @@
 {
   "nav": {
     "switchLangToEn": "EN",
-    "switchLangToZh": "中"
+    "switchLangToZh": "中",
+    "agentLiveMenuItem": "Agent Live"
   },
   "hero": {
     "title": "Meet Your AI Trading Partner",
@@ -39,21 +40,29 @@
       "badge": "Recommended",
       "desc": "Wake up your AI with one click to capture global market dynamics. The AI scans price action of major coins, social sentiment, on-chain signals and macro news, then delivers a structured report to kick off your trading day.",
       "inputPlaceholder": "Click to copy, then send to your agent to try it out",
-      "defaultPrompt": "Generate today's crypto market report for me: scan 24h price moves of BTC/ETH/SOL, social sentiment shifts, major on-chain whale transfers and macro news, then deliver a structured report to start my trading day.",
+      "defaultPrompt": "Generate today's crypto market report for me: scan 24h price moves of BTC/ETH/SOL, social sentiment shifts, hot-coin movers and macro news, then deliver a structured report to start my trading day.",
       "copiedToast": "Copied to clipboard",
       "cta": "Try Now",
       "ctaClipboard": "Use the skills from GitHub - connectCoinw/coinw-skills to send me a 24-hour crypto daily report every morning at 9:00 AM, including market data and major coin prices.",
       "ctaCopiedToast": "Copied to clipboard — send it to your Agent to unlock the crypto experience",
       "chatSpeaker": "Claw 42 Agent",
-      "chatTime": "just now",
-      "chatTitle": "📊 Today's Crypto Market Report",
-      "chatBullets": [
-        "BTC: $67,432 (+2.3%) — Breaking key resistance",
-        "ETH: $3,521 (+1.8%) — Layer 2 TVL hits new high",
-        "SOL: $178 (-0.5%) — Meme coin heat cooling",
-        "Sentiment: Greed 72",
-        "On-chain whale moves: 3 transfers > 1000 BTC"
-      ]
+      "dailyBrief": {
+        "title": "Daily crypto market brief",
+        "realtimeLabel": "Realtime data",
+        "sentimentLabel": "Market sentiment",
+        "sentimentNeutral": "Neutral",
+        "sentimentExtremeFear": "Extreme Fear",
+        "sentimentFear": "Fear",
+        "sentimentGreed": "Greed",
+        "sentimentExtremeGreed": "Extreme Greed",
+        "todayMoverLabel": "Today's mover",
+        "tierOpportunity": "Opportunity",
+        "tierHot": "Hot",
+        "tierMajors": "Major",
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago",
+        "unavailable": "—"
+      }
     },
     "realtime": {
       "title": "Real-Time Market Monitor",
@@ -133,5 +142,80 @@
       "3. Claw 42 bears no responsibility for any loss arising from use or inability to use Claw 42 Skills. Claw 42 reserves the right to terminate or restrict this feature at its sole discretion. Digital asset prices carry high market risk and volatility. The value of your investment may go down as well as up, and you may not recover your principal. You are fully responsible for your investment decisions. Claw 42 assumes no liability for any loss you may suffer.",
       "4. Past performance is not a reliable indicator of future performance. Before making any investment, carefully consider your experience, financial situation, investment objectives and risk tolerance, and consult an independent financial advisor. For more information, see our Risk Notice and Terms of Use."
     ]
+  },
+  "agentWatch": {
+    "pageTitle": "Live · Crypto Market",
+    "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
+    "pageHeroTagline": "",
+    "sidebarStatus": {
+      "thinking": "Thinking",
+      "speaking": "Speaking",
+      "idle": "Idle"
+    },
+    "bottomCta": "Open Agent →",
+    "linkCardLiveBadge": "LIVE",
+    "linkCardTitle": "3 Agents are watching the market",
+    "linkCardDesc": "Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
+    "fallbackNotice": "",
+    "banner": {
+      "newContent": "New content →",
+      "dismissAriaLabel": "Dismiss new content notice"
+    },
+    "emptyHistory": "Waiting for the next Agent batch.",
+    "loadingHistory": "Loading...",
+    "coinPool": {
+      "majors": "Majors",
+      "trending": "Trending",
+      "opportunity": "Opportunity"
+    },
+    "focusCard": {
+      "watching": "Watching now",
+      "trigger": "Trigger",
+      "fail": "Invalidation",
+      "expandFail": "Invalidation",
+      "evidenceCount": "{count} signals as evidence",
+      "minutesAgo": "{minutes} min ago",
+      "warmup": "Agent warming up",
+      "thinking": "Thinking",
+      "focusLabel": "Watching now"
+    },
+    "marketEvent": {
+      "title": "Market Signals",
+      "empty": "Waiting for new signals..."
+    },
+    "newsDebate": {
+      "liveBadge": "LIVE Debate",
+      "criticalBadge": "Breaking",
+      "source": "Source",
+      "original": "Original",
+      "intensity": "Intensity",
+      "roundIndependent": "Round 1 · Independent takes",
+      "roundRebuttal": "Round 2 · Rebuttals",
+      "roundConsensus": "Round 3 · Consensus",
+      "finalStrategy": "User strategy",
+      "consensus": "Consensus",
+      "entry": "Entry",
+      "stopLoss": "Stop loss",
+      "takeProfit": "Take profit",
+      "dissent": "Dissent",
+      "risk": "Risk",
+      "follow": "followers",
+      "watching": "watching",
+      "expired": "Expired",
+      "expiresIn": "left",
+      "followLong": "Follow long",
+      "followShort": "Follow short",
+      "waitSignal": "Wait for signal",
+      "share": "Share",
+      "replay": "Replay",
+      "newsTab": "News",
+      "noNews": "No news yet"
+    }
+  },
+  "coinModal": {
+    "closeAriaLabel": "Close market card",
+    "goToWatchCta": "Go to Agent Live",
+    "loadingPrice": "Loading market data",
+    "agentCommentMissing": "Agent commentary available in Chinese only"
   }
 }

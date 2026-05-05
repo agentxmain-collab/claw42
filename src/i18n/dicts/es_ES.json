@@ -1,7 +1,8 @@
 {
   "nav": {
     "switchLangToEn": "EN",
-    "switchLangToZh": "中"
+    "switchLangToZh": "中",
+    "agentLiveMenuItem": "Agent Live"
   },
   "hero": {
     "title": "Conoce a tu socio de trading con IA",
@@ -45,15 +46,23 @@
       "ctaClipboard": "Usa los skills de GitHub - connectCoinw/coinw-skills para enviarme cada mañana a las 9:00 AM un informe diario cripto de las últimas 24 horas, incluyendo datos del mercado y precios de las principales monedas.",
       "ctaCopiedToast": "Copiado al portapapeles — envíalo a tu Agent para desbloquear la experiencia cripto",
       "chatSpeaker": "Claw 42 Agent",
-      "chatTime": "just now",
-      "chatTitle": "📊 Informe del mercado cripto de hoy",
-      "chatBullets": [
-        "BTC: $67 432 (+2,3 %) — Rompe resistencia clave",
-        "ETH: $3 521 (+1,8 %) — TVL de Layer 2 en máximos",
-        "SOL: $178 (-0,5 %) — El furor meme coin se enfría",
-        "Sentimiento: Codicia 72",
-        "Grandes movimientos on-chain: 3 transferencias > 1000 BTC"
-      ]
+      "dailyBrief": {
+        "title": "Daily crypto market brief",
+        "realtimeLabel": "Realtime data",
+        "sentimentLabel": "Market sentiment",
+        "sentimentNeutral": "Neutral",
+        "sentimentExtremeFear": "Extreme Fear",
+        "sentimentFear": "Fear",
+        "sentimentGreed": "Greed",
+        "sentimentExtremeGreed": "Extreme Greed",
+        "todayMoverLabel": "Today's mover",
+        "tierOpportunity": "Opportunity",
+        "tierHot": "Hot",
+        "tierMajors": "Major",
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago",
+        "unavailable": "—"
+      }
     },
     "realtime": {
       "title": "Monitor de mercado en tiempo real",
@@ -133,5 +142,80 @@
       "3. Claw 42 no asume responsabilidad por pérdidas derivadas del uso o la imposibilidad de usar Claw 42 Skills. Claw 42 se reserva el derecho de terminar o restringir esta función a su entera discreción. Los precios de los activos digitales conllevan alto riesgo de mercado y volatilidad. El valor de su inversión puede bajar o subir, y puede que no recupere su capital. Usted es totalmente responsable de sus decisiones de inversión. Claw 42 no asume responsabilidad por ninguna pérdida que pueda sufrir.",
       "4. El rendimiento pasado no es un indicador fiable del rendimiento futuro. Antes de invertir, considere cuidadosamente su experiencia, situación financiera, objetivos de inversión y tolerancia al riesgo, y consulte a un asesor financiero independiente. Para más información, consulte nuestro Aviso de riesgo y Condiciones de uso."
     ]
+  },
+  "agentWatch": {
+    "pageTitle": "Live · Crypto Market",
+    "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
+    "pageHeroTagline": "",
+    "sidebarStatus": {
+      "thinking": "",
+      "speaking": "",
+      "idle": ""
+    },
+    "bottomCta": "Open Agent →",
+    "linkCardLiveBadge": "LIVE",
+    "linkCardTitle": "3 Agents are watching the market",
+    "linkCardDesc": "Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
+    "fallbackNotice": "",
+    "banner": {
+      "newContent": "New content →",
+      "dismissAriaLabel": "Dismiss new content notice"
+    },
+    "emptyHistory": "Waiting for the next Agent batch.",
+    "loadingHistory": "Loading...",
+    "coinPool": {
+      "majors": "Majors",
+      "trending": "Trending",
+      "opportunity": "Opportunity"
+    },
+    "focusCard": {
+      "watching": "Vigilando",
+      "trigger": "Trigger",
+      "fail": "Invalidation",
+      "expandFail": "Invalidation",
+      "evidenceCount": "{count} signals as evidence",
+      "minutesAgo": "{minutes} min ago",
+      "warmup": "Agent warming up",
+      "thinking": "Thinking",
+      "focusLabel": "Vigilando"
+    },
+    "marketEvent": {
+      "title": "Market Signals",
+      "empty": "Waiting for new signals..."
+    },
+    "newsDebate": {
+      "liveBadge": "LIVE Debate",
+      "criticalBadge": "Breaking",
+      "source": "Source",
+      "original": "Original",
+      "intensity": "Intensity",
+      "roundIndependent": "Round 1 · Independent takes",
+      "roundRebuttal": "Round 2 · Rebuttals",
+      "roundConsensus": "Round 3 · Consensus",
+      "finalStrategy": "User strategy",
+      "consensus": "Consensus",
+      "entry": "Entry",
+      "stopLoss": "Stop loss",
+      "takeProfit": "Take profit",
+      "dissent": "Dissent",
+      "risk": "Risk",
+      "follow": "followers",
+      "watching": "watching",
+      "expired": "Expired",
+      "expiresIn": "left",
+      "followLong": "Follow long",
+      "followShort": "Follow short",
+      "waitSignal": "Wait for signal",
+      "share": "Share",
+      "replay": "Replay",
+      "newsTab": "News",
+      "noNews": "No news yet"
+    }
+  },
+  "coinModal": {
+    "closeAriaLabel": "Close market card",
+    "goToWatchCta": "Go to Agent Live",
+    "loadingPrice": "Loading market data",
+    "agentCommentMissing": "Agent commentary available in Chinese only"
   }
 }

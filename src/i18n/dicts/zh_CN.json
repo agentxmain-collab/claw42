@@ -1,7 +1,8 @@
 {
   "nav": {
     "switchLangToEn": "EN",
-    "switchLangToZh": "中"
+    "switchLangToZh": "中",
+    "agentLiveMenuItem": "实时分析"
   },
   "hero": {
     "title": "遇见你的AI交易伙伴",
@@ -39,21 +40,29 @@
       "badge": "推荐场景",
       "desc": "一键唤醒 AI 获取全球市场动态。AI 将自动扫描主流币种波动、热门社交媒体情绪、重要链上数据与宏观新闻，输出结构化的中文研报，助你开启每日交易。",
       "inputPlaceholder": "点击复制内容，发送给你的 agent 即可体验",
-      "defaultPrompt": "帮我生成今日加密货币市场日报：扫描 BTC/ETH/SOL 等主流币种 24 小时价格波动、主要社交媒体的情绪变化、链上大额转账和宏观新闻，输出结构化的中文日报，帮我开启今天的交易。",
+      "defaultPrompt": "帮我生成今日加密货币市场日报：扫描 BTC/ETH/SOL 等主流币种 24 小时价格波动、主要社交媒体的情绪变化、热门币异动和宏观新闻，输出结构化的中文日报，帮我开启今天的交易。",
       "copiedToast": "已复制到剪贴板",
       "cta": "立即试用",
       "ctaClipboard": "使用 GitHub - connectCoinw/coinw-skills 中的 skills，在每天早上 9:00 发送给我过去 24 小时的加密日报，包含大盘数据、主流币种行情。",
       "ctaCopiedToast": "已复制到剪贴板，发给你的 Agent 开启加密新体验",
       "chatSpeaker": "Claw 42 Agent",
-      "chatTime": "just now",
-      "chatTitle": "📊 今日加密货币市场日报",
-      "chatBullets": [
-        "BTC: $67,432 (+2.3%) — 突破关键阻力位",
-        "ETH: $3,521 (+1.8%) — Layer2 TVL 创新高",
-        "SOL: $178 (-0.5%) — Meme 币热度回落",
-        "市场情绪: 贪婪 72",
-        "链上大额转账: 3 笔 > 1000 BTC"
-      ]
+      "dailyBrief": {
+        "title": "今日加密货币市场日报",
+        "realtimeLabel": "实时数据",
+        "sentimentLabel": "市场情绪",
+        "sentimentNeutral": "中性",
+        "sentimentExtremeFear": "极度恐慌",
+        "sentimentFear": "恐慌",
+        "sentimentGreed": "贪婪",
+        "sentimentExtremeGreed": "极度贪婪",
+        "todayMoverLabel": "今日异动",
+        "tierOpportunity": "机会区",
+        "tierHot": "热门区",
+        "tierMajors": "主流区",
+        "justNow": "刚刚",
+        "minutesAgo": "{n} 分钟前",
+        "unavailable": "—"
+      }
     },
     "realtime": {
       "title": "实时行情监控",
@@ -133,5 +142,80 @@
       "3. 对于因使用或禁止使用 Claw 42 Skills 功能而导致的任何损失，Claw 42 概不负责。Claw 42 有权自行决定终止或限制此功能。数字资产价格具有高市场风险和波动性。您的投资价值可能下降也可能上涨，且可能无法收回投资本金。您应对自己的投资决策负全责。Claw 42 对您可能遭受的任何损失不承担责任。",
       "4. 记住过去的并非未来表现的可靠预测指标。在做出任何投资前，您应仔细考虑自己的投资经验、财务状况、投资目标和风险承受能力，并咨询独立财务顾问。更多信息请参阅我们的风险提示和使用条款。"
     ]
+  },
+  "agentWatch": {
+    "pageTitle": "Live · 加密市场",
+    "pageSubtitle": "3 个 Agent 同时盯盘。Alpha 看突破，Beta 看趋势，Gamma 看极端。",
+    "pageHeroTagline": "",
+    "sidebarStatus": {
+      "thinking": "思考中",
+      "speaking": "发言中",
+      "idle": "静默"
+    },
+    "bottomCta": "开始使用 Agent →",
+    "linkCardLiveBadge": "LIVE",
+    "linkCardTitle": "3 个 Agent 正在盯盘",
+    "linkCardDesc": "Alpha 看突破，Beta 看趋势，Gamma 看极端",
+    "fallbackNotice": "",
+    "banner": {
+      "newContent": "有新内容 →",
+      "dismissAriaLabel": "关闭新内容提示"
+    },
+    "emptyHistory": "等待下一批 Agent 判断",
+    "loadingHistory": "加载中...",
+    "coinPool": {
+      "majors": "主流",
+      "trending": "热门",
+      "opportunity": "机会"
+    },
+    "focusCard": {
+      "watching": "当前关注",
+      "trigger": "触发",
+      "fail": "失效",
+      "expandFail": "失效条件",
+      "evidenceCount": "{count} 条信号支撑",
+      "minutesAgo": "{minutes} 分钟前",
+      "warmup": "Agent 准备中",
+      "thinking": "思考中",
+      "focusLabel": "当前关注"
+    },
+    "marketEvent": {
+      "title": "市场信号",
+      "empty": "等待新信号..."
+    },
+    "newsDebate": {
+      "liveBadge": "LIVE 辩论",
+      "criticalBadge": "重大插播",
+      "source": "来源",
+      "original": "原文",
+      "intensity": "激烈度",
+      "roundIndependent": "Round 1 · 独立观点",
+      "roundRebuttal": "Round 2 · 反驳追问",
+      "roundConsensus": "Round 3 · 共识收敛",
+      "finalStrategy": "用户策略",
+      "consensus": "共识",
+      "entry": "入场",
+      "stopLoss": "止损",
+      "takeProfit": "止盈",
+      "dissent": "保留意见",
+      "risk": "风险",
+      "follow": "已跟单",
+      "watching": "人在看",
+      "expired": "已失效",
+      "expiresIn": "后失效",
+      "followLong": "一键跟多",
+      "followShort": "一键跟空",
+      "waitSignal": "等待信号",
+      "share": "分享",
+      "replay": "复盘",
+      "newsTab": "新闻",
+      "noNews": "暂无新闻"
+    }
+  },
+  "coinModal": {
+    "closeAriaLabel": "关闭行情卡",
+    "goToWatchCta": "去实时分析看他们继续聊",
+    "loadingPrice": "行情数据获取中",
+    "agentCommentMissing": "Agent 点评暂时不可用"
   }
 }

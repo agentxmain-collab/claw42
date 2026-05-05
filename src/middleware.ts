@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCALES, matchLocale } from "./i18n/locales";
+import { agentWatchRedirectPath } from "./modules/agent-watch/locale";
 
 const LOCALE_COOKIE = "claw42-locale";
 
@@ -7,13 +8,22 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const hasLocale = LOCALES.some(
-    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
   );
-  if (hasLocale) return NextResponse.next();
+  if (hasLocale) {
+    const [, locale, nextSegment] = pathname.split("/");
+    const agentRedirectPath = nextSegment === "agent" ? agentWatchRedirectPath(locale) : null;
+    if (agentRedirectPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = agentRedirectPath;
+      return NextResponse.redirect(url, 302);
+    }
+
+    return NextResponse.next();
+  }
 
   const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
-  const isValidCookie =
-    cookieLocale && (LOCALES as readonly string[]).includes(cookieLocale);
+  const isValidCookie = cookieLocale && (LOCALES as readonly string[]).includes(cookieLocale);
   const locale = isValidCookie
     ? (cookieLocale as (typeof LOCALES)[number])
     : matchLocale(request.headers.get("accept-language"));

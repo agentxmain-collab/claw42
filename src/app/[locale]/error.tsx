@@ -16,15 +16,9 @@ export default function LocaleError({
   return (
     <main className="flex min-h-screen items-center justify-center bg-black px-6">
       <div className="text-center">
-        <p className="mb-4 font-mono text-sm text-[#ff5f5f]">
-          Something went wrong
-        </p>
-        <h1 className="mb-4 text-2xl font-bold text-white md:text-3xl">
-          We hit a snag
-        </h1>
-        <p className="mb-8 text-gray-400">
-          An unexpected error occurred. Try reloading.
-        </p>
+        <p className="mb-4 font-mono text-sm text-[#ff5f5f]">Something went wrong</p>
+        <h1 className="mb-4 text-2xl font-bold text-white md:text-3xl">We hit a snag</h1>
+        <p className="mb-8 text-gray-400">An unexpected error occurred. Try reloading.</p>
         <button
           type="button"
           onClick={reset}

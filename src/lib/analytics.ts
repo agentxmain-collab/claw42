@@ -4,6 +4,8 @@ export const ANALYTICS_EVENTS = [
   "page_view",
   "hero_cta_copy",
   "hero_api_docs_click",
+  "hero_agent_watch_click",
+  "hero_coin_watch_click",
   "quick_start_copy",
   "daily_prompt_copy",
   "daily_cta_copy",
@@ -11,6 +13,15 @@ export const ANALYTICS_EVENTS = [
   "locale_select",
   "skill_card_click",
   "back_to_top_click",
+  "news_debate_view",
+  "news_debate_original_click",
+  "news_debate_strategy_follow_click",
+  "news_debate_share_open",
+  "news_debate_share_copy",
+  "news_feed_ticker_click",
+  "agent_mini_card_click",
+  "strategy_replay_view",
+  "replay_page_view",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
@@ -29,13 +40,7 @@ interface AnalyticsPayload {
   };
 }
 
-const UTM_KEYS = [
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_content",
-  "utm_term",
-] as const;
+const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
 let posthogInited = false;
 
@@ -53,10 +58,7 @@ function ensurePosthog() {
   posthogInited = true;
 }
 
-function capturePosthog(
-  event: AnalyticsEventName,
-  properties: AnalyticsProperties
-) {
+function capturePosthog(event: AnalyticsEventName, properties: AnalyticsProperties) {
   try {
     ensurePosthog();
     if (posthogInited) posthog.capture(event, properties);
@@ -90,7 +92,7 @@ function getUtmProperties(): AnalyticsProperties | undefined {
 
 function buildPayload(
   event: AnalyticsEventName,
-  properties: AnalyticsProperties
+  properties: AnalyticsProperties,
 ): AnalyticsPayload {
   return {
     event,
@@ -105,10 +107,7 @@ function buildPayload(
   };
 }
 
-export function trackEvent(
-  event: AnalyticsEventName,
-  properties: AnalyticsProperties = {}
-) {
+export function trackEvent(event: AnalyticsEventName, properties: AnalyticsProperties = {}) {
   if (typeof window === "undefined") return;
 
   const body = JSON.stringify(buildPayload(event, properties));
@@ -128,7 +127,9 @@ export function trackEvent(
     body,
     keepalive: true,
     signal: controller.signal,
-  }).catch(() => {
-    // Analytics must never interrupt the user journey.
-  }).finally(() => window.clearTimeout(timeoutId));
+  })
+    .catch(() => {
+      // Analytics must never interrupt the user journey.
+    })
+    .finally(() => window.clearTimeout(timeoutId));
 }

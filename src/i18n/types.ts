@@ -14,6 +14,7 @@ export interface Dict {
   nav: {
     switchLangToEn: string; // 当前中文时按钮显示
     switchLangToZh: string; // 当前英文时按钮显示
+    agentLiveMenuItem: string;
   };
   hero: {
     title: string;
@@ -42,9 +43,23 @@ export interface Dict {
       ctaClipboard: string;
       ctaCopiedToast: string;
       chatSpeaker: string;
-      chatTime: string;
-      chatTitle: string;
-      chatBullets: string[];
+      dailyBrief: {
+        title: string;
+        realtimeLabel: string;
+        sentimentLabel: string;
+        sentimentNeutral: string;
+        sentimentExtremeFear: string;
+        sentimentFear: string;
+        sentimentGreed: string;
+        sentimentExtremeGreed: string;
+        todayMoverLabel: string;
+        tierOpportunity: string;
+        tierHot: string;
+        tierMajors: string;
+        justNow: string;
+        minutesAgo: string;
+        unavailable: string;
+      };
     };
     realtime: {
       title: string;
@@ -86,5 +101,80 @@ export interface Dict {
   disclaimer: {
     title: string;
     paragraphs: string[];
+  };
+  agentWatch: {
+    pageTitle: string;
+    pageSubtitle: string;
+    pageHeroTagline: string;
+    sidebarStatus: {
+      thinking: string;
+      speaking: string;
+      idle: string;
+    };
+    bottomCta: string;
+    linkCardLiveBadge: string;
+    linkCardTitle: string;
+    linkCardDesc: string;
+    fallbackNotice: string;
+    banner: {
+      newContent: string;
+      dismissAriaLabel: string;
+    };
+    emptyHistory: string;
+    loadingHistory: string;
+    coinPool: {
+      majors: string;
+      trending: string;
+      opportunity: string;
+    };
+    focusCard: {
+      watching: string;
+      focusLabel: string;
+      trigger: string;
+      fail: string;
+      expandFail: string;
+      evidenceCount: string;
+      minutesAgo: string;
+      warmup: string;
+      thinking: string;
+    };
+    marketEvent: {
+      title: string;
+      empty: string;
+    };
+    newsDebate: {
+      liveBadge: string;
+      criticalBadge: string;
+      source: string;
+      original: string;
+      intensity: string;
+      roundIndependent: string;
+      roundRebuttal: string;
+      roundConsensus: string;
+      finalStrategy: string;
+      consensus: string;
+      entry: string;
+      stopLoss: string;
+      takeProfit: string;
+      dissent: string;
+      risk: string;
+      follow: string;
+      watching: string;
+      expired: string;
+      expiresIn: string;
+      followLong: string;
+      followShort: string;
+      waitSignal: string;
+      share: string;
+      replay: string;
+      newsTab: string;
+      noNews: string;
+    };
+  };
+  coinModal: {
+    closeAriaLabel: string;
+    goToWatchCta: string;
+    loadingPrice: string;
+    agentCommentMissing: string;
   };
 }

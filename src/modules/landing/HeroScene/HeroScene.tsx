@@ -1,15 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
+import { useMarketTicker } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import { useMouseNormalized } from "./useMouseNormalized";
+import { heroStageCssVars } from "./heroStageMotion";
+import { useHeroScrollDepth } from "./useHeroScrollDepth";
 import { useRobotPose, type Pose } from "./useRobotPose";
 import { RobotLayer } from "./RobotLayer";
 import { PedestalLayer } from "./PedestalLayer";
 import { CoinsLayer } from "./CoinsLayer";
+import type { CoinSymbol } from "@/modules/agent-watch/types";
 
 /** Simple mobile detection without extra dependencies. */
 function useIsMobile() {
@@ -46,10 +51,14 @@ function useMobilePoseCycle(isMobile: boolean, reduceMotion: boolean): Pose {
 
 export function HeroScene() {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const reduceMotion = useReducedMotion() ?? false;
   const stageRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [heroCopied, setHeroCopied] = useState(false);
+  const { data: tickerData } = useMarketTicker({ enabled: true, intervalMs: 60_000 });
+  const scrollDepth = useHeroScrollDepth(stageRef, reduceMotion);
+  const stageStyle = heroStageCssVars(scrollDepth);
 
   const handleHeroCtaClick = async () => {
     try {
@@ -73,66 +82,113 @@ export function HeroScene() {
   const desktopPose = useRobotPose(mouseX, reduceMotion);
   const mobilePose = useMobilePoseCycle(isMobile, reduceMotion);
   const pose = isMobile ? mobilePose : desktopPose;
+  const watchPath = `/${locale}/agent`;
+  const handleOpenWatch = () => {
+    trackEvent("hero_agent_watch_click", { locale, surface: "hero_robot" });
+    router.push(watchPath);
+  };
+  const handleOpenCoinWatch = (symbol: CoinSymbol) => {
+    trackEvent("hero_coin_watch_click", { locale, symbol, surface: "hero_coin" });
+    router.push(`${watchPath}#${symbol}`);
+  };
 
   return (
     <section
       ref={stageRef}
-      className="claw42-hero-scene relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden bg-black pt-[72px] md:pt-[80px]"
+      className="claw42-hero-scene relative aspect-[4/5] w-full overflow-hidden bg-black pt-[72px] md:aspect-auto md:h-screen md:max-h-[920px] md:min-h-[760px] md:pt-[80px]"
+      style={stageStyle}
     >
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
-          background: `
-            radial-gradient(circle at 50% 40%, rgba(115, 90, 255, 0.84) 0%, rgba(96, 70, 235, 0.64) 18%, rgba(58, 36, 150, 0.48) 36%, rgba(18, 12, 42, 0.18) 56%, rgba(0, 0, 0, 0) 74%),
-            radial-gradient(circle at 50% 54%, rgba(255, 255, 255, 0.12) 0%, rgba(198, 189, 255, 0.08) 14%, rgba(14, 9, 34, 0) 34%)
-          `,
+          backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
+          backgroundPosition: "center bottom",
+          backgroundSize: "cover",
+          transform: "translate3d(0, var(--claw42-hero-depth-bg-y, 0px), 0)",
         }}
       />
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.84) 10%, rgba(0,0,0,0.28) 24%, rgba(0,0,0,0.1) 34%, rgba(0,0,0,0.08) 66%, rgba(0,0,0,0.34) 80%, rgba(0,0,0,0.8) 92%, rgba(0,0,0,0.98) 100%)",
+            "linear-gradient(180deg, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.5) 12%, rgba(0,0,0,0.04) 32%, rgba(0,0,0,0.02) 58%, rgba(0,0,0,0.64) 78%, rgba(0,0,0,0.98) 100%)",
         }}
       />
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 128% 88% at 50% 50%, rgba(0,0,0,0) 46%, rgba(0,0,0,0.44) 74%, rgba(0,0,0,0.92) 100%)",
+            "radial-gradient(ellipse 120% 84% at 50% 46%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.44) 78%, rgba(0,0,0,0.94) 100%)",
         }}
+      />
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-[8]"
+        style={{
+          backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
+          backgroundPosition: "center bottom",
+          backgroundSize: "cover",
+          filter: "brightness(1.22) saturate(1.18)",
+          mixBlendMode: "screen",
+          transform: "translate3d(0, var(--claw42-hero-depth-horizon-y, 0px), 0)",
+          WebkitMaskImage:
+            "linear-gradient(180deg, transparent 38%, black 47%, black 66%, transparent 74%)",
+          maskImage:
+            "linear-gradient(180deg, transparent 38%, black 47%, black 66%, transparent 74%)",
+        }}
+        animate={
+          reduceMotion
+            ? { opacity: 0.1 }
+            : {
+                opacity: [0.04, 0.14, 0.04],
+              }
+        }
+        transition={
+          reduceMotion ? { duration: 0 } : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
+        }
       />
 
       {/* z-10 Pedestal */}
       <PedestalLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
 
       {/* z-20/25 Robot */}
-      <RobotLayer pose={pose} mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
+      <RobotLayer
+        pose={pose}
+        mouseX={mouseX}
+        mouseY={mouseY}
+        reduceMotion={reduceMotion}
+        onOpenWatch={handleOpenWatch}
+      />
 
       {/* z-30 Coins */}
-      <CoinsLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
+      <CoinsLayer
+        mouseX={mouseX}
+        mouseY={mouseY}
+        reduceMotion={reduceMotion}
+        tickers={tickerData?.tickers}
+        onSelectCoin={handleOpenCoinWatch}
+      />
 
       {/* z-50 Gradient scrim for title readability */}
-      <div className="absolute inset-x-0 bottom-0 z-50 h-[42%] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
+      <div className="via-black/72 pointer-events-none absolute inset-x-0 bottom-0 z-50 h-[48%] bg-gradient-to-t from-black to-transparent" />
 
       {/* z-50 Title + CTA overlay */}
-      <div className="claw42-hero-copy absolute inset-x-0 bottom-[6%] z-50 flex flex-col items-center text-center px-6 max-w-4xl mx-auto left-1/2 -translate-x-1/2">
+      <div className="claw42-hero-copy absolute left-1/2 top-[71%] z-50 flex w-full max-w-3xl -translate-x-1/2 flex-col items-center px-6 text-center">
         <div className="claw42-hero-text flex flex-col items-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
+          <h1 className="mb-3 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-[44px] lg:text-[48px]">
             {t.hero.title}
           </h1>
-          <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mb-8 leading-relaxed">
+          <p className="mb-6 max-w-2xl text-sm leading-relaxed text-gray-400 sm:text-base md:text-[17px]">
             {t.hero.subtitle}
           </p>
         </div>
-        <div className="claw42-hero-actions flex flex-col sm:flex-row gap-4 pointer-events-auto">
+        <div className="claw42-hero-actions pointer-events-auto flex flex-col items-center justify-center gap-4 sm:flex-row">
           <div className="relative">
             <motion.button
               type="button"
               onClick={handleHeroCtaClick}
               whileHover={reduceMotion ? undefined : { scale: 1.05 }}
               whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-              className="px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
+              className="inline-flex min-w-[9.25rem] items-center justify-center rounded-xl bg-[#7c5cff] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] md:text-base"
             >
               {t.hero.ctaPrimary}
             </motion.button>
@@ -143,7 +199,7 @@ export function HeroScene() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
                   transition={{ duration: 0.18 }}
-                  className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 rounded-md bg-[#7c5cff] text-white text-xs font-semibold shadow-lg z-10"
+                  className="absolute -top-10 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#7c5cff] px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
                 >
                   {t.hero.ctaPrimaryCopiedToast}
                 </motion.div>
@@ -162,7 +218,7 @@ export function HeroScene() {
             }
             whileHover={reduceMotion ? undefined : { scale: 1.05 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
+            className="inline-flex min-w-[9.25rem] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/15 md:text-base"
           >
             {t.hero.ctaSecondary}
           </motion.a>

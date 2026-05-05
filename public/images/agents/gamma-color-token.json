@@ -1,0 +1,8 @@
+{
+  "agentId": "gamma",
+  "primary": "#251a2e",
+  "accent": "#9b6bff",
+  "accentRgba": "rgba(155, 107, 255, 1)",
+  "glowRgba": "rgba(155, 107, 255, 0.45)",
+  "secondaryAccent": "#d48cff"
+}
