@@ -20,6 +20,8 @@ package_files:
   moderate: 1
   low: 0
   posthog-js: "^1.372.3 (added 2026-04-30 by Dan directive; covered by ADR 0002; pending Dan 墨菲 scan)"
+  recharts: "^2.15.4 (added for task-15 StrategyMiniChart; covered by ADR 0005; pending Dan 墨菲 scan)"
+  "@vercel/og": "^0.6.8 (added for task-15 share image route; covered by ADR 0006; pending Dan 墨菲 scan)"
   notes: "next / glob 类。存量不强升级（v2.2 'A 级存量不强改' 原则）"
   github_remote: agentxmain-collab/claw42 (https)
   worktrees:

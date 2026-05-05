@@ -116,6 +116,8 @@ src/
 
 **AI 改动这些路径前必须显式声明**："本改动涉及禁止路径 X，原因 Y，请 Dan 确认"。
 
+例外记录：`vercel.json` 的 task-15 strategy replay cron 已由 ADR 0004 预批准，仅限 `/api/cron/strategy-replay` 一条 cron；后续新增或修改部署配置仍需 Dan 显式确认。
+
 ## 10. 升级路径 + 已知技术债
 
 **已知债**（按规范允许的 "A 级存量不强改" 豁免）：

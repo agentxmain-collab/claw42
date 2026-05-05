@@ -142,6 +142,34 @@ export interface Dict {
       title: string;
       empty: string;
     };
+    newsDebate: {
+      liveBadge: string;
+      criticalBadge: string;
+      source: string;
+      original: string;
+      intensity: string;
+      roundIndependent: string;
+      roundRebuttal: string;
+      roundConsensus: string;
+      finalStrategy: string;
+      consensus: string;
+      entry: string;
+      stopLoss: string;
+      takeProfit: string;
+      dissent: string;
+      risk: string;
+      follow: string;
+      watching: string;
+      expired: string;
+      expiresIn: string;
+      followLong: string;
+      followShort: string;
+      waitSignal: string;
+      share: string;
+      replay: string;
+      newsTab: string;
+      noNews: string;
+    };
   };
   coinModal: {
     closeAriaLabel: string;

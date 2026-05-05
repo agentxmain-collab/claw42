@@ -2,10 +2,12 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
+import type { Dict } from "@/i18n/types";
 import type { AgentId, CoinPoolPayload, StreamEntry } from "../types";
 import type { AgentWatchLocale } from "../locale";
 import { buildStreamChatMessages } from "../utils/streamChatMessages";
 import { AgentChatBubble } from "./AgentChatBubble";
+import { NewsDebateCard } from "./NewsDebateCard";
 import { TypingIndicator } from "./TypingIndicator";
 
 export interface StreamHandle {
@@ -18,17 +20,24 @@ interface StreamProps {
   pool?: CoinPoolPayload;
   emptyLabel?: string;
   locale?: AgentWatchLocale;
+  newsDebateLabels: Dict["agentWatch"]["newsDebate"];
 }
 
 function StreamEntryView({
   entry,
   pool,
   locale = "zh_CN",
+  newsDebateLabels,
 }: {
   entry: StreamEntry;
   pool?: CoinPoolPayload;
   locale?: AgentWatchLocale;
+  newsDebateLabels: Dict["agentWatch"]["newsDebate"];
 }) {
+  if (entry.kind === "news_debate") {
+    return <NewsDebateCard debate={entry.debate} labels={newsDebateLabels} />;
+  }
+
   const messages = buildStreamChatMessages(entry, pool, locale);
 
   return (
@@ -41,7 +50,7 @@ function StreamEntryView({
 }
 
 export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
-  { entries, typingAgent, pool, emptyLabel, locale = "zh_CN" },
+  { entries, typingAgent, pool, emptyLabel, locale = "zh_CN", newsDebateLabels },
   forwardedRef,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,7 +105,13 @@ export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
 
         <AnimatePresence initial={false}>
           {uniqueEntries.map((entry) => (
-            <StreamEntryView key={entry.id} entry={entry} pool={pool} locale={locale} />
+            <StreamEntryView
+              key={entry.id}
+              entry={entry}
+              pool={pool}
+              locale={locale}
+              newsDebateLabels={newsDebateLabels}
+            />
           ))}
         </AnimatePresence>
 

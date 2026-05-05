@@ -12,6 +12,7 @@ import type {
   AgentMessage,
   AgentId,
   AgentStatus,
+  NewsDebateEntry,
   StreamEntry,
   WatchUpdateEntry,
 } from "./types";
@@ -19,6 +20,8 @@ import { AgentRowCard } from "./components/AgentRowCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
 import { MarketEventFeed } from "./components/MarketEventFeed";
 import { Stream, type StreamHandle } from "./components/Stream";
+import { CriticalNewsBanner } from "./components/CriticalNewsBanner";
+import { NewsFeedTicker } from "./components/NewsFeedTicker";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
 import {
@@ -59,7 +62,8 @@ function isPriorityEvent(entry: StreamEntry) {
   return (
     entry.kind === "collective_event" ||
     entry.kind === "focus_event" ||
-    entry.kind === "conflict_event"
+    entry.kind === "conflict_event" ||
+    entry.kind === "news_debate"
   );
 }
 
@@ -67,6 +71,11 @@ function speakerIdsForEntry(entry: StreamEntry): AgentId[] {
   if (isAgentMessage(entry)) return [entry.agentId];
   if (isWatchUpdate(entry)) return entry.agentId ? [entry.agentId] : [];
   if (isAgentDiscussion(entry)) return entry.responses.map((response) => response.agentId);
+  if (entry.kind === "news_debate") {
+    return entry.debate.rounds.flatMap((round) =>
+      round.utterances.map((utterance) => utterance.agentId),
+    );
+  }
   if (entry.kind === "focus_event") return [entry.primaryResponse.agentId];
   if (entry.kind === "collective_event") {
     return [entry.primaryResponse, ...entry.echoResponses].map((response) => response.agentId);
@@ -141,9 +150,21 @@ function trimStreamEntries(entries: StreamEntry[]) {
 }
 
 function streamEntriesFromPayload(data: NonNullable<ReturnType<typeof useAgentAnalysis>["data"]>) {
-  if (data.streamEntries?.length) return data.streamEntries;
+  const debateEntries: NewsDebateEntry[] =
+    data.newsDebates?.map((debate) => ({
+      kind: "news_debate",
+      id: debate.id,
+      ts: debate.ts,
+      debate,
+    })) ?? [];
 
-  return data.stream.map(
+  if (data.streamEntries?.length) {
+    return dedupeStreamEntries([...debateEntries, ...data.streamEntries]).sort(
+      (a, b) => a.ts - b.ts,
+    );
+  }
+
+  const legacyEntries = data.stream.map(
     (item, index): AgentMessage => ({
       kind: "agent_message",
       id: `${data.generatedAt}-${item.agentId}-${index}`,
@@ -153,6 +174,8 @@ function streamEntriesFromPayload(data: NonNullable<ReturnType<typeof useAgentAn
       triggerSignalId: `legacy-${data.generatedAt}-${item.agentId}-${index}`,
     }),
   );
+
+  return dedupeStreamEntries([...debateEntries, ...legacyEntries]).sort((a, b) => a.ts - b.ts);
 }
 
 export function AgentWatchBoard() {
@@ -396,11 +419,16 @@ export function AgentWatchBoard() {
       <div className="space-y-7">
         <TopicHeader t={t} />
         <CoinTickerStrip pool={data?.pool} tickers={data?.tickers} labels={t.agentWatch.coinPool} />
+        <CriticalNewsBanner
+          debate={data?.newsDebates?.[0] ?? null}
+          labels={t.agentWatch.newsDebate}
+        />
         <MarketEventFeed
           signals={marketSignals}
           labels={t.agentWatch.marketEvent}
           locale={agentWatchLocale}
         />
+        <NewsFeedTicker debates={data?.newsDebates ?? []} labels={t.agentWatch.newsDebate} />
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {AGENT_ORDER.map((agentId) => (
@@ -430,6 +458,7 @@ export function AgentWatchBoard() {
           pool={data?.pool}
           emptyLabel={t.agentWatch.emptyHistory}
           locale={agentWatchLocale}
+          newsDebateLabels={t.agentWatch.newsDebate}
         />
 
         <p className="text-white/42 rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3 text-xs leading-relaxed">

@@ -15,14 +15,18 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,md,json,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,md,json,css}\"",
+    "verify:agent-ip": "node scripts/verify-agent-ip.mjs",
+    "verify:news": "node scripts/verify-news.mjs",
     "verify": "npm run typecheck && npm run lint && npm run format:check && npm run build"
   },
   "dependencies": {
+    "@vercel/og": "^0.6.8",
     "framer-motion": "^11.18.2",
     "next": "14.2.35",
     "posthog-js": "^1.372.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "recharts": "^2.15.4"
   },
   "devDependencies": {
     "@types/node": "^20",

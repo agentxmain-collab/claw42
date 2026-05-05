@@ -1,3 +1,5 @@
+import type { NewsDebate } from "@/lib/types";
+
 export type CoinSymbol = "BTC" | "ETH" | "SOL" | "USDT";
 export type AgentId = "alpha" | "beta" | "gamma";
 export type AgentStatus = "thinking" | "speaking" | "idle";
@@ -219,13 +221,21 @@ export interface AgentDiscussionEntry {
   severity: "neutral" | "watch";
 }
 
+export interface NewsDebateEntry {
+  kind: "news_debate";
+  id: string;
+  ts: number;
+  debate: NewsDebate;
+}
+
 export type StreamEntry =
   | AgentMessage
   | CollectiveEvent
   | FocusEvent
   | ConflictEvent
   | WatchUpdateEntry
-  | AgentDiscussionEntry;
+  | AgentDiscussionEntry
+  | NewsDebateEntry;
 
 export type CoinComments = Record<CoinSymbol, Record<AgentId, string>>;
 
@@ -240,6 +250,7 @@ export interface AgentAnalysisPayload {
   marketSource: MarketDataSource;
   stream: StreamMessage[];
   streamEntries?: StreamEntry[];
+  newsDebates?: NewsDebate[];
   heroBubbles: string[];
   coinComments: CoinComments;
   degraded?: boolean;

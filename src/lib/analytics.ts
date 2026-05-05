@@ -13,6 +13,15 @@ export const ANALYTICS_EVENTS = [
   "locale_select",
   "skill_card_click",
   "back_to_top_click",
+  "news_debate_view",
+  "news_debate_original_click",
+  "news_debate_strategy_follow_click",
+  "news_debate_share_open",
+  "news_debate_share_copy",
+  "news_feed_ticker_click",
+  "agent_mini_card_click",
+  "strategy_replay_view",
+  "replay_page_view",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

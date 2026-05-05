@@ -24,7 +24,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.coingecko.com https://api.alternative.me https://api.minimaxi.com https://api.deepseek.com https://api.anthropic.com https://app.posthog.com https://us.i.posthog.com https://eu.i.posthog.com",
+              "connect-src 'self' https://api.coingecko.com https://api.alternative.me https://api.minimaxi.com https://api.deepseek.com https://api.anthropic.com https://app.posthog.com https://us.i.posthog.com https://eu.i.posthog.com https://cryptopanic.com https://api.qrserver.com https://qrserver.com",
               "frame-ancestors 'none'",
             ].join("; "),
           },
