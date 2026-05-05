@@ -1572,6 +1572,28 @@ async function callTextProvider(
   return null;
 }
 
+const MECHANICAL_OUTPUT_PATTERNS = [
+  /作为\s*(?:Alpha|Beta|Gamma|[^\s，,。]{1,8}派)/i,
+  /首先/,
+  /其次/,
+  /综上所述/,
+  /值得注意的是/,
+];
+
+export function hasMechanicalOutput(text: string): boolean {
+  return MECHANICAL_OUTPUT_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+export function antiMechanicalFallback(text: string, fallback: string): string {
+  return hasMechanicalOutput(text) ? fallback : text.trim();
+}
+
+export async function generateLlmText(
+  prompt: string,
+): Promise<{ text: string; source: ProviderSource } | null> {
+  return callTextProvider(prompt);
+}
+
 async function generateAgentMessageFromSignal(
   agentId: AgentId,
   signal: SignalRecord,
