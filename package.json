@@ -16,9 +16,11 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,md,json,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,md,json,css}\"",
     "verify:agent-ip": "node scripts/verify-agent-ip.mjs",
+    "verify:news": "node scripts/verify-news.mjs",
     "verify": "npm run typecheck && npm run lint && npm run format:check && npm run build"
   },
   "dependencies": {
+    "@vercel/og": "^0.6.8",
     "framer-motion": "^11.18.2",
     "next": "14.2.35",
     "posthog-js": "^1.372.3",
