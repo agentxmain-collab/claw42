@@ -12,7 +12,9 @@ function StatusDot({ status, label }: { status: AgentStatus; label: string }) {
       : status === "speaking"
         ? "animate-pulse bg-[#3a7bff] shadow-[0_0_8px_rgba(58,123,255,0.45)]"
         : "bg-white/20";
-  return <span aria-label={label} title={label} className={`inline-block h-2 w-2 rounded-full ${cls}`} />;
+  return (
+    <span aria-label={label} title={label} className={`inline-block h-2 w-2 rounded-full ${cls}`} />
+  );
 }
 
 export function AgentRowCard({
@@ -66,9 +68,7 @@ export function AgentRowCard({
             title={`${focusLabels.focusLabel}: ${formatCoinSymbol(focus.symbol)}`}
             className="shrink-0 rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-1.5 text-left transition-colors hover:bg-white/[0.08]"
           >
-            <span className="mr-1 text-xs font-bold text-white/45">
-              {focusLabels.focusLabel}
-            </span>
+            <span className="mr-1 text-xs font-bold text-white/45">{focusLabels.focusLabel}</span>
             <span className="font-mono text-sm font-bold text-white">
               {formatCoinSymbol(focus.symbol)}
             </span>
@@ -78,7 +78,7 @@ export function AgentRowCard({
 
       {focus ? (
         <>
-          <p className="line-clamp-3 text-sm font-semibold leading-relaxed text-white/86">
+          <p className="text-white/86 line-clamp-3 text-sm font-semibold leading-relaxed">
             {prefixLeadingCoinSymbol(focus.judgment, focus.symbol)}
           </p>
           <details className="rounded-xl border border-white/[0.07] bg-black/20 px-3 py-2 text-sm">

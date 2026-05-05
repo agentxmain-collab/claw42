@@ -49,13 +49,13 @@ export function FocusEventCard({ event }: { event: FocusEvent }) {
       </p>
 
       {event.primaryResponse.content.trim().length > 0 && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl border border-white/[0.08] bg-black/28 px-3 py-2">
+        <div className="bg-black/28 mt-3 flex items-start gap-2 rounded-xl border border-white/[0.08] px-3 py-2">
           <AgentAvatar agentId={agentId} size="typing" className="mt-0.5" />
           <div className="min-w-0">
             <div className="text-xs font-semibold" style={{ color: token.primary }}>
               {meta.name}
             </div>
-            <p className="mt-1 text-sm leading-relaxed text-white/76">
+            <p className="text-white/76 mt-1 text-sm leading-relaxed">
               {prefixLeadingCoinSymbol(event.primaryResponse.content, event.symbol)}
             </p>
           </div>

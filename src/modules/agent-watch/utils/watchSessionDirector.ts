@@ -75,7 +75,10 @@ function entrySymbols(entry: StreamEntry): string[] {
   return [];
 }
 
-export function directorModeForVisit(now: number, lastVisitAt: number | null | undefined): WatchDirectorMode {
+export function directorModeForVisit(
+  now: number,
+  lastVisitAt: number | null | undefined,
+): WatchDirectorMode {
   if (!lastVisitAt || now <= lastVisitAt) return "fresh";
   const age = now - lastVisitAt;
   if (age <= RESUME_WINDOW_MS) return "resume";
@@ -88,7 +91,8 @@ export function directorKeyForEntry(entry: StreamEntry): string {
   if (entry.kind === "agent_message") {
     return `agent:${entry.agentId}:${entry.triggerSignalId}:${entry.content.trim()}`;
   }
-  if (entry.kind === "focus_event") return `focus:${entry.symbol}:${entry.signalType}:${entry.description}`;
+  if (entry.kind === "focus_event")
+    return `focus:${entry.symbol}:${entry.signalType}:${entry.description}`;
   if (entry.kind === "collective_event") {
     return `collective:${entry.signalType}:${entry.direction}:${entry.symbols.join(":")}:${entry.description}`;
   }
@@ -100,7 +104,11 @@ function hasSeen(memory: WatchDirectorMemory, entry: StreamEntry): boolean {
 }
 
 function isPriority(entry: StreamEntry): boolean {
-  return entry.kind === "collective_event" || entry.kind === "focus_event" || entry.kind === "conflict_event";
+  return (
+    entry.kind === "collective_event" ||
+    entry.kind === "focus_event" ||
+    entry.kind === "conflict_event"
+  );
 }
 
 function entryRank(entry: StreamEntry): number {
@@ -110,13 +118,21 @@ function entryRank(entry: StreamEntry): number {
   return 3;
 }
 
-function pickAnalysisEntry(entries: StreamEntry[], memory: WatchDirectorMemory): StreamEntry | null {
-  return [...entries]
-    .filter((entry) => !hasSeen(memory, entry))
-    .sort((a, b) => entryRank(a) - entryRank(b) || b.ts - a.ts)[0] ?? null;
+function pickAnalysisEntry(
+  entries: StreamEntry[],
+  memory: WatchDirectorMemory,
+): StreamEntry | null {
+  return (
+    [...entries]
+      .filter((entry) => !hasSeen(memory, entry))
+      .sort((a, b) => entryRank(a) - entryRank(b) || b.ts - a.ts)[0] ?? null
+  );
 }
 
-function preferredKindsForMode(mode: WatchDirectorMode, hasAnalysisEntry: boolean): SupplementalKind[] {
+function preferredKindsForMode(
+  mode: WatchDirectorMode,
+  hasAnalysisEntry: boolean,
+): SupplementalKind[] {
   if (mode === "resume") {
     return hasAnalysisEntry
       ? ["condition_update", "agent_discussion", "agent_heartbeat", "quiet_observation"]
@@ -192,10 +208,9 @@ export function rememberDirectorEntries(
   entries: StreamEntry[],
   now: number,
 ): WatchDirectorMemory {
-  const seenKeys = [
-    ...memory.seenKeys,
-    ...entries.map(directorKeyForEntry),
-  ].filter((key, index, source) => source.indexOf(key) === index).slice(-MAX_SEEN_KEYS);
+  const seenKeys = [...memory.seenKeys, ...entries.map(directorKeyForEntry)]
+    .filter((key, index, source) => source.indexOf(key) === index)
+    .slice(-MAX_SEEN_KEYS);
   const speakers = entries.flatMap(entrySpeakers);
   const symbols = entries.flatMap(entrySymbols);
 
@@ -221,14 +236,20 @@ export function readWatchDirectorMemory(storage: Storage | undefined): WatchDire
     return {
       lastVisitAt: typeof parsed.lastVisitAt === "number" ? parsed.lastVisitAt : null,
       seenKeys: Array.isArray(parsed.seenKeys)
-        ? parsed.seenKeys.filter((key): key is string => typeof key === "string").slice(-MAX_SEEN_KEYS)
+        ? parsed.seenKeys
+            .filter((key): key is string => typeof key === "string")
+            .slice(-MAX_SEEN_KEYS)
         : [],
       lastSpeaker:
-        parsed.lastSpeaker === "alpha" || parsed.lastSpeaker === "beta" || parsed.lastSpeaker === "gamma"
+        parsed.lastSpeaker === "alpha" ||
+        parsed.lastSpeaker === "beta" ||
+        parsed.lastSpeaker === "gamma"
           ? parsed.lastSpeaker
           : null,
       lastSymbols: Array.isArray(parsed.lastSymbols)
-        ? parsed.lastSymbols.filter((symbol): symbol is string => typeof symbol === "string").slice(0, 4)
+        ? parsed.lastSymbols
+            .filter((symbol): symbol is string => typeof symbol === "string")
+            .slice(0, 4)
         : [],
     };
   } catch {
@@ -236,7 +257,10 @@ export function readWatchDirectorMemory(storage: Storage | undefined): WatchDire
   }
 }
 
-export function writeWatchDirectorMemory(storage: Storage | undefined, memory: WatchDirectorMemory) {
+export function writeWatchDirectorMemory(
+  storage: Storage | undefined,
+  memory: WatchDirectorMemory,
+) {
   if (!storage) return;
   try {
     storage.setItem(WATCH_DIRECTOR_MEMORY_KEY, JSON.stringify(memory));

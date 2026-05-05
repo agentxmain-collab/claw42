@@ -295,7 +295,8 @@ function majorFromPool(
   symbol: DailyBriefMajorSymbol,
   narratives: DailyBriefNarratives,
 ): DailyBriefMajor {
-  const ticker = pool && !pool.isFallback && pool.source !== "fallback" ? pool.tickers[symbol] : null;
+  const ticker =
+    pool && !pool.isFallback && pool.source !== "fallback" ? pool.tickers[symbol] : null;
 
   return {
     symbol,
@@ -310,8 +311,7 @@ function pickTodayMover(pool: CoinPoolPayload | null): DailyBriefMover | null {
 
   const candidates = [...pool.trending, ...pool.opportunity].filter(
     (item): item is CoinTickerEntry =>
-      !NON_MOVER_SYMBOLS.has(item.symbol.toUpperCase()) &&
-      Number.isFinite(item.change24h),
+      !NON_MOVER_SYMBOLS.has(item.symbol.toUpperCase()) && Number.isFinite(item.change24h),
   );
 
   if (candidates.length === 0) return null;
@@ -328,10 +328,7 @@ function pickTodayMover(pool: CoinPoolPayload | null): DailyBriefMover | null {
 }
 
 export async function getDailyBrief(locale: Locale | string = "zh_CN"): Promise<DailyBriefData> {
-  const [poolResult, fearGreedResult] = await Promise.allSettled([
-    getCoinPool(),
-    fetchFearGreed(),
-  ]);
+  const [poolResult, fearGreedResult] = await Promise.allSettled([getCoinPool(), fetchFearGreed()]);
 
   const pool = poolResult.status === "fulfilled" ? poolResult.value : null;
   if (poolResult.status === "rejected") {

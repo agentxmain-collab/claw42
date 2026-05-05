@@ -102,11 +102,17 @@ const UPDATE_ROTATION: SupplementalUpdateKind[] = [
 ];
 
 function isPriorityEvent(entry: StreamEntry): boolean {
-  return entry.kind === "collective_event" || entry.kind === "focus_event" || entry.kind === "conflict_event";
+  return (
+    entry.kind === "collective_event" ||
+    entry.kind === "focus_event" ||
+    entry.kind === "conflict_event"
+  );
 }
 
 function hasFreshPriorityEvent(entries: StreamEntry[], now: number): boolean {
-  return entries.some((entry) => isPriorityEvent(entry) && Math.abs(now - entry.ts) <= HIGH_EVENT_SUPPRESS_MS);
+  return entries.some(
+    (entry) => isPriorityEvent(entry) && Math.abs(now - entry.ts) <= HIGH_EVENT_SUPPRESS_MS,
+  );
 }
 
 function allTickers(pool: CoinPoolPayload): CoinTickerEntry[] {
@@ -129,11 +135,13 @@ function updateId(type: SupplementalUpdateKind, semanticKey: string, now: number
 }
 
 function firstSentence(text: string): string {
-  return text
-    .replace(/\s+/g, " ")
-    .split(/[。；;]/)
-    .map((part) => part.trim())
-    .filter(Boolean)[0] ?? text.trim();
+  return (
+    text
+      .replace(/\s+/g, " ")
+      .split(/[。；;]/)
+      .map((part) => part.trim())
+      .filter(Boolean)[0] ?? text.trim()
+  );
 }
 
 function focusByRotation(focus: AgentFocus[], now: number): AgentFocus | null {
@@ -181,12 +189,19 @@ function buildMarketDigest(
       ? `Market digest: ${symbol} is ${formatChange(topMover.change24h)} over 24h, currently the largest volatility marker. Watch whether the move spreads to peers.`
       : `市场摘要：${symbol} 24h ${formatChange(topMover.change24h)}，是当前波动最大的观察点，先看是否扩散到同组币种。`;
 
-  return entry("market_digest", now, `mover:${topMover.symbol}:${Math.round(topMover.change24h * 10)}`, TITLE_COPY[locale].market_digest, content, {
-    symbol: topMover.symbol,
-    symbols: [topMover.symbol],
-    severity: Math.abs(topMover.change24h) >= 12 ? "watch" : "neutral",
-    title: locale === "en_US" ? `${symbol} ${directionEn}` : `${symbol} ${direction}`,
-  });
+  return entry(
+    "market_digest",
+    now,
+    `mover:${topMover.symbol}:${Math.round(topMover.change24h * 10)}`,
+    TITLE_COPY[locale].market_digest,
+    content,
+    {
+      symbol: topMover.symbol,
+      symbols: [topMover.symbol],
+      severity: Math.abs(topMover.change24h) >= 12 ? "watch" : "neutral",
+      title: locale === "en_US" ? `${symbol} ${directionEn}` : `${symbol} ${direction}`,
+    },
+  );
 }
 
 function buildFocusUpdate(
@@ -204,11 +219,18 @@ function buildFocusUpdate(
       ? `${AGENT_NAME[item.agentId]} is watching ${symbol}: ${judgment}`
       : `${AGENT_NAME[item.agentId]} 当前盯防 ${symbol}：${judgment}`;
 
-  return entry("focus_update", now, `focus:${item.agentId}:${item.symbol}:${judgment}`, TITLE_COPY[locale].focus_update, content, {
-    agentId: item.agentId,
-    symbol: item.symbol,
-    symbols: [item.symbol],
-  });
+  return entry(
+    "focus_update",
+    now,
+    `focus:${item.agentId}:${item.symbol}:${judgment}`,
+    TITLE_COPY[locale].focus_update,
+    content,
+    {
+      agentId: item.agentId,
+      symbol: item.symbol,
+      symbols: [item.symbol],
+    },
+  );
 }
 
 function buildConditionUpdate(
@@ -227,11 +249,18 @@ function buildConditionUpdate(
       ? `Condition watch: ${symbol} trigger is "${trigger}"; invalidation is "${fail}".`
       : `等待条件：${symbol} 触发看「${trigger}」；失效看「${fail}」。`;
 
-  return entry("condition_update", now, `condition:${item.agentId}:${item.symbol}:${trigger}:${fail}`, TITLE_COPY[locale].condition_update, content, {
-    agentId: item.agentId,
-    symbol: item.symbol,
-    symbols: [item.symbol],
-  });
+  return entry(
+    "condition_update",
+    now,
+    `condition:${item.agentId}:${item.symbol}:${trigger}:${fail}`,
+    TITLE_COPY[locale].condition_update,
+    content,
+    {
+      agentId: item.agentId,
+      symbol: item.symbol,
+      symbols: [item.symbol],
+    },
+  );
 }
 
 function buildQuietObservation(
@@ -274,9 +303,16 @@ function buildQuietObservation(
         ? `观察状态：暂无新的高优触发，3 个 Agent 继续盯防 ${displaySymbols} 的条件变化。`
         : "观察状态：暂无新的高优触发，3 个 Agent 继续等待可确认的市场信号。";
 
-  return entry("quiet_observation", now, `quiet:${symbols.join(":") || "empty"}`, TITLE_COPY[locale].quiet_observation, content, {
-    symbols,
-  });
+  return entry(
+    "quiet_observation",
+    now,
+    `quiet:${symbols.join(":") || "empty"}`,
+    TITLE_COPY[locale].quiet_observation,
+    content,
+    {
+      symbols,
+    },
+  );
 }
 
 function buildAgentHeartbeat(
@@ -286,10 +322,12 @@ function buildAgentHeartbeat(
   locale: AgentWatchLocale,
 ): WatchUpdateEntry | null {
   const tickers = allTickers(pool);
-  const fallbackTicker = tickers.sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))[0] ?? null;
+  const fallbackTicker =
+    tickers.sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))[0] ?? null;
   const focusIndex = Math.abs(Math.floor(now / 30_000)) % Math.max(focus.length, 1);
   const item = focus[focusIndex] ?? null;
-  const agentId = item?.agentId ?? DISCUSSION_AGENT_ORDER[focusIndex % DISCUSSION_AGENT_ORDER.length] ?? "alpha";
+  const agentId =
+    item?.agentId ?? DISCUSSION_AGENT_ORDER[focusIndex % DISCUSSION_AGENT_ORDER.length] ?? "alpha";
   const symbol = item?.symbol ?? fallbackTicker?.symbol;
   if (!symbol) return null;
 
@@ -325,9 +363,7 @@ function uniqueSymbols(symbols: Array<string | undefined>): string[] {
 }
 
 function topMover(pool: CoinPoolPayload): CoinTickerEntry | null {
-  return allTickers(pool).sort(
-    (a, b) => Math.abs(b.change24h) - Math.abs(a.change24h),
-  )[0] ?? null;
+  return allTickers(pool).sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))[0] ?? null;
 }
 
 function fallbackAgentLine(agentId: AgentId, symbol: string, change24h?: number): string {
@@ -376,18 +412,22 @@ function buildAgentDiscussion(
     fallbackSymbol,
   ]).slice(0, 3);
   const topic = symbols.map(formatCoinSymbol).join(" / ");
-  const tickerBySymbol = new Map(allTickers(pool).map((ticker) => [ticker.symbol.toUpperCase(), ticker]));
+  const tickerBySymbol = new Map(
+    allTickers(pool).map((ticker) => [ticker.symbol.toUpperCase(), ticker]),
+  );
 
   const responses: StreamResponse[] = DISCUSSION_AGENT_ORDER.map((agentId) => {
     const item = focusByAgent.get(agentId);
     const symbol = item?.symbol ?? fallbackSymbol;
     const ticker = tickerBySymbol.get(symbol.toUpperCase());
-    const source = locale === "en_US"
-      ? fallbackAgentLineEn(agentId, symbol, ticker?.change24h)
-      : item
-        ? firstSentence(item.judgment || item.trigger.description)
-        : fallbackAgentLine(agentId, symbol, ticker?.change24h);
-    const label = locale === "en_US" ? AGENT_DISCUSSION_LABEL_EN[agentId] : AGENT_DISCUSSION_LABEL[agentId];
+    const source =
+      locale === "en_US"
+        ? fallbackAgentLineEn(agentId, symbol, ticker?.change24h)
+        : item
+          ? firstSentence(item.judgment || item.trigger.description)
+          : fallbackAgentLine(agentId, symbol, ticker?.change24h);
+    const label =
+      locale === "en_US" ? AGENT_DISCUSSION_LABEL_EN[agentId] : AGENT_DISCUSSION_LABEL[agentId];
     const separator = locale === "en_US" ? ": " : "：";
     const content = `${label}${separator}${prefixLeadingCoinSymbol(source, symbol)}`;
     return { agentId, content, symbol };
@@ -398,16 +438,19 @@ function buildAgentDiscussion(
     ...responses.map((response) => `${response.agentId}:${firstSentence(response.content)}`),
   ].join("|");
   const hasWatchMove = mover ? Math.abs(mover.change24h) >= 12 : false;
-  const hasWatchSignal = signals.some((signal) => signal.severity === "alert" || signal.severity === "watch");
+  const hasWatchSignal = signals.some(
+    (signal) => signal.severity === "alert" || signal.severity === "watch",
+  );
 
   return {
     kind: "agent_discussion",
     id: updateId(AGENT_DISCUSSION_KIND, semanticKey, now),
     ts: now,
     topic,
-    summary: locale === "en_US"
-      ? `Agent huddle: Alpha watches breakouts, Beta watches trends, Gamma watches extremes; current checks focus on ${topic}.`
-      : `三方会诊：Alpha 看突破，Beta 看趋势，Gamma 看极端；当前围绕 ${topic} 等确认。`,
+    summary:
+      locale === "en_US"
+        ? `Agent huddle: Alpha watches breakouts, Beta watches trends, Gamma watches extremes; current checks focus on ${topic}.`
+        : `三方会诊：Alpha 看突破，Beta 看趋势，Gamma 看极端；当前围绕 ${topic} 等确认。`,
     dedupeKey: `agent_discussion:${semanticKey}`,
     symbol: symbols[0],
     symbols,
@@ -428,7 +471,8 @@ function buildByKind(
   if (kind === "focus_update") return buildFocusUpdate(now, focus, locale);
   if (kind === "condition_update") return buildConditionUpdate(now, focus, locale);
   if (kind === AGENT_HEARTBEAT_KIND) return buildAgentHeartbeat(now, pool, focus, locale);
-  if (kind === AGENT_DISCUSSION_KIND) return buildAgentDiscussion(now, pool, focus, signals, locale);
+  if (kind === AGENT_DISCUSSION_KIND)
+    return buildAgentDiscussion(now, pool, focus, signals, locale);
   return buildQuietObservation(now, focus, signals, locale);
 }
 
@@ -459,11 +503,9 @@ export function buildWatchSupplementalEntry({
   }
 
   const safeFocus = focus ?? [];
-  const rotatedKind = preferredKind ?? UPDATE_ROTATION[Math.abs(Math.floor(now / 60_000)) % UPDATE_ROTATION.length];
-  const orderedKinds = [
-    rotatedKind,
-    ...UPDATE_ROTATION.filter((kind) => kind !== rotatedKind),
-  ];
+  const rotatedKind =
+    preferredKind ?? UPDATE_ROTATION[Math.abs(Math.floor(now / 60_000)) % UPDATE_ROTATION.length];
+  const orderedKinds = [rotatedKind, ...UPDATE_ROTATION.filter((kind) => kind !== rotatedKind)];
 
   for (const kind of orderedKinds) {
     const update = buildByKind(kind, now, pool, safeFocus, signals, locale);

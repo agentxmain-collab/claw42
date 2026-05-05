@@ -114,9 +114,8 @@ export function CoinTickerStrip({
   };
 }) {
   const majors = useMemo(() => pool?.majors ?? majorsFromTickers(tickers), [pool?.majors, tickers]);
-  const [expandedGroups, setExpandedGroups] = useState<Record<FoldableGroupKey, boolean>>(
-    readFoldState,
-  );
+  const [expandedGroups, setExpandedGroups] =
+    useState<Record<FoldableGroupKey, boolean>>(readFoldState);
   const groups = useMemo<Array<{ key: string; label: string; entries: CoinTickerEntry[] }>>(
     () => [
       { key: "majors", label: labels.majors, entries: majors },
@@ -209,7 +208,7 @@ export function CoinTickerStrip({
                 key={`toggle-${group.key}`}
                 type="button"
                 onClick={() => toggleGroup(group.key)}
-                className={`rounded-md border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-xs text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white/82 ${
+                className={`hover:text-white/82 rounded-md border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-xs text-white/60 transition-colors hover:bg-white/[0.06] ${
                   index === 0 ? "ml-2" : ""
                 }`}
               >

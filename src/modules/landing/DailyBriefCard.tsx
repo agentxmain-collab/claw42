@@ -65,13 +65,7 @@ function useDailyBrief(locale: string): DailyBriefData | null {
   return data;
 }
 
-function BriefRow({
-  major,
-  unavailable,
-}: {
-  major: DailyBriefMajor;
-  unavailable: string;
-}) {
+function BriefRow({ major, unavailable }: { major: DailyBriefMajor; unavailable: string }) {
   const change = formatChange(major.change24h);
 
   return (

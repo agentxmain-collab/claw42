@@ -8,24 +8,18 @@ import { formatAgentMessageTime } from "../utils/formatTime";
 import { formatCoinSymbol, prefixLeadingCoinSymbol } from "../utils/symbolFormat";
 import { AgentAvatar } from "./AgentAvatar";
 
-function ResponsePanel({
-  response,
-  symbol,
-}: {
-  response: StreamResponse;
-  symbol: string;
-}) {
+function ResponsePanel({ response, symbol }: { response: StreamResponse; symbol: string }) {
   const meta = AGENT_META[response.agentId];
   const token = AGENT_COLOR_TOKEN[response.agentId];
 
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-white/[0.08] bg-black/28 px-3 py-2">
+    <div className="bg-black/28 flex items-start gap-2 rounded-xl border border-white/[0.08] px-3 py-2">
       <AgentAvatar agentId={response.agentId} size="typing" className="mt-0.5" />
       <div className="min-w-0">
         <div className="text-xs font-semibold" style={{ color: token.primary }}>
           {meta.name}
         </div>
-        <p className="mt-1 text-sm leading-relaxed text-white/76">
+        <p className="text-white/76 mt-1 text-sm leading-relaxed">
           {prefixLeadingCoinSymbol(response.content, symbol)}
         </p>
       </div>
@@ -57,7 +51,7 @@ export function ConflictEventCard({ event }: { event: ConflictEvent }) {
         <span className="font-mono text-xs text-white/35">{timeLabel}</span>
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed text-white/78">
+      <p className="text-white/78 mt-3 text-sm leading-relaxed">
         {prefixLeadingCoinSymbol(event.description, event.symbol)}
       </p>
 

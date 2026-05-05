@@ -1,9 +1,4 @@
-import type {
-  AgentDiscussionEntry,
-  AgentId,
-  StreamEntry,
-  WatchUpdateEntry,
-} from "../types";
+import type { AgentDiscussionEntry, AgentId, StreamEntry, WatchUpdateEntry } from "../types";
 
 const PRIORITY_THINK_MS = { min: 900, max: 1400 };
 const DISCUSSION_THINK_MS = { min: 1400, max: 2200 };
@@ -45,8 +40,9 @@ export function displayScheduleStartDelay(
 
 export function splitStreamEntryForDisplay(entry: StreamEntry): StreamEntry[] {
   if (entry.kind === "collective_event") {
-    const responses = [entry.primaryResponse, ...entry.echoResponses]
-      .filter((response) => response.content.trim().length > 0);
+    const responses = [entry.primaryResponse, ...entry.echoResponses].filter(
+      (response) => response.content.trim().length > 0,
+    );
     if (responses.length <= 1) return [entry];
 
     return responses.map((response) => ({
@@ -92,7 +88,11 @@ export function thinkDurationForStreamEntry(
   if (reduceMotion) return 0;
 
   const key = `${entry.id}:${index}`;
-  if (entry.kind === "focus_event" || entry.kind === "collective_event" || entry.kind === "conflict_event") {
+  if (
+    entry.kind === "focus_event" ||
+    entry.kind === "collective_event" ||
+    entry.kind === "conflict_event"
+  ) {
     return boundedJitter(key, PRIORITY_THINK_MS.min, PRIORITY_THINK_MS.max);
   }
 
@@ -103,12 +103,13 @@ export function thinkDurationForStreamEntry(
   return boundedJitter(key, DEFAULT_THINK_MS.min, DEFAULT_THINK_MS.max);
 }
 
-export function gapDurationAfterStreamEntry(
-  entry: StreamEntry,
-  reduceMotion = false,
-): number {
+export function gapDurationAfterStreamEntry(entry: StreamEntry, reduceMotion = false): number {
   if (reduceMotion) return 120;
-  if (entry.kind === "focus_event" || entry.kind === "collective_event" || entry.kind === "conflict_event") {
+  if (
+    entry.kind === "focus_event" ||
+    entry.kind === "collective_event" ||
+    entry.kind === "conflict_event"
+  ) {
     return PRIORITY_GAP_MS;
   }
   if (isAgentDiscussion(entry)) return DISCUSSION_GAP_MS;

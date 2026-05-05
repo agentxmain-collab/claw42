@@ -24,7 +24,10 @@ export interface AgentChatMessage {
   points: AgentPointLevel[];
 }
 
-const FALLBACK_AGENT: Record<Exclude<StreamEntry["kind"], "agent_message" | "agent_discussion">, AgentId> = {
+const FALLBACK_AGENT: Record<
+  Exclude<StreamEntry["kind"], "agent_message" | "agent_discussion">,
+  AgentId
+> = {
   collective_event: "beta",
   focus_event: "gamma",
   conflict_event: "alpha",
@@ -93,18 +96,28 @@ function formatPointPrice(value: number | null | undefined, locale: AgentWatchLo
   return formatPrice(value);
 }
 
-function tickerForSymbol(pool: CoinPoolPayload | undefined, symbol: string): CoinTickerEntry | null {
+function tickerForSymbol(
+  pool: CoinPoolPayload | undefined,
+  symbol: string,
+): CoinTickerEntry | null {
   if (!pool) return null;
   const normalized = symbol.toUpperCase();
-  return [...pool.majors, ...pool.trending, ...pool.opportunity]
-    .find((ticker) => ticker.symbol.toUpperCase() === normalized) ?? null;
+  return (
+    [...pool.majors, ...pool.trending, ...pool.opportunity].find(
+      (ticker) => ticker.symbol.toUpperCase() === normalized,
+    ) ?? null
+  );
 }
 
-function contextForSymbol(pool: CoinPoolPayload | undefined, symbol: string): CoinMarketContext | null {
+function contextForSymbol(
+  pool: CoinPoolPayload | undefined,
+  symbol: string,
+): CoinMarketContext | null {
   if (!pool?.signals) return null;
   const normalized = symbol.toUpperCase();
-  return Object.entries(pool.signals)
-    .find(([key]) => key.toUpperCase() === normalized)?.[1] ?? null;
+  return (
+    Object.entries(pool.signals).find(([key]) => key.toUpperCase() === normalized)?.[1] ?? null
+  );
 }
 
 function priceAnchor(pool: CoinPoolPayload | undefined, symbol: string): number | null {
@@ -144,25 +157,64 @@ function pointLevelsForAgent(
   if (agentId === "alpha") {
     return [
       { label: labels[0], value: formatPointPrice(anchor, locale) },
-      { label: labels[1], value: formatPointPrice(levelFromContext(pool, symbol, "resistance") ?? derivedLevel(anchor, 1.018), locale) },
+      {
+        label: labels[1],
+        value: formatPointPrice(
+          levelFromContext(pool, symbol, "resistance") ?? derivedLevel(anchor, 1.018),
+          locale,
+        ),
+      },
       { label: labels[2], value: formatPointPrice(anchor, locale) },
-      { label: labels[3], value: formatPointPrice(levelFromContext(pool, symbol, "support") ?? derivedLevel(anchor, 0.982), locale) },
+      {
+        label: labels[3],
+        value: formatPointPrice(
+          levelFromContext(pool, symbol, "support") ?? derivedLevel(anchor, 0.982),
+          locale,
+        ),
+      },
     ];
   }
 
   if (agentId === "beta") {
     return [
       { label: labels[0], value: formatPointPrice(anchor, locale) },
-      { label: labels[1], value: formatPointPrice(levelFromContext(pool, symbol, "ema13") ?? derivedLevel(anchor, 1.012), locale) },
-      { label: labels[2], value: formatPointPrice(levelFromContext(pool, symbol, "ema12"), locale) },
-      { label: labels[3], value: formatPointPrice(levelFromContext(pool, symbol, "support") ?? derivedLevel(anchor, 0.985), locale) },
+      {
+        label: labels[1],
+        value: formatPointPrice(
+          levelFromContext(pool, symbol, "ema13") ?? derivedLevel(anchor, 1.012),
+          locale,
+        ),
+      },
+      {
+        label: labels[2],
+        value: formatPointPrice(levelFromContext(pool, symbol, "ema12"), locale),
+      },
+      {
+        label: labels[3],
+        value: formatPointPrice(
+          levelFromContext(pool, symbol, "support") ?? derivedLevel(anchor, 0.985),
+          locale,
+        ),
+      },
     ];
   }
 
   return [
     { label: labels[0], value: formatPointPrice(anchor, locale) },
-    { label: labels[1], value: formatPointPrice(levelFromContext(pool, symbol, "low") ?? derivedLevel(anchor, 0.97), locale) },
-    { label: labels[2], value: formatPointPrice(levelFromContext(pool, symbol, "high") ?? derivedLevel(anchor, 1.03), locale) },
+    {
+      label: labels[1],
+      value: formatPointPrice(
+        levelFromContext(pool, symbol, "low") ?? derivedLevel(anchor, 0.97),
+        locale,
+      ),
+    },
+    {
+      label: labels[2],
+      value: formatPointPrice(
+        levelFromContext(pool, symbol, "high") ?? derivedLevel(anchor, 1.03),
+        locale,
+      ),
+    },
     { label: labels[3], value: formatPointPrice(derivedLevel(anchor, 1.035), locale) },
   ];
 }
@@ -179,10 +231,7 @@ function uniqueSymbols(symbols: Array<string | undefined>): string[] {
   return result;
 }
 
-function discussionSymbolsForResponse(
-  entrySymbols: string[],
-  response: StreamResponse,
-): string[] {
+function discussionSymbolsForResponse(entrySymbols: string[], response: StreamResponse): string[] {
   const mentionedSymbol = entrySymbols.find((symbol) =>
     response.content.includes(formatCoinSymbol(symbol)),
   );
@@ -259,14 +308,17 @@ export function buildStreamChatMessages(
   }
 
   if (entry.kind === "collective_event") {
-    const responses = [entry.primaryResponse, ...entry.echoResponses]
-      .filter((response) => response.content.trim().length > 0);
-    const fallbackContent = locale === "en_US"
-      ? `${entry.symbols.map(formatCoinSymbol).join(" / ")} show ${SIGNAL_LABEL_EN[entry.signalType]}.`
-      : `${entry.symbols.map(formatCoinSymbol).join(" / ")} 出现${SIGNAL_LABEL[entry.signalType]}，${entry.description}`;
-    const source = responses.length > 0
-      ? responses
-      : [{ agentId: FALLBACK_AGENT.collective_event, content: fallbackContent }];
+    const responses = [entry.primaryResponse, ...entry.echoResponses].filter(
+      (response) => response.content.trim().length > 0,
+    );
+    const fallbackContent =
+      locale === "en_US"
+        ? `${entry.symbols.map(formatCoinSymbol).join(" / ")} show ${SIGNAL_LABEL_EN[entry.signalType]}.`
+        : `${entry.symbols.map(formatCoinSymbol).join(" / ")} 出现${SIGNAL_LABEL[entry.signalType]}，${entry.description}`;
+    const source =
+      responses.length > 0
+        ? responses
+        : [{ agentId: FALLBACK_AGENT.collective_event, content: fallbackContent }];
     return source.map((response) =>
       message({
         id: `${entry.id}-${response.agentId}`,
@@ -288,7 +340,11 @@ export function buildStreamChatMessages(
         id: `${entry.id}-${agentId}`,
         ts: entry.ts,
         agentId,
-        content: joinDescription(locale, entry.description, prefixLeadingCoinSymbol(entry.primaryResponse.content, entry.symbol)),
+        content: joinDescription(
+          locale,
+          entry.description,
+          prefixLeadingCoinSymbol(entry.primaryResponse.content, entry.symbol),
+        ),
         symbols: [entry.symbol],
         tag: TAG_COPY[locale].focus,
         pool,
@@ -299,15 +355,20 @@ export function buildStreamChatMessages(
 
   if (entry.kind === "conflict_event") {
     const responses = entry.responses.filter((response) => response.content.trim().length > 0);
-    const source = responses.length > 0
-      ? responses
-      : [{ agentId: FALLBACK_AGENT.conflict_event, content: entry.description }];
+    const source =
+      responses.length > 0
+        ? responses
+        : [{ agentId: FALLBACK_AGENT.conflict_event, content: entry.description }];
     return source.map((response) =>
       message({
         id: `${entry.id}-${response.agentId}`,
         ts: entry.ts,
         agentId: response.agentId,
-        content: joinDescription(locale, entry.description, prefixLeadingCoinSymbol(response.content, entry.symbol)),
+        content: joinDescription(
+          locale,
+          entry.description,
+          prefixLeadingCoinSymbol(response.content, entry.symbol),
+        ),
         symbols: [entry.symbol],
         tag: TAG_COPY[locale].conflict,
         pool,

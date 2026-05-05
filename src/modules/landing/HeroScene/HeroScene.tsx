@@ -95,11 +95,11 @@ export function HeroScene() {
   return (
     <section
       ref={stageRef}
-      className="claw42-hero-scene relative w-full aspect-[4/5] overflow-hidden bg-black pt-[72px] md:aspect-auto md:h-screen md:min-h-[760px] md:max-h-[920px] md:pt-[80px]"
+      className="claw42-hero-scene relative aspect-[4/5] w-full overflow-hidden bg-black pt-[72px] md:aspect-auto md:h-screen md:max-h-[920px] md:min-h-[760px] md:pt-[80px]"
       style={stageStyle}
     >
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
           backgroundPosition: "center bottom",
@@ -108,21 +108,21 @@ export function HeroScene() {
         }}
       />
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             "linear-gradient(180deg, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.5) 12%, rgba(0,0,0,0.04) 32%, rgba(0,0,0,0.02) 58%, rgba(0,0,0,0.64) 78%, rgba(0,0,0,0.98) 100%)",
         }}
       />
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             "radial-gradient(ellipse 120% 84% at 50% 46%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.44) 78%, rgba(0,0,0,0.94) 100%)",
         }}
       />
       <motion.div
-        className="absolute inset-0 z-[8] pointer-events-none"
+        className="pointer-events-none absolute inset-0 z-[8]"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
           backgroundPosition: "center bottom",
@@ -143,9 +143,7 @@ export function HeroScene() {
               }
         }
         transition={
-          reduceMotion
-            ? { duration: 0 }
-            : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
+          reduceMotion ? { duration: 0 } : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
         }
       />
 
@@ -171,7 +169,7 @@ export function HeroScene() {
       />
 
       {/* z-50 Gradient scrim for title readability */}
-      <div className="absolute inset-x-0 bottom-0 z-50 h-[48%] bg-gradient-to-t from-black via-black/72 to-transparent pointer-events-none" />
+      <div className="via-black/72 pointer-events-none absolute inset-x-0 bottom-0 z-50 h-[48%] bg-gradient-to-t from-black to-transparent" />
 
       {/* z-50 Title + CTA overlay */}
       <div className="claw42-hero-copy absolute left-1/2 top-[71%] z-50 flex w-full max-w-3xl -translate-x-1/2 flex-col items-center px-6 text-center">
@@ -183,7 +181,7 @@ export function HeroScene() {
             {t.hero.subtitle}
           </p>
         </div>
-        <div className="claw42-hero-actions flex flex-col items-center justify-center gap-4 pointer-events-auto sm:flex-row">
+        <div className="claw42-hero-actions pointer-events-auto flex flex-col items-center justify-center gap-4 sm:flex-row">
           <div className="relative">
             <motion.button
               type="button"
@@ -201,7 +199,7 @@ export function HeroScene() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
                   transition={{ duration: 0.18 }}
-                  className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 rounded-md bg-[#7c5cff] text-white text-xs font-semibold shadow-lg z-10"
+                  className="absolute -top-10 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#7c5cff] px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
                 >
                   {t.hero.ctaPrimaryCopiedToast}
                 </motion.div>

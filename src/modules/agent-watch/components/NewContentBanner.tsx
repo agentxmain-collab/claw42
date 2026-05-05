@@ -33,7 +33,7 @@ export function NewContentBanner({ visible, onDismiss, onJumpToLatest }: NewCont
             <button
               type="button"
               onClick={onJumpToLatest}
-              className="flex items-center gap-2 rounded-l-full px-4 py-1.5 text-xs font-semibold text-white/78 transition-colors hover:bg-white/10"
+              className="text-white/78 flex items-center gap-2 rounded-l-full px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-white/10"
             >
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-35" />

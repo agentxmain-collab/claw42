@@ -19,7 +19,10 @@ export function prefixLeadingCoinSymbol(text: string, symbol: string): string {
   if (!normalized) return text;
   if (normalized === "AI" && /^\s*\$?AI\s+Agent\b/i.test(text)) return text;
 
-  const leadingSymbol = new RegExp(`^\\s*\\$?${escapeRegExp(normalized)}(?=\\b|\\s|\\d|[-+/(（:：])`, "i");
+  const leadingSymbol = new RegExp(
+    `^\\s*\\$?${escapeRegExp(normalized)}(?=\\b|\\s|\\d|[-+/(（:：])`,
+    "i",
+  );
   return text.replace(leadingSymbol, formatCoinSymbol(normalized));
 }
 
@@ -44,7 +47,13 @@ export function prefixCoinSymbolsInText(text: string, symbols: string[]): string
     .filter(Boolean)
     .sort((a, b) => b.length - a.length)
     .reduce((current, symbol) => {
-      const symbolPattern = new RegExp(`(^|[^$A-Za-z0-9_])\\$?${escapeRegExp(symbol)}(?=$|[^A-Za-z0-9_])`, "g");
-      return current.replace(symbolPattern, (_match, prefix: string) => `${prefix}${formatCoinSymbol(symbol)}`);
+      const symbolPattern = new RegExp(
+        `(^|[^$A-Za-z0-9_])\\$?${escapeRegExp(symbol)}(?=$|[^A-Za-z0-9_])`,
+        "g",
+      );
+      return current.replace(
+        symbolPattern,
+        (_match, prefix: string) => `${prefix}${formatCoinSymbol(symbol)}`,
+      );
     }, text);
 }

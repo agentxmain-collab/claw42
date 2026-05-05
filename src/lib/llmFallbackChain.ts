@@ -202,7 +202,8 @@ type TimedCacheEntry = {
 const liveCaches: Partial<Record<AgentWatchLocale, LiveCacheEntry>> = {};
 const backgroundRefreshInFlight: Partial<Record<AgentWatchLocale, boolean>> = {};
 const staticFallbackCaches: Partial<Record<AgentWatchLocale, TimedCacheEntry>> = {};
-const analysisRefreshInFlight: Partial<Record<AgentWatchLocale, Promise<AgentAnalysisPayload>>> = {};
+const analysisRefreshInFlight: Partial<Record<AgentWatchLocale, Promise<AgentAnalysisPayload>>> =
+  {};
 const HISTORY_BUFFER_MAX_MESSAGES = 200;
 const HISTORY_DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 let historyBuffer: HistoryMessageEntry[] = [];
@@ -329,7 +330,9 @@ function buildFallbackStream(
 }
 
 function signalDescription(signal: SignalRecord): string {
-  const parts = [signal.payload.description ?? `${signal.symbol} ${SIGNAL_TYPE_LABELS[signal.type]}`];
+  const parts = [
+    signal.payload.description ?? `${signal.symbol} ${SIGNAL_TYPE_LABELS[signal.type]}`,
+  ];
   if (typeof signal.payload.volumeRatio === "number") {
     parts.push(`volumeRatio ${signal.payload.volumeRatio.toFixed(2)}x`);
   }
@@ -420,7 +423,11 @@ function normalizeSpeechText(agentId: AgentId, signal: SignalRecord, text: strin
   return content;
 }
 
-function buildAgentSpeechPrompt(agentId: AgentId, signal: SignalRecord, pool: CoinPoolPayload): string {
+function buildAgentSpeechPrompt(
+  agentId: AgentId,
+  signal: SignalRecord,
+  pool: CoinPoolPayload,
+): string {
   return `你是 Claw42 的实时看盘 Agent。只基于下面这一条真实信号发言，不要补充不存在的数据。
 
 ${skillPromptBlock(agentId)}
@@ -496,9 +503,7 @@ function buildFallbackHeroBubbles(
   locale: AgentWatchLocale = "zh_CN",
 ): string[] {
   const seed = fallbackSeed(tickers);
-  return AGENTS.map((agentId, index) =>
-    selectAgentHeroBubble(agentId, seed + index * 7, locale),
-  );
+  return AGENTS.map((agentId, index) => selectAgentHeroBubble(agentId, seed + index * 7, locale));
 }
 
 function buildFallbackComments(locale: AgentWatchLocale = "zh_CN"): CoinComments {
@@ -524,11 +529,7 @@ function fallbackFocusForAgent(
     .filter((coin) => !RISK_COINS.includes(coin.symbol as CoinSymbol) && coin.symbol !== "USDT")
     .sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))[0];
   const target =
-    agentId === "alpha"
-      ? opportunity
-      : agentId === "beta"
-        ? leader
-        : extremeCandidate ?? null;
+    agentId === "alpha" ? opportunity : agentId === "beta" ? leader : (extremeCandidate ?? null);
   const symbol = target?.symbol ?? "BTC";
   const priceLevel = Number.isFinite(target?.price) ? target.price : undefined;
 
@@ -629,7 +630,8 @@ function fallbackFocusForAgent(
         trigger: {
           type: "custom",
           symbol: "—",
-          description: "A hot or opportunity coin must show a clear 24h extreme before mean-reversion watch opens.",
+          description:
+            "A hot or opportunity coin must show a clear 24h extreme before mean-reversion watch opens.",
         },
         fail: {
           type: "custom",
@@ -751,8 +753,7 @@ function pushHistoryFromBatch(payload: AgentAnalysisPayload) {
       (entry) =>
         entry.agentId === item.agentId &&
         entry.content === item.content &&
-        Math.abs(payload.generatedAt - entry.generatedAt) <=
-          HISTORY_DUPLICATE_CONTENT_WINDOW_MS,
+        Math.abs(payload.generatedAt - entry.generatedAt) <= HISTORY_DUPLICATE_CONTENT_WINDOW_MS,
     );
     if (duplicateContent) return;
 
@@ -881,9 +882,7 @@ const CROSS_BANNED_PHRASES: Record<AgentId, string[]> = {
 
 function formatTerminology(skill: AgentSkill): string {
   if (!skill.terminology) return "无强制术语";
-  return `每条至少 ${skill.terminology.minPerMessage} 个：${skill.terminology.required.join(
-    "、",
-  )}`;
+  return `每条至少 ${skill.terminology.minPerMessage} 个：${skill.terminology.required.join("、")}`;
 }
 
 function formatAgentTerminology(agentId: AgentId, skill: AgentSkill): string {
@@ -1230,7 +1229,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isFocusTriggerType(value: unknown): value is AgentFocus["trigger"]["type"] {
-  return typeof value === "string" && FOCUS_TRIGGER_TYPES.has(value as AgentFocus["trigger"]["type"]);
+  return (
+    typeof value === "string" && FOCUS_TRIGGER_TYPES.has(value as AgentFocus["trigger"]["type"])
+  );
 }
 
 function isFocusFailType(value: unknown): value is AgentFocus["fail"]["type"] {
@@ -1316,7 +1317,11 @@ function normalizeFocus(
         symbol: triggerSymbol,
         priceLevel: normalizeOptionalNumber(triggerRaw.priceLevel),
         volumeRatio: normalizeOptionalNumber(triggerRaw.volumeRatio),
-        description: normalizeFocusText(triggerRaw.description, `${agentId}.trigger.description`, 140),
+        description: normalizeFocusText(
+          triggerRaw.description,
+          `${agentId}.trigger.description`,
+          140,
+        ),
       },
       fail: {
         type: failRaw.type,
@@ -1373,7 +1378,8 @@ function validateAnalysis(
 
   const normalizedHeroBubbles = heroBubbles.slice(0, 3).map((item) => {
     const content = String(item).slice(0, 100);
-    if (hasUnsupportedV1DataClaim(content)) throw new Error("hero bubble uses unsupported v1 indicator");
+    if (hasUnsupportedV1DataClaim(content))
+      throw new Error("hero bubble uses unsupported v1 indicator");
     if (hasBannedOutputPattern(content)) throw new Error("hero bubble uses banned opener");
     return content;
   });
@@ -1408,7 +1414,12 @@ function validateAnalysis(
   };
 }
 
-const LEGACY_JSON_PIPELINE = [buildStaticFallback, buildPrompt, parseAnalysisJson, validateAnalysis] as const;
+const LEGACY_JSON_PIPELINE = [
+  buildStaticFallback,
+  buildPrompt,
+  parseAnalysisJson,
+  validateAnalysis,
+] as const;
 void LEGACY_JSON_PIPELINE;
 
 async function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
@@ -1542,7 +1553,9 @@ if (PROVIDERS.length === 0) {
   console.info(`[claw42] LLM chain: ${PROVIDERS.map((provider) => provider.name).join(" → ")}`);
 }
 
-async function callTextProvider(prompt: string): Promise<{ text: string; source: ProviderSource } | null> {
+async function callTextProvider(
+  prompt: string,
+): Promise<{ text: string; source: ProviderSource } | null> {
   for (const provider of PROVIDERS) {
     try {
       await sleep(randomThinkDelayMs());
@@ -1671,7 +1684,9 @@ async function hydrateConflictEvent(
   locale: AgentWatchLocale,
 ): Promise<{ event: ConflictEvent; source: ProviderSource | null }> {
   const responses = await Promise.all(
-    event.conflictingAgents.map((agentId) => generateEventResponse(agentId, event.description, pool, locale)),
+    event.conflictingAgents.map((agentId) =>
+      generateEventResponse(agentId, event.description, pool, locale),
+    ),
   );
   return {
     event: {
@@ -1812,7 +1827,9 @@ function refreshAnalysisOnce(locale: AgentWatchLocale): Promise<AgentAnalysisPay
   return promise;
 }
 
-export async function getAgentAnalysis(locale: AgentWatchLocale = "zh_CN"): Promise<AgentAnalysisPayload> {
+export async function getAgentAnalysis(
+  locale: AgentWatchLocale = "zh_CN",
+): Promise<AgentAnalysisPayload> {
   const now = Date.now();
   const cached = liveCaches[locale];
   const hasUnseenRecentSignal = cached

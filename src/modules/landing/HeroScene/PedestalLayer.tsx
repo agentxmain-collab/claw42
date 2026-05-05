@@ -30,9 +30,9 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
   const depthTransform = `translate(-50%, 0) translate(${parallaxX}px, calc(${parallaxY}px + var(--claw42-hero-depth-pedestal-y, 0px)))`;
 
   return (
-    <div className="claw42-hero-pedestal-layer absolute inset-0 pointer-events-none">
+    <div className="claw42-hero-pedestal-layer pointer-events-none absolute inset-0">
       <motion.div
-        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
           bottom: "var(--claw42-hero-pedestal-glow-bottom, 41%)",
           width: "var(--claw42-hero-pedestal-glow-width, min(340px, 24vw))",
@@ -50,15 +50,13 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
           }}
           animate={reduceMotion ? { opacity: 0.65 } : { opacity: [0.45, 0.85, 0.45] }}
           transition={
-            reduceMotion
-              ? { duration: 0 }
-              : { duration: 3, repeat: Infinity, ease: "easeInOut" }
+            reduceMotion ? { duration: 0 } : { duration: 3, repeat: Infinity, ease: "easeInOut" }
           }
         />
       </motion.div>
 
       <motion.div
-        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
           bottom: "var(--claw42-hero-pedestal-beam-bottom, 43%)",
           width: "min(206px, 17vw)",
@@ -72,14 +70,12 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
         }}
         animate={reduceMotion ? { opacity: 0.9 } : { opacity: [0.48, 0.92, 0.48] }}
         transition={
-          reduceMotion
-            ? { duration: 0 }
-            : { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
+          reduceMotion ? { duration: 0 } : { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
         }
       />
 
       <div
-        className="absolute left-1/2 -translate-x-1/2 pointer-events-none overflow-visible"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 overflow-visible"
         style={{
           bottom: "var(--claw42-hero-pedestal-rays-bottom, 44%)",
           width: "min(232px, 19vw)",
@@ -152,7 +148,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       </div>
 
       <motion.div
-        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
           bottom: "var(--claw42-hero-pedestal-top-glow-bottom, 48%)",
           width: "min(260px, 22vw)",
@@ -165,14 +161,12 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
         }}
         animate={reduceMotion ? { opacity: 0.88 } : { opacity: [0.62, 1, 0.62] }}
         transition={
-          reduceMotion
-            ? { duration: 0 }
-            : { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+          reduceMotion ? { duration: 0 } : { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
         }
       />
 
       <motion.div
-        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
           bottom: "var(--claw42-hero-pedestal-orb-bottom, 47%)",
           width: "min(196px, 16vw)",
@@ -185,14 +179,12 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
         }}
         animate={reduceMotion ? { opacity: 0.96 } : { opacity: [0.76, 1, 0.76] }}
         transition={
-          reduceMotion
-            ? { duration: 0 }
-            : { duration: 1.7, repeat: Infinity, ease: "easeInOut" }
+          reduceMotion ? { duration: 0 } : { duration: 1.7, repeat: Infinity, ease: "easeInOut" }
         }
       />
 
       <div
-        className="absolute left-1/2 pointer-events-none"
+        className="pointer-events-none absolute left-1/2"
         style={{
           bottom: "var(--claw42-hero-pedestal-bottom, 37%)",
           width: "var(--claw42-hero-pedestal-width, min(456px, 24vw))",
@@ -201,7 +193,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
         }}
       >
         <motion.div
-          className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2"
           style={{
             top: "-18%",
             zIndex: 0,
@@ -213,9 +205,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
           }}
           animate={reduceMotion ? { opacity: 0.6 } : { opacity: [0.4, 0.8, 0.4] }}
           transition={
-            reduceMotion
-              ? { duration: 0 }
-            : { duration: 3, repeat: Infinity, ease: "easeInOut" }
+            reduceMotion ? { duration: 0 } : { duration: 3, repeat: Infinity, ease: "easeInOut" }
           }
         />
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -224,7 +214,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
           alt=""
           aria-hidden="true"
           draggable={false}
-          className="relative z-10 w-full h-auto select-none"
+          className="relative z-10 h-auto w-full select-none"
         />
       </div>
     </div>

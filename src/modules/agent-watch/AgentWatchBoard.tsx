@@ -56,7 +56,11 @@ function isAgentDiscussion(entry: StreamEntry): entry is AgentDiscussionEntry {
 }
 
 function isPriorityEvent(entry: StreamEntry) {
-  return entry.kind === "collective_event" || entry.kind === "focus_event" || entry.kind === "conflict_event";
+  return (
+    entry.kind === "collective_event" ||
+    entry.kind === "focus_event" ||
+    entry.kind === "conflict_event"
+  );
 }
 
 function speakerIdsForEntry(entry: StreamEntry): AgentId[] {
@@ -156,10 +160,10 @@ export function AgentWatchBoard() {
   const agentWatchLocale = resolveAgentWatchLocale(locale);
   const isSupportedAgentWatchLocale = isAgentWatchLocale(locale);
   const reduceMotion = useReducedMotion();
-  const {
-    isLoading: isHistoryLoading,
-    refreshHistory,
-  } = useAgentHistory({ enabled: isSupportedAgentWatchLocale, initialLimit: 60 });
+  const { isLoading: isHistoryLoading, refreshHistory } = useAgentHistory({
+    enabled: isSupportedAgentWatchLocale,
+    initialLimit: 60,
+  });
   const { data, isLoading, hasNewContent, dismissNewContent } = useAgentAnalysis({
     enabled: isSupportedAgentWatchLocale,
     locale: agentWatchLocale,
@@ -199,13 +203,16 @@ export function AgentWatchBoard() {
     };
   }, []);
 
-  const rememberScheduledEntries = useCallback((entries: StreamEntry[], now: number) => {
-    const { memory } = ensureDirectorMemory(now);
-    const nextMemory = rememberDirectorEntries(memory, entries, now);
-    directorMemoryRef.current = nextMemory;
-    const storage = typeof window === "undefined" ? undefined : window.localStorage;
-    writeWatchDirectorMemory(storage, nextMemory);
-  }, [ensureDirectorMemory]);
+  const rememberScheduledEntries = useCallback(
+    (entries: StreamEntry[], now: number) => {
+      const { memory } = ensureDirectorMemory(now);
+      const nextMemory = rememberDirectorEntries(memory, entries, now);
+      directorMemoryRef.current = nextMemory;
+      const storage = typeof window === "undefined" ? undefined : window.localStorage;
+      writeWatchDirectorMemory(storage, nextMemory);
+    },
+    [ensureDirectorMemory],
+  );
 
   const scheduleStreamEntries = useCallback(
     (entries: StreamEntry[], options: { clearPending?: boolean } = {}) => {
@@ -241,22 +248,18 @@ export function AgentWatchBoard() {
             setTypingAgent((current) => (current === agentId ? null : current));
             setSpeakingAgent(agentId);
           }
-          setLiveQueue((current) =>
-            trimStreamEntries(
-              dedupeStreamEntries([
-                ...current,
-                entry,
-              ]),
-            ),
-          );
+          setLiveQueue((current) => trimStreamEntries(dedupeStreamEntries([...current, entry])));
         }, nextDelay + thinkDuration);
 
         timersRef.current.push(appendTimer);
 
         if (agentId) {
-          const clearSpeakingTimer = window.setTimeout(() => {
-            setSpeakingAgent((current) => (current === agentId ? null : current));
-          }, nextDelay + thinkDuration + 1100);
+          const clearSpeakingTimer = window.setTimeout(
+            () => {
+              setSpeakingAgent((current) => (current === agentId ? null : current));
+            },
+            nextDelay + thinkDuration + 1100,
+          );
           timersRef.current.push(clearSpeakingTimer);
         }
 
@@ -296,7 +299,13 @@ export function AgentWatchBoard() {
       setTypingAgent(null);
       setSpeakingAgent(null);
     };
-  }, [agentWatchLocale, data, ensureDirectorMemory, rememberScheduledEntries, scheduleStreamEntries]);
+  }, [
+    agentWatchLocale,
+    data,
+    ensureDirectorMemory,
+    rememberScheduledEntries,
+    scheduleStreamEntries,
+  ]);
 
   useEffect(() => {
     if (!data?.pool) return;
@@ -305,10 +314,7 @@ export function AgentWatchBoard() {
 
     const existingEntries = streamEntriesFromPayload(data);
     const visibleEntries = trimStreamEntries(
-      dedupeStreamEntries([
-        ...existingEntries,
-        ...liveQueue,
-      ]),
+      dedupeStreamEntries([...existingEntries, ...liveQueue]),
     );
     const cutoff = now - DUPLICATE_CONTENT_WINDOW_MS * 2;
     for (const [key, ts] of Array.from(supplementalClaimRef.current.entries())) {
@@ -352,12 +358,16 @@ export function AgentWatchBoard() {
     lastSupplementalAtRef.current = now;
     rememberScheduledEntries([entry], now);
     scheduleStreamEntries([entry]);
-  }, [agentWatchLocale, data, liveQueue, marketSignals, rememberScheduledEntries, scheduleStreamEntries]);
+  }, [
+    agentWatchLocale,
+    data,
+    liveQueue,
+    marketSignals,
+    rememberScheduledEntries,
+    scheduleStreamEntries,
+  ]);
 
-  const combinedEntries = useMemo(
-    () => liveQueue,
-    [liveQueue],
-  );
+  const combinedEntries = useMemo(() => liveQueue, [liveQueue]);
   const focusByAgent = useMemo(
     () => new Map(data?.focus?.map((focus) => [focus.agentId, focus]) ?? []),
     [data?.focus],
@@ -385,11 +395,7 @@ export function AgentWatchBoard() {
     >
       <div className="space-y-7">
         <TopicHeader t={t} />
-        <CoinTickerStrip
-          pool={data?.pool}
-          tickers={data?.tickers}
-          labels={t.agentWatch.coinPool}
-        />
+        <CoinTickerStrip pool={data?.pool} tickers={data?.tickers} labels={t.agentWatch.coinPool} />
         <MarketEventFeed
           signals={marketSignals}
           labels={t.agentWatch.marketEvent}
@@ -426,7 +432,7 @@ export function AgentWatchBoard() {
           locale={agentWatchLocale}
         />
 
-        <p className="rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3 text-xs leading-relaxed text-white/42">
+        <p className="text-white/42 rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3 text-xs leading-relaxed">
           {agentWatchLocale === "en_US"
             ? "Risk notice: This page is generated by AI from public market data for information display only and does not constitute investment advice. Please make trading decisions based on your own risk tolerance."
             : "风险提示：本页面内容由 AI 根据公开行情数据自动生成，仅用于信息展示，不构成投资建议。请结合自身风险承受能力判断，交易决策由用户自行承担。"}

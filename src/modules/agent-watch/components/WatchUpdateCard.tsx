@@ -40,7 +40,7 @@ export function WatchUpdateCard({ entry }: { entry: WatchUpdateEntry }) {
       className={`animate-stream-in rounded-2xl border p-4 ${UPDATE_STYLE[entry.updateType]}`}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-white/10 bg-white/[0.055] px-2 py-1 text-xs font-semibold text-white/72">
+        <span className="text-white/72 rounded-full border border-white/10 bg-white/[0.055] px-2 py-1 text-xs font-semibold">
           {UPDATE_LABEL[entry.updateType]}
         </span>
         {agent && (
@@ -62,7 +62,7 @@ export function WatchUpdateCard({ entry }: { entry: WatchUpdateEntry }) {
         <span className="font-mono text-xs text-white/35">{timeLabel}</span>
       </div>
 
-      <p className="mt-3 text-sm font-semibold leading-relaxed text-white/78">{entry.content}</p>
+      <p className="text-white/78 mt-3 text-sm font-semibold leading-relaxed">{entry.content}</p>
     </motion.article>
   );
 }

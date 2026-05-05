@@ -74,43 +74,349 @@ const TRAIL_PARTICLES: ReadonlyArray<{
   tail: string;
 }> = [
   // HEAD 段 —— 主轨迹 14 颗
-  { offset: 0, perp: 0, size: 3.2, blur: 0.2, alpha: 1, core: "240,248,255", mid: "150,200,255", tail: "74,150,255" },
-  { offset: -5, perp: -1.6, size: 2.6, blur: 0.22, alpha: 0.97, core: "236,246,255", mid: "145,195,255", tail: "70,145,252" },
-  { offset: -10, perp: 2.0, size: 2.1, blur: 0.25, alpha: 0.94, core: "230,244,255", mid: "140,188,255", tail: "66,140,248" },
-  { offset: -15, perp: -2.8, size: 1.7, blur: 0.28, alpha: 0.9, core: "224,240,255", mid: "135,182,255", tail: "62,135,244" },
-  { offset: -20, perp: 3.4, size: 1.4, blur: 0.32, alpha: 0.85, core: "218,236,255", mid: "128,176,255", tail: "58,130,240" },
-  { offset: -26, perp: -4.0, size: 1.2, blur: 0.35, alpha: 0.8, core: "212,232,255", mid: "122,170,255", tail: "54,125,236" },
-  { offset: -32, perp: 4.4, size: 1.0, blur: 0.38, alpha: 0.74, core: "206,228,255", mid: "116,164,255", tail: "50,120,230" },
-  { offset: -38, perp: -4.6, size: 0.82, blur: 0.4, alpha: 0.68, core: "200,224,255", mid: "110,158,255", tail: "48,115,224" },
-  { offset: -44, perp: 4.4, size: 0.68, blur: 0.42, alpha: 0.62, core: "194,220,255", mid: "105,152,255", tail: "46,110,218" },
-  { offset: -50, perp: -4.0, size: 0.55, blur: 0.45, alpha: 0.56, core: "188,216,255", mid: "100,146,255", tail: "44,105,212" },
-  { offset: -56, perp: 3.4, size: 0.44, blur: 0.48, alpha: 0.5, core: "182,212,255", mid: "95,140,255", tail: "42,100,206" },
-  { offset: -62, perp: -2.8, size: 0.35, blur: 0.5, alpha: 0.44, core: "176,208,255", mid: "90,135,255", tail: "40,95,200" },
-  { offset: -68, perp: 2.2, size: 0.28, blur: 0.52, alpha: 0.38, core: "170,204,255", mid: "85,130,250", tail: "38,90,194" },
-  { offset: -74, perp: -1.6, size: 0.22, blur: 0.55, alpha: 0.32, core: "164,200,255", mid: "80,125,245", tail: "36,85,188" },
+  {
+    offset: 0,
+    perp: 0,
+    size: 3.2,
+    blur: 0.2,
+    alpha: 1,
+    core: "240,248,255",
+    mid: "150,200,255",
+    tail: "74,150,255",
+  },
+  {
+    offset: -5,
+    perp: -1.6,
+    size: 2.6,
+    blur: 0.22,
+    alpha: 0.97,
+    core: "236,246,255",
+    mid: "145,195,255",
+    tail: "70,145,252",
+  },
+  {
+    offset: -10,
+    perp: 2.0,
+    size: 2.1,
+    blur: 0.25,
+    alpha: 0.94,
+    core: "230,244,255",
+    mid: "140,188,255",
+    tail: "66,140,248",
+  },
+  {
+    offset: -15,
+    perp: -2.8,
+    size: 1.7,
+    blur: 0.28,
+    alpha: 0.9,
+    core: "224,240,255",
+    mid: "135,182,255",
+    tail: "62,135,244",
+  },
+  {
+    offset: -20,
+    perp: 3.4,
+    size: 1.4,
+    blur: 0.32,
+    alpha: 0.85,
+    core: "218,236,255",
+    mid: "128,176,255",
+    tail: "58,130,240",
+  },
+  {
+    offset: -26,
+    perp: -4.0,
+    size: 1.2,
+    blur: 0.35,
+    alpha: 0.8,
+    core: "212,232,255",
+    mid: "122,170,255",
+    tail: "54,125,236",
+  },
+  {
+    offset: -32,
+    perp: 4.4,
+    size: 1.0,
+    blur: 0.38,
+    alpha: 0.74,
+    core: "206,228,255",
+    mid: "116,164,255",
+    tail: "50,120,230",
+  },
+  {
+    offset: -38,
+    perp: -4.6,
+    size: 0.82,
+    blur: 0.4,
+    alpha: 0.68,
+    core: "200,224,255",
+    mid: "110,158,255",
+    tail: "48,115,224",
+  },
+  {
+    offset: -44,
+    perp: 4.4,
+    size: 0.68,
+    blur: 0.42,
+    alpha: 0.62,
+    core: "194,220,255",
+    mid: "105,152,255",
+    tail: "46,110,218",
+  },
+  {
+    offset: -50,
+    perp: -4.0,
+    size: 0.55,
+    blur: 0.45,
+    alpha: 0.56,
+    core: "188,216,255",
+    mid: "100,146,255",
+    tail: "44,105,212",
+  },
+  {
+    offset: -56,
+    perp: 3.4,
+    size: 0.44,
+    blur: 0.48,
+    alpha: 0.5,
+    core: "182,212,255",
+    mid: "95,140,255",
+    tail: "42,100,206",
+  },
+  {
+    offset: -62,
+    perp: -2.8,
+    size: 0.35,
+    blur: 0.5,
+    alpha: 0.44,
+    core: "176,208,255",
+    mid: "90,135,255",
+    tail: "40,95,200",
+  },
+  {
+    offset: -68,
+    perp: 2.2,
+    size: 0.28,
+    blur: 0.52,
+    alpha: 0.38,
+    core: "170,204,255",
+    mid: "85,130,250",
+    tail: "38,90,194",
+  },
+  {
+    offset: -74,
+    perp: -1.6,
+    size: 0.22,
+    blur: 0.55,
+    alpha: 0.32,
+    core: "164,200,255",
+    mid: "80,125,245",
+    tail: "36,85,188",
+  },
   // FORK 段 —— 末端散开，offset/perp 不对称打散（不再镜像）
-  { offset: -58, perp: 9.2, size: 0.5, blur: 0.5, alpha: 0.38, core: "200,225,255", mid: "110,160,255", tail: "50,118,230" },
-  { offset: -64, perp: -7.8, size: 0.46, blur: 0.52, alpha: 0.36, core: "195,220,255", mid: "105,155,255", tail: "48,115,225" },
-  { offset: -71, perp: 12.6, size: 0.36, blur: 0.55, alpha: 0.3, core: "185,215,255", mid: "98,148,255", tail: "44,108,218" },
-  { offset: -75, perp: -10.4, size: 0.34, blur: 0.55, alpha: 0.28, core: "178,210,255", mid: "92,142,255", tail: "42,104,212" },
-  { offset: -83, perp: 13.8, size: 0.28, blur: 0.6, alpha: 0.24, core: "168,202,255", mid: "85,135,250", tail: "38,95,200" },
-  { offset: -86, perp: -11.2, size: 0.26, blur: 0.6, alpha: 0.22, core: "160,196,255", mid: "78,128,245", tail: "35,90,190" },
+  {
+    offset: -58,
+    perp: 9.2,
+    size: 0.5,
+    blur: 0.5,
+    alpha: 0.38,
+    core: "200,225,255",
+    mid: "110,160,255",
+    tail: "50,118,230",
+  },
+  {
+    offset: -64,
+    perp: -7.8,
+    size: 0.46,
+    blur: 0.52,
+    alpha: 0.36,
+    core: "195,220,255",
+    mid: "105,155,255",
+    tail: "48,115,225",
+  },
+  {
+    offset: -71,
+    perp: 12.6,
+    size: 0.36,
+    blur: 0.55,
+    alpha: 0.3,
+    core: "185,215,255",
+    mid: "98,148,255",
+    tail: "44,108,218",
+  },
+  {
+    offset: -75,
+    perp: -10.4,
+    size: 0.34,
+    blur: 0.55,
+    alpha: 0.28,
+    core: "178,210,255",
+    mid: "92,142,255",
+    tail: "42,104,212",
+  },
+  {
+    offset: -83,
+    perp: 13.8,
+    size: 0.28,
+    blur: 0.6,
+    alpha: 0.24,
+    core: "168,202,255",
+    mid: "85,135,250",
+    tail: "38,95,200",
+  },
+  {
+    offset: -86,
+    perp: -11.2,
+    size: 0.26,
+    blur: 0.6,
+    alpha: 0.22,
+    core: "160,196,255",
+    mid: "78,128,245",
+    tail: "35,90,190",
+  },
   // SPARK 段 —— 更远飞溅，不对称
-  { offset: -90, perp: 6.3, size: 0.22, blur: 0.5, alpha: 0.22, core: "150,190,255", mid: "72,122,240", tail: "32,82,180" },
-  { offset: -95, perp: -5.1, size: 0.2, blur: 0.52, alpha: 0.2, core: "145,185,255", mid: "68,118,235", tail: "30,78,175" },
-  { offset: -99, perp: 13.2, size: 0.18, blur: 0.55, alpha: 0.18, core: "138,180,255", mid: "64,114,230", tail: "28,75,168" },
-  { offset: -104, perp: -9.8, size: 0.17, blur: 0.58, alpha: 0.16, core: "132,175,255", mid: "60,110,225", tail: "26,72,162" },
-  { offset: -108, perp: 7.2, size: 0.15, blur: 0.6, alpha: 0.14, core: "125,170,255", mid: "56,105,220", tail: "24,68,155" },
-  { offset: -112, perp: -14.5, size: 0.14, blur: 0.62, alpha: 0.13, core: "118,164,255", mid: "52,100,215", tail: "22,64,148" },
+  {
+    offset: -90,
+    perp: 6.3,
+    size: 0.22,
+    blur: 0.5,
+    alpha: 0.22,
+    core: "150,190,255",
+    mid: "72,122,240",
+    tail: "32,82,180",
+  },
+  {
+    offset: -95,
+    perp: -5.1,
+    size: 0.2,
+    blur: 0.52,
+    alpha: 0.2,
+    core: "145,185,255",
+    mid: "68,118,235",
+    tail: "30,78,175",
+  },
+  {
+    offset: -99,
+    perp: 13.2,
+    size: 0.18,
+    blur: 0.55,
+    alpha: 0.18,
+    core: "138,180,255",
+    mid: "64,114,230",
+    tail: "28,75,168",
+  },
+  {
+    offset: -104,
+    perp: -9.8,
+    size: 0.17,
+    blur: 0.58,
+    alpha: 0.16,
+    core: "132,175,255",
+    mid: "60,110,225",
+    tail: "26,72,162",
+  },
+  {
+    offset: -108,
+    perp: 7.2,
+    size: 0.15,
+    blur: 0.6,
+    alpha: 0.14,
+    core: "125,170,255",
+    mid: "56,105,220",
+    tail: "24,68,155",
+  },
+  {
+    offset: -112,
+    perp: -14.5,
+    size: 0.14,
+    blur: 0.62,
+    alpha: 0.13,
+    core: "118,164,255",
+    mid: "52,100,215",
+    tail: "22,64,148",
+  },
   // SCATTER 段 —— 完全不规则脱轨飞溅，两侧远近散落，体积/亮度极大反差
-  { offset: -30, perp: 9.8, size: 0.42, blur: 0.45, alpha: 0.32, core: "185,216,255", mid: "98,150,255", tail: "44,108,218" },
-  { offset: -40, perp: -13.5, size: 0.38, blur: 0.48, alpha: 0.3, core: "175,210,255", mid: "90,142,252", tail: "38,95,200" },
-  { offset: -48, perp: 8.5, size: 0.32, blur: 0.5, alpha: 0.28, core: "170,205,255", mid: "85,135,250", tail: "35,90,195" },
-  { offset: -53, perp: -11.3, size: 0.24, blur: 0.55, alpha: 0.22, core: "162,198,255", mid: "78,128,245", tail: "32,85,185" },
-  { offset: -67, perp: 15.4, size: 0.2, blur: 0.6, alpha: 0.18, core: "155,192,255", mid: "72,120,240", tail: "30,80,175" },
-  { offset: -88, perp: -7.2, size: 0.28, blur: 0.52, alpha: 0.24, core: "148,186,255", mid: "66,112,232", tail: "28,75,165" },
-  { offset: -115, perp: 10.1, size: 0.14, blur: 0.65, alpha: 0.12, core: "140,180,255", mid: "60,105,225", tail: "26,70,155" },
-  { offset: -120, perp: -17.3, size: 0.1, blur: 0.7, alpha: 0.1, core: "132,172,255", mid: "54,98,218", tail: "24,65,145" },
+  {
+    offset: -30,
+    perp: 9.8,
+    size: 0.42,
+    blur: 0.45,
+    alpha: 0.32,
+    core: "185,216,255",
+    mid: "98,150,255",
+    tail: "44,108,218",
+  },
+  {
+    offset: -40,
+    perp: -13.5,
+    size: 0.38,
+    blur: 0.48,
+    alpha: 0.3,
+    core: "175,210,255",
+    mid: "90,142,252",
+    tail: "38,95,200",
+  },
+  {
+    offset: -48,
+    perp: 8.5,
+    size: 0.32,
+    blur: 0.5,
+    alpha: 0.28,
+    core: "170,205,255",
+    mid: "85,135,250",
+    tail: "35,90,195",
+  },
+  {
+    offset: -53,
+    perp: -11.3,
+    size: 0.24,
+    blur: 0.55,
+    alpha: 0.22,
+    core: "162,198,255",
+    mid: "78,128,245",
+    tail: "32,85,185",
+  },
+  {
+    offset: -67,
+    perp: 15.4,
+    size: 0.2,
+    blur: 0.6,
+    alpha: 0.18,
+    core: "155,192,255",
+    mid: "72,120,240",
+    tail: "30,80,175",
+  },
+  {
+    offset: -88,
+    perp: -7.2,
+    size: 0.28,
+    blur: 0.52,
+    alpha: 0.24,
+    core: "148,186,255",
+    mid: "66,112,232",
+    tail: "28,75,165",
+  },
+  {
+    offset: -115,
+    perp: 10.1,
+    size: 0.14,
+    blur: 0.65,
+    alpha: 0.12,
+    core: "140,180,255",
+    mid: "60,105,225",
+    tail: "26,70,155",
+  },
+  {
+    offset: -120,
+    perp: -17.3,
+    size: 0.1,
+    blur: 0.7,
+    alpha: 0.1,
+    core: "132,172,255",
+    mid: "54,98,218",
+    tail: "24,65,145",
+  },
 ];
 
 const COINS: CoinConfig[] = [
@@ -216,7 +522,7 @@ function MarketCallout({
         <div className="font-mono text-[12px] font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]">
           {formatCoinSymbol(coin.symbol)}
         </div>
-        <div className="font-mono text-[13px] font-semibold tracking-[0.08em] text-white/72 drop-shadow-[0_0_8px_rgba(124,92,255,0.45)]">
+        <div className="text-white/72 font-mono text-[13px] font-semibold tracking-[0.08em] drop-shadow-[0_0_8px_rgba(124,92,255,0.45)]">
           {formatTickerPrice(ticker.price)}
         </div>
         <div
@@ -241,7 +547,7 @@ function MarketCallout({
           }}
         />
         <span
-          className={`absolute top-1/2 h-5 w-px -translate-y-1/2 bg-white/28 ${
+          className={`bg-white/28 absolute top-1/2 h-5 w-px -translate-y-1/2 ${
             isLeft ? "left-0" : "right-0"
           }`}
         />
@@ -290,9 +596,7 @@ export function CoinsLayer({
 
     const timer = window.setInterval(() => {
       const now = Date.now();
-      setTrail((current) =>
-        current.filter((point) => now - point.createdAt < TRAIL_LIFETIME_MS),
-      );
+      setTrail((current) => current.filter((point) => now - point.createdAt < TRAIL_LIFETIME_MS));
     }, 50);
 
     return () => window.clearInterval(timer);
@@ -309,27 +613,30 @@ export function CoinsLayer({
     ]);
   }, []);
 
-  const pushTrailPointFromClient = useCallback((clientX: number, clientY: number) => {
-    if (!layerRef.current) return;
+  const pushTrailPointFromClient = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!layerRef.current) return;
 
-    const rect = layerRef.current.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+      const rect = layerRef.current.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
 
-    if (x < -120 || y < -120 || x > rect.width + 120 || y > rect.height + 120) {
-      return;
-    }
+      if (x < -120 || y < -120 || x > rect.width + 120 || y > rect.height + 120) {
+        return;
+      }
 
-    const last = lastWindowPointRef.current;
-    const dx = last ? x - last.x : 0;
-    const dy = last ? y - last.y : 0;
-    const distance = Math.hypot(dx, dy);
+      const last = lastWindowPointRef.current;
+      const dx = last ? x - last.x : 0;
+      const dy = last ? y - last.y : 0;
+      const distance = Math.hypot(dx, dy);
 
-    lastWindowPointRef.current = { x, y };
+      lastWindowPointRef.current = { x, y };
 
-    if (last && distance < TRAIL_POINT_THRESHOLD) return;
-    pushTrailPoint({ x, y, dx, dy });
-  }, [pushTrailPoint]);
+      if (last && distance < TRAIL_POINT_THRESHOLD) return;
+      pushTrailPoint({ x, y, dx, dy });
+    },
+    [pushTrailPoint],
+  );
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -354,12 +661,15 @@ export function CoinsLayer({
     };
   }, [reduceMotion, pushTrailPointFromClient]);
 
-  const engageTrail = useCallback((clientX: number, clientY: number) => {
-    trailActiveRef.current = true;
-    trailFollowUntilRef.current = Number.POSITIVE_INFINITY;
-    lastWindowPointRef.current = null;
-    pushTrailPointFromClient(clientX, clientY);
-  }, [pushTrailPointFromClient]);
+  const engageTrail = useCallback(
+    (clientX: number, clientY: number) => {
+      trailActiveRef.current = true;
+      trailFollowUntilRef.current = Number.POSITIVE_INFINITY;
+      lastWindowPointRef.current = null;
+      pushTrailPointFromClient(clientX, clientY);
+    },
+    [pushTrailPointFromClient],
+  );
 
   const lingerTrail = useCallback(() => {
     trailActiveRef.current = false;
@@ -372,12 +682,10 @@ export function CoinsLayer({
         const t = tick * coin.freqScale;
         const floatX = reduceMotion
           ? 0
-          : Math.sin(t * 0.6 + coin.phaseX1) * 12 +
-            Math.sin(t * 0.23 + coin.phaseX2) * 8;
+          : Math.sin(t * 0.6 + coin.phaseX1) * 12 + Math.sin(t * 0.23 + coin.phaseX2) * 8;
         const floatY = reduceMotion
           ? 0
-          : Math.cos(t * 0.5 + coin.phaseY1) * 8 +
-            Math.sin(t * 0.31 + coin.phaseY2) * 6;
+          : Math.cos(t * 0.5 + coin.phaseY1) * 8 + Math.sin(t * 0.31 + coin.phaseY2) * 6;
 
         return (
           <CoinItem
@@ -445,7 +753,7 @@ function CoinItem({
     >
       <button
         type="button"
-        className={`claw42-hero-coin ${coin.sizeClass} relative pointer-events-auto cursor-pointer hover:scale-105 focus-visible:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c5cff]/70`}
+        className={`claw42-hero-coin ${coin.sizeClass} pointer-events-auto relative cursor-pointer hover:scale-105 focus-visible:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c5cff]/70`}
         data-coin={coin.symbol}
         style={{
           transform: `translate(${translateX}px, calc(${translateY}px + var(--claw42-hero-depth-coin-y, 0px))) scale(${tooltipVisible ? 1.05 : 1})`,
@@ -494,7 +802,7 @@ function CoinItem({
             alt=""
             aria-label={coin.label}
             draggable={false}
-            className="relative z-10 w-full h-auto select-none pointer-events-auto cursor-pointer"
+            className="pointer-events-auto relative z-10 h-auto w-full cursor-pointer select-none"
             style={{
               filter: baseFilter,
               transition: "filter 240ms ease-out",
@@ -513,7 +821,7 @@ function CoinItem({
 
 function TrailOverlay({ trail }: { trail: TrailPoint[] }) {
   return (
-    <div className="absolute inset-0 z-40 pointer-events-none overflow-visible">
+    <div className="pointer-events-none absolute inset-0 z-40 overflow-visible">
       <AnimatePresence>
         {trail.map((point) => {
           const distance = Math.max(1, Math.hypot(point.dx, point.dy));
@@ -525,7 +833,7 @@ function TrailOverlay({ trail }: { trail: TrailPoint[] }) {
           return (
             <motion.div
               key={point.id}
-              className="absolute pointer-events-none"
+              className="pointer-events-none absolute"
               style={{
                 left: point.x,
                 top: point.y,

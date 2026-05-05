@@ -35,8 +35,10 @@ function signalDirection(signal: SignalRecord): SignalDirection {
     if (typeof change24h === "number") return change24h >= 0 ? "up" : "down";
   }
   if (signal.type === "ema_cross") {
-    if (signal.payload.emaState === "golden_cross" || signal.payload.emaState === "above") return "up";
-    if (signal.payload.emaState === "dead_cross" || signal.payload.emaState === "below") return "down";
+    if (signal.payload.emaState === "golden_cross" || signal.payload.emaState === "above")
+      return "up";
+    if (signal.payload.emaState === "dead_cross" || signal.payload.emaState === "below")
+      return "down";
   }
   if (signal.type === "breakout") {
     const description = signal.payload.description ?? "";
@@ -97,7 +99,9 @@ export function detectCollectiveEvent(
   const candidates = Array.from(groups.entries())
     .map(([key, groupSignals]) => {
       const [signalType, direction] = key.split(":") as [SignalType, "up" | "down"];
-      const symbols = Array.from(new Set(groupSignals.map((signal) => signal.symbol.toUpperCase())));
+      const symbols = Array.from(
+        new Set(groupSignals.map((signal) => signal.symbol.toUpperCase())),
+      );
       return { signalType, direction, symbols, groupSignals };
     })
     .filter((item) => item.symbols.length >= 3)
@@ -166,9 +170,7 @@ export function detectConflictEvent(focus: AgentFocus[], now = Date.now()): Conf
     const agents = Array.from(new Set(items.map((item) => item.agentId)));
     if (agents.length < 2) continue;
 
-    const hasMomentum = items.some(
-      (item) => item.agentId === "alpha" || item.agentId === "beta",
-    );
+    const hasMomentum = items.some((item) => item.agentId === "alpha" || item.agentId === "beta");
     const hasMeanReversion = items.some((item) => item.agentId === "gamma");
     if (!hasMomentum || !hasMeanReversion) continue;
 

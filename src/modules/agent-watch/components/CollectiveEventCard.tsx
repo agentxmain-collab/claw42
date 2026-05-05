@@ -17,13 +17,7 @@ const SIGNAL_LABEL: Record<CollectiveEvent["signalType"], string> = {
   range_change: "异动",
 };
 
-function ResponseRow({
-  response,
-  symbols,
-}: {
-  response: StreamResponse;
-  symbols: string[];
-}) {
+function ResponseRow({ response, symbols }: { response: StreamResponse; symbols: string[] }) {
   const meta = AGENT_META[response.agentId];
   const token = AGENT_COLOR_TOKEN[response.agentId];
 
@@ -34,7 +28,7 @@ function ResponseRow({
         <div className="text-xs font-semibold text-white" style={{ color: token.primary }}>
           {meta.name}
         </div>
-        <p className="mt-1 text-sm leading-relaxed text-white/76">
+        <p className="text-white/76 mt-1 text-sm leading-relaxed">
           {prefixCoinSymbolsInText(response.content, symbols)}
         </p>
       </div>
@@ -60,7 +54,7 @@ export function CollectiveEventCard({ event }: { event: CollectiveEvent }) {
       className="animate-stream-in rounded-2xl border border-white/[0.09] bg-white/[0.035] p-4"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-xs font-semibold text-white/82">
+        <span className="text-white/82 rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-xs font-semibold">
           集体信号
         </span>
         <span className={`text-xs font-semibold ${directionClass}`}>
@@ -78,12 +72,12 @@ export function CollectiveEventCard({ event }: { event: CollectiveEvent }) {
             {formatCoinSymbol(symbol)}
           </span>
         ))}
-        <span className="rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-xs text-white/62">
+        <span className="text-white/62 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-xs">
           {SIGNAL_LABEL[event.signalType]}
         </span>
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed text-white/76">
+      <p className="text-white/76 mt-3 text-sm leading-relaxed">
         {prefixCoinSymbolsInText(event.description, event.symbols)}
       </p>
 

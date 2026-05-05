@@ -1,4 +1,9 @@
-import type { AgentId, SignalRecord, SignalSeverity, SignalType } from "@/modules/agent-watch/types";
+import type {
+  AgentId,
+  SignalRecord,
+  SignalSeverity,
+  SignalType,
+} from "@/modules/agent-watch/types";
 
 export const AGENT_SPEECH_RATE_LIMIT_MS = 60_000;
 

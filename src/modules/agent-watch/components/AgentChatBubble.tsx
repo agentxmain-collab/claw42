@@ -49,7 +49,7 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
           {message.symbols.slice(0, 3).map((symbol) => (
             <span
               key={symbol}
-              className="rounded-md border border-white/10 bg-white/[0.045] px-2 py-0.5 font-mono text-[11px] font-semibold leading-none text-white/72"
+              className="text-white/72 rounded-md border border-white/10 bg-white/[0.045] px-2 py-0.5 font-mono text-[11px] font-semibold leading-none"
             >
               {formatCoinSymbol(symbol)}
             </span>
@@ -58,7 +58,7 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
         </div>
 
         <div
-          className="relative mt-1 rounded-2xl rounded-tl-md border bg-[#19191c]/92 px-4 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.18)] backdrop-blur"
+          className="bg-[#19191c]/92 relative mt-1 rounded-2xl rounded-tl-md border px-4 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.18)] backdrop-blur"
           style={{ borderColor: token.soft }}
         >
           <span
@@ -67,19 +67,17 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
             style={{ borderColor: token.soft }}
           />
 
-          <p className="text-sm font-semibold leading-relaxed text-white/86">
-            {message.content}
-          </p>
+          <p className="text-white/86 text-sm font-semibold leading-relaxed">{message.content}</p>
 
           {message.points.length > 0 && (
             <div className="mt-3 border-t border-white/[0.07] pt-2.5">
               <div className="grid gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
                 {message.points.map((point) => (
                   <div key={`${point.label}-${point.value}`} className="min-w-0">
-                    <div className="text-[11px] font-semibold leading-none text-white/38">
+                    <div className="text-white/38 text-[11px] font-semibold leading-none">
                       {point.label}
                     </div>
-                    <div className="mt-1 truncate font-mono text-xs font-semibold leading-none text-white/78">
+                    <div className="text-white/78 mt-1 truncate font-mono text-xs font-semibold leading-none">
                       {point.value}
                     </div>
                   </div>

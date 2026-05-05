@@ -46,13 +46,7 @@ const LIVE_LOADING_LINES = {
   en_US: ["Reading live market signals", "Agents are scanning market shifts"],
 };
 
-export function RobotLayer({
-  pose,
-  mouseX,
-  mouseY,
-  reduceMotion,
-  onOpenWatch,
-}: RobotLayerProps) {
+export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: RobotLayerProps) {
   const { t, locale } = useI18n();
   const [blink, setBlink] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -74,11 +68,14 @@ export function RobotLayer({
     let closeId: ReturnType<typeof setTimeout> | undefined;
 
     const scheduleBlink = () => {
-      blinkId = setTimeout(() => {
-        setBlink(true);
-        closeId = setTimeout(() => setBlink(false), 150);
-        scheduleBlink();
-      }, 3000 + Math.random() * 2000);
+      blinkId = setTimeout(
+        () => {
+          setBlink(true);
+          closeId = setTimeout(() => setBlink(false), 150);
+          scheduleBlink();
+        },
+        3000 + Math.random() * 2000,
+      );
     };
 
     scheduleBlink();
@@ -93,7 +90,7 @@ export function RobotLayer({
 
   return (
     <div
-      className="claw42-hero-robot absolute z-40 left-1/2 bottom-[34%] md:bottom-[40%]"
+      className="claw42-hero-robot absolute bottom-[34%] left-1/2 z-40 md:bottom-[40%]"
       style={{
         transform: `translate(-50%, 0) translate(${parallaxX}px, calc(${parallaxY}px + var(--claw42-hero-depth-robot-y, 0px)))`,
         bottom: "var(--claw42-hero-robot-bottom, 58%)",
@@ -102,7 +99,7 @@ export function RobotLayer({
       }}
     >
       <motion.div
-        className="relative pointer-events-auto cursor-pointer"
+        className="pointer-events-auto relative cursor-pointer"
         role="button"
         tabIndex={0}
         aria-label={t.hero.speechBubbleAriaLabel}
@@ -117,9 +114,7 @@ export function RobotLayer({
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
         animate={reduceMotion ? { y: 0 } : { y: [0, -12, 0] }}
         transition={
-          reduceMotion
-            ? { duration: 0 }
-            : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
+          reduceMotion ? { duration: 0 } : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
         }
       >
         {/*
@@ -133,7 +128,7 @@ export function RobotLayer({
             alt=""
             aria-label="Claw 42 robot"
             draggable={false}
-            className="w-full h-auto select-none block cursor-pointer"
+            className="block h-auto w-full cursor-pointer select-none"
             style={{ pointerEvents: displayPose === "left" ? "auto" : "none" }}
             initial={false}
             animate={{ opacity: displayPose === "left" ? 1 : 0 }}
@@ -144,7 +139,7 @@ export function RobotLayer({
             alt=""
             aria-hidden="true"
             draggable={false}
-            className="w-full h-auto select-none block cursor-pointer absolute inset-0"
+            className="absolute inset-0 block h-auto w-full cursor-pointer select-none"
             style={{ pointerEvents: displayPose === "right" ? "auto" : "none" }}
             initial={false}
             animate={{ opacity: displayPose === "right" ? 1 : 0 }}
@@ -153,7 +148,7 @@ export function RobotLayer({
         </div>
 
         <div
-          className="absolute select-none pointer-events-none"
+          className="pointer-events-none absolute select-none"
           style={{
             top: EYES_OVERLAY.top,
             left: FACE_LAYOUT[displayPose].x,
@@ -167,7 +162,7 @@ export function RobotLayer({
             alt=""
             aria-hidden="true"
             draggable={false}
-            className="w-full h-auto block"
+            className="block h-auto w-full"
             animate={blink ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
             transition={{ duration: 0.15 }}
             style={{
@@ -178,7 +173,7 @@ export function RobotLayer({
         </div>
 
         <div
-          className="absolute select-none pointer-events-none"
+          className="pointer-events-none absolute select-none"
           style={{
             top: MOUTH_OVERLAY.top,
             left: FACE_LAYOUT[displayPose].x,
@@ -207,7 +202,7 @@ export function RobotLayer({
               alt=""
               aria-hidden="true"
               draggable={false}
-              className="w-full h-auto block"
+              className="block h-auto w-full"
               style={{
                 filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
               }}
