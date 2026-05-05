@@ -37,7 +37,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
           />
           <div style={{ fontSize: 34, fontWeight: 800 }}>Claw 42 Agent Debate</div>
         </div>
-        <div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ marginBottom: 20, color: "#b8a9ff", fontSize: 26, fontWeight: 700 }}>
             $BTC / $ETH / $SOL
           </div>
