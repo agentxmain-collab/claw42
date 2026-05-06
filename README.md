@@ -36,7 +36,10 @@ npm run dev
 - `MINIMAX_API_KEY` — 备用 LLM provider
 - `ANTHROPIC_API_KEY` — 第三 fallback
 - `COINGECKO_API_KEY` — 行情数据（demo key 即可）
-- `CRYPTOPANIC_API_KEY` — 新闻辩论数据源（Preview 可缺失并走 mock/hybrid fallback）
+- `CRYPTOCOMPARE_API_KEY` — 新闻主数据源（SourceChain primary）
+- `COINGECKO_DEMO_KEY` — 新闻备用数据源（SourceChain fallback）
+- `NEWS_PRIMARY_SOURCE` / `NEWS_USAGE_BAND` / `NEWS_ENABLE_STANDBY_SOURCES` — 新闻源链路控制与缓存频段
+- `CRYPTOPANIC_API_KEY` — standby 新闻源，默认不启用
 - `CRON_SECRET` — 策略复盘 cron 鉴权 secret（Production 配置）
 - `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` — PostHog 客户端事件上报（缺失时 analytics 静默 degrade，不影响功能）
 
