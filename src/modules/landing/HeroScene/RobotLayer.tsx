@@ -125,11 +125,14 @@ export function RobotLayer({
     let closeId: ReturnType<typeof setTimeout> | undefined;
 
     const scheduleBlink = () => {
-      blinkId = setTimeout(() => {
-        setBlink(true);
-        closeId = setTimeout(() => setBlink(false), 150);
-        scheduleBlink();
-      }, 3000 + Math.random() * 2000);
+      blinkId = setTimeout(
+        () => {
+          setBlink(true);
+          closeId = setTimeout(() => setBlink(false), 150);
+          scheduleBlink();
+        },
+        3000 + Math.random() * 2000,
+      );
     };
 
     scheduleBlink();
@@ -142,7 +145,7 @@ export function RobotLayer({
   return (
     <div
       ref={robotRef}
-      className="claw42-hero-robot absolute z-40 left-1/2 bottom-[34%] md:bottom-[40%]"
+      className="claw42-hero-robot absolute bottom-[34%] left-1/2 z-40 md:bottom-[40%]"
       style={{
         transform: "translate(-50%, 0) translateY(var(--claw42-hero-depth-robot-y, 0px))",
         bottom: "var(--claw42-hero-robot-bottom, 58%)",
@@ -151,7 +154,7 @@ export function RobotLayer({
       }}
     >
       <motion.div
-        className="relative pointer-events-auto cursor-pointer"
+        className="pointer-events-auto relative cursor-pointer"
         role="button"
         tabIndex={0}
         aria-label={t.hero.speechBubbleAriaLabel}
@@ -166,9 +169,7 @@ export function RobotLayer({
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
         animate={reduceMotion ? { y: 0 } : { y: [0, -12, 0] }}
         transition={
-          reduceMotion
-            ? { duration: 0 }
-            : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
+          reduceMotion ? { duration: 0 } : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
         }
       >
         <motion.div
@@ -195,124 +196,124 @@ export function RobotLayer({
               transformOrigin: "center center",
             }}
           >
-          {/*
+            {/*
             Body 双张常驻 + opacity 切换，避免 AnimatePresence mount/unmount 导致
             motion.div 高度在切换瞬间塌陷（会让 eyes/mouth 的百分比定位跑到底座区域，
             并且造成机器人整体概率性消失的 flicker）
           */}
-          <div className="relative">
-            <motion.img
-              src={POSE_SRC.left}
-              alt=""
-              aria-label="Claw 42 robot"
-              draggable={false}
-              className="w-full h-auto select-none block cursor-pointer"
-              style={{ pointerEvents: displayPose === "left" ? "auto" : "none" }}
-              initial={false}
-              animate={{ opacity: displayPose === "left" ? 1 : 0 }}
-              transition={{ duration: 0.2 }}
-            />
-            <motion.img
-              src={POSE_SRC.right}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              className="w-full h-auto select-none block cursor-pointer absolute inset-0"
-              style={{ pointerEvents: displayPose === "right" ? "auto" : "none" }}
-              initial={false}
-              animate={{ opacity: displayPose === "right" ? 1 : 0 }}
-              transition={{ duration: 0.2 }}
-            />
-            <motion.div
-              aria-hidden="true"
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: spotlightBackground,
-                opacity: reduceMotion ? 0 : 0.65,
-                WebkitMaskImage: `url("${POSE_SRC[displayPose]}")`,
-                maskImage: `url("${POSE_SRC[displayPose]}")`,
-                WebkitMaskPosition: "center",
-                maskPosition: "center",
-                WebkitMaskRepeat: "no-repeat",
-                maskRepeat: "no-repeat",
-                WebkitMaskSize: "100% 100%",
-                maskSize: "100% 100%",
-              }}
-            />
-          </div>
-
-          <motion.div
-            className="absolute select-none pointer-events-none"
-            style={{
-              top: EYES_OVERLAY.top,
-              left: FACE_LAYOUT[displayPose].x,
-              width: EYES_OVERLAY.width,
-              x: faceTranslateX,
-              y: faceTranslateY,
-            }}
-          >
-            <div
-              style={{
-                transform: `translate(-50%, 0)${displayPose === "right" ? " scaleX(-1)" : ""}`,
-                transformOrigin: "center center",
-              }}
-            >
+            <div className="relative">
               <motion.img
-                src="/images/hero/robot-eyes.png"
+                src={POSE_SRC.left}
+                alt=""
+                aria-label="Claw 42 robot"
+                draggable={false}
+                className="block h-auto w-full cursor-pointer select-none"
+                style={{ pointerEvents: displayPose === "left" ? "auto" : "none" }}
+                initial={false}
+                animate={{ opacity: displayPose === "left" ? 1 : 0 }}
+                transition={{ duration: 0.2 }}
+              />
+              <motion.img
+                src={POSE_SRC.right}
                 alt=""
                 aria-hidden="true"
                 draggable={false}
-                className="w-full h-auto block"
-                animate={blink ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
-                transition={{ duration: 0.15 }}
+                className="absolute inset-0 block h-auto w-full cursor-pointer select-none"
+                style={{ pointerEvents: displayPose === "right" ? "auto" : "none" }}
+                initial={false}
+                animate={{ opacity: displayPose === "right" ? 1 : 0 }}
+                transition={{ duration: 0.2 }}
+              />
+              <motion.div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
                 style={{
-                  transformOrigin: "center center",
-                  filter: "drop-shadow(0 0 10px rgba(73, 201, 255, 0.95)) saturate(1.35)",
+                  background: spotlightBackground,
+                  opacity: reduceMotion ? 0 : 0.65,
+                  WebkitMaskImage: `url("${POSE_SRC[displayPose]}")`,
+                  maskImage: `url("${POSE_SRC[displayPose]}")`,
+                  WebkitMaskPosition: "center",
+                  maskPosition: "center",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskRepeat: "no-repeat",
+                  WebkitMaskSize: "100% 100%",
+                  maskSize: "100% 100%",
                 }}
               />
             </div>
-          </motion.div>
 
-          <motion.div
-            className="absolute select-none pointer-events-none"
-            style={{
-              top: MOUTH_OVERLAY.top,
-              left: FACE_LAYOUT[displayPose].x,
-              width: MOUTH_OVERLAY.width,
-              x: faceTranslateX,
-              y: faceTranslateY,
-            }}
-          >
-            <div style={{ transform: "translate(-50%, 0)" }}>
-              <motion.div
-                animate={
-                  reduceMotion || !hovered
-                    ? { scaleX: 1, scaleY: 1, y: 0 }
-                    : {
-                        scaleX: [1, 1.12, 0.94, 1.08, 1],
-                        scaleY: [1, 1.38, 0.82, 1.18, 1],
-                        y: [0, 0.45, -0.08, 0.22, 0],
-                      }
-                }
-                transition={
-                  reduceMotion || !hovered
-                    ? { duration: 0.18 }
-                    : { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
-                }
+            <motion.div
+              className="pointer-events-none absolute select-none"
+              style={{
+                top: EYES_OVERLAY.top,
+                left: FACE_LAYOUT[displayPose].x,
+                width: EYES_OVERLAY.width,
+                x: faceTranslateX,
+                y: faceTranslateY,
+              }}
+            >
+              <div
+                style={{
+                  transform: `translate(-50%, 0)${displayPose === "right" ? " scaleX(-1)" : ""}`,
+                  transformOrigin: "center center",
+                }}
               >
                 <motion.img
-                  src="/images/hero/robot-mouth.png"
+                  src="/images/hero/robot-eyes.png"
                   alt=""
                   aria-hidden="true"
                   draggable={false}
-                  className="w-full h-auto block"
+                  className="block h-auto w-full"
+                  animate={blink ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
+                  transition={{ duration: 0.15 }}
                   style={{
-                    filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
+                    transformOrigin: "center center",
+                    filter: "drop-shadow(0 0 10px rgba(73, 201, 255, 0.95)) saturate(1.35)",
                   }}
                 />
-              </motion.div>
-            </div>
-          </motion.div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="pointer-events-none absolute select-none"
+              style={{
+                top: MOUTH_OVERLAY.top,
+                left: FACE_LAYOUT[displayPose].x,
+                width: MOUTH_OVERLAY.width,
+                x: faceTranslateX,
+                y: faceTranslateY,
+              }}
+            >
+              <div style={{ transform: "translate(-50%, 0)" }}>
+                <motion.div
+                  animate={
+                    reduceMotion || !hovered
+                      ? { scaleX: 1, scaleY: 1, y: 0 }
+                      : {
+                          scaleX: [1, 1.12, 0.94, 1.08, 1],
+                          scaleY: [1, 1.38, 0.82, 1.18, 1],
+                          y: [0, 0.45, -0.08, 0.22, 0],
+                        }
+                  }
+                  transition={
+                    reduceMotion || !hovered
+                      ? { duration: 0.18 }
+                      : { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+                  }
+                >
+                  <motion.img
+                    src="/images/hero/robot-mouth.png"
+                    alt=""
+                    aria-hidden="true"
+                    draggable={false}
+                    className="block h-auto w-full"
+                    style={{
+                      filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
+                    }}
+                  />
+                </motion.div>
+              </div>
+            </motion.div>
           </motion.div>
         </motion.div>
 

@@ -140,7 +140,7 @@ function MarketCallout({
         <div className="font-mono text-[12px] font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]">
           {formatCoinSymbol(coin.symbol)}
         </div>
-        <div className="font-mono text-[13px] font-semibold tracking-[0.08em] text-white/72 drop-shadow-[0_0_8px_rgba(124,92,255,0.45)]">
+        <div className="text-white/72 font-mono text-[13px] font-semibold tracking-[0.08em] drop-shadow-[0_0_8px_rgba(124,92,255,0.45)]">
           {formatTickerPrice(ticker.price)}
         </div>
         <div
@@ -165,7 +165,7 @@ function MarketCallout({
           }}
         />
         <span
-          className={`absolute top-1/2 h-5 w-px -translate-y-1/2 bg-white/28 ${
+          className={`bg-white/28 absolute top-1/2 h-5 w-px -translate-y-1/2 ${
             isLeft ? "left-0" : "right-0"
           }`}
         />
@@ -210,12 +210,10 @@ export function CoinsLayer({
         const t = tick * coin.freqScale;
         const floatX = reduceMotion
           ? 0
-          : Math.sin(t * 0.6 + coin.phaseX1) * 12 +
-            Math.sin(t * 0.23 + coin.phaseX2) * 8;
+          : Math.sin(t * 0.6 + coin.phaseX1) * 12 + Math.sin(t * 0.23 + coin.phaseX2) * 8;
         const floatY = reduceMotion
           ? 0
-          : Math.cos(t * 0.5 + coin.phaseY1) * 8 +
-            Math.sin(t * 0.31 + coin.phaseY2) * 6;
+          : Math.cos(t * 0.5 + coin.phaseY1) * 8 + Math.sin(t * 0.31 + coin.phaseY2) * 6;
 
         return (
           <CoinItem
@@ -277,7 +275,7 @@ function CoinItem({
     >
       <button
         type="button"
-        className={`claw42-hero-coin ${coin.sizeClass} relative pointer-events-auto cursor-pointer hover:scale-105 focus-visible:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c5cff]/70`}
+        className={`claw42-hero-coin ${coin.sizeClass} pointer-events-auto relative cursor-pointer hover:scale-105 focus-visible:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c5cff]/70`}
         data-coin={coin.symbol}
         style={{
           transform: `translate(${translateX}px, calc(${translateY}px + var(--claw42-hero-depth-coin-y, 0px))) scale(${tooltipVisible ? 1.05 : 1})`,
@@ -321,7 +319,7 @@ function CoinItem({
             alt=""
             aria-label={coin.label}
             draggable={false}
-            className="relative z-10 w-full h-auto select-none pointer-events-auto cursor-pointer"
+            className="pointer-events-auto relative z-10 h-auto w-full cursor-pointer select-none"
             style={{
               filter: baseFilter,
               transition: "filter 240ms ease-out",
