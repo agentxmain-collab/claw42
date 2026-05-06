@@ -162,6 +162,10 @@ export function getActiveSources(role?: SourceRole): NewsSourceConfig[] {
   );
 }
 
+export function getStandbySources(): NewsSourceConfig[] {
+  return NEWS_SOURCE_CONFIGS.filter((source) => source.status === "standby");
+}
+
 export function getSourceChain(): NewsSourceConfig[] {
   const order: SourceRole[] = ["primary", "fallback", "specialty"];
   const sources = order.flatMap((role) => getActiveSources(role));

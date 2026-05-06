@@ -1,0 +1,32 @@
+[
+  {
+    "id": "mock-market-btc-etf-flow",
+    "title": "BTC ETF inflows accelerate while ETH volatility compresses",
+    "url": "https://claw42.ai/mock/news/btc-etf-flow",
+    "source": "Claw 42 Mock News",
+    "sourceDomain": "claw42.ai",
+    "currencies": ["BTC", "ETH"],
+    "sentiment": "bullish",
+    "publishedAt": 1762300800000
+  },
+  {
+    "id": "mock-sol-chain-activity",
+    "title": "SOL ecosystem activity rises after a new token launch",
+    "url": "https://claw42.ai/mock/news/sol-chain-activity",
+    "source": "Claw 42 Mock News",
+    "sourceDomain": "claw42.ai",
+    "currencies": ["SOL"],
+    "sentiment": "neutral",
+    "publishedAt": 1762300200000
+  },
+  {
+    "id": "mock-market-risk-off",
+    "title": "Crypto market turns cautious before the next Fed rate decision",
+    "url": "https://claw42.ai/mock/news/market-risk-off",
+    "source": "Claw 42 Mock News",
+    "sourceDomain": "claw42.ai",
+    "currencies": ["BTC", "ETH", "SOL"],
+    "sentiment": "bearish",
+    "publishedAt": 1762299600000
+  }
+]
