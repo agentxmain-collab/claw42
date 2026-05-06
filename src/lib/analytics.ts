@@ -26,6 +26,7 @@ export const ANALYTICS_EVENTS = [
   "news_source_failed",
   "news_normalizer_run",
   "news_quota_alert",
+  "strategy_synthesis_failed",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

@@ -15,6 +15,7 @@ import {
 } from "@/lib/llmFallbackChain";
 import { fetchLivePriceSnapshot, type TickerSnapshot } from "@/lib/news/livePriceFetch";
 import { plainSpeechRetryInstruction, validatePlainSpeech } from "@/lib/plainSpeechGuard";
+import { strategyRetryInstruction, validateStrategyAgainstSnapshot } from "@/lib/strategyValidator";
 import { classifyNewsTrigger } from "@/lib/newsTriggers";
 import { buildCoinwDeeplink } from "@/lib/strategyDeeplink";
 import type { SignalRecord } from "@/modules/agent-watch/types";
@@ -243,12 +244,12 @@ async function generateStrategy(
   utterances: Utterance[],
   ts: number,
   snapshot: TickerSnapshot | null,
-): Promise<FinalStrategy> {
+): Promise<FinalStrategy | null> {
   const primarySymbol = news.currencies[0] ?? "BTC";
-  const raw = await callDebateJson(buildDebateR3Prompt(news, utterances, snapshot), {
+  const fallbackRaw = {
     symbol: primarySymbol,
     direction: "wait",
-    entryCondition: `${primarySymbol} 等 5min K 线重新站回关键位`,
+    entryCondition: `${primarySymbol} 等 5 分钟价格重新站回关键位`,
     stopLoss: 0,
     takeProfit: [],
     consensusRatio: "1:2",
@@ -256,7 +257,31 @@ async function generateStrategy(
     dissentAgents: getFactionIds(),
     dissentNote: "三派未达成一致",
     riskNote: "新闻驱动波动大，等待二次确认",
-  });
+  };
+  const prompt = buildDebateR3Prompt(news, utterances, snapshot);
+  const firstRaw = await callDebateJson(prompt, fallbackRaw);
+  const firstStrategy = buildStrategyFromRaw(news, firstRaw, ts);
+  const firstValidation = validateStrategyAgainstSnapshot(firstStrategy, snapshot);
+  if (firstValidation.ok) return firstStrategy;
+
+  const retryRaw = await callDebateJson(
+    `${prompt}\n\n${strategyRetryInstruction(firstValidation)}`,
+    fallbackRaw,
+  );
+  const retryStrategy = buildStrategyFromRaw(news, retryRaw, ts);
+  const retryValidation = validateStrategyAgainstSnapshot(retryStrategy, snapshot);
+  if (retryValidation.ok) return retryStrategy;
+
+  console.warn("[claw42] strategy synthesis failed", retryValidation.reasons);
+  return null;
+}
+
+function buildStrategyFromRaw(
+  news: NewsItem,
+  raw: Record<string, unknown>,
+  ts: number,
+): FinalStrategy {
+  const primarySymbol = news.currencies[0] ?? "BTC";
   const createdAt = ts;
   const id = `${news.id}:strategy:${createdAt}`;
   const counts = fakeFollowCount(id, createdAt);

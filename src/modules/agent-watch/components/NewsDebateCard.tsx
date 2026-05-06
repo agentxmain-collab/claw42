@@ -3,6 +3,7 @@
 import type { Dict } from "@/i18n/types";
 import type { NewsDebate } from "@/lib/types";
 import { FinalStrategyBlock } from "./FinalStrategyBlock";
+import { InsufficientConsensus } from "./InsufficientConsensus";
 import { RoundBanner } from "./RoundBanner";
 import { UtteranceBubble } from "./UtteranceBubble";
 
@@ -76,8 +77,10 @@ export function NewsDebateCard({
         ))}
       </div>
 
-      {debate.finalStrategy && (
+      {debate.finalStrategy ? (
         <FinalStrategyBlock strategy={debate.finalStrategy} labels={labels} />
+      ) : (
+        <InsufficientConsensus debate={debate} labels={labels} />
       )}
     </article>
   );
