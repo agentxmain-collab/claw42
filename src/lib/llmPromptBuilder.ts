@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getFaction, getFactionIds } from "@/lib/factionRegistry";
+import { loadRelationshipStates, relationshipContextForAgent } from "@/lib/agentRelationship";
 import { formatLiveSnapshotForPrompt, type TickerSnapshot } from "@/lib/news/livePriceFetch";
 import { PLAIN_SPEECH_PROMPT_BLOCK } from "@/lib/plainSpeechGuard";
 import type { FactionId, NewsItem, Utterance } from "@/lib/types";
@@ -33,17 +34,24 @@ function liveMarketBlock(snapshot: TickerSnapshot | null, news: NewsItem): strin
   return formatLiveSnapshotForPrompt(snapshot, symbols);
 }
 
+async function relationshipBlock(agentId: FactionId): Promise<string> {
+  const snapshot = await loadRelationshipStates().catch(() => null);
+  return snapshot ? relationshipContextForAgent(agentId, snapshot) : "";
+}
+
 export async function buildDebateR1Prompt(
   agentId: FactionId,
   news: NewsItem,
   snapshot: TickerSnapshot | null,
 ): Promise<string> {
   const faction = getFaction(agentId);
-  const ip = await loadAgentIp(agentId);
+  const [ip, relationship] = await Promise.all([loadAgentIp(agentId), relationshipBlock(agentId)]);
   return `你是 ${faction.displayName} ${faction.title}·${faction.nickname}，加密交易江湖人物。
 
 ## 你的人设
 ${ip}
+
+${relationship}
 
 ## 触发新闻
 ${newsBlock(news)}
@@ -77,7 +85,7 @@ export async function buildDebateR2Prompt(
   news: NewsItem,
 ): Promise<string> {
   const faction = getFaction(agentId);
-  const ip = await loadAgentIp(agentId);
+  const [ip, relationship] = await Promise.all([loadAgentIp(agentId), relationshipBlock(agentId)]);
   const others = otherR1
     .map((utterance) => `- ${getFaction(utterance.agentId).displayName}: "${utterance.content}"`)
     .join("\n");
@@ -86,6 +94,8 @@ export async function buildDebateR2Prompt(
 
 ## 你的人设
 ${ip}
+
+${relationship}
 
 ## 你的 R1 观点
 ${ownR1.content}

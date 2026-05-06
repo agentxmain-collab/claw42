@@ -1,9 +1,12 @@
 import { listStrategyReplays } from "@/lib/strategyHistory";
+import { loadRelationshipStates, relationshipChartRows } from "@/lib/agentRelationship";
+import { RelationshipChart } from "@/modules/agent-watch/components/RelationshipChart";
 
 export const dynamic = "force-dynamic";
 
-export default function AgentReplayPage() {
+export default async function AgentReplayPage() {
   const replays = listStrategyReplays(30);
+  const relationshipRows = relationshipChartRows(await loadRelationshipStates());
 
   return (
     <main className="min-h-screen bg-black px-5 py-24 text-white md:px-10">
@@ -46,6 +49,7 @@ export default function AgentReplayPage() {
             ))
           )}
         </div>
+        <RelationshipChart rows={relationshipRows} />
       </section>
     </main>
   );

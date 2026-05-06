@@ -1895,14 +1895,23 @@ function recordEventSpeakers(entry: StreamEntry, ts: number) {
   });
 }
 
-async function buildNewsDebates(now: number): Promise<NewsDebate[]> {
+async function buildNewsDebates(
+  now: number,
+  pool: CoinPoolPayload,
+  signals: SignalRecord[],
+): Promise<NewsDebate[]> {
   try {
-    const [{ fetchNewsWithChain }, { normalizeNewsItem }, { tryOrchestrateNewsDebate }] =
-      await Promise.all([
-        import("@/lib/news/sourceChain"),
-        import("@/lib/news/normalizer"),
-        import("@/lib/debateOrchestrator"),
-      ]);
+    const [
+      { fetchNewsWithChain },
+      { normalizeNewsItem },
+      { tryOrchestrateNewsDebate, orchestrateNewsDebate },
+      { buildNoNewsDebateTopic },
+    ] = await Promise.all([
+      import("@/lib/news/sourceChain"),
+      import("@/lib/news/normalizer"),
+      import("@/lib/debateOrchestrator"),
+      import("@/lib/topicGenerator"),
+    ]);
     const { items, servedBy } = await fetchNewsWithChain({ limit: 6 });
     const debates: NewsDebate[] = [];
 
@@ -1912,6 +1921,17 @@ async function buildNewsDebates(now: number): Promise<NewsDebate[]> {
       if (!debate) continue;
       debates.push(debate);
       if (debates.length >= 1) break;
+    }
+
+    if (debates.length === 0) {
+      const topic = buildNoNewsDebateTopic({
+        now,
+        pool,
+        signals,
+      });
+      if (topic) {
+        debates.push(await orchestrateNewsDebate(topic, now));
+      }
     }
 
     return debates;
@@ -1991,7 +2011,7 @@ async function refreshAnalysis(locale: AgentWatchLocale): Promise<AgentAnalysisP
     if (result.source) providerSources.push(result.source);
   }
 
-  const newsDebates = await buildNewsDebates(generatedAt);
+  const newsDebates = await buildNewsDebates(generatedAt, pool, recentSignals);
   newsDebates.forEach((debate) => {
     streamEntries.unshift({
       kind: "news_debate",

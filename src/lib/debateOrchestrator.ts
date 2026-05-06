@@ -117,10 +117,7 @@ async function callDebateJson(prompt: string, fallback: Record<string, unknown>)
   return parseObject(retry.text);
 }
 
-async function callPlainDebateJson(
-  prompt: string,
-  _fallback: Record<string, unknown>,
-): Promise<Record<string, unknown> | null> {
+async function callPlainDebateJson(prompt: string): Promise<Record<string, unknown> | null> {
   const first = await generateLlmText(prompt);
   if (!first) return null;
   const firstRaw = parseObject(first.text);
@@ -155,10 +152,7 @@ async function generateR1(
   if (!snapshot) return waitingForTickerUtterance(agentId, news, ts);
   if (!decision.shouldSpeak) return fallback;
 
-  const raw = await callPlainDebateJson(await buildDebateR1Prompt(agentId, news, snapshot), {
-    content: fallback.content,
-    isGoldenLine: false,
-  });
+  const raw = await callPlainDebateJson(await buildDebateR1Prompt(agentId, news, snapshot));
   if (!raw) return { ...fallback, content: "" };
   const content = antiMechanicalFallback(
     String(raw.content ?? fallback.content),
@@ -196,13 +190,6 @@ async function generateR2(
   const cited = otherR1[0] ?? ownR1;
   const raw = await callPlainDebateJson(
     await buildDebateR2Prompt(agentId, ownR1, otherR1, snapshot, news),
-    {
-      content: fallback.content,
-      prefix: "rebut",
-      citedAgentId: cited.agentId,
-      citedQuote: cited.content.slice(0, 30),
-      isGoldenLine: false,
-    },
   );
   if (!raw) return { ...fallback, content: "" };
   const prefix = VALID_PREFIXES.has(raw.prefix as Exclude<UtterancePrefix, null>)

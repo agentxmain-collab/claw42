@@ -59,15 +59,6 @@ function isAgentDiscussion(entry: StreamEntry): entry is AgentDiscussionEntry {
   return entry.kind === "agent_discussion";
 }
 
-function isPriorityEvent(entry: StreamEntry) {
-  return (
-    entry.kind === "collective_event" ||
-    entry.kind === "focus_event" ||
-    entry.kind === "conflict_event" ||
-    entry.kind === "news_debate"
-  );
-}
-
 function speakerIdsForEntry(entry: StreamEntry): AgentId[] {
   if (isAgentMessage(entry)) return [entry.agentId];
   if (isWatchUpdate(entry)) return entry.agentId ? [entry.agentId] : [];

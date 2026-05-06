@@ -3,6 +3,7 @@ import { normalizeNewsItem } from "@/lib/news/normalizer";
 import { fetchNewsWithChain } from "@/lib/news/sourceChain";
 import { tryOrchestrateNewsDebate, listNewsDebates } from "@/lib/debateOrchestrator";
 import { getCoinPool } from "@/lib/marketDataCache";
+import { adjustDebtFromReplays } from "@/lib/agentRelationship";
 import { evaluateStrategy, recordStrategyReplay } from "@/lib/strategyHistory";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,11 @@ export async function GET(request: NextRequest) {
     recordStrategyReplay(replay);
     replayed.push(replay);
   }
+  await adjustDebtFromReplays(replayed, now).catch((error) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[claw42] relationship debt adjustment skipped", error);
+    }
+  });
 
   return NextResponse.json({
     ok: true,
