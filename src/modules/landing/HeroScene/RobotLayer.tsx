@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useAgentAnalysis } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import { resolveAgentWatchLocale } from "@/modules/agent-watch/locale";
@@ -46,7 +46,19 @@ const LIVE_LOADING_LINES = {
   en_US: ["Reading live market signals", "Agents are scanning market shifts"],
 };
 
-export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: RobotLayerProps) {
+const ROBOT_SPRING = {
+  stiffness: 80,
+  damping: 20,
+  mass: 0.8,
+};
+
+export function RobotLayer({
+  pose,
+  mouseX,
+  mouseY,
+  reduceMotion,
+  onOpenWatch,
+}: RobotLayerProps) {
   const { t, locale } = useI18n();
   const [blink, setBlink] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -61,6 +73,24 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
     () => mergeHeroSpeechLinePools(liveLines, t.hero.speechBubble, locale !== agentWatchLocale),
     [liveLines, locale, agentWatchLocale, t.hero.speechBubble],
   );
+  const mouseMotionX = useMotionValue(0);
+  const mouseMotionY = useMotionValue(0);
+  const smoothMouseX = useSpring(mouseMotionX, ROBOT_SPRING);
+  const smoothMouseY = useSpring(mouseMotionY, ROBOT_SPRING);
+  const headTranslateX = useTransform(smoothMouseX, [-1, 1], [-24, 24]);
+  const headTranslateY = useTransform(smoothMouseY, [-1, 1], [-12, 12]);
+  const headScaleX = useTransform(smoothMouseX, [-1, 0, 1], [0.96, 1, 0.96]);
+  const headRotateZ = useTransform(smoothMouseX, [-1, 1], [-3, 3]);
+  const spotlightBackground = useTransform([smoothMouseX, smoothMouseY], ([x, y]) => {
+    const pointX = 50 + Number(x) * 30;
+    const pointY = 40 + Number(y) * 20;
+    return `radial-gradient(circle at ${pointX}% ${pointY}%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 25%, transparent 55%)`;
+  });
+
+  useEffect(() => {
+    mouseMotionX.set(reduceMotion ? 0 : mouseX);
+    mouseMotionY.set(reduceMotion ? 0 : mouseY);
+  }, [mouseMotionX, mouseMotionY, mouseX, mouseY, reduceMotion]);
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -85,14 +115,11 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
     };
   }, [reduceMotion]);
 
-  const parallaxX = reduceMotion ? 0 : mouseX * 0.3 * 20;
-  const parallaxY = reduceMotion ? 0 : mouseY * 0.3 * 12;
-
   return (
     <div
       className="claw42-hero-robot absolute bottom-[34%] left-1/2 z-40 md:bottom-[40%]"
       style={{
-        transform: `translate(-50%, 0) translate(${parallaxX}px, calc(${parallaxY}px + var(--claw42-hero-depth-robot-y, 0px)))`,
+        transform: "translate(-50%, 0) translateY(var(--claw42-hero-depth-robot-y, 0px))",
         bottom: "var(--claw42-hero-robot-bottom, 58%)",
         width: "var(--claw42-hero-robot-width, min(316px, 18vw))",
         pointerEvents: "none",
@@ -117,98 +144,118 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion, onOpenWatch }: 
           reduceMotion ? { duration: 0 } : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
         }
       >
-        {/*
-          Body 双张常驻 + opacity 切换，避免 AnimatePresence mount/unmount 导致
-          motion.div 高度在切换瞬间塌陷（会让 eyes/mouth 的百分比定位跑到底座区域，
-          并且造成机器人整体概率性消失的 flicker）
-        */}
-        <div className="relative">
-          <motion.img
-            src={POSE_SRC.left}
-            alt=""
-            aria-label="Claw 42 robot"
-            draggable={false}
-            className="block h-auto w-full cursor-pointer select-none"
-            style={{ pointerEvents: displayPose === "left" ? "auto" : "none" }}
-            initial={false}
-            animate={{ opacity: displayPose === "left" ? 1 : 0 }}
-            transition={{ duration: 0.2 }}
-          />
-          <motion.img
-            src={POSE_SRC.right}
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            className="absolute inset-0 block h-auto w-full cursor-pointer select-none"
-            style={{ pointerEvents: displayPose === "right" ? "auto" : "none" }}
-            initial={false}
-            animate={{ opacity: displayPose === "right" ? 1 : 0 }}
-            transition={{ duration: 0.2 }}
-          />
-        </div>
-
-        <div
-          className="pointer-events-none absolute select-none"
+        <motion.div
+          className="relative"
           style={{
-            top: EYES_OVERLAY.top,
-            left: FACE_LAYOUT[displayPose].x,
-            width: EYES_OVERLAY.width,
-            transform: `translate(-50%, 0)${displayPose === "right" ? " scaleX(-1)" : ""}`,
+            x: headTranslateX,
+            y: headTranslateY,
+            scaleX: headScaleX,
+            rotateZ: headRotateZ,
             transformOrigin: "center center",
           }}
         >
-          <motion.img
-            src="/images/hero/robot-eyes.png"
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            className="block h-auto w-full"
-            animate={blink ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
-            transition={{ duration: 0.15 }}
-            style={{
-              transformOrigin: "center center",
-              filter: "drop-shadow(0 0 10px rgba(73, 201, 255, 0.95)) saturate(1.35)",
-            }}
-          />
-        </div>
+          {/*
+            Body 双张常驻 + opacity 切换，避免 AnimatePresence mount/unmount 导致
+            motion.div 高度在切换瞬间塌陷（会让 eyes/mouth 的百分比定位跑到底座区域，
+            并且造成机器人整体概率性消失的 flicker）
+          */}
+          <div className="relative">
+            <motion.img
+              src={POSE_SRC.left}
+              alt=""
+              aria-label="Claw 42 robot"
+              draggable={false}
+              className="w-full h-auto select-none block cursor-pointer"
+              style={{ pointerEvents: displayPose === "left" ? "auto" : "none" }}
+              initial={false}
+              animate={{ opacity: displayPose === "left" ? 1 : 0 }}
+              transition={{ duration: 0.2 }}
+            />
+            <motion.img
+              src={POSE_SRC.right}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="w-full h-auto select-none block cursor-pointer absolute inset-0"
+              style={{ pointerEvents: displayPose === "right" ? "auto" : "none" }}
+              initial={false}
+              animate={{ opacity: displayPose === "right" ? 1 : 0 }}
+              transition={{ duration: 0.2 }}
+            />
+            <motion.div
+              aria-hidden="true"
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: spotlightBackground,
+                mixBlendMode: "overlay",
+                opacity: reduceMotion ? 0 : 1,
+              }}
+            />
+          </div>
 
-        <div
-          className="pointer-events-none absolute select-none"
-          style={{
-            top: MOUTH_OVERLAY.top,
-            left: FACE_LAYOUT[displayPose].x,
-            width: MOUTH_OVERLAY.width,
-            transform: "translate(-50%, 0)",
-          }}
-        >
-          <motion.div
-            animate={
-              reduceMotion || !hovered
-                ? { scaleX: 1, scaleY: 1, y: 0 }
-                : {
-                    scaleX: [1, 1.12, 0.94, 1.08, 1],
-                    scaleY: [1, 1.38, 0.82, 1.18, 1],
-                    y: [0, 0.45, -0.08, 0.22, 0],
-                  }
-            }
-            transition={
-              reduceMotion || !hovered
-                ? { duration: 0.18 }
-                : { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
-            }
+          <div
+            className="absolute select-none pointer-events-none"
+            style={{
+              top: EYES_OVERLAY.top,
+              left: FACE_LAYOUT[displayPose].x,
+              width: EYES_OVERLAY.width,
+              transform: `translate(-50%, 0)${displayPose === "right" ? " scaleX(-1)" : ""}`,
+              transformOrigin: "center center",
+            }}
           >
             <motion.img
-              src="/images/hero/robot-mouth.png"
+              src="/images/hero/robot-eyes.png"
               alt=""
               aria-hidden="true"
               draggable={false}
               className="block h-auto w-full"
+              animate={blink ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
+              transition={{ duration: 0.15 }}
               style={{
-                filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
+                transformOrigin: "center center",
+                filter: "drop-shadow(0 0 10px rgba(73, 201, 255, 0.95)) saturate(1.35)",
               }}
             />
-          </motion.div>
-        </div>
+          </div>
+
+          <div
+            className="absolute select-none pointer-events-none"
+            style={{
+              top: MOUTH_OVERLAY.top,
+              left: FACE_LAYOUT[displayPose].x,
+              width: MOUTH_OVERLAY.width,
+              transform: "translate(-50%, 0)",
+            }}
+          >
+            <motion.div
+              animate={
+                reduceMotion || !hovered
+                  ? { scaleX: 1, scaleY: 1, y: 0 }
+                  : {
+                      scaleX: [1, 1.12, 0.94, 1.08, 1],
+                      scaleY: [1, 1.38, 0.82, 1.18, 1],
+                      y: [0, 0.45, -0.08, 0.22, 0],
+                    }
+              }
+              transition={
+                reduceMotion || !hovered
+                  ? { duration: 0.18 }
+                  : { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+              }
+            >
+              <motion.img
+                src="/images/hero/robot-mouth.png"
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                className="w-full h-auto block"
+                style={{
+                  filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
+                }}
+              />
+            </motion.div>
+          </div>
+        </motion.div>
 
         <SpeechBubble
           visible={hovered}

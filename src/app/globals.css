@@ -5,6 +5,11 @@
 :root {
   --brand-purple: #6c4fff;
   --brand-lime: #d1ff55;
+  --coinw-brand-hex: #7650ff;
+  --coinw-brand-border-soft: rgba(118, 80, 255, 0.35);
+  --coinw-brand-border-strong: rgba(118, 80, 255, 0.6);
+  --coinw-brand-glow-soft: rgba(118, 80, 255, 0.18);
+  --coinw-brand-glow-strong: rgba(118, 80, 255, 0.32);
   --font-stack: var(--font-inter), var(--font-noto-sc), -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
 }
@@ -388,13 +393,13 @@ body {
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  border: 1px solid rgba(96, 186, 255, 0.65);
+  border: 1px solid var(--coinw-brand-border-soft);
   opacity: 0;
   pointer-events: none;
   box-shadow:
-    0 0 0 1px rgba(96, 186, 255, 0.24),
-    0 0 12px rgba(74, 136, 255, 0.28),
-    0 0 22px rgba(74, 136, 255, 0.16);
+    0 0 0 1px var(--coinw-brand-glow-soft),
+    0 0 12px var(--coinw-brand-glow-strong),
+    0 0 22px var(--coinw-brand-glow-soft);
   transition:
     opacity 0.35s ease,
     box-shadow 0.35s ease,
@@ -402,25 +407,33 @@ body {
 }
 
 .card-glow:hover {
-  border-color: rgba(102, 188, 255, 0.18);
+  border-color: var(--coinw-brand-border-soft);
   box-shadow:
     0 26px 60px -30px rgba(0, 0, 0, 0.92),
-    0 18px 48px -28px rgba(74, 136, 255, 0.36),
-    0 0 22px rgba(74, 136, 255, 0.08);
+    0 18px 48px -28px var(--coinw-brand-glow-strong),
+    0 0 22px var(--coinw-brand-glow-soft);
 }
 
 .card-glow:hover::before {
-  border-color: rgba(102, 188, 255, 0.28);
+  border-color: var(--coinw-brand-border-strong);
   opacity: 1;
 }
 
 .card-glow:hover::after {
   opacity: 1;
-  border-color: rgba(108, 196, 255, 0.78);
+  border-color: var(--coinw-brand-border-strong);
   box-shadow:
-    0 0 0 1px rgba(96, 186, 255, 0.3),
-    0 0 16px rgba(74, 136, 255, 0.34),
-    0 0 30px rgba(74, 136, 255, 0.2);
+    0 0 0 1px var(--coinw-brand-border-soft),
+    0 0 16px var(--coinw-brand-glow-strong),
+    0 0 30px var(--coinw-brand-glow-strong);
+}
+
+@media (hover: none) {
+  .card-glow:hover {
+    box-shadow:
+      0 18px 40px -24px rgba(0, 0, 0, 0.88),
+      0 10px 28px -18px var(--coinw-brand-glow-strong);
+  }
 }
 
 /* Scenario Claw 42 Agent card frame adapted from Uiverse reference provided by Dan. */
@@ -867,7 +880,7 @@ body {
   .card-glow:hover {
     box-shadow:
       0 18px 40px -24px rgba(0, 0, 0, 0.88),
-      0 10px 28px -18px rgba(74, 136, 255, 0.32);
+      0 10px 28px -18px var(--coinw-brand-glow-strong);
   }
 
   .card-glow:hover::before {
