@@ -228,8 +228,15 @@ export function RobotLayer({
               className="absolute inset-0 pointer-events-none"
               style={{
                 background: spotlightBackground,
-                mixBlendMode: "overlay",
-                opacity: reduceMotion ? 0 : 1,
+                opacity: reduceMotion ? 0 : 0.65,
+                WebkitMaskImage: `url("${POSE_SRC[displayPose]}")`,
+                maskImage: `url("${POSE_SRC[displayPose]}")`,
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskSize: "100% 100%",
+                maskSize: "100% 100%",
               }}
             />
           </div>
