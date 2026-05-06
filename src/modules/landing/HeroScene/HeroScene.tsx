@@ -14,6 +14,7 @@ import { useRobotPose, type Pose } from "./useRobotPose";
 import { RobotLayer } from "./RobotLayer";
 import { PedestalLayer } from "./PedestalLayer";
 import { CoinsLayer } from "./CoinsLayer";
+import { ParticleLayer } from "./ParticleLayer";
 import type { CoinSymbol } from "@/modules/agent-watch/types";
 
 /** Simple mobile detection without extra dependencies. */
@@ -151,6 +152,14 @@ export function HeroScene() {
 
       {/* z-10 Pedestal */}
       <PedestalLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
+
+      {/* z-25 Particles */}
+      <ParticleLayer
+        stageRef={stageRef}
+        mouseX={mouseX}
+        mouseY={mouseY}
+        reduceMotion={reduceMotion}
+      />
 
       {/* z-20/25 Robot */}
       <RobotLayer
