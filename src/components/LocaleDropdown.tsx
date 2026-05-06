@@ -3,14 +3,19 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { usePathname } from "next/navigation";
 import { useI18n } from "@/i18n/I18nProvider";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/locales";
 import type { Locale } from "@/i18n/types";
 import { trackEvent } from "@/lib/analytics";
+import { AGENT_WATCH_LOCALES } from "@/modules/agent-watch/locale";
 
 export function LocaleDropdown() {
   const { locale, switchLocale } = useI18n();
+  const pathname = usePathname();
   const reduceMotion = useReducedMotion();
+  const isAgentWatchRoute = pathname.split("/").filter(Boolean)[1] === "agent";
+  const localeOptions: readonly Locale[] = isAgentWatchRoute ? AGENT_WATCH_LOCALES : LOCALES;
   const [isOpen, setIsOpen] = useState(false);
   const [activeLocale, setActiveLocale] = useState<Locale>(locale);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -21,9 +26,9 @@ export function LocaleDropdown() {
   useEffect(() => {
     if (!isOpen) return;
 
-    setActiveLocale(locale);
+    setActiveLocale(localeOptions.includes(locale) ? locale : localeOptions[0]);
     requestAnimationFrame(() => listboxRef.current?.focus());
-  }, [isOpen, locale]);
+  }, [isOpen, locale, localeOptions]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,7 +57,7 @@ export function LocaleDropdown() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [isOpen]);
 
-  const activeIndex = LOCALES.findIndex((item) => item === activeLocale);
+  const activeIndex = localeOptions.findIndex((item) => item === activeLocale);
 
   const handleSelect = (nextLocale: Locale) => {
     setIsOpen(false);
@@ -65,14 +70,14 @@ export function LocaleDropdown() {
   };
 
   const moveActive = (offset: number) => {
-    const nextIndex = (activeIndex + offset + LOCALES.length) % LOCALES.length;
-    setActiveLocale(LOCALES[nextIndex]);
+    const nextIndex = (activeIndex + offset + localeOptions.length) % localeOptions.length;
+    setActiveLocale(localeOptions[nextIndex]);
   };
 
   const handleButtonKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
-      setActiveLocale(locale);
+      setActiveLocale(localeOptions.includes(locale) ? locale : localeOptions[0]);
       if (!isOpen) trackEvent("locale_dropdown_open", { locale });
       setIsOpen(true);
     }
@@ -93,13 +98,13 @@ export function LocaleDropdown() {
 
     if (event.key === "Home") {
       event.preventDefault();
-      setActiveLocale(LOCALES[0]);
+      setActiveLocale(localeOptions[0]);
       return;
     }
 
     if (event.key === "End") {
       event.preventDefault();
-      setActiveLocale(LOCALES[LOCALES.length - 1]);
+      setActiveLocale(localeOptions[localeOptions.length - 1]);
       return;
     }
 
@@ -159,7 +164,7 @@ export function LocaleDropdown() {
             transition={{ duration: reduceMotion ? 0 : 0.15 }}
             className="absolute right-0 top-[calc(100%+8px)] min-w-[240px] max-h-[360px] overflow-y-auto py-2 rounded-xl bg-[#111] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] z-50 focus:outline-none"
           >
-            {LOCALES.map((item) => {
+            {localeOptions.map((item) => {
               const isSelected = item === locale;
               const isActive = item === activeLocale;
 

@@ -4,6 +4,8 @@ export const ANALYTICS_EVENTS = [
   "page_view",
   "hero_cta_copy",
   "hero_api_docs_click",
+  "hero_agent_watch_click",
+  "hero_coin_watch_click",
   "quick_start_copy",
   "daily_prompt_copy",
   "daily_cta_copy",

@@ -27,24 +27,25 @@ const LIGHT_RAYS = [
 export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerProps) {
   const parallaxX = reduceMotion ? 0 : mouseX * 0.1 * 20;
   const parallaxY = reduceMotion ? 0 : mouseY * 0.1 * 12;
+  const depthTransform = `translate(-50%, 0) translate(${parallaxX}px, calc(${parallaxY}px + var(--claw42-hero-depth-pedestal-y, 0px)))`;
 
   return (
     <div className="claw42-hero-pedestal-layer absolute inset-0 pointer-events-none">
       <motion.div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
-          bottom: "11%",
-          width: "min(340px, 29vw)",
-          height: "min(230px, 19vw)",
-          transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
-          zIndex: 15,
+          bottom: "var(--claw42-hero-pedestal-glow-bottom, 41%)",
+          width: "var(--claw42-hero-pedestal-glow-width, min(340px, 24vw))",
+          height: "min(190px, 16vw)",
+          transform: depthTransform,
+          zIndex: 11,
         }}
       >
         <motion.div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 48% 100% at 50% 100%, rgba(160,134,255,0.72) 0%, rgba(124,92,255,0.48) 28%, rgba(88,58,215,0.24) 52%, transparent 76%)",
+              "radial-gradient(ellipse 52% 82% at 50% 40%, rgba(160,134,255,0.66) 0%, rgba(124,92,255,0.4) 28%, rgba(88,58,215,0.18) 52%, transparent 76%)",
             filter: "blur(12px)",
           }}
           animate={reduceMotion ? { opacity: 0.65 } : { opacity: [0.45, 0.85, 0.45] }}
@@ -59,11 +60,11 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
-          bottom: "18%",
+          bottom: "var(--claw42-hero-pedestal-beam-bottom, 43%)",
           width: "min(206px, 17vw)",
           height: "min(286px, 24vw)",
-          transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
-          zIndex: 17,
+          transform: depthTransform,
+          zIndex: 12,
           background:
             "linear-gradient(180deg, rgba(198,182,255,0) 0%, rgba(198,182,255,0.24) 18%, rgba(149,121,255,0.52) 42%, rgba(96,73,246,0.46) 66%, rgba(73,201,255,0.14) 82%, rgba(73,201,255,0) 100%)",
           filter: "blur(26px)",
@@ -80,11 +81,11 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none overflow-visible"
         style={{
-          bottom: "19%",
+          bottom: "var(--claw42-hero-pedestal-rays-bottom, 44%)",
           width: "min(232px, 19vw)",
           height: "min(292px, 24vw)",
-          transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
-          zIndex: 18,
+          transform: depthTransform,
+          zIndex: 13,
         }}
       >
         {LIGHT_RAYS.map((ray) => (
@@ -153,11 +154,11 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
-          bottom: "24%",
+          bottom: "var(--claw42-hero-pedestal-top-glow-bottom, 48%)",
           width: "min(260px, 22vw)",
           height: "min(132px, 10vw)",
-          transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
-          zIndex: 18,
+          transform: depthTransform,
+          zIndex: 14,
           background:
             "radial-gradient(ellipse 52% 68% at 50% 56%, rgba(207,190,255,0.98) 0%, rgba(154,125,255,0.72) 24%, rgba(108,79,244,0.46) 44%, rgba(73,201,255,0.18) 64%, transparent 82%)",
           filter: "blur(24px)",
@@ -173,11 +174,11 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
         style={{
-          bottom: "23%",
+          bottom: "var(--claw42-hero-pedestal-orb-bottom, 47%)",
           width: "min(196px, 16vw)",
           height: "min(196px, 16vw)",
-          transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
-          zIndex: 19,
+          transform: depthTransform,
+          zIndex: 15,
           background:
             "radial-gradient(circle, rgba(228,218,255,0.98) 0%, rgba(176,152,255,0.72) 28%, rgba(111,86,248,0.28) 54%, transparent 78%)",
           filter: "blur(20px)",
@@ -193,24 +194,17 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <div
         className="absolute left-1/2 pointer-events-none"
         style={{
-          bottom: "9%",
-          width: "min(456px, 40vw)",
-          transform: `translate(-50%, 0) translate(${parallaxX}px, ${parallaxY}px)`,
-          zIndex: 10,
+          bottom: "var(--claw42-hero-pedestal-bottom, 37%)",
+          width: "var(--claw42-hero-pedestal-width, min(456px, 24vw))",
+          transform: depthTransform,
+          zIndex: 35,
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/images/hero/pedestal.png"
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          className="w-full h-auto select-none"
-        />
         <motion.div
           className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
           style={{
-            top: "-10%",
+            top: "-18%",
+            zIndex: 0,
             width: "74%",
             height: "46%",
             background:
@@ -221,8 +215,16 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
           transition={
             reduceMotion
               ? { duration: 0 }
-              : { duration: 3, repeat: Infinity, ease: "easeInOut" }
+            : { duration: 3, repeat: Infinity, ease: "easeInOut" }
           }
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/hero/pedestal.png"
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="relative z-10 w-full h-auto select-none"
         />
       </div>
     </div>

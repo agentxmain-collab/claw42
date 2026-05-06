@@ -1,0 +1,8 @@
+{
+  "agentId": "alpha",
+  "primary": "#2a2832",
+  "accent": "#ff5f5f",
+  "accentRgba": "rgba(255, 95, 95, 1)",
+  "glowRgba": "rgba(255, 95, 95, 0.45)",
+  "secondaryAccent": "#ff8a3d"
+}
