@@ -555,9 +555,7 @@ body {
 
 /* Terminal glow */
 .terminal-glow {
-  box-shadow:
-    0 0 40px rgba(108, 79, 255, 0.15),
-    0 4px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.20);
 }
 
 /* Quick start terminal adapted from Uiverse reference provided by Dan. */
