@@ -19,6 +19,11 @@ import {
   formatLiveSnapshotForPrompt,
   type TickerSnapshot,
 } from "@/lib/news/livePriceFetch";
+import {
+  PLAIN_SPEECH_PROMPT_BLOCK,
+  plainSpeechRetryInstruction,
+  validatePlainSpeech,
+} from "@/lib/plainSpeechGuard";
 import type { NewsDebate } from "@/lib/types";
 import type {
   AgentFocus,
@@ -460,8 +465,7 @@ function normalizeSpeechText(agentId: AgentId, signal: SignalRecord, text: strin
   if (
     content.length < 10 ||
     hasUnsupportedV1DataClaim(content) ||
-    hasBannedOutputPattern(content) ||
-    !hasAgentTerminology(agentId, content)
+    hasBannedOutputPattern(content)
   ) {
     return sanitizeAgentMessage(fallbackSignalSpeech(agentId, signal), signal.symbol);
   }
@@ -495,6 +499,8 @@ ${formatLiveSnapshotForPrompt(liveSnapshot, [
   ...pool.trending.map((entry) => entry.symbol),
   ...pool.opportunity.map((entry) => entry.symbol),
 ])}
+
+${PLAIN_SPEECH_PROMPT_BLOCK}
 
 要求：
 - 只输出一句或两句中文纯文本，不要 JSON，不要 markdown。
@@ -534,6 +540,8 @@ ${formatLiveSnapshotForPrompt(liveSnapshot, [
   ...pool.trending.map((entry) => entry.symbol),
   ...pool.opportunity.map((entry) => entry.symbol),
 ])}
+
+${PLAIN_SPEECH_PROMPT_BLOCK}
 
 要求：
 - 只输出中文纯文本，不要 JSON，不要 markdown。
@@ -1654,6 +1662,33 @@ async function callTextProvider(
   return null;
 }
 
+async function callPlainTextProvider(
+  prompt: string,
+): Promise<{ text: string; source: ProviderSource } | null> {
+  const first = await callTextProvider(prompt);
+  if (!first) return null;
+
+  const firstContent = stripModelText(first.text);
+  const firstValidation = validatePlainSpeech(firstContent);
+  if (firstValidation.ok) return { ...first, text: firstContent };
+
+  const retry = await callTextProvider(
+    `${prompt}\n\n${plainSpeechRetryInstruction(firstValidation.reasons)}`,
+  );
+  if (!retry) return null;
+
+  const retryContent = stripModelText(retry.text);
+  const retryValidation = validatePlainSpeech(retryContent);
+  if (!retryValidation.ok) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[claw42] plain speech rejected", retryValidation.reasons);
+    }
+    return null;
+  }
+
+  return { ...retry, text: retryContent };
+}
+
 const MECHANICAL_OUTPUT_PATTERNS = [
   /作为\s*(?:Alpha|Beta|Gamma|[^\s，,。]{1,8}派)/i,
   /首先/,
@@ -1682,7 +1717,7 @@ async function generateAgentMessageFromSignal(
   pool: CoinPoolPayload,
   generatedAt: number,
   locale: AgentWatchLocale,
-): Promise<{ entry: AgentMessage; source: ProviderSource | null }> {
+): Promise<{ entry: AgentMessage | null; source: ProviderSource | null }> {
   const fallback = fallbackSignalSpeech(agentId, signal, locale);
   const liveSnapshot = await fetchLivePriceSnapshot(pool);
   if (!liveSnapshot) {
@@ -1703,12 +1738,13 @@ async function generateAgentMessageFromSignal(
     };
   }
 
-  const providerResult = await callTextProvider(
+  const providerResult = await callPlainTextProvider(
     buildAgentSpeechPrompt(agentId, signal, pool, liveSnapshot),
   );
-  const content = providerResult
-    ? normalizeSpeechText(agentId, signal, providerResult.text)
-    : fallback;
+  const content = providerResult ? normalizeSpeechText(agentId, signal, providerResult.text) : null;
+  if (!content || !validatePlainSpeech(content).ok) {
+    return { entry: null, source: null };
+  }
 
   return {
     entry: buildAgentMessageEntry(agentId, signal, content, generatedAt, liveSnapshot.fetchedAt),
@@ -1754,12 +1790,23 @@ async function generateEventResponse(
     };
   }
 
-  const providerResult = await callTextProvider(
+  const providerResult = await callPlainTextProvider(
     buildEventPrompt(agentId, eventDescription, pool, liveSnapshot),
   );
   const content = providerResult
     ? normalizeSpeechText(agentId, fallbackSignal, providerResult.text)
-    : fallback;
+    : "";
+  if (!content || !validatePlainSpeech(content).ok) {
+    return {
+      response: {
+        agentId,
+        content: "",
+        symbol: fallbackSignal.symbol,
+        marketDataFetchedAt: liveSnapshot.fetchedAt,
+      },
+      source: null,
+    };
+  }
   return {
     response: { agentId, content, marketDataFetchedAt: liveSnapshot.fetchedAt },
     source: providerResult?.source ?? null,
@@ -1938,6 +1985,7 @@ async function refreshAnalysis(locale: AgentWatchLocale): Promise<AgentAnalysisP
   );
 
   for (const result of agentMessageResults) {
+    if (!result.entry) continue;
     streamEntries.push(result.entry);
     recordAgentSpoke(result.entry.agentId, generatedAt);
     if (result.source) providerSources.push(result.source);

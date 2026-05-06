@@ -14,6 +14,7 @@ import {
   hasMechanicalOutput,
 } from "@/lib/llmFallbackChain";
 import { fetchLivePriceSnapshot, type TickerSnapshot } from "@/lib/news/livePriceFetch";
+import { plainSpeechRetryInstruction, validatePlainSpeech } from "@/lib/plainSpeechGuard";
 import { classifyNewsTrigger } from "@/lib/newsTriggers";
 import { buildCoinwDeeplink } from "@/lib/strategyDeeplink";
 import type { SignalRecord } from "@/modules/agent-watch/types";
@@ -115,6 +116,32 @@ async function callDebateJson(prompt: string, fallback: Record<string, unknown>)
   return parseObject(retry.text);
 }
 
+async function callPlainDebateJson(
+  prompt: string,
+  _fallback: Record<string, unknown>,
+): Promise<Record<string, unknown> | null> {
+  const first = await generateLlmText(prompt);
+  if (!first) return null;
+  const firstRaw = parseObject(first.text);
+  const firstContent = String(firstRaw.content ?? "");
+  const firstValidation = validatePlainSpeech(firstContent);
+  if (!hasMechanicalOutput(first.text) && firstValidation.ok) return firstRaw;
+
+  const retryPrompt = `${prompt}\n\n${plainSpeechRetryInstruction(
+    hasMechanicalOutput(first.text)
+      ? [...firstValidation.reasons, "输出机械套话"]
+      : firstValidation.reasons,
+  )}`;
+  const retry = await generateLlmText(retryPrompt);
+  if (!retry) return null;
+  const retryRaw = parseObject(retry.text);
+  const retryContent = String(retryRaw.content ?? "");
+  const retryValidation = validatePlainSpeech(retryContent);
+  if (hasMechanicalOutput(retry.text) || !retryValidation.ok) return null;
+
+  return retryRaw;
+}
+
 async function generateR1(
   agentId: FactionId,
   news: NewsItem,
@@ -127,10 +154,11 @@ async function generateR1(
   if (!snapshot) return waitingForTickerUtterance(agentId, news, ts);
   if (!decision.shouldSpeak) return fallback;
 
-  const raw = await callDebateJson(await buildDebateR1Prompt(agentId, news, snapshot), {
+  const raw = await callPlainDebateJson(await buildDebateR1Prompt(agentId, news, snapshot), {
     content: fallback.content,
     isGoldenLine: false,
   });
+  if (!raw) return { ...fallback, content: "" };
   const content = antiMechanicalFallback(
     String(raw.content ?? fallback.content),
     fallback.content,
@@ -165,7 +193,7 @@ async function generateR2(
   if (!decision.shouldSpeak) return { ...fallback, id: `${news.id}:${agentId}:r2:fallback:${ts}` };
 
   const cited = otherR1[0] ?? ownR1;
-  const raw = await callDebateJson(
+  const raw = await callPlainDebateJson(
     await buildDebateR2Prompt(agentId, ownR1, otherR1, snapshot, news),
     {
       content: fallback.content,
@@ -175,6 +203,7 @@ async function generateR2(
       isGoldenLine: false,
     },
   );
+  if (!raw) return { ...fallback, content: "" };
   const prefix = VALID_PREFIXES.has(raw.prefix as Exclude<UtterancePrefix, null>)
     ? (raw.prefix as Exclude<UtterancePrefix, null>)
     : "rebut";
@@ -274,26 +303,28 @@ async function buildNewsDebate(
 ): Promise<NewsDebate> {
   const pacing = debatePacingForSeverity(trigger.severity);
   const factionIds = getFactionIds();
-  const r1 = await Promise.all(
-    factionIds.map(async (agentId) =>
-      generateR1(agentId, news, now, await fetchLivePriceSnapshot()),
-    ),
-  );
+  const r1 = (
+    await Promise.all(
+      factionIds.map(async (agentId) =>
+        generateR1(agentId, news, now, await fetchLivePriceSnapshot()),
+      ),
+    )
+  ).filter((utterance) => utterance.content.trim().length > 0);
   const r2: Utterance[] = [];
 
   for (const agentId of factionIds) {
-    const own = r1.find((utterance) => utterance.agentId === agentId)!;
+    const own = r1.find((utterance) => utterance.agentId === agentId);
+    if (!own) continue;
     const others = r1.filter((utterance) => utterance.agentId !== agentId);
-    r2.push(
-      await generateR2(
-        agentId,
-        news,
-        own,
-        others,
-        now + r2.length * 1000,
-        await fetchLivePriceSnapshot(),
-      ),
+    const response = await generateR2(
+      agentId,
+      news,
+      own,
+      others,
+      now + r2.length * 1000,
+      await fetchLivePriceSnapshot(),
     );
+    if (response.content.trim().length > 0) r2.push(response);
   }
 
   const rounds: DebateRound[] = [

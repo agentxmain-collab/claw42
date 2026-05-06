@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getFaction, getFactionIds } from "@/lib/factionRegistry";
 import { formatLiveSnapshotForPrompt, type TickerSnapshot } from "@/lib/news/livePriceFetch";
+import { PLAIN_SPEECH_PROMPT_BLOCK } from "@/lib/plainSpeechGuard";
 import type { FactionId, NewsItem, Utterance } from "@/lib/types";
 
 const AGENT_IP_DIR = path.join(process.cwd(), "docs", "agent-ip");
@@ -49,6 +50,8 @@ ${newsBlock(news)}
 
 ${liveMarketBlock(snapshot, news)}
 
+${PLAIN_SPEECH_PROMPT_BLOCK}
+
 ## 输出 JSON
 {
   "content": "1-2 句你的独立观点。直接说事，不要客套",
@@ -91,6 +94,8 @@ ${ownR1.content}
 ${others}
 
 ${liveMarketBlock(snapshot, news)}
+
+${PLAIN_SPEECH_PROMPT_BLOCK}
 
 ## 任务
 挑其中 1 派的 R1 观点反驳 / 嘲讽 / 提点 / 阴阳。
@@ -136,6 +141,8 @@ ${newsBlock(news)}
 ${lines}
 
 ${liveMarketBlock(snapshot, news)}
+
+${PLAIN_SPEECH_PROMPT_BLOCK}
 
 ## 输出 JSON
 {
