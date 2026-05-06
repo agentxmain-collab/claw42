@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useI18n } from "@/i18n/I18nProvider";
 import { getFaction } from "@/lib/factionRegistry";
 import type { Utterance } from "@/lib/types";
 import { AgentAvatar } from "./AgentAvatar";
@@ -17,8 +19,22 @@ const PREFIX_LABEL: Record<Exclude<Utterance["prefix"], null>, string> = {
 };
 
 export function UtteranceBubble({ utterance }: { utterance: Utterance }) {
+  const { locale } = useI18n();
   const faction = getFaction(utterance.agentId);
   const cited = utterance.citedAgentId ? getFaction(utterance.citedAgentId) : null;
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!utterance.marketDataFetchedAt) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 10_000);
+    return () => window.clearInterval(timer);
+  }, [utterance.marketDataFetchedAt]);
+
+  const dataAgeLabel = utterance.marketDataFetchedAt
+    ? locale === "en_US"
+      ? `data ${Math.max(0, Math.round((now - utterance.marketDataFetchedAt) / 1000))}s ago`
+      : `数据 ${Math.max(0, Math.round((now - utterance.marketDataFetchedAt) / 1000))} 秒前`
+    : null;
 
   return (
     <motion.div
@@ -35,6 +51,9 @@ export function UtteranceBubble({ utterance }: { utterance: Utterance }) {
             {faction.displayName}
           </span>
           <span className="text-white/35">{faction.title}</span>
+          {dataAgeLabel && (
+            <span className="font-semibold text-emerald-300/70">{dataAgeLabel}</span>
+          )}
         </div>
         <div
           className={`mt-1 rounded-2xl border bg-black/35 px-3 py-2 text-sm leading-relaxed shadow-[0_14px_34px_rgba(0,0,0,0.24)] ${

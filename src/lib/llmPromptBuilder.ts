@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { getFaction, getFactionIds } from "@/lib/factionRegistry";
+import { formatLiveSnapshotForPrompt, type TickerSnapshot } from "@/lib/news/livePriceFetch";
 import type { FactionId, NewsItem, Utterance } from "@/lib/types";
 
 const AGENT_IP_DIR = path.join(process.cwd(), "docs", "agent-ip");
@@ -26,7 +27,16 @@ function newsBlock(news: NewsItem): string {
   ].join("\n");
 }
 
-export async function buildDebateR1Prompt(agentId: FactionId, news: NewsItem): Promise<string> {
+function liveMarketBlock(snapshot: TickerSnapshot | null, news: NewsItem): string {
+  const symbols = ["BTC", "ETH", "SOL", ...news.currencies];
+  return formatLiveSnapshotForPrompt(snapshot, symbols);
+}
+
+export async function buildDebateR1Prompt(
+  agentId: FactionId,
+  news: NewsItem,
+  snapshot: TickerSnapshot | null,
+): Promise<string> {
   const faction = getFaction(agentId);
   const ip = await loadAgentIp(agentId);
   return `你是 ${faction.displayName} ${faction.title}·${faction.nickname}，加密交易江湖人物。
@@ -36,6 +46,8 @@ ${ip}
 
 ## 触发新闻
 ${newsBlock(news)}
+
+${liveMarketBlock(snapshot, news)}
 
 ## 输出 JSON
 {
@@ -47,6 +59,8 @@ ${newsBlock(news)}
 - 字数 30-80
 - 直接说事，不要“作为 ${faction.displayName}”这种铺垫
 - 至少引用新闻里的一个具体词或数据点
+- 必须引用实时市场状态里的至少一个具体价格/百分比数字
+- 必须用“所以 + 具体行动/观察 + 价格触发条件”结尾
 - 用江湖人物口吻，可以用招牌话术但不要复读
 - 不允许“可能”“或许”“建议”“首先”“其次”“综上所述”“值得注意的是”
 - 不允许 cite 别的 Agent`;
@@ -56,6 +70,8 @@ export async function buildDebateR2Prompt(
   agentId: FactionId,
   ownR1: Utterance,
   otherR1: Utterance[],
+  snapshot: TickerSnapshot | null,
+  news: NewsItem,
 ): Promise<string> {
   const faction = getFaction(agentId);
   const ip = await loadAgentIp(agentId);
@@ -74,6 +90,8 @@ ${ownR1.content}
 ## 其他 2 派的 R1 观点
 ${others}
 
+${liveMarketBlock(snapshot, news)}
+
 ## 任务
 挑其中 1 派的 R1 观点反驳 / 嘲讽 / 提点 / 阴阳。
 
@@ -90,11 +108,17 @@ ${others}
 - content 必须呼应 citedQuote
 - prefix 强制不为空
 - 字数 25-60
+- 必须引用实时市场状态里的至少一个具体价格/百分比数字
+- 必须用“所以 + 具体行动/观察 + 价格触发条件”收束
 - 毒舌可以但不能脏话
 - 不允许“可能”“或许”“建议”“首先”“其次”“综上所述”“值得注意的是”`;
 }
 
-export function buildDebateR3Prompt(news: NewsItem, utterances: Utterance[]): string {
+export function buildDebateR3Prompt(
+  news: NewsItem,
+  utterances: Utterance[],
+  snapshot: TickerSnapshot | null,
+): string {
   const lines = utterances
     .map((utterance) => {
       const faction = getFaction(utterance.agentId);
@@ -110,6 +134,8 @@ ${newsBlock(news)}
 
 ## 3 派 R1 + R2 全部内容
 ${lines}
+
+${liveMarketBlock(snapshot, news)}
 
 ## 输出 JSON
 {
@@ -128,6 +154,7 @@ ${lines}
 ## 约束
 - direction = wait 时，entryCondition / stopLoss / takeProfit 仍要填
 - consensusRatio 严格按 3 派最终方向投票
+- entryCondition / stopLoss / takeProfit 必须围绕实时市场状态里的 current 价格，不能偏离当前价 10% 以上
 - 不出现“可能”“建议”“或许”“首先”“其次”“综上所述”“值得注意的是”
 - entryCondition 必须可执行`;
 }

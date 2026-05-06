@@ -141,6 +141,7 @@ export interface StreamResponse {
   agentId: AgentId;
   content: string;
   symbol?: string;
+  marketDataFetchedAt?: number;
 }
 
 export interface AgentMessage {
@@ -152,6 +153,7 @@ export interface AgentMessage {
   symbol?: string;
   symbols?: string[];
   triggerSignalId: string;
+  marketDataFetchedAt?: number;
 }
 
 export interface CollectiveEvent {
@@ -205,6 +207,7 @@ export interface WatchUpdateEntry {
   agentId?: AgentId;
   symbol?: string;
   symbols?: string[];
+  marketDataFetchedAt?: number;
   severity: "neutral" | "watch";
 }
 
@@ -218,6 +221,7 @@ export interface AgentDiscussionEntry {
   symbol?: string;
   symbols: string[];
   responses: StreamResponse[];
+  marketDataFetchedAt?: number;
   severity: "neutral" | "watch";
 }
 

@@ -14,6 +14,11 @@ import {
   detectConflictEvent,
   detectFocusEvent,
 } from "@/lib/eventDetectors";
+import {
+  fetchLivePriceSnapshot,
+  formatLiveSnapshotForPrompt,
+  type TickerSnapshot,
+} from "@/lib/news/livePriceFetch";
 import type { NewsDebate } from "@/lib/types";
 import type {
   AgentFocus,
@@ -39,8 +44,8 @@ import type {
   TimeframeSignal,
 } from "@/modules/agent-watch/types";
 
-const FRESH_TTL_MS = 10 * 60_000;
-const STALE_TTL_MS = 30 * 60_000;
+const FRESH_TTL_MS = 25_000;
+const STALE_TTL_MS = 30_000;
 const PROVIDER_FAILURE_FALLBACK_TTL_MS = 30 * 60_000;
 const PROVIDER_TIMEOUT_MS = 5000;
 const COINS: CoinSymbol[] = ["BTC", "ETH", "SOL", "USDT"];
@@ -394,6 +399,45 @@ function fallbackSignalSpeech(
   return `${signal.symbol} ${brief}，极端位置只进观察区。均值回归要等近期高低位失速，不接飞刀。`;
 }
 
+function waitingForLiveData(agentId: AgentId, locale: AgentWatchLocale = "zh_CN"): string {
+  const zh: Record<AgentId, string[]> = {
+    alpha: [
+      "实时价格没刷出来，先等数据。",
+      "盘口断了一拍，没有新价格不追。",
+      "数据没回来，关键位先不报。",
+    ],
+    beta: [
+      "实时数据还没回来，趋势判断先暂停。",
+      "价格源没刷出新点，等下一轮确认。",
+      "没有新价格，先不升级趋势判断。",
+    ],
+    gamma: [
+      "数据没刷出来，不拿旧价算极端。",
+      "实时价格断了，回归窗口先不判。",
+      "没有新价格，不接第一刀。",
+    ],
+  };
+  const en: Record<AgentId, string[]> = {
+    alpha: [
+      "Live price did not refresh, so Alpha waits.",
+      "No fresh tape yet; no breakout call.",
+      "Data is missing, no key level call.",
+    ],
+    beta: [
+      "Live data is missing, so Beta pauses the trend read.",
+      "No fresh price point yet; wait for the next check.",
+      "No new price, no trend upgrade.",
+    ],
+    gamma: [
+      "No fresh price, so Gamma will not call an extreme.",
+      "Live price is missing; reversion waits.",
+      "No new data, no falling-knife call.",
+    ],
+  };
+  const lines = locale === "en_US" ? en[agentId] : zh[agentId];
+  return lines[Math.abs(Date.now()) % lines.length] ?? lines[0];
+}
+
 function stripModelText(text: string): string {
   return stripCodeFence(text)
     .replace(/^["'“”]+|["'“”]+$/g, "")
@@ -428,6 +472,7 @@ function buildAgentSpeechPrompt(
   agentId: AgentId,
   signal: SignalRecord,
   pool: CoinPoolPayload,
+  liveSnapshot: TickerSnapshot | null,
 ): string {
   return `你是 Claw42 的实时看盘 Agent。只基于下面这一条真实信号发言，不要补充不存在的数据。
 
@@ -441,10 +486,22 @@ ${formatPoolGroup("主流", pool.majors)}
 ${formatPoolGroup("热门", pool.trending)}
 ${formatPoolGroup("机会", pool.opportunity)}
 
+${formatLiveSnapshotForPrompt(liveSnapshot, [
+  signal.symbol,
+  "BTC",
+  "ETH",
+  "SOL",
+  ...pool.majors.map((entry) => entry.symbol),
+  ...pool.trending.map((entry) => entry.symbol),
+  ...pool.opportunity.map((entry) => entry.symbol),
+])}
+
 要求：
 - 只输出一句或两句中文纯文本，不要 JSON，不要 markdown。
 - ${signal.symbol} 已经在卡片头部展示，正文不要用 ${signal.symbol} 开头。
 - 必须引用触发信号里的具体数字/条件；如果正文中间需要引用 ${signal.symbol} 可以保留。
+- 必须引用实时市场状态里的一个具体价格/百分比数字。
+- 必须用“所以 + 具体观察/动作 + 价格触发条件”收束。
 - 必须给可观察条件：突破/回踩/EMA/极端回归边界之一。
 - 不要复述“我是某派”，不要写行情新闻摘要。
 - 禁止编造 RSI、布林带、MACD、KDJ 或未给出的指标。`;
@@ -454,6 +511,7 @@ function buildEventPrompt(
   agentId: AgentId,
   eventDescription: string,
   pool: CoinPoolPayload,
+  liveSnapshot: TickerSnapshot | null,
 ): string {
   return `你是 Claw42 的 ${SKILLS[agentId].displayName}。只针对这个实时事件给一句看盘回应。
 
@@ -467,10 +525,22 @@ ${formatPoolGroup("主流", pool.majors)}
 ${formatPoolGroup("热门", pool.trending)}
 ${formatPoolGroup("机会", pool.opportunity)}
 
+${formatLiveSnapshotForPrompt(liveSnapshot, [
+  eventDescription.match(/\b[A-Z0-9]{2,12}\b/)?.[0] ?? "BTC",
+  "BTC",
+  "ETH",
+  "SOL",
+  ...pool.majors.map((entry) => entry.symbol),
+  ...pool.trending.map((entry) => entry.symbol),
+  ...pool.opportunity.map((entry) => entry.symbol),
+])}
+
 要求：
 - 只输出中文纯文本，不要 JSON，不要 markdown。
 - 事件卡头部已经展示 symbol，正文不要用 symbol 开头。
 - 必须引用事件中的币种或条件。
+- 必须引用实时市场状态里的一个具体价格/百分比数字。
+- 必须用“所以 + 具体观察/动作 + 价格触发条件”收束。
 - 直接给判断和下一步观察条件。
 - 禁止套话、禁止复读 Ticker、禁止编造未给出的指标。`;
 }
@@ -480,6 +550,7 @@ function buildAgentMessageEntry(
   signal: SignalRecord,
   content: string,
   generatedAt: number,
+  marketDataFetchedAt?: number,
 ): AgentMessage {
   return {
     kind: "agent_message",
@@ -490,6 +561,7 @@ function buildAgentMessageEntry(
     symbol: signal.symbol,
     symbols: [signal.symbol],
     triggerSignalId: signal.id,
+    marketDataFetchedAt,
   };
 }
 
@@ -958,7 +1030,7 @@ function formatCollectiveSignalBrief(summary: ReturnType<typeof buildSignalSumma
   return lines.join("\n");
 }
 
-function buildPrompt(pool: CoinPoolPayload): string {
+function buildPrompt(pool: CoinPoolPayload, liveSnapshot: TickerSnapshot | null): string {
   const tickers = pool.tickers;
   const summary = buildSignalSummary();
   const summaryText = formatSummaryForPrompt(summary);
@@ -972,6 +1044,15 @@ function buildPrompt(pool: CoinPoolPayload): string {
 
 ## 当前实时行情数据
 ${formatMarketLine(tickers)}
+
+${formatLiveSnapshotForPrompt(liveSnapshot, [
+  "BTC",
+  "ETH",
+  "SOL",
+  ...pool.majors.map((entry) => entry.symbol),
+  ...pool.trending.map((entry) => entry.symbol),
+  ...pool.opportunity.map((entry) => entry.symbol),
+])}
 
 ## 当前多币种池
 ${formatPoolGroup("主流", pool.majors)}
@@ -1603,20 +1684,34 @@ async function generateAgentMessageFromSignal(
   locale: AgentWatchLocale,
 ): Promise<{ entry: AgentMessage; source: ProviderSource | null }> {
   const fallback = fallbackSignalSpeech(agentId, signal, locale);
+  const liveSnapshot = await fetchLivePriceSnapshot(pool);
+  if (!liveSnapshot) {
+    return {
+      entry: buildAgentMessageEntry(
+        agentId,
+        signal,
+        waitingForLiveData(agentId, locale),
+        generatedAt,
+      ),
+      source: null,
+    };
+  }
   if (locale === "en_US") {
     return {
-      entry: buildAgentMessageEntry(agentId, signal, fallback, generatedAt),
+      entry: buildAgentMessageEntry(agentId, signal, fallback, generatedAt, liveSnapshot.fetchedAt),
       source: null,
     };
   }
 
-  const providerResult = await callTextProvider(buildAgentSpeechPrompt(agentId, signal, pool));
+  const providerResult = await callTextProvider(
+    buildAgentSpeechPrompt(agentId, signal, pool, liveSnapshot),
+  );
   const content = providerResult
     ? normalizeSpeechText(agentId, signal, providerResult.text)
     : fallback;
 
   return {
-    entry: buildAgentMessageEntry(agentId, signal, content, generatedAt),
+    entry: buildAgentMessageEntry(agentId, signal, content, generatedAt, liveSnapshot.fetchedAt),
     source: providerResult?.source ?? null,
   };
 }
@@ -1636,19 +1731,37 @@ async function generateEventResponse(
     payload: { description: eventDescription },
   };
   const fallback = fallbackSignalSpeech(agentId, fallbackSignal, locale);
+  const liveSnapshot = await fetchLivePriceSnapshot(pool);
+  if (!liveSnapshot) {
+    return {
+      response: {
+        agentId,
+        content: waitingForLiveData(agentId, locale),
+        symbol: fallbackSignal.symbol,
+      },
+      source: null,
+    };
+  }
   if (locale === "en_US") {
     return {
-      response: { agentId, content: fallback, symbol: fallbackSignal.symbol },
+      response: {
+        agentId,
+        content: fallback,
+        symbol: fallbackSignal.symbol,
+        marketDataFetchedAt: liveSnapshot.fetchedAt,
+      },
       source: null,
     };
   }
 
-  const providerResult = await callTextProvider(buildEventPrompt(agentId, eventDescription, pool));
+  const providerResult = await callTextProvider(
+    buildEventPrompt(agentId, eventDescription, pool, liveSnapshot),
+  );
   const content = providerResult
     ? normalizeSpeechText(agentId, fallbackSignal, providerResult.text)
     : fallback;
   return {
-    response: { agentId, content },
+    response: { agentId, content, marketDataFetchedAt: liveSnapshot.fetchedAt },
     source: providerResult?.source ?? null,
   };
 }

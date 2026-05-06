@@ -22,6 +22,7 @@ export interface AgentChatMessage {
   symbols: string[];
   tag?: string;
   points: AgentPointLevel[];
+  marketDataFetchedAt?: number;
 }
 
 const FALLBACK_AGENT: Record<
@@ -247,6 +248,7 @@ function message({
   tag,
   pool,
   locale = "zh_CN",
+  marketDataFetchedAt,
 }: {
   id: string;
   ts: number;
@@ -256,6 +258,7 @@ function message({
   tag?: string;
   pool?: CoinPoolPayload;
   locale?: AgentWatchLocale;
+  marketDataFetchedAt?: number;
 }): AgentChatMessage {
   const safeSymbols = uniqueSymbols(symbols);
   return {
@@ -266,6 +269,7 @@ function message({
     symbols: safeSymbols,
     tag,
     points: pointLevelsForAgent(agentId, safeSymbols, pool, locale),
+    marketDataFetchedAt,
   };
 }
 
@@ -288,6 +292,7 @@ export function buildStreamChatMessages(
         symbols: entry.symbols?.length ? entry.symbols : entry.symbol ? [entry.symbol] : [],
         pool,
         locale,
+        marketDataFetchedAt: entry.marketDataFetchedAt,
       }),
     ];
   }
@@ -303,6 +308,7 @@ export function buildStreamChatMessages(
         tag: TAG_COPY[locale].discussion,
         pool,
         locale,
+        marketDataFetchedAt: response.marketDataFetchedAt ?? entry.marketDataFetchedAt,
       }),
     );
   }
@@ -329,6 +335,7 @@ export function buildStreamChatMessages(
         tag: TAG_COPY[locale].collective,
         pool,
         locale,
+        marketDataFetchedAt: response.marketDataFetchedAt,
       }),
     );
   }
@@ -349,6 +356,7 @@ export function buildStreamChatMessages(
         tag: TAG_COPY[locale].focus,
         pool,
         locale,
+        marketDataFetchedAt: entry.primaryResponse.marketDataFetchedAt,
       }),
     ];
   }
@@ -373,6 +381,7 @@ export function buildStreamChatMessages(
         tag: TAG_COPY[locale].conflict,
         pool,
         locale,
+        marketDataFetchedAt: response.marketDataFetchedAt,
       }),
     );
   }
@@ -389,6 +398,7 @@ export function buildStreamChatMessages(
       tag: entry.updateType === "agent_heartbeat" ? TAG_COPY[locale].heartbeat : entry.title,
       pool,
       locale,
+      marketDataFetchedAt: entry.marketDataFetchedAt,
     }),
   ];
 }

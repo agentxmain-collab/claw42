@@ -65,6 +65,7 @@ export interface Utterance {
   citedQuote?: string;
   isGoldenLine: boolean;
   ts: number;
+  marketDataFetchedAt?: number;
 }
 
 export interface FinalStrategy {

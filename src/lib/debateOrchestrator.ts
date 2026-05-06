@@ -13,6 +13,7 @@ import {
   generateLlmText,
   hasMechanicalOutput,
 } from "@/lib/llmFallbackChain";
+import { fetchLivePriceSnapshot, type TickerSnapshot } from "@/lib/news/livePriceFetch";
 import { classifyNewsTrigger } from "@/lib/newsTriggers";
 import { buildCoinwDeeplink } from "@/lib/strategyDeeplink";
 import type { SignalRecord } from "@/modules/agent-watch/types";
@@ -67,6 +68,29 @@ function fallbackUtterance(
   };
 }
 
+function waitingForTickerUtterance(agentId: FactionId, news: NewsItem, ts: number): Utterance {
+  const faction = getFaction(agentId);
+  const lines = [
+    `${faction.nickname}：实时价格没刷出来，先等数据。`,
+    `${faction.nickname}：盘口数据断了一拍，等下一轮再说。`,
+    `${faction.nickname}：现在不拿旧价硬判断，等数据回来。`,
+    `${faction.nickname}：行情源还没回，先暂停下结论。`,
+    `${faction.nickname}：没有新价格，不给点位。`,
+  ];
+  const content = lines[Math.abs(ts + agentId.length) % lines.length] ?? lines[0];
+  const emotion = emotionFromContext({ agentId, sentiment: news.sentiment });
+  return {
+    id: `${news.id}:${agentId}:waiting:${ts}`,
+    agentId,
+    content,
+    prefix: null,
+    emoji: emojiForEmotion(agentId, emotion),
+    emotion,
+    isGoldenLine: false,
+    ts,
+  };
+}
+
 function syntheticSignal(agentId: FactionId, news: NewsItem, ts: number): SignalRecord {
   const faction = getFaction(agentId);
   return {
@@ -91,13 +115,19 @@ async function callDebateJson(prompt: string, fallback: Record<string, unknown>)
   return parseObject(retry.text);
 }
 
-async function generateR1(agentId: FactionId, news: NewsItem, ts: number): Promise<Utterance> {
+async function generateR1(
+  agentId: FactionId,
+  news: NewsItem,
+  ts: number,
+  snapshot: TickerSnapshot | null,
+): Promise<Utterance> {
   const signal = syntheticSignal(agentId, news, ts);
   const decision = checkAgentSpeech(agentId, [signal], ts);
   const fallback = fallbackUtterance(agentId, news, ts, 1);
+  if (!snapshot) return waitingForTickerUtterance(agentId, news, ts);
   if (!decision.shouldSpeak) return fallback;
 
-  const raw = await callDebateJson(await buildDebateR1Prompt(agentId, news), {
+  const raw = await callDebateJson(await buildDebateR1Prompt(agentId, news, snapshot), {
     content: fallback.content,
     isGoldenLine: false,
   });
@@ -116,6 +146,7 @@ async function generateR1(agentId: FactionId, news: NewsItem, ts: number): Promi
     emotion,
     isGoldenLine,
     ts,
+    marketDataFetchedAt: snapshot.fetchedAt,
   };
 }
 
@@ -125,20 +156,25 @@ async function generateR2(
   ownR1: Utterance,
   otherR1: Utterance[],
   ts: number,
+  snapshot: TickerSnapshot | null,
 ): Promise<Utterance> {
   const signal = syntheticSignal(agentId, news, ts);
   const decision = checkAgentSpeech(agentId, [signal], ts);
   const fallback = fallbackUtterance(agentId, news, ts, 2);
+  if (!snapshot) return waitingForTickerUtterance(agentId, news, ts);
   if (!decision.shouldSpeak) return { ...fallback, id: `${news.id}:${agentId}:r2:fallback:${ts}` };
 
   const cited = otherR1[0] ?? ownR1;
-  const raw = await callDebateJson(await buildDebateR2Prompt(agentId, ownR1, otherR1), {
-    content: fallback.content,
-    prefix: "rebut",
-    citedAgentId: cited.agentId,
-    citedQuote: cited.content.slice(0, 30),
-    isGoldenLine: false,
-  });
+  const raw = await callDebateJson(
+    await buildDebateR2Prompt(agentId, ownR1, otherR1, snapshot, news),
+    {
+      content: fallback.content,
+      prefix: "rebut",
+      citedAgentId: cited.agentId,
+      citedQuote: cited.content.slice(0, 30),
+      isGoldenLine: false,
+    },
+  );
   const prefix = VALID_PREFIXES.has(raw.prefix as Exclude<UtterancePrefix, null>)
     ? (raw.prefix as Exclude<UtterancePrefix, null>)
     : "rebut";
@@ -161,6 +197,7 @@ async function generateR2(
     citedQuote: String(raw.citedQuote ?? cited.content).slice(0, 30),
     isGoldenLine,
     ts,
+    marketDataFetchedAt: snapshot.fetchedAt,
   };
 }
 
@@ -176,9 +213,10 @@ async function generateStrategy(
   news: NewsItem,
   utterances: Utterance[],
   ts: number,
+  snapshot: TickerSnapshot | null,
 ): Promise<FinalStrategy> {
   const primarySymbol = news.currencies[0] ?? "BTC";
-  const raw = await callDebateJson(buildDebateR3Prompt(news, utterances), {
+  const raw = await callDebateJson(buildDebateR3Prompt(news, utterances, snapshot), {
     symbol: primarySymbol,
     direction: "wait",
     entryCondition: `${primarySymbol} 等 5min K 线重新站回关键位`,
@@ -236,13 +274,26 @@ async function buildNewsDebate(
 ): Promise<NewsDebate> {
   const pacing = debatePacingForSeverity(trigger.severity);
   const factionIds = getFactionIds();
-  const r1 = await Promise.all(factionIds.map((agentId) => generateR1(agentId, news, now)));
+  const r1 = await Promise.all(
+    factionIds.map(async (agentId) =>
+      generateR1(agentId, news, now, await fetchLivePriceSnapshot()),
+    ),
+  );
   const r2: Utterance[] = [];
 
   for (const agentId of factionIds) {
     const own = r1.find((utterance) => utterance.agentId === agentId)!;
     const others = r1.filter((utterance) => utterance.agentId !== agentId);
-    r2.push(await generateR2(agentId, news, own, others, now + r2.length * 1000));
+    r2.push(
+      await generateR2(
+        agentId,
+        news,
+        own,
+        others,
+        now + r2.length * 1000,
+        await fetchLivePriceSnapshot(),
+      ),
+    );
   }
 
   const rounds: DebateRound[] = [
@@ -254,7 +305,12 @@ async function buildNewsDebate(
       startedAt: now + pacing.roundTwoDelayMs,
     },
   ];
-  const strategy = await generateStrategy(news, [...r1, ...r2], now + pacing.strategyRevealDelayMs);
+  const strategy = await generateStrategy(
+    news,
+    [...r1, ...r2],
+    now + pacing.strategyRevealDelayMs,
+    await fetchLivePriceSnapshot(),
+  );
   factionIds.forEach((agentId) => recordAgentSpoke(agentId, now));
 
   const debate: NewsDebate = {

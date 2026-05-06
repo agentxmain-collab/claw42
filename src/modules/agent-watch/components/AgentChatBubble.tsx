@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import type { AgentChatMessage } from "../utils/streamChatMessages";
@@ -14,6 +15,19 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
   const meta = AGENT_META[message.agentId];
   const token = AGENT_COLOR_TOKEN[message.agentId];
   const timeLabel = formatAgentMessageTime(message.ts, locale);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!message.marketDataFetchedAt) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 10_000);
+    return () => window.clearInterval(timer);
+  }, [message.marketDataFetchedAt]);
+
+  const dataAgeLabel = message.marketDataFetchedAt
+    ? locale === "en_US"
+      ? `data ${Math.max(0, Math.round((now - message.marketDataFetchedAt) / 1000))}s ago`
+      : `数据 ${Math.max(0, Math.round((now - message.marketDataFetchedAt) / 1000))} 秒前`
+    : null;
 
   return (
     <motion.article
@@ -55,6 +69,9 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
             </span>
           ))}
           <span className="font-mono text-xs text-white/35">{timeLabel}</span>
+          {dataAgeLabel && (
+            <span className="text-xs font-semibold text-emerald-300/70">{dataAgeLabel}</span>
+          )}
         </div>
 
         <div
