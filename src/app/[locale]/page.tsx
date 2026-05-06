@@ -178,7 +178,7 @@ function WhySection() {
             variants={fadeUpVariants(reduceMotion)}
             transition={getFadeUpTransition(i * 0.08)}
             whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-            className="card-glow relative bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col overflow-hidden"
+            className="card-glow group relative bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col overflow-hidden"
           >
             <div className="w-14 h-14 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-5 overflow-hidden">
               <Image
@@ -192,9 +192,7 @@ function WhySection() {
             </div>
             <h3 className="text-xl font-bold text-white mb-3">{card.title}</h3>
             <p className="text-gray-400 text-sm leading-relaxed flex-1">{card.desc}</p>
-            {i === 1 && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#6c4fff] to-[#a78bfa]" />
-            )}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#6c4fff] to-[#a78bfa] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
           </motion.div>
         ))}
       </div>
