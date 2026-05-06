@@ -1,6 +1,7 @@
 "use client";
 
 import type { Dict } from "@/i18n/types";
+import { trackEvent } from "@/lib/analytics";
 import type { FinalStrategy } from "@/lib/types";
 import { StrategyMiniChart } from "./StrategyMiniChart";
 
@@ -15,6 +16,10 @@ function minutesLeft(expiresAt: number) {
   return Math.max(0, Math.ceil((expiresAt - Date.now()) / 60_000));
 }
 
+function isEnglish(labels: Dict["agentWatch"]["newsDebate"]) {
+  return labels.waitSignal.toLowerCase().includes("wait");
+}
+
 export function FinalStrategyBlock({
   strategy,
   labels,
@@ -22,6 +27,7 @@ export function FinalStrategyBlock({
   strategy: FinalStrategy;
   labels: Dict["agentWatch"]["newsDebate"];
 }) {
+  const english = isEnglish(labels);
   const isExpired = strategy.expiresAt <= Date.now();
   const directionClass =
     strategy.direction === "long"
@@ -105,6 +111,11 @@ export function FinalStrategyBlock({
             type="button"
             disabled={isExpired || strategy.direction === "wait"}
             onClick={() => {
+              trackEvent("news_debate_strategy_follow_click", {
+                strategy_id: strategy.id,
+                symbol: strategy.symbol,
+                direction: strategy.direction,
+              });
               if (strategy.deeplink)
                 window.open(strategy.deeplink, "_blank", "noopener,noreferrer");
             }}
@@ -112,6 +123,34 @@ export function FinalStrategyBlock({
           >
             {cta}
           </button>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                trackEvent("strategy_feedback", {
+                  strategy_id: strategy.id,
+                  symbol: strategy.symbol,
+                  action: "followed",
+                })
+              }
+              className="rounded-lg border border-emerald-300/25 bg-emerald-300/[0.08] px-2 py-1.5 text-xs font-bold text-emerald-200 transition hover:border-emerald-300/55"
+            >
+              {english ? "I followed" : "我跟了"}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                trackEvent("strategy_feedback", {
+                  strategy_id: strategy.id,
+                  symbol: strategy.symbol,
+                  action: "skipped",
+                })
+              }
+              className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1.5 text-xs font-bold text-white/55 transition hover:border-white/25 hover:text-white"
+            >
+              {english ? "I skipped" : "我没跟"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

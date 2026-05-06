@@ -2,7 +2,7 @@ import type { NewsDebate } from "@/lib/types";
 
 export type CoinSymbol = "BTC" | "ETH" | "SOL" | "USDT";
 export type AgentId = "alpha" | "beta" | "gamma";
-export type AgentStatus = "thinking" | "speaking" | "idle";
+export type AgentStatus = "thinking" | "speaking" | "alert" | "idle";
 export type AnalysisSource = "minimax" | "deepseek" | "claude" | "cache" | "static-fallback";
 export type ProviderSource = "minimax" | "deepseek" | "claude";
 

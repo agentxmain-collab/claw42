@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
+import { buildChatterPlan } from "@/lib/chatterGenerator";
 import { AGENT_ORDER } from "./agents";
 import { useAgentAnalysis } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
@@ -204,6 +205,7 @@ export function AgentWatchBoard() {
   const directorModeRef = useRef<WatchDirectorMode | null>(null);
   const supplementalClaimRef = useRef(new Map<string, number>());
   const lastSupplementalAtRef = useRef(0);
+  const hasScheduledInitialRef = useRef(false);
   const [liveQueue, setLiveQueue] = useState<StreamEntry[]>([]);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
@@ -313,7 +315,9 @@ export function AgentWatchBoard() {
     });
     const directorEntries = opening.entries.length > 0 ? opening.entries : entries;
     rememberScheduledEntries(directorEntries, now);
-    scheduleStreamEntries(directorEntries, { clearPending: true });
+    const clearPending = !hasScheduledInitialRef.current;
+    hasScheduledInitialRef.current = true;
+    scheduleStreamEntries(directorEntries, { clearPending });
 
     return () => {
       timersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -333,7 +337,6 @@ export function AgentWatchBoard() {
   useEffect(() => {
     if (!data?.pool) return;
     const now = Date.now();
-    if (now - lastSupplementalAtRef.current < 25_000) return;
 
     const existingEntries = streamEntriesFromPayload(data);
     const visibleEntries = trimStreamEntries(
@@ -344,11 +347,18 @@ export function AgentWatchBoard() {
       if (ts < cutoff) supplementalClaimRef.current.delete(key);
     }
 
+    const chatterPlan = buildChatterPlan({
+      now,
+      lastSpokeAt: lastSupplementalAtRef.current,
+      pool: data.pool,
+      signals: marketSignals,
+      visibleEntries,
+    });
+    if (!chatterPlan.shouldSpeak) return;
+
     const preferredKinds = needsAgentDiversity(visibleEntries)
       ? (["agent_discussion", "agent_heartbeat"] as const)
-      : visibleEntries.some(isPriorityEvent)
-        ? (["agent_discussion", "agent_heartbeat"] as const)
-        : ([undefined, "agent_heartbeat"] as const);
+      : chatterPlan.preferredKinds;
     let entry: ReturnType<typeof buildWatchSupplementalEntry> = null;
 
     for (const preferredKind of preferredKinds) {
@@ -406,9 +416,21 @@ export function AgentWatchBoard() {
     dismissNewContent();
   }, [dismissNewContent, refreshHistory]);
   const statusForAgent = useCallback(
-    (agentId: AgentId): AgentStatus =>
-      typingAgent === agentId ? "thinking" : speakingAgent === agentId ? "speaking" : "idle",
-    [speakingAgent, typingAgent],
+    (agentId: AgentId): AgentStatus => {
+      if (typingAgent === agentId) return "thinking";
+      if (speakingAgent === agentId) return "speaking";
+      const focus = focusByAgent.get(agentId);
+      const hasRecentAlert =
+        Boolean(focus) &&
+        marketSignals.some(
+          (signal) =>
+            signal.symbol.toUpperCase() === focus?.symbol.toUpperCase() &&
+            signal.severity === "alert" &&
+            Date.now() - signal.ts <= 2 * 60_000,
+        );
+      return hasRecentAlert ? "alert" : "idle";
+    },
+    [focusByAgent, marketSignals, speakingAgent, typingAgent],
   );
 
   return (

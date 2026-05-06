@@ -1,11 +1,11 @@
 import type { AgentDiscussionEntry, AgentId, StreamEntry, WatchUpdateEntry } from "../types";
 
-const PRIORITY_THINK_MS = { min: 900, max: 1400 };
-const DISCUSSION_THINK_MS = { min: 1400, max: 2200 };
-const DEFAULT_THINK_MS = { min: 1800, max: 3000 };
-const PRIORITY_GAP_MS = 1100;
-const DISCUSSION_GAP_MS = 1300;
-const DEFAULT_GAP_MS = 900;
+const PRIORITY_THINK_MS = { min: 1800, max: 2800 };
+const DISCUSSION_THINK_MS = { min: 2200, max: 3600 };
+const DEFAULT_THINK_MS = { min: 2400, max: 4200 };
+const PRIORITY_GAP_MS = 1400;
+const DISCUSSION_GAP_MS = 1800;
+const DEFAULT_GAP_MS = 1200;
 
 function isWatchUpdate(entry: StreamEntry): entry is WatchUpdateEntry {
   return entry.kind === "watch_update";

@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AGENT_META } from "../agents";
 import type { AgentId } from "../types";
 import type { AgentWatchLocale } from "../locale";
+import { typingPhraseForAgent } from "../utils/agentTypingPhrases";
 import { AgentAvatar } from "./AgentAvatar";
 
 export function TypingIndicator({
@@ -15,6 +16,7 @@ export function TypingIndicator({
 }) {
   const reduceMotion = useReducedMotion();
   const meta = AGENT_META[agentId];
+  const phrase = typingPhraseForAgent(agentId, locale);
 
   return (
     <motion.div
@@ -36,7 +38,7 @@ export function TypingIndicator({
             aria-hidden="true"
             className="absolute -left-[5px] top-4 h-3 w-3 rotate-45 border-b border-l border-white/10 bg-[#19191c]"
           />
-          <span>{locale === "en_US" ? `${meta.name} is thinking` : `${meta.name} 正在思考`}</span>
+          <span>{phrase}</span>
           <span className="flex items-center gap-1">
             <span className="animate-typing-dot-1 h-1 w-1 rounded-full bg-white/45" />
             <span className="animate-typing-dot-2 h-1 w-1 rounded-full bg-white/45" />
