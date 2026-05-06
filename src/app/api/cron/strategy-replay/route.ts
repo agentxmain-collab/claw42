@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { fetchCryptoPanicNews } from "@/lib/api/cryptopanic";
+import { normalizeNewsItem } from "@/lib/news/normalizer";
+import { fetchNewsWithChain } from "@/lib/news/sourceChain";
 import { tryOrchestrateNewsDebate, listNewsDebates } from "@/lib/debateOrchestrator";
 import { getCoinPool } from "@/lib/marketDataCache";
 import { evaluateStrategy, recordStrategyReplay } from "@/lib/strategyHistory";
@@ -19,11 +20,12 @@ export async function GET(request: NextRequest) {
   }
 
   const now = Date.now();
-  const { items, mode, degraded } = await fetchCryptoPanicNews({ limit: 8 });
+  const { items, servedBy, fellBackFrom } = await fetchNewsWithChain({ limit: 8 });
   const debates = [];
 
   for (const item of items) {
-    const debate = await tryOrchestrateNewsDebate(item, now + debates.length * 1000);
+    const normalizedItem = await normalizeNewsItem(item, servedBy);
+    const debate = await tryOrchestrateNewsDebate(normalizedItem, now + debates.length * 1000);
     if (!debate) continue;
     debates.push(debate);
     if (debates.length >= 2) break;
@@ -48,8 +50,8 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    mode,
-    degraded,
+    servedBy,
+    fellBackFrom,
     generatedDebates: debates.length,
     replayed: replayed.length,
     servedAt: now,

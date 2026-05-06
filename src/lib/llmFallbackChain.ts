@@ -1737,15 +1737,18 @@ function recordEventSpeakers(entry: StreamEntry, ts: number) {
 
 async function buildNewsDebates(now: number): Promise<NewsDebate[]> {
   try {
-    const [{ fetchCryptoPanicNews }, { tryOrchestrateNewsDebate }] = await Promise.all([
-      import("@/lib/api/cryptopanic"),
-      import("@/lib/debateOrchestrator"),
-    ]);
-    const { items } = await fetchCryptoPanicNews({ limit: 6 });
+    const [{ fetchNewsWithChain }, { normalizeNewsItem }, { tryOrchestrateNewsDebate }] =
+      await Promise.all([
+        import("@/lib/news/sourceChain"),
+        import("@/lib/news/normalizer"),
+        import("@/lib/debateOrchestrator"),
+      ]);
+    const { items, servedBy } = await fetchNewsWithChain({ limit: 6 });
     const debates: NewsDebate[] = [];
 
     for (const item of items) {
-      const debate = await tryOrchestrateNewsDebate(item, now + debates.length * 1000);
+      const normalizedItem = await normalizeNewsItem(item, servedBy);
+      const debate = await tryOrchestrateNewsDebate(normalizedItem, now + debates.length * 1000);
       if (!debate) continue;
       debates.push(debate);
       if (debates.length >= 1) break;

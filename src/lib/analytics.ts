@@ -22,6 +22,10 @@ export const ANALYTICS_EVENTS = [
   "agent_mini_card_click",
   "strategy_replay_view",
   "replay_page_view",
+  "news_fetched",
+  "news_source_failed",
+  "news_normalizer_run",
+  "news_quota_alert",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
