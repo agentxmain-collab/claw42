@@ -29,6 +29,10 @@ const MAX_FOLLOW_FORCE = 0.018;
 const FAR_DISTANCE = 400;
 const NEAR_DISTANCE = 100;
 const FRICTION = 0.9;
+const RESET_FRICTION = 0.72;
+const ACTIVE_RETURN_FORCE = 0.0012;
+const RESET_RETURN_FORCE = 0.018;
+const RESET_LIFE_MS = 1400;
 
 function particleForceForDistance(distance: number) {
   if (distance > FAR_DISTANCE) return 0;
@@ -107,6 +111,7 @@ export function ParticleLayer({
       );
       const followForce = particleForceForDistance(mouseDistance);
       const shouldSpawn = mouseDistance <= FAR_DISTANCE;
+      const resetting = mouseDistance > FAR_DISTANCE;
 
       if (
         shouldSpawn &&
@@ -136,22 +141,25 @@ export function ParticleLayer({
         const toRobotX = robotCenter.x - particle.x;
         const toRobotY = robotCenter.y - particle.y;
         const orbitDistance = Math.max(1, Math.hypot(toRobotX, toRobotY));
-        const orbitX = (-toRobotY / orbitDistance) * AMBIENT_DRIFT_SPEED;
-        const orbitY = (toRobotX / orbitDistance) * AMBIENT_DRIFT_SPEED;
+        const orbitSpeed = resetting ? 0 : AMBIENT_DRIFT_SPEED;
+        const orbitX = (-toRobotY / orbitDistance) * orbitSpeed;
+        const orbitY = (toRobotX / orbitDistance) * orbitSpeed;
+        const friction = resetting ? RESET_FRICTION : FRICTION;
+        const returnForce = resetting ? RESET_RETURN_FORCE : ACTIVE_RETURN_FORCE;
 
         particle.vx =
-          particle.vx * FRICTION +
+          particle.vx * friction +
           toMouseX * followForce +
-          toRobotX * 0.0012 +
+          toRobotX * returnForce +
           orbitX;
         particle.vy =
-          particle.vy * FRICTION +
+          particle.vy * friction +
           toMouseY * followForce +
-          toRobotY * 0.0012 +
+          toRobotY * returnForce +
           orbitY;
         particle.x += particle.vx;
         particle.y += particle.vy;
-        particle.life -= deltaMs / PARTICLE_LIFE_MS;
+        particle.life -= deltaMs / (resetting ? RESET_LIFE_MS : PARTICLE_LIFE_MS);
 
         if (particle.life > 0) {
           const alpha = particle.life * 0.68;
