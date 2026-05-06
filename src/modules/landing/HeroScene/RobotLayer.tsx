@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { RefObject } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useAgentAnalysis } from "@/modules/agent-watch/hooks/useAgentAnalysis";
@@ -10,6 +11,7 @@ import { SpeechBubble } from "./SpeechBubble";
 import { buildHeroSpeechLines, mergeHeroSpeechLinePools } from "./heroSpeechLines";
 
 interface RobotLayerProps {
+  robotRef: RefObject<HTMLDivElement>;
   pose: Pose;
   mouseX: number;
   mouseY: number;
@@ -46,13 +48,26 @@ const LIVE_LOADING_LINES = {
   en_US: ["Reading live market signals", "Agents are scanning market shifts"],
 };
 
-const ROBOT_SPRING = {
+const BODY_SPRING = {
+  stiffness: 30,
+  damping: 30,
+  mass: 1.2,
+};
+
+const HEAD_SPRING = {
   stiffness: 80,
   damping: 20,
   mass: 0.8,
 };
 
+const FACE_SPRING = {
+  stiffness: 150,
+  damping: 18,
+  mass: 0.5,
+};
+
 export function RobotLayer({
+  robotRef,
   pose,
   mouseX,
   mouseY,
@@ -75,13 +90,25 @@ export function RobotLayer({
   );
   const mouseMotionX = useMotionValue(0);
   const mouseMotionY = useMotionValue(0);
-  const smoothMouseX = useSpring(mouseMotionX, ROBOT_SPRING);
-  const smoothMouseY = useSpring(mouseMotionY, ROBOT_SPRING);
-  const headTranslateX = useTransform(smoothMouseX, [-1, 1], [-24, 24]);
-  const headTranslateY = useTransform(smoothMouseY, [-1, 1], [-12, 12]);
-  const headScaleX = useTransform(smoothMouseX, [-1, 0, 1], [0.96, 1, 0.96]);
-  const headRotateZ = useTransform(smoothMouseX, [-1, 1], [-3, 3]);
-  const spotlightBackground = useTransform([smoothMouseX, smoothMouseY], ([x, y]) => {
+  const bodyMouseX = useSpring(mouseMotionX, BODY_SPRING);
+  const bodyMouseY = useSpring(mouseMotionY, BODY_SPRING);
+  const headMouseX = useSpring(mouseMotionX, HEAD_SPRING);
+  const headMouseY = useSpring(mouseMotionY, HEAD_SPRING);
+  const faceMouseX = useSpring(mouseMotionX, FACE_SPRING);
+  const faceMouseY = useSpring(mouseMotionY, FACE_SPRING);
+  const bodyTranslateX = useTransform(bodyMouseX, [-1, 1], [-6, 6]);
+  const bodyTranslateY = useTransform(bodyMouseY, [-1, 1], [-3, 3]);
+  const bodyRotateY = useTransform(bodyMouseX, [-1, 1], [-3, 3]);
+  const bodyRotateX = useTransform(bodyMouseY, [-1, 1], [2, -2]);
+  const headTranslateX = useTransform(headMouseX, [-1, 1], [-4, 4]);
+  const headTranslateY = useTransform(headMouseY, [-1, 1], [-3, 3]);
+  const headScaleX = useTransform(headMouseX, [-1, 0, 1], [0.985, 1, 0.985]);
+  const headRotateY = useTransform(headMouseX, [-1, 1], [-7, 7]);
+  const headRotateX = useTransform(headMouseY, [-1, 1], [4, -4]);
+  const headRotateZ = useTransform(headMouseX, [-1, 1], [-2, 2]);
+  const faceTranslateX = useTransform(faceMouseX, [-1, 1], [-8, 8]);
+  const faceTranslateY = useTransform(faceMouseY, [-1, 1], [-5, 5]);
+  const spotlightBackground = useTransform([faceMouseX, faceMouseY], ([x, y]) => {
     const pointX = 50 + Number(x) * 30;
     const pointY = 40 + Number(y) * 20;
     return `radial-gradient(circle at ${pointX}% ${pointY}%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 25%, transparent 55%)`;
@@ -114,6 +141,7 @@ export function RobotLayer({
 
   return (
     <div
+      ref={robotRef}
       className="claw42-hero-robot absolute z-40 left-1/2 bottom-[34%] md:bottom-[40%]"
       style={{
         transform: "translate(-50%, 0) translateY(var(--claw42-hero-depth-robot-y, 0px))",
@@ -146,13 +174,27 @@ export function RobotLayer({
         <motion.div
           className="relative"
           style={{
-            x: headTranslateX,
-            y: headTranslateY,
-            scaleX: headScaleX,
-            rotateZ: headRotateZ,
+            x: bodyTranslateX,
+            y: bodyTranslateY,
+            rotateY: bodyRotateY,
+            rotateX: bodyRotateX,
+            transformStyle: "preserve-3d",
             transformOrigin: "center center",
           }}
         >
+          <motion.div
+            className="relative"
+            style={{
+              x: headTranslateX,
+              y: headTranslateY,
+              scaleX: headScaleX,
+              rotateY: headRotateY,
+              rotateX: headRotateX,
+              rotateZ: headRotateZ,
+              transformStyle: "preserve-3d",
+              transformOrigin: "center center",
+            }}
+          >
           {/*
             Body 双张常驻 + opacity 切换，避免 AnimatePresence mount/unmount 导致
             motion.div 高度在切换瞬间塌陷（会让 eyes/mouth 的百分比定位跑到底座区域，
@@ -192,68 +234,79 @@ export function RobotLayer({
             />
           </div>
 
-          <div
+          <motion.div
             className="absolute select-none pointer-events-none"
             style={{
               top: EYES_OVERLAY.top,
               left: FACE_LAYOUT[displayPose].x,
               width: EYES_OVERLAY.width,
-              transform: `translate(-50%, 0)${displayPose === "right" ? " scaleX(-1)" : ""}`,
-              transformOrigin: "center center",
+              x: faceTranslateX,
+              y: faceTranslateY,
             }}
           >
-            <motion.img
-              src="/images/hero/robot-eyes.png"
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              className="w-full h-auto block"
-              animate={blink ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
-              transition={{ duration: 0.15 }}
+            <div
               style={{
+                transform: `translate(-50%, 0)${displayPose === "right" ? " scaleX(-1)" : ""}`,
                 transformOrigin: "center center",
-                filter: "drop-shadow(0 0 10px rgba(73, 201, 255, 0.95)) saturate(1.35)",
               }}
-            />
-          </div>
+            >
+              <motion.img
+                src="/images/hero/robot-eyes.png"
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                className="w-full h-auto block"
+                animate={blink ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  transformOrigin: "center center",
+                  filter: "drop-shadow(0 0 10px rgba(73, 201, 255, 0.95)) saturate(1.35)",
+                }}
+              />
+            </div>
+          </motion.div>
 
-          <div
+          <motion.div
             className="absolute select-none pointer-events-none"
             style={{
               top: MOUTH_OVERLAY.top,
               left: FACE_LAYOUT[displayPose].x,
               width: MOUTH_OVERLAY.width,
-              transform: "translate(-50%, 0)",
+              x: faceTranslateX,
+              y: faceTranslateY,
             }}
           >
-            <motion.div
-              animate={
-                reduceMotion || !hovered
-                  ? { scaleX: 1, scaleY: 1, y: 0 }
-                  : {
-                      scaleX: [1, 1.12, 0.94, 1.08, 1],
-                      scaleY: [1, 1.38, 0.82, 1.18, 1],
-                      y: [0, 0.45, -0.08, 0.22, 0],
-                    }
-              }
-              transition={
-                reduceMotion || !hovered
-                  ? { duration: 0.18 }
-                  : { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
-              }
-            >
-              <motion.img
-                src="/images/hero/robot-mouth.png"
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                className="w-full h-auto block"
-                style={{
-                  filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
-                }}
-              />
-            </motion.div>
-          </div>
+            <div style={{ transform: "translate(-50%, 0)" }}>
+              <motion.div
+                animate={
+                  reduceMotion || !hovered
+                    ? { scaleX: 1, scaleY: 1, y: 0 }
+                    : {
+                        scaleX: [1, 1.12, 0.94, 1.08, 1],
+                        scaleY: [1, 1.38, 0.82, 1.18, 1],
+                        y: [0, 0.45, -0.08, 0.22, 0],
+                      }
+                }
+                transition={
+                  reduceMotion || !hovered
+                    ? { duration: 0.18 }
+                    : { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+                }
+              >
+                <motion.img
+                  src="/images/hero/robot-mouth.png"
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  className="w-full h-auto block"
+                  style={{
+                    filter: "drop-shadow(0 0 8px rgba(73, 201, 255, 0.75)) saturate(1.2)",
+                  }}
+                />
+              </motion.div>
+            </div>
+          </motion.div>
+          </motion.div>
         </motion.div>
 
         <SpeechBubble

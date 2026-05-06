@@ -55,6 +55,7 @@ export function HeroScene() {
   const router = useRouter();
   const reduceMotion = useReducedMotion() ?? false;
   const stageRef = useRef<HTMLDivElement>(null);
+  const robotRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [heroCopied, setHeroCopied] = useState(false);
   const { data: tickerData } = useMarketTicker({ enabled: true, intervalMs: 60_000 });
@@ -97,7 +98,7 @@ export function HeroScene() {
     <section
       ref={stageRef}
       className="claw42-hero-scene relative w-full aspect-[4/5] overflow-hidden bg-black pt-[72px] md:aspect-auto md:h-screen md:min-h-[760px] md:max-h-[920px] md:pt-[80px]"
-      style={stageStyle}
+      style={{ ...stageStyle, perspective: "1200px" }}
     >
       <div
         className="absolute inset-0 pointer-events-none"
@@ -156,6 +157,7 @@ export function HeroScene() {
       {/* z-25 Particles */}
       <ParticleLayer
         stageRef={stageRef}
+        robotRef={robotRef}
         mouseX={mouseX}
         mouseY={mouseY}
         reduceMotion={reduceMotion}
@@ -163,6 +165,7 @@ export function HeroScene() {
 
       {/* z-20/25 Robot */}
       <RobotLayer
+        robotRef={robotRef}
         pose={pose}
         mouseX={mouseX}
         mouseY={mouseY}
