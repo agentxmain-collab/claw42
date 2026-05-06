@@ -14,6 +14,7 @@ import { useRobotPose, type Pose } from "./useRobotPose";
 import { RobotLayer } from "./RobotLayer";
 import { PedestalLayer } from "./PedestalLayer";
 import { CoinsLayer } from "./CoinsLayer";
+import { ParticleLayer } from "./ParticleLayer";
 import type { CoinSymbol } from "@/modules/agent-watch/types";
 
 /** Simple mobile detection without extra dependencies. */
@@ -54,6 +55,7 @@ export function HeroScene() {
   const router = useRouter();
   const reduceMotion = useReducedMotion() ?? false;
   const stageRef = useRef<HTMLDivElement>(null);
+  const robotRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [heroCopied, setHeroCopied] = useState(false);
   const { data: tickerData } = useMarketTicker({ enabled: true, intervalMs: 60_000 });
@@ -96,7 +98,7 @@ export function HeroScene() {
     <section
       ref={stageRef}
       className="claw42-hero-scene relative aspect-[4/5] w-full overflow-hidden bg-black pt-[72px] md:aspect-auto md:h-screen md:max-h-[920px] md:min-h-[760px] md:pt-[80px]"
-      style={stageStyle}
+      style={{ ...stageStyle, perspective: "1200px" }}
     >
       <div
         className="pointer-events-none absolute inset-0"
@@ -150,8 +152,18 @@ export function HeroScene() {
       {/* z-10 Pedestal */}
       <PedestalLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
 
+      {/* z-25 Particles */}
+      <ParticleLayer
+        stageRef={stageRef}
+        robotRef={robotRef}
+        mouseX={mouseX}
+        mouseY={mouseY}
+        reduceMotion={reduceMotion}
+      />
+
       {/* z-20/25 Robot */}
       <RobotLayer
+        robotRef={robotRef}
         pose={pose}
         mouseX={mouseX}
         mouseY={mouseY}
