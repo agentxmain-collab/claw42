@@ -46,6 +46,7 @@ import {
   type WatchDirectorMode,
   writeWatchDirectorMemory,
 } from "./utils/watchSessionDirector";
+import { buildLoadingChatThread } from "./utils/streamChatThreads";
 
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 const STREAM_MAX_ENTRIES = 48;
@@ -57,6 +58,16 @@ function entriesFromInitialThreads(threads: ChatThread[]): ChatThreadEntry[] {
     ts: thread.messages[0]?.ts ?? thread.createdAt,
     thread,
   }));
+}
+
+function buildBootEntry(locale: ReturnType<typeof resolveAgentWatchLocale>): ChatThreadEntry {
+  const thread = buildLoadingChatThread(locale);
+  return {
+    kind: "chat_thread",
+    id: `boot-${locale}`,
+    ts: thread.createdAt,
+    thread,
+  };
 }
 
 function isAgentMessage(entry: StreamEntry): entry is AgentMessage {
@@ -215,9 +226,10 @@ export function AgentWatchBoard({
   const lastSupplementalAtRef = useRef(0);
   const hasScheduledInitialRef = useRef(false);
   const fiveSecondGuardRef = useRef(false);
-  const [liveQueue, setLiveQueue] = useState<StreamEntry[]>(() =>
-    entriesFromInitialThreads(initialChatThreads),
-  );
+  const [liveQueue, setLiveQueue] = useState<StreamEntry[]>(() => {
+    const initialEntries = entriesFromInitialThreads(initialChatThreads);
+    return initialEntries.length > 0 ? initialEntries : [buildBootEntry(agentWatchLocale)];
+  });
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
 

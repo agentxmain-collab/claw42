@@ -37,14 +37,20 @@ function StreamEntryView({
   locale?: AgentWatchLocale;
   newsDebateLabels: Dict["agentWatch"]["newsDebate"];
 }) {
-  const thread = useMemo(() => buildStreamChatThread(entry, pool, locale), [entry, locale, pool]);
+  const thread = useMemo(() => buildStreamChatThread(entry, undefined, locale), [entry, locale]);
 
   if (entry.kind === "news_debate") {
     return <NewsDebateCard debate={entry.debate} labels={newsDebateLabels} />;
   }
 
   if (thread) {
-    return <ChatThreadRenderer thread={thread} labels={newsDebateLabels} />;
+    return (
+      <ChatThreadRenderer
+        thread={thread}
+        labels={newsDebateLabels}
+        staged={!thread.id.startsWith("boot:")}
+      />
+    );
   }
 
   const messages = buildStreamChatMessages(entry, pool, locale);

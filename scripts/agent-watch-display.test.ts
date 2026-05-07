@@ -23,7 +23,10 @@ import {
   cleanRobotAnalysisLine,
   mergeHeroSpeechLinePools,
 } from "../src/modules/landing/HeroScene/heroSpeechLines";
-import { buildStreamChatThread } from "../src/modules/agent-watch/utils/streamChatThreads";
+import {
+  buildLoadingChatThread,
+  buildStreamChatThread,
+} from "../src/modules/agent-watch/utils/streamChatThreads";
 import type {
   AgentFocus,
   AgentMessage,
@@ -288,6 +291,15 @@ assert.ok(heartbeatDuringPriority);
 assert.equal(heartbeatDuringPriority.kind, "watch_update");
 assert.equal(heartbeatDuringPriority.updateType, "agent_heartbeat");
 
+const loadingThread = buildLoadingChatThread("zh_CN", 1_714_000_150_000);
+assert.equal(loadingThread.id, "boot:zh_CN");
+assert.equal(loadingThread.messages.length, 3);
+assert.deepEqual(
+  loadingThread.messages.map((message) => message.agentId),
+  ["beta", "alpha", "gamma"],
+);
+assert.ok(loadingThread.messages.every((message) => message.content.length > 0));
+
 const discussionChat = buildStreamChatMessages(discussion, pool);
 assert.equal(discussionChat.length, 3);
 assert.deepEqual(
@@ -319,6 +331,23 @@ assert.ok(
   ),
 );
 assert.match(discussionThread.messages[1]!.content, /Alpha|老 K|你|这个点|先/);
+const discussionThreadAfterTickerRefresh = buildStreamChatThread(
+  discussion,
+  { ...pool, ts: pool.ts + 10_000 },
+  "zh_CN",
+);
+assert.deepEqual(
+  discussionThreadAfterTickerRefresh?.messages.map((message) => message.id),
+  discussionThread.messages.map((message) => message.id),
+);
+
+const heartbeatThread = buildStreamChatThread(heartbeat, pool);
+assert.ok(heartbeatThread);
+assert.equal(heartbeatThread.messages.length, 3);
+assert.equal(heartbeatThread.messages[1]?.replyTo, heartbeatThread.messages[0]?.id);
+assert.equal(heartbeatThread.messages[1]?.mentioning, heartbeatThread.messages[0]?.agentId);
+assert.ok((heartbeatThread.messages[1]?.citedQuote?.length ?? 0) >= 5);
+assert.ok(new Set(heartbeatThread.messages.map((message) => message.agentId)).size >= 2);
 
 const englishDiscussion = buildWatchSupplementalEntry({
   now: 1_714_000_180_000,

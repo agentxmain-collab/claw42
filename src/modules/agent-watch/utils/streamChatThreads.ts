@@ -2,10 +2,30 @@ import type { ChatAction, ChatMessage, ChatThread, ConversationSeed } from "../.
 import { sanitizeChatContent } from "../../../lib/chatGuardrails";
 import type { AgentId, CoinPoolPayload, StreamEntry } from "../types";
 import type { AgentWatchLocale } from "../locale";
-import { AGENT_META } from "../agents";
+import { AGENT_META, AGENT_ORDER } from "../agents";
 import { buildStreamChatMessages, type AgentChatMessage } from "./streamChatMessages";
+import { formatCoinSymbol } from "./symbolFormat";
 
 const ACTION_SEQUENCE: ChatAction[] = ["open", "question", "rebut", "agree", "refocus", "comment"];
+const BREAKOUT_AGENT = AGENT_ORDER[0]!;
+const TREND_AGENT = AGENT_ORDER[1]!;
+const EXTREME_AGENT = AGENT_ORDER[2]!;
+
+const BOOT_COPY: Record<AgentWatchLocale, Array<{ agentId: AgentId; content: string }>> = {
+  zh_CN: [
+    { agentId: TREND_AGENT, content: "我先接行情源，主流币价格出来前先看队列。" },
+    { agentId: BREAKOUT_AGENT, content: "我盯突破和放量，数据一到先筛可确认信号。" },
+    { agentId: EXTREME_AGENT, content: "我盯极端波动，先把异常币池排出来。" },
+  ],
+  en_US: [
+    { agentId: TREND_AGENT, content: "I am connecting the market feed before calling trend." },
+    {
+      agentId: BREAKOUT_AGENT,
+      content: "I will screen breakout volume once the first tick lands.",
+    },
+    { agentId: EXTREME_AGENT, content: "I am sorting extreme movers while fresh prices load." },
+  ],
+};
 
 function uniqueSymbols(symbols: string[]) {
   const seen = new Set<string>();
@@ -25,6 +45,80 @@ function symbolsForEntry(entry: StreamEntry) {
   if ("symbols" in entry && Array.isArray(entry.symbols)) return entry.symbols;
   if ("symbol" in entry && typeof entry.symbol === "string") return [entry.symbol];
   return [];
+}
+
+function nextAgentAfter(agentId: AgentId, offset: number): AgentId {
+  const index = AGENT_ORDER.indexOf(agentId);
+  const safeIndex = index >= 0 ? index : 0;
+  return AGENT_ORDER[(safeIndex + offset) % AGENT_ORDER.length] ?? AGENT_ORDER[0]!;
+}
+
+function primarySymbol(messages: AgentChatMessage[], entry: StreamEntry) {
+  return (
+    messages.flatMap((message) => message.symbols)[0] ??
+    uniqueSymbols(symbolsForEntry(entry))[0] ??
+    "BTC"
+  );
+}
+
+function followUpContent({
+  agentId,
+  symbol,
+  locale,
+}: {
+  agentId: AgentId;
+  symbol: string;
+  locale: AgentWatchLocale;
+}) {
+  const formattedSymbol = formatCoinSymbol(symbol);
+  if (locale === "en_US") {
+    if (agentId === BREAKOUT_AGENT) {
+      return `${formattedSymbol} still needs level and volume confirmation; no clean trigger yet.`;
+    }
+    if (agentId === TREND_AGENT) {
+      return `${formattedSymbol} trend is not aligned yet; wait for the next confirmation tick.`;
+    }
+    return `${formattedSymbol} is not extreme enough yet; watch the recent high-low boundary.`;
+  }
+
+  if (agentId === BREAKOUT_AGENT) {
+    return `${formattedSymbol} 先看关键位和放量确认，没信号就不追。`;
+  }
+  if (agentId === TREND_AGENT) {
+    return `${formattedSymbol} 趋势还没完全接上，先等下一根确认。`;
+  }
+  return `${formattedSymbol} 位置还没到足够极端，先看近期高低位失速。`;
+}
+
+function withConversationFollowUps(
+  messages: AgentChatMessage[],
+  entry: StreamEntry,
+  locale: AgentWatchLocale,
+): AgentChatMessage[] {
+  if (messages.length >= 3) return messages;
+
+  const first = messages[0];
+  if (!first) return messages;
+
+  const symbol = primarySymbol(messages, entry);
+  const symbols = uniqueSymbols([symbol, ...first.symbols]).slice(0, 2);
+  const result = [...messages];
+
+  while (result.length < 3) {
+    const agentId = nextAgentAfter(first.agentId, result.length);
+    const id = `${entry.id}-reply-${result.length}-${agentId}`;
+    result.push({
+      id,
+      ts: first.ts + result.length * 1000,
+      agentId,
+      content: followUpContent({ agentId, symbol, locale }),
+      symbols,
+      tag: first.tag,
+      marketDataFetchedAt: first.marketDataFetchedAt,
+    });
+  }
+
+  return result;
 }
 
 function titleForEntry(entry: StreamEntry, locale: AgentWatchLocale) {
@@ -159,7 +253,11 @@ export function buildStreamChatThread(
   if (entry.kind === "chat_thread") return entry.thread;
   if (entry.kind === "news_debate") return entry.debate.chatThread;
 
-  const legacyMessages = buildStreamChatMessages(entry, pool, locale);
+  const legacyMessages = withConversationFollowUps(
+    buildStreamChatMessages(entry, pool, locale),
+    entry,
+    locale,
+  );
   if (legacyMessages.length === 0) return null;
 
   const threadId = `stream-thread:${entry.id}`;
@@ -185,5 +283,51 @@ export function buildStreamChatThread(
     createdAt: entry.ts,
     completedAt: entry.ts + messages.length * 1000,
     symbol: uniqueSymbols(symbolsForEntry(entry))[0],
+  };
+}
+
+export function buildLoadingChatThread(
+  locale: AgentWatchLocale,
+  now: number = Date.now(),
+): ChatThread {
+  const threadId = `boot:${locale}`;
+  const seed: ConversationSeed = {
+    id: `boot-seed:${locale}`,
+    type: "market",
+    title: locale === "en_US" ? "Connecting market feed" : "连接行情",
+    description:
+      locale === "en_US"
+        ? "Agents are preparing the live market context."
+        : "Agent 正在准备实时行情上下文。",
+    symbols: ["BTC", "ETH", "SOL"],
+    sentiment: "neutral",
+    createdAt: now,
+  };
+  const messages = BOOT_COPY[locale].map(
+    (item, index): ChatMessage => ({
+      id: `${threadId}:boot:${index}:${item.agentId}`,
+      threadId,
+      ts: now + index * 1000,
+      agentId: item.agentId,
+      content: item.content,
+      contentZh: item.content,
+      action: index === 0 ? "open" : index === 1 ? "agree" : "refocus",
+      expectsReply: index < 2,
+      mood: index === 0 ? "neutral" : index === 1 ? "agreeable" : "curious",
+      dataSource: "fallback",
+      snapshotAt: now,
+      fetchedAt: now,
+      failureFallback: true,
+    }),
+  );
+
+  return {
+    id: threadId,
+    seed,
+    messages,
+    strategy: null,
+    status: "active",
+    createdAt: now,
+    symbol: "BTC",
   };
 }

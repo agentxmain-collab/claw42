@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Dict } from "@/i18n/types";
 import { useI18n } from "@/i18n/I18nProvider";
 import { trackEvent } from "@/lib/analytics";
@@ -40,7 +40,18 @@ export function ChatThreadRenderer({
   const agentWatchLocale = resolveAgentWatchLocale(locale);
   const [visibleCount, setVisibleCount] = useState(staged ? 0 : thread.messages.length);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
-  const threadMessages = thread.messages;
+  const threadMessagesRef = useRef(thread.messages);
+  const visibleCountRef = useRef(visibleCount);
+  const threadIdRef = useRef(thread.id);
+  const messageKey = thread.messages.map((message) => message.id).join("|");
+
+  useEffect(() => {
+    threadMessagesRef.current = thread.messages;
+  }, [messageKey, thread.messages]);
+
+  useEffect(() => {
+    visibleCountRef.current = visibleCount;
+  }, [visibleCount]);
 
   useEffect(() => {
     trackEvent("chat_thread_view", {
@@ -51,18 +62,37 @@ export function ChatThreadRenderer({
   }, [thread.id, thread.messages.length, thread.seed.type]);
 
   useEffect(() => {
+    const threadMessages = threadMessagesRef.current;
+
     if (!staged) {
       setVisibleCount(threadMessages.length);
+      visibleCountRef.current = threadMessages.length;
       setTypingAgent(null);
       return;
     }
 
     const timers: number[] = [];
+    const isNewThread = threadIdRef.current !== thread.id;
+    if (isNewThread) {
+      threadIdRef.current = thread.id;
+      visibleCountRef.current = 0;
+      setVisibleCount(0);
+    }
+
+    const startIndex = isNewThread ? 0 : Math.min(visibleCountRef.current, threadMessages.length);
+
+    if (startIndex >= threadMessages.length) {
+      setVisibleCount(threadMessages.length);
+      visibleCountRef.current = threadMessages.length;
+      setTypingAgent(null);
+      return;
+    }
+
     let cursor = 0;
-    setVisibleCount(0);
     setTypingAgent(null);
 
-    threadMessages.forEach((message, index) => {
+    threadMessages.slice(startIndex).forEach((message, offset) => {
+      const index = startIndex + offset;
       const thinkDuration = boundedDelay(`${thread.id}:${message.id}:think`, 1700, 3400);
       const afterGap = boundedDelay(`${thread.id}:${message.id}:gap`, 650, 1300);
       timers.push(
@@ -74,6 +104,7 @@ export function ChatThreadRenderer({
       timers.push(
         window.setTimeout(() => {
           setTypingAgent(null);
+          visibleCountRef.current = index + 1;
           setVisibleCount(index + 1);
         }, cursor),
       );
@@ -83,7 +114,9 @@ export function ChatThreadRenderer({
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [staged, thread.id, threadMessages]);
+  }, [messageKey, staged, thread.id]);
+
+  const threadMessages = thread.messages;
 
   const visibleMessages = staged ? threadMessages.slice(0, visibleCount) : threadMessages;
 
