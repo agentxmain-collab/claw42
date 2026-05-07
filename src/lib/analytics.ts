@@ -28,6 +28,8 @@ export const ANALYTICS_EVENTS = [
   "news_quota_alert",
   "strategy_synthesis_failed",
   "strategy_feedback",
+  "strategy_followed_self_reported",
+  "strategy_skipped_self_reported",
   "chat_thread_view",
   "chat_message_action",
 ] as const;

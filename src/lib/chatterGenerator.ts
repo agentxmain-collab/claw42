@@ -15,9 +15,9 @@ export interface ChatterPlan {
   activity: "hot" | "active" | "quiet";
 }
 
-const HOT_INTERVAL_MS = 4 * 60_000;
-const ACTIVE_INTERVAL_MS = 6 * 60_000;
-const QUIET_INTERVAL_MS = 8 * 60_000;
+const HOT_INTERVAL_MS = 8 * 60_000;
+const ACTIVE_INTERVAL_MS = 4 * 60_000;
+const QUIET_INTERVAL_MS = 2.4 * 60_000;
 const HOT_SIGNAL_WINDOW_MS = 90_000;
 const ACTIVE_SIGNAL_WINDOW_MS = 5 * 60_000;
 

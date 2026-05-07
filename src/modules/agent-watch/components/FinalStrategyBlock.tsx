@@ -127,10 +127,10 @@ export function FinalStrategyBlock({
             <button
               type="button"
               onClick={() =>
-                trackEvent("strategy_feedback", {
+                trackEvent("strategy_followed_self_reported", {
                   strategy_id: strategy.id,
                   symbol: strategy.symbol,
-                  action: "followed",
+                  direction: strategy.direction,
                 })
               }
               className="rounded-lg border border-emerald-300/25 bg-emerald-300/[0.08] px-2 py-1.5 text-xs font-bold text-emerald-200 transition hover:border-emerald-300/55"
@@ -140,10 +140,10 @@ export function FinalStrategyBlock({
             <button
               type="button"
               onClick={() =>
-                trackEvent("strategy_feedback", {
+                trackEvent("strategy_skipped_self_reported", {
                   strategy_id: strategy.id,
                   symbol: strategy.symbol,
-                  action: "skipped",
+                  direction: strategy.direction,
                 })
               }
               className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1.5 text-xs font-bold text-white/55 transition hover:border-white/25 hover:text-white"

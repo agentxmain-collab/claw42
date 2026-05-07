@@ -22,9 +22,14 @@ export async function loadAgentIp(agentId: FactionId): Promise<string> {
 }
 
 export function seedFromNews(news: NewsItem, createdAt: number): ConversationSeed {
+  const isGeneratedTopic =
+    news.source.toLowerCase().includes("topicgenerator") ||
+    news.source.toLowerCase().includes("topic-generator") ||
+    news.url.startsWith("claw42://internal/");
+
   return {
     id: news.id,
-    type: news.source === "topic-generator" ? "chitchat" : "news",
+    type: isGeneratedTopic ? "chitchat" : "news",
     title: news.title,
     description: news.title,
     symbols: news.currencies.map((symbol) => symbol.replace(/^\$/, "").toUpperCase()),
