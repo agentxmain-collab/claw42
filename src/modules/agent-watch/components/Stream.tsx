@@ -6,6 +6,7 @@ import type { Dict } from "@/i18n/types";
 import type { AgentId, CoinPoolPayload, StreamEntry } from "../types";
 import type { AgentWatchLocale } from "../locale";
 import { buildStreamChatMessages } from "../utils/streamChatMessages";
+import { buildStreamChatThread } from "../utils/streamChatThreads";
 import { AgentChatBubble } from "./AgentChatBubble";
 import { ChatScrollContainer, type ChatScrollContainerHandle } from "./ChatScrollContainer";
 import { ChatThreadRenderer } from "./ChatThreadRenderer";
@@ -36,12 +37,14 @@ function StreamEntryView({
   locale?: AgentWatchLocale;
   newsDebateLabels: Dict["agentWatch"]["newsDebate"];
 }) {
+  const thread = useMemo(() => buildStreamChatThread(entry, pool, locale), [entry, locale, pool]);
+
   if (entry.kind === "news_debate") {
     return <NewsDebateCard debate={entry.debate} labels={newsDebateLabels} />;
   }
 
-  if (entry.kind === "chat_thread") {
-    return <ChatThreadRenderer thread={entry.thread} labels={newsDebateLabels} />;
+  if (thread) {
+    return <ChatThreadRenderer thread={thread} labels={newsDebateLabels} />;
   }
 
   const messages = buildStreamChatMessages(entry, pool, locale);

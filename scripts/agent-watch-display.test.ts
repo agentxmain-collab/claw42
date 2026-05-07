@@ -23,6 +23,7 @@ import {
   cleanRobotAnalysisLine,
   mergeHeroSpeechLinePools,
 } from "../src/modules/landing/HeroScene/heroSpeechLines";
+import { buildStreamChatThread } from "../src/modules/agent-watch/utils/streamChatThreads";
 import type {
   AgentFocus,
   AgentMessage,
@@ -262,7 +263,7 @@ assert.equal(discussion.responses.length, 3);
 assert.match(discussion.topic, /\$DOGE|\$BTC|\$AI/);
 
 const heartbeat = buildWatchSupplementalEntry({
-  now: 1_714_000_210_000,
+  now: 1_714_000_240_000,
   pool,
   focus,
   signals: [],
@@ -276,7 +277,7 @@ assert.match(heartbeat.content, /巡检|复核|扫描/);
 assert.match(heartbeat.content, /\$DOGE|\$BTC|\$AI/);
 
 const heartbeatDuringPriority = buildWatchSupplementalEntry({
-  now: 1_714_000_210_000,
+  now: 1_714_000_240_000,
   pool,
   focus,
   signals: [],
@@ -306,6 +307,19 @@ assert.deepEqual(
   ],
 );
 
+const discussionThread = buildStreamChatThread(discussion, pool);
+assert.ok(discussionThread);
+assert.equal(discussionThread.messages.length, 3);
+assert.equal(discussionThread.messages[1]?.replyTo, discussionThread.messages[0]?.id);
+assert.equal(discussionThread.messages[1]?.mentioning, discussionThread.messages[0]?.agentId);
+assert.ok((discussionThread.messages[1]?.citedQuote?.length ?? 0) >= 5);
+assert.ok(
+  discussionThread.messages.every(
+    (message) => !/^\s*(破位|趋势|极端|回归|复核)[:：]/.test(message.content),
+  ),
+);
+assert.match(discussionThread.messages[1]!.content, /Alpha|老 K|你|这个点|先/);
+
 const englishDiscussion = buildWatchSupplementalEntry({
   now: 1_714_000_180_000,
   pool,
@@ -323,24 +337,18 @@ assert.equal(englishDiscussionChat[0].tag, "Agent huddle");
 assert.ok(englishDiscussionChat.every((item) => !/[\u4e00-\u9fff]/.test(item.content)));
 
 const discussionDisplayEntries = splitStreamEntryForDisplay(discussion);
-assert.equal(discussionDisplayEntries.length, 3);
-assert.deepEqual(discussionDisplayEntries.map(speakerForStreamEntry), ["alpha", "beta", "gamma"]);
-assert.ok(
-  discussionDisplayEntries.every(
-    (entry) => entry.kind === "agent_discussion" && entry.responses.length === 1,
-  ),
-);
+assert.equal(discussionDisplayEntries.length, 1);
+assert.equal(speakerForStreamEntry(discussion), null);
 
 const focusChat = buildStreamChatMessages(highEvent, pool);
 assert.equal(focusChat.length, 1);
 assert.equal(focusChat[0].tag, "高优信号");
 assert.equal(focusChat[0].symbols[0], "AI");
-assert.ok(thinkDurationForStreamEntry(highEvent, 0) < thinkDurationForStreamEntry(heartbeat, 0));
-assert.ok(thinkDurationForStreamEntry(highEvent, 0) >= 900);
-assert.ok(thinkDurationForStreamEntry(discussionDisplayEntries[0], 0) >= 1400);
-assert.ok(thinkDurationForStreamEntry(heartbeat, 0) >= 1800);
-assert.ok(gapDurationAfterStreamEntry(discussionDisplayEntries[0]) > 900);
-assert.ok(gapDurationAfterStreamEntry(heartbeat) > 700);
+assert.equal(thinkDurationForStreamEntry(highEvent, 0), 0);
+assert.equal(thinkDurationForStreamEntry(discussionDisplayEntries[0], 0), 0);
+assert.equal(thinkDurationForStreamEntry(heartbeat, 0), 0);
+assert.ok(gapDurationAfterStreamEntry(discussionDisplayEntries[0]) >= 9_000);
+assert.ok(gapDurationAfterStreamEntry(heartbeat) >= 3_000);
 assert.equal(displayScheduleStartDelay(10_000, 13_500), 3_500);
 assert.equal(displayScheduleStartDelay(10_000, 9_500), 0);
 assert.equal(displayScheduleStartDelay(10_000, 13_500, true), 0);

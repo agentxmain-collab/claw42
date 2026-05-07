@@ -2,28 +2,13 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { actionEmoji } from "@/lib/chatActions";
 import { trackEvent } from "@/lib/analytics";
-import type { ChatAction, ChatMessage } from "@/lib/types";
+import type { ChatMessage } from "@/lib/types";
 import { getFaction } from "@/lib/factionRegistry";
 import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import { formatAgentMessageTime } from "../utils/formatTime";
 import { AgentAvatar } from "./AgentAvatar";
-
-const ACTION_BADGE: Record<ChatAction, string> = {
-  open: "开场",
-  rebut: "反驳",
-  agree: "附议",
-  question: "追问",
-  taunt: "挑衅",
-  derail: "跑偏",
-  refocus: "拉回",
-  comment: "观察",
-  react: "反应",
-  concede: "让步",
-  gloat: "得意",
-};
 
 const MERGE_WINDOW_MS = 10_000;
 
@@ -50,20 +35,6 @@ function MentionBadge({ agentId }: { agentId: ChatMessage["agentId"] }) {
       style={{ borderColor: token.soft, color: token.primary, backgroundColor: token.soft }}
     >
       @{meta.name}
-    </span>
-  );
-}
-
-function ActionBadge({ action, agentId }: { action: ChatAction; agentId: ChatMessage["agentId"] }) {
-  const token = AGENT_COLOR_TOKEN[agentId];
-  const label = ACTION_BADGE[action] ?? action;
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold leading-none"
-      style={{ borderColor: token.soft, color: token.primary, backgroundColor: token.soft }}
-    >
-      <span aria-hidden="true">{actionEmoji(action)}</span>
-      {label}
     </span>
   );
 }
@@ -160,7 +131,6 @@ export function ChatMessageBubble({
             <span className="text-sm font-bold" style={{ color: token.primary }}>
               {meta.name}
             </span>
-            <ActionBadge action={message.action} agentId={message.agentId} />
             {message.mentioning && <MentionBadge agentId={message.mentioning} />}
             <span className="font-mono text-xs text-white/35">
               {formatAgentMessageTime(message.ts, locale)}
@@ -184,7 +154,6 @@ export function ChatMessageBubble({
           )}
           {isMerged && (
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <ActionBadge action={message.action} agentId={message.agentId} />
               {message.mentioning && <MentionBadge agentId={message.mentioning} />}
               <span className="font-mono text-xs text-white/30">
                 {formatAgentMessageTime(message.ts, locale)}
