@@ -3,6 +3,11 @@ export interface ChatGuardrailValidation {
   reasons: string[];
 }
 
+type MentionFloorMessage = {
+  mentioning?: unknown;
+  citedQuote?: unknown;
+};
+
 const FACTION_ALIAS_PATTERN = "(?:Alpha|Beta|Gamma|老\\s*K|老\\s*白|老\\s*G|老K|老白|老G)";
 
 const REPORT_ACTION_PATTERN =
@@ -62,6 +67,30 @@ export function sanitizeChatContent(content: string): string {
   }
 
   return text;
+}
+
+function hashNumber(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return hash;
+}
+
+export function shouldForceMentionForFloor(
+  messages: MentionFloorMessage[],
+  currentTurn: number,
+  seedId: string,
+): boolean {
+  if (currentTurn >= 6) return false;
+  const mentionsSoFar = messages
+    .slice(0, currentTurn)
+    .filter((message) => message.mentioning && message.citedQuote).length;
+  const remainingTurns = 6 - currentTurn;
+  const stillNeed = 2 - mentionsSoFar;
+  if (stillNeed <= 0) return false;
+  if (remainingTurns <= stillNeed) return true;
+  return hashNumber(`${seedId}:mention-floor:${currentTurn}`) % 10 < 7;
 }
 
 export function validateActionDirection(content: string): string[] {

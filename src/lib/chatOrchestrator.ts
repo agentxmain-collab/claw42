@@ -2,6 +2,7 @@ import { checkAgentSpeech, recordAgentSpoke } from "@/lib/agentSpeechGuard";
 import { pickAction, pickNextSpeaker } from "@/lib/chatActions";
 import {
   sanitizeChatContent,
+  shouldForceMentionForFloor,
   validateChatContent as validateChatGuardrails,
 } from "@/lib/chatGuardrails";
 import { getFaction, getFactionIds, isFactionId } from "@/lib/factionRegistry";
@@ -395,7 +396,25 @@ async function generateMessage({
   const retry = await generateLlmText(
     `${prompt}\n\n${plainSpeechRetryInstruction(firstResult.reasons)}\nmention/reply 也必须按 schema；当前 relationship debt=${debt.toFixed(1)}。`,
   );
-  if (!retry) return { message: null, retries: 1 };
+  if (!retry) {
+    return {
+      message: buildChatMessage({
+        raw: { content: fallback, expectsReply: Boolean(forceExpectsReply), mood: "neutral" },
+        fallback,
+        agentId,
+        action,
+        threadId,
+        ts,
+        history,
+        snapshot,
+        seed,
+        forcedMention,
+        forceExpectsReply,
+        sanitizeContent: true,
+      }).message,
+      retries: 1,
+    };
+  }
   const retryRaw = parseObject(retry.text);
   const retryResult = buildChatMessage({
     raw: retryRaw,
@@ -426,7 +445,25 @@ async function generateMessage({
     forceExpectsReply,
     sanitizeContent: true,
   });
-  return { message: sanitizedRetryResult.valid ? sanitizedRetryResult.message : null, retries: 1 };
+  if (sanitizedRetryResult.valid) return { message: sanitizedRetryResult.message, retries: 1 };
+
+  return {
+    message: buildChatMessage({
+      raw: { content: fallback, expectsReply: Boolean(forceExpectsReply), mood: "neutral" },
+      fallback,
+      agentId,
+      action,
+      threadId,
+      ts,
+      history,
+      snapshot,
+      seed,
+      forcedMention,
+      forceExpectsReply,
+      sanitizeContent: true,
+    }).message,
+    retries: 1,
+  };
 }
 
 function buildStrategyFromRaw(
@@ -563,7 +600,7 @@ export async function runChatThread(news: NewsItem, now = Date.now()): Promise<C
     const pickedAction: ChatAction =
       messageIndex === 0 ? "open" : pickAction(nextAgent, messages, debt);
     const action = actionForOpeningMention(pickedAction, messageIndex, seed);
-    const forcedMention = shouldForceMentionInOpening(messageIndex, seed.id)
+    const forcedMention = shouldForceMentionForFloor(messages, messageIndex, seed.id)
       ? mentionTargetFor(messages, nextAgent)
       : undefined;
     const ts = now + messages.length * 1000;

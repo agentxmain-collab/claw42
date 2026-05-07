@@ -2,6 +2,7 @@ import { debatePacingForSeverity } from "@/lib/debatePacing";
 import { rememberChatThread } from "@/lib/chatHistoryStore";
 import { intensityScoreFromMessages, runChatThread } from "@/lib/chatOrchestrator";
 import { classifyNewsTrigger } from "@/lib/newsTriggers";
+import { getOrCreateSharedChatThread } from "@/lib/sharedThreadStore";
 import type { NewsDebate, NewsItem } from "@/lib/types";
 
 const debateStore = new Map<string, NewsDebate>();
@@ -12,7 +13,11 @@ async function buildNewsDebate(
   now: number,
 ): Promise<NewsDebate> {
   const pacing = debatePacingForSeverity(trigger.severity);
-  const chatThread = await runChatThread(news, now);
+  const { thread: chatThread } = await getOrCreateSharedChatThread({
+    news,
+    now,
+    createThread: runChatThread,
+  });
   await rememberChatThread(chatThread).catch((error) => {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[claw42] chat history persist skipped", error);

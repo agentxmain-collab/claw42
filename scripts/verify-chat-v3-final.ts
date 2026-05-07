@@ -2,9 +2,11 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import {
   sanitizeChatContent,
+  shouldForceMentionForFloor,
   validateChatContent,
   type ChatGuardrailValidation,
 } from "../src/lib/chatGuardrails.ts";
+import { LIMITS, normalizeThreadSymbol, threadKeyForSymbol } from "../src/lib/sharedThreadStore.ts";
 
 const SAMPLE_SIZE = 50;
 
@@ -88,6 +90,24 @@ function main() {
   validSamples.forEach((sample) => {
     assertValid(sample, "valid sample", validateChatContent(sample));
   });
+
+  if (LIMITS.MAX_ACTIVE_THREADS_PER_SYMBOL !== 1) {
+    throw new Error("shared thread limit must enforce one active thread per symbol");
+  }
+  if (LIMITS.THREAD_COOLDOWN_PER_COIN_MS !== 5 * 60 * 1000) {
+    throw new Error("thread cooldown must be 5 minutes");
+  }
+  if (normalizeThreadSymbol("$btc") !== "BTC" || threadKeyForSymbol("eth") !== "thread:ETH") {
+    throw new Error("thread symbol normalization failed");
+  }
+  const noMentionHistory = Array.from({ length: 4 }, (_, index) => ({
+    id: `m-${index}`,
+    mentioning: null,
+    citedQuote: null,
+  }));
+  if (!shouldForceMentionForFloor(noMentionHistory, 4, "synthetic-seed")) {
+    throw new Error("mention floor must force when remaining turns equal missing mentions");
+  }
 
   const details = Array.from({ length: SAMPLE_SIZE }, (_, index) => threadSample(index));
   const summary = {

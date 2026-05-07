@@ -23,6 +23,12 @@ export type UtterancePrefix =
 export type AgentEmotion = "neutral" | "confident" | "angry" | "skeptical" | "excited";
 export type DebateProjectionView = "public" | "operator" | "share";
 export type ConversationSeedType = "news" | "market" | "chitchat";
+export type TriggerReason =
+  | "cooldown_expired"
+  | "breaking_news"
+  | "price_volatility"
+  | "dev_override"
+  | "cold_start";
 export type ChatAction =
   | "open"
   | "rebut"
