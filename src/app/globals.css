@@ -20,6 +20,16 @@ body {
   overflow-x: hidden;
 }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #d1ff55;
+  outline-offset: 3px;
+}
+
 .claw42-app-surface {
   min-height: 100svh;
   background: #000000;

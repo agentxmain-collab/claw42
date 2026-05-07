@@ -12,7 +12,14 @@ function StatusDot({ status, label }: { status: AgentStatus; label: string }) {
       : status === "speaking"
         ? "animate-pulse bg-[#3a7bff] shadow-[0_0_8px_rgba(58,123,255,0.45)]"
         : "bg-white/20";
-  return <span aria-label={label} title={label} className={`inline-block h-2 w-2 rounded-full ${cls}`} />;
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className={`inline-block h-2 w-2 rounded-full ${cls}`}
+    />
+  );
 }
 
 export function AgentRowCard({
@@ -64,6 +71,7 @@ export function AgentRowCard({
           <button
             type="button"
             title={`${focusLabels.focusLabel}: ${formatCoinSymbol(focus.symbol)}`}
+            aria-label={`${focusLabels.focusLabel}: ${formatCoinSymbol(focus.symbol)}`}
             className="shrink-0 rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-1.5 text-left transition-colors hover:bg-white/[0.08]"
           >
             <span className="mr-1 text-xs font-bold text-white/45">

@@ -126,6 +126,7 @@ function QuickStartSection() {
                 whileTap={reduceMotion ? undefined : { scale: 0.98 }}
                 className="quickstart-copy-toggle copy-btn"
                 title="Copy to clipboard"
+                aria-label="Copy quick start command"
               >
                 {copied ? (
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
