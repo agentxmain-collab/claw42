@@ -23,6 +23,12 @@ export type UtterancePrefix =
 export type AgentEmotion = "neutral" | "confident" | "angry" | "skeptical" | "excited";
 export type DebateProjectionView = "public" | "operator" | "share";
 export type ConversationSeedType = "news" | "market" | "chitchat";
+export type TriggerReason =
+  | "cooldown_expired"
+  | "breaking_news"
+  | "price_volatility"
+  | "dev_override"
+  | "cold_start";
 export type ChatAction =
   | "open"
   | "rebut"
@@ -100,6 +106,8 @@ export interface ChatMessage {
   ts: number;
   agentId: FactionId;
   content: string;
+  contentEn?: string;
+  contentZh?: string;
   replyTo?: string;
   mentioning?: FactionId;
   action: ChatAction;
@@ -108,6 +116,10 @@ export interface ChatMessage {
   citedQuote?: string;
   isGoldenLine?: boolean;
   marketDataFetchedAt?: number;
+  dataSource: "coinw" | "coingecko" | "fallback";
+  snapshotAt: number;
+  fetchedAt: number;
+  failureFallback: boolean;
 }
 
 export interface ChatThread {
@@ -115,9 +127,13 @@ export interface ChatThread {
   seed: ConversationSeed;
   messages: ChatMessage[];
   strategy: FinalStrategy | null;
-  status: "active" | "completed";
+  status: "active" | "completing" | "completed" | "cooldown" | "archived" | "degraded";
   createdAt: number;
   completedAt?: number;
+  cooldownUntil?: number | null;
+  symbol?: string;
+  llmCallsUsed?: number;
+  retryCount?: number;
 }
 
 export interface FinalStrategy {

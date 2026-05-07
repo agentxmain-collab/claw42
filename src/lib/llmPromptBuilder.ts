@@ -1,10 +1,12 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { examplesForPrompt } from "@/lib/agentDialogueExamples";
 import { ACTION_DESCRIPTIONS } from "@/lib/chatActions";
 import { getFaction, getFactionIds } from "@/lib/factionRegistry";
 import { loadRelationshipStates, relationshipContextForAgent } from "@/lib/agentRelationship";
 import { formatLiveSnapshotForPrompt, type TickerSnapshot } from "@/lib/news/livePriceFetch";
 import { PLAIN_SPEECH_PROMPT_BLOCK } from "@/lib/plainSpeechGuard";
+import { slangPolicyPrompt } from "@/lib/slangPolicy";
 import type { ChatAction, ChatMessage, ConversationSeed, FactionId, NewsItem } from "@/lib/types";
 
 const AGENT_IP_DIR = path.join(process.cwd(), "docs", "agent-ip");
@@ -107,6 +109,11 @@ ${ip}
 ${relationship}
 ${relationshipDebt}
 
+## 人设 few-shot 正反例
+${examplesForPrompt(agentId)}
+
+${slangPolicyPrompt("zh_CN")}
+
 ## 本场情境
 ${newsBlock(seed)}
 
@@ -128,6 +135,8 @@ ${PLAIN_SPEECH_PROMPT_BLOCK}
 - 必须引用实时市场状态里的至少 1 个具体价格、百分比或时间窗口。
 - 必须出现“所以”，并在“所以”后给行动和具体价格触发条件。
 - 动作词“追 / 做 / 动手 / 干 / 上车 / 入场 / 建仓”后必须马上带方向：“多 / 空 / 等 / 不动”。
+- 同一条必须产出中文和英文两个版本：contentZh / contentEn。content 用中文版本。
+- 英文保留 mild slang，不直译中文粗口。
 - 反例修正：
   - ❌ “$BTC 81200 上车，所以看 81500。” ✅ “$BTC 81200 上车做多，所以站稳 81500 再追多。”
   - ❌ “$ETH 跌破 2240 就追，所以别犹豫。” ✅ “$ETH 跌破 2240 追空，所以回到 2260 上方不动。”
@@ -143,6 +152,8 @@ ${forcedMentionLine}
 ## 输出 JSON
 {
   "content": "...",
+  "contentZh": "...",
+  "contentEn": "...",
   "replyTo": "message id|null",
   "mentioning": "${factionIds}|null",
   "expectsReply": true,

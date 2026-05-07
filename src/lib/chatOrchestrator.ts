@@ -1,5 +1,11 @@
 import { checkAgentSpeech, recordAgentSpoke } from "@/lib/agentSpeechGuard";
+import { noDataFallbackForAgent } from "@/lib/agentDialogueExamples";
 import { pickAction, pickNextSpeaker } from "@/lib/chatActions";
+import {
+  sanitizeChatContent,
+  shouldForceMentionForFloor,
+  validateChatContent as validateChatGuardrails,
+} from "@/lib/chatGuardrails";
 import { getFaction, getFactionIds, isFactionId } from "@/lib/factionRegistry";
 import { fakeFollowCount } from "@/lib/fakeFollowCount";
 import { generateLlmText, hasMechanicalOutput } from "@/lib/llmFallbackChain";
@@ -30,45 +36,9 @@ const MAX_TURNS = 20;
 const QUIET_STREAK_FOR_END = 5;
 const MIN_TOTAL_MESSAGES = 6;
 const MAX_RETRY_TOTAL = 5;
-const MAX_CONTENT_CHARS = 80;
-
-const FACTION_ALIAS_PATTERN = "(?:Alpha|Beta|Gamma|老\\s*K|老\\s*白|老\\s*G|老K|老白|老G)";
-const REPORT_PREFIX_PATTERN =
-  "(?:破位|趋势|极端|突破|回归|突破视角|趋势视角|回归视角|突破派|趋势派|回归派)";
-
-const BANNED_CHAT_PATTERNS = [
-  new RegExp(`${REPORT_PREFIX_PATTERN}\\s*[:：]`, "i"),
-  new RegExp(`${REPORT_PREFIX_PATTERN}\\s*(?:分析|判断|观察|派认为)\\s*[:：]?`, "i"),
-  new RegExp(`${FACTION_ALIAS_PATTERN}\\s*[:：]`, "i"),
-  new RegExp(`${FACTION_ALIAS_PATTERN}\\s*派认为\\s*[:：]?`, "i"),
-  new RegExp(
-    `${FACTION_ALIAS_PATTERN}\\s*(?:追多|追空|做多|做空|反驳|提问|同意|嘲讽|开场|评论|复盘|判断)\\s*[:：]`,
-    "i",
-  ),
-  /(?:突破|趋势|回归|极端|破位)\s*视角[:：]/,
-  /基于(?:派别)?分析/,
-  /首先/,
-  /其次/,
-  /最后/,
-  /综上/,
-  /值得注意的是/,
-];
-
-const REPORT_PREFIX_CLEANERS = [
-  new RegExp(`^\\s*${REPORT_PREFIX_PATTERN}\\s*(?:分析|判断|观察|派认为|视角)?\\s*[:：]\\s*`, "i"),
-  new RegExp(`^\\s*${FACTION_ALIAS_PATTERN}\\s*派认为\\s*[:：]?\\s*`, "i"),
-  new RegExp(`^\\s*${FACTION_ALIAS_PATTERN}\\s*[:：]\\s*`, "i"),
-  new RegExp(
-    `^\\s*${FACTION_ALIAS_PATTERN}\\s*(?:追多|追空|做多|做空|反驳|提问|同意|嘲讽|开场|评论|复盘|判断)\\s*[:：]\\s*`,
-    "i",
-  ),
-  /^\s*(?:突破|趋势|回归|极端|破位)\s*视角\s*[:：]\s*/i,
-  /^\s*[-—:：]\s*/,
-];
-
-const ACTION_WORD_PATTERN = /(追|做|动手|干|上车|入场|建仓)/g;
-const ACTION_WITH_DIRECTION_PATTERN = /(?:追|做|动手|干|上车|入场|建仓)\s*(?:做)?(?:多|空|等|不动)/;
 const MENTION_ACTIONS: ChatAction[] = ["rebut", "question", "taunt", "agree"];
+
+export { sanitizeChatContent } from "@/lib/chatGuardrails";
 
 function parseObject(text: string): Record<string, unknown> {
   const trimmed = text.trim();
@@ -107,20 +77,6 @@ function prefixSymbols(content: string, seed: ConversationSeed): string {
       `$1$${normalized}`,
     );
   }, content);
-}
-
-export function sanitizeChatContent(content: string): string {
-  let text = content.trim();
-  let previous = "";
-  let guard = 0;
-  while (text !== previous && guard < 6) {
-    previous = text;
-    REPORT_PREFIX_CLEANERS.forEach((pattern) => {
-      text = text.replace(pattern, "").trim();
-    });
-    guard += 1;
-  }
-  return text;
 }
 
 function hashNumber(value: string): number {
@@ -180,7 +136,7 @@ function fallbackContent(
   const faction = getFaction(agentId);
   const symbol = primarySymbol(seed);
   const point = pricePoint(snapshot, seed);
-  if (!point) return `${faction.nickname} 数据源 10 秒内没回，所以先等下一轮价格。`;
+  if (!point) return noDataFallbackForAgent(agentId, `${seed.id}:${seed.createdAt}`);
 
   const current = formatNumber(point.current);
   const high = formatNumber(point.high24h);
@@ -245,28 +201,11 @@ function isValidMention(value: unknown, agentId: FactionId): FactionId | undefin
   return isFactionId(normalized) && normalized !== agentId ? normalized : undefined;
 }
 
-function validateActionDirection(content: string): string[] {
-  const reasons: string[] = [];
-  let match: RegExpExecArray | null;
-  ACTION_WORD_PATTERN.lastIndex = 0;
-  while ((match = ACTION_WORD_PATTERN.exec(content))) {
-    const before = content.slice(Math.max(0, match.index - 1), match.index);
-    if (/[不别没勿]/.test(before)) continue;
-    const windowText = content.slice(match.index, match.index + 8);
-    if (!ACTION_WITH_DIRECTION_PATTERN.test(windowText)) {
-      reasons.push("动作词缺少明确方向");
-      break;
-    }
-  }
-  return reasons;
-}
-
 export function validateChatContent(content: string) {
   const reasons: string[] = [];
   const text = content.trim();
-  if (Array.from(text).length > MAX_CONTENT_CHARS) reasons.push("超过 80 字");
-  if (BANNED_CHAT_PATTERNS.some((pattern) => pattern.test(text))) reasons.push("含报告前缀或套话");
-  reasons.push(...validateActionDirection(text));
+  const guardrails = validateChatGuardrails(text);
+  reasons.push(...guardrails.reasons);
   if (hasMechanicalOutput(text)) reasons.push("输出机械套话");
   reasons.push(...validatePlainSpeech(text).reasons);
   return { ok: reasons.length === 0, reasons };
@@ -304,6 +243,11 @@ function buildChatMessage({
     sanitizeContent ? sanitizeChatContent(baseContent) : baseContent,
     seed,
   );
+  const contentZh =
+    typeof raw?.contentZh === "string"
+      ? prefixSymbols(sanitizeContent ? sanitizeChatContent(raw.contentZh) : raw.contentZh, seed)
+      : content;
+  const contentEn = typeof raw?.contentEn === "string" ? raw.contentEn.trim() : undefined;
   const validation = validateChatContent(content);
   const rawReplyTo = isValidReplyTo(raw?.replyTo, history);
   const rawMentioning = isValidMention(raw?.mentioning, agentId);
@@ -331,6 +275,8 @@ function buildChatMessage({
     ts,
     agentId,
     content: content.slice(0, 120),
+    contentZh: contentZh.slice(0, 120),
+    contentEn: contentEn?.slice(0, 180),
     replyTo,
     mentioning,
     action,
@@ -339,6 +285,10 @@ function buildChatMessage({
     citedQuote,
     isGoldenLine: action === "gloat" || action === "taunt",
     marketDataFetchedAt: snapshot?.fetchedAt,
+    dataSource: snapshot ? "coingecko" : "fallback",
+    snapshotAt: snapshot?.fetchedAt ?? ts,
+    fetchedAt: snapshot?.fetchedAt ?? ts,
+    failureFallback: !snapshot,
   };
 
   const schemaReasons: string[] = [];
@@ -454,7 +404,25 @@ async function generateMessage({
   const retry = await generateLlmText(
     `${prompt}\n\n${plainSpeechRetryInstruction(firstResult.reasons)}\nmention/reply 也必须按 schema；当前 relationship debt=${debt.toFixed(1)}。`,
   );
-  if (!retry) return { message: null, retries: 1 };
+  if (!retry) {
+    return {
+      message: buildChatMessage({
+        raw: { content: fallback, expectsReply: Boolean(forceExpectsReply), mood: "neutral" },
+        fallback,
+        agentId,
+        action,
+        threadId,
+        ts,
+        history,
+        snapshot,
+        seed,
+        forcedMention,
+        forceExpectsReply,
+        sanitizeContent: true,
+      }).message,
+      retries: 1,
+    };
+  }
   const retryRaw = parseObject(retry.text);
   const retryResult = buildChatMessage({
     raw: retryRaw,
@@ -485,7 +453,25 @@ async function generateMessage({
     forceExpectsReply,
     sanitizeContent: true,
   });
-  return { message: sanitizedRetryResult.valid ? sanitizedRetryResult.message : null, retries: 1 };
+  if (sanitizedRetryResult.valid) return { message: sanitizedRetryResult.message, retries: 1 };
+
+  return {
+    message: buildChatMessage({
+      raw: { content: fallback, expectsReply: Boolean(forceExpectsReply), mood: "neutral" },
+      fallback,
+      agentId,
+      action,
+      threadId,
+      ts,
+      history,
+      snapshot,
+      seed,
+      forcedMention,
+      forceExpectsReply,
+      sanitizeContent: true,
+    }).message,
+    retries: 1,
+  };
 }
 
 function buildStrategyFromRaw(
@@ -622,7 +608,7 @@ export async function runChatThread(news: NewsItem, now = Date.now()): Promise<C
     const pickedAction: ChatAction =
       messageIndex === 0 ? "open" : pickAction(nextAgent, messages, debt);
     const action = actionForOpeningMention(pickedAction, messageIndex, seed);
-    const forcedMention = shouldForceMentionInOpening(messageIndex, seed.id)
+    const forcedMention = shouldForceMentionForFloor(messages, messageIndex, seed.id)
       ? mentionTargetFor(messages, nextAgent)
       : undefined;
     const ts = now + messages.length * 1000;
@@ -658,5 +644,9 @@ export async function runChatThread(news: NewsItem, now = Date.now()): Promise<C
     status: "completed",
     createdAt: now,
     completedAt: Date.now(),
+    cooldownUntil: Date.now() + 5 * 60_000,
+    symbol: primarySymbol(seed),
+    llmCallsUsed: messages.length + retryTotal + (strategy ? 1 : 0),
+    retryCount: retryTotal,
   };
 }
