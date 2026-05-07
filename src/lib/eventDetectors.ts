@@ -185,7 +185,7 @@ export function detectConflictEvent(focus: AgentFocus[], now = Date.now()): Conf
       id: eventId("conflict", now, eventHash),
       ts: now,
       symbol,
-      description: `${symbol} 同时被趋势/突破视角和回归视角盯上，条件冲突需要拆开看。`,
+      description: `${symbol} 同时被趋势、破位和极端派盯上，条件冲突需要拆开看。`,
       conflictingAgents: [first, second],
       responses: [emptyResponse(first), emptyResponse(second)],
     };

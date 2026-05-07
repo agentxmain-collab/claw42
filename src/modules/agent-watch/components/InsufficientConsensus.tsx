@@ -18,10 +18,9 @@ export function InsufficientConsensus({
 }) {
   const english = isEnglish(labels);
   const symbols = debate.newsCurrencies.map((symbol) => `$${symbol}`).join(" / ");
-  const agentSummary = debate.rounds
-    .flatMap((round) => round.utterances)
+  const agentSummary = debate.messages
     .slice(-3)
-    .map((utterance) => utterance.content)
+    .map((message) => message.content)
     .join(" · ");
 
   useEffect(() => {

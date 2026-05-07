@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { buildChatterPlan } from "@/lib/chatterGenerator";
+import type { ChatThread } from "@/lib/types";
 import { AGENT_ORDER } from "./agents";
 import { useAgentAnalysis } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
@@ -13,6 +14,7 @@ import type {
   AgentMessage,
   AgentId,
   AgentStatus,
+  ChatThreadEntry,
   NewsDebateEntry,
   StreamEntry,
   WatchUpdateEntry,
@@ -23,6 +25,7 @@ import { MarketEventFeed } from "./components/MarketEventFeed";
 import { Stream, type StreamHandle } from "./components/Stream";
 import { CriticalNewsBanner } from "./components/CriticalNewsBanner";
 import { NewsFeedTicker } from "./components/NewsFeedTicker";
+import { FactionPresenceBar } from "./components/FactionPresenceBar";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
 import {
@@ -47,6 +50,15 @@ import {
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 const STREAM_MAX_ENTRIES = 48;
 
+function entriesFromInitialThreads(threads: ChatThread[]): ChatThreadEntry[] {
+  return threads.map((thread) => ({
+    kind: "chat_thread",
+    id: `initial-${thread.id}`,
+    ts: thread.messages[0]?.ts ?? thread.createdAt,
+    thread,
+  }));
+}
+
 function isAgentMessage(entry: StreamEntry): entry is AgentMessage {
   return entry.kind === "agent_message";
 }
@@ -64,9 +76,10 @@ function speakerIdsForEntry(entry: StreamEntry): AgentId[] {
   if (isWatchUpdate(entry)) return entry.agentId ? [entry.agentId] : [];
   if (isAgentDiscussion(entry)) return entry.responses.map((response) => response.agentId);
   if (entry.kind === "news_debate") {
-    return entry.debate.rounds.flatMap((round) =>
-      round.utterances.map((utterance) => utterance.agentId),
-    );
+    return entry.debate.messages.map((message) => message.agentId);
+  }
+  if (entry.kind === "chat_thread") {
+    return entry.thread.messages.map((message) => message.agentId);
   }
   if (entry.kind === "focus_event") return [entry.primaryResponse.agentId];
   if (entry.kind === "collective_event") {
@@ -170,7 +183,11 @@ function streamEntriesFromPayload(data: NonNullable<ReturnType<typeof useAgentAn
   return dedupeStreamEntries([...debateEntries, ...legacyEntries]).sort((a, b) => a.ts - b.ts);
 }
 
-export function AgentWatchBoard() {
+export function AgentWatchBoard({
+  initialChatThreads = [],
+}: {
+  initialChatThreads?: ChatThread[];
+}) {
   const { t, locale } = useI18n();
   const agentWatchLocale = resolveAgentWatchLocale(locale);
   const isSupportedAgentWatchLocale = isAgentWatchLocale(locale);
@@ -197,7 +214,10 @@ export function AgentWatchBoard() {
   const supplementalClaimRef = useRef(new Map<string, number>());
   const lastSupplementalAtRef = useRef(0);
   const hasScheduledInitialRef = useRef(false);
-  const [liveQueue, setLiveQueue] = useState<StreamEntry[]>([]);
+  const fiveSecondGuardRef = useRef(false);
+  const [liveQueue, setLiveQueue] = useState<StreamEntry[]>(() =>
+    entriesFromInitialThreads(initialChatThreads),
+  );
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
 
@@ -288,6 +308,34 @@ export function AgentWatchBoard() {
   );
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (fiveSecondGuardRef.current) return;
+      const now = Date.now();
+      fiveSecondGuardRef.current = true;
+      const guardAgent = AGENT_ORDER[1] ?? AGENT_ORDER[0]!;
+      const entry: WatchUpdateEntry = {
+        kind: "watch_update",
+        id: `cold-start-${now}`,
+        ts: now,
+        updateType: "quiet_observation",
+        title: agentWatchLocale === "en_US" ? "Agent check-in" : "Agent 巡检",
+        content:
+          agentWatchLocale === "en_US"
+            ? "BTC is still loading fresh context, so I am waiting for the next live tick above $0 before judging."
+            : "BTC 实时上下文还在刷新，所以先等下一跳价格再判断。",
+        dedupeKey: `cold-start-${agentWatchLocale}`,
+        agentId: guardAgent,
+        symbols: ["BTC"],
+        severity: "neutral",
+      };
+      rememberScheduledEntries([entry], now);
+      scheduleStreamEntries([entry]);
+    }, 3200);
+
+    return () => window.clearTimeout(timer);
+  }, [agentWatchLocale, rememberScheduledEntries, scheduleStreamEntries]);
+
+  useEffect(() => {
     if (!data || processedGeneratedAtRef.current === data.generatedAt) return;
     processedGeneratedAtRef.current = data.generatedAt;
 
@@ -308,6 +356,7 @@ export function AgentWatchBoard() {
     rememberScheduledEntries(directorEntries, now);
     const clearPending = !hasScheduledInitialRef.current;
     hasScheduledInitialRef.current = true;
+    fiveSecondGuardRef.current = true;
     scheduleStreamEntries(directorEntries, { clearPending });
 
     return () => {
@@ -392,6 +441,18 @@ export function AgentWatchBoard() {
   ]);
 
   const combinedEntries = useMemo(() => liveQueue, [liveQueue]);
+  const focusSymbols = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [
+            ...(data?.focus?.map((focus) => focus.symbol) ?? []),
+            ...(data?.newsDebates?.[0]?.newsCurrencies ?? []),
+          ].filter(Boolean),
+        ),
+      ),
+    [data?.focus, data?.newsDebates],
+  );
   const focusByAgent = useMemo(
     () => new Map(data?.focus?.map((focus) => [focus.agentId, focus]) ?? []),
     [data?.focus],
@@ -431,6 +492,11 @@ export function AgentWatchBoard() {
     >
       <div className="space-y-7">
         <TopicHeader t={t} />
+        <FactionPresenceBar
+          entries={combinedEntries}
+          focusSymbols={focusSymbols}
+          locale={agentWatchLocale}
+        />
         <CoinTickerStrip pool={data?.pool} tickers={data?.tickers} labels={t.agentWatch.coinPool} />
         <CriticalNewsBanner
           debate={data?.newsDebates?.[0] ?? null}

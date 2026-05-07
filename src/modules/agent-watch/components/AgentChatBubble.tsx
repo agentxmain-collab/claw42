@@ -48,18 +48,6 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
           <span className="text-sm font-bold" style={{ color: token.primary }}>
             {meta.name}
           </span>
-          {message.tag && (
-            <span
-              className="rounded-full border px-2 py-0.5 text-[11px] font-semibold leading-none"
-              style={{
-                borderColor: token.soft,
-                color: token.primary,
-                backgroundColor: token.soft,
-              }}
-            >
-              {message.tag}
-            </span>
-          )}
           {message.symbols.slice(0, 3).map((symbol) => (
             <span
               key={symbol}
@@ -85,23 +73,6 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
           />
 
           <p className="text-white/86 text-sm font-semibold leading-relaxed">{message.content}</p>
-
-          {message.points.length > 0 && (
-            <div className="mt-3 border-t border-white/[0.07] pt-2.5">
-              <div className="grid gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
-                {message.points.map((point) => (
-                  <div key={`${point.label}-${point.value}`} className="min-w-0">
-                    <div className="text-white/38 text-[11px] font-semibold leading-none">
-                      {point.label}
-                    </div>
-                    <div className="text-white/78 mt-1 truncate font-mono text-xs font-semibold leading-none">
-                      {point.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </motion.article>

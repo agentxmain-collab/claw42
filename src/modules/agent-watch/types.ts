@@ -1,4 +1,4 @@
-import type { NewsDebate } from "@/lib/types";
+import type { ChatThread, NewsDebate } from "@/lib/types";
 
 export type CoinSymbol = "BTC" | "ETH" | "SOL" | "USDT";
 export type AgentId = "alpha" | "beta" | "gamma";
@@ -232,6 +232,13 @@ export interface NewsDebateEntry {
   debate: NewsDebate;
 }
 
+export interface ChatThreadEntry {
+  kind: "chat_thread";
+  id: string;
+  ts: number;
+  thread: ChatThread;
+}
+
 export type StreamEntry =
   | AgentMessage
   | CollectiveEvent
@@ -239,7 +246,8 @@ export type StreamEntry =
   | ConflictEvent
   | WatchUpdateEntry
   | AgentDiscussionEntry
-  | NewsDebateEntry;
+  | NewsDebateEntry
+  | ChatThreadEntry;
 
 export type CoinComments = Record<CoinSymbol, Record<AgentId, string>>;
 

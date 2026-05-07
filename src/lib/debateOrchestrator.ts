@@ -1,312 +1,10 @@
-import { checkAgentSpeech, recordAgentSpoke } from "@/lib/agentSpeechGuard";
-import { emotionFromContext, emojiForEmotion } from "@/lib/agentEmotion";
 import { debatePacingForSeverity } from "@/lib/debatePacing";
-import { getFaction, getFactionIds, isFactionId } from "@/lib/factionRegistry";
-import { fakeFollowCount } from "@/lib/fakeFollowCount";
-import {
-  buildDebateR1Prompt,
-  buildDebateR2Prompt,
-  buildDebateR3Prompt,
-} from "@/lib/llmPromptBuilder";
-import {
-  antiMechanicalFallback,
-  generateLlmText,
-  hasMechanicalOutput,
-} from "@/lib/llmFallbackChain";
-import { fetchLivePriceSnapshot, type TickerSnapshot } from "@/lib/news/livePriceFetch";
-import { plainSpeechRetryInstruction, validatePlainSpeech } from "@/lib/plainSpeechGuard";
-import { strategyRetryInstruction, validateStrategyAgainstSnapshot } from "@/lib/strategyValidator";
+import { rememberChatThread } from "@/lib/chatHistoryStore";
+import { intensityScoreFromMessages, runChatThread } from "@/lib/chatOrchestrator";
 import { classifyNewsTrigger } from "@/lib/newsTriggers";
-import { buildCoinwDeeplink } from "@/lib/strategyDeeplink";
-import type { SignalRecord } from "@/modules/agent-watch/types";
-import type {
-  ConsensusRatio,
-  DebateDirection,
-  DebateRound,
-  FactionId,
-  FinalStrategy,
-  NewsDebate,
-  NewsItem,
-  Utterance,
-  UtterancePrefix,
-} from "@/lib/types";
+import type { NewsDebate, NewsItem } from "@/lib/types";
 
 const debateStore = new Map<string, NewsDebate>();
-const VALID_PREFIXES = new Set<Exclude<UtterancePrefix, null>>([
-  "rebut",
-  "taunt",
-  "sneer",
-  "mock",
-  "cool",
-  "remind",
-  "agree",
-  "reflect",
-]);
-
-function parseObject(text: string): Record<string, unknown> {
-  const trimmed = text.trim();
-  const jsonText = trimmed.startsWith("{") ? trimmed : (trimmed.match(/\{[\s\S]*\}/)?.[0] ?? "{}");
-  return JSON.parse(jsonText) as Record<string, unknown>;
-}
-
-function fallbackUtterance(
-  agentId: FactionId,
-  news: NewsItem,
-  ts: number,
-  round: number,
-): Utterance {
-  const faction = getFaction(agentId);
-  const content = `${faction.nickname}：${news.currencies[0] ?? "BTC"} ${faction.catchphrases[round % faction.catchphrases.length]}`;
-  const emotion = emotionFromContext({ agentId, sentiment: news.sentiment });
-  return {
-    id: `${news.id}:${agentId}:fallback:${round}:${ts}`,
-    agentId,
-    content,
-    prefix: null,
-    emoji: emojiForEmotion(agentId, emotion),
-    emotion,
-    isGoldenLine: false,
-    ts,
-  };
-}
-
-function waitingForTickerUtterance(agentId: FactionId, news: NewsItem, ts: number): Utterance {
-  const faction = getFaction(agentId);
-  const lines = [
-    `${faction.nickname}：实时价格没刷出来，先等数据。`,
-    `${faction.nickname}：盘口数据断了一拍，等下一轮再说。`,
-    `${faction.nickname}：现在不拿旧价硬判断，等数据回来。`,
-    `${faction.nickname}：行情源还没回，先暂停下结论。`,
-    `${faction.nickname}：没有新价格，不给点位。`,
-  ];
-  const content = lines[Math.abs(ts + agentId.length) % lines.length] ?? lines[0];
-  const emotion = emotionFromContext({ agentId, sentiment: news.sentiment });
-  return {
-    id: `${news.id}:${agentId}:waiting:${ts}`,
-    agentId,
-    content,
-    prefix: null,
-    emoji: emojiForEmotion(agentId, emotion),
-    emotion,
-    isGoldenLine: false,
-    ts,
-  };
-}
-
-function syntheticSignal(agentId: FactionId, news: NewsItem, ts: number): SignalRecord {
-  const faction = getFaction(agentId);
-  return {
-    id: `news-${news.id}-${agentId}`,
-    ts,
-    symbol: news.currencies[0] ?? "BTC",
-    type: faction.signalTypes[0] ?? "breakout",
-    severity: "watch",
-    payload: { description: news.title },
-  };
-}
-
-async function callDebateJson(prompt: string, fallback: Record<string, unknown>) {
-  const first = await generateLlmText(prompt);
-  if (!first) return fallback;
-  if (!hasMechanicalOutput(first.text)) return parseObject(first.text);
-
-  const retry = await generateLlmText(
-    `${prompt}\n\n上一版太机械，重写：不要铺垫，不要套话，只输出 JSON。`,
-  );
-  if (!retry || hasMechanicalOutput(retry.text)) return fallback;
-  return parseObject(retry.text);
-}
-
-async function callPlainDebateJson(prompt: string): Promise<Record<string, unknown> | null> {
-  const first = await generateLlmText(prompt);
-  if (!first) return null;
-  const firstRaw = parseObject(first.text);
-  const firstContent = String(firstRaw.content ?? "");
-  const firstValidation = validatePlainSpeech(firstContent);
-  if (!hasMechanicalOutput(first.text) && firstValidation.ok) return firstRaw;
-
-  const retryPrompt = `${prompt}\n\n${plainSpeechRetryInstruction(
-    hasMechanicalOutput(first.text)
-      ? [...firstValidation.reasons, "输出机械套话"]
-      : firstValidation.reasons,
-  )}`;
-  const retry = await generateLlmText(retryPrompt);
-  if (!retry) return null;
-  const retryRaw = parseObject(retry.text);
-  const retryContent = String(retryRaw.content ?? "");
-  const retryValidation = validatePlainSpeech(retryContent);
-  if (hasMechanicalOutput(retry.text) || !retryValidation.ok) return null;
-
-  return retryRaw;
-}
-
-async function generateR1(
-  agentId: FactionId,
-  news: NewsItem,
-  ts: number,
-  snapshot: TickerSnapshot | null,
-): Promise<Utterance> {
-  const signal = syntheticSignal(agentId, news, ts);
-  const decision = checkAgentSpeech(agentId, [signal], ts);
-  const fallback = fallbackUtterance(agentId, news, ts, 1);
-  if (!snapshot) return waitingForTickerUtterance(agentId, news, ts);
-  if (!decision.shouldSpeak) return fallback;
-
-  const raw = await callPlainDebateJson(await buildDebateR1Prompt(agentId, news, snapshot));
-  if (!raw) return { ...fallback, content: "" };
-  const content = antiMechanicalFallback(
-    String(raw.content ?? fallback.content),
-    fallback.content,
-  ).slice(0, 140);
-  const isGoldenLine = Boolean(raw.isGoldenLine);
-  const emotion = emotionFromContext({ agentId, sentiment: news.sentiment, isGoldenLine });
-  return {
-    id: `${news.id}:${agentId}:r1:${ts}`,
-    agentId,
-    content,
-    prefix: null,
-    emoji: emojiForEmotion(agentId, emotion),
-    emotion,
-    isGoldenLine,
-    ts,
-    marketDataFetchedAt: snapshot.fetchedAt,
-  };
-}
-
-async function generateR2(
-  agentId: FactionId,
-  news: NewsItem,
-  ownR1: Utterance,
-  otherR1: Utterance[],
-  ts: number,
-  snapshot: TickerSnapshot | null,
-): Promise<Utterance> {
-  const signal = syntheticSignal(agentId, news, ts);
-  const decision = checkAgentSpeech(agentId, [signal], ts);
-  const fallback = fallbackUtterance(agentId, news, ts, 2);
-  if (!snapshot) return waitingForTickerUtterance(agentId, news, ts);
-  if (!decision.shouldSpeak) return { ...fallback, id: `${news.id}:${agentId}:r2:fallback:${ts}` };
-
-  const cited = otherR1[0] ?? ownR1;
-  const raw = await callPlainDebateJson(
-    await buildDebateR2Prompt(agentId, ownR1, otherR1, snapshot, news),
-  );
-  if (!raw) return { ...fallback, content: "" };
-  const prefix = VALID_PREFIXES.has(raw.prefix as Exclude<UtterancePrefix, null>)
-    ? (raw.prefix as Exclude<UtterancePrefix, null>)
-    : "rebut";
-  const rawCitedAgentId = String(raw.citedAgentId);
-  const citedAgentId: FactionId = isFactionId(rawCitedAgentId) ? rawCitedAgentId : cited.agentId;
-  const content = antiMechanicalFallback(
-    String(raw.content ?? fallback.content),
-    fallback.content,
-  ).slice(0, 140);
-  const isGoldenLine = Boolean(raw.isGoldenLine);
-  const emotion = emotionFromContext({ agentId, sentiment: news.sentiment, prefix, isGoldenLine });
-  return {
-    id: `${news.id}:${agentId}:r2:${ts}`,
-    agentId,
-    content,
-    prefix,
-    emoji: emojiForEmotion(agentId, emotion),
-    emotion,
-    citedAgentId,
-    citedQuote: String(raw.citedQuote ?? cited.content).slice(0, 30),
-    isGoldenLine,
-    ts,
-    marketDataFetchedAt: snapshot.fetchedAt,
-  };
-}
-
-function normalizeDirection(value: unknown): DebateDirection {
-  return value === "long" || value === "short" || value === "wait" ? value : "wait";
-}
-
-function normalizeConsensusRatio(value: unknown): ConsensusRatio {
-  return value === "3:0" || value === "2:1" || value === "1:2" || value === "0:3" ? value : "1:2";
-}
-
-async function generateStrategy(
-  news: NewsItem,
-  utterances: Utterance[],
-  ts: number,
-  snapshot: TickerSnapshot | null,
-): Promise<FinalStrategy | null> {
-  const primarySymbol = news.currencies[0] ?? "BTC";
-  const fallbackRaw = {
-    symbol: primarySymbol,
-    direction: "wait",
-    entryCondition: `${primarySymbol} 等 5 分钟价格重新站回关键位`,
-    stopLoss: 0,
-    takeProfit: [],
-    consensusRatio: "1:2",
-    consensusAgents: [],
-    dissentAgents: getFactionIds(),
-    dissentNote: "三派未达成一致",
-    riskNote: "新闻驱动波动大，等待二次确认",
-  };
-  const prompt = buildDebateR3Prompt(news, utterances, snapshot);
-  const firstRaw = await callDebateJson(prompt, fallbackRaw);
-  const firstStrategy = buildStrategyFromRaw(news, firstRaw, ts);
-  const firstValidation = validateStrategyAgainstSnapshot(firstStrategy, snapshot);
-  if (firstValidation.ok) return firstStrategy;
-
-  const retryRaw = await callDebateJson(
-    `${prompt}\n\n${strategyRetryInstruction(firstValidation)}`,
-    fallbackRaw,
-  );
-  const retryStrategy = buildStrategyFromRaw(news, retryRaw, ts);
-  const retryValidation = validateStrategyAgainstSnapshot(retryStrategy, snapshot);
-  if (retryValidation.ok) return retryStrategy;
-
-  console.warn("[claw42] strategy synthesis failed", retryValidation.reasons);
-  return null;
-}
-
-function buildStrategyFromRaw(
-  news: NewsItem,
-  raw: Record<string, unknown>,
-  ts: number,
-): FinalStrategy {
-  const primarySymbol = news.currencies[0] ?? "BTC";
-  const createdAt = ts;
-  const id = `${news.id}:strategy:${createdAt}`;
-  const counts = fakeFollowCount(id, createdAt);
-  const strategy: FinalStrategy = {
-    id,
-    symbol: String(raw.symbol ?? primarySymbol)
-      .replace(/^\$/, "")
-      .toUpperCase(),
-    direction: normalizeDirection(raw.direction),
-    entryCondition: String(raw.entryCondition ?? `${primarySymbol} 等关键位确认`).slice(0, 80),
-    stopLoss: Number(raw.stopLoss) || 0,
-    takeProfit: Array.isArray(raw.takeProfit)
-      ? raw.takeProfit.map(Number).filter((value) => Number.isFinite(value))
-      : [],
-    consensusRatio: normalizeConsensusRatio(raw.consensusRatio),
-    consensusAgents: Array.isArray(raw.consensusAgents)
-      ? raw.consensusAgents.map(String).filter(isFactionId)
-      : [],
-    dissentAgents: Array.isArray(raw.dissentAgents)
-      ? raw.dissentAgents.map(String).filter(isFactionId)
-      : [],
-    dissentNote: String(raw.dissentNote ?? "").slice(0, 80),
-    riskNote: String(raw.riskNote ?? "本页面内容均由 AI 生成，不构成投资建议。").slice(0, 100),
-    followCount: counts.followCount,
-    viewCount: counts.viewCount,
-    createdAt,
-    expiresAt: createdAt + 30 * 60_000,
-    deeplink: "",
-  };
-  strategy.deeplink = buildCoinwDeeplink(strategy);
-  return strategy;
-}
-
-function intensityScore(rounds: DebateRound[]): NewsDebate["intensityScore"] {
-  const utterances = rounds.flatMap((round) => round.utterances);
-  const spice = utterances.filter((utterance) => utterance.prefix || utterance.isGoldenLine).length;
-  return Math.min(5, Math.max(1, Math.ceil(spice / 2))) as NewsDebate["intensityScore"];
-}
 
 async function buildNewsDebate(
   news: NewsItem,
@@ -314,47 +12,12 @@ async function buildNewsDebate(
   now: number,
 ): Promise<NewsDebate> {
   const pacing = debatePacingForSeverity(trigger.severity);
-  const factionIds = getFactionIds();
-  const r1 = (
-    await Promise.all(
-      factionIds.map(async (agentId) =>
-        generateR1(agentId, news, now, await fetchLivePriceSnapshot()),
-      ),
-    )
-  ).filter((utterance) => utterance.content.trim().length > 0);
-  const r2: Utterance[] = [];
-
-  for (const agentId of factionIds) {
-    const own = r1.find((utterance) => utterance.agentId === agentId);
-    if (!own) continue;
-    const others = r1.filter((utterance) => utterance.agentId !== agentId);
-    const response = await generateR2(
-      agentId,
-      news,
-      own,
-      others,
-      now + r2.length * 1000,
-      await fetchLivePriceSnapshot(),
-    );
-    if (response.content.trim().length > 0) r2.push(response);
-  }
-
-  const rounds: DebateRound[] = [
-    { roundNumber: 1, roundType: "independent", utterances: r1, startedAt: now },
-    {
-      roundNumber: 2,
-      roundType: "rebuttal",
-      utterances: r2,
-      startedAt: now + pacing.roundTwoDelayMs,
-    },
-  ];
-  const strategy = await generateStrategy(
-    news,
-    [...r1, ...r2],
-    now + pacing.strategyRevealDelayMs,
-    await fetchLivePriceSnapshot(),
-  );
-  factionIds.forEach((agentId) => recordAgentSpoke(agentId, now));
+  const chatThread = await runChatThread(news, now);
+  await rememberChatThread(chatThread).catch((error) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[claw42] chat history persist skipped", error);
+    }
+  });
 
   const debate: NewsDebate = {
     id: `debate:${news.id}`,
@@ -365,18 +28,22 @@ async function buildNewsDebate(
     newsSource: news.source,
     newsSentiment: news.sentiment,
     newsCurrencies: news.currencies,
-    rounds,
-    finalStrategy: strategy,
-    intensityScore: intensityScore(rounds),
+    chatThread,
+    messages: chatThread.messages,
+    rounds: [],
+    finalStrategy: chatThread.strategy,
+    intensityScore: intensityScoreFromMessages(chatThread.messages),
     status: "completed",
     createdAt: now,
-    completedAt: Date.now(),
+    completedAt: chatThread.completedAt ?? Date.now(),
     layers: {
       source: news,
       trigger,
       pacing,
-      rounds,
-      strategy,
+      chatThread,
+      messages: chatThread.messages,
+      rounds: [],
+      strategy: chatThread.strategy,
       replay: null,
     },
   };

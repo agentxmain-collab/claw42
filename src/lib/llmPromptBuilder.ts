@@ -1,10 +1,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { ACTION_DESCRIPTIONS } from "@/lib/chatActions";
 import { getFaction, getFactionIds } from "@/lib/factionRegistry";
 import { loadRelationshipStates, relationshipContextForAgent } from "@/lib/agentRelationship";
 import { formatLiveSnapshotForPrompt, type TickerSnapshot } from "@/lib/news/livePriceFetch";
 import { PLAIN_SPEECH_PROMPT_BLOCK } from "@/lib/plainSpeechGuard";
-import type { FactionId, NewsItem, Utterance } from "@/lib/types";
+import type { ChatAction, ChatMessage, ConversationSeed, FactionId, NewsItem } from "@/lib/types";
 
 const AGENT_IP_DIR = path.join(process.cwd(), "docs", "agent-ip");
 const ipDocCache: Partial<Record<FactionId, string>> = {};
@@ -20,17 +21,35 @@ export async function loadAgentIp(agentId: FactionId): Promise<string> {
   return content;
 }
 
-function newsBlock(news: NewsItem): string {
-  return [
-    `title: ${news.title}`,
-    `currencies: ${news.currencies.join(", ") || "UNKNOWN"}`,
-    `sentiment: ${news.sentiment}`,
-    `source: ${news.source}`,
-  ].join("\n");
+export function seedFromNews(news: NewsItem, createdAt: number): ConversationSeed {
+  return {
+    id: news.id,
+    type: news.source === "topic-generator" ? "chitchat" : "news",
+    title: news.title,
+    description: news.title,
+    symbols: news.currencies.map((symbol) => symbol.replace(/^\$/, "").toUpperCase()),
+    sentiment: news.sentiment,
+    source: news.source,
+    url: news.url,
+    createdAt,
+  };
 }
 
-function liveMarketBlock(snapshot: TickerSnapshot | null, news: NewsItem): string {
-  const symbols = ["BTC", "ETH", "SOL", ...news.currencies];
+function newsBlock(seed: ConversationSeed): string {
+  return [
+    `type: ${seed.type}`,
+    `title: ${seed.title}`,
+    `description: ${seed.description}`,
+    `symbols: ${seed.symbols.join(", ") || "UNKNOWN"}`,
+    `sentiment: ${seed.sentiment}`,
+    seed.source ? `source: ${seed.source}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function liveMarketBlock(snapshot: TickerSnapshot | null, seed: ConversationSeed): string {
+  const symbols = ["BTC", "ETH", "SOL", ...seed.symbols];
   return formatLiveSnapshotForPrompt(snapshot, symbols);
 }
 
@@ -39,139 +58,125 @@ async function relationshipBlock(agentId: FactionId): Promise<string> {
   return snapshot ? relationshipContextForAgent(agentId, snapshot) : "";
 }
 
-export async function buildDebateR1Prompt(
-  agentId: FactionId,
-  news: NewsItem,
-  snapshot: TickerSnapshot | null,
-): Promise<string> {
+function historyBlock(history: ChatMessage[]): string {
+  if (history.length === 0) return "暂无历史，直接开场。";
+  return history
+    .slice(-5)
+    .map((message) => {
+      const faction = getFaction(message.agentId);
+      const mention = message.mentioning ? ` @${getFaction(message.mentioning).displayName}` : "";
+      return `- ${message.id} ${faction.displayName}/${faction.nickname}${mention}: ${message.content}`;
+    })
+    .join("\n");
+}
+
+export async function buildChatMessagePrompt({
+  agentId,
+  action,
+  seed,
+  history,
+  snapshot,
+  relationshipDebt,
+}: {
+  agentId: FactionId;
+  action: ChatAction;
+  seed: ConversationSeed;
+  history: ChatMessage[];
+  snapshot: TickerSnapshot | null;
+  relationshipDebt: string;
+}): Promise<string> {
   const faction = getFaction(agentId);
   const [ip, relationship] = await Promise.all([loadAgentIp(agentId), relationshipBlock(agentId)]);
+  const factionIds = getFactionIds().join("|");
+
   return `你是 ${faction.displayName} ${faction.title}·${faction.nickname}，加密交易江湖人物。
 
 ## 你的人设
 ${ip}
 
 ${relationship}
+${relationshipDebt}
 
-## 触发新闻
-${newsBlock(news)}
+## 本场情境
+${newsBlock(seed)}
 
-${liveMarketBlock(snapshot, news)}
+${liveMarketBlock(snapshot, seed)}
 
-${PLAIN_SPEECH_PROMPT_BLOCK}
+## 最近 5 条聊天历史
+${historyBlock(history)}
 
-## 输出 JSON
-{
-  "content": "1-2 句你的独立观点。直接说事，不要客套",
-  "isGoldenLine": false
-}
-
-## 约束
-- 字数 30-80
-- 直接说事，不要“作为 ${faction.displayName}”这种铺垫
-- 至少引用新闻里的一个具体词或数据点
-- 必须引用实时市场状态里的至少一个具体价格/百分比数字
-- 必须用“所以 + 具体行动/观察 + 价格触发条件”结尾
-- 用江湖人物口吻，可以用招牌话术但不要复读
-- 不允许“可能”“或许”“建议”“首先”“其次”“综上所述”“值得注意的是”
-- 不允许 cite 别的 Agent`;
-}
-
-export async function buildDebateR2Prompt(
-  agentId: FactionId,
-  ownR1: Utterance,
-  otherR1: Utterance[],
-  snapshot: TickerSnapshot | null,
-  news: NewsItem,
-): Promise<string> {
-  const faction = getFaction(agentId);
-  const [ip, relationship] = await Promise.all([loadAgentIp(agentId), relationshipBlock(agentId)]);
-  const others = otherR1
-    .map((utterance) => `- ${getFaction(utterance.agentId).displayName}: "${utterance.content}"`)
-    .join("\n");
-
-  return `你是 ${faction.displayName} ${faction.title}·${faction.nickname}。
-
-## 你的人设
-${ip}
-
-${relationship}
-
-## 你的 R1 观点
-${ownR1.content}
-
-## 其他 2 派的 R1 观点
-${others}
-
-${liveMarketBlock(snapshot, news)}
+## 本次动作
+${action}: ${ACTION_DESCRIPTIONS[action]}
 
 ${PLAIN_SPEECH_PROMPT_BLOCK}
 
-## 任务
-挑其中 1 派的 R1 观点反驳 / 嘲讽 / 提点 / 阴阳。
+## 聊天硬约束
+- 只生成你自己的 1 条 message。
+- content 1-2 句，不超过 80 个中文字符或 80 words。
+- 直接说话，禁止“突破视角：”“趋势视角：”“回归视角：”“${faction.displayName} 派认为：”“基于分析”。
+- 禁止“首先 / 其次 / 最后 / 综上所述 / 值得注意的是”。
+- 必须引用实时市场状态里的至少 1 个具体价格、百分比或时间窗口。
+- 必须出现“所以”，并在“所以”后给行动和具体价格触发条件。
+- mentioning 只能是 ${factionIds} 或 null；不能 @ 自己。
+- replyTo 只能填最近 5 条历史里的 message id，没引用就 null。
+- citedQuote 只在 replyTo 不为 null 时填写，必须来自被引用 message 的原话片段。
+- 允许轻微语气词，但不要脏话、不要空泛鼓动、不要投资承诺。
 
 ## 输出 JSON
 {
-  "content": "1-2 句反驳",
-  "prefix": "rebut|taunt|sneer|mock|cool|remind",
-  "citedAgentId": "${getFactionIds().join("|")}",
-  "citedQuote": "你引用对方的原句（≤30 字）",
-  "isGoldenLine": false
+  "content": "...",
+  "replyTo": "message id|null",
+  "mentioning": "${factionIds}|null",
+  "expectsReply": true,
+  "mood": "aggressive|agreeable|neutral|sarcastic|curious",
+  "citedQuote": "可选，≤28 字"
+}`;
 }
 
-## 约束
-- content 必须呼应 citedQuote
-- prefix 强制不为空
-- 字数 25-60
-- 必须引用实时市场状态里的至少一个具体价格/百分比数字
-- 必须用“所以 + 具体行动/观察 + 价格触发条件”收束
-- 毒舌可以但不能脏话
-- 不允许“可能”“或许”“建议”“首先”“其次”“综上所述”“值得注意的是”`;
-}
-
-export function buildDebateR3Prompt(
-  news: NewsItem,
-  utterances: Utterance[],
+export function buildChatStrategyPrompt(
+  seed: ConversationSeed,
+  messages: ChatMessage[],
   snapshot: TickerSnapshot | null,
 ): string {
-  const lines = utterances
-    .map((utterance) => {
-      const faction = getFaction(utterance.agentId);
-      return `- ${faction.displayName}/${faction.nickname}: ${utterance.content}`;
-    })
+  const primarySymbol = seed.symbols[0] ?? "BTC";
+  const transcript = messages
+    .map((message) => `${getFaction(message.agentId).nickname}: ${message.content}`)
     .join("\n");
-  const primarySymbol = news.currencies[0] ?? "BTC";
 
-  return `你是中立的辩论裁判，不是 3 派之一。
+  return `你是中立交易裁判，负责从 3 派聊天里提取最终策略。
 
-## 触发新闻
-${newsBlock(news)}
+## 触发源
+${newsBlock(seed)}
 
-## 3 派 R1 + R2 全部内容
-${lines}
+## 完整聊天
+${transcript}
 
-${liveMarketBlock(snapshot, news)}
+${liveMarketBlock(snapshot, seed)}
 
-${PLAIN_SPEECH_PROMPT_BLOCK}
+## 任务
+如果 3 派已经收敛到同一个方向和触发条件，输出 strategy。
+如果分歧大、价格条件不一致、缺少可执行点位，输出 consensusReached=false 且 strategy=null。
 
 ## 输出 JSON
 {
-  "consensusRatio": "3:0|2:1|1:2|0:3",
-  "consensusAgents": ["${getFactionIds().join('","')}"],
-  "dissentAgents": [],
-  "direction": "long|short|wait",
-  "symbol": "${primarySymbol}",
-  "entryCondition": "具体的入场条件描述，必须含点位或K线条件",
-  "stopLoss": 76500,
-  "takeProfit": [78500, 79200],
-  "dissentNote": "保留意见的核心论点",
-  "riskNote": "本场关键风险提示"
+  "consensusReached": true,
+  "strategy": {
+    "consensusRatio": "3:0|2:1|1:2|0:3",
+    "consensusAgents": ["${getFactionIds().join('","')}"],
+    "dissentAgents": [],
+    "direction": "long|short|wait",
+    "symbol": "${primarySymbol}",
+    "entryCondition": "必须含点位或价格触发条件",
+    "stopLoss": 76500,
+    "takeProfit": [78500, 79200],
+    "dissentNote": "保留意见",
+    "riskNote": "本页面内容均由 AI 生成，不构成投资建议"
+  }
 }
 
 ## 约束
-- direction = wait 时，entryCondition / stopLoss / takeProfit 仍要填
-- consensusRatio 严格按 3 派最终方向投票
-- entryCondition / stopLoss / takeProfit 必须围绕实时市场状态里的 current 价格，不能偏离当前价 10% 以上
-- 不出现“可能”“建议”“或许”“首先”“其次”“综上所述”“值得注意的是”
-- entryCondition 必须可执行`;
+- strategy 为 null 时，consensusReached 必须是 false。
+- entryCondition / stopLoss / takeProfit 必须围绕实时市场状态里的 current 价格，不能偏离当前价 10% 以上。
+- 不出现“可能”“建议”“或许”“首先”“其次”“综上所述”“值得注意的是”。
+- 只输出 JSON，不要解释。`;
 }

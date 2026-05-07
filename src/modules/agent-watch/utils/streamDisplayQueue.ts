@@ -72,6 +72,7 @@ export function splitStreamEntryForDisplay(entry: StreamEntry): StreamEntry[] {
 
 export function speakerForStreamEntry(entry: StreamEntry): AgentId | null {
   if (entry.kind === "news_debate") return null;
+  if (entry.kind === "chat_thread") return entry.thread.messages[0]?.agentId ?? null;
   if (entry.kind === "agent_message") return entry.agentId;
   if (isWatchUpdate(entry)) return entry.agentId ?? "beta";
   if (isAgentDiscussion(entry)) return entry.responses[0]?.agentId ?? null;
@@ -91,6 +92,7 @@ export function thinkDurationForStreamEntry(
   const key = `${entry.id}:${index}`;
   if (
     entry.kind === "news_debate" ||
+    entry.kind === "chat_thread" ||
     entry.kind === "focus_event" ||
     entry.kind === "collective_event" ||
     entry.kind === "conflict_event"
@@ -109,6 +111,7 @@ export function gapDurationAfterStreamEntry(entry: StreamEntry, reduceMotion = f
   if (reduceMotion) return 120;
   if (
     entry.kind === "news_debate" ||
+    entry.kind === "chat_thread" ||
     entry.kind === "focus_event" ||
     entry.kind === "collective_event" ||
     entry.kind === "conflict_event"

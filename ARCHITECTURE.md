@@ -26,6 +26,8 @@ src/
   lib/                    # 服务端 + 客户端工具
     llmFallbackChain.ts   # LLM 调用 + fallback
     marketDataCache.ts    # CoinGecko cache + stale-while-revalidate
+    chatOrchestrator.ts   # Watch 链式聊天编排 + meta 策略提取
+    news/                 # 多源新闻 source chain + cache + normalizer
     analytics.ts          # 客户端事件上报
     rateLimit.ts          # API 限流
   i18n/                   # 10 语 dict + Provider
@@ -48,10 +50,12 @@ src/
                                                         v
 [client useEffect 60s poll] --> setMarketData state --> watch UI
                                                         |
+[News source chain] --> debateOrchestrator.ts --> chatOrchestrator.ts
+                                                        |
 [LLM provider chain] --60s cache--> llmFallbackChain.ts --> /api/agents/analysis
 ```
 
-主要数据流：客户端 60s 轮询服务端，服务端缓存 30s 真实 API。stale-while-revalidate 策略保证降级。
+主要数据流：客户端 60s 轮询服务端，服务端缓存 30s 真实 API。Watch 页的新闻/行情触发先进入 source chain，再由 `chatOrchestrator.ts` 生成链式聊天线程；旧 R1/R2/R3 固定轮次不再作为产品形态。stale-while-revalidate 策略保证降级。
 
 ## 5. 认证 / 权限边界
 

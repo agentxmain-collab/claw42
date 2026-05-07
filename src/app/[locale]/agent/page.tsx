@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { loadRecentChatHistory } from "@/lib/chatHistoryStore";
 import { AgentWatchBoard } from "@/modules/agent-watch/AgentWatchBoard";
 import { agentWatchRedirectPath } from "@/modules/agent-watch/locale";
 
@@ -6,6 +7,7 @@ export default async function AgentPage({ params }: { params: Promise<{ locale: 
   const { locale } = await params;
   const redirectPath = agentWatchRedirectPath(locale);
   if (redirectPath) redirect(redirectPath);
+  const initialChatThreads = await loadRecentChatHistory({ limit: 3, messagesPerChat: 5 });
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
@@ -24,7 +26,7 @@ export default async function AgentPage({ params }: { params: Promise<{ locale: 
         }}
       />
       <div className="relative z-10">
-        <AgentWatchBoard />
+        <AgentWatchBoard initialChatThreads={initialChatThreads} />
       </div>
     </main>
   );

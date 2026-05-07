@@ -7,6 +7,7 @@ import type { AgentId, CoinPoolPayload, StreamEntry } from "../types";
 import type { AgentWatchLocale } from "../locale";
 import { buildStreamChatMessages } from "../utils/streamChatMessages";
 import { AgentChatBubble } from "./AgentChatBubble";
+import { ChatThreadRenderer } from "./ChatThreadRenderer";
 import { NewsDebateCard } from "./NewsDebateCard";
 import { TypingIndicator } from "./TypingIndicator";
 
@@ -36,6 +37,10 @@ function StreamEntryView({
 }) {
   if (entry.kind === "news_debate") {
     return <NewsDebateCard debate={entry.debate} labels={newsDebateLabels} />;
+  }
+
+  if (entry.kind === "chat_thread") {
+    return <ChatThreadRenderer thread={entry.thread} labels={newsDebateLabels} />;
   }
 
   const messages = buildStreamChatMessages(entry, pool, locale);

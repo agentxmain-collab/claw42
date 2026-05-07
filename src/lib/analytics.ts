@@ -28,6 +28,8 @@ export const ANALYTICS_EVENTS = [
   "news_quota_alert",
   "strategy_synthesis_failed",
   "strategy_feedback",
+  "chat_thread_view",
+  "chat_message_action",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

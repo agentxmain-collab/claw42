@@ -28,15 +28,15 @@ const AGENT_NAME: Record<AgentId, string> = {
 const DISCUSSION_AGENT_ORDER: AgentId[] = ["alpha", "beta", "gamma"];
 
 const AGENT_DISCUSSION_LABEL: Record<AgentId, string> = {
-  alpha: "突破视角",
-  beta: "趋势视角",
-  gamma: "回归视角",
+  alpha: "破位",
+  beta: "趋势",
+  gamma: "极端",
 };
 
 const AGENT_DISCUSSION_LABEL_EN: Record<AgentId, string> = {
-  alpha: "Breakout view",
-  beta: "Trend view",
-  gamma: "Mean-reversion view",
+  alpha: "Breakout",
+  beta: "Trend",
+  gamma: "Extreme",
 };
 
 const AGENT_HEARTBEAT_LINES: Record<AgentId, string[]> = {
@@ -46,7 +46,7 @@ const AGENT_HEARTBEAT_LINES: Record<AgentId, string[]> = {
     "复核：{symbol} 未触发突破条件，报警线继续贴近近期高点。",
   ],
   beta: [
-    "巡检：重新检查 {symbol} 的 EMA12/13 结构，未共振前不升级。",
+    "巡检：重新检查 {symbol} 的短中期线位置，没合上前不升级。",
     "扫描：{symbol} 趋势仍需回撤质量确认，暂不把反弹当趋势。",
     "复核：{symbol} 顺势条件不足，继续观察高位能否重新抬升。",
   ],

@@ -2,10 +2,7 @@
 
 import type { Dict } from "@/i18n/types";
 import type { NewsDebate } from "@/lib/types";
-import { FinalStrategyBlock } from "./FinalStrategyBlock";
-import { InsufficientConsensus } from "./InsufficientConsensus";
-import { RoundBanner } from "./RoundBanner";
-import { UtteranceBubble } from "./UtteranceBubble";
+import { ChatThreadRenderer } from "./ChatThreadRenderer";
 
 export function NewsDebateCard({
   debate,
@@ -58,30 +55,7 @@ export function NewsDebateCard({
         <span>{debate.intensityScore}/5</span>
       </div>
 
-      <div className="space-y-3">
-        {debate.rounds.map((round) => (
-          <section key={round.roundNumber} className="space-y-3">
-            <RoundBanner
-              label={
-                round.roundType === "independent"
-                  ? labels.roundIndependent
-                  : round.roundType === "rebuttal"
-                    ? labels.roundRebuttal
-                    : labels.roundConsensus
-              }
-            />
-            {round.utterances.map((utterance) => (
-              <UtteranceBubble key={utterance.id} utterance={utterance} />
-            ))}
-          </section>
-        ))}
-      </div>
-
-      {debate.finalStrategy ? (
-        <FinalStrategyBlock strategy={debate.finalStrategy} labels={labels} />
-      ) : (
-        <InsufficientConsensus debate={debate} labels={labels} />
-      )}
+      <ChatThreadRenderer thread={debate.chatThread} debate={debate} labels={labels} />
     </article>
   );
 }

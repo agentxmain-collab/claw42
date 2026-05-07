@@ -17,6 +17,8 @@ function publicProjection(debate: NewsDebate): PublicDebateProjection {
     severity: debate.layers.trigger.severity,
     status: debate.status,
     intensityScore: debate.intensityScore,
+    chatThread: debate.chatThread,
+    messages: debate.messages,
     rounds: debate.rounds,
     finalStrategy: debate.finalStrategy,
   };
@@ -41,9 +43,7 @@ function shareProjection(debate: NewsDebate): ShareDebateProjection {
     symbol,
     direction: strategy?.direction ?? "wait",
     consensusRatio: strategy?.consensusRatio ?? "0:3",
-    goldenLines: debate.rounds.flatMap((round) =>
-      round.utterances.filter((utterance) => utterance.isGoldenLine),
-    ),
+    goldenLines: debate.messages.filter((message) => message.isGoldenLine),
     followCount: strategy?.followCount ?? 0,
   };
 }

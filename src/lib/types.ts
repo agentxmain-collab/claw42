@@ -22,6 +22,20 @@ export type UtterancePrefix =
   | null;
 export type AgentEmotion = "neutral" | "confident" | "angry" | "skeptical" | "excited";
 export type DebateProjectionView = "public" | "operator" | "share";
+export type ConversationSeedType = "news" | "market" | "chitchat";
+export type ChatAction =
+  | "open"
+  | "rebut"
+  | "agree"
+  | "question"
+  | "taunt"
+  | "derail"
+  | "refocus"
+  | "comment"
+  | "react"
+  | "concede"
+  | "gloat";
+export type ChatMood = "aggressive" | "agreeable" | "neutral" | "sarcastic" | "curious";
 
 export interface NewsItem {
   id: string;
@@ -68,6 +82,44 @@ export interface Utterance {
   marketDataFetchedAt?: number;
 }
 
+export interface ConversationSeed {
+  id: string;
+  type: ConversationSeedType;
+  title: string;
+  description: string;
+  symbols: string[];
+  sentiment: NewsSentiment;
+  source?: string;
+  url?: string;
+  createdAt: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  threadId: string;
+  ts: number;
+  agentId: FactionId;
+  content: string;
+  replyTo?: string;
+  mentioning?: FactionId;
+  action: ChatAction;
+  expectsReply: boolean;
+  mood: ChatMood;
+  citedQuote?: string;
+  isGoldenLine?: boolean;
+  marketDataFetchedAt?: number;
+}
+
+export interface ChatThread {
+  id: string;
+  seed: ConversationSeed;
+  messages: ChatMessage[];
+  strategy: FinalStrategy | null;
+  status: "active" | "completed";
+  createdAt: number;
+  completedAt?: number;
+}
+
 export interface FinalStrategy {
   id: string;
   symbol: string;
@@ -91,6 +143,8 @@ export interface NewsDebateLayers {
   source: NewsItem;
   trigger: NewsTriggerClassification;
   pacing: DebatePacingPlan;
+  chatThread: ChatThread;
+  messages: ChatMessage[];
   rounds: DebateRound[];
   strategy: FinalStrategy | null;
   replay: StrategyReplay | null;
@@ -105,6 +159,8 @@ export interface NewsDebate {
   newsSource: string;
   newsSentiment: NewsSentiment;
   newsCurrencies: string[];
+  chatThread: ChatThread;
+  messages: ChatMessage[];
   rounds: DebateRound[];
   finalStrategy: FinalStrategy | null;
   intensityScore: 1 | 2 | 3 | 4 | 5;
@@ -160,6 +216,8 @@ export interface PublicDebateProjection {
   severity: NewsSeverity;
   status: NewsDebateStatus;
   intensityScore: NewsDebate["intensityScore"];
+  chatThread: ChatThread;
+  messages: ChatMessage[];
   rounds: DebateRound[];
   finalStrategy: FinalStrategy | null;
 }
@@ -177,7 +235,7 @@ export interface ShareDebateProjection {
   symbol: string;
   direction: DebateDirection;
   consensusRatio: ConsensusRatio;
-  goldenLines: Utterance[];
+  goldenLines: ChatMessage[];
   followCount: number;
 }
 

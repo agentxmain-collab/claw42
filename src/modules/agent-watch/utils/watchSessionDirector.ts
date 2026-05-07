@@ -89,6 +89,7 @@ export function directorModeForVisit(
 export function directorKeyForEntry(entry: StreamEntry): string {
   if (isWatchUpdate(entry) || isAgentDiscussion(entry)) return entry.dedupeKey;
   if (entry.kind === "news_debate") return `news-debate:${entry.debate.id}`;
+  if (entry.kind === "chat_thread") return `chat-thread:${entry.thread.id}`;
   if (entry.kind === "agent_message") {
     return `agent:${entry.agentId}:${entry.triggerSignalId}:${entry.content.trim()}`;
   }
@@ -109,7 +110,8 @@ function isPriority(entry: StreamEntry): boolean {
     entry.kind === "collective_event" ||
     entry.kind === "focus_event" ||
     entry.kind === "conflict_event" ||
-    entry.kind === "news_debate"
+    entry.kind === "news_debate" ||
+    entry.kind === "chat_thread"
   );
 }
 
