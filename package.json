@@ -17,6 +17,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,md,json,css}\"",
     "verify:agent-ip": "node scripts/verify-agent-ip.mjs",
     "verify:news": "node scripts/verify-news.mjs",
+    "verify:chat-v3-final": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/verify-chat-v3-final.ts",
     "verify": "npm run typecheck && npm run lint && npm run format:check && npm run build"
   },
   "dependencies": {
