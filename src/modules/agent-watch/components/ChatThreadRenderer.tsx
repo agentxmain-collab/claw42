@@ -29,8 +29,13 @@ export function ChatThreadRenderer({
   return (
     <section className="space-y-2">
       <SeedChip thread={thread} />
-      {thread.messages.map((message) => (
-        <ChatMessageBubble key={message.id} message={message} history={thread.messages} />
+      {thread.messages.map((message, index) => (
+        <ChatMessageBubble
+          key={message.id}
+          message={message}
+          previousMessage={thread.messages[index - 1]}
+          history={thread.messages}
+        />
       ))}
 
       {debate &&

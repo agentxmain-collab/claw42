@@ -1,12 +1,13 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useMemo, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { Dict } from "@/i18n/types";
 import type { AgentId, CoinPoolPayload, StreamEntry } from "../types";
 import type { AgentWatchLocale } from "../locale";
 import { buildStreamChatMessages } from "../utils/streamChatMessages";
 import { AgentChatBubble } from "./AgentChatBubble";
+import { ChatScrollContainer, type ChatScrollContainerHandle } from "./ChatScrollContainer";
 import { ChatThreadRenderer } from "./ChatThreadRenderer";
 import { NewsDebateCard } from "./NewsDebateCard";
 import { TypingIndicator } from "./TypingIndicator";
@@ -54,12 +55,24 @@ function StreamEntryView({
   );
 }
 
+function streamEntryScrollKey(entry: StreamEntry) {
+  if (entry.kind === "chat_thread") {
+    const lastMessage = entry.thread.messages[entry.thread.messages.length - 1];
+    return `${entry.id}:${entry.thread.messages.length}:${lastMessage?.id ?? "empty"}:${entry.thread.strategy?.id ?? "no-strategy"}`;
+  }
+  if (entry.kind === "news_debate") {
+    const messages = entry.debate.chatThread.messages;
+    const lastMessage = messages[messages.length - 1];
+    return `${entry.id}:${messages.length}:${lastMessage?.id ?? "empty"}:${entry.debate.chatThread.strategy?.id ?? "no-strategy"}`;
+  }
+  return entry.id;
+}
+
 export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
   { entries, typingAgent, pool, emptyLabel, locale = "zh_CN", newsDebateLabels },
   forwardedRef,
 ) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
+  const scrollRef = useRef<ChatScrollContainerHandle>(null);
   const uniqueEntries = useMemo(() => {
     const seen = new Set<string>();
     return entries.filter((entry) => {
@@ -74,74 +87,43 @@ export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
       return false;
     });
   }, [entries]);
-
-  useEffect(() => {
-    if (!autoScroll) return;
-    const el = containerRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [uniqueEntries, typingAgent, autoScroll]);
+  const scrollDependencyKey = `${uniqueEntries.map(streamEntryScrollKey).join("|")}:${typingAgent ?? "idle"}`;
 
   useImperativeHandle(forwardedRef, () => ({
-    scrollToLatest: () => {
-      const el = containerRef.current;
-      if (!el) return;
-      setAutoScroll(true);
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    },
+    scrollToLatest: () => scrollRef.current?.scrollToBottom("smooth"),
   }));
 
   return (
-    <div className="relative min-h-[560px] w-full overflow-hidden rounded-2xl border border-white/10 bg-[#111]">
-      <div
-        ref={containerRef}
-        onScroll={() => {
-          const el = containerRef.current;
-          if (!el) return;
-          setAutoScroll(el.scrollHeight - el.scrollTop - el.clientHeight < 96);
-        }}
-        className="h-[560px] overflow-y-auto px-4 py-4 md:px-6"
-      >
-        {uniqueEntries.length === 0 && !typingAgent && (
-          <div className="flex h-full items-center justify-center text-sm text-white/40">
-            {emptyLabel ?? "等待 Agent 开口..."}
-          </div>
-        )}
-
-        <AnimatePresence initial={false}>
-          {uniqueEntries.map((entry) => (
-            <StreamEntryView
-              key={entry.id}
-              entry={entry}
-              pool={pool}
-              locale={locale}
-              newsDebateLabels={newsDebateLabels}
-            />
-          ))}
-        </AnimatePresence>
-
-        <AnimatePresence initial={false}>
-          {typingAgent && (
-            <TypingIndicator key={`typing-${typingAgent}`} agentId={typingAgent} locale={locale} />
-          )}
-        </AnimatePresence>
-      </div>
-
-      {!autoScroll && (
-        <button
-          type="button"
-          onClick={() => {
-            setAutoScroll(true);
-            containerRef.current?.scrollTo({
-              top: containerRef.current.scrollHeight,
-              behavior: "smooth",
-            });
-          }}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md"
-        >
-          {locale === "en_US" ? "Back to latest" : "回到最新"}
-        </button>
+    <ChatScrollContainer
+      ref={scrollRef}
+      dependencyKey={scrollDependencyKey}
+      newMessagesLabel={locale === "en_US" ? "New discussion" : "有新讨论"}
+      className="min-h-[560px] w-full rounded-2xl border border-white/10 bg-[#111]"
+      contentClassName="h-[560px] overflow-y-auto px-4 py-4 md:px-6"
+    >
+      {uniqueEntries.length === 0 && !typingAgent && (
+        <div className="flex h-full items-center justify-center text-sm text-white/40">
+          {emptyLabel ?? "等待 Agent 开口..."}
+        </div>
       )}
-    </div>
+
+      <AnimatePresence initial={false}>
+        {uniqueEntries.map((entry) => (
+          <StreamEntryView
+            key={entry.id}
+            entry={entry}
+            pool={pool}
+            locale={locale}
+            newsDebateLabels={newsDebateLabels}
+          />
+        ))}
+      </AnimatePresence>
+
+      <AnimatePresence initial={false}>
+        {typingAgent && (
+          <TypingIndicator key={`typing-${typingAgent}`} agentId={typingAgent} locale={locale} />
+        )}
+      </AnimatePresence>
+    </ChatScrollContainer>
   );
 });
