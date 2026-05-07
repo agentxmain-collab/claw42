@@ -6,7 +6,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { buildChatterPlan } from "@/lib/chatterGenerator";
 import type { ChatThread } from "@/lib/types";
 import { AGENT_ORDER } from "./agents";
-import { useAgentAnalysis } from "./hooks/useAgentAnalysis";
+import { useAgentAnalysis, useMarketTicker } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
 import { useMarketEventFeed } from "./hooks/useMarketEventFeed";
 import type {
@@ -210,6 +210,10 @@ export function AgentWatchBoard({
   const { data, isLoading, hasNewContent, dismissNewContent } = useAgentAnalysis({
     enabled: isSupportedAgentWatchLocale,
     locale: agentWatchLocale,
+  });
+  const { data: tickerData } = useMarketTicker({
+    enabled: isSupportedAgentWatchLocale,
+    intervalMs: 10_000,
   });
   const { signals: marketSignals } = useMarketEventFeed({
     enabled: isSupportedAgentWatchLocale,
@@ -509,7 +513,11 @@ export function AgentWatchBoard({
           focusSymbols={focusSymbols}
           locale={agentWatchLocale}
         />
-        <CoinTickerStrip pool={data?.pool} tickers={data?.tickers} labels={t.agentWatch.coinPool} />
+        <CoinTickerStrip
+          pool={data?.pool ?? tickerData?.pool}
+          tickers={data?.tickers ?? tickerData?.tickers}
+          labels={t.agentWatch.coinPool}
+        />
         <CriticalNewsBanner
           debate={data?.newsDebates?.[0] ?? null}
           labels={t.agentWatch.newsDebate}
