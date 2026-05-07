@@ -141,7 +141,11 @@ export async function getOrCreateSharedChatThread({
     ),
   };
   await saveSharedThread(sharedThread);
-  return { thread: sharedThread, triggerReason: current ? "cooldown_expired" : "cold_start", reused: false };
+  return {
+    thread: sharedThread,
+    triggerReason: current ? "cooldown_expired" : "cold_start",
+    reused: false,
+  };
 }
 
 export function subscribeSharedThread(symbol: string): ReadableStream<Uint8Array> {

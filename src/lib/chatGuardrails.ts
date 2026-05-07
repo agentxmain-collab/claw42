@@ -10,8 +10,7 @@ type MentionFloorMessage = {
 
 const FACTION_ALIAS_PATTERN = "(?:Alpha|Beta|Gamma|老\\s*K|老\\s*白|老\\s*G|老K|老白|老G)";
 
-const REPORT_ACTION_PATTERN =
-  "(?:突破|破位|趋势|极端|回归|反转|顺势|逆势|追涨|杀跌|盘整|横盘)";
+const REPORT_ACTION_PATTERN = "(?:突破|破位|趋势|极端|回归|反转|顺势|逆势|追涨|杀跌|盘整|横盘)";
 
 export const FORBIDDEN_PREFIX_PATTERNS: RegExp[] = [
   new RegExp(`^\\s*${FACTION_ALIAS_PATTERN}\\s*[:：]`, "i"),

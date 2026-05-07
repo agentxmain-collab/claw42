@@ -7,6 +7,8 @@ import {
   type ChatGuardrailValidation,
 } from "../src/lib/chatGuardrails.ts";
 import { LIMITS, normalizeThreadSymbol, threadKeyForSymbol } from "../src/lib/sharedThreadStore.ts";
+import { AGENT_DIALOGUE_FEW_SHOTS } from "../src/lib/agentDialogueExamples.ts";
+import { PERSONA_SLANG_POLICY_BY_LOCALE } from "../src/lib/slangPolicy.ts";
 
 const SAMPLE_SIZE = 50;
 
@@ -107,6 +109,20 @@ function main() {
   }));
   if (!shouldForceMentionForFloor(noMentionHistory, 4, "synthetic-seed")) {
     throw new Error("mention floor must force when remaining turns equal missing mentions");
+  }
+  Object.entries(AGENT_DIALOGUE_FEW_SHOTS).forEach(([agentId, examples]) => {
+    if (examples.length < 8) throw new Error(`${agentId} must have at least 8 few-shot examples`);
+    examples.forEach((example, index) => {
+      if (!example.good || !example.bad) {
+        throw new Error(`${agentId} few-shot ${index} must include good and bad examples`);
+      }
+    });
+  });
+  if (!PERSONA_SLANG_POLICY_BY_LOCALE.zh_CN.allowed.includes("卧槽")) {
+    throw new Error("zh_CN slang policy must allow mild emotional terms");
+  }
+  if (!PERSONA_SLANG_POLICY_BY_LOCALE.zh_CN.banned.includes("操")) {
+    throw new Error("zh_CN slang policy must ban strong profanity");
   }
 
   const details = Array.from({ length: SAMPLE_SIZE }, (_, index) => threadSample(index));

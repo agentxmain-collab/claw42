@@ -1,4 +1,5 @@
 import { checkAgentSpeech, recordAgentSpoke } from "@/lib/agentSpeechGuard";
+import { noDataFallbackForAgent } from "@/lib/agentDialogueExamples";
 import { pickAction, pickNextSpeaker } from "@/lib/chatActions";
 import {
   sanitizeChatContent,
@@ -135,7 +136,7 @@ function fallbackContent(
   const faction = getFaction(agentId);
   const symbol = primarySymbol(seed);
   const point = pricePoint(snapshot, seed);
-  if (!point) return `${faction.nickname} 数据源 10 秒内没回，所以先等下一轮价格。`;
+  if (!point) return noDataFallbackForAgent(agentId, `${seed.id}:${seed.createdAt}`);
 
   const current = formatNumber(point.current);
   const high = formatNumber(point.high24h);
@@ -242,6 +243,11 @@ function buildChatMessage({
     sanitizeContent ? sanitizeChatContent(baseContent) : baseContent,
     seed,
   );
+  const contentZh =
+    typeof raw?.contentZh === "string"
+      ? prefixSymbols(sanitizeContent ? sanitizeChatContent(raw.contentZh) : raw.contentZh, seed)
+      : content;
+  const contentEn = typeof raw?.contentEn === "string" ? raw.contentEn.trim() : undefined;
   const validation = validateChatContent(content);
   const rawReplyTo = isValidReplyTo(raw?.replyTo, history);
   const rawMentioning = isValidMention(raw?.mentioning, agentId);
@@ -269,6 +275,8 @@ function buildChatMessage({
     ts,
     agentId,
     content: content.slice(0, 120),
+    contentZh: contentZh.slice(0, 120),
+    contentEn: contentEn?.slice(0, 180),
     replyTo,
     mentioning,
     action,
