@@ -20,6 +20,12 @@ function isEnglish(labels: Dict["agentWatch"]["newsDebate"]) {
   return labels.waitSignal.toLowerCase().includes("wait");
 }
 
+function directionChip(direction: FinalStrategy["direction"], english: boolean) {
+  if (direction === "long") return english ? "🟢 Long" : "🟢多头";
+  if (direction === "short") return english ? "🔴 Short" : "🔴空头";
+  return english ? "⚪ Wait" : "⚪等待";
+}
+
 export function FinalStrategyBlock({
   strategy,
   labels,
@@ -54,6 +60,9 @@ export function FinalStrategyBlock({
             </span>
             <span className={`font-mono text-sm font-bold ${directionClass}`}>
               ${strategy.symbol} · {strategy.direction.toUpperCase()}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-xs font-bold text-white/80">
+              {directionChip(strategy.direction, english)}
             </span>
           </div>
 

@@ -27,15 +27,25 @@ import type {
 } from "@/lib/types";
 
 const MAX_TURNS = 20;
-const QUIET_STREAK_FOR_END = 3;
+const QUIET_STREAK_FOR_END = 5;
+const MIN_TOTAL_MESSAGES = 6;
 const MAX_RETRY_TOTAL = 5;
 const MAX_CONTENT_CHARS = 80;
 
+const FACTION_ALIAS_PATTERN = "(?:Alpha|Beta|Gamma|老\\s*K|老\\s*白|老\\s*G|老K|老白|老G)";
+const REPORT_PREFIX_PATTERN =
+  "(?:破位|趋势|极端|突破|回归|突破视角|趋势视角|回归视角|突破派|趋势派|回归派)";
+
 const BANNED_CHAT_PATTERNS = [
-  /突破视角[:：]/,
-  /趋势视角[:：]/,
-  /回归视角[:：]/,
-  /(?:Alpha|Beta|Gamma)\s*派认为[:：]?/i,
+  new RegExp(`${REPORT_PREFIX_PATTERN}\\s*[:：]`, "i"),
+  new RegExp(`${REPORT_PREFIX_PATTERN}\\s*(?:分析|判断|观察|派认为)\\s*[:：]?`, "i"),
+  new RegExp(`${FACTION_ALIAS_PATTERN}\\s*[:：]`, "i"),
+  new RegExp(`${FACTION_ALIAS_PATTERN}\\s*派认为\\s*[:：]?`, "i"),
+  new RegExp(
+    `${FACTION_ALIAS_PATTERN}\\s*(?:追多|追空|做多|做空|反驳|提问|同意|嘲讽|开场|评论|复盘|判断)\\s*[:：]`,
+    "i",
+  ),
+  /(?:突破|趋势|回归|极端|破位)\s*视角[:：]/,
   /基于(?:派别)?分析/,
   /首先/,
   /其次/,
@@ -43,6 +53,22 @@ const BANNED_CHAT_PATTERNS = [
   /综上/,
   /值得注意的是/,
 ];
+
+const REPORT_PREFIX_CLEANERS = [
+  new RegExp(`^\\s*${REPORT_PREFIX_PATTERN}\\s*(?:分析|判断|观察|派认为|视角)?\\s*[:：]\\s*`, "i"),
+  new RegExp(`^\\s*${FACTION_ALIAS_PATTERN}\\s*派认为\\s*[:：]?\\s*`, "i"),
+  new RegExp(`^\\s*${FACTION_ALIAS_PATTERN}\\s*[:：]\\s*`, "i"),
+  new RegExp(
+    `^\\s*${FACTION_ALIAS_PATTERN}\\s*(?:追多|追空|做多|做空|反驳|提问|同意|嘲讽|开场|评论|复盘|判断)\\s*[:：]\\s*`,
+    "i",
+  ),
+  /^\s*(?:突破|趋势|回归|极端|破位)\s*视角\s*[:：]\s*/i,
+  /^\s*[-—:：]\s*/,
+];
+
+const ACTION_WORD_PATTERN = /(追|做|动手|干|上车|入场|建仓)/g;
+const ACTION_WITH_DIRECTION_PATTERN = /(?:追|做|动手|干|上车|入场|建仓)\s*(?:做)?(?:多|空|等|不动)/;
+const MENTION_ACTIONS: ChatAction[] = ["rebut", "question", "taunt", "agree"];
 
 function parseObject(text: string): Record<string, unknown> {
   const trimmed = text.trim();
@@ -83,6 +109,58 @@ function prefixSymbols(content: string, seed: ConversationSeed): string {
   }, content);
 }
 
+export function sanitizeChatContent(content: string): string {
+  let text = content.trim();
+  let previous = "";
+  let guard = 0;
+  while (text !== previous && guard < 6) {
+    previous = text;
+    REPORT_PREFIX_CLEANERS.forEach((pattern) => {
+      text = text.replace(pattern, "").trim();
+    });
+    guard += 1;
+  }
+  return text;
+}
+
+function hashNumber(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return hash;
+}
+
+function shouldForceOpeningReply(messageIndex: number, seed: ConversationSeed): boolean {
+  if (messageIndex >= 4) return false;
+  if (messageIndex < 3) return true;
+  return hashNumber(`${seed.id}:reply:${messageIndex}`) % 10 < 7;
+}
+
+export function shouldForceMentionInOpening(messageIndex: number, seedId: string): boolean {
+  if (messageIndex < 1 || messageIndex > 5) return false;
+  if (messageIndex === 1 || messageIndex === 3) return true;
+  return hashNumber(`${seedId}:mention:${messageIndex}`) % 10 < 7;
+}
+
+function actionForOpeningMention(action: ChatAction, messageIndex: number, seed: ConversationSeed) {
+  if (!shouldForceMentionInOpening(messageIndex, seed.id)) return action;
+  const index =
+    hashNumber(`${seed.id}:mention-action:${messageIndex}:${action}`) % MENTION_ACTIONS.length;
+  return MENTION_ACTIONS[index] ?? "question";
+}
+
+function mentionTargetFor(history: ChatMessage[], agentId: FactionId): FactionId | undefined {
+  const recent = [...history].reverse().find((message) => message.agentId !== agentId);
+  if (recent) return recent.agentId;
+  return getFactionIds().find((id) => id !== agentId);
+}
+
+function lastMessageByAgent(history: ChatMessage[], agentId: FactionId | undefined) {
+  if (!agentId) return undefined;
+  return [...history].reverse().find((message) => message.agentId === agentId);
+}
+
 function pricePoint(snapshot: TickerSnapshot | null, seed: ConversationSeed) {
   const symbol = primarySymbol(seed);
   return snapshot?.prices[symbol] ?? snapshot?.prices.BTC ?? null;
@@ -108,7 +186,7 @@ function fallbackContent(
   const high = formatNumber(point.high24h);
   const low = formatNumber(point.low24h);
   if (faction.role === "breakout") {
-    return `$${symbol} 现价 ${current}，上沿在 ${high} 附近，所以站稳 ${high} 再追。`;
+    return `$${symbol} 现价 ${current}，上沿在 ${high} 附近，所以站稳 ${high} 再追多。`;
   }
   if (faction.role === "trend") {
     return `$${symbol} 现价 ${current}，24h 低点 ${low} 没破，所以跌回 ${low} 前先看延续。`;
@@ -167,11 +245,28 @@ function isValidMention(value: unknown, agentId: FactionId): FactionId | undefin
   return isFactionId(normalized) && normalized !== agentId ? normalized : undefined;
 }
 
-function validateChatContent(content: string) {
+function validateActionDirection(content: string): string[] {
+  const reasons: string[] = [];
+  let match: RegExpExecArray | null;
+  ACTION_WORD_PATTERN.lastIndex = 0;
+  while ((match = ACTION_WORD_PATTERN.exec(content))) {
+    const before = content.slice(Math.max(0, match.index - 1), match.index);
+    if (/[不别没勿]/.test(before)) continue;
+    const windowText = content.slice(match.index, match.index + 8);
+    if (!ACTION_WITH_DIRECTION_PATTERN.test(windowText)) {
+      reasons.push("动作词缺少明确方向");
+      break;
+    }
+  }
+  return reasons;
+}
+
+export function validateChatContent(content: string) {
   const reasons: string[] = [];
   const text = content.trim();
   if (Array.from(text).length > MAX_CONTENT_CHARS) reasons.push("超过 80 字");
   if (BANNED_CHAT_PATTERNS.some((pattern) => pattern.test(text))) reasons.push("含报告前缀或套话");
+  reasons.push(...validateActionDirection(text));
   if (hasMechanicalOutput(text)) reasons.push("输出机械套话");
   reasons.push(...validatePlainSpeech(text).reasons);
   return { ok: reasons.length === 0, reasons };
@@ -187,6 +282,9 @@ function buildChatMessage({
   history,
   snapshot,
   seed,
+  forcedMention,
+  forceExpectsReply,
+  sanitizeContent = false,
 }: {
   raw: Record<string, unknown> | null;
   fallback: string;
@@ -197,15 +295,36 @@ function buildChatMessage({
   history: ChatMessage[];
   snapshot: TickerSnapshot | null;
   seed: ConversationSeed;
+  forcedMention?: FactionId;
+  forceExpectsReply?: boolean;
+  sanitizeContent?: boolean;
 }): { message: ChatMessage; valid: boolean; reasons: string[] } {
-  const content = prefixSymbols(String(raw?.content ?? fallback).trim(), seed);
+  const baseContent = String(raw?.content ?? fallback).trim();
+  const content = prefixSymbols(
+    sanitizeContent ? sanitizeChatContent(baseContent) : baseContent,
+    seed,
+  );
   const validation = validateChatContent(content);
-  const replyTo = isValidReplyTo(raw?.replyTo, history);
-  const mentioning = isValidMention(raw?.mentioning, agentId);
+  const rawReplyTo = isValidReplyTo(raw?.replyTo, history);
+  const rawMentioning = isValidMention(raw?.mentioning, agentId);
+  const forcedMentionMessage = lastMessageByAgent(history, forcedMention);
+  const mentioning = forcedMention ?? rawMentioning;
+  const replyTo = rawReplyTo ?? forcedMentionMessage?.id;
+  const citedSource =
+    history.find((message) => message.id === replyTo) ?? lastMessageByAgent(history, mentioning);
+  const rawCitedQuote = typeof raw?.citedQuote === "string" ? raw.citedQuote.trim() : "";
+  const citedQuote =
+    rawCitedQuote.length >= 5
+      ? rawCitedQuote.slice(0, 28)
+      : mentioning
+        ? citedSource?.content.slice(0, 28)
+        : undefined;
   const expectsReply =
-    typeof raw?.expectsReply === "boolean"
-      ? raw.expectsReply
-      : action === "question" || action === "rebut" || action === "taunt";
+    typeof forceExpectsReply === "boolean"
+      ? forceExpectsReply
+      : typeof raw?.expectsReply === "boolean"
+        ? raw.expectsReply
+        : action === "question" || action === "rebut" || action === "taunt";
   const message: ChatMessage = {
     id: `${threadId}:${agentId}:${history.length}:${ts}`,
     threadId,
@@ -217,7 +336,7 @@ function buildChatMessage({
     action,
     expectsReply,
     mood: normalizeMood(raw?.mood),
-    citedQuote: replyTo ? String(raw?.citedQuote ?? "").slice(0, 28) || undefined : undefined,
+    citedQuote,
     isGoldenLine: action === "gloat" || action === "taunt",
     marketDataFetchedAt: snapshot?.fetchedAt,
   };
@@ -228,6 +347,9 @@ function buildChatMessage({
   }
   if (typeof raw?.mentioning === "string" && raw.mentioning !== "null" && !mentioning) {
     schemaReasons.push("mentioning 无效或 @ 自己");
+  }
+  if (mentioning && (!message.citedQuote || Array.from(message.citedQuote).length < 5)) {
+    schemaReasons.push("mentioning 必须带 citedQuote");
   }
 
   return {
@@ -247,6 +369,8 @@ async function generateMessage({
   snapshot,
   relationshipLine,
   debt,
+  forcedMention,
+  forceExpectsReply,
 }: {
   agentId: FactionId;
   action: ChatAction;
@@ -257,6 +381,8 @@ async function generateMessage({
   snapshot: TickerSnapshot | null;
   relationshipLine: string;
   debt: number;
+  forcedMention?: FactionId;
+  forceExpectsReply?: boolean;
 }): Promise<{ message: ChatMessage | null; retries: number }> {
   const fallback = fallbackContent(agentId, seed, snapshot);
   const signal = syntheticSignal(agentId, seed, ts);
@@ -273,6 +399,8 @@ async function generateMessage({
         history,
         snapshot,
         seed,
+        forcedMention,
+        forceExpectsReply,
       }).message,
       retries: 0,
     };
@@ -285,6 +413,7 @@ async function generateMessage({
     history,
     snapshot,
     relationshipDebt: relationshipLine,
+    forcedMention,
   });
   const first = await generateLlmText(prompt);
   if (!first) {
@@ -299,6 +428,8 @@ async function generateMessage({
         history,
         snapshot,
         seed,
+        forcedMention,
+        forceExpectsReply,
       }).message,
       retries: 0,
     };
@@ -315,6 +446,8 @@ async function generateMessage({
     history,
     snapshot,
     seed,
+    forcedMention,
+    forceExpectsReply,
   });
   if (firstResult.valid) return { message: firstResult.message, retries: 0 };
 
@@ -333,8 +466,26 @@ async function generateMessage({
     history,
     snapshot,
     seed,
+    forcedMention,
+    forceExpectsReply,
   });
-  return { message: retryResult.valid ? retryResult.message : null, retries: 1 };
+  if (retryResult.valid) return { message: retryResult.message, retries: 1 };
+
+  const sanitizedRetryResult = buildChatMessage({
+    raw: retryRaw,
+    fallback,
+    agentId,
+    action,
+    threadId,
+    ts,
+    history,
+    snapshot,
+    seed,
+    forcedMention,
+    forceExpectsReply,
+    sanitizeContent: true,
+  });
+  return { message: sanitizedRetryResult.valid ? sanitizedRetryResult.message : null, retries: 1 };
 }
 
 function buildStrategyFromRaw(
@@ -461,14 +612,19 @@ export async function runChatThread(news: NewsItem, now = Date.now()): Promise<C
   let nextAgent: FactionId | null = pickOpener(seed);
 
   while (nextAgent && messages.length < MAX_TURNS && retryTotal < MAX_RETRY_TOTAL) {
-    if (messages.length >= QUIET_STREAK_FOR_END && quietStreak(messages) >= QUIET_STREAK_FOR_END) {
+    if (messages.length >= MIN_TOTAL_MESSAGES && quietStreak(messages) >= QUIET_STREAK_FOR_END) {
       break;
     }
 
     const last = messages[messages.length - 1];
     const debt = relationshipDebt(nextAgent, last?.agentId, relationshipSnapshot.pairs);
-    const action: ChatAction =
-      messages.length === 0 ? "open" : pickAction(nextAgent, messages, debt);
+    const messageIndex = messages.length;
+    const pickedAction: ChatAction =
+      messageIndex === 0 ? "open" : pickAction(nextAgent, messages, debt);
+    const action = actionForOpeningMention(pickedAction, messageIndex, seed);
+    const forcedMention = shouldForceMentionInOpening(messageIndex, seed.id)
+      ? mentionTargetFor(messages, nextAgent)
+      : undefined;
     const ts = now + messages.length * 1000;
     const result = await generateMessage({
       agentId: nextAgent,
@@ -480,6 +636,8 @@ export async function runChatThread(news: NewsItem, now = Date.now()): Promise<C
       snapshot,
       relationshipLine: relationshipPromptLine(nextAgent, relationshipSnapshot.pairs),
       debt,
+      forcedMention,
+      forceExpectsReply: shouldForceOpeningReply(messageIndex, seed),
     });
 
     retryTotal += result.retries;

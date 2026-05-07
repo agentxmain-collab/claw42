@@ -82,6 +82,7 @@ export async function buildChatMessagePrompt({
   history,
   snapshot,
   relationshipDebt,
+  forcedMention,
 }: {
   agentId: FactionId;
   action: ChatAction;
@@ -89,10 +90,14 @@ export async function buildChatMessagePrompt({
   history: ChatMessage[];
   snapshot: TickerSnapshot | null;
   relationshipDebt: string;
+  forcedMention?: FactionId;
 }): Promise<string> {
   const faction = getFaction(agentId);
   const [ip, relationship] = await Promise.all([loadAgentIp(agentId), relationshipBlock(agentId)]);
   const factionIds = getFactionIds().join("|");
+  const forcedMentionLine = forcedMention
+    ? `- 本条必须 mentioning="${forcedMention}"，citedQuote 必须引用 ${getFaction(forcedMention).displayName} 最近一句原话片段，且不少于 5 个字。`
+    : "";
 
   return `你是 ${faction.displayName} ${faction.title}·${faction.nickname}，加密交易江湖人物。
 
@@ -122,9 +127,17 @@ ${PLAIN_SPEECH_PROMPT_BLOCK}
 - 禁止“首先 / 其次 / 最后 / 综上所述 / 值得注意的是”。
 - 必须引用实时市场状态里的至少 1 个具体价格、百分比或时间窗口。
 - 必须出现“所以”，并在“所以”后给行动和具体价格触发条件。
+- 动作词“追 / 做 / 动手 / 干 / 上车 / 入场 / 建仓”后必须马上带方向：“多 / 空 / 等 / 不动”。
+- 反例修正：
+  - ❌ “$BTC 81200 上车，所以看 81500。” ✅ “$BTC 81200 上车做多，所以站稳 81500 再追多。”
+  - ❌ “$ETH 跌破 2240 就追，所以别犹豫。” ✅ “$ETH 跌破 2240 追空，所以回到 2260 上方不动。”
+  - ❌ “$SOL 83 附近动手，所以等放量。” ✅ “$SOL 83 附近动手等，所以放量过 84.2 再做多。”
+  - ❌ “$BTC 回踩 76000 入场，所以看反弹。” ✅ “$BTC 回踩 76000 入场做多，所以跌破 75200 不动。”
+  - ❌ “$AI 继续干，所以别慢。” ✅ “$AI 继续等，所以重新站上 0.74 再做多。”
 - mentioning 只能是 ${factionIds} 或 null；不能 @ 自己。
 - replyTo 只能填最近 5 条历史里的 message id，没引用就 null。
 - citedQuote 只在 replyTo 不为 null 时填写，必须来自被引用 message 的原话片段。
+${forcedMentionLine}
 - 允许轻微语气词，但不要脏话、不要空泛鼓动、不要投资承诺。
 
 ## 输出 JSON
