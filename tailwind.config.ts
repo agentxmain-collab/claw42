@@ -12,10 +12,33 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          purple: "#6c4fff",
+          purple: "#5227ff",
+          "purple-bright": "#6c4fff",
           lime: "#d1ff55",
-          dark: "#0a0a0a",
+          red: "#e95032",
         },
+        bg: {
+          primary: "#1a1a1a",
+          "fill-card1": "#262626",
+          "fill-card2": "rgba(255, 255, 255, 0.05)",
+        },
+        fg: {
+          primary: "#ffffff",
+          secondary: "#a6a6a6",
+          tertiary: "#737373",
+          brand: "#6c4fff",
+        },
+        "border-token": {
+          primary: "rgba(255, 255, 255, 0.1)",
+          secondary: "rgba(255, 255, 255, 0.05)",
+          brand: "#6c4fff",
+        },
+        func: {
+          red: "#e95032",
+          green: "#14a739",
+          yellow: "#fed500",
+        },
+        "brand-dark": "#0a0a0a",
       },
       fontFamily: {
         sans: ["var(--font-stack)"],
