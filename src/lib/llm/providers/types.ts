@@ -13,6 +13,7 @@ export interface LLMInput {
   maxTokens?: number;
   timeoutMs?: number;
   cacheKey?: string;
+  cacheTTLSeconds?: number;
   taskTag: string;
 }
 
