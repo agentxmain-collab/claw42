@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test:signal-engine": "vitest run src/lib/signal-engine/__tests__",
     "test:kv-lock": "vitest run src/lib/storage/__tests__/kv-lock.test.ts",
     "test:kv-rate-limiter": "vitest run src/lib/storage/__tests__/kv-rate-limiter.test.ts",
     "test:kv-quota": "vitest run src/lib/storage/__tests__/kv-quota.test.ts",
