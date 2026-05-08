@@ -205,14 +205,13 @@ export function formatLiveSnapshotForPrompt(
   }
 
   const ageSeconds = Math.max(0, Math.round((Date.now() - snapshot.fetchedAt) / 1000));
-  const uniqueSymbols = Array.from(new Set(symbols.map((symbol) => symbol.toUpperCase()))).filter(
-    (symbol) => snapshot.prices[symbol],
-  );
+  const uniqueSymbols = Array.from(new Set(symbols.map((symbol) => symbol.toUpperCase())));
 
   return [
     `## 实时市场状态 — 数据 ${ageSeconds} 秒前抓取`,
     ...uniqueSymbols.map((symbol) => {
       const point = snapshot.prices[symbol];
+      if (!point) return `${symbol}: <数据缺失>（严禁用其他币价格替代）`;
       return [
         `${symbol}:`,
         `  当前 ${formatUsd(point.current)} (24h ${formatPct(point.change24h)})`,

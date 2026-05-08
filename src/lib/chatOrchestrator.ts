@@ -119,7 +119,7 @@ function lastMessageByAgent(history: ChatMessage[], agentId: FactionId | undefin
 
 function pricePoint(snapshot: TickerSnapshot | null, seed: ConversationSeed) {
   const symbol = primarySymbol(seed);
-  return snapshot?.prices[symbol] ?? snapshot?.prices.BTC ?? null;
+  return snapshot?.prices[symbol] ?? null;
 }
 
 function formatNumber(value: number): string {

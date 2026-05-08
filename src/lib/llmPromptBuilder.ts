@@ -56,8 +56,30 @@ function newsBlock(seed: ConversationSeed): string {
 }
 
 function liveMarketBlock(snapshot: TickerSnapshot | null, seed: ConversationSeed): string {
-  const symbols = ["BTC", "ETH", "SOL", ...seed.symbols];
+  const symbols = seed.symbols.length > 0 ? seed.symbols : [primarySymbol(seed)];
   return formatLiveSnapshotForPrompt(snapshot, symbols);
+}
+
+function primarySymbol(seed: ConversationSeed): string {
+  return seed.symbols[0]?.replace(/^\$/, "").toUpperCase() || "BTC";
+}
+
+function formatInvariantPrice(value: number | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "<数据缺失>";
+  return `$${value.toLocaleString("en-US", {
+    maximumFractionDigits: value >= 1000 ? 0 : value >= 1 ? 4 : 6,
+  })}`;
+}
+
+function currentSymbolInvariantBlock(snapshot: TickerSnapshot | null, seed: ConversationSeed) {
+  const symbol = primarySymbol(seed);
+  const point = snapshot?.prices[symbol];
+  return [
+    "## 当前讨论币种硬约束",
+    `当前讨论的 symbol 是 ${symbol}，当前价格是 ${formatInvariantPrice(point?.current)}。`,
+    `你必须只引用 ${symbol} 的数据，严禁引用 BTC/ETH/SOL 或其他币的数字来代替 ${symbol}。`,
+    `如果你不知道 ${symbol} 的某个数字，写 <数据缺失>，不得猜测或套用其他币价格。`,
+  ].join("\n");
 }
 
 async function relationshipBlock(agentId: FactionId): Promise<string> {
@@ -119,6 +141,8 @@ ${newsBlock(seed)}
 
 ${liveMarketBlock(snapshot, seed)}
 
+${currentSymbolInvariantBlock(snapshot, seed)}
+
 ## 最近 5 条聊天历史
 ${historyBlock(history)}
 
@@ -138,11 +162,11 @@ ${PLAIN_SPEECH_PROMPT_BLOCK}
 - 同一条必须产出中文和英文两个版本：contentZh / contentEn。content 用中文版本。
 - 英文保留 mild slang，不直译中文粗口。
 - 反例修正：
-  - ❌ “$BTC 81200 上车，所以看 81500。” ✅ “$BTC 81200 上车做多，所以站稳 81500 再追多。”
-  - ❌ “$ETH 跌破 2240 就追，所以别犹豫。” ✅ “$ETH 跌破 2240 追空，所以回到 2260 上方不动。”
-  - ❌ “$SOL 83 附近动手，所以等放量。” ✅ “$SOL 83 附近动手等，所以放量过 84.2 再做多。”
-  - ❌ “$BTC 回踩 76000 入场，所以看反弹。” ✅ “$BTC 回踩 76000 入场做多，所以跌破 75200 不动。”
-  - ❌ “$AI 继续干，所以别慢。” ✅ “$AI 继续等，所以重新站上 0.74 再做多。”
+  - ❌ “$<SYMBOL> <PRICE> 上车，所以看 <TARGET>。” ✅ “$<SYMBOL> <PRICE> 上车做多，所以站稳 <TARGET> 再追多。”
+  - ❌ “$<SYMBOL> 跌破 <PRICE> 就追，所以别犹豫。” ✅ “$<SYMBOL> 跌破 <PRICE> 追空，所以回到 <INVALIDATION> 上方不动。”
+  - ❌ “$<SYMBOL> <PRICE> 附近动手，所以等放量。” ✅ “$<SYMBOL> <PRICE> 附近动手等，所以放量过 <TARGET> 再做多。”
+  - ❌ “$<SYMBOL> 回踩 <PRICE> 入场，所以看反弹。” ✅ “$<SYMBOL> 回踩 <PRICE> 入场做多，所以跌破 <INVALIDATION> 不动。”
+  - ❌ “$<SYMBOL> 继续干，所以别慢。” ✅ “$<SYMBOL> 继续等，所以重新站上 <TARGET> 再做多。”
 - mentioning 只能是 ${factionIds} 或 null；不能 @ 自己。
 - replyTo 只能填最近 5 条历史里的 message id，没引用就 null。
 - citedQuote 只在 replyTo 不为 null 时填写，必须来自被引用 message 的原话片段。
@@ -182,6 +206,8 @@ ${transcript}
 
 ${liveMarketBlock(snapshot, seed)}
 
+${currentSymbolInvariantBlock(snapshot, seed)}
+
 ## 任务
 如果 3 派已经收敛到同一个方向和触发条件，输出 strategy。
 如果分歧大、价格条件不一致、缺少可执行点位，输出 consensusReached=false 且 strategy=null。
@@ -196,8 +222,8 @@ ${liveMarketBlock(snapshot, seed)}
     "direction": "long|short|wait",
     "symbol": "${primarySymbol}",
     "entryCondition": "必须含点位或价格触发条件",
-    "stopLoss": 76500,
-    "takeProfit": [78500, 79200],
+    "stopLoss": <number around current symbol price>,
+    "takeProfit": [<number around current symbol price>, <number around current symbol price>],
     "dissentNote": "保留意见",
     "riskNote": "本页面内容均由 AI 生成，不构成投资建议"
   }
