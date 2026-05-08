@@ -31,7 +31,7 @@ function DailyReportInput() {
         type="button"
         onClick={handleClick}
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-        className="min-h-[48px] w-full cursor-pointer rounded-lg border border-white/10 bg-[#0a0a0a] px-4 py-3 text-left text-sm text-gray-400 transition-colors hover:border-[#7c5cff]/40 hover:text-gray-300"
+        className="min-h-[48px] w-full cursor-pointer rounded-lg border border-border-token-primary bg-bg-primary px-4 py-3 text-left text-sm text-fg-secondary transition-colors hover:border-brand-purple-bright/40 hover:text-fg-primary"
       >
         {t.scenarios.daily.inputPlaceholder}
       </motion.button>
@@ -42,7 +42,7 @@ function DailyReportInput() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
             transition={{ duration: 0.18 }}
-            className="absolute -top-10 left-0 rounded-md bg-[#7c5cff] px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
+            className="absolute -top-10 left-0 rounded-md bg-brand-purple-bright px-3 py-1.5 text-xs font-semibold text-white"
           >
             {t.scenarios.daily.copiedToast}
           </motion.div>
@@ -78,17 +78,19 @@ function DailyReportCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-      className="card-glow h-full rounded-2xl border border-white/10 bg-[#111] p-6 transition-[box-shadow,border-color,background-color] duration-500 md:p-8"
+      className="card-glow h-full rounded-card border border-border-token-primary bg-bg-fill-card1 p-6 transition-[border-color,background-color] duration-500 md:p-8"
     >
       <div className="grid h-full grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2">
         <div className="flex h-full flex-col">
           <div className="mb-4 flex flex-wrap items-center gap-3">
-            <h3 className="text-xl font-bold text-white md:text-2xl">{t.scenarios.daily.title}</h3>
-            <span className="rounded-full border border-[#7c5cff]/30 bg-[#7c5cff]/20 px-2.5 py-1 text-xs font-bold text-[#d7ccff]">
+            <h3 className="text-xl font-bold text-fg-primary md:text-2xl">
+              {t.scenarios.daily.title}
+            </h3>
+            <span className="rounded-full border border-brand-purple-bright/30 bg-brand-purple-bright/20 px-2.5 py-1 text-xs font-bold text-fg-primary">
               {t.scenarios.daily.badge}
             </span>
           </div>
-          <p className="mb-6 text-sm leading-relaxed text-gray-400 md:text-base">
+          <p className="mb-6 text-sm leading-relaxed text-fg-secondary md:text-base">
             {t.scenarios.daily.desc}
           </p>
 
@@ -111,7 +113,7 @@ function DailyReportCard({ delay }: { delay: number }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
                     transition={{ duration: 0.18 }}
-                    className="absolute -top-10 left-0 z-10 whitespace-nowrap rounded-md bg-[#7c5cff] px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
+                    className="absolute -top-10 left-0 z-10 whitespace-nowrap rounded-md bg-brand-purple-bright px-3 py-1.5 text-xs font-semibold text-white"
                   >
                     {t.scenarios.daily.ctaCopiedToast}
                   </motion.div>
@@ -139,15 +141,15 @@ function RealtimeMonitorCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-      className="card-glow flex-1 rounded-2xl border border-white/10 bg-[#111] p-5 transition-[box-shadow,border-color,background-color] duration-500"
+      className="card-glow flex-1 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
     >
-      <h3 className="mb-2 text-base font-semibold text-white md:text-lg">
+      <h3 className="mb-2 text-base font-semibold text-fg-primary md:text-lg">
         {t.scenarios.realtime.title}
       </h3>
-      <p className="text-xs leading-relaxed text-gray-400 md:text-sm">
+      <p className="text-xs leading-relaxed text-fg-secondary md:text-sm">
         {t.scenarios.realtime.desc}
       </p>
-      <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-gray-300">
+      <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border-token-primary bg-bg-fill-card2 px-3 py-1.5 font-mono text-xs text-fg-primary">
         <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" />
         {t.scenarios.realtime.ticker}
       </div>
@@ -167,15 +169,15 @@ function AutoTradeCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-      className="card-glow flex-1 rounded-2xl border border-white/10 bg-[#111] p-5 transition-[box-shadow,border-color,background-color] duration-500"
+      className="card-glow flex-1 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
     >
-      <h3 className="mb-2 text-base font-semibold text-white md:text-lg">
+      <h3 className="mb-2 text-base font-semibold text-fg-primary md:text-lg">
         {t.scenarios.autoTrade.title}
       </h3>
-      <p className="text-xs leading-relaxed text-gray-400 md:text-sm">
+      <p className="text-xs leading-relaxed text-fg-secondary md:text-sm">
         {t.scenarios.autoTrade.desc}
       </p>
-      <span className="mt-4 inline-flex text-xs font-semibold text-[#d1ff55]">
+      <span className="mt-4 inline-flex text-xs font-semibold text-brand-purple">
         {t.scenarios.autoTrade.cta}
       </span>
     </motion.div>
@@ -201,10 +203,10 @@ export function ScenariosSection() {
       </div>
 
       <div className="mb-10 text-center">
-        <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl lg:text-5xl">
+        <h2 className="mb-4 text-3xl font-bold text-fg-primary md:text-4xl lg:text-5xl">
           {t.scenarios.sectionTitle}
         </h2>
-        <p className="mx-auto max-w-3xl text-base leading-relaxed text-gray-400 md:text-lg">
+        <p className="mx-auto max-w-3xl text-base leading-relaxed text-fg-secondary md:text-lg">
           {t.scenarios.sectionSubtitle}
         </p>
       </div>
