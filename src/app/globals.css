@@ -107,6 +107,19 @@ textarea:focus-visible,
   min-height: 100svh;
 }
 
+.disclaimer-section {
+  position: relative;
+  background:
+    linear-gradient(
+      to top,
+      var(--color-brand-purple) 0%,
+      rgba(82, 39, 255, 0.5) 15%,
+      rgba(82, 39, 255, 0.15) 35%,
+      transparent 60%
+    ),
+    var(--color-bg-primary);
+}
+
 @media (max-width: 1024px) {
   .claw42-app-surface .claw42-hero-scene {
     --claw42-hero-robot-bottom: 43%;
