@@ -21,7 +21,7 @@ const notoSansSC = Noto_Sans_SC({
   variable: "--font-noto-sc",
   display: "swap",
 });
-const bodyFontClassName = `${inter.variable} ${notoSansSC.variable} font-sans`;
+const bodyFontClassName = `${inter.variable} ${notoSansSC.variable} font-language`;
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));

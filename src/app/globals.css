@@ -2,7 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/satoshi/Satoshi-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/satoshi/Satoshi-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/satoshi/Satoshi-Bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/fonts/satoshi/Satoshi-Black.woff2") format("woff2");
+}
+
 :root {
+  --color-brand-purple: #5227ff;
+  --color-brand-purple-bright: #6c4fff;
+  --color-brand-lime: #d1ff55;
+  --color-brand-red: #e95032;
+  --color-bg-primary: #1a1a1a;
+  --color-bg-fill-card1: #262626;
+  --color-bg-fill-card2: rgba(255, 255, 255, 0.05);
+  --color-fg-primary: #ffffff;
+  --color-fg-secondary: #a6a6a6;
+  --color-fg-tertiary: #737373;
+  --color-fg-brand: #6c4fff;
+  --color-border-primary: rgba(255, 255, 255, 0.1);
+  --color-border-secondary: rgba(255, 255, 255, 0.05);
+  --color-border-brand: #6c4fff;
+  --color-func-red: #e95032;
+  --color-func-green: #14a739;
+  --color-func-yellow: #fed500;
   --brand-purple: #6c4fff;
   --brand-lime: #d1ff55;
   --coinw-brand-hex: #7650ff;
@@ -13,6 +62,10 @@
   --font-stack:
     var(--font-inter), var(--font-noto-sc), -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
+  --font-language:
+    "Satoshi", var(--font-noto-sc), "Noto Sans TC", "Noto Sans JP", "Noto Sans Arabic",
+    "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: "Satoshi", var(--font-language);
   --spacing-section-x: 5.625rem;
   --spacing-section-y: 7.5rem;
   --radius-card: 1rem;
@@ -28,7 +81,7 @@ html {
 body {
   background: #000000;
   color: #ffffff;
-  font-family: var(--font-stack);
+  font-family: var(--font-language);
   overflow-x: hidden;
 }
 
