@@ -27,7 +27,30 @@
       "No preguntes por qué 42. El que sabe, sabe.",
       "Hace 42 segundos leía datos on-chain. Ahora te toca a ti preguntar."
     ],
-    "speechBubbleAriaLabel": "Burbuja de diálogo de Claw 42 Agent"
+    "speechBubbleAriaLabel": "Burbuja de diálogo de Claw 42 Agent",
+    "miniPlayer": {
+      "title": "Mesa táctica rápida de Agent",
+      "loading": "Agent está analizando...",
+      "strategyDirection": {
+        "long": "Largo",
+        "short": "Corto",
+        "watch": "Observar"
+      },
+      "confidence": "Confianza",
+      "entry": "Entrada",
+      "stopLoss": "Stop loss",
+      "target": "Objetivo"
+    },
+    "cta": {
+      "openAgentWatch": "Ver discusión completa →",
+      "openCoinwAccount": "Abrir cuenta CoinW →",
+      "openCoinwAccountWithSymbol": "Abrir CoinW para operar {symbol} →"
+    },
+    "hint": {
+      "tapCoin": "👇 Toca cualquier moneda para análisis instantáneo de AI Agent",
+      "tapCoinMobile": "Toca una moneda para análisis de AI Agent"
+    },
+    "miniPlayerClose": "Cerrar mesa táctica rápida de Agent"
   },
   "quickStart": {
     "title": "Conoce a tu primer Agente de IA en 30 segundos"

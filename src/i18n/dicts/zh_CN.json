@@ -27,7 +27,30 @@
       "别问为什么是 42。懂的都懂。",
       "42 秒前我还在读链上数据，现在轮到你问我问题。"
     ],
-    "speechBubbleAriaLabel": "Claw 42 Agent 气泡提示"
+    "speechBubbleAriaLabel": "Claw 42 Agent 气泡提示",
+    "miniPlayer": {
+      "title": "Agent 快速战术台",
+      "loading": "Agent 正在分析...",
+      "strategyDirection": {
+        "long": "做多",
+        "short": "做空",
+        "watch": "观望"
+      },
+      "confidence": "信心",
+      "entry": "入场",
+      "stopLoss": "止损",
+      "target": "目标"
+    },
+    "cta": {
+      "openAgentWatch": "去看完整讨论 →",
+      "openCoinwAccount": "开通 CoinW 账户 →",
+      "openCoinwAccountWithSymbol": "开通 CoinW 账户交易 {symbol} →"
+    },
+    "hint": {
+      "tapCoin": "👇 点击任意币种听 AI Agent 即时分析",
+      "tapCoinMobile": "点任意币种听 AI Agent 即时分析"
+    },
+    "miniPlayerClose": "关闭 Agent 快速战术台"
   },
   "quickStart": {
     "title": "30 秒遇见你的第一个 AI Agent"
