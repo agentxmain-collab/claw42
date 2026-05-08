@@ -254,13 +254,17 @@ function DisclaimerSection() {
       viewport={motionViewport}
       variants={fadeOnlyVariants()}
       transition={getFadeUpTransition()}
-      className="relative mt-10 border-t border-white/5 py-10"
+      className="disclaimer-section relative py-[120px]"
     >
-      <div className="mx-auto max-w-7xl px-6 md:px-12 lg:px-20">
-        <h3 className="mb-6 text-lg font-bold text-white">{t.disclaimer.title}</h3>
-        <div className="space-y-4 text-xs leading-relaxed text-gray-500">
+      <div className="mx-auto flex max-w-7xl flex-col gap-[32px] px-6 md:px-12 lg:px-[90px]">
+        <h2 className="text-3xl font-bold leading-tight text-fg-primary md:text-4xl lg:text-[45px] lg:leading-[52px]">
+          {t.disclaimer.title}
+        </h2>
+        <div className="flex flex-col items-start gap-4 rounded-3xl p-[24px]">
           {t.disclaimer.paragraphs.map((para, i) => (
-            <p key={i}>{para}</p>
+            <p key={i} className="text-sm leading-[22px] tracking-[0.25px] text-fg-primary">
+              {para}
+            </p>
           ))}
         </div>
 
