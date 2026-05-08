@@ -12,7 +12,14 @@ function StatusDot({ status, label }: { status: AgentStatus; label: string }) {
       : status === "speaking"
         ? "animate-pulse bg-[#3a7bff] shadow-[0_0_8px_rgba(58,123,255,0.45)]"
         : "bg-white/20";
-  return <span aria-label={label} title={label} className={`inline-block h-2 w-2 rounded-full ${cls}`} />;
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className={`inline-block h-2 w-2 rounded-full ${cls}`}
+    />
+  );
 }
 
 export function AgentRowCard({
@@ -64,9 +71,10 @@ export function AgentRowCard({
           <button
             type="button"
             title={`${focusLabels.focusLabel}: ${formatCoinSymbol(focus.symbol)}`}
+            aria-label={`${focusLabels.focusLabel}: ${formatCoinSymbol(focus.symbol)}`}
             className="shrink-0 rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-1.5 text-left transition-colors hover:bg-white/[0.08]"
           >
-            <span className="mr-1 text-xs font-bold text-white/45">
+            <span className="mr-1 text-xs font-bold text-[#8b8b8b]">
               {focusLabels.focusLabel}
             </span>
             <span className="font-mono text-sm font-bold text-white">
@@ -82,7 +90,7 @@ export function AgentRowCard({
             {prefixLeadingCoinSymbol(focus.judgment, focus.symbol)}
           </p>
           <details className="rounded-xl border border-white/[0.07] bg-black/20 px-3 py-2 text-sm">
-            <summary className="flex cursor-pointer select-none items-center gap-2 text-xs font-semibold text-white/45 hover:text-white/65">
+            <summary className="flex cursor-pointer select-none items-center gap-2 text-xs font-semibold text-[#828282] hover:text-white/65">
               {focusLabels.expandFail}
             </summary>
             <div className="mt-3 space-y-2 text-xs leading-relaxed text-white/65">

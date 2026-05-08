@@ -190,7 +190,7 @@ export function HeroScene() {
               onClick={handleHeroCtaClick}
               whileHover={reduceMotion ? undefined : { scale: 1.05 }}
               whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-              className="inline-flex min-w-[9.25rem] items-center justify-center rounded-xl bg-[#7c5cff] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] md:text-base"
+              className="inline-flex min-w-[9.25rem] items-center justify-center rounded-xl bg-[#6a4be0] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] md:text-base"
             >
               {t.hero.ctaPrimary}
             </motion.button>
