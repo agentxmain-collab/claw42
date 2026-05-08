@@ -100,7 +100,7 @@ function DailyReportCard({ delay }: { delay: number }) {
                 onClick={handleCtaClick}
                 whileHover={reduceMotion ? undefined : { scale: 1.05 }}
                 whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#7c5cff] px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)]"
+                className="inline-flex shrink-0 items-center justify-center rounded-lg bg-brand-purple-bright px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-brand-purple"
               >
                 {t.scenarios.daily.cta}
               </motion.button>
