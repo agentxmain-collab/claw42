@@ -109,15 +109,29 @@ textarea:focus-visible,
 
 .disclaimer-section {
   position: relative;
-  background:
-    linear-gradient(
-      to top,
-      var(--color-brand-purple) 0%,
-      rgba(82, 39, 255, 0.5) 15%,
-      rgba(82, 39, 255, 0.15) 35%,
-      transparent 60%
-    ),
-    var(--color-bg-primary);
+  overflow: hidden;
+  background: #000000;
+}
+
+.disclaimer-section::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 0;
+  height: clamp(92px, 12vw, 150px);
+  background: linear-gradient(
+    to top,
+    rgba(82, 39, 255, 0.54) 0%,
+    rgba(82, 39, 255, 0.22) 48%,
+    rgba(82, 39, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.disclaimer-section > div {
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 1024px) {
@@ -476,12 +490,7 @@ textarea:focus-visible,
   inset: 0;
   border-radius: inherit;
   border: 1px solid var(--color-border-brand);
-  background: linear-gradient(
-    to top,
-    rgba(82, 39, 255, 0.4) 0%,
-    rgba(82, 39, 255, 0.12) 28px,
-    transparent 48px
-  );
+  background: transparent;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.35s ease;
@@ -534,24 +543,21 @@ textarea:focus-visible,
 .scenario-agent-frame-white {
   inset: 1px;
   border-radius: 18px;
-  filter: blur(2px);
+  filter: none;
 }
 
 .scenario-agent-frame-border {
   inset: 1px;
   border-radius: 19px;
-  filter: blur(0.5px);
+  filter: none;
 }
 
 .scenario-agent-frame-dark {
-  inset: -1px;
-  filter: blur(3px);
+  display: none;
 }
 
 .scenario-agent-frame-glow {
-  inset: -28px;
-  filter: blur(30px);
-  opacity: 0.42;
+  display: none;
 }
 
 .scenario-agent-frame-white::before,
@@ -638,6 +644,21 @@ textarea:focus-visible,
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background-color: #0a0a0a;
+}
+
+@keyframes quick-start-caret-blink {
+  0%,
+  46% {
+    opacity: 1;
+  }
+  47%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.quick-start-caret {
+  animation: quick-start-caret-blink 0.9s steps(1, end) infinite;
 }
 
 /* Terminal glow */
@@ -788,6 +809,7 @@ textarea:focus-visible,
   .animate-typing-dot-1,
   .animate-typing-dot-2,
   .animate-typing-dot-3,
+  .quick-start-caret,
   .animate-stream-in {
     animation: none;
   }

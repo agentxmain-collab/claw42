@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
@@ -22,6 +22,65 @@ import {
 const HERO_INTERACTIVE_ENABLED =
   process.env.HERO_INTERACTIVE_ENABLED === "true" ||
   process.env.NEXT_PUBLIC_HERO_INTERACTIVE_ENABLED === "true";
+
+type CommandSegment = {
+  text: string;
+  className: string;
+};
+
+function useLoopingTypedLength(targetLength: number, reduceMotion: boolean) {
+  const [length, setLength] = useState(reduceMotion ? targetLength : 0);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      setLength(targetLength);
+      return;
+    }
+
+    let intervalId: number | undefined;
+    let timeoutId: number | undefined;
+
+    const startTyping = () => {
+      setLength(0);
+      intervalId = window.setInterval(() => {
+        setLength((current) => {
+          const next = Math.min(current + 1, targetLength);
+          if (next >= targetLength) {
+            window.clearInterval(intervalId);
+            timeoutId = window.setTimeout(startTyping, 2200);
+          }
+          return next;
+        });
+      }, 34);
+    };
+
+    timeoutId = window.setTimeout(startTyping, 360);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [reduceMotion, targetLength]);
+
+  return length;
+}
+
+function renderCommandSegments(segments: CommandSegment[], maxLength?: number) {
+  let remaining = maxLength ?? Number.POSITIVE_INFINITY;
+
+  return segments.map((segment, index) => {
+    const visibleText = segment.text.slice(0, Math.max(0, remaining));
+    remaining -= segment.text.length;
+
+    if (!visibleText) return null;
+
+    return (
+      <span key={`${segment.text}-${index}`} className={segment.className}>
+        {visibleText}
+      </span>
+    );
+  });
+}
 
 function CopyIcon24() {
   return (
@@ -98,6 +157,13 @@ function QuickStartSection() {
   const reduceMotion = useReducedMotion();
   const [copied, setCopied] = useState(false);
   const command = `npx skills add ${COINW_SKILLS_URL}`;
+  const commandSegments: CommandSegment[] = [
+    { text: "npx ", className: "text-fg-primary" },
+    { text: "skills add", className: "text-brand-purple-bright" },
+    { text: " ", className: "text-fg-primary" },
+    { text: COINW_SKILLS_URL, className: "text-brand-purple-bright" },
+  ];
+  const typedLength = useLoopingTypedLength(command.length, reduceMotion ?? false);
 
   const handleCopy = async () => {
     try {
@@ -137,17 +203,26 @@ function QuickStartSection() {
           </span>
         </div>
         <div className="flex items-center justify-between bg-bg-primary p-6">
-          <div className="min-w-0 flex-1 overflow-x-auto">
+          <div
+            className="min-w-0 flex-1 overflow-x-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-bright/60"
+            tabIndex={0}
+            role="region"
+            aria-label={command}
+          >
             <div
-              className="flex w-max items-center gap-2 whitespace-nowrap text-[16px] leading-[24px] tracking-[0.15px]"
-              aria-label={command}
+              className="flex w-max items-center gap-2 whitespace-nowrap font-mono text-[16px] leading-[24px] tracking-[0.15px]"
+              aria-hidden="true"
             >
               <span className="text-brand-purple">$</span>
-              <span className="text-fg-primary">npx </span>
-              <span className="text-brand-purple-bright">skills add</span>
-              <span className="text-fg-primary"> </span>
-              <span className="text-brand-purple-bright">{COINW_SKILLS_URL}</span>
-              <span className="ml-1 inline-block h-5 w-1 bg-brand-purple" aria-hidden="true" />
+              <span className="relative">
+                <span className="invisible whitespace-pre" aria-hidden="true">
+                  {renderCommandSegments(commandSegments)}
+                </span>
+                <span className="absolute inset-y-0 left-0 whitespace-pre">
+                  {renderCommandSegments(commandSegments, typedLength)}
+                </span>
+              </span>
+              <span className="quick-start-caret ml-1 inline-block h-5 w-1 bg-brand-purple" aria-hidden="true" />
             </div>
           </div>
           <motion.button

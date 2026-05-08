@@ -17,18 +17,21 @@ interface Particle {
   vy: number;
   size: number;
   life: number;
+  decay: number;
   hue: number;
 }
 
-const PARTICLE_COUNT_DESKTOP = 50;
+const PARTICLE_COUNT_DESKTOP = 42;
 const PARTICLE_COUNT_MOBILE = 30;
-const PARTICLE_LIFE_MS = 2200;
-const SPAWN_RADIUS = 60;
-const AMBIENT_DRIFT_SPEED = 0.3;
-const FRICTION = 0.9;
-const ACTIVE_SPAWN_INTERVAL_MS = 24;
-const IDLE_SPAWN_INTERVAL_MS = 96;
-const IDLE_AFTER_MS = 1500;
+const PARTICLE_LIFE_MS = 760;
+const ACTIVE_SPAWN_RADIUS = 18;
+const IDLE_SPAWN_RADIUS = 10;
+const AMBIENT_DRIFT_SPEED = 0.12;
+const FRICTION = 0.72;
+const CURSOR_PULL = 0.035;
+const ACTIVE_SPAWN_INTERVAL_MS = 18;
+const IDLE_SPAWN_INTERVAL_MS = 180;
+const IDLE_AFTER_MS = 520;
 
 function resolveSpawnCenter(stage: HTMLDivElement, mouseX: number, mouseY: number) {
   const stageRect = stage.getBoundingClientRect();
@@ -103,17 +106,20 @@ export function ParticleLayer({ stageRef, mouseX, mouseY, reduceMotion }: Partic
         particlesRef.current.length < maxParticleCount
       ) {
         lastSpawnRef.current = now;
+        const idle = now - lastMouseMoveRef.current >= IDLE_AFTER_MS;
         const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * SPAWN_RADIUS;
-        const driftSpeed = AMBIENT_DRIFT_SPEED + Math.random() * 0.45;
+        const radius = idle ? IDLE_SPAWN_RADIUS : ACTIVE_SPAWN_RADIUS;
+        const distance = Math.sqrt(Math.random()) * radius;
+        const driftSpeed = AMBIENT_DRIFT_SPEED + Math.random() * 0.16;
         particlesRef.current.push({
           x: spawnCenter.x + Math.cos(angle) * distance,
           y: spawnCenter.y + Math.sin(angle) * distance,
-          vx: Math.cos(angle) * driftSpeed + (Math.random() - 0.5) * 0.25,
-          vy: Math.sin(angle) * driftSpeed + (Math.random() - 0.5) * 0.25,
-          size: 1.4 + Math.random() * 2.4,
+          vx: Math.cos(angle) * driftSpeed + (Math.random() - 0.5) * 0.08,
+          vy: Math.sin(angle) * driftSpeed + (Math.random() - 0.5) * 0.08,
+          size: 1 + Math.random() * 1.8,
           life: 1,
-          hue: 250 + Math.random() * 30,
+          decay: 0.82 + Math.random() * 0.36,
+          hue: 248 + Math.random() * 24,
         });
       }
 
@@ -121,18 +127,20 @@ export function ParticleLayer({ stageRef, mouseX, mouseY, reduceMotion }: Partic
 
       const survivors: Particle[] = [];
       for (const particle of particlesRef.current) {
+        particle.vx += (spawnCenter.x - particle.x) * CURSOR_PULL;
+        particle.vy += (spawnCenter.y - particle.y) * CURSOR_PULL;
         particle.vx *= FRICTION;
         particle.vy *= FRICTION;
         particle.x += particle.vx;
         particle.y += particle.vy;
-        particle.life -= deltaMs / PARTICLE_LIFE_MS;
+        particle.life -= (deltaMs / PARTICLE_LIFE_MS) * particle.decay;
 
         if (particle.life > 0) {
-          const alpha = particle.life * 0.68;
+          const alpha = Math.min(0.72, particle.life * 0.74);
           ctx.beginPath();
           ctx.fillStyle = `hsla(${particle.hue}, 90%, 70%, ${alpha})`;
           ctx.shadowColor = `hsla(${particle.hue}, 90%, 60%, ${alpha})`;
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 4;
           ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
           ctx.fill();
           survivors.push(particle);
