@@ -1,0 +1,99 @@
+import { trackUsage, isBudgetAutopaused, BudgetExceededError } from "@/lib/llm/budget-tracker";
+import { anthropicProvider } from "@/lib/llm/providers/anthropic";
+import { claudeHaikuProvider } from "@/lib/llm/providers/claude-haiku";
+import { deepseekChatProvider } from "@/lib/llm/providers/deepseek-chat";
+import { minimaxProvider } from "@/lib/llm/providers/minimax";
+import { openaiProvider } from "@/lib/llm/providers/openai";
+import { stubProvider } from "@/lib/llm/providers/stub";
+import type { LLMInput, LLMOutput, LLMProvider, ProviderId } from "@/lib/llm/providers/types";
+
+export { BudgetExceededError };
+export type { LLMInput, LLMOutput, LLMProvider, ProviderId } from "@/lib/llm/providers/types";
+
+const PROVIDERS: Record<ProviderId, LLMProvider> = {
+  "deepseek-chat": deepseekChatProvider,
+  minimax: minimaxProvider,
+  "claude-haiku": claudeHaikuProvider,
+  openai: openaiProvider,
+  anthropic: anthropicProvider,
+  stub: stubProvider,
+};
+
+const cache = new Map<string, LLMOutput>();
+
+function isProviderId(value: string | undefined): value is ProviderId {
+  return Boolean(value && value in PROVIDERS);
+}
+
+function pushUnique(chain: ProviderId[], providerId: ProviderId) {
+  if (!chain.includes(providerId)) chain.push(providerId);
+}
+
+export function getProvider(providerId: ProviderId): LLMProvider {
+  return PROVIDERS[providerId];
+}
+
+export function getProviderChain(): ProviderId[] {
+  const chain: ProviderId[] = [];
+  const primary = process.env.LLM_PRIMARY_PROVIDER;
+  pushUnique(chain, isProviderId(primary) ? primary : "deepseek-chat");
+  pushUnique(chain, "minimax");
+  pushUnique(chain, "claude-haiku");
+  if (process.env.NODE_ENV !== "production" || process.env.LLM_ENABLE_STUB === "1") {
+    pushUnique(chain, "stub");
+  }
+  return chain;
+}
+
+function readCache(cacheKey: string): LLMOutput | null {
+  const cached = cache.get(cacheKey);
+  if (!cached) return null;
+  return {
+    ...cached,
+    cached: true,
+    cacheHitProvider: cached.cacheHitProvider ?? cached.provider,
+  };
+}
+
+function writeCache(cacheKey: string, output: LLMOutput) {
+  cache.set(cacheKey, { ...output, cached: false, cacheHitProvider: output.provider });
+}
+
+export async function callWithChain(input: LLMInput): Promise<LLMOutput> {
+  if (input.cacheKey) {
+    const cached = readCache(input.cacheKey);
+    if (cached) return cached;
+  }
+
+  if (await isBudgetAutopaused()) {
+    throw new BudgetExceededError("Monthly LLM budget exceeded autopause threshold");
+  }
+
+  let lastError: Error | null = null;
+  for (const providerId of getProviderChain()) {
+    const provider = getProvider(providerId);
+    try {
+      if (!(await provider.isHealthy())) continue;
+
+      const output = await provider.generate(input);
+      const normalizedOutput = { ...output, cached: false };
+      await trackUsage(provider, input, normalizedOutput);
+      if (input.cacheKey) writeCache(input.cacheKey, normalizedOutput);
+      return normalizedOutput;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`LLM provider ${providerId} failed`, {
+        taskTag: input.taskTag,
+        error: lastError.message,
+      });
+    }
+  }
+
+  throw lastError ?? new Error("All LLM providers in chain failed");
+}
+
+export const __llmProviderTestUtils = {
+  clearCache() {
+    cache.clear();
+  },
+};
