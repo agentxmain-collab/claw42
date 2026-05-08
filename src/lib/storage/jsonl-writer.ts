@@ -1,5 +1,6 @@
 import { appendFile, mkdir, readdir, rename, rm, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { withFileLock } from "@/lib/storage/file-lock";
 
 export interface JsonlWriteOptions {
   maxBytes?: number;
@@ -9,6 +10,12 @@ export interface JsonlWriteOptions {
 const DEFAULT_MAX_BYTES = 10 * 1024 * 1024;
 const DEFAULT_MAX_FILES = 5;
 
+/**
+ * Appends one JSON-serializable value per line under a file lock.
+ * Rotation naming is `events.jsonl` -> `events.jsonl.1` -> `events.jsonl.2`.
+ * When `maxFiles` is exceeded the oldest suffix is deleted, then existing
+ * files are moved with atomic rename before the new active file is appended.
+ */
 export async function appendJsonLine(
   filePath: string,
   value: unknown,
@@ -19,8 +26,10 @@ export async function appendJsonLine(
   const maxFiles = Math.max(1, Math.floor(options.maxFiles ?? DEFAULT_MAX_FILES));
 
   await mkdir(dirname(filePath), { recursive: true });
-  await rotateIfNeeded(filePath, Buffer.byteLength(line), maxBytes, maxFiles);
-  await appendFile(filePath, line, "utf8");
+  await withFileLock(`${filePath}.lock`, async () => {
+    await rotateIfNeeded(filePath, Buffer.byteLength(line), maxBytes, maxFiles);
+    await appendFile(filePath, line, "utf8");
+  });
 }
 
 async function rotateIfNeeded(
