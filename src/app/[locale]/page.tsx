@@ -10,6 +10,7 @@ import { ScenariosSection } from "@/modules/landing/ScenariosSection";
 import { SkillsEcoSection } from "@/modules/landing/SkillsEcoSection";
 import { StartTradeSection } from "@/modules/landing/StartTradeSection";
 import { HeroScene } from "@/modules/landing/HeroScene";
+import { HeroSceneInteractive } from "@/modules/landing/HeroSceneInteractive";
 import {
   fadeOnlyVariants,
   fadeScaleVariants,
@@ -17,6 +18,10 @@ import {
   getFadeUpTransition,
   motionViewport,
 } from "@/lib/motion";
+
+const HERO_INTERACTIVE_ENABLED =
+  process.env.HERO_INTERACTIVE_ENABLED === "true" ||
+  process.env.NEXT_PUBLIC_HERO_INTERACTIVE_ENABLED === "true";
 
 function ClipboardIcon() {
   return (
@@ -270,7 +275,7 @@ function DisclaimerSection() {
 export default function Home() {
   return (
     <main id="top" className="bg-black min-h-screen">
-      <HeroScene />
+      {HERO_INTERACTIVE_ENABLED ? <HeroSceneInteractive /> : <HeroScene />}
       <QuickStartSection />
       <ScenariosSection />
       <WhySection />

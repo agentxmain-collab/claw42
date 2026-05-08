@@ -27,7 +27,30 @@
       "Не питай, чому 42. Хто в темі — той в темі.",
       "42 секунди тому я читав ончейн-дані. Тепер твоя черга."
     ],
-    "speechBubbleAriaLabel": "Спливаюче повідомлення Claw 42 Agent"
+    "speechBubbleAriaLabel": "Спливаюче повідомлення Claw 42 Agent",
+    "miniPlayer": {
+      "title": "Швидкий тактичний стіл Agent",
+      "loading": "Agent аналізує...",
+      "strategyDirection": {
+        "long": "Лонг",
+        "short": "Шорт",
+        "watch": "Спостерігати"
+      },
+      "confidence": "Впевненість",
+      "entry": "Вхід",
+      "stopLoss": "Стоп-лос",
+      "target": "Ціль"
+    },
+    "cta": {
+      "openAgentWatch": "Дивитися повне обговорення →",
+      "openCoinwAccount": "Відкрити акаунт CoinW →",
+      "openCoinwAccountWithSymbol": "Відкрити CoinW для торгівлі {symbol} →"
+    },
+    "hint": {
+      "tapCoin": "👇 Натисніть монету для миттєвого аналізу AI Agent",
+      "tapCoinMobile": "Натисніть монету для аналізу AI Agent"
+    },
+    "miniPlayerClose": "Закрити швидкий тактичний стіл Agent"
   },
   "quickStart": {
     "title": "Зустріньте свого першого AI-агента за 30 секунд"

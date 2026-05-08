@@ -27,7 +27,30 @@
       "なぜ 42 か、訊かないで。分かる人には分かる。",
       "42 秒前までオンチェーンを読んでた。次は君の番だ。"
     ],
-    "speechBubbleAriaLabel": "Claw 42 Agent 吹き出し"
+    "speechBubbleAriaLabel": "Claw 42 Agent 吹き出し",
+    "miniPlayer": {
+      "title": "Agent クイック戦術デスク",
+      "loading": "Agent が分析中...",
+      "strategyDirection": {
+        "long": "ロング",
+        "short": "ショート",
+        "watch": "様子見"
+      },
+      "confidence": "信頼度",
+      "entry": "エントリー",
+      "stopLoss": "損切り",
+      "target": "目標"
+    },
+    "cta": {
+      "openAgentWatch": "ディスカッションを見る →",
+      "openCoinwAccount": "CoinW アカウントを開設 →",
+      "openCoinwAccountWithSymbol": "{symbol} 取引のため CoinW を開設 →"
+    },
+    "hint": {
+      "tapCoin": "👇 任意の銘柄をタップして AI Agent の即時分析を見る",
+      "tapCoinMobile": "銘柄をタップして AI Agent 分析を見る"
+    },
+    "miniPlayerClose": "Agent クイック戦術デスクを閉じる"
   },
   "quickStart": {
     "title": "30 秒で最初の AI Agent に出会う"

@@ -27,7 +27,30 @@
       "لا تسأل لماذا 42. من يعرف يعرف.",
       "قبل 42 ثانية كنت أقرأ بيانات السلسلة. الآن دورك لتسأل."
     ],
-    "speechBubbleAriaLabel": "فقاعة كلام وكيل Claw 42"
+    "speechBubbleAriaLabel": "فقاعة كلام وكيل Claw 42",
+    "miniPlayer": {
+      "title": "لوحة تكتيكات Agent السريعة",
+      "loading": "Agent يقوم بالتحليل...",
+      "strategyDirection": {
+        "long": "شراء",
+        "short": "بيع",
+        "watch": "مراقبة"
+      },
+      "confidence": "الثقة",
+      "entry": "الدخول",
+      "stopLoss": "إيقاف الخسارة",
+      "target": "الهدف"
+    },
+    "cta": {
+      "openAgentWatch": "شاهد النقاش الكامل →",
+      "openCoinwAccount": "افتح حساب CoinW →",
+      "openCoinwAccountWithSymbol": "افتح CoinW لتداول {symbol} →"
+    },
+    "hint": {
+      "tapCoin": "👇 اضغط أي عملة لتحليل AI Agent الفوري",
+      "tapCoinMobile": "اضغط عملة لتحليل AI Agent"
+    },
+    "miniPlayerClose": "إغلاق لوحة تكتيكات Agent السريعة"
   },
   "quickStart": {
     "title": "تعرّف على أول وكيل ذكاء اصطناعي في 30 ثانية"
