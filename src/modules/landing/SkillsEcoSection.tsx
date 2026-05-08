@@ -48,10 +48,10 @@ export function SkillsEcoSection() {
       className="relative mx-auto max-w-7xl px-6 py-16 md:px-12 md:py-20 lg:px-20"
     >
       <div className="mb-10 text-center">
-        <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl lg:text-5xl">
+        <h2 className="mb-4 text-3xl font-bold text-fg-primary md:text-4xl lg:text-5xl">
           {t.skillsEco.title}
         </h2>
-        <p className="mx-auto max-w-3xl text-base leading-relaxed text-gray-400 md:text-lg">
+        <p className="mx-auto max-w-3xl text-base leading-relaxed text-fg-secondary md:text-lg">
           {t.skillsEco.subtitle}
         </p>
       </div>
@@ -63,9 +63,9 @@ export function SkillsEcoSection() {
             {...cardVariants(i)}
             whileHover={prefersReducedMotion ? undefined : { y: -8, scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
-            className="card-glow flex flex-col rounded-2xl border border-white/10 bg-[#111] p-6 md:p-8"
+            className="card-glow flex flex-col rounded-card border border-border-token-primary bg-gradient-to-b from-bg-fill-card1 to-bg-fill-card1/30 p-6 md:p-8"
           >
-            <div className="mb-4 flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1a]">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center overflow-hidden rounded-panel border border-border-token-primary bg-bg-primary">
               <Image
                 src={`/images/icons/${ECO_ICON_SLUGS[i] ?? ECO_ICON_SLUGS[0]}.png`}
                 alt=""
@@ -75,8 +75,8 @@ export function SkillsEcoSection() {
                 className="h-10 w-10 object-contain"
               />
             </div>
-            <h3 className="mb-3 text-xl font-bold text-white md:text-2xl">{card.title}</h3>
-            <p className="mb-5 flex-1 text-sm leading-relaxed text-gray-400 md:text-base">
+            <h3 className="mb-3 text-xl font-bold text-fg-primary md:text-2xl">{card.title}</h3>
+            <p className="mb-5 flex-1 text-sm leading-relaxed text-fg-secondary md:text-base">
               {card.desc}
             </p>
             <a
@@ -91,7 +91,7 @@ export function SkillsEcoSection() {
                   index: i,
                 })
               }
-              className="self-start text-sm font-semibold text-[#d1ff55] transition-colors hover:brightness-110"
+              className="self-start text-sm font-semibold text-brand-purple transition-colors hover:text-brand-purple-bright"
             >
               {card.cta} →
             </a>
