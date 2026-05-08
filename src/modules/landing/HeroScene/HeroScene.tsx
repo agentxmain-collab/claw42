@@ -186,10 +186,10 @@ export function HeroScene() {
       {/* z-50 Title + CTA overlay */}
       <div className="claw42-hero-copy absolute left-1/2 top-[71%] z-50 flex w-full max-w-3xl -translate-x-1/2 flex-col items-center px-6 text-center">
         <div className="claw42-hero-text flex flex-col items-center">
-          <h1 className="mb-3 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-[44px] lg:text-[48px]">
+          <h1 className="mb-3 text-3xl font-bold leading-tight tracking-tight text-fg-primary sm:text-4xl md:text-[44px] md:leading-[52px] lg:text-[57px] lg:leading-[68px] lg:tracking-[-0.25px]">
             {t.hero.title}
           </h1>
-          <p className="mb-6 max-w-2xl text-sm leading-relaxed text-gray-400 sm:text-base md:text-[17px]">
+          <p className="mb-6 max-w-2xl text-sm leading-relaxed text-fg-secondary sm:text-base md:text-[17px]">
             {t.hero.subtitle}
           </p>
         </div>
@@ -211,7 +211,7 @@ export function HeroScene() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
                   transition={{ duration: 0.18 }}
-                  className="absolute -top-10 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#7c5cff] px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
+                  className="absolute -top-10 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-purple-bright px-3 py-1.5 text-xs font-semibold text-white"
                 >
                   {t.hero.ctaPrimaryCopiedToast}
                 </motion.div>
