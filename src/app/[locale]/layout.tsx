@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Noto_Sans_SC } from "next/font/google";
 import { notFound } from "next/navigation";
 import { AnalyticsPageView } from "@/components/AnalyticsPageView";
+import { WebVitalsBeacon } from "@/components/observability/WebVitalsBeacon";
 import { SiteHeader } from "@/components/SiteHeader";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { HTML_LANG, LOCALES, RTL_LOCALES, isLocale } from "@/i18n/locales";
@@ -61,6 +62,7 @@ export default async function LocaleLayout({
       <body className={bodyFontClassName}>
         <I18nProvider initialLocale={typedLocale}>
           <AnalyticsPageView />
+          <WebVitalsBeacon />
           <SiteHeader />
           {children}
         </I18nProvider>
