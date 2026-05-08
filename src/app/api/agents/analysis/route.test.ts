@@ -16,7 +16,7 @@ vi.mock("@/lib/llm/generateText", () => ({
   generateText: generateTextMock,
 }));
 
-vi.mock("@/lib/llmFallbackChain", () => ({
+vi.mock("@/lib/agentAnalysis", () => ({
   getAgentAnalysis: getAgentAnalysisMock,
 }));
 

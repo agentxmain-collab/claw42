@@ -6,14 +6,14 @@ Claw 42 — 加密货币 AI Agent 竞技养成生态对外产品站。当前阶�
 
 ## 2. 技术栈
 
-| 层         | 选型                        | 版本     | 选型理由                            |
-| ---------- | --------------------------- | -------- | ----------------------------------- |
-| 框架       | Next.js                     | 14.2.35  | App Router + React 18 + Vercel 一体 |
-| 样式       | Tailwind CSS                | 3.4.1    | 工程团队熟悉，Next 一体集成         |
-| 动效       | framer-motion               | 11.18.2  | Hero 场景 + 渐次出现动画必需        |
-| TypeScript | strict                      | 5.x      | 最低成本测试层                      |
-| LLM        | minimax / deepseek / claude | API      | fallback chain，可降级              |
-| 行情       | CoinGecko API               | demo key | 免费层 + 30s cache                  |
+| 层         | 选型                                   | 版本     | 选型理由                            |
+| ---------- | -------------------------------------- | -------- | ----------------------------------- |
+| 框架       | Next.js                                | 14.2.35  | App Router + React 18 + Vercel 一体 |
+| 样式       | Tailwind CSS                           | 3.4.1    | 工程团队熟悉，Next 一体集成         |
+| 动效       | framer-motion                          | 11.18.2  | Hero 场景 + 渐次出现动画必需        |
+| TypeScript | strict                                 | 5.x      | 最低成本测试层                      |
+| LLM        | deepseek-chat / minimax / claude-haiku | API      | 统一 provider chain + budget cap    |
+| 行情       | CoinGecko API                          | demo key | 免费层 + 30s cache                  |
 
 ## 3. 目录结构 + 模块边界
 
@@ -24,7 +24,8 @@ src/
     api/                  # API routes（agents / market / analytics）
   components/             # 跨模块共享 UI
   lib/                    # 服务端 + 客户端工具
-    llmFallbackChain.ts   # LLM 调用 + fallback
+    llm/                  # 统一 LLM provider + generateText + budget/cache
+    agentAnalysis.ts      # Agent 分析刷新 + history buffer
     marketDataCache.ts    # CoinGecko cache + stale-while-revalidate
     chatOrchestrator.ts   # Watch 链式聊天编排 + meta 策略提取
     news/                 # 多源新闻 source chain + cache + normalizer
@@ -52,7 +53,7 @@ src/
                                                         |
 [News source chain] --> debateOrchestrator.ts --> chatOrchestrator.ts
                                                         |
-[LLM provider chain] --60s cache--> llmFallbackChain.ts --> /api/agents/analysis
+[LLM provider chain] --budget/cache--> generateText/callWithChain --> agentAnalysis.ts --> /api/agents/analysis
 ```
 
 主要数据流：客户端 60s 轮询服务端，服务端缓存 30s 真实 API。Watch 页的新闻/行情触发先进入 source chain，再由 `chatOrchestrator.ts` 生成链式聊天线程；旧 R1/R2/R3 固定轮次不再作为产品形态。stale-while-revalidate 策略保证降级。

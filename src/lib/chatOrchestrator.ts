@@ -8,7 +8,8 @@ import {
 } from "@/lib/chatGuardrails";
 import { getFaction, getFactionIds, isFactionId } from "@/lib/factionRegistry";
 import { fakeFollowCount } from "@/lib/fakeFollowCount";
-import { generateLlmText, hasMechanicalOutput } from "@/lib/llmFallbackChain";
+import { generateText } from "@/lib/llm/generateText";
+import { hasMechanicalOutput } from "@/lib/llm/guardrails";
 import {
   buildChatMessagePrompt,
   buildChatStrategyPrompt,
@@ -41,7 +42,7 @@ const CHAT_LLM_RESPONSE_CACHE_TTL_MS = 5_000;
 
 export { sanitizeChatContent } from "@/lib/chatGuardrails";
 
-type ChatLlmResponse = Awaited<ReturnType<typeof generateLlmText>>;
+type ChatLlmResponse = { text: string; source: "deepseek" } | null;
 type ChatLlmCachePhase = "first" | "retry";
 
 const chatLlmResponseCache = new Map<string, { expiresAt: number; value: ChatLlmResponse }>();
@@ -160,7 +161,7 @@ async function generateCachedChatLlmText({
   history: ChatMessage[];
   phase: ChatLlmCachePhase;
 }): Promise<ChatLlmResponse> {
-  if (isChatCacheDisabled()) return generateLlmText(prompt);
+  if (isChatCacheDisabled()) return generateChatLlmText(prompt, `chat:${agentId}:${phase}`);
 
   const now = Date.now();
   pruneExpiredChatCache(now);
@@ -171,7 +172,7 @@ async function generateCachedChatLlmText({
     return cached.value;
   }
 
-  const value = await generateLlmText(prompt);
+  const value = await generateChatLlmText(prompt, `chat:${agentId}:${phase}`);
   if (value) {
     chatLlmResponseCache.set(key, {
       value,
@@ -179,6 +180,24 @@ async function generateCachedChatLlmText({
     });
   }
   return value;
+}
+
+async function generateChatLlmText(prompt: string, taskTag: string): Promise<ChatLlmResponse> {
+  try {
+    const text = await generateText(prompt, {
+      taskTag,
+      temperature: 0.75,
+      maxTokens: 320,
+      enableCache: false,
+      enableGuardrails: false,
+    });
+    return { text, source: "deepseek" };
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[claw42] chat LLM fallback", error);
+    }
+    return null;
+  }
 }
 
 function shouldForceOpeningReply(messageIndex: number, seed: ConversationSeed): boolean {
@@ -632,7 +651,7 @@ async function synthesizeStrategy(
     strategy: null,
   };
   const prompt = buildChatStrategyPrompt(seed, messages, snapshot);
-  const first = await generateLlmText(prompt);
+  const first = await generateChatLlmText(prompt, "chat:strategy:first");
   const firstRaw = first ? parseObject(first.text) : fallbackRaw;
   if (firstRaw.consensusReached === false || firstRaw.strategy === null) return null;
 
@@ -644,7 +663,10 @@ async function synthesizeStrategy(
   const firstValidation = validateStrategyAgainstSnapshot(firstStrategy, snapshot);
   if (firstValidation.ok) return firstStrategy;
 
-  const retry = await generateLlmText(`${prompt}\n\n${strategyRetryInstruction(firstValidation)}`);
+  const retry = await generateChatLlmText(
+    `${prompt}\n\n${strategyRetryInstruction(firstValidation)}`,
+    "chat:strategy:retry",
+  );
   const retryRaw = retry ? parseObject(retry.text) : fallbackRaw;
   if (retryRaw.consensusReached === false || retryRaw.strategy === null) return null;
   const retryStrategy = buildStrategyFromRaw(
