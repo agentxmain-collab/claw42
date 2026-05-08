@@ -23,21 +23,35 @@ const HERO_INTERACTIVE_ENABLED =
   process.env.HERO_INTERACTIVE_ENABLED === "true" ||
   process.env.NEXT_PUBLIC_HERO_INTERACTIVE_ENABLED === "true";
 
-function ClipboardIcon() {
+function CopyIcon24() {
   return (
-    <svg
-      className="h-5 w-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.5}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
-      />
-    </svg>
+    <span className="relative block size-6" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        className="absolute left-[12.5%] top-[12.5%] size-[75%]"
+        focusable="false"
+      >
+        <use href="/icons/copy.svg#icon" />
+      </svg>
+    </span>
+  );
+}
+
+function CopiedCheckIcon() {
+  return (
+    <span className="relative block size-6" aria-hidden="true">
+      <svg
+        className="absolute left-[12.5%] top-[12.5%] size-[75%] text-func-green"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+        focusable="false"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+      </svg>
+    </span>
   );
 }
 
@@ -110,57 +124,43 @@ function QuickStartSection() {
         viewport={motionViewport}
         variants={fadeScaleVariants(reduceMotion)}
         transition={getFadeUpTransition()}
-        className="quickstart-terminal-card w-full max-w-3xl"
+        className="terminal-glow w-full max-w-2xl overflow-hidden rounded-card border border-border-token-secondary bg-bg-fill-card2"
       >
-        <div className="quickstart-terminal-wrap">
-          <div className="quickstart-terminal">
-            <div className="quickstart-terminal-head">
-              <div className="quickstart-terminal-title">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M7 8.5 10.5 12 7 15.5M12 16h5"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M4.75 5.75h14.5v12.5H4.75z"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span>Quick Start Terminal</span>
-              </div>
-              <motion.button
-                onClick={handleCopy}
-                whileHover={reduceMotion ? undefined : { scale: 1.05 }}
-                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                className="quickstart-copy-toggle copy-btn"
-                title="Copy to clipboard"
-                aria-label="Copy quick start command"
-              >
-                {copied ? (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                ) : (
-                  <ClipboardIcon />
-                )}
-              </motion.button>
-            </div>
-            <div className="quickstart-terminal-body">
-              <div className="quickstart-terminal-pre" aria-label={command}>
-                <code>$&nbsp;</code>
-                <span className="quickstart-terminal-cmd">
-                  <span className="quickstart-token-npx">npx&nbsp;</span>
-                  <span className="quickstart-token-skill">skills add&nbsp;</span>
-                  <span className="quickstart-token-url">{COINW_SKILLS_URL}</span>
-                </span>
-              </div>
+        <div className="flex items-center gap-2 border-b border-[rgba(158,147,255,0.1)] bg-bg-fill-card1 px-4 pb-[9px] pt-2">
+          <div className="flex gap-1.5 opacity-50" aria-hidden="true">
+            <span className="size-3 rounded-full bg-func-red" />
+            <span className="size-3 rounded-full bg-func-yellow" />
+            <span className="size-3 rounded-full bg-func-green" />
+          </div>
+          <span className="flex-1 text-center text-[10px] font-normal uppercase leading-[12px] text-fg-secondary opacity-50">
+            Quick Start Terminal
+          </span>
+        </div>
+        <div className="flex items-center justify-between bg-bg-primary p-6">
+          <div className="min-w-0 flex-1 overflow-x-auto">
+            <div
+              className="flex w-max items-center gap-2 whitespace-nowrap text-[16px] leading-[24px] tracking-[0.15px]"
+              aria-label={command}
+            >
+              <span className="text-brand-purple">$</span>
+              <span className="text-fg-primary">npx </span>
+              <span className="text-brand-purple-bright">skills add</span>
+              <span className="text-fg-primary"> </span>
+              <span className="text-brand-purple-bright">{COINW_SKILLS_URL}</span>
+              <span className="ml-1 inline-block h-5 w-1 bg-brand-purple" aria-hidden="true" />
             </div>
           </div>
+          <motion.button
+            onClick={handleCopy}
+            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+            className={`copy-btn relative ml-4 shrink-0 text-fg-secondary transition-colors hover:text-fg-primary ${
+              copied ? "copied" : ""
+            }`}
+            title="Copy to clipboard"
+            aria-label="Copy quick start command"
+          >
+            {copied ? <CopiedCheckIcon /> : <CopyIcon24 />}
+          </motion.button>
         </div>
       </motion.div>
     </Section>
