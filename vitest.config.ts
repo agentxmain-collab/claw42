@@ -4,8 +4,7 @@ import path from "node:path";
 export default defineConfig({
   test: {
     globals: true,
-    environment: "node",
-    include: ["src/lib/signal-engine/__tests__/**/*.test.ts"]
+    environment: "node"
   },
   resolve: {
     alias: {
