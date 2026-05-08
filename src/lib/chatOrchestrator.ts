@@ -37,8 +37,14 @@ const QUIET_STREAK_FOR_END = 5;
 const MIN_TOTAL_MESSAGES = 6;
 const MAX_RETRY_TOTAL = 5;
 const MENTION_ACTIONS: ChatAction[] = ["rebut", "question", "taunt", "agree"];
+const CHAT_LLM_RESPONSE_CACHE_TTL_MS = 5_000;
 
 export { sanitizeChatContent } from "@/lib/chatGuardrails";
+
+type ChatLlmResponse = Awaited<ReturnType<typeof generateLlmText>>;
+type ChatLlmCachePhase = "first" | "retry";
+
+const chatLlmResponseCache = new Map<string, { expiresAt: number; value: ChatLlmResponse }>();
 
 function parseObject(text: string): Record<string, unknown> {
   const trimmed = text.trim();
@@ -85,6 +91,94 @@ function hashNumber(value: string): number {
     hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
   }
   return hash;
+}
+
+function hashText(value: string): string {
+  return hashNumber(value).toString(36);
+}
+
+function lastFiveMessagesHash(history: ChatMessage[]): string {
+  const payload = history.slice(-5).map((message) => ({
+    id: message.id,
+    agentId: message.agentId,
+    action: message.action,
+    content: message.content,
+    mentioning: message.mentioning ?? null,
+    replyTo: message.replyTo ?? null,
+  }));
+  return hashText(JSON.stringify(payload));
+}
+
+function isChatCacheDisabled(): boolean {
+  return process.env.CHAT_CACHE_DISABLED === "1";
+}
+
+function chatLlmCacheKey({
+  threadId,
+  messageIndex,
+  agentId,
+  history,
+  phase,
+  prompt,
+}: {
+  threadId: string;
+  messageIndex: number;
+  agentId: FactionId;
+  history: ChatMessage[];
+  phase: ChatLlmCachePhase;
+  prompt: string;
+}): string {
+  return [
+    "chat-llm",
+    `thread_id=${threadId}`,
+    `message_index=${messageIndex}`,
+    `agent_id=${agentId}`,
+    `last_5_messages_hash=${lastFiveMessagesHash(history)}`,
+    `phase=${phase}`,
+    `prompt_hash=${hashText(prompt)}`,
+  ].join("|");
+}
+
+function pruneExpiredChatCache(now: number) {
+  for (const [key, cached] of Array.from(chatLlmResponseCache.entries())) {
+    if (cached.expiresAt <= now) chatLlmResponseCache.delete(key);
+  }
+}
+
+async function generateCachedChatLlmText({
+  prompt,
+  threadId,
+  messageIndex,
+  agentId,
+  history,
+  phase,
+}: {
+  prompt: string;
+  threadId: string;
+  messageIndex: number;
+  agentId: FactionId;
+  history: ChatMessage[];
+  phase: ChatLlmCachePhase;
+}): Promise<ChatLlmResponse> {
+  if (isChatCacheDisabled()) return generateLlmText(prompt);
+
+  const now = Date.now();
+  pruneExpiredChatCache(now);
+  const key = chatLlmCacheKey({ threadId, messageIndex, agentId, history, phase, prompt });
+  const cached = chatLlmResponseCache.get(key);
+  if (cached && cached.expiresAt > now) {
+    console.info(`[claw42] CACHE_HIT for key=${key}`);
+    return cached.value;
+  }
+
+  const value = await generateLlmText(prompt);
+  if (value) {
+    chatLlmResponseCache.set(key, {
+      value,
+      expiresAt: now + CHAT_LLM_RESPONSE_CACHE_TTL_MS,
+    });
+  }
+  return value;
 }
 
 function shouldForceOpeningReply(messageIndex: number, seed: ConversationSeed): boolean {
@@ -365,7 +459,15 @@ async function generateMessage({
     relationshipDebt: relationshipLine,
     forcedMention,
   });
-  const first = await generateLlmText(prompt);
+  const messageIndex = history.length;
+  const first = await generateCachedChatLlmText({
+    prompt,
+    threadId,
+    messageIndex,
+    agentId,
+    history,
+    phase: "first",
+  });
   if (!first) {
     return {
       message: buildChatMessage({
@@ -401,9 +503,15 @@ async function generateMessage({
   });
   if (firstResult.valid) return { message: firstResult.message, retries: 0 };
 
-  const retry = await generateLlmText(
-    `${prompt}\n\n${plainSpeechRetryInstruction(firstResult.reasons)}\nmention/reply 也必须按 schema；当前 relationship debt=${debt.toFixed(1)}。`,
-  );
+  const retryPrompt = `${prompt}\n\n${plainSpeechRetryInstruction(firstResult.reasons)}\nmention/reply 也必须按 schema；当前 relationship debt=${debt.toFixed(1)}。`;
+  const retry = await generateCachedChatLlmText({
+    prompt: retryPrompt,
+    threadId,
+    messageIndex,
+    agentId,
+    history,
+    phase: "retry",
+  });
   if (!retry) {
     return {
       message: buildChatMessage({
