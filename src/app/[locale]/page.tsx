@@ -174,10 +174,10 @@ function WhySection() {
   return (
     <Section className="mx-auto max-w-7xl">
       <div className="mb-4 text-center">
-        <h2 className="mb-4 text-2xl font-bold leading-tight text-white md:text-3xl lg:text-4xl">
+        <h2 className="mb-4 text-2xl font-bold leading-tight text-fg-primary md:text-3xl lg:text-4xl">
           {t.why.title}
         </h2>
-        <p className="mx-auto max-w-4xl text-sm leading-relaxed text-gray-400 md:text-base">
+        <p className="mx-auto max-w-4xl text-sm leading-relaxed text-fg-secondary md:text-base">
           {t.why.subtitle}
         </p>
       </div>
@@ -192,9 +192,9 @@ function WhySection() {
             variants={fadeUpVariants(reduceMotion)}
             transition={getFadeUpTransition(i * 0.08)}
             whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-            className="card-glow group relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#111] p-8"
+            className="card-glow group relative flex flex-col overflow-hidden rounded-card border border-border-token-primary bg-bg-fill-card1 p-8"
           >
-            <div className="mb-5 flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1a]">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center overflow-hidden rounded-panel border border-border-token-primary bg-bg-primary">
               <Image
                 src={`/images/icons/${WHY_ICON_SLUGS[i] ?? WHY_ICON_SLUGS[0]}.png`}
                 alt=""
@@ -204,15 +204,14 @@ function WhySection() {
                 className="h-10 w-10 object-contain"
               />
             </div>
-            <h3 className="mb-3 text-xl font-bold text-white">{card.title}</h3>
-            <p className="flex-1 text-sm leading-relaxed text-gray-400">{card.desc}</p>
-            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#6c4fff] to-[#a78bfa] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <h3 className="mb-3 text-xl font-bold text-fg-primary">{card.title}</h3>
+            <p className="flex-1 text-sm leading-relaxed text-fg-secondary">{card.desc}</p>
           </motion.div>
         ))}
       </div>
 
       {t.why.tagline && (
-        <p className="mt-10 text-center text-sm italic tracking-wide text-gray-500 md:text-base">
+        <p className="mt-10 text-center text-sm italic tracking-wide text-fg-tertiary md:text-base">
           {t.why.tagline}
         </p>
       )}
