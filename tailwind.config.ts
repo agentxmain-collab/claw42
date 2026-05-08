@@ -41,7 +41,9 @@ const config: Config = {
         "brand-dark": "#0a0a0a",
       },
       fontFamily: {
-        sans: ["var(--font-stack)"],
+        sans: ["var(--font-stack)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        language: ["var(--font-language)", "system-ui", "sans-serif"],
       },
       keyframes: {
         "fade-in-up": {
