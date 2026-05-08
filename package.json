@@ -6,14 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:kv-lock": "vitest run src/lib/storage/__tests__/kv-lock.test.ts",
+    "test:kv-rate-limiter": "vitest run src/lib/storage/__tests__/kv-rate-limiter.test.ts",
+    "test:kv-quota": "vitest run src/lib/storage/__tests__/kv-quota.test.ts",
+    "verify:metrics": "node scripts/verify-metrics.mjs"
   },
   "dependencies": {
+    "@vercel/kv": "^3.0.0",
     "framer-motion": "^11.18.2",
     "next": "14.2.35",
     "posthog-js": "^1.372.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "web-vitals": "^5.2.0"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -23,6 +29,7 @@
     "eslint-config-next": "14.2.35",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.5"
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { reportError } from "@/lib/observability/error-reporter";
 
 export default function LocaleError({
   error,
@@ -9,8 +10,15 @@ export default function LocaleError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [errorId, setErrorId] = useState<string | null>(null);
+
   useEffect(() => {
-    console.error(error);
+    setErrorId(
+      reportError(error, {
+        surface: "next_locale_error",
+        digest: error.digest,
+      }),
+    );
   }, [error]);
 
   return (
@@ -23,12 +31,15 @@ export default function LocaleError({
           We hit a snag
         </h1>
         <p className="mb-8 text-gray-400">
-          An unexpected error occurred. Try reloading.
+          An unexpected error occurred. Share this error ID with Dan if it repeats.
+        </p>
+        <p className="mb-8 rounded-xl border border-white/10 bg-white/5 px-3 py-2 font-mono text-xs text-white/70">
+          Error ID: {errorId ?? "reporting"}
         </p>
         <button
           type="button"
           onClick={reset}
-          className="inline-flex items-center rounded-xl bg-[#7c5cff] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#8e6bff]"
+          className="inline-flex items-center rounded-xl bg-[#7c5cff] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#8e6bff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d1ff55]"
         >
           Try again
         </button>
