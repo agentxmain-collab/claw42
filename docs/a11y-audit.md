@@ -18,6 +18,16 @@ Current run found 4 route-level serious `color-contrast` violations. WCAG AA req
 
 Raw axe details came from `reports/a11y/2026-05-07.json`. No brand color changes were made in this branch.
 
+## Resolution (2026-05-08)
+
+The serious `color-contrast` violations above were resolved with targeted color adjustments only:
+
+- HeroScene CTA button background changed from `#7c5cff` to `#6a4be0`, raising white text contrast from `4.34:1` to approximately `5.18:1`.
+- AgentRowCard focus label text changed from the previous rendered `#848484` equivalent to `#8b8b8b`, raising contrast on `#1f1f1f` from `4.40:1` to approximately `4.86:1`.
+- AgentRowCard collapsed invalidation summary text changed from the previous rendered `#7a7a7a` equivalent to `#828282`, raising contrast on `#0e0e0e` from `4.49:1` to approximately `5.01:1`.
+
+The global brand color `#7c5cff` is still retained for non-text decorative and tooltip usages.
+
 ## Focus Management
 
 Global focus-visible styling is applied to links, buttons, inputs, selects, textareas, and focusable custom elements. The coin modal already moves focus into the dialog on open and restores focus to the trigger on close.
