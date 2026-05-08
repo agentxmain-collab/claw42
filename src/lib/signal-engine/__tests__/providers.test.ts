@@ -1,6 +1,6 @@
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import { getStructuringProvider, stubStructuringProvider } from "@/lib/signal-engine/providers";
-import { PLACEHOLDER_FOR_T2 } from "@/lib/signal-engine/providers/llm";
+import { llmStructuringProvider } from "@/lib/signal-engine/providers/llm";
 import { structureWithStub } from "@/lib/signal-engine/providers/stub";
 import { ingestCandidates } from "@/lib/signal-engine/ingest";
 
@@ -12,19 +12,12 @@ describe("signal providers", () => {
     expect(provider.name).toBe("stub");
   });
 
-  test("falls back to stub for LLM mode outside production", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-
-    try {
-      expect(getStructuringProvider({ SIGNAL_PROVIDER: "llm" })).toBe(stubStructuringProvider);
-      expect(warn).toHaveBeenCalled();
-    } finally {
-      warn.mockRestore();
-    }
+  test("uses the LLM provider when SIGNAL_PROVIDER=llm", () => {
+    expect(getStructuringProvider({ SIGNAL_PROVIDER: "llm" })).toBe(llmStructuringProvider);
   });
 
-  test("exposes explicit T2 placeholder for LLM provider files", () => {
-    expect(PLACEHOLDER_FOR_T2).toBe(true);
+  test("LLM provider is no longer a T2 placeholder", () => {
+    expect(llmStructuringProvider.name).toBe("llm");
   });
 
   test("stub provider preserves candidate direction only above low-confidence threshold", () => {
