@@ -23,6 +23,7 @@
     "verify:news": "tsx scripts/verify-news.mjs",
     "verify:chat-v3-final": "tsx scripts/verify-chat-v3-final.ts",
     "verify:llm-providers": "tsx scripts/verify-llm-providers.ts",
+    "verify:llm-generate-text": "tsx scripts/verify-llm-generate-text.ts",
     "verify:metrics": "tsx scripts/verify-metrics.mjs",
     "verify:a11y": "tsx scripts/verify-a11y.mjs",
     "verify": "npm run format:check && npm run typecheck && npm run lint && npm run verify:agent-ip && npm run verify:news && npm run verify:chat-v3-final"

@@ -1,4 +1,5 @@
 import { trackUsage, isBudgetAutopaused, BudgetExceededError } from "@/lib/llm/budget-tracker";
+import { __llmCacheTestUtils, getFromCache, setCache } from "@/lib/llm/cache";
 import { anthropicProvider } from "@/lib/llm/providers/anthropic";
 import { claudeHaikuProvider } from "@/lib/llm/providers/claude-haiku";
 import { deepseekChatProvider } from "@/lib/llm/providers/deepseek-chat";
@@ -18,8 +19,6 @@ const PROVIDERS: Record<ProviderId, LLMProvider> = {
   anthropic: anthropicProvider,
   stub: stubProvider,
 };
-
-const cache = new Map<string, LLMOutput>();
 
 function isProviderId(value: string | undefined): value is ProviderId {
   return Boolean(value && value in PROVIDERS);
@@ -45,24 +44,16 @@ export function getProviderChain(): ProviderId[] {
   return chain;
 }
 
-function readCache(cacheKey: string): LLMOutput | null {
-  const cached = cache.get(cacheKey);
-  if (!cached) return null;
-  return {
-    ...cached,
-    cached: true,
-    cacheHitProvider: cached.cacheHitProvider ?? cached.provider,
-  };
-}
-
-function writeCache(cacheKey: string, output: LLMOutput) {
-  cache.set(cacheKey, { ...output, cached: false, cacheHitProvider: output.provider });
-}
-
 export async function callWithChain(input: LLMInput): Promise<LLMOutput> {
   if (input.cacheKey) {
-    const cached = readCache(input.cacheKey);
-    if (cached) return cached;
+    const cached = await getFromCache(input.cacheKey);
+    if (cached) {
+      return {
+        ...cached,
+        cached: true,
+        cacheHitProvider: cached.cacheHitProvider ?? cached.provider,
+      };
+    }
   }
 
   if (await isBudgetAutopaused()) {
@@ -78,7 +69,9 @@ export async function callWithChain(input: LLMInput): Promise<LLMOutput> {
       const output = await provider.generate(input);
       const normalizedOutput = { ...output, cached: false };
       await trackUsage(provider, input, normalizedOutput);
-      if (input.cacheKey) writeCache(input.cacheKey, normalizedOutput);
+      if (input.cacheKey) {
+        await setCache(input.cacheKey, normalizedOutput, input.cacheTTLSeconds);
+      }
       return normalizedOutput;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
@@ -94,6 +87,6 @@ export async function callWithChain(input: LLMInput): Promise<LLMOutput> {
 
 export const __llmProviderTestUtils = {
   clearCache() {
-    cache.clear();
+    __llmCacheTestUtils.clearMemoryCache();
   },
 };
