@@ -155,7 +155,6 @@ export function HeroScene() {
       {/* z-25 Particles */}
       <ParticleLayer
         stageRef={stageRef}
-        robotRef={robotRef}
         mouseX={mouseX}
         mouseY={mouseY}
         reduceMotion={reduceMotion}

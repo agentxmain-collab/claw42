@@ -5,7 +5,6 @@ import type { RefObject } from "react";
 
 interface ParticleLayerProps {
   stageRef: RefObject<HTMLDivElement>;
-  robotRef: RefObject<HTMLDivElement>;
   mouseX: number;
   mouseY: number;
   reduceMotion: boolean;
@@ -22,52 +21,43 @@ interface Particle {
 }
 
 const PARTICLE_COUNT_DESKTOP = 50;
+const PARTICLE_COUNT_MOBILE = 30;
 const PARTICLE_LIFE_MS = 2200;
 const SPAWN_RADIUS = 60;
 const AMBIENT_DRIFT_SPEED = 0.3;
-const MAX_FOLLOW_FORCE = 0.018;
-const FAR_DISTANCE = 400;
-const NEAR_DISTANCE = 100;
 const FRICTION = 0.9;
-const RESET_FRICTION = 0.72;
-const ACTIVE_RETURN_FORCE = 0.0012;
-const RESET_RETURN_FORCE = 0.018;
-const RESET_LIFE_MS = 1400;
+const ACTIVE_SPAWN_INTERVAL_MS = 24;
+const IDLE_SPAWN_INTERVAL_MS = 96;
+const IDLE_AFTER_MS = 1500;
 
-function particleForceForDistance(distance: number) {
-  if (distance > FAR_DISTANCE) return 0;
-  if (distance <= NEAR_DISTANCE) return MAX_FOLLOW_FORCE;
-  return MAX_FOLLOW_FORCE * ((FAR_DISTANCE - distance) / (FAR_DISTANCE - NEAR_DISTANCE));
-}
-
-function resolveRobotCenter(stage: HTMLDivElement, robot: HTMLDivElement | null) {
+function resolveSpawnCenter(stage: HTMLDivElement, mouseX: number, mouseY: number) {
   const stageRect = stage.getBoundingClientRect();
-  if (!robot) {
+  const mouseInStage = mouseX >= -1 && mouseX <= 1 && mouseY >= -1 && mouseY <= 1;
+
+  if (!mouseInStage) {
     return { x: stageRect.width / 2, y: stageRect.height / 2 };
   }
 
-  const robotRect = robot.getBoundingClientRect();
   return {
-    x: robotRect.left + robotRect.width / 2 - stageRect.left,
-    y: robotRect.top + robotRect.height / 2 - stageRect.top,
+    x: stageRect.width / 2 + (mouseX * stageRect.width) / 2,
+    y: stageRect.height / 2 + (mouseY * stageRect.height) / 2,
   };
 }
 
-export function ParticleLayer({
-  stageRef,
-  robotRef,
-  mouseX,
-  mouseY,
-  reduceMotion,
-}: ParticleLayerProps) {
+export function ParticleLayer({ stageRef, mouseX, mouseY, reduceMotion }: ParticleLayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const rafRef = useRef<number | null>(null);
   const lastFrameRef = useRef(0);
   const lastSpawnRef = useRef(0);
   const mouseRef = useRef({ x: mouseX, y: mouseY });
+  const lastMouseMoveRef = useRef(performance.now());
 
   useEffect(() => {
+    const previousMouse = mouseRef.current;
+    if (Math.abs(previousMouse.x - mouseX) > 0.001 || Math.abs(previousMouse.y - mouseY) > 0.001) {
+      lastMouseMoveRef.current = performance.now();
+    }
     mouseRef.current = { x: mouseX, y: mouseY };
   }, [mouseX, mouseY]);
 
@@ -100,29 +90,27 @@ export function ParticleLayer({
       lastFrameRef.current = now;
 
       const currentMouse = mouseRef.current;
-      const mousePoint = {
-        x: rect.width / 2 + (currentMouse.x * rect.width) / 2,
-        y: rect.height / 2 + (currentMouse.y * rect.height) / 2,
-      };
-      const robotCenter = resolveRobotCenter(stage, robotRef.current);
-      const mouseDistance = Math.hypot(mousePoint.x - robotCenter.x, mousePoint.y - robotCenter.y);
-      const followForce = particleForceForDistance(mouseDistance);
-      const shouldSpawn = mouseDistance <= FAR_DISTANCE;
-      const resetting = mouseDistance > FAR_DISTANCE;
+      const spawnCenter = resolveSpawnCenter(stage, currentMouse.x, currentMouse.y);
+      const maxParticleCount =
+        window.innerWidth < 768 ? PARTICLE_COUNT_MOBILE : PARTICLE_COUNT_DESKTOP;
+      const spawnInterval =
+        now - lastMouseMoveRef.current >= IDLE_AFTER_MS
+          ? IDLE_SPAWN_INTERVAL_MS
+          : ACTIVE_SPAWN_INTERVAL_MS;
 
       if (
-        shouldSpawn &&
-        now - lastSpawnRef.current > 24 &&
-        particlesRef.current.length < PARTICLE_COUNT_DESKTOP
+        now - lastSpawnRef.current > spawnInterval &&
+        particlesRef.current.length < maxParticleCount
       ) {
         lastSpawnRef.current = now;
         const angle = Math.random() * Math.PI * 2;
         const distance = Math.random() * SPAWN_RADIUS;
+        const driftSpeed = AMBIENT_DRIFT_SPEED + Math.random() * 0.45;
         particlesRef.current.push({
-          x: robotCenter.x + Math.cos(angle) * distance,
-          y: robotCenter.y + Math.sin(angle) * distance,
-          vx: (Math.random() - 0.5) * 0.7,
-          vy: (Math.random() - 0.5) * 0.7,
+          x: spawnCenter.x + Math.cos(angle) * distance,
+          y: spawnCenter.y + Math.sin(angle) * distance,
+          vx: Math.cos(angle) * driftSpeed + (Math.random() - 0.5) * 0.25,
+          vy: Math.sin(angle) * driftSpeed + (Math.random() - 0.5) * 0.25,
           size: 1.4 + Math.random() * 2.4,
           life: 1,
           hue: 250 + Math.random() * 30,
@@ -133,24 +121,11 @@ export function ParticleLayer({
 
       const survivors: Particle[] = [];
       for (const particle of particlesRef.current) {
-        const toMouseX = mousePoint.x - particle.x;
-        const toMouseY = mousePoint.y - particle.y;
-        const toRobotX = robotCenter.x - particle.x;
-        const toRobotY = robotCenter.y - particle.y;
-        const orbitDistance = Math.max(1, Math.hypot(toRobotX, toRobotY));
-        const orbitSpeed = resetting ? 0 : AMBIENT_DRIFT_SPEED;
-        const orbitX = (-toRobotY / orbitDistance) * orbitSpeed;
-        const orbitY = (toRobotX / orbitDistance) * orbitSpeed;
-        const friction = resetting ? RESET_FRICTION : FRICTION;
-        const returnForce = resetting ? RESET_RETURN_FORCE : ACTIVE_RETURN_FORCE;
-
-        particle.vx =
-          particle.vx * friction + toMouseX * followForce + toRobotX * returnForce + orbitX;
-        particle.vy =
-          particle.vy * friction + toMouseY * followForce + toRobotY * returnForce + orbitY;
+        particle.vx *= FRICTION;
+        particle.vy *= FRICTION;
         particle.x += particle.vx;
         particle.y += particle.vy;
-        particle.life -= deltaMs / (resetting ? RESET_LIFE_MS : PARTICLE_LIFE_MS);
+        particle.life -= deltaMs / PARTICLE_LIFE_MS;
 
         if (particle.life > 0) {
           const alpha = particle.life * 0.68;
@@ -178,8 +153,9 @@ export function ParticleLayer({
       observer.disconnect();
       particlesRef.current = [];
       lastFrameRef.current = 0;
+      lastSpawnRef.current = 0;
     };
-  }, [reduceMotion, robotRef, stageRef]);
+  }, [reduceMotion, stageRef]);
 
   if (reduceMotion) return null;
 
