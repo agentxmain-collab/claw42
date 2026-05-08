@@ -39,10 +39,10 @@ export async function translateNewsItem(
         enableGuardrails: true,
       },
     );
-    translatedTitle = antiMechanicalFallback(
-      text.replace(/^["“]|["”]$/g, ""),
-      fallback,
-    ).slice(0, 120);
+    translatedTitle = antiMechanicalFallback(text.replace(/^["“]|["”]$/g, ""), fallback).slice(
+      0,
+      120,
+    );
     translatedSource = "llm";
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {

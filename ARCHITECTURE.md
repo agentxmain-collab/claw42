@@ -6,14 +6,14 @@ Claw 42 — 加密货币 AI Agent 竞技养成生态对外产品站。当前阶�
 
 ## 2. 技术栈
 
-| 层         | 选型                        | 版本     | 选型理由                            |
-| ---------- | --------------------------- | -------- | ----------------------------------- |
-| 框架       | Next.js                     | 14.2.35  | App Router + React 18 + Vercel 一体 |
-| 样式       | Tailwind CSS                | 3.4.1    | 工程团队熟悉，Next 一体集成         |
-| 动效       | framer-motion               | 11.18.2  | Hero 场景 + 渐次出现动画必需        |
-| TypeScript | strict                      | 5.x      | 最低成本测试层                      |
-| LLM        | deepseek-chat / minimax / claude-haiku | API      | 统一 provider chain + budget cap |
-| 行情       | CoinGecko API               | demo key | 免费层 + 30s cache                  |
+| 层         | 选型                                   | 版本     | 选型理由                            |
+| ---------- | -------------------------------------- | -------- | ----------------------------------- |
+| 框架       | Next.js                                | 14.2.35  | App Router + React 18 + Vercel 一体 |
+| 样式       | Tailwind CSS                           | 3.4.1    | 工程团队熟悉，Next 一体集成         |
+| 动效       | framer-motion                          | 11.18.2  | Hero 场景 + 渐次出现动画必需        |
+| TypeScript | strict                                 | 5.x      | 最低成本测试层                      |
+| LLM        | deepseek-chat / minimax / claude-haiku | API      | 统一 provider chain + budget cap    |
+| 行情       | CoinGecko API                          | demo key | 免费层 + 30s cache                  |
 
 ## 3. 目录结构 + 模块边界
 
