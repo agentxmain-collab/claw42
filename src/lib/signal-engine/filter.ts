@@ -6,7 +6,7 @@ export function evaluateRules(candidate: RawCandidate): RuleEvaluation[] {
     evaluateMultiSource(candidate),
     evaluateMarketAnomaly(candidate),
     evaluateHighCredibilityNews(candidate),
-    evaluateMacroDeviation(candidate)
+    evaluateMacroDeviation(candidate),
   ];
 }
 
@@ -29,7 +29,11 @@ function evaluateHighCredibilityNews(candidate: RawCandidate): RuleEvaluation {
 
 function evaluateMacroDeviation(candidate: RawCandidate): RuleEvaluation {
   if (!candidate.macroItem) {
-    return { name: "macro_deviation", score: candidate.eventType === "macro" ? 45 : 0, triggered: false };
+    return {
+      name: "macro_deviation",
+      score: candidate.eventType === "macro" ? 45 : 0,
+      triggered: false,
+    };
   }
   const forecast = parseFloat(candidate.macroItem.forecast);
   const actual = parseFloat(candidate.macroItem.actual);

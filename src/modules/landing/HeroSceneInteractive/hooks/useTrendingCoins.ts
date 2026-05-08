@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type {
-  HeroTrendingCoin,
-  HeroTrendingCoinsResponse,
-} from "../types/trending-coin";
+import type { HeroTrendingCoin, HeroTrendingCoinsResponse } from "../types/trending-coin";
 
 const SESSION_STORAGE_KEY = "hero_trending_session_v1";
 

@@ -5,17 +5,35 @@ import type { StructuredFields } from "@/lib/signal-engine/providers/types";
 const directions = new Set<MarketDirection>(["bullish", "bearish", "neutral"]);
 const impactLevels = new Set<ImpactLevel>(["critical", "high", "medium", "low"]);
 
-export function normalizeStructuredFields(value: unknown, fallback: StructuredFields): StructuredFields {
+export function normalizeStructuredFields(
+  value: unknown,
+  fallback: StructuredFields,
+): StructuredFields {
   const input = isRecord(value) ? value : {};
 
   return {
-    whyItMatters: normalizeLocalizedText(readAlias(input, "whyItMatters", "why_it_matters"), fallback.whyItMatters),
-    marketContext: normalizeLocalizedText(readAlias(input, "marketContext", "market_context"), fallback.marketContext),
-    watchPoints: normalizeLocalizedTextList(readAlias(input, "watchPoints", "watch_points"), fallback.watchPoints),
+    whyItMatters: normalizeLocalizedText(
+      readAlias(input, "whyItMatters", "why_it_matters"),
+      fallback.whyItMatters,
+    ),
+    marketContext: normalizeLocalizedText(
+      readAlias(input, "marketContext", "market_context"),
+      fallback.marketContext,
+    ),
+    watchPoints: normalizeLocalizedTextList(
+      readAlias(input, "watchPoints", "watch_points"),
+      fallback.watchPoints,
+    ),
     direction: normalizeDirection(input.direction, fallback.direction),
     confidence: normalizeConfidence(input.confidence, fallback.confidence),
-    impactLevel: normalizeImpactLevel(readAlias(input, "impactLevel", "impact_level"), fallback.impactLevel),
-    riskNotes: normalizeLocalizedTextList(readAlias(input, "riskNotes", "risk_notes"), fallback.riskNotes)
+    impactLevel: normalizeImpactLevel(
+      readAlias(input, "impactLevel", "impact_level"),
+      fallback.impactLevel,
+    ),
+    riskNotes: normalizeLocalizedTextList(
+      readAlias(input, "riskNotes", "risk_notes"),
+      fallback.riskNotes,
+    ),
   };
 }
 
@@ -47,9 +65,14 @@ function normalizeLocalizedTextOrNull(value: unknown): LocalizedText | null {
   return { zh, en };
 }
 
-function normalizeDirection(value: unknown, fallback: MarketDirection | null): MarketDirection | null {
+function normalizeDirection(
+  value: unknown,
+  fallback: MarketDirection | null,
+): MarketDirection | null {
   if (value === null) return null;
-  return typeof value === "string" && directions.has(value as MarketDirection) ? (value as MarketDirection) : fallback;
+  return typeof value === "string" && directions.has(value as MarketDirection)
+    ? (value as MarketDirection)
+    : fallback;
 }
 
 function normalizeConfidence(value: unknown, fallback: number) {
@@ -58,7 +81,9 @@ function normalizeConfidence(value: unknown, fallback: number) {
 }
 
 function normalizeImpactLevel(value: unknown, fallback: ImpactLevel): ImpactLevel {
-  return typeof value === "string" && impactLevels.has(value as ImpactLevel) ? (value as ImpactLevel) : fallback;
+  return typeof value === "string" && impactLevels.has(value as ImpactLevel)
+    ? (value as ImpactLevel)
+    : fallback;
 }
 
 function normalizeText(value: unknown) {

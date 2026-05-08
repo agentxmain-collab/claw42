@@ -16,12 +16,7 @@ const coinwLocaleFallback: Partial<Record<Locale, string>> = {
   en_XA: "en_US",
 };
 
-export function HeroCTAButtons({
-  locale,
-  coin,
-  watchLabel,
-  registerLabel,
-}: HeroCTAButtonsProps) {
+export function HeroCTAButtons({ locale, coin, watchLabel, registerLabel }: HeroCTAButtonsProps) {
   const symbol = coin.symbol.toUpperCase();
   const coinwLocale = coinwLocaleFallback[locale] ?? locale;
   const registerUrl = `https://www.coinw.com/${coinwLocale}/register?r=XXCryptoEN&utm_source=claw42_hero&utm_campaign=${encodeURIComponent(
@@ -54,7 +49,7 @@ export function HeroCTAButtons({
             surface: "hero_mini_player_register",
           })
         }
-        className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#62f0ff]/36 bg-[#05202a] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#09323f]"
+        className="border-[#62f0ff]/36 inline-flex min-h-10 items-center justify-center rounded-md border bg-[#05202a] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#09323f]"
       >
         {registerLabel.replace("{symbol}", symbol)}
       </a>

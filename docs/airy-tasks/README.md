@@ -10,6 +10,7 @@
 - TypeScript **5.x**
 
 **禁用清单**（各任务 spec 里也会重申）：
+
 - ❌ Tailwind v4-only 语法（`@theme` / `@utility` / inline theme config 等）
 - ❌ React 19-only Server Component 模式（async client component / use() hook 等）
 - ❌ next-intl / next-i18next（用自建 Context）
@@ -17,12 +18,12 @@
 
 ## 任务列表
 
-| # | 任务 | 分支 | 状态 | 依赖 |
-|---|------|------|------|------|
-| 01 | i18n 双语切换 + 排版收敛 | `feature/claw42-i18n-layout` | 已合并 @ 14616a2 | 无 |
-| 02 | v1.1 Polish：Header + Hero 稳定 + AI Skills 生态 + Scenarios 布局重构 + 全站动效 | `feature/claw42-v1-1-polish` | 在途 | Task 01（已合并） |
-| 03 | 真实 URL 替换 + QuickStart 命令更新 | `feature/claw42-v1-1-polish`（同 Task 02 分支） | 待认领 | Task 02（合并到同一 PR） |
-| 04 | Hero 交互场景：Robot Pose State Machine + Eye Tracking + 轮播气泡 + 4 币漂浮交互 | `feature/claw42-hero-scene-04` | 待认领 | Task 02（已合并），hero 资源已在 `public/images/hero/`（assets/hero-scene 已合 main） |
+| #   | 任务                                                                             | 分支                                            | 状态             | 依赖                                                                                  |
+| --- | -------------------------------------------------------------------------------- | ----------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
+| 01  | i18n 双语切换 + 排版收敛                                                         | `feature/claw42-i18n-layout`                    | 已合并 @ 14616a2 | 无                                                                                    |
+| 02  | v1.1 Polish：Header + Hero 稳定 + AI Skills 生态 + Scenarios 布局重构 + 全站动效 | `feature/claw42-v1-1-polish`                    | 在途             | Task 01（已合并）                                                                     |
+| 03  | 真实 URL 替换 + QuickStart 命令更新                                              | `feature/claw42-v1-1-polish`（同 Task 02 分支） | 待认领           | Task 02（合并到同一 PR）                                                              |
+| 04  | Hero 交互场景：Robot Pose State Machine + Eye Tracking + 轮播气泡 + 4 币漂浮交互 | `feature/claw42-hero-scene-04`                  | 待认领           | Task 02（已合并），hero 资源已在 `public/images/hero/`（assets/hero-scene 已合 main） |
 
 ## 工作流
 
@@ -49,5 +50,5 @@
 
 ---
 
-*维护者: F（总调度）*
-*创建: 2026-04-20*
+_维护者: F（总调度）_
+_创建: 2026-04-20_

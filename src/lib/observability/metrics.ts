@@ -1,11 +1,6 @@
 import { join } from "node:path";
 import { appendJsonLine } from "../storage/jsonl-writer";
-import {
-  hasKvConfig,
-  writeMetricToKv,
-  type KvClient,
-  type MetricRecord,
-} from "./kv-metrics";
+import { hasKvConfig, writeMetricToKv, type KvClient, type MetricRecord } from "./kv-metrics";
 
 export type MetricProperties = Record<string, unknown>;
 
@@ -21,11 +16,7 @@ export interface MetricsEmitterOptions {
 const MAX_PROPERTY_KEYS = 40;
 const MAX_STRING_LENGTH = 500;
 
-export async function emit(
-  metricName: string,
-  properties: MetricProperties = {},
-  value?: number,
-) {
+export async function emit(metricName: string, properties: MetricProperties = {}, value?: number) {
   await createMetricsEmitter().emit(metricName, properties, value);
 }
 
@@ -92,7 +83,10 @@ export function metricPath(rootDir: string, isoTimestamp: string) {
 }
 
 function normalizeMetricName(value: string) {
-  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9_.-]+/g, "_");
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, "_");
   return normalized || "metric";
 }
 

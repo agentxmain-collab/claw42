@@ -51,7 +51,7 @@ describe("metrics.emit", () => {
     expect(client.lpush).toHaveBeenCalledOnce();
     expect(client.lpush).toHaveBeenCalledWith(
       "metrics:2026-05-07:signup",
-      expect.stringContaining("\"locale\":\"en_US\""),
+      expect.stringContaining('"locale":"en_US"'),
     );
     expect(client.expire).toHaveBeenCalledWith("metrics:2026-05-07:signup", 604800);
   });

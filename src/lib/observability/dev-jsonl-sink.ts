@@ -20,10 +20,7 @@ async function rotateIfNeeded(filePath: string, nextLineBytes: number): Promise<
     if (stats.size + nextLineBytes <= MAX_JSONL_BYTES) return;
 
     const parsed = path.parse(filePath);
-    const rotatedPath = path.join(
-      parsed.dir,
-      `${parsed.name}-${Date.now()}${parsed.ext}`
-    );
+    const rotatedPath = path.join(parsed.dir, `${parsed.name}-${Date.now()}${parsed.ext}`);
 
     await fs.rename(filePath, rotatedPath);
   } catch (error) {

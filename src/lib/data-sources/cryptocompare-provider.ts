@@ -14,14 +14,20 @@ const defaultBaseUrl = "https://min-api.cryptocompare.com";
 const defaultTimeoutMs = 8_000;
 const defaultSymbols = ["BTC", "ETH", "SOL"];
 
-export async function fetchCryptoComparePriceSnapshots(options: CryptoCompareOptions = {}): Promise<PriceSnapshot[]> {
+export async function fetchCryptoComparePriceSnapshots(
+  options: CryptoCompareOptions = {},
+): Promise<PriceSnapshot[]> {
   const symbols = options.symbols ?? defaultSymbols;
   const url = new URL("/data/pricemultifull", options.baseUrl ?? defaultBaseUrl);
   url.searchParams.set("fsyms", symbols.join(","));
   url.searchParams.set("tsyms", "USD");
   if (options.apiKey) url.searchParams.set("api_key", options.apiKey);
 
-  const response = await fetchWithTimeout(options.fetcher ?? fetch, url, options.timeoutMs ?? defaultTimeoutMs);
+  const response = await fetchWithTimeout(
+    options.fetcher ?? fetch,
+    url,
+    options.timeoutMs ?? defaultTimeoutMs,
+  );
   const json = await parseJsonResponse(response);
   if (!response.ok) throw new Error(`cryptocompare price source failed with ${response.status}`);
   if (!isRecord(json)) return [];
@@ -62,7 +68,7 @@ function toPriceSnapshot(symbol: string, raw: Record<string, unknown>): PriceSna
     change24h: toNumber(asset.USD.CHANGEPCT24HOUR) ?? 0,
     volumeChange24h: 0,
     source: "cryptocompare",
-    updatedAt: lastUpdate ? new Date(lastUpdate * 1000).toISOString() : new Date().toISOString()
+    updatedAt: lastUpdate ? new Date(lastUpdate * 1000).toISOString() : new Date().toISOString(),
   };
 }
 

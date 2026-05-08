@@ -37,7 +37,7 @@ export function toAgentSignalPayload(signal: SignalCard): AgentSignalPayload {
     evidenceSources: uniqueEvidenceSources(signal),
     asPrompt: {
       zh: buildPrompt(signal, "zh"),
-      en: buildPrompt(signal, "en")
+      en: buildPrompt(signal, "en"),
     },
     asFunctionCall: {
       name: "hotpursuit_signal",
@@ -52,14 +52,16 @@ export function toAgentSignalPayload(signal: SignalCard): AgentSignalPayload {
         evidenceCount: signal.evidence.confirmCount,
         evidenceSources: uniqueEvidenceSources(signal),
         watchPoints: signal.explanation.watchPoints,
-        risks: signal.judgment.riskNotes
-      }
-    }
+        risks: signal.judgment.riskNotes,
+      },
+    },
   };
 }
 
 function uniqueEvidenceSources(signal: SignalCard) {
-  return Array.from(new Set([signal.facts.source, ...signal.evidence.pieces.map((piece) => piece.source)]));
+  return Array.from(
+    new Set([signal.facts.source, ...signal.evidence.pieces.map((piece) => piece.source)]),
+  );
 }
 
 function buildPrompt(signal: SignalCard, locale: keyof LocalizedText) {

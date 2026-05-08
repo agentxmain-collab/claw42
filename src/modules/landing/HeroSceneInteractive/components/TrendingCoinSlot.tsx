@@ -2,11 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { HeroTrendingCoin } from "../types/trending-coin";
-import {
-  clampCoinScale,
-  isExtremeDrop,
-  priceMovementToScale,
-} from "../utils/priceMovementToScale";
+import { clampCoinScale, isExtremeDrop, priceMovementToScale } from "../utils/priceMovementToScale";
 
 interface TrendingCoinSlotProps {
   coin: HeroTrendingCoin;
@@ -84,7 +80,7 @@ export function TrendingCoinSlot({
           draggable={false}
           className="relative h-9 w-9 rounded-full md:h-12 md:w-12"
         />
-        <span className="absolute -bottom-8 left-1/2 min-w-20 -translate-x-1/2 rounded-md border border-white/10 bg-black/78 px-2 py-1 text-center text-[11px] leading-tight text-white shadow-lg md:-bottom-9 md:text-xs">
+        <span className="bg-black/78 absolute -bottom-8 left-1/2 min-w-20 -translate-x-1/2 rounded-md border border-white/10 px-2 py-1 text-center text-[11px] leading-tight text-white shadow-lg md:-bottom-9 md:text-xs">
           <span className="block font-semibold">{coin.symbol}</span>
           <span className={positive ? "text-[#7afacb]" : "text-[#ffbe82]"}>{changeLabel}</span>
         </span>

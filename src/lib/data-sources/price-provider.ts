@@ -21,10 +21,12 @@ const defaultTimeoutMs = 8_000;
 const defaultCoins: CoinMapping[] = [
   { id: "bitcoin", symbol: "BTC" },
   { id: "ethereum", symbol: "ETH" },
-  { id: "solana", symbol: "SOL" }
+  { id: "solana", symbol: "SOL" },
 ];
 
-export async function fetchCoinGeckoPriceSnapshots(options: CoinGeckoPriceOptions = {}): Promise<PriceSnapshot[]> {
+export async function fetchCoinGeckoPriceSnapshots(
+  options: CoinGeckoPriceOptions = {},
+): Promise<PriceSnapshot[]> {
   const coins = options.coins ?? defaultCoins;
   const url = new URL("/api/v3/simple/price", options.baseUrl ?? defaultBaseUrl);
   url.searchParams.set("ids", coins.map((coin) => coin.id).join(","));
@@ -33,16 +35,22 @@ export async function fetchCoinGeckoPriceSnapshots(options: CoinGeckoPriceOption
   url.searchParams.set("include_24hr_vol", "true");
   url.searchParams.set("include_last_updated_at", "true");
 
-  const response = await fetchWithTimeout(options.fetcher ?? fetch, url, options.timeoutMs ?? defaultTimeoutMs, {
-    headers: options.apiKey ? { "x-cg-pro-api-key": options.apiKey } : undefined
-  });
+  const response = await fetchWithTimeout(
+    options.fetcher ?? fetch,
+    url,
+    options.timeoutMs ?? defaultTimeoutMs,
+    {
+      headers: options.apiKey ? { "x-cg-pro-api-key": options.apiKey } : undefined,
+    },
+  );
   const json = await parseJsonResponse(response);
   if (!response.ok) throw new Error(`price source failed with ${response.status}`);
   if (!isRecord(json)) return [];
 
-  const volumeChanges = options.includeVolumeChange24h === false
-    ? new Map<string, number>()
-    : await fetchVolumeChanges(coins, options);
+  const volumeChanges =
+    options.includeVolumeChange24h === false
+      ? new Map<string, number>()
+      : await fetchVolumeChanges(coins, options);
 
   return coins
     .map((coin) => toPriceSnapshot(coin, json[coin.id], volumeChanges.get(coin.id) ?? 0))
@@ -50,20 +58,30 @@ export async function fetchCoinGeckoPriceSnapshots(options: CoinGeckoPriceOption
 }
 
 async function fetchVolumeChanges(coins: CoinMapping[], options: CoinGeckoPriceOptions) {
-  const entries = await Promise.all(coins.map(async (coin) => {
-    try {
-      const url = new URL(`/api/v3/coins/${encodeURIComponent(coin.id)}/market_chart`, options.baseUrl ?? defaultBaseUrl);
-      url.searchParams.set("vs_currency", "usd");
-      url.searchParams.set("days", "2");
-      const response = await fetchWithTimeout(options.fetcher ?? fetch, url, options.timeoutMs ?? defaultTimeoutMs, {
-        headers: options.apiKey ? { "x-cg-pro-api-key": options.apiKey } : undefined
-      });
-      if (!response.ok) return [coin.id, 0] as const;
-      return [coin.id, calculateVolumeChange24h(await parseJsonResponse(response))] as const;
-    } catch {
-      return [coin.id, 0] as const;
-    }
-  }));
+  const entries = await Promise.all(
+    coins.map(async (coin) => {
+      try {
+        const url = new URL(
+          `/api/v3/coins/${encodeURIComponent(coin.id)}/market_chart`,
+          options.baseUrl ?? defaultBaseUrl,
+        );
+        url.searchParams.set("vs_currency", "usd");
+        url.searchParams.set("days", "2");
+        const response = await fetchWithTimeout(
+          options.fetcher ?? fetch,
+          url,
+          options.timeoutMs ?? defaultTimeoutMs,
+          {
+            headers: options.apiKey ? { "x-cg-pro-api-key": options.apiKey } : undefined,
+          },
+        );
+        if (!response.ok) return [coin.id, 0] as const;
+        return [coin.id, calculateVolumeChange24h(await parseJsonResponse(response))] as const;
+      } catch {
+        return [coin.id, 0] as const;
+      }
+    }),
+  );
 
   return new Map(entries);
 }
@@ -84,7 +102,11 @@ async function parseJsonResponse(response: Response): Promise<unknown> {
   return JSON.parse(text);
 }
 
-function toPriceSnapshot(coin: CoinMapping, value: unknown, volumeChange24h: number): PriceSnapshot | null {
+function toPriceSnapshot(
+  coin: CoinMapping,
+  value: unknown,
+  volumeChange24h: number,
+): PriceSnapshot | null {
   if (!isRecord(value)) return null;
   const price = toNumber(value.usd);
   if (price === null) return null;
@@ -96,12 +118,15 @@ function toPriceSnapshot(coin: CoinMapping, value: unknown, volumeChange24h: num
     change24h: toNumber(value.usd_24h_change) ?? 0,
     volumeChange24h,
     source: "coingecko",
-    updatedAt: lastUpdatedAt ? new Date(lastUpdatedAt * 1000).toISOString() : new Date().toISOString()
+    updatedAt: lastUpdatedAt
+      ? new Date(lastUpdatedAt * 1000).toISOString()
+      : new Date().toISOString(),
   };
 }
 
 function calculateVolumeChange24h(value: unknown) {
-  if (!isRecord(value) || !Array.isArray(value.total_volumes) || value.total_volumes.length < 2) return 0;
+  if (!isRecord(value) || !Array.isArray(value.total_volumes) || value.total_volumes.length < 2)
+    return 0;
   const latest = volumePointValue(value.total_volumes[value.total_volumes.length - 1]);
   const previous = volumePointValue(value.total_volumes[value.total_volumes.length - 2]);
   if (latest === null || previous === null || previous <= 0) return 0;

@@ -6,7 +6,7 @@ describe("signal score", () => {
     const score = scoreCandidate([
       { name: "multi_source_confirm", score: 100, triggered: true },
       { name: "market_anomaly", score: 80, triggered: true },
-      { name: "high_credibility_news", score: 50, triggered: true }
+      { name: "high_credibility_news", score: 50, triggered: true },
     ]);
 
     expect(score).toBe(70);
@@ -20,8 +20,12 @@ describe("signal score", () => {
   });
 
   test("requires both score and strong rule before headlining", () => {
-    expect(isHeadliner(72, [{ name: "high_credibility_news", score: 90, triggered: true }])).toBe(false);
-    expect(isHeadliner(69, [{ name: "multi_source_confirm", score: 100, triggered: true }])).toBe(false);
+    expect(isHeadliner(72, [{ name: "high_credibility_news", score: 90, triggered: true }])).toBe(
+      false,
+    );
+    expect(isHeadliner(69, [{ name: "multi_source_confirm", score: 100, triggered: true }])).toBe(
+      false,
+    );
     expect(isHeadliner(75, [{ name: "market_anomaly", score: 100, triggered: true }])).toBe(true);
   });
 });

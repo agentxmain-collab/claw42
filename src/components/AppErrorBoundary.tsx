@@ -12,10 +12,7 @@ interface AppErrorBoundaryState {
   errorId: string | null;
 }
 
-export class AppErrorBoundary extends Component<
-  AppErrorBoundaryProps,
-  AppErrorBoundaryState
-> {
+export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
   state: AppErrorBoundaryState = {
     hasError: false,
     errorId: null,
@@ -67,13 +64,7 @@ export class AppErrorBoundary extends Component<
   }
 }
 
-function ErrorFallback({
-  errorId,
-  onReset,
-}: {
-  errorId: string | null;
-  onReset: () => void;
-}) {
+function ErrorFallback({ errorId, onReset }: { errorId: string | null; onReset: () => void }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-black px-6 py-16 text-white">
       <section className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#111] p-6 text-center shadow-2xl">

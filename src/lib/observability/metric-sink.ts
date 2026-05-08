@@ -13,10 +13,7 @@ export interface MetricSink {
 }
 
 function shouldWriteDevMetrics(): boolean {
-  return (
-    process.env.NODE_ENV === "development" ||
-    process.env.VERCEL_ENV === "preview"
-  );
+  return process.env.NODE_ENV === "development" || process.env.VERCEL_ENV === "preview";
 }
 
 function shouldWarnOnMetricError(): boolean {
@@ -26,7 +23,7 @@ function shouldWarnOnMetricError(): boolean {
 function buildMetricRecord(
   name: string,
   properties: MetricProperties = {},
-  value?: number
+  value?: number,
 ): MetricRecord {
   return {
     name,

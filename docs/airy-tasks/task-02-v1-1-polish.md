@@ -11,11 +11,13 @@
 ## 变更范围
 
 ### 新建
+
 - `src/components/SiteHeader.tsx` — 从 `src/i18n/LanguageSwitcher.tsx` 搬过来，重命名 export 为 `SiteHeader`
 - `src/modules/landing/SkillsEcoSection.tsx` — 新板块组件
 - 可选：`src/lib/motion.ts` — 复用的 motion variant（如 `fadeUp`, `fadeIn`）
 
 ### 修改
+
 - `src/app/layout.tsx` — import `SiteHeader` 替换 `TopBar`
 - `src/app/page.tsx` — Hero 布局修正、在 Scenarios 和 Why 之间插入 `<SkillsEcoSection />`、Scenarios 卡片加 motion
 - `src/i18n/zh.json` / `src/i18n/en.json` — 新增 `skillsEco` section
@@ -24,10 +26,12 @@
 - `tailwind.config.ts` — 可选：加 `@keyframes float` 如果不用 framer-motion 做 robot 浮动
 
 ### 删除
+
 - `src/i18n/LanguageSwitcher.tsx` — 内容搬到 `SiteHeader.tsx` 后删掉
 - `public/images/claw42-logo.png` — 2MB 死资源，代码里从未 import
 
 ### 不动
+
 - `src/i18n/I18nProvider.tsx`（Task 01 已验收通过，不要动 Provider 逻辑）
 - `src/i18n/zh.json` / `en.json` 里 Task 01 的字段（只追加，不改已有）
 - `src/app/globals.css` 里 `.fade-in-section` / `.card-glow` / `.hero-fade` 规则（可在 motion 方案里共存或迁移，详见 #4）
@@ -38,6 +42,7 @@
 ## 技术上下文
 
 ### 技术栈基线（重申，硬约束）
+
 - Next.js 14.2.35（App Router）
 - React 18
 - Tailwind CSS 3.4.1
@@ -45,6 +50,7 @@
 - 新允许依赖：**`framer-motion` ^11.x**（本 task 白名单唯一新增）
 
 ### 禁用清单
+
 - ❌ Tailwind v4 语法（`@theme` / `@utility`）
 - ❌ React 19 only 特性（async client component / use() hook）
 - ❌ next-intl / next-i18next
@@ -54,6 +60,7 @@
 ### 当前 origin/main 关键代码片段（canonical @ 14616a2）
 
 **`src/i18n/LanguageSwitcher.tsx`**（要搬走 + 删除）：
+
 ```tsx
 "use client";
 import { useI18n } from "./I18nProvider";
@@ -63,19 +70,17 @@ export function TopBar() {
   const nextLabel = locale === "zh" ? t.nav.switchLangToEn : t.nav.switchLangToZh;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 h-[60px] bg-black/80 backdrop-blur-xl border-b border-white/[0.06]">
-      <div className="max-w-[1440px] mx-auto h-full flex items-center justify-between px-6 md:px-10 lg:px-16">
-        <a href="/" className="flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-full bg-[#6c4fff] flex items-center justify-center text-white font-bold text-lg">
+    <nav className="fixed left-0 right-0 top-0 z-50 h-[60px] border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
+      <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between px-6 md:px-10 lg:px-16">
+        <a href="/" className="flex shrink-0 items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#6c4fff] text-lg font-bold text-white">
             C
           </div>
-          <span className="text-white font-semibold text-lg tracking-tight">
-            Claw 42
-          </span>
+          <span className="text-lg font-semibold tracking-tight text-white">Claw 42</span>
         </a>
         <button
           onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
-          className="w-11 h-11 rounded-full bg-white/[0.08] border border-white/[0.12] hover:bg-white/[0.15] transition-all text-white/80 hover:text-white text-sm font-semibold flex items-center justify-center"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.08] text-sm font-semibold text-white/80 transition-all hover:bg-white/[0.15] hover:text-white"
           aria-label="Switch language"
         >
           {nextLabel}
@@ -87,6 +92,7 @@ export function TopBar() {
 ```
 
 **`src/app/layout.tsx`**（`TopBar` import 要换成 `SiteHeader`）：
+
 ```tsx
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { TopBar } from "@/i18n/LanguageSwitcher";
@@ -94,23 +100,29 @@ import { TopBar } from "@/i18n/LanguageSwitcher";
 <I18nProvider>
   <TopBar />
   {children}
-</I18nProvider>
+</I18nProvider>;
 ```
 
 **`src/app/page.tsx` Hero（当前有问题的片段）**：
+
 ```tsx
 function HeroSection() {
   const { t } = useI18n();
   return (
     <section className="relative pt-20 md:pt-24">
-      <div className="relative w-full hero-fade">
-        <Image src="/images/hero-robot-scene.png" alt="Claw 42 AI Trading"
-          width={1440} height={548}
-          className="w-full h-auto object-cover" priority />
+      <div className="hero-fade relative w-full">
+        <Image
+          src="/images/hero-robot-scene.png"
+          alt="Claw 42 AI Trading"
+          width={1440}
+          height={548}
+          className="h-auto w-full object-cover"
+          priority
+        />
       </div>
       {/* ↓ 问题点：-mt-8 / -mt-16 是固定的负 margin，中文短标题会被拉进机器人脚下 */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 -mt-8 md:-mt-16 pb-12">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
+      <div className="relative z-10 -mt-8 flex flex-col items-center px-6 pb-12 text-center md:-mt-16">
+        <h1 className="mb-4 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[56px]">
           {t.hero.title}
         </h1>
         {/* ... */}
@@ -130,6 +142,7 @@ function HeroSection() {
 两张卡片（2 列 grid）：
 
 **卡片 1：Contract**
+
 - 图标：占位（灰色圆角方块 + `⚙️` emoji 或 SVG，Airy 自定，不要用图片）
 - 标题（中）：`Contract`
 - 描述（中）：`合约专用 skill：涵盖市场数据、下单 / 取消订单、止盈 / 止损、持仓和订单查询、账户资产、持仓模式和杠杆查询`
@@ -138,6 +151,7 @@ function HeroSection() {
 - 链接：`了解详情 →` / `Learn more →`（`href="#"` 占位，别跳外链）
 
 **卡片 2：Spot**
+
 - 图标：占位（灰色圆角方块 + `📊` emoji 或 SVG）
 - 标题（中）：`Spot`
 - 描述（中）：`现货专用 skill：涵盖市场数据、下单 / 取消订单、订单查询、账户余额和资金划转`
@@ -152,12 +166,14 @@ function HeroSection() {
 ### 1. Header 打磨（`SiteHeader`）
 
 #### 1.1 组件搬家
+
 - 新建 `src/components/SiteHeader.tsx`，把 `LanguageSwitcher.tsx` 的内容搬过来
 - export `SiteHeader`（不再叫 `TopBar`）
 - `layout.tsx` import 从 `@/i18n/LanguageSwitcher` 改为 `@/components/SiteHeader`
 - 删掉 `src/i18n/LanguageSwitcher.tsx`（`LanguageSwitcher.tsx` 整个文件删除，不是清空）
 
 #### 1.2 Logo 替换
+
 - 当前的 "C" 圆形占位（`<div className="w-10 h-10 rounded-full bg-[#6c4fff] ...">C</div>`）替换为：
   ```tsx
   <Image
@@ -166,73 +182,76 @@ function HeroSection() {
     width={40}
     height={40}
     priority
-    className="w-10 h-10 object-contain"
+    className="h-10 w-10 object-contain"
   />
   ```
 - import `next/image`
 
 #### 1.3 Header 高度 + 固定
+
 - 高度从 `h-[60px]` 改为 `h-[72px]`
 - 保留 `fixed top-0 left-0 right-0 z-50`（已经是固定顶部，确认不要改）
 - 保留 `backdrop-blur-xl bg-black/80 border-b border-white/[0.06]`
 - 确保 `z-50` 足够盖在任何页面内容之上（现在 Hero/Scenarios/其他板块都没有比 z-50 高的层，OK）
 
 #### 1.4 Hero 避让
+
 - 因为 Header 从 60px 变 72px，`HeroSection` 顶部 padding 从 `pt-20 md:pt-24` 调整为 `pt-24 md:pt-28`——别让 Header 挡住 robot 图顶部
 
 #### 1.5 删除死资源
+
 - 删除 `public/images/claw42-logo.png`（2MB，没被任何代码 import）
 - 保留 `public/images/claw42-logo-trimmed.png`（新 logo 用的就是这个）
 
 ### 2. Hero 语言切换稳定性
 
 #### 2.1 问题根因
+
 当前 Hero 用 `-mt-8 md:-mt-16` 负 margin 把标题区拉进 hero-robot-scene 图片的下部（让机器人和标题视觉上"连接"）。但负 margin 是**固定值**，不随标题文字长度变化。英文标题 `Meet Your AI Trading Partner`（28 字符）会自动换行，实际占两行；中文标题 `遇见你的 AI 交易伙伴`（11 字符）只占一行。结果：中文版本标题被拉得比英文更靠上，直接叠进机器人脚下。
 
 #### 2.2 修法
+
 **方案（采用）**：移除负 margin，改为 Hero 图片 + 内容区用 `flex flex-col`，内容区用正常 padding。
 
 改成：
+
 ```tsx
 function HeroSection() {
   const { t } = useI18n();
   return (
-    <section className="relative pt-24 md:pt-28 pb-12">
+    <section className="relative pb-12 pt-24 md:pt-28">
       {/* Hero background image — 固定宽高比，不再让内容叠进去 */}
-      <div className="relative w-full hero-fade mb-8 md:mb-12">
+      <div className="hero-fade relative mb-8 w-full md:mb-12">
         <Image
           src="/images/hero-robot-scene.png"
           alt="Claw 42 AI Trading"
           width={1440}
           height={548}
-          className="w-full h-auto object-cover"
+          className="h-auto w-full object-cover"
           priority
         />
       </div>
 
       {/* Content — 完全独立于 hero image，不再用负 margin */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-4xl mx-auto">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
+      <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center px-6 text-center">
+        <h1 className="mb-4 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[56px]">
           {t.hero.title}
         </h1>
-        <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mb-8 leading-relaxed">
+        <p className="mb-8 max-w-2xl text-sm leading-relaxed text-gray-400 sm:text-base md:text-lg">
           {t.hero.subtitle}
         </p>
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
           {/* 主 CTA：立即开始 / Get Started — href 锁定 #signup */}
           <a
             href="#signup"
-            className="px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl
-                       hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)]
-                       transition-all inline-flex items-center justify-center"
+            className="inline-flex items-center justify-center rounded-xl bg-[#7c5cff] px-8 py-3 text-base font-semibold text-white transition-all hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)]"
           >
             {t.hero.ctaPrimary}
           </a>
           {/* 次 CTA：API 文档 / API Docs — href 占位 #api-docs */}
           <a
             href="#api-docs"
-            className="px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl
-                       hover:bg-white/15 transition-all inline-flex items-center justify-center"
+            className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-8 py-3 text-base font-semibold text-white transition-all hover:bg-white/15"
           >
             {t.hero.ctaSecondary}
           </a>
@@ -244,6 +263,7 @@ function HeroSection() {
 ```
 
 要点：
+
 - 移除 `-mt-8 md:-mt-16`
 - hero image 之后加 `mb-8 md:mb-12`（图片和标题之间固定间距）
 - 中英文切换后布局必须稳定（标题不叠进图片）
@@ -251,6 +271,7 @@ function HeroSection() {
 - **Scenarios 的「立即试用」按钮 href 必须和 Hero 主 CTA 完全一致**（都用 `#signup`）
 
 #### 2.3 验收
+
 - 中文状态下截图（Header + Hero + Scenarios 前半），机器人和标题之间有清晰间距
 - 英文状态下同位置截图，和中文版视觉差异只有**文字**，没有**位置**差异
 - 两张截图并排对比，标题 baseline 基本对齐（±8px 内）
@@ -258,7 +279,9 @@ function HeroSection() {
 ### 3. 新增 `SkillsEcoSection` 板块
 
 #### 3.1 位置
+
 插在 `ScenariosSection` 之后、`WhySection` 之前。`page.tsx` 最终页面顺序：
+
 ```tsx
 <HeroSection />
 <QuickStartSection />
@@ -269,6 +292,7 @@ function HeroSection() {
 ```
 
 #### 3.2 组件结构
+
 `src/modules/landing/SkillsEcoSection.tsx`：
 
 ```tsx
@@ -280,33 +304,33 @@ export function SkillsEcoSection() {
   const cards = t.skillsEco.cards;
 
   return (
-    <section className="relative py-16 md:py-20 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto">
-      <div className="text-center mb-10">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-white">
+    <section className="relative mx-auto max-w-7xl px-6 py-16 md:px-12 md:py-20 lg:px-20">
+      <div className="mb-10 text-center">
+        <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl lg:text-5xl">
           {t.skillsEco.title}
         </h2>
-        <p className="text-gray-400 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
+        <p className="mx-auto max-w-3xl text-base leading-relaxed text-gray-400 md:text-lg">
           {t.skillsEco.subtitle}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {cards.map((card, i) => (
           <div
             key={i}
-            className="card-glow bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col"
+            className="card-glow flex flex-col rounded-2xl border border-white/10 bg-[#111] p-6 md:p-8"
           >
             {/* 图标占位 */}
-            <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-4 text-2xl">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-[#1a1a1a] text-2xl">
               {card.icon}
             </div>
-            <h3 className="text-xl md:text-2xl font-bold text-white mb-3">{card.title}</h3>
-            <p className="text-gray-400 text-sm md:text-base leading-relaxed mb-5 flex-1">
+            <h3 className="mb-3 text-xl font-bold text-white md:text-2xl">{card.title}</h3>
+            <p className="mb-5 flex-1 text-sm leading-relaxed text-gray-400 md:text-base">
               {card.desc}
             </p>
             <a
               href="#"
-              className="text-[#d1ff55] text-sm font-semibold hover:brightness-110 transition-colors self-start"
+              className="self-start text-sm font-semibold text-[#d1ff55] transition-colors hover:brightness-110"
             >
               {card.cta} →
             </a>
@@ -319,7 +343,9 @@ export function SkillsEcoSection() {
 ```
 
 #### 3.3 i18n 字典
+
 `zh.json` 追加（根对象内，和 `scenarios` 同级）：
+
 ```json
 "skillsEco": {
   "title": "探索 AI Skills 生态",
@@ -342,6 +368,7 @@ export function SkillsEcoSection() {
 ```
 
 `en.json` 追加：
+
 ```json
 "skillsEco": {
   "title": "Explore the AI Skills Ecosystem",
@@ -364,6 +391,7 @@ export function SkillsEcoSection() {
 ```
 
 `types.ts` 追加到 `Dict` interface：
+
 ```ts
 skillsEco: {
   title: string;
@@ -374,17 +402,19 @@ skillsEco: {
     desc: string;
     cta: string;
   }>;
-};
+}
 ```
 
 ### 4. 全站动效（framer-motion）
 
 #### 4.1 引入
+
 - `npm install framer-motion@^11`
 - 只用 `motion.*` + `AnimatePresence`，不用 `LayoutGroup` / `LazyMotion` 等高级特性
 - 所有动效组件必须 `"use client"`（本项目 page.tsx 已经是）
 
 #### 4.2 全局动效规则
+
 - **入场**：任何 Section 级别组件第一次进入视口 → `opacity 0 → 1 + y: 24 → 0`，duration 0.6s，ease `"easeOut"`
 - **Stagger**：Section 内多个卡片按顺序延迟入场，每张间隔 0.08s
 - **Hover**：按钮 `scale: 1.05`（已有 Tailwind 写法可保留，也可改 motion）、卡片 `y: -4` + glow 增强
@@ -393,7 +423,9 @@ skillsEco: {
 - **关键约束**：动效不能影响 layout（用 `transform` 不用 margin），不能引起 CLS
 
 #### 4.3 落地方案
+
 封装一个公共 motion wrapper（`src/lib/motion.ts` 或直接在 page.tsx 顶部）：
+
 ```ts
 export const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -404,13 +436,16 @@ export const fadeUp = {
 ```
 
 替换现有 `fade-in-section` CSS 方案（`useScrollFadeIn` hook + `.fade-in-section.is-visible`）为 framer-motion 的 `whileInView`：
+
 - 删掉 `useScrollFadeIn` hook 的调用
 - `Section` wrapper 用 `motion.section` 替代 `<section>`
 - `globals.css` 里 `.fade-in-section` 规则可以保留（不影响），但不再有 `useScrollFadeIn` 给它加 class
 - 或者：保留 CSS `.fade-in-section`，只在**新组件**（SkillsEcoSection、hero）用 motion，不统一替换——Airy 自己选一个方案全站一致，不要一半 CSS 一半 motion
 
 #### 4.4 Hero robot 浮动（可选提升）
+
 `hero-robot-scene.png` 给轻微浮动：
+
 ```tsx
 <motion.div
   animate={{ y: [0, -8, 0] }}
@@ -420,6 +455,7 @@ export const fadeUp = {
   <Image ... />
 </motion.div>
 ```
+
 注意：振幅 8px 足够 subtle，不要做大，避免喧宾夺主。
 
 ### 5. Scenarios 布局重构 + 视觉（dict 已有字段不改，追加两个新字段）
@@ -457,6 +493,7 @@ export const fadeUp = {
 ```
 
 **关键点**：
+
 - ① + ② 是**同一个大板块**，等宽两列（`lg:grid-cols-2 gap-6`），不是原来的左大右小
 - ③ + ④ 是次要栏，放在主板块**下方**，另起一个 grid（`lg:grid-cols-2 gap-4`）
 - 次要栏两张卡的**体量**（padding、字号、icon 尺寸）明显小于主板块，形成主次对比
@@ -466,6 +503,7 @@ export const fadeUp = {
 #### 5.2 dict 字段处理
 
 **不改**（Task 01 已验收）：
+
 - `scenarios.sectionTitle` / `sectionSubtitle`
 - `scenarios.daily.title` / `badge` / `desc` / `inputPlaceholder` / `cta` / `chatSpeaker` / `chatTime` / `chatTitle` / `chatBullets`
 - `scenarios.realtime.title` / `desc` / `ticker`
@@ -474,18 +512,21 @@ export const fadeUp = {
 **追加**（这次 task 新加的两个 key，不碰已有字段）：
 
 `zh.json` 的 `scenarios.daily` 下加：
+
 ```json
 "defaultPrompt": "帮我生成今日加密货币市场日报：扫描 BTC/ETH/SOL 等主流币种 24 小时价格波动、主要社交媒体的情绪变化、链上大额转账和宏观新闻，输出结构化的中文日报，帮我开启今天的交易。",
 "copiedToast": "已复制到剪贴板"
 ```
 
 `en.json` 的 `scenarios.daily` 下加：
+
 ```json
 "defaultPrompt": "Generate today's crypto market report for me: scan 24h price moves of BTC/ETH/SOL, social sentiment shifts, major on-chain whale transfers and macro news, then deliver a structured report to start my trading day.",
 "copiedToast": "Copied to clipboard"
 ```
 
 `types.ts` 的 `scenarios.daily` 类型里追加：
+
 ```ts
 defaultPrompt: string;
 copiedToast: string;
@@ -521,15 +562,13 @@ function DailyReportInput() {
       <button
         type="button"
         onClick={handleClick}
-        className="w-full text-left bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3
-                   text-sm text-gray-400 hover:border-[#7c5cff]/40 hover:text-gray-300
-                   transition-colors cursor-pointer"
+        className="w-full cursor-pointer rounded-lg border border-white/10 bg-[#0a0a0a] px-4 py-3 text-left text-sm text-gray-400 transition-colors hover:border-[#7c5cff]/40 hover:text-gray-300"
       >
         {t.scenarios.daily.inputPlaceholder}
       </button>
       {/* Toast */}
       {copied && (
-        <div className="absolute -top-10 left-0 px-3 py-1.5 rounded-md bg-[#7c5cff] text-white text-xs font-semibold shadow-lg">
+        <div className="absolute -top-10 left-0 rounded-md bg-[#7c5cff] px-3 py-1.5 text-xs font-semibold text-white shadow-lg">
           {t.scenarios.daily.copiedToast}
         </div>
       )}
@@ -539,6 +578,7 @@ function DailyReportInput() {
 ```
 
 要求：
+
 - 点击整个输入框区域都能复制（用 `<button>` 而不是 `<input readOnly>`，避免 focus 状态干扰）
 - 复制成功后在输入框上方浮出 toast `已复制到剪贴板` / `Copied to clipboard`，2 秒后自动消失
 - 浏览器不支持 `navigator.clipboard`（如 HTTP 站点或老浏览器）时静默失败，不报错、不 alert
@@ -551,9 +591,7 @@ function DailyReportInput() {
 ```tsx
 <a
   href="#signup"
-  className="px-5 py-3 bg-[#7c5cff] text-white text-sm font-semibold rounded-lg
-             hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)]
-             transition-all shrink-0 inline-flex items-center"
+  className="inline-flex shrink-0 items-center rounded-lg bg-[#7c5cff] px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-[#8e6bff] hover:shadow-[0_0_20px_rgba(124,92,255,0.4)]"
 >
   {t.scenarios.daily.cta}
 </a>
@@ -569,29 +607,29 @@ function DailyReportInput() {
 Chat Preview ② 的 header 区域（`chatSpeaker` + `chatTime` 行）加一个 typing dots 指示器，放在 `chatSpeaker` 后面、`chatTime` 前面：
 
 ```tsx
-<div className="flex items-center gap-2 mb-3">
+<div className="mb-3 flex items-center gap-2">
   {/* Agent 头像（保持上版粉紫渐变方块 + ✨） */}
-  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8ad4] via-[#a78bfa] to-[#7c5cff]
-                  flex items-center justify-center shadow-[0_0_12px_rgba(167,139,250,0.5)]">
+  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff8ad4] via-[#a78bfa] to-[#7c5cff] shadow-[0_0_12px_rgba(167,139,250,0.5)]">
     <span className="text-sm">✨</span>
   </div>
   <span className="text-sm font-semibold text-white">{t.scenarios.daily.chatSpeaker}</span>
   {/* Typing dots — 三点交替跳动，视觉表达"Agent 正在思考" */}
-  <div className="flex gap-1 items-end pb-0.5">
+  <div className="flex items-end gap-1 pb-0.5">
     {[0, 1, 2].map((i) => (
       <motion.span
         key={i}
-        className="w-1.5 h-1.5 rounded-full bg-[#a78bfa]"
+        className="h-1.5 w-1.5 rounded-full bg-[#a78bfa]"
         animate={{ y: [0, -3, 0], opacity: [0.3, 1, 0.3] }}
         transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
       />
     ))}
   </div>
-  <span className="text-xs text-gray-500 ml-auto">{t.scenarios.daily.chatTime}</span>
+  <span className="ml-auto text-xs text-gray-500">{t.scenarios.daily.chatTime}</span>
 </div>
 ```
 
 要点：
+
 - 三个圆点紫色 `#a78bfa`，直径 6px，间距 4px
 - 动画：y 方向 0 → -3px → 0，opacity 0.3 → 1 → 0.3，循环
 - 三点之间 delay 0.15s 错开，形成"波浪跳动"
@@ -605,16 +643,17 @@ Chat Preview ② 的 header 区域（`chatSpeaker` + `chatTime` 行）加一个 
 **b. Agent 头像渐变方形 + ✨**（已上版 Airy 做了，保留）
 
 **c. Chat preview 彩虹渐变描边**（已上版 Airy 做了，保留）：
+
 ```tsx
-<div className="rounded-xl p-[1.5px] bg-gradient-to-br from-[#7c5cff] via-[#ff8ad4] to-[#d1ff55]
-                shadow-[0_0_32px_-4px_rgba(124,92,255,0.35)]">
-  <div className="h-full bg-[#0a0a0a] rounded-[10px] p-5">
+<div className="rounded-xl bg-gradient-to-br from-[#7c5cff] via-[#ff8ad4] to-[#d1ff55] p-[1.5px] shadow-[0_0_32px_-4px_rgba(124,92,255,0.35)]">
+  <div className="h-full rounded-[10px] bg-[#0a0a0a] p-5">
     {/* header 行（5.5 的 typing dots）+ chatTitle + chatBullets */}
   </div>
 </div>
 ```
 
 **d. 主板块两张卡 glow**（主板块 ① 和 ② 都是主卡，都要较强 glow）：
+
 ```tsx
 shadow-[0_0_40px_-10px_rgba(124,92,255,0.4),0_0_80px_-20px_rgba(255,138,212,0.2)]
 hover:shadow-[0_0_60px_-8px_rgba(124,92,255,0.6),0_0_120px_-20px_rgba(255,138,212,0.3)]
@@ -622,12 +661,14 @@ transition-shadow duration-500
 ```
 
 **e. 次要栏两张卡 glow**（弱于主板块，形成主次对比）：
+
 ```tsx
 shadow-[0_0_16px_-8px_rgba(124,92,255,0.25)]
 hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)]
 ```
 
 **f. 次要栏卡片内部结构**（体量缩小）：
+
 - padding：`p-5`（主板块是 `p-6 md:p-8`）
 - 标题：`text-base md:text-lg font-semibold`（主板块是 `text-xl md:text-2xl font-bold`）
 - desc：`text-xs md:text-sm`（主板块是 `text-sm md:text-base`）
@@ -636,8 +677,9 @@ hover:shadow-[0_0_28px_-6px_rgba(124,92,255,0.4)]
 - 次要栏整体最大高度控制在 160px 左右（靠内容控制，不硬设 `max-h`）
 
 **g. 板块整体粒子 / 星云底色**（上版已做，保留）：
+
 ```tsx
-<div className="absolute inset-0 pointer-events-none -z-10 opacity-60">
+<div className="pointer-events-none absolute inset-0 -z-10 opacity-60">
   <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,92,255,0.15),transparent_60%)]" />
   <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,138,212,0.08),transparent_50%)]" />
 </div>
@@ -659,34 +701,34 @@ export function ScenariosSection() {
   return (
     <motion.section
       {...fadeUp}
-      className="relative max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-16 md:py-20"
+      className="relative mx-auto max-w-7xl px-6 py-16 md:px-12 md:py-20 lg:px-20"
     >
       {/* 星云底 */}
-      <div className="absolute inset-0 pointer-events-none -z-10 opacity-60">
+      <div className="pointer-events-none absolute inset-0 -z-10 opacity-60">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,92,255,0.15),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,138,212,0.08),transparent_50%)]" />
       </div>
 
       {/* Section header */}
-      <div className="text-center mb-10">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-white">
+      <div className="mb-10 text-center">
+        <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl lg:text-5xl">
           {t.scenarios.sectionTitle}
         </h2>
-        <p className="text-gray-400 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
+        <p className="mx-auto max-w-3xl text-base leading-relaxed text-gray-400 md:text-lg">
           {t.scenarios.sectionSubtitle}
         </p>
       </div>
 
       {/* ① + ② 主板块（等宽两列） */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <DailyReportCard />   {/* ① */}
-        <ChatPreviewCard />   {/* ② */}
+      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <DailyReportCard /> {/* ① */}
+        <ChatPreviewCard /> {/* ② */}
       </div>
 
       {/* ③ + ④ 次要栏（等宽两列，体量小） */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <RealtimeMonitorCard />  {/* ③ */}
-        <AutoTradeCard />        {/* ④ */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <RealtimeMonitorCard /> {/* ③ */}
+        <AutoTradeCard /> {/* ④ */}
       </div>
     </motion.section>
   );
@@ -786,6 +828,7 @@ export function ScenariosSection() {
 ## Commit 策略
 
 建议按原子 commit：
+
 1. `refactor: rename TopBar → SiteHeader, move to components/`
 2. `fix(header): real logo png + 72px height`
 3. `feat(hero): decouple title from image, lock CTA href to #signup, fix language switch layout`
@@ -804,6 +847,7 @@ export function ScenariosSection() {
 ## 有歧义时问 F
 
 遇到以下情况停手、在 PR 里或通过 Dan 问 F：
+
 - framer-motion 和现有 `fade-in-section` CSS 方案不知道怎么合并
 - Hero 修复后中英文截图对比还是不对齐，不知道是不是我的方案本身有问题
 - 新板块的卡片 hover 想做 3D tilt 但不确定是不是超范围
@@ -813,6 +857,6 @@ export function ScenariosSection() {
 
 ---
 
-*Spec: F（总调度）*
-*日期: 2026-04-21（v2：Scenarios 从视觉重做升级为布局重构 + 交互补齐）*
-*技术栈版本: Next.js 14.2.35 + React 18 + Tailwind 3.4.1 + 新增 framer-motion ^11*
+_Spec: F（总调度）_
+_日期: 2026-04-21（v2：Scenarios 从视觉重做升级为布局重构 + 交互补齐）_
+_技术栈版本: Next.js 14.2.35 + React 18 + Tailwind 3.4.1 + 新增 framer-motion ^11_

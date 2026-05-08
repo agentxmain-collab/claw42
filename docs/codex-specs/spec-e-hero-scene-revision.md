@@ -7,6 +7,7 @@
 ## v2 修订说明（2026-04-22，基于 Dan 纠正）
 
 相对 v1 变更点：
+
 - 实际只有 `robot-left` / `robot-right` 两种 pose（**没有 center pose 素材**）
 - 不再生成 `robot-center-blank.png`；center 视作 left 默认朝向
 - 眼+嘴素材已由 F 从 `robot-face.png` 切出 → `robot-eyes.png` + `robot-mouth.png`（107×59 全尺寸对齐，已在 `public/images/hero/`）
@@ -35,28 +36,31 @@ F 审核通过后，`feature/claw42-hero-scene-04` 含本修复再整体合并�
 
 以下文件**已在** `public/images/hero/`（F 已 push 到 main）：
 
-| 文件 | 规格 | 内容 |
-|------|------|------|
-| `robot-eyes.png` | 107×59，PNG 透明底 | 从 `robot-face.png` 切出——仅保留双眼区域（y=0–29），嘴区域透明 |
-| `robot-mouth.png` | 107×59，PNG 透明底 | 从 `robot-face.png` 切出——仅保留嘴区域（y=30–58），眼区域透明 |
+| 文件              | 规格               | 内容                                                           |
+| ----------------- | ------------------ | -------------------------------------------------------------- |
+| `robot-eyes.png`  | 107×59，PNG 透明底 | 从 `robot-face.png` 切出——仅保留双眼区域（y=0–29），嘴区域透明 |
+| `robot-mouth.png` | 107×59，PNG 透明底 | 从 `robot-face.png` 切出——仅保留嘴区域（y=30–58），眼区域透明  |
 
 关键：两张切分图**保持和原 `robot-face.png` 完全相同的 107×59 尺寸**，只是 alpha 不同。这意味着：
 
 > 在 Airy task-04 的代码里，`robot-face.png` 原本叠加到 body 的 `top` / `left` / `width` 坐标，**直接复用给 `robot-eyes.png` 和 `robot-mouth.png`**，不需要重新计算对齐位置。两张图叠起来视觉上等价于 face 原图。
 
 已有仍使用的资源：
+
 - `robot-left.png`（316×297，**无面部**身体，头部朝左）
 - `robot-right.png`（316×297，**无面部**身体，头部朝右）
 - `pedestal.png`（456×148）
 - `coin-btc.png` / `coin-eth.png` / `coin-sol.png` / `coin-usdt.png`
 
 不再引用的资源（保留文件，代码里不再 src）：
+
 - `robot-center.png`（**带面部**的 center 身体，不用——因为面部拆分后 center 身体要改用无脸版，但我们决定不要 center pose，这张图直接弃用）
 - `robot-face.png`（已被切成 eyes + mouth 两张，原图保留备份）
 
 ## 变更范围
 
 ### 修改
+
 - `src/modules/landing/HeroScene/HeroScene.tsx`
 - `src/modules/landing/HeroScene/RobotLayer.tsx`
 - `src/modules/landing/HeroScene/PedestalLayer.tsx`
@@ -64,6 +68,7 @@ F 审核通过后，`feature/claw42-hero-scene-04` 含本修复再整体合并�
 - `src/modules/landing/HeroScene/SpeechBubble.tsx`
 
 ### 不动（明确禁止碰）
+
 - `src/modules/landing/HeroScene/useMouseNormalized.ts`
 - `src/modules/landing/HeroScene/useRobotPose.ts`（**仍允许输出 "center"，RobotLayer 内部 collapse**）
 - `src/modules/landing/HeroScene/index.tsx`
@@ -75,12 +80,14 @@ F 审核通过后，`feature/claw42-hero-scene-04` 含本修复再整体合并�
 - `public/images/*` 已有资源只增不删
 
 ### 不在本 spec 范围
+
 - useRobotPose 的 pose 决策逻辑（由 Airy 实现，保留）
 - 鼠标归一化 Hook
 - 舞台 21/9 / 4/5 响应式比例
 - Header 双 logo 问题（独立 spec 处理）
 
 ## 技术栈（硬约束）
+
 - Next.js 14.2.35（App Router）
 - React 18
 - Tailwind CSS 3.4.1
@@ -88,6 +95,7 @@ F 审核通过后，`feature/claw42-hero-scene-04` 含本修复再整体合并�
 - framer-motion ^11.x
 
 ### 禁用清单
+
 - ❌ 新增依赖
 - ❌ Tailwind v4 语法
 - ❌ React 19 only 特性
@@ -104,6 +112,7 @@ F 审核通过后，`feature/claw42-hero-scene-04` 含本修复再整体合并�
 Airy 实现：4 币椭圆轨道漂浮 + hover 放大 1.3x + 旋转 360° + 黑底 tooltip 显示 symbol。
 
 问题：
+
 1. 币尺寸 44-76px 太小
 2. 椭圆轨道 infinite loop 运动轨迹可预测，**机械感**明显
 3. hover 放大+旋转+tooltip 三件套过于 SaaS dashboard 风，和整体太空感不搭
@@ -154,18 +163,58 @@ interface CoinConfig {
 }
 
 const COINS: CoinConfig[] = [
-  { symbol: "BTC",  label: "Bitcoin",  src: "/images/hero/coin-btc.png",
-    anchor: { top: "22%", left: "20%" }, sizeClass: "w-[60px] md:w-[108px]",
-    depth: 0.8, phaseX1: 0,    phaseX2: 1.2, phaseY1: 0.4, phaseY2: 2.1, freqScale: 1.0 },
-  { symbol: "ETH",  label: "Ethereum", src: "/images/hero/coin-eth.png",
-    anchor: { top: "18%", right: "21%" }, sizeClass: "w-[58px] md:w-[104px]",
-    depth: 0.7, phaseX1: 1.9,  phaseX2: 3.0, phaseY1: 1.1, phaseY2: 0.6, freqScale: 1.15 },
-  { symbol: "SOL",  label: "Solana",   src: "/images/hero/coin-sol.png",
-    anchor: { top: "58%", left: "14%" }, sizeClass: "w-[54px] md:w-[96px]",
-    depth: 0.9, phaseX1: 2.7,  phaseX2: 0.4, phaseY1: 2.3, phaseY2: 1.5, freqScale: 0.88 },
-  { symbol: "USDT", label: "Tether",   src: "/images/hero/coin-usdt.png",
-    anchor: { top: "52%", right: "15%" }, sizeClass: "w-[56px] md:w-[100px]",
-    depth: 0.75, phaseX1: 0.8, phaseX2: 2.5, phaseY1: 3.1, phaseY2: 0.2, freqScale: 1.27 },
+  {
+    symbol: "BTC",
+    label: "Bitcoin",
+    src: "/images/hero/coin-btc.png",
+    anchor: { top: "22%", left: "20%" },
+    sizeClass: "w-[60px] md:w-[108px]",
+    depth: 0.8,
+    phaseX1: 0,
+    phaseX2: 1.2,
+    phaseY1: 0.4,
+    phaseY2: 2.1,
+    freqScale: 1.0,
+  },
+  {
+    symbol: "ETH",
+    label: "Ethereum",
+    src: "/images/hero/coin-eth.png",
+    anchor: { top: "18%", right: "21%" },
+    sizeClass: "w-[58px] md:w-[104px]",
+    depth: 0.7,
+    phaseX1: 1.9,
+    phaseX2: 3.0,
+    phaseY1: 1.1,
+    phaseY2: 0.6,
+    freqScale: 1.15,
+  },
+  {
+    symbol: "SOL",
+    label: "Solana",
+    src: "/images/hero/coin-sol.png",
+    anchor: { top: "58%", left: "14%" },
+    sizeClass: "w-[54px] md:w-[96px]",
+    depth: 0.9,
+    phaseX1: 2.7,
+    phaseX2: 0.4,
+    phaseY1: 2.3,
+    phaseY2: 1.5,
+    freqScale: 0.88,
+  },
+  {
+    symbol: "USDT",
+    label: "Tether",
+    src: "/images/hero/coin-usdt.png",
+    anchor: { top: "52%", right: "15%" },
+    sizeClass: "w-[56px] md:w-[100px]",
+    depth: 0.75,
+    phaseX1: 0.8,
+    phaseX2: 2.5,
+    phaseY1: 3.1,
+    phaseY2: 0.2,
+    freqScale: 1.27,
+  },
 ];
 
 export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
@@ -187,15 +236,15 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
   }, [reduceMotion]);
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-30">
+    <div className="pointer-events-none absolute inset-0 z-30">
       {COINS.map((coin) => {
         const t = tick * coin.freqScale;
-        const floatX = reduceMotion ? 0 :
-          Math.sin(t * 0.6 + coin.phaseX1) * 30 +
-          Math.sin(t * 0.23 + coin.phaseX2) * 18;
-        const floatY = reduceMotion ? 0 :
-          Math.cos(t * 0.5 + coin.phaseY1) * 22 +
-          Math.sin(t * 0.31 + coin.phaseY2) * 14;
+        const floatX = reduceMotion
+          ? 0
+          : Math.sin(t * 0.6 + coin.phaseX1) * 30 + Math.sin(t * 0.23 + coin.phaseX2) * 18;
+        const floatY = reduceMotion
+          ? 0
+          : Math.cos(t * 0.5 + coin.phaseY1) * 22 + Math.sin(t * 0.31 + coin.phaseY2) * 14;
         const parallaxX = reduceMotion ? 0 : mouseX * coin.depth * 24;
         const parallaxY = reduceMotion ? 0 : mouseY * coin.depth * 14;
 
@@ -257,7 +306,7 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
           src={coin.src}
           alt=""
           aria-hidden="true"
-          className={`${coin.sizeClass} absolute top-0 left-0 select-none pointer-events-none`}
+          className={`${coin.sizeClass} pointer-events-none absolute left-0 top-0 select-none`}
           style={{
             transform: `translate(${trailB.x}px, ${trailB.y}px)`,
             opacity: 0.15,
@@ -271,7 +320,7 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
           src={coin.src}
           alt=""
           aria-hidden="true"
-          className={`${coin.sizeClass} absolute top-0 left-0 select-none pointer-events-none`}
+          className={`${coin.sizeClass} pointer-events-none absolute left-0 top-0 select-none`}
           style={{
             transform: `translate(${trailA.x}px, ${trailA.y}px)`,
             opacity: 0.35,
@@ -287,7 +336,7 @@ function CoinItem({ coin, translateX, translateY, reduceMotion }: CoinItemProps)
         draggable={false}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className={`${coin.sizeClass} relative select-none pointer-events-auto cursor-pointer`}
+        className={`${coin.sizeClass} pointer-events-auto relative cursor-pointer select-none`}
         style={{
           transform: `translate(${translateX}px, ${translateY}px)`,
           filter: baseFilter,
@@ -350,7 +399,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
     <>
       {/* 能量光柱（pedestal 上方，robot 下方） */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
           bottom: "20%",
           width: "min(280px, 26vw)",
@@ -368,16 +417,14 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
           }}
           animate={reduceMotion ? { opacity: 0.65 } : { opacity: [0.45, 0.85, 0.45] }}
           transition={
-            reduceMotion
-              ? { duration: 0 }
-              : { duration: 3, repeat: Infinity, ease: "easeInOut" }
+            reduceMotion ? { duration: 0 } : { duration: 3, repeat: Infinity, ease: "easeInOut" }
           }
         />
       </div>
 
       {/* Pedestal 本体 */}
       <div
-        className="absolute left-1/2 pointer-events-none"
+        className="pointer-events-none absolute left-1/2"
         style={{
           bottom: "20%",
           width: "min(456px, 40vw)",
@@ -390,11 +437,11 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
           alt=""
           aria-hidden="true"
           draggable={false}
-          className="w-full h-auto select-none"
+          className="h-auto w-full select-none"
         />
         {/* Pedestal 顶部发光 halo */}
         <motion.div
-          className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2"
           style={{
             top: "-8%",
             width: "70%",
@@ -405,9 +452,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
           }}
           animate={reduceMotion ? { opacity: 0.6 } : { opacity: [0.4, 0.8, 0.4] }}
           transition={
-            reduceMotion
-              ? { duration: 0 }
-              : { duration: 3, repeat: Infinity, ease: "easeInOut" }
+            reduceMotion ? { duration: 0 } : { duration: 3, repeat: Infinity, ease: "easeInOut" }
           }
         />
       </div>
@@ -429,6 +474,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
 ### 当前问题
 
 Airy 实现：
+
 - center 姿态用 `robot-center.png`（**带面部**）+ `robot-face.png` overlay → 冗余叠加，原图面部穿帮
 - face overlay 作为独立子层，和 body idle 浮动**脱节**（身体飘，脸不跟）
 - eyes 和 mouth 同一张图，眼动时嘴也动
@@ -443,11 +489,13 @@ const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
 ```
 
 含义：
+
 - `pose === "left"` → 显示 left 姿态
 - `pose === "right"` → 显示 right 姿态
 - `pose === "center"` → 视作 "left"（默认朝向）
 
 其他要求：
+
 - body 只用 `robot-left.png` / `robot-right.png`（都是**无面部**身体）
 - 在 body 上叠加两个独立子元素：`<img src="robot-eyes.png">` 和 `<img src="robot-mouth.png">`
 - eyes 和 mouth 都是 107×59 全尺寸，从 `robot-face.png` 切出——**叠加坐标直接复用 Airy 代码里 robot-face.png 原本叠加的 top/left/width**
@@ -518,9 +566,9 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
   // Codex 开工前先 checkout Airy 分支，grep "robot-face" 在 RobotLayer.tsx 里找到原坐标，
   // 复制到 FACE_OVERLAY 常量。
   const FACE_OVERLAY = {
-    top: "34%",       // ← 占位：实际从 Airy 代码 copy
-    leftPct: "50%",   // ← 占位
-    widthPct: "34%",  // ← 占位（约 107/316 = 33.9%）
+    top: "34%", // ← 占位：实际从 Airy 代码 copy
+    leftPct: "50%", // ← 占位
+    widthPct: "34%", // ← 占位（约 107/316 = 33.9%）
   };
 
   return (
@@ -539,9 +587,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
         className="relative"
         animate={reduceMotion ? { y: 0 } : { y: [0, -12, 0] }}
         transition={
-          reduceMotion
-            ? { duration: 0 }
-            : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
+          reduceMotion ? { duration: 0 } : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
         }
       >
         {/* Body — 挂 hover 监听 */}
@@ -554,7 +600,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
             draggable={false}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            className="w-full h-auto select-none block"
+            className="block h-auto w-full select-none"
             style={{ pointerEvents: "auto" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -569,7 +615,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
           alt=""
           aria-hidden="true"
           draggable={false}
-          className="absolute select-none pointer-events-none"
+          className="pointer-events-none absolute select-none"
           style={{
             top: FACE_OVERLAY.top,
             left: FACE_OVERLAY.leftPct,
@@ -588,7 +634,7 @@ export function RobotLayer({ pose, mouseX, mouseY, reduceMotion }: RobotLayerPro
           alt=""
           aria-hidden="true"
           draggable={false}
-          className="absolute select-none pointer-events-none"
+          className="pointer-events-none absolute select-none"
           style={{
             top: FACE_OVERLAY.top,
             left: FACE_OVERLAY.leftPct,
@@ -678,7 +724,7 @@ export function SpeechBubble({ visible, reduceMotion }: SpeechBubbleProps) {
 
   return (
     <div
-      className="absolute pointer-events-none top-[-8%] left-1/2 -translate-x-1/2 md:top-[28%] md:left-[62%] md:translate-x-0"
+      className="pointer-events-none absolute left-1/2 top-[-8%] -translate-x-1/2 md:left-[62%] md:top-[28%] md:translate-x-0"
       style={{ zIndex: 40 }}
     >
       <AnimatePresence>
@@ -689,14 +735,14 @@ export function SpeechBubble({ visible, reduceMotion }: SpeechBubbleProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 6 }}
             transition={{ duration: reduceMotion ? 0 : 0.22, ease: "easeOut" }}
-            className="relative bg-white/95 text-gray-900 rounded-2xl px-4 py-2 text-sm font-medium max-w-[240px] md:max-w-[280px] shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+            className="relative max-w-[240px] rounded-2xl bg-white/95 px-4 py-2 text-sm font-medium text-gray-900 shadow-[0_8px_32px_rgba(0,0,0,0.3)] md:max-w-[280px]"
             aria-label={t.hero.speechBubbleAriaLabel}
             role="status"
           >
             {currentLine}
             {/* Tail 指向左下（桌面）/ 底部中央（移动）——简单用旋转方块 */}
             <span
-              className="absolute w-3 h-3 bg-white/95 rotate-45 left-[16px] bottom-[-6px] md:left-[16px]"
+              className="absolute bottom-[-6px] left-[16px] h-3 w-3 rotate-45 bg-white/95 md:left-[16px]"
               aria-hidden="true"
             />
           </motion.div>
@@ -719,12 +765,14 @@ export function SpeechBubble({ visible, reduceMotion }: SpeechBubbleProps) {
 ## 验收标准
 
 ### 编译/类型
+
 - [ ] `npx tsc --noEmit` 通过
 - [ ] `npm run build` 成功
 - [ ] `npm run lint` 无新增错误
 - [ ] `git diff --name-only feature/claw42-hero-scene-04..HEAD` 只显示本 spec 允许的 5 个文件
 
 ### 资源依赖验证
+
 - [ ] `public/images/hero/robot-eyes.png` 存在（107×59）
 - [ ] `public/images/hero/robot-mouth.png` 存在（107×59）
 - [ ] 代码里不再引用 `robot-center.png`（grep 确认）
@@ -734,6 +782,7 @@ export function SpeechBubble({ visible, reduceMotion }: SpeechBubbleProps) {
 ### 视觉/交互（桌面）
 
 Coins：
+
 - [ ] 4 币尺寸 ~108px 桌面
 - [ ] 漂浮轨迹**看不出固定椭圆**
 - [ ] 默认状态币自带柔和紫色发光
@@ -742,12 +791,14 @@ Coins：
 - [ ] 鼠标离开 → ghost 消失，发光回默认
 
 Robot + Pedestal：
+
 - [ ] Robot 底部和 pedestal 顶部有明显视觉间距（悬浮感）
 - [ ] Robot idle 上下浮动明显（±12px）
 - [ ] Pedestal 顶部向上发散紫色光柱
 - [ ] 光柱 + halo 呼吸节奏
 
 面部（left 和 right pose 都生效）：
+
 - [ ] body 使用 `robot-left.png` 或 `robot-right.png`（**无面部**身体）
 - [ ] eyes（`robot-eyes.png`）和 mouth（`robot-mouth.png`）叠加位置和原 `robot-face.png` 在 Airy 分支里的位置**完全一致**
 - [ ] body idle 浮动时，eyes 和 mouth **同步**上下浮动（不脱节）
@@ -759,6 +810,7 @@ Robot + Pedestal：
 - [ ] 初始状态（pose === "center"）视觉上显示 left 姿态
 
 Speech bubble：
+
 - [ ] 默认**不显示**
 - [ ] 鼠标进入 robot body → 气泡 fade-in，位置在 robot 嘴巴右上方
 - [ ] 气泡显示内容是从 14 条池随机选的一条
@@ -768,12 +820,14 @@ Speech bubble：
 - [ ] 气泡**不随 idle float 抖动**（在 motion.div 外）
 
 ### 视觉/交互（移动端 / < 768px）
+
 - [ ] 币尺寸缩到 54-60px
 - [ ] 漂浮幅度自然缩小
 - [ ] Speech bubble 位置在 robot 正上方
 - [ ] 触屏设备 hover 触发行为（没有真实 hover）作为已知限制，不在本 spec 解决
 
 ### reduce-motion
+
 - [ ] Coins 不漂浮（静止在锚点），hover 不漂移（parallax 也关），只发光
 - [ ] trail ghost 完全不渲染
 - [ ] Robot body 不 idle 浮动
@@ -782,6 +836,7 @@ Speech bubble：
 - [ ] Speech bubble 显示/隐藏无 fade
 
 ### 边界
+
 - [ ] 不引入新依赖
 - [ ] 不引用 robot-center.png / robot-face.png
 - [ ] 不改 page.tsx / i18n / hook 文件
@@ -807,6 +862,7 @@ Speech bubble：
 1. 从 `feature/claw42-hero-scene-04` checkout `fix/hero-scene-revision-01`
 2. 实现 + 自测（桌面 + 移动端模拟 + reduce-motion）
 3. Commit message：
+
    ```
    fix(hero): coins free-float + robot float-gap + eyes/mouth split + bubble hover
 
@@ -818,6 +874,7 @@ Speech bubble：
    - SpeechBubble: hover-triggered, anchored to robot mouth, random line per hover
    - Assets: use pre-split robot-eyes.png + robot-mouth.png (already in main)
    ```
+
 4. Push + 开 PR 到 `feature/claw42-hero-scene-04`
 
 ## 有疑问不要猜
@@ -829,7 +886,7 @@ Speech bubble：
 
 ---
 
-*维护者: F（总调度）*
-*创建: 2026-04-22（v2）*
-*执行者: Codex（OpenAI Codex）*
-*基于: feature/claw42-hero-scene-04（Airy task-04 产出）*
+_维护者: F（总调度）_
+_创建: 2026-04-22（v2）_
+_执行者: Codex（OpenAI Codex）_
+_基于: feature/claw42-hero-scene-04（Airy task-04 产出）_

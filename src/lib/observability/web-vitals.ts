@@ -17,12 +17,7 @@ function reportMetric(metric: Metric) {
   reportVital(metric.name, metric.value, metric.id, metric.navigationType);
 }
 
-export function reportVital(
-  name: string,
-  value: number,
-  id: string,
-  navigationType: string,
-) {
+export function reportVital(name: string, value: number, id: string, navigationType: string) {
   if (typeof window === "undefined") return;
 
   const body = JSON.stringify({

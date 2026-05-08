@@ -11,6 +11,7 @@
 一句话：为 claw42 加中英文切换（自建 Context + JSON 文件）+ 收敛全站 section 排版间距。
 
 完成后世界变成什么样：
+
 - 页面右上角多一个圆形 `EN / 中` 切换按钮
 - 点击切换中英文，刷新后记住选择（localStorage）
 - 所有可见文案（Hero / QuickStart / Scenarios / Why / Disclaimer）都能切换
@@ -28,6 +29,7 @@
 - Tailwind v3.4.1
 
 **关键约束**：
+
 - i18n 方案 = 自建 Context + JSON，**禁用** next-intl / next-i18next / react-intl
 - Provider 必须是 Client Component（要用 useState）
 - 语言切换不改 URL（不走 /zh /en 路由方案）
@@ -139,14 +141,7 @@ export interface Dict {
 ```tsx
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import zh from "./zh.json";
 import en from "./en.json";
 import type { Dict, Locale } from "./types";
@@ -210,7 +205,7 @@ export function LanguageSwitcher() {
   return (
     <button
       onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
-      className="fixed top-5 right-5 z-50 w-11 h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:scale-105 transition-all text-white text-sm font-semibold flex items-center justify-center shadow-lg"
+      className="fixed right-5 top-5 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-semibold text-white shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white/20"
       aria-label="Switch language"
     >
       {nextLabel}
@@ -239,9 +234,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN" className="dark">
       <body className={inter.className}>
@@ -297,6 +290,7 @@ function HeroSection() {
 对所有 Section 重复此模式。
 
 **特殊处理**：
+
 - `whyCards` 数组当前在组件外定义。改为组件内 `const cards = t.why.cards;`
 - Scenarios 的 chat bullets 当前硬编码 5 行 `<p>`。改为 `t.scenarios.daily.chatBullets.map((line, i) => <p key={i}>{line}</p>)`
 - Disclaimer 4 段文字同理 map
@@ -306,19 +300,19 @@ function HeroSection() {
 
 改动的 padding / margin：
 
-| 位置 | Before | After |
-|------|--------|-------|
-| `<Section>` wrapper | `py-20 md:py-28` | `py-12 md:py-16` |
-| HeroSection 外 | `pt-8 md:pt-16` | `pt-6 md:pt-10` |
-| HeroSection 内 content | `pb-20` | `pb-12` |
-| Hero h1 | `mb-5` | `mb-4` |
-| Hero p（subtitle） | `mb-10` | `mb-8` |
-| QuickStart h2 | `mb-12` | `mb-10` |
-| Scenarios header | `mb-14` | `mb-10` |
-| Scenarios subtitle `mb-4` | `mb-4` | `mb-3` |
-| Why header subtitle | `mb-6` | `mb-4` |
-| Why cards grid | `mt-14` | `mt-10` |
-| DisclaimerSection | `mt-20 py-16` | `mt-10 py-10` |
+| 位置                      | Before           | After            |
+| ------------------------- | ---------------- | ---------------- |
+| `<Section>` wrapper       | `py-20 md:py-28` | `py-12 md:py-16` |
+| HeroSection 外            | `pt-8 md:pt-16`  | `pt-6 md:pt-10`  |
+| HeroSection 内 content    | `pb-20`          | `pb-12`          |
+| Hero h1                   | `mb-5`           | `mb-4`           |
+| Hero p（subtitle）        | `mb-10`          | `mb-8`           |
+| QuickStart h2             | `mb-12`          | `mb-10`          |
+| Scenarios header          | `mb-14`          | `mb-10`          |
+| Scenarios subtitle `mb-4` | `mb-4`           | `mb-3`           |
+| Why header subtitle       | `mb-6`           | `mb-4`           |
+| Why cards grid            | `mt-14`          | `mt-10`          |
+| DisclaimerSection         | `mt-20 py-16`    | `mt-10 py-10`    |
 
 其余不动（gap-6 / 卡片内 padding / max-width 等保持）。
 
@@ -487,11 +481,13 @@ function HeroSection() {
 ## 验收标准
 
 编译/类型：
+
 - [ ] `npm run build` 通过无 error
 - [ ] `npx tsc --noEmit` 通过无 error
 - [ ] `npm run lint` 通过（allow warning，不允许 error）
 
 功能：
+
 - [ ] 页面默认显示中文（初次访问）
 - [ ] 右上角切换按钮固定显示，不遮挡 Hero 主内容
 - [ ] 点击按钮 → 立即切换语言，所有可见文案同步切换
@@ -499,6 +495,7 @@ function HeroSection() {
 - [ ] 切换时 `<html lang>` 属性从 `zh-CN` ↔ `en` 同步变化（DevTools 验证）
 
 覆盖完整性：
+
 - [ ] `grep -n "Meet Your AI Trading Partner" src/app/page.tsx` 无结果
 - [ ] `grep -n "立即开始" src/app/page.tsx` 无结果
 - [ ] `grep -n "生成加密货币日报" src/app/page.tsx` 无结果
@@ -506,10 +503,12 @@ function HeroSection() {
 - [ ] page.tsx 中所有 UI 可见字符串都通过 `t.xxx` 引用
 
 结构：
+
 - [ ] `ls src/i18n/` 显示 5 个文件：types.ts / zh.json / en.json / I18nProvider.tsx / LanguageSwitcher.tsx
 - [ ] `package.json` dependencies 未增加任何条目
 
 排版：
+
 - [ ] 页面总高度对比前后，新版本减少 ≥ 15%（浏览器开发者工具验证 body 总高度）
 - [ ] 无视觉错位 / 溢出 / 内容被遮挡
 
@@ -558,4 +557,4 @@ feat(i18n): add bilingual (zh/en) switcher + tighten section padding
 
 ---
 
-*F @ 2026-04-20 23:xx*
+_F @ 2026-04-20 23:xx_

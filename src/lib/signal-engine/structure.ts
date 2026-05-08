@@ -13,7 +13,10 @@ export function structureCandidate(candidate: RawCandidate): SignalCard {
   return createSignalCard(candidate, structured, context);
 }
 
-export async function structureCandidateAsync(candidate: RawCandidate, provider: StructuringProvider = stubStructuringProvider): Promise<SignalCard> {
+export async function structureCandidateAsync(
+  candidate: RawCandidate,
+  provider: StructuringProvider = stubStructuringProvider,
+): Promise<SignalCard> {
   const context = evaluateCandidate(candidate);
   const fallback = structureWithStub(candidate, context.score, context.impactLevel);
   let structured = fallback;
@@ -23,7 +26,7 @@ export async function structureCandidateAsync(candidate: RawCandidate, provider:
       candidate,
       rules: context.rules,
       score: context.score,
-      impactLevel: context.impactLevel
+      impactLevel: context.impactLevel,
     });
     structured = normalizeStructuredFields(providerOutput, fallback);
   } catch (error) {
@@ -44,7 +47,11 @@ function evaluateCandidate(candidate: RawCandidate) {
 function createSignalCard(
   candidate: RawCandidate,
   structured: StructuredFields,
-  context: { rules: RuleEvaluation[]; score: number; impactLevel: SignalCard["judgment"]["impactLevel"] }
+  context: {
+    rules: RuleEvaluation[];
+    score: number;
+    impactLevel: SignalCard["judgment"]["impactLevel"];
+  },
 ): SignalCard {
   const date = candidate.publishedAt.slice(0, 10);
 
@@ -52,7 +59,7 @@ function createSignalCard(
     symbol: asset.symbol,
     direction: asset.direction,
     impactLevel: severityToImpact(asset.severity),
-    note: asset.note
+    note: asset.note,
   }));
 
   return {
@@ -67,18 +74,18 @@ function createSignalCard(
       source: candidate.source,
       publishedAt: candidate.publishedAt,
       eventType: candidate.eventType,
-      eventStatus: candidate.eventStatus
+      eventStatus: candidate.eventStatus,
     },
     explanation: {
       whyItMatters: structured.whyItMatters,
       marketContext: structured.marketContext,
-      watchPoints: structured.watchPoints
+      watchPoints: structured.watchPoints,
     },
     judgment: {
       direction: structured.direction,
       confidence: structured.confidence,
       impactLevel: structured.impactLevel,
-      riskNotes: structured.riskNotes
+      riskNotes: structured.riskNotes,
     },
     impact: {
       primaryAsset: candidate.primaryAsset,
@@ -86,20 +93,20 @@ function createSignalCard(
       tracks: candidate.tracks,
       tradingPairs: candidate.tradingPairs,
       projects: candidate.projects,
-      campaignTags: candidate.campaignTags
+      campaignTags: candidate.campaignTags,
     },
     evidence: {
       pieces: candidate.evidence,
       timeline: candidate.timeline,
       multiSourceConfirm: candidate.evidence.length >= 2,
-      confirmCount: candidate.evidence.length
+      confirmCount: candidate.evidence.length,
     },
     actions: [],
     engine: {
       candidateScore: context.score,
       isHeadliner: isHeadliner(context.score, context.rules),
       dedupKey: `${candidate.eventType}:${candidate.primaryAsset}:${date}`,
-      rules: context.rules.filter((rule) => rule.triggered).map((rule) => rule.name)
-    }
+      rules: context.rules.filter((rule) => rule.triggered).map((rule) => rule.name),
+    },
   };
 }

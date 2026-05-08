@@ -11,6 +11,7 @@
 ## 变更范围
 
 ### 新建
+
 - `src/modules/landing/HeroScene/index.tsx` — 默认导出 `HeroScene`
 - `src/modules/landing/HeroScene/HeroScene.tsx` — 主容器（21/9 舞台 + z-index 分层）
 - `src/modules/landing/HeroScene/RobotLayer.tsx` — 机器人姿态状态机 + 面部覆盖层
@@ -21,15 +22,18 @@
 - `src/modules/landing/HeroScene/useRobotPose.ts` — 姿态状态机 Hook（center / looking-left / looking-right + 滞后）
 
 ### 修改
+
 - `src/app/[locale]/page.tsx` — 删除当前 `HeroSection` 组件定义，改为 `import { HeroScene } from "@/modules/landing/HeroScene"`，在 `<main>` 顶部渲染 `<HeroScene />`。保留 `QuickStartSection` / `ScenariosSection` / `WhySection` / `SkillsEcoSection` / `DisclaimerSection` 不动
 - `src/i18n/types.ts` — 新增 `hero.speechBubble: string[]`（14 条文案池）和 `hero.speechBubbleAriaLabel: string`（无障碍描述）
 - `src/i18n/dicts/*.json` — 10 个 dict 全加上述两个字段（本 spec 给出完整翻译，直接 paste）
 
 ### 删除
+
 - `public/images/hero-robot-scene.png` — 已被单独资源替代，整图不再使用
 - `src/app/[locale]/page.tsx` 里 `HeroSection` 函数（搬到新模块后删掉函数定义+ClipboardIcon 保留因为 QuickStart 还在用）
 
 ### 不动
+
 - `QuickStartSection` / `WhySection` / `DisclaimerSection` 及其 i18n 字段
 - `src/modules/landing/ScenariosSection.tsx` / `SkillsEcoSection.tsx`
 - `src/lib/motion.ts`（可以 import 用，但不要改里面 variant）
@@ -40,6 +44,7 @@
 ## 技术上下文
 
 ### 技术栈基线（重申，硬约束）
+
 - Next.js 14.2.35（App Router）
 - React 18
 - Tailwind CSS 3.4.1
@@ -47,6 +52,7 @@
 - framer-motion ^11.x（已在依赖里，本 task 不新增依赖）
 
 ### 禁用清单
+
 - ❌ Tailwind v4 语法
 - ❌ React 19 only 特性（async client component / use() hook）
 - ❌ 新依赖（连图标库/动画库都别加，现有 framer-motion 够用）
@@ -56,14 +62,14 @@
 
 ### 资源清单（已在 `public/images/hero/`，已合并到 main）
 
-| 文件 | 尺寸 | 用途 |
-|------|------|------|
-| `robot-center.png` | 316×297 | 中间姿态（有眼睛嘴巴，但面部细节**不用这张图的**，用单独 face overlay 覆盖） |
-| `robot-left.png` | 316×297 | 向左看姿态（无面部） |
-| `robot-right.png` | 316×297 | 向右看姿态（无面部） |
-| `robot-face.png` | 107×59 | 眼睛+嘴巴独立覆盖层（**只在 center 姿态叠加**） |
-| `pedestal.png` | 456×148 | 发光底座 |
-| `coin-btc.png` / `coin-eth.png` / `coin-sol.png` / `coin-usdt.png` | ~130×130 | 币种（Spec D 用，本 task 只占位） |
+| 文件                                                               | 尺寸     | 用途                                                                         |
+| ------------------------------------------------------------------ | -------- | ---------------------------------------------------------------------------- |
+| `robot-center.png`                                                 | 316×297  | 中间姿态（有眼睛嘴巴，但面部细节**不用这张图的**，用单独 face overlay 覆盖） |
+| `robot-left.png`                                                   | 316×297  | 向左看姿态（无面部）                                                         |
+| `robot-right.png`                                                  | 316×297  | 向右看姿态（无面部）                                                         |
+| `robot-face.png`                                                   | 107×59   | 眼睛+嘴巴独立覆盖层（**只在 center 姿态叠加**）                              |
+| `pedestal.png`                                                     | 456×148  | 发光底座                                                                     |
+| `coin-btc.png` / `coin-eth.png` / `coin-sol.png` / `coin-usdt.png` | ~130×130 | 币种（Spec D 用，本 task 只占位）                                            |
 
 **重要**：`robot-center.png` 本身带原始面部，但我们要用 `robot-face.png` 独立覆盖实现眼球追踪。实现时 `RobotLayer` 的 z-index 叠加顺序：
 
@@ -77,25 +83,27 @@ robot-center.png（底层，带原始面部）
 ## 舞台布局（21/9，z-index 分层）
 
 ### 容器
+
 - `<section>` 顶级，`aspect-[21/9]`，`relative`，`overflow-hidden`
 - 桌面：宽度 100vw，高度自动（21/9 比）
 - 移动端（< md 断点）：改用 `aspect-[4/5]` 或 `aspect-[5/6]`（舞台变竖），因为 21/9 在手机上太窄
 
 ### z-index stack（back → front）
 
-| z | 层 | 内容 | depth（视差系数） |
-|---|------|------|---|
-| 0 | 背景 | 渐变 `bg-gradient-to-b from-[#0a0a12] via-[#0f0a1f] to-black` + 可选星点 noise | 0.05 |
-| 10 | Pedestal | `pedestal.png`，绝对定位 `bottom: 20%`，水平居中，宽 `min(456px, 40vw)` | 0.10 |
-| 20 | Robot body | 三姿态图，绝对定位 `bottom: 28%`，水平居中，宽 `min(316px, 28vw)` | 0.30 |
-| 25 | Robot face overlay | `robot-face.png`，**仅在 center 姿态显示**，绝对定位到 robot 面部区 | 0.35 |
-| 30 | Coins layer | `<CoinsLayer />` 4 币漂浮（BTC/ETH/SOL/USDT），各币独立 depth | 0.70-0.90 |
-| 40 | Speech bubble | 轮播气泡，绝对定位到 robot **右上**（desktop）/ robot **正上方**（mobile） | 0.50 |
-| 50 | Title overlay | Title + subtitle + 双 CTA，绝对定位到舞台 `bottom: 6%`，水平居中 | - |
+| z   | 层                 | 内容                                                                           | depth（视差系数） |
+| --- | ------------------ | ------------------------------------------------------------------------------ | ----------------- |
+| 0   | 背景               | 渐变 `bg-gradient-to-b from-[#0a0a12] via-[#0f0a1f] to-black` + 可选星点 noise | 0.05              |
+| 10  | Pedestal           | `pedestal.png`，绝对定位 `bottom: 20%`，水平居中，宽 `min(456px, 40vw)`        | 0.10              |
+| 20  | Robot body         | 三姿态图，绝对定位 `bottom: 28%`，水平居中，宽 `min(316px, 28vw)`              | 0.30              |
+| 25  | Robot face overlay | `robot-face.png`，**仅在 center 姿态显示**，绝对定位到 robot 面部区            | 0.35              |
+| 30  | Coins layer        | `<CoinsLayer />` 4 币漂浮（BTC/ETH/SOL/USDT），各币独立 depth                  | 0.70-0.90         |
+| 40  | Speech bubble      | 轮播气泡，绝对定位到 robot **右上**（desktop）/ robot **正上方**（mobile）     | 0.50              |
+| 50  | Title overlay      | Title + subtitle + 双 CTA，绝对定位到舞台 `bottom: 6%`，水平居中               | -                 |
 
 **depth 的用途**：所有 z=10/20/25/30/40 的层都做鼠标视差位移 `translate(mouseX * depth * 20px, mouseY * depth * 12px)`。深度越大位移越大，产生空间感。背景（z=0）也可以做 `depth=0.05` 微量位移。
 
 ### Title overlay 的可读性
+
 - Title 位置和 robot+pedestal 可能有重叠。为保证可读性，Title 下方垫一层 `bg-gradient-to-t from-black via-black/80 to-transparent`，高度约 `35%`，从舞台底部往上渐变。
 - Title 字号沿用现有（`text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold`）
 - Subtitle 字号沿用现有（`text-sm sm:text-base md:text-lg`）
@@ -187,10 +195,10 @@ export function useRobotPose(mouseX: number, reduceMotion: boolean): Pose {
         return "center";
       }
       if (current === "left") {
-        return mouseX > -0.20 ? "center" : "left";
+        return mouseX > -0.2 ? "center" : "left";
       }
       // current === "right"
-      return mouseX < 0.20 ? "center" : "right";
+      return mouseX < 0.2 ? "center" : "right";
     });
   }, [mouseX, reduceMotion]);
 
@@ -201,6 +209,7 @@ export function useRobotPose(mouseX: number, reduceMotion: boolean): Pose {
 ### 3. `RobotLayer.tsx`
 
 职责：
+
 - 根据 `pose` 渲染对应的 robot 图（center / left / right），用 `AnimatePresence mode="popLayout"` 做切换淡入淡出
 - 仅 `pose === "center"` 时叠加 `robot-face.png`；叠加的 face 根据 `mouseX` / `mouseY` 做 `translate(mouseX * 4px, mouseY * 3px)` 眼球跟随
 - 整个 RobotLayer 按 depth=0.3 做视差位移
@@ -209,6 +218,7 @@ export function useRobotPose(mouseX: number, reduceMotion: boolean): Pose {
 - 空闲 idle 上下浮动 `y: [0, -8, 0]`，4s 周期（保留原 HeroSection 的感觉）
 
 props：
+
 ```tsx
 interface RobotLayerProps {
   pose: "center" | "left" | "right";
@@ -228,12 +238,12 @@ interface RobotLayerProps {
 
 4 个币围绕机器人散开。百分比绝对定位（相对舞台父容器）。
 
-| 币 | 桌面锚点 | 桌面直径 | 移动端直径 | 视差深度 | 漂浮半径 X / Y | 漂浮周期 | 相位偏移 |
-|---|---|---|---|---|---|---|---|
-| BTC | `top: 20%, left: 18%` | 76px | 44px | 0.80 | 38 / 22 | 7.2s | 0s |
-| ETH | `top: 15%, right: 19%` | 72px | 42px | 0.70 | 42 / 26 | 8.3s | 1.8s |
-| SOL | `top: 55%, left: 12%` | 64px | 40px | 0.90 | 34 / 20 | 6.8s | 3.1s |
-| USDT | `top: 48%, right: 13%` | 68px | 42px | 0.75 | 36 / 24 | 9.1s | 0.6s |
+| 币   | 桌面锚点               | 桌面直径 | 移动端直径 | 视差深度 | 漂浮半径 X / Y | 漂浮周期 | 相位偏移 |
+| ---- | ---------------------- | -------- | ---------- | -------- | -------------- | -------- | -------- |
+| BTC  | `top: 20%, left: 18%`  | 76px     | 44px       | 0.80     | 38 / 22        | 7.2s     | 0s       |
+| ETH  | `top: 15%, right: 19%` | 72px     | 42px       | 0.70     | 42 / 26        | 8.3s     | 1.8s     |
+| SOL  | `top: 55%, left: 12%`  | 64px     | 40px       | 0.90     | 34 / 20        | 6.8s     | 3.1s     |
+| USDT | `top: 48%, right: 13%` | 68px     | 42px       | 0.75     | 36 / 24        | 9.1s     | 0.6s     |
 
 移动端（`< md`）：漂浮半径减半（18-22 / 10-13），周期不变。
 
@@ -341,7 +351,7 @@ const COINS: CoinConfig[] = [
 
 export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
   return (
-    <div className="absolute inset-0 pointer-events-none z-30">
+    <div className="pointer-events-none absolute inset-0 z-30">
       {COINS.map((coin) => {
         const parallaxX = reduceMotion ? 0 : mouseX * coin.depth * 24;
         const parallaxY = reduceMotion ? 0 : mouseY * coin.depth * 14;
@@ -379,11 +389,9 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
               }
             >
               <motion.div
-                className="group relative cursor-pointer pointer-events-auto"
+                className="group pointer-events-auto relative cursor-pointer"
                 whileHover={
-                  reduceMotion
-                    ? { scale: 1.15 }
-                    : { scale: 1.3, rotate: 360, zIndex: 10 }
+                  reduceMotion ? { scale: 1.15 } : { scale: 1.3, rotate: 360, zIndex: 10 }
                 }
                 transition={{
                   scale: { duration: 0.28, ease: "easeOut" },
@@ -394,11 +402,11 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
                   src={coin.src}
                   alt=""
                   aria-label={coin.label}
-                  className={`${coin.sizeClass} drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)] select-none`}
+                  className={`${coin.sizeClass} select-none drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)]`}
                   draggable={false}
                 />
                 <span
-                  className="absolute left-1/2 -translate-x-1/2 -top-10 px-3 py-1 rounded-full bg-black/80 text-white text-xs font-semibold tracking-wide pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap"
+                  className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/80 px-3 py-1 text-xs font-semibold tracking-wide text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100"
                   aria-hidden="true"
                 >
                   {coin.symbol}
@@ -416,6 +424,7 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
 ### 6. `SpeechBubble.tsx`
 
 职责：
+
 - 从 `t.hero.speechBubble`（长度 14）随机（或顺序）选一条显示
 - 每 **5.5s** 切换到下一条（平滑 fade + slight slide）
 - 不要总是顺序播放——第一次 mount 随机选个起点，之后顺序轮播
@@ -424,6 +433,7 @@ export function CoinsLayer({ mouseX, mouseY, reduceMotion }: CoinsLayerProps) {
 - 移动端气泡更小、文字行数可能要多（限制 max-width），desktop 可以到 `max-w-xs`
 
 props：
+
 ```tsx
 interface SpeechBubbleProps {
   reduceMotion: boolean;
@@ -431,6 +441,7 @@ interface SpeechBubbleProps {
 ```
 
 实现细节（必须）：
+
 - 用 `t.hero.speechBubble` 数组作为文案池
 - Aria label 用 `t.hero.speechBubbleAriaLabel`
 - 用 `AnimatePresence mode="wait"` 做切换
@@ -462,7 +473,7 @@ export function HeroScene() {
   return (
     <section
       ref={stageRef}
-      className="relative w-full aspect-[4/5] md:aspect-[21/9] overflow-hidden bg-gradient-to-b from-[#0a0a12] via-[#0f0a1f] to-black pt-[72px] md:pt-[80px]"
+      className="relative aspect-[4/5] w-full overflow-hidden bg-gradient-to-b from-[#0a0a12] via-[#0f0a1f] to-black pt-[72px] md:aspect-[21/9] md:pt-[80px]"
     >
       {/* z-0 背景已在上面 bg-gradient，这里可加 noise/stars 粒子 */}
 
@@ -479,22 +490,22 @@ export function HeroScene() {
       <SpeechBubble reduceMotion={reduceMotion} />
 
       {/* z-50 Title overlay + gradient scrim */}
-      <div className="absolute inset-x-0 bottom-0 z-50 h-[42%] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-[6%] z-50 flex flex-col items-center text-center px-6 max-w-4xl mx-auto left-1/2 -translate-x-1/2">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight mb-4 text-white leading-tight">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-50 h-[42%] bg-gradient-to-t from-black via-black/80 to-transparent" />
+      <div className="absolute inset-x-0 bottom-[6%] left-1/2 z-50 mx-auto flex max-w-4xl -translate-x-1/2 flex-col items-center px-6 text-center">
+        <h1 className="mb-4 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[56px]">
           {t.hero.title}
         </h1>
-        <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mb-8 leading-relaxed">
+        <p className="mb-8 max-w-2xl text-sm leading-relaxed text-gray-400 sm:text-base md:text-lg">
           {t.hero.subtitle}
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 pointer-events-auto">
+        <div className="pointer-events-auto flex flex-col gap-4 sm:flex-row">
           <motion.a
             href={COINW_SKILLS_URL}
             target="_blank"
             rel="noopener noreferrer"
             whileHover={reduceMotion ? undefined : { scale: 1.05 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="px-8 py-3 bg-[#7c5cff] text-white text-base font-semibold rounded-xl hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)] transition-all inline-flex items-center justify-center"
+            className="inline-flex items-center justify-center rounded-xl bg-[#7c5cff] px-8 py-3 text-base font-semibold text-white transition-all hover:bg-[#8e6bff] hover:shadow-[0_0_24px_rgba(124,92,255,0.5)]"
           >
             {t.hero.ctaPrimary}
           </motion.a>
@@ -504,7 +515,7 @@ export function HeroScene() {
             rel="noopener noreferrer"
             whileHover={reduceMotion ? undefined : { scale: 1.05 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="px-8 py-3 bg-white/10 border border-white/20 text-white text-base font-semibold rounded-xl hover:bg-white/15 transition-all inline-flex items-center justify-center"
+            className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-8 py-3 text-base font-semibold text-white transition-all hover:bg-white/15"
           >
             {t.hero.ctaSecondary}
           </motion.a>
@@ -524,6 +535,7 @@ export { HeroScene } from "./HeroScene";
 ## 移动端降级
 
 在 `< md` 断点：
+
 - 舞台改 `aspect-[4/5]`（不是 21/9）
 - 禁用鼠标视差和眼睛跟随（没鼠标）
 - 机器人姿态自动循环：每 8s 切 center → left → center → right → center（reduce-motion 时锁 center）
@@ -554,6 +566,7 @@ hero: {
 所有 dict 按下面顺序追加 `speechBubble` 数组（长度必须 14，顺序一致）和 `speechBubbleAriaLabel`。
 
 #### zh_CN
+
 ```json
 "speechBubble": [
   "42 出自《银河系漫游指南》——宇宙的终极答案。",
@@ -575,6 +588,7 @@ hero: {
 ```
 
 #### zh_TW
+
 ```json
 "speechBubble": [
   "42 出自《銀河便車指南》——宇宙的終極答案。",
@@ -596,6 +610,7 @@ hero: {
 ```
 
 #### en_US
+
 ```json
 "speechBubble": [
   "42 is from The Hitchhiker's Guide to the Galaxy — the ultimate answer to the universe.",
@@ -617,6 +632,7 @@ hero: {
 ```
 
 #### ja_JP
+
 ```json
 "speechBubble": [
   "42 は『銀河ヒッチハイク・ガイド』より——宇宙の究極の答え。",
@@ -638,6 +654,7 @@ hero: {
 ```
 
 #### ru_RU
+
 ```json
 "speechBubble": [
   "42 — это из «Автостопом по галактике», окончательный ответ на вопрос о Вселенной.",
@@ -659,6 +676,7 @@ hero: {
 ```
 
 #### uk_UA
+
 ```json
 "speechBubble": [
   "42 — це з «Путівника для мандрівників по галактиці», остаточна відповідь на питання про Всесвіт.",
@@ -680,6 +698,7 @@ hero: {
 ```
 
 #### fr_FR
+
 ```json
 "speechBubble": [
   "42 vient du Guide du voyageur galactique — la réponse ultime à l'univers.",
@@ -701,6 +720,7 @@ hero: {
 ```
 
 #### es_ES
+
 ```json
 "speechBubble": [
   "42 viene de la Guía del autoestopista galáctico — la respuesta definitiva al universo.",
@@ -722,6 +742,7 @@ hero: {
 ```
 
 #### ar_SA
+
 ```json
 "speechBubble": [
   "42 من رواية «دليل المسافر إلى المجرة» — الإجابة النهائية عن الكون.",
@@ -743,6 +764,7 @@ hero: {
 ```
 
 #### en_XA（镜像 en_US，和现有 dict 风格一致）
+
 ```json
 "speechBubble": [
   "42 is from The Hitchhiker's Guide to the Galaxy — the ultimate answer to the universe.",
@@ -766,11 +788,13 @@ hero: {
 ## 验收标准
 
 编译/类型：
+
 - [ ] `npx tsc --noEmit` 通过
 - [ ] `npm run build` 成功
 - [ ] `npm run lint` 无新增错误
 
 视觉/交互（桌面）：
+
 - [ ] 打开 `/` 或 `/en_US`，看到 21/9 舞台，robot + pedestal 居中、4 币漂浮在 robot 周围、title+CTA 在下部
 - [ ] 4 币各自椭圆漂浮，彼此不同步
 - [ ] 鼠标悬停任一币 → 放大 1.3x + 旋转 360° + 上方黑色小气泡显示 symbol（BTC/ETH/SOL/USDT）
@@ -786,21 +810,25 @@ hero: {
 - [ ] Title / CTA 可点击，CTA 链接指向 `COINW_SKILLS_URL`
 
 视觉/交互（移动端 / < 768px）：
+
 - [ ] 舞台变 4/5 纵向比
 - [ ] 无鼠标视差、无眼睛跟随
 - [ ] Robot 每 8s 自动循环姿态
 - [ ] Speech bubble 在 robot 正上方
 
 i18n：
+
 - [ ] 10 个 dict 全部有 `speechBubble`（长度 14）和 `speechBubbleAriaLabel`
 - [ ] 切换 locale 气泡文案对应变化
 - [ ] ar_SA 下整体 RTL 正常（title/CTA 方向，气泡文字方向）
 - [ ] `npx tsc --noEmit` 过（types.ts 字段和 dict 形状一致）
 
 reduce-motion：
+
 - [ ] 系统 prefers-reduced-motion 开启时：robot 姿态锁 center，coins 不动，气泡切换无 fade，pedestal 发光呼吸关闭
 
 其他：
+
 - [ ] `public/images/hero-robot-scene.png` 被删除
 - [ ] `page.tsx` 里 `HeroSection` 函数定义被删除
 - [ ] 没引入任何新依赖（`package.json` 和 `package-lock.json` 除了 build hash 外无改动）
@@ -820,6 +848,7 @@ reduce-motion：
 1. 从最新 `main` 切分支 `feature/claw42-hero-scene-04`
 2. 实现 + 自测（桌面 + 移动端模拟 + reduce-motion）
 3. Commit message 清晰：
+
    ```
    feat(hero): interactive scene with pose state machine + speech bubble rotation
 
@@ -832,11 +861,13 @@ reduce-motion：
    - i18n: hero.speechBubble[14] + hero.speechBubbleAriaLabel across 10 locales
    - Remove legacy hero-robot-scene.png and HeroSection function
    ```
+
 4. Push + 开 PR → 等 F 审核
 
 ## 有疑问不要猜
 
 以下情况直接停下问 F（通过 Dan 中转）：
+
 - face overlay 的定位算出来对不齐 robot 面部（面部偏移的具体像素，你测试后告诉 F 看到的实际情况）
 - 气泡 tail（小尾巴）指向位置在 desktop/mobile 哪个方向更合适
 - 21/9 在超宽屏（2560px+）下 robot 显得太小，是否要加 max-height
@@ -844,6 +875,6 @@ reduce-motion：
 
 ---
 
-*维护者: F（总调度）*
-*创建: 2026-04-22*
-*依赖 Task：02（已合并）*
+_维护者: F（总调度）_
+_创建: 2026-04-22_
+_依赖 Task：02（已合并）_

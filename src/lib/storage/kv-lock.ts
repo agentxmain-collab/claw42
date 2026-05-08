@@ -40,13 +40,19 @@ const RELEASE_SCRIPT = `
 `;
 
 export class LockBusyError extends Error {
-  constructor(public readonly key: string, public readonly waitedMs: number) {
+  constructor(
+    public readonly key: string,
+    public readonly waitedMs: number,
+  ) {
     super(`Failed to acquire lock for "${key}" within ${waitedMs}ms`);
     this.name = "LockBusyError";
   }
 }
 
-export async function tryAcquireLock(key: string, options: LockOptions = {}): Promise<LockHandle | null> {
+export async function tryAcquireLock(
+  key: string,
+  options: LockOptions = {},
+): Promise<LockHandle | null> {
   const ttlMs = normalizePositiveInteger(options.ttlMs, DEFAULT_TTL_MS);
   const waitMs = normalizeNonNegativeInteger(options.waitMs, DEFAULT_WAIT_MS);
   const startedAt = Date.now();
@@ -59,7 +65,7 @@ export async function tryAcquireLock(key: string, options: LockOptions = {}): Pr
       return {
         key,
         token,
-        acquiredAt: Date.now()
+        acquiredAt: Date.now(),
       };
     }
 
@@ -90,7 +96,11 @@ export async function releaseLock(handle: LockHandle): Promise<boolean> {
   return releaseWithTokenCheckedFallback(key, handle.token);
 }
 
-export async function withLock<T>(key: string, fn: () => Promise<T>, options: LockOptions = {}): Promise<T> {
+export async function withLock<T>(
+  key: string,
+  fn: () => Promise<T>,
+  options: LockOptions = {},
+): Promise<T> {
   const waitedMs = normalizeNonNegativeInteger(options.waitMs, DEFAULT_WAIT_MS);
   const handle = await tryAcquireLock(key, options);
   if (!handle) throw new LockBusyError(key, waitedMs);
@@ -158,11 +168,15 @@ function warnFallbackOnce() {
 }
 
 function normalizePositiveInteger(value: number | undefined, fallback: number) {
-  return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : fallback;
 }
 
 function normalizeNonNegativeInteger(value: number | undefined, fallback: number) {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.floor(value) : fallback;
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? Math.floor(value)
+    : fallback;
 }
 
 function sleep(ms: number) {
@@ -174,5 +188,5 @@ export const __kvLockTestUtils = {
     memoryLocks.clear();
     warnedAboutFallback = false;
   },
-  memoryLocks
+  memoryLocks,
 };

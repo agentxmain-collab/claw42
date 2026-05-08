@@ -10,7 +10,8 @@ export function dedupSignals(signals: SignalCard[]) {
       continue;
     }
 
-    const winner = existing.engine.candidateScore >= signal.engine.candidateScore ? existing : signal;
+    const winner =
+      existing.engine.candidateScore >= signal.engine.candidateScore ? existing : signal;
     const loser = winner === existing ? signal : existing;
 
     byKey.set(signal.engine.dedupKey, {
@@ -20,12 +21,12 @@ export function dedupSignals(signals: SignalCard[]) {
         pieces: [...winner.evidence.pieces, ...loser.evidence.pieces],
         timeline: [...winner.evidence.timeline, ...loser.evidence.timeline],
         multiSourceConfirm: true,
-        confirmCount: winner.evidence.confirmCount + loser.evidence.confirmCount
+        confirmCount: winner.evidence.confirmCount + loser.evidence.confirmCount,
       },
       engine: {
         ...winner.engine,
-        rules: Array.from(new Set([...winner.engine.rules, ...loser.engine.rules, "dedup_merge"]))
-      }
+        rules: Array.from(new Set([...winner.engine.rules, ...loser.engine.rules, "dedup_merge"])),
+      },
     });
   }
 

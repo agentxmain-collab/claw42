@@ -1,4 +1,7 @@
-export function parseLlmJsonObject(text: string, invalidMessage = "LLM provider returned invalid JSON response"): Record<string, unknown> {
+export function parseLlmJsonObject(
+  text: string,
+  invalidMessage = "LLM provider returned invalid JSON response",
+): Record<string, unknown> {
   const direct = tryParseObject(text.trim());
   if (direct) return direct;
 
@@ -41,13 +44,13 @@ function extractFirstJsonObject(text: string) {
         escaped = false;
       } else if (char === "\\") {
         escaped = true;
-      } else if (char === "\"") {
+      } else if (char === '"') {
         inString = false;
       }
       continue;
     }
 
-    if (char === "\"") {
+    if (char === '"') {
       inString = true;
       continue;
     }

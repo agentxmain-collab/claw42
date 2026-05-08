@@ -13,7 +13,10 @@ export function isCredibleSource(source: string) {
 }
 
 export function getPriceSnapshot(symbol: string) {
-  return priceSnapshots.find((snapshot) => snapshot.symbol.toUpperCase() === symbol.toUpperCase()) ?? null;
+  return (
+    priceSnapshots.find((snapshot) => snapshot.symbol.toUpperCase() === symbol.toUpperCase()) ??
+    null
+  );
 }
 
 type IngestOptions = {
@@ -28,7 +31,7 @@ export function ingestCandidates(options: IngestOptions = {}): RawCandidate[] {
   const sourceCalendarItems = options.calendarItems ?? calendarItems;
   return [
     ...sourceNewsItems.map((item) => newsToCandidate(item, sourcePriceSnapshots)),
-    ...sourceCalendarItems.filter((item) => item.impact === "high").map(calendarToCandidate)
+    ...sourceCalendarItems.filter((item) => item.impact === "high").map(calendarToCandidate),
   ];
 }
 
@@ -37,7 +40,7 @@ export async function ingestCandidatesAsync(): Promise<RawCandidate[]> {
   return ingestCandidates({
     newsItems: data.newsItems,
     priceSnapshots: data.priceSnapshots,
-    calendarItems: data.mode === "live" ? [] : calendarItems
+    calendarItems: data.mode === "live" ? [] : calendarItems,
   });
 }
 
@@ -49,7 +52,7 @@ function newsToCandidate(item: NewsItem, sourcePriceSnapshots: PriceSnapshot[]):
     symbol: asset.symbol,
     direction: asset.direction,
     severity: asset.severity,
-    note: asset.note
+    note: asset.note,
   }));
 
   return {
@@ -63,30 +66,39 @@ function newsToCandidate(item: NewsItem, sourcePriceSnapshots: PriceSnapshot[]):
     eventStatus: "confirmed",
     primaryAsset,
     relatedAssets,
-    tracks: inferTracks(eventType, relatedAssets.map((asset) => asset.symbol)),
+    tracks: inferTracks(
+      eventType,
+      relatedAssets.map((asset) => asset.symbol),
+    ),
     tradingPairs: relatedAssets.map((asset) => `${asset.symbol}/USDT`),
-    projects: relatedAssets.filter((asset) => !["BTC", "ETH", "SOL", "USDC"].includes(asset.symbol)).map((asset) => asset.symbol),
+    projects: relatedAssets
+      .filter((asset) => !["BTC", "ETH", "SOL", "USDC"].includes(asset.symbol))
+      .map((asset) => asset.symbol),
     campaignTags: inferCampaignTags(eventType, primaryAsset),
     timeline: item.timeline,
     evidence: buildEvidence(item, marketSnapshot, eventType),
     marketSnapshot,
     macroItem: null,
-    direction: item.marketDirection
+    direction: item.marketDirection,
   };
 }
 
 function getPriceSnapshotFrom(sourcePriceSnapshots: PriceSnapshot[], symbol: string) {
-  return sourcePriceSnapshots.find((snapshot) => snapshot.symbol.toUpperCase() === symbol.toUpperCase()) ?? null;
+  return (
+    sourcePriceSnapshots.find(
+      (snapshot) => snapshot.symbol.toUpperCase() === symbol.toUpperCase(),
+    ) ?? null
+  );
 }
 
 function calendarToCandidate(item: MacroItem): RawCandidate {
   const title = {
     zh: `${item.name.zh}临近，市场等待宏观确认`,
-    en: `${item.name.en} approaches as markets await macro confirmation`
+    en: `${item.name.en} approaches as markets await macro confirmation`,
   };
   const summary = {
     zh: `${item.name.zh}将影响美元、利率预期与风险资产定价。`,
-    en: `${item.name.en} may influence the dollar, rate expectations, and risk-asset pricing.`
+    en: `${item.name.en} may influence the dollar, rate expectations, and risk-asset pricing.`,
   };
 
   return {
@@ -111,32 +123,36 @@ function calendarToCandidate(item: MacroItem): RawCandidate {
         title: item.name,
         detail: {
           zh: `预期值 ${item.forecast}，实际值 ${item.actual}。`,
-          en: `Forecast ${item.forecast}, actual ${item.actual}.`
-        }
-      }
+          en: `Forecast ${item.forecast}, actual ${item.actual}.`,
+        },
+      },
     ],
     evidence: [
       {
         kind: "macro",
         source: "Macro Calendar",
         excerpt: summary,
-        capturedAt: item.datetime
-      }
+        capturedAt: item.datetime,
+      },
     ],
     marketSnapshot: null,
     macroItem: item,
-    direction: null
+    direction: null,
   };
 }
 
-function buildEvidence(item: NewsItem, marketSnapshot: ReturnType<typeof getPriceSnapshot>, eventType: EventType): EvidencePiece[] {
+function buildEvidence(
+  item: NewsItem,
+  marketSnapshot: ReturnType<typeof getPriceSnapshot>,
+  eventType: EventType,
+): EvidencePiece[] {
   const pieces: EvidencePiece[] = [
     {
       kind: "news",
       source: item.source,
       excerpt: item.summary,
-      capturedAt: item.publishedAt
-    }
+      capturedAt: item.publishedAt,
+    },
   ];
 
   if (marketSnapshot && Math.abs(marketSnapshot.change24h) >= 3) {
@@ -145,9 +161,9 @@ function buildEvidence(item: NewsItem, marketSnapshot: ReturnType<typeof getPric
       source: marketSnapshot.source,
       excerpt: {
         zh: `${marketSnapshot.symbol} 24h 变化 ${marketSnapshot.change24h}%，成交量变化 ${marketSnapshot.volumeChange24h}%。`,
-        en: `${marketSnapshot.symbol} changed ${marketSnapshot.change24h}% over 24h with volume change of ${marketSnapshot.volumeChange24h}%.`
+        en: `${marketSnapshot.symbol} changed ${marketSnapshot.change24h}% over 24h with volume change of ${marketSnapshot.volumeChange24h}%.`,
       },
-      capturedAt: marketSnapshot.updatedAt
+      capturedAt: marketSnapshot.updatedAt,
     });
   }
 
@@ -159,9 +175,9 @@ function buildEvidence(item: NewsItem, marketSnapshot: ReturnType<typeof getPric
         source: "Macro Calendar",
         excerpt: {
           zh: `${macro.name.zh} 是当前风险资产定价的重要背景。`,
-          en: `${macro.name.en} is an important backdrop for risk-asset pricing.`
+          en: `${macro.name.en} is an important backdrop for risk-asset pricing.`,
         },
-        capturedAt: macro.datetime
+        capturedAt: macro.datetime,
       });
     }
   }
@@ -172,7 +188,8 @@ function buildEvidence(item: NewsItem, marketSnapshot: ReturnType<typeof getPric
 function inferEventType(item: NewsItem): EventType {
   const text = `${item.id} ${item.title.zh} ${item.title.en}`.toLowerCase();
   if (text.includes("etf")) return "etf";
-  if (text.includes("监管") || text.includes("policy") || text.includes("bill")) return "regulation";
+  if (text.includes("监管") || text.includes("policy") || text.includes("bill"))
+    return "regulation";
   if (text.includes("升级") || text.includes("upgrade")) return "project";
   if (text.includes("矿工") || text.includes("miner")) return "onchain";
   return "narrative";

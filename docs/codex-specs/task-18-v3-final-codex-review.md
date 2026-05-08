@@ -289,20 +289,20 @@ D7 鼓励“操 / 妈的 / 草 / 卧槽”，同时又要求“不脏话”。�
 
 ## 4. 我建议的参数调整
 
-| 参数 | 原方案 | 建议 |
-| --- | --- | --- |
-| `FORCE_EXPECTS_REPLY_TURNS` | 4 | 保留，前 4 条硬 true |
-| `FORCE_MENTION_PROBABILITY` | 0.7 | 保留概率，但叠加“前 6 条至少 2 条 mention”硬下限 |
-| `MIN_TOTAL_MESSAGES` | 6 | 保留，且 strategy synthesis 前强制满足 |
-| `QUIET_STREAK_FOR_END` | 5 | 保留 |
-| `MAX_TOTAL_MESSAGES` | 20 | 保留，配合长 thread 折叠 |
-| `MAX_RETRY_COUNT_PER_THREAD` | 5 | 保留，sanitize retry 也计入 |
-| `react typing` | 200-600ms | 调为 500-900ms |
-| `concede typing` | 2500-4000ms | 调为 1800-3000ms |
-| same-agent merge | 10s | 保留，但限制同 thread |
-| strategy auto-scroll | 无条件 | 改为“用户接近底部或主动点击时” |
-| `MAX_LLM_CALLS_PER_MINUTE_GLOBAL` | 30 | preview 默认 30；生产 env 配置且需集中状态 |
-| `MAX_THREADS_PER_DAY` | 50 | preview 可用；生产 env 配置 |
+| 参数                              | 原方案      | 建议                                             |
+| --------------------------------- | ----------- | ------------------------------------------------ |
+| `FORCE_EXPECTS_REPLY_TURNS`       | 4           | 保留，前 4 条硬 true                             |
+| `FORCE_MENTION_PROBABILITY`       | 0.7         | 保留概率，但叠加“前 6 条至少 2 条 mention”硬下限 |
+| `MIN_TOTAL_MESSAGES`              | 6           | 保留，且 strategy synthesis 前强制满足           |
+| `QUIET_STREAK_FOR_END`            | 5           | 保留                                             |
+| `MAX_TOTAL_MESSAGES`              | 20          | 保留，配合长 thread 折叠                         |
+| `MAX_RETRY_COUNT_PER_THREAD`      | 5           | 保留，sanitize retry 也计入                      |
+| `react typing`                    | 200-600ms   | 调为 500-900ms                                   |
+| `concede typing`                  | 2500-4000ms | 调为 1800-3000ms                                 |
+| same-agent merge                  | 10s         | 保留，但限制同 thread                            |
+| strategy auto-scroll              | 无条件      | 改为“用户接近底部或主动点击时”                   |
+| `MAX_LLM_CALLS_PER_MINUTE_GLOBAL` | 30          | preview 默认 30；生产 env 配置且需集中状态       |
+| `MAX_THREADS_PER_DAY`             | 50          | preview 可用；生产 env 配置                      |
 
 ## 5. 全局判断
 

@@ -78,7 +78,11 @@ function assertValid(sample: string, label: string, validator: ChatGuardrailVali
 function main() {
   forbiddenSamples.forEach((sample) => {
     assertInvalid(sample, "forbidden prefix", validateChatContent(sample));
-    assertValid(sample, "sanitized forbidden prefix", validateChatContent(sanitizeChatContent(sample)));
+    assertValid(
+      sample,
+      "sanitized forbidden prefix",
+      validateChatContent(sanitizeChatContent(sample)),
+    );
   });
 
   ambiguousSamples.forEach((sample) => {

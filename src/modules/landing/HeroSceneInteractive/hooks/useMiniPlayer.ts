@@ -20,23 +20,26 @@ export function useMiniPlayer() {
     loadingTimerRef.current = null;
   }, []);
 
-  const selectCoin = useCallback(async (coin: HeroTrendingCoin) => {
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
-    clearLoadingTimer();
-    setSelectedCoin(coin);
-    setData(null);
-    setStatus("picking");
+  const selectCoin = useCallback(
+    async (coin: HeroTrendingCoin) => {
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
+      clearLoadingTimer();
+      setSelectedCoin(coin);
+      setData(null);
+      setStatus("picking");
 
-    loadingTimerRef.current = window.setTimeout(() => {
-      if (requestIdRef.current === requestId) setStatus("loading");
-    }, 120);
-    const playerData = await fetchHeroMiniPlayerData(coin.symbol);
-    if (requestIdRef.current !== requestId) return;
-    clearLoadingTimer();
-    setData(playerData);
-    setStatus("shown");
-  }, [clearLoadingTimer]);
+      loadingTimerRef.current = window.setTimeout(() => {
+        if (requestIdRef.current === requestId) setStatus("loading");
+      }, 120);
+      const playerData = await fetchHeroMiniPlayerData(coin.symbol);
+      if (requestIdRef.current !== requestId) return;
+      clearLoadingTimer();
+      setData(playerData);
+      setStatus("shown");
+    },
+    [clearLoadingTimer],
+  );
 
   const close = useCallback(() => {
     requestIdRef.current += 1;
