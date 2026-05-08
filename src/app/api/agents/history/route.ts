@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getHistoryMessages, getNewestGeneratedAt } from "@/lib/llmFallbackChain";
+import { getHistoryMessages, getNewestGeneratedAt } from "@/lib/agentAnalysis";
 
 export const runtime = "nodejs";
 

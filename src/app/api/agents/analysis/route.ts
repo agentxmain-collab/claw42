@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getAgentAnalysis } from "@/lib/llmFallbackChain";
+import { getAgentAnalysis } from "@/lib/agentAnalysis";
 import { generateText } from "@/lib/llm/generateText";
 import { rateLimit } from "@/lib/rateLimit";
 import { getHotSignals, getMajorEvent } from "@/lib/signal-engine";

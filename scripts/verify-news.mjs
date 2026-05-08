@@ -127,7 +127,7 @@ const srcFiles = [
   "src/lib/news/adapters/coinw-announcements-adapter.ts",
   "src/lib/news/adapters/cryptopanic-adapter.ts",
   "src/lib/debateOrchestrator.ts",
-  "src/lib/llmFallbackChain.ts",
+  "src/lib/agentAnalysis.ts",
   "src/lib/newsTriggers.ts",
 ];
 for (const path of srcFiles) {

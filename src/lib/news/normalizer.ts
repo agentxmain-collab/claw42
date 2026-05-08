@@ -1,4 +1,4 @@
-import { generateLlmText } from "@/lib/llmFallbackChain";
+import { generateText } from "@/lib/llm/generateText";
 import type { NewsItem, NewsSentiment } from "@/lib/types";
 import type { NewsSourceId } from "@/lib/news/sourceRegistry";
 
@@ -70,10 +70,15 @@ export async function normalizeNewsItem(item: NewsItem, sourceId: NewsSourceId):
   if (missing.length === 0) return item;
 
   try {
-    const result = await generateLlmText(buildPrompt(item, missing));
-    if (!result) return item;
+    const text = await generateText(buildPrompt(item, missing), {
+      taskTag: `news:normalizer:${sourceId}`,
+      temperature: 0.2,
+      maxTokens: 240,
+      cacheTTLSeconds: 6 * 60 * 60,
+      enableGuardrails: false,
+    });
 
-    const parsed = parseObject(result.text);
+    const parsed = parseObject(text);
     const fields: NormalizedFields = {
       sentiment: normalizeSentiment(parsed.sentiment),
       currencies: normalizeCurrencies(parsed.currencies),

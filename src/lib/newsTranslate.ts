@@ -1,5 +1,6 @@
 import { getCachedJson, setCachedJson } from "@/lib/cache/fileCache";
-import { antiMechanicalFallback, generateLlmText } from "@/lib/llmFallbackChain";
+import { generateText } from "@/lib/llm/generateText";
+import { antiMechanicalFallback } from "@/lib/llm/guardrails";
 import type { NewsItem } from "@/lib/types";
 
 export interface TranslatedNewsItem extends NewsItem {
@@ -25,17 +26,34 @@ export async function translateNewsItem(
   }
 
   const fallback = news.title;
-  const result = await generateLlmText(
-    `把下面的加密新闻标题翻译成简体中文，只输出标题，不要解释：\n${news.title}`,
-  );
-  const translatedTitle = result
-    ? antiMechanicalFallback(result.text.replace(/^["“]|["”]$/g, ""), fallback).slice(0, 120)
-    : fallback;
+  let translatedTitle = fallback;
+  let translatedSource: TranslatedNewsItem["translatedSource"] = "fallback";
+  try {
+    const text = await generateText(
+      `把下面的加密新闻标题翻译成简体中文，只输出标题，不要解释：\n${news.title}`,
+      {
+        taskTag: `news:translate:${locale}`,
+        temperature: 0.2,
+        maxTokens: 120,
+        cacheTTLSeconds: 6 * 60 * 60,
+        enableGuardrails: true,
+      },
+    );
+    translatedTitle = antiMechanicalFallback(
+      text.replace(/^["“]|["”]$/g, ""),
+      fallback,
+    ).slice(0, 120);
+    translatedSource = "llm";
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[news] translation fallback", error);
+    }
+  }
 
   await setCachedJson(cacheKey(news, locale), {
     generatedAt: Date.now(),
     data: { title: translatedTitle },
   });
 
-  return { ...news, translatedTitle, translatedSource: result ? "llm" : "fallback" };
+  return { ...news, translatedTitle, translatedSource };
 }

@@ -5,6 +5,8 @@ import { getCoinPool } from "@/lib/marketDataCache";
 import { triggerSignalGeneration } from "@/lib/marketSignals";
 import { getSignalsByWindow } from "@/lib/signalBuffer";
 import { getLastBatchSummary, recordSuccessfulPayload } from "@/lib/llmHistorySummary";
+import { callWithChain } from "@/lib/llm/providers";
+import type { ProviderId } from "@/lib/llm/providers/types";
 import { buildSignalSummary, formatSummaryForPrompt } from "@/lib/signalSummary";
 import { checkAgentSpeech, recordAgentSpoke } from "@/lib/agentSpeechGuard";
 import type { AgentWatchLocale } from "@/modules/agent-watch/locale";
@@ -195,9 +197,6 @@ const SKILLS: Record<AgentId, AgentSkill> = {
   beta: betaSkill as AgentSkill,
   gamma: gammaSkill as AgentSkill,
 };
-
-type ProviderName = "minimax" | "deepseek" | "claude";
-type ProviderMode = "json" | "text";
 
 type LiveCacheEntry = {
   value: AgentAnalysisPayload;
@@ -1512,16 +1511,6 @@ const LEGACY_JSON_PIPELINE = [
 ] as const;
 void LEGACY_JSON_PIPELINE;
 
-async function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
-  try {
-    return await fn(controller.signal);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -1530,136 +1519,35 @@ function randomThinkDelayMs(): number {
   return Math.round(800 + Math.random() * 1200);
 }
 
-async function callMiniMax(prompt: string, mode: ProviderMode = "json"): Promise<string> {
-  const apiKey = process.env.MINIMAX_API_KEY;
-  if (!apiKey) throw new Error("missing MINIMAX_API_KEY");
-
-  const model = process.env.MINIMAX_MODEL || "MiniMax-Text-01";
-  const endpoint =
-    process.env.MINIMAX_ENDPOINT || "https://api.minimaxi.com/v1/text/chatcompletion_v2";
-
-  return withTimeout(async (signal) => {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: mode === "text" ? 260 : 1400,
-        temperature: 0.78,
-        top_p: 0.9,
-      }),
-      signal,
-    });
-
-    if (!response.ok) throw new Error(`minimax ${response.status}`);
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const content = data.choices?.[0]?.message?.content?.trim();
-    if (!content) throw new Error("minimax empty response");
-    return content;
-  });
-}
-
-async function callDeepSeek(prompt: string, mode: ProviderMode = "json"): Promise<string> {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) throw new Error("missing DEEPSEEK_API_KEY");
-
-  return withTimeout(async (signal) => {
-    const body: Record<string, unknown> = {
-      model: "deepseek-chat",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: mode === "text" ? 260 : 1400,
-      temperature: 0.78,
-    };
-    if (mode === "json") body.response_format = { type: "json_object" };
-
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify(body),
-      signal,
-    });
-
-    if (!response.ok) throw new Error(`deepseek ${response.status}`);
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const content = data.choices?.[0]?.message?.content?.trim();
-    if (!content) throw new Error("deepseek empty response");
-    return content;
-  });
-}
-
-async function callClaude(prompt: string, mode: ProviderMode = "json"): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("missing ANTHROPIC_API_KEY");
-
-  return withTimeout(async (signal) => {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: mode === "text" ? 260 : 1400,
-        temperature: 0.78,
-        messages: [{ role: "user", content: prompt }],
-      }),
-      signal,
-    });
-
-    if (!response.ok) throw new Error(`claude ${response.status}`);
-    const data = (await response.json()) as {
-      content?: Array<{ type: string; text?: string }>;
-    };
-    const content = data.content?.find((item) => item.type === "text")?.text?.trim();
-    if (!content) throw new Error("claude empty response");
-    return content;
-  });
-}
-
-type ProviderEntry = {
-  name: ProviderName;
-  call: (prompt: string, mode?: ProviderMode) => Promise<string>;
-  envKey: string;
-};
-
-const ALL_PROVIDERS: ProviderEntry[] = [
-  { name: "deepseek", call: callDeepSeek, envKey: "DEEPSEEK_API_KEY" },
-  { name: "minimax", call: callMiniMax, envKey: "MINIMAX_API_KEY" },
-  { name: "claude", call: callClaude, envKey: "ANTHROPIC_API_KEY" },
-];
-
-const PROVIDERS = ALL_PROVIDERS.filter((provider) => Boolean(process.env[provider.envKey]));
-
-if (PROVIDERS.length === 0) {
-  console.warn("[claw42] no LLM provider configured, will use static fallback only");
-} else {
-  console.info(`[claw42] LLM chain: ${PROVIDERS.map((provider) => provider.name).join(" → ")}`);
+function providerSourceFromId(providerId: ProviderId): ProviderSource | null {
+  if (providerId === "deepseek-chat") return "deepseek";
+  if (providerId === "minimax") return "minimax";
+  if (providerId === "claude-haiku") return "claude";
+  return null;
 }
 
 async function callTextProvider(
   prompt: string,
 ): Promise<{ text: string; source: ProviderSource } | null> {
-  for (const provider of PROVIDERS) {
-    try {
-      await sleep(randomThinkDelayMs());
-      const text = await provider.call(prompt, "text");
-      return { text, source: provider.name };
-    } catch (error) {
-      console.warn(
-        `[claw42] ${provider.name} speech fallback`,
-        error instanceof Error ? error.message : error,
-      );
-    }
+  try {
+    await sleep(randomThinkDelayMs());
+    const output = await callWithChain({
+      prompt,
+      maxTokens: 260,
+      temperature: 0.78,
+      timeoutMs: PROVIDER_TIMEOUT_MS,
+      taskTag: "agent-analysis:speech",
+    });
+    const source = providerSourceFromId(output.cacheHitProvider ?? output.provider);
+    if (!source) return null;
+    return { text: output.text, source };
+  } catch (error) {
+    console.warn(
+      "[claw42] unified speech fallback",
+      error instanceof Error ? error.message : error,
+    );
+    return null;
   }
-
-  return null;
 }
 
 async function callPlainTextProvider(
@@ -1687,28 +1575,6 @@ async function callPlainTextProvider(
   }
 
   return { ...retry, text: retryContent };
-}
-
-const MECHANICAL_OUTPUT_PATTERNS = [
-  /作为\s*(?:Alpha|Beta|Gamma|[^\s，,。]{1,8}派)/i,
-  /首先/,
-  /其次/,
-  /综上所述/,
-  /值得注意的是/,
-];
-
-export function hasMechanicalOutput(text: string): boolean {
-  return MECHANICAL_OUTPUT_PATTERNS.some((pattern) => pattern.test(text));
-}
-
-export function antiMechanicalFallback(text: string, fallback: string): string {
-  return hasMechanicalOutput(text) ? fallback : text.trim();
-}
-
-export async function generateLlmText(
-  prompt: string,
-): Promise<{ text: string; source: ProviderSource } | null> {
-  return callTextProvider(prompt);
 }
 
 async function generateAgentMessageFromSignal(

@@ -1,5 +1,6 @@
 import { getCachedJson, setCachedJson } from "@/lib/cache/fileCache";
-import { antiMechanicalFallback, generateLlmText } from "@/lib/llmFallbackChain";
+import { generateText } from "@/lib/llm/generateText";
+import { antiMechanicalFallback } from "@/lib/llm/guardrails";
 import type { NewsItem } from "@/lib/types";
 
 export interface NewsAgentAnalysis {
@@ -41,8 +42,23 @@ export async function analyzeNewsForAgent(
     locale === "en_US"
       ? `Give one plain-English agent-style market note for this crypto headline. Use one sentence, no investment advice, include symbols if present.\n${news.title}`
       : `为下面加密新闻写一句 Agent 旁观分析，白话、短句、不要投资建议，保留币种符号。\n${news.title}`;
-  const result = await generateLlmText(prompt);
-  const summary = result ? antiMechanicalFallback(result.text, fallback).slice(0, 140) : fallback;
+  let summary = fallback;
+  let source: NewsAgentAnalysis["source"] = "fallback";
+  try {
+    const text = await generateText(prompt, {
+      taskTag: `news:agent-analysis:${locale}`,
+      temperature: 0.65,
+      maxTokens: 180,
+      cacheTTLSeconds: 6 * 60 * 60,
+      enableGuardrails: true,
+    });
+    summary = antiMechanicalFallback(text, fallback).slice(0, 140);
+    source = "llm";
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[news] agent analysis fallback", error);
+    }
+  }
 
   await setCachedJson(cacheKey(news, locale), {
     generatedAt: Date.now(),
@@ -53,7 +69,7 @@ export async function analyzeNewsForAgent(
     newsId: news.id,
     locale,
     summary,
-    source: result ? "llm" : "fallback",
+    source,
     generatedAt: Date.now(),
   };
 }
