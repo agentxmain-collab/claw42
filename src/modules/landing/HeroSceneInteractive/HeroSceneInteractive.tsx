@@ -86,6 +86,7 @@ export function HeroSceneInteractive() {
   const router = useRouter();
   const reduceMotion = useReducedMotion() ?? false;
   const stageRef = useRef<HTMLDivElement>(null);
+  const robotRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [heroCopied, setHeroCopied] = useState(false);
   const { coins, isLoading } = useTrendingCoins();
@@ -131,11 +132,11 @@ export function HeroSceneInteractive() {
   return (
     <section
       ref={stageRef}
-      className="relative w-full min-h-[800px] overflow-hidden bg-black pt-[72px] md:h-screen md:min-h-[760px] md:max-h-[920px] md:pt-[80px]"
+      className="relative min-h-[800px] w-full overflow-hidden bg-black pt-[72px] md:h-screen md:max-h-[920px] md:min-h-[760px] md:pt-[80px]"
       style={stageStyle}
     >
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
           backgroundPosition: "center bottom",
@@ -144,21 +145,21 @@ export function HeroSceneInteractive() {
         }}
       />
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             "linear-gradient(180deg, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.5) 12%, rgba(0,0,0,0.08) 34%, rgba(0,0,0,0.24) 62%, rgba(0,0,0,0.88) 100%)",
         }}
       />
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             "radial-gradient(ellipse 120% 84% at 50% 44%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.46) 78%, rgba(0,0,0,0.96) 100%)",
         }}
       />
       <motion.div
-        className="absolute inset-0 z-[8] pointer-events-none"
+        className="pointer-events-none absolute inset-0 z-[8]"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
           backgroundPosition: "center bottom",
@@ -179,6 +180,7 @@ export function HeroSceneInteractive() {
 
       <PedestalLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
       <RobotLayer
+        robotRef={robotRef}
         pose={pose}
         mouseX={mouseX}
         mouseY={mouseY}
@@ -192,7 +194,7 @@ export function HeroSceneInteractive() {
         reduceMotion={reduceMotion}
       />
 
-      <div className="absolute inset-0 z-[45] hidden pointer-events-none md:block">
+      <div className="pointer-events-none absolute inset-0 z-[45] hidden md:block">
         {coins.map((coin, index) => {
           const slotId = slotIds[index];
           return (
@@ -214,7 +216,7 @@ export function HeroSceneInteractive() {
         })}
       </div>
 
-      <div className="absolute left-1/2 top-[50%] z-[55] grid w-[min(330px,88vw)] -translate-x-1/2 grid-cols-2 justify-items-center gap-x-20 gap-y-12 pointer-events-none md:hidden">
+      <div className="pointer-events-none absolute left-1/2 top-[50%] z-[55] grid w-[min(330px,88vw)] -translate-x-1/2 grid-cols-2 justify-items-center gap-x-20 gap-y-12 md:hidden">
         {coins.map((coin) => (
           <div key={coin.id} className="pointer-events-auto">
             <TrendingCoinSlot
@@ -229,8 +231,8 @@ export function HeroSceneInteractive() {
 
       <HintArrow text={t.hero.hint.tapCoin} reduceMotion={reduceMotion} />
 
-      <div className="absolute inset-x-0 bottom-0 z-50 h-[46%] bg-gradient-to-t from-black via-black/74 to-transparent pointer-events-none" />
-      <div className="absolute left-1/2 bottom-[5%] z-[60] flex w-full max-w-3xl -translate-x-1/2 flex-col items-center px-6 text-center md:bottom-[7%]">
+      <div className="via-black/74 pointer-events-none absolute inset-x-0 bottom-0 z-50 h-[46%] bg-gradient-to-t from-black to-transparent" />
+      <div className="absolute bottom-[5%] left-1/2 z-[60] flex w-full max-w-3xl -translate-x-1/2 flex-col items-center px-6 text-center md:bottom-[7%]">
         <div className="flex flex-col items-center">
           <h1 className="mb-3 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-[44px] lg:text-[48px]">
             {t.hero.title}
@@ -242,7 +244,7 @@ export function HeroSceneInteractive() {
             {t.hero.hint.tapCoinMobile}
           </p>
         </div>
-        <div className="flex flex-col items-center justify-center gap-3 pointer-events-auto sm:flex-row">
+        <div className="pointer-events-auto flex flex-col items-center justify-center gap-3 sm:flex-row">
           <div className="relative">
             <motion.button
               type="button"
@@ -279,7 +281,7 @@ export function HeroSceneInteractive() {
             }
             whileHover={reduceMotion ? undefined : { scale: 1.04 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="inline-flex min-w-[9.25rem] items-center justify-center rounded-lg border border-[#62f0ff]/38 bg-[#05202a] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#09323f] md:text-base"
+            className="border-[#62f0ff]/38 inline-flex min-w-[9.25rem] items-center justify-center rounded-lg border bg-[#05202a] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#09323f] md:text-base"
           >
             {t.hero.ctaSecondary}
           </motion.a>

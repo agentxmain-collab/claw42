@@ -108,9 +108,7 @@ export function cleanRobotAnalysisLine(
 function uniqueUsableLines(lines: string[], locale: HeroSpeechLocale): string[] {
   return Array.from(
     new Set(
-      lines
-        .map((line) => cleanRobotAnalysisLine(line, locale))
-        .filter((line) => line.length >= 8),
+      lines.map((line) => cleanRobotAnalysisLine(line, locale)).filter((line) => line.length >= 8),
     ),
   );
 }
@@ -152,7 +150,10 @@ function signalBackedEntryLines(entry: HeroSpeechEntry): string[] {
   }
 
   if (entry.kind === "collective_event") {
-    return responseLinesWithContext([entry.primaryResponse, ...(entry.echoResponses ?? [])], symbols);
+    return responseLinesWithContext(
+      [entry.primaryResponse, ...(entry.echoResponses ?? [])],
+      symbols,
+    );
   }
 
   if (entry.kind === "focus_event") {
@@ -171,14 +172,16 @@ function formatSignedPercent(value: number): string {
 }
 
 function focusSupplementLines(data: HeroSpeechPayload): string[] {
-  return (data.focus ?? []).flatMap((item) => [
-    item.trigger?.description
-      ? lineWithSymbolContext(item.trigger.description, item.symbol ? [item.symbol] : [])
-      : undefined,
-    item.judgment && !/(没信号|信号不足|还没有足够|等待信号)/.test(item.judgment)
-      ? lineWithSymbolContext(item.judgment, item.symbol ? [item.symbol] : [])
-      : undefined,
-  ]).filter((content): content is string => Boolean(content));
+  return (data.focus ?? [])
+    .flatMap((item) => [
+      item.trigger?.description
+        ? lineWithSymbolContext(item.trigger.description, item.symbol ? [item.symbol] : [])
+        : undefined,
+      item.judgment && !/(没信号|信号不足|还没有足够|等待信号)/.test(item.judgment)
+        ? lineWithSymbolContext(item.judgment, item.symbol ? [item.symbol] : [])
+        : undefined,
+    ])
+    .filter((content): content is string => Boolean(content));
 }
 
 function poolSupplementLines(data: HeroSpeechPayload, locale: HeroSpeechLocale): string[] {
@@ -236,7 +239,10 @@ export function buildHeroSpeechLines(
     locale,
   );
   if (signalBackedLines.length > 0) {
-    return Array.from(new Set([...signalBackedLines, ...supplementLines(data, locale)])).slice(0, 5);
+    return Array.from(new Set([...signalBackedLines, ...supplementLines(data, locale)])).slice(
+      0,
+      5,
+    );
   }
 
   const streamLines = uniqueUsableLines(
@@ -251,9 +257,7 @@ export function buildHeroSpeechLines(
 }
 
 function cleanLinePool(lines: string[] | undefined): string[] {
-  return Array.from(
-    new Set((lines ?? []).map((line) => line.trim()).filter(Boolean)),
-  );
+  return Array.from(new Set((lines ?? []).map((line) => line.trim()).filter(Boolean)));
 }
 
 export function mergeHeroSpeechLinePools(
@@ -264,10 +268,7 @@ export function mergeHeroSpeechLinePools(
   const livePool = cleanLinePool(liveLines);
   if (!includeScripts) return livePool.length > 0 ? livePool : undefined;
 
-  const scriptPool = cleanLinePool(scriptLines).slice(
-    0,
-    Math.max(3, livePool.length || 3),
-  );
+  const scriptPool = cleanLinePool(scriptLines).slice(0, Math.max(3, livePool.length || 3));
 
   const merged: string[] = [];
   const maxLength = Math.max(livePool.length, scriptPool.length);

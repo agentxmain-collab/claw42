@@ -43,9 +43,11 @@ try {
     for (const route of routes) {
       const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
       const response = await page.goto(`${baseUrl}${route.path}`, {
-        waitUntil: "networkidle",
+        waitUntil: "domcontentloaded",
         timeout: 30_000,
       });
+      await page.waitForLoadState("load", { timeout: 15_000 }).catch(() => undefined);
+      await page.waitForTimeout(500);
 
       if (route.optional && response?.status() === 404) {
         await page.close();
@@ -77,10 +79,12 @@ try {
       const focusResults = await page.evaluate(() => {
         const elements = Array.from(
           document.querySelectorAll("a[href], button:not([disabled]), input:not([disabled])"),
-        ).filter((element) => {
-          const rect = element.getBoundingClientRect();
-          return rect.width > 0 && rect.height > 0;
-        }).slice(0, 20);
+        )
+          .filter((element) => {
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0;
+          })
+          .slice(0, 20);
 
         return elements.map((element, index) => {
           element.scrollIntoView({ block: "center", inline: "center" });
@@ -93,7 +97,9 @@ try {
           return {
             index,
             tag: element.tagName.toLowerCase(),
-            text: (element.textContent || element.getAttribute("aria-label") || "").trim().slice(0, 80),
+            text: (element.textContent || element.getAttribute("aria-label") || "")
+              .trim()
+              .slice(0, 80),
             visible,
           };
         });
@@ -138,11 +144,14 @@ try {
   printResults(results);
   const blockingCount = results.reduce(
     (total, result) =>
-      total + result.violations.filter((violation) => BLOCKING_IMPACTS.has(violation.impact ?? "")).length,
+      total +
+      result.violations.filter((violation) => BLOCKING_IMPACTS.has(violation.impact ?? "")).length,
     0,
   );
   const invisibleFocus = results.flatMap((result) =>
-    result.focusResults.filter((item) => !item.visible).map((item) => `${result.route.name}:${item.tag}:${item.text}`),
+    result.focusResults
+      .filter((item) => !item.visible)
+      .map((item) => `${result.route.name}:${item.tag}:${item.text}`),
   );
 
   if (invisibleFocus.length > 0) {
@@ -151,14 +160,21 @@ try {
   }
 
   if (blockingCount > 0) {
-    throw new Error(`Found ${blockingCount} critical/serious axe violation${blockingCount === 1 ? "" : "s"}.`);
+    throw new Error(
+      `Found ${blockingCount} critical/serious axe violation${blockingCount === 1 ? "" : "s"}.`,
+    );
   }
 } finally {
   await stopNext();
 }
 
 function startNext() {
-  const nextBin = path.join(rootDir, "node_modules", ".bin", process.platform === "win32" ? "next.cmd" : "next");
+  const nextBin = path.join(
+    rootDir,
+    "node_modules",
+    ".bin",
+    process.platform === "win32" ? "next.cmd" : "next",
+  );
   const child = spawn(nextBin, ["dev", "--hostname", "127.0.0.1", "--port", String(port)], {
     cwd: rootDir,
     env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" },
@@ -199,7 +215,9 @@ function printResults(results) {
   let total = 0;
   for (const result of results) {
     total += result.violations.length;
-    console.log(`\n${result.route.name} ${result.route.path}: ${result.violations.length} axe violation(s)`);
+    console.log(
+      `\n${result.route.name} ${result.route.path}: ${result.violations.length} axe violation(s)`,
+    );
     for (const violation of result.violations) {
       console.log(`  [${violation.impact ?? "unknown"}] ${violation.id}: ${violation.help}`);
       for (const node of violation.nodes.slice(0, 3)) {

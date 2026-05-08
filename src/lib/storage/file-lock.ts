@@ -16,7 +16,11 @@ const defaultStaleMs = 30_000;
  * The lock file stores pid/createdAt for diagnostics; stale locks are removed
  * after `staleMs`, and acquisition fails after `timeoutMs` instead of hanging.
  */
-export async function withFileLock<T>(lockPath: string, run: () => Promise<T>, options: FileLockOptions = {}): Promise<T> {
+export async function withFileLock<T>(
+  lockPath: string,
+  run: () => Promise<T>,
+  options: FileLockOptions = {},
+): Promise<T> {
   const release = await acquireFileLock(lockPath, options);
   try {
     return await run();
@@ -36,7 +40,9 @@ async function acquireFileLock(lockPath: string, options: FileLockOptions) {
   while (Date.now() - startedAt <= timeoutMs) {
     try {
       const handle = await open(lockPath, "wx");
-      await handle.writeFile(JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() }));
+      await handle.writeFile(
+        JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() }),
+      );
       return async () => {
         await handle.close();
         await rm(lockPath, { force: true });

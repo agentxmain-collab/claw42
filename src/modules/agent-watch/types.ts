@@ -1,12 +1,9 @@
+import type { ChatThread, NewsDebate } from "@/lib/types";
+
 export type CoinSymbol = "BTC" | "ETH" | "SOL" | "USDT";
 export type AgentId = "alpha" | "beta" | "gamma";
-export type AgentStatus = "thinking" | "speaking" | "idle";
-export type AnalysisSource =
-  | "minimax"
-  | "deepseek"
-  | "claude"
-  | "cache"
-  | "static-fallback";
+export type AgentStatus = "thinking" | "speaking" | "alert" | "idle";
+export type AnalysisSource = "minimax" | "deepseek" | "claude" | "cache" | "static-fallback";
 export type ProviderSource = "minimax" | "deepseek" | "claude";
 
 export interface TickerData {
@@ -144,6 +141,7 @@ export interface StreamResponse {
   agentId: AgentId;
   content: string;
   symbol?: string;
+  marketDataFetchedAt?: number;
 }
 
 export interface AgentMessage {
@@ -155,6 +153,7 @@ export interface AgentMessage {
   symbol?: string;
   symbols?: string[];
   triggerSignalId: string;
+  marketDataFetchedAt?: number;
 }
 
 export interface CollectiveEvent {
@@ -208,6 +207,7 @@ export interface WatchUpdateEntry {
   agentId?: AgentId;
   symbol?: string;
   symbols?: string[];
+  marketDataFetchedAt?: number;
   severity: "neutral" | "watch";
 }
 
@@ -221,7 +221,22 @@ export interface AgentDiscussionEntry {
   symbol?: string;
   symbols: string[];
   responses: StreamResponse[];
+  marketDataFetchedAt?: number;
   severity: "neutral" | "watch";
+}
+
+export interface NewsDebateEntry {
+  kind: "news_debate";
+  id: string;
+  ts: number;
+  debate: NewsDebate;
+}
+
+export interface ChatThreadEntry {
+  kind: "chat_thread";
+  id: string;
+  ts: number;
+  thread: ChatThread;
 }
 
 export type StreamEntry =
@@ -230,7 +245,9 @@ export type StreamEntry =
   | FocusEvent
   | ConflictEvent
   | WatchUpdateEntry
-  | AgentDiscussionEntry;
+  | AgentDiscussionEntry
+  | NewsDebateEntry
+  | ChatThreadEntry;
 
 export type CoinComments = Record<CoinSymbol, Record<AgentId, string>>;
 
@@ -245,6 +262,7 @@ export interface AgentAnalysisPayload {
   marketSource: MarketDataSource;
   stream: StreamMessage[];
   streamEntries?: StreamEntry[];
+  newsDebates?: NewsDebate[];
   heroBubbles: string[];
   coinComments: CoinComments;
   degraded?: boolean;

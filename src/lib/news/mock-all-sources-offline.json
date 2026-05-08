@@ -1,0 +1,16 @@
+{
+  "scenario": "all_sources_offline",
+  "expectedServedBy": "standby_mock",
+  "items": [
+    {
+      "id": "offline-mock-btc-market",
+      "title": "BTC volatility rises while broader crypto liquidity thins",
+      "url": "https://claw42.ai/mock/news/offline-btc-market",
+      "source": "Claw 42 Offline Mock",
+      "sourceDomain": "claw42.ai",
+      "currencies": ["BTC"],
+      "sentiment": "neutral",
+      "publishedAt": 1762300800000
+    }
+  ]
+}

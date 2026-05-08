@@ -1,10 +1,27 @@
 import type { LocalizedText, MarketDirection } from "@/types/common";
 import type { TimelineItem } from "@/types/news";
 
-export type EventType = "regulation" | "etf" | "macro" | "exchange" | "project" | "onchain" | "market_move" | "narrative";
+export type EventType =
+  | "regulation"
+  | "etf"
+  | "macro"
+  | "exchange"
+  | "project"
+  | "onchain"
+  | "market_move"
+  | "narrative";
 export type EventStatus = "confirmed" | "developing" | "watching" | "expired";
 export type ImpactLevel = "critical" | "high" | "medium" | "low";
-export type SignalTrack = "btc_eth" | "altcoin" | "defi" | "rwa" | "stablecoin" | "l2" | "ai" | "meme" | "infrastructure";
+export type SignalTrack =
+  | "btc_eth"
+  | "altcoin"
+  | "defi"
+  | "rwa"
+  | "stablecoin"
+  | "l2"
+  | "ai"
+  | "meme"
+  | "infrastructure";
 export type EvidenceKind = "news" | "market" | "macro" | "onchain" | "social";
 export type ActionKind = "trade" | "alert" | "campaign" | "topic" | "external_api";
 

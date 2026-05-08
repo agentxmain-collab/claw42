@@ -1,7 +1,13 @@
 import type { MacroItem } from "@/types/calendar";
 import type { MarketDirection, Severity } from "@/types/common";
 import type { NewsItem, TimelineItem } from "@/types/news";
-import type { EventStatus, EventType, EvidencePiece, PriceSnapshot, SignalTrack } from "@/types/signal";
+import type {
+  EventStatus,
+  EventType,
+  EvidencePiece,
+  PriceSnapshot,
+  SignalTrack,
+} from "@/types/signal";
 
 export type RawCandidate = {
   id: string;

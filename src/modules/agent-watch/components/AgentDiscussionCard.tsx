@@ -36,7 +36,7 @@ export function AgentDiscussionCard({ entry }: { entry: AgentDiscussionEntry }) 
         <span className="font-mono text-xs text-white/35">{timeLabel}</span>
       </div>
 
-      <p className="mt-3 text-sm font-semibold leading-relaxed text-white/72">{entry.summary}</p>
+      <p className="text-white/72 mt-3 text-sm font-semibold leading-relaxed">{entry.summary}</p>
 
       <div className="mt-4 grid gap-3">
         {entry.responses.map((response) => {
@@ -56,7 +56,7 @@ export function AgentDiscussionCard({ entry }: { entry: AgentDiscussionEntry }) 
                 <div className="text-xs font-bold" style={{ color: token.primary }}>
                   {meta.name}
                 </div>
-                <p className="mt-1 text-sm font-semibold leading-relaxed text-white/82">
+                <p className="text-white/82 mt-1 text-sm font-semibold leading-relaxed">
                   {response.content}
                 </p>
               </div>

@@ -153,7 +153,13 @@ Alpha · 突破派
 ```ts
 type WatchFeedItem =
   | { type: "agent"; agentId: AgentId; content: string; timestamp: number }
-  | { type: "market-event"; symbol: string; severity: "info" | "hot" | "risk"; content: string; timestamp: number };
+  | {
+      type: "market-event";
+      symbol: string;
+      severity: "info" | "hot" | "risk";
+      content: string;
+      timestamp: number;
+    };
 ```
 
 价值：页面更像实时看盘室，而不是聊天窗口。
@@ -164,13 +170,13 @@ type WatchFeedItem =
 
 ### 5.1 刷新节奏
 
-| 层级 | 刷新 | 成本 | 说明 |
-|---|---:|---:|---|
-| Ticker | 30s | 低 | CoinGecko + cache |
-| Market signals | 60s | 低 | 本地计算 |
-| Agent LLM | 3-5min | 中 | DeepSeek primary |
-| Event-trigger LLM | 最小间隔 90s | 中 | 只在强信号触发 |
-| History | 初次加载 + 新内容提示 | 低 | 后端 buffer |
+| 层级              |                  刷新 | 成本 | 说明              |
+| ----------------- | --------------------: | ---: | ----------------- |
+| Ticker            |                   30s |   低 | CoinGecko + cache |
+| Market signals    |                   60s |   低 | 本地计算          |
+| Agent LLM         |                3-5min |   中 | DeepSeek primary  |
+| Event-trigger LLM |          最小间隔 90s |   中 | 只在强信号触发    |
+| History           | 初次加载 + 新内容提示 |   低 | 后端 buffer       |
 
 ### 5.2 LLM 不应承担的工作
 
@@ -278,4 +284,3 @@ Part F: 对 Task 09 的落地顺序建议
 4. 最后再考虑事件触发 LLM。
 
 原因：用户价值感来自“持续有东西发生”，不一定来自“LLM 更频繁说话”。
-

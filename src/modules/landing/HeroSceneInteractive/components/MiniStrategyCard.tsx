@@ -8,12 +8,12 @@ interface MiniStrategyCardProps {
 
 export function MiniStrategyCard({ strategy, t }: MiniStrategyCardProps) {
   return (
-    <div className="rounded-md border border-[#62f0ff]/28 bg-[#071a22]/86 p-3">
+    <div className="border-[#62f0ff]/28 bg-[#071a22]/86 rounded-md border p-3">
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-semibold text-white">
           {t.hero.miniPlayer.strategyDirection[strategy.direction]}
         </span>
-        <span className="rounded-full border border-white/12 bg-white/[0.07] px-2 py-0.5 text-[11px] text-[#f9f4ff]">
+        <span className="border-white/12 rounded-full border bg-white/[0.07] px-2 py-0.5 text-[11px] text-[#f9f4ff]">
           {t.hero.miniPlayer.confidence}: {strategy.confidence}%
         </span>
       </div>

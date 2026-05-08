@@ -1,6 +1,14 @@
-import { newsItems as mockNewsItems, priceSnapshots as mockPriceSnapshots } from "@/lib/data/mock-db";
+import {
+  newsItems as mockNewsItems,
+  priceSnapshots as mockPriceSnapshots,
+} from "@/lib/data/mock-db";
 import { fetchCryptoComparePriceSnapshots } from "@/lib/data-sources/cryptocompare-provider";
-import { isDataSourceInCooldown, recordDataSourceError, recordDataSourceFallback, recordDataSourceSuccess } from "@/lib/data-sources/health";
+import {
+  isDataSourceInCooldown,
+  recordDataSourceError,
+  recordDataSourceFallback,
+  recordDataSourceSuccess,
+} from "@/lib/data-sources/health";
 import { fetchRssNewsItems } from "@/lib/data-sources/news-provider";
 import { getNewsTranslatorFromEnv } from "@/lib/data-sources/news-translator";
 import { fetchCoinGeckoPriceSnapshots } from "@/lib/data-sources/price-provider";
@@ -36,7 +44,9 @@ export type SignalDataSourceResult = {
   warnings: string[];
 };
 
-export async function loadSignalDataSources(options: SignalDataSourceOptions = {}): Promise<SignalDataSourceResult> {
+export async function loadSignalDataSources(
+  options: SignalDataSourceOptions = {},
+): Promise<SignalDataSourceResult> {
   const startedAt = Date.now();
   const env = options.env ?? process.env;
   const mode = options.mode ?? normalizeMode(env.SIGNAL_DATA_MODE);
@@ -46,29 +56,37 @@ export async function loadSignalDataSources(options: SignalDataSourceOptions = {
       mode,
       priceSnapshots: mockPriceSnapshots,
       newsItems: mockNewsItems,
-      warnings: []
+      warnings: [],
     };
   }
 
-  const priceProvider = options.priceProvider ?? (() => fetchPriceSnapshotsWithFallback({
-    coinGeckoProvider: () => fetchCoinGeckoPriceSnapshots({
-      baseUrl: env.SIGNAL_PRICE_API_BASE_URL,
-      apiKey: env.SIGNAL_PRICE_API_KEY,
-      timeoutMs: parsePositiveInteger(env.SIGNAL_DATA_TIMEOUT_MS, 8_000)
-    }),
-    cryptoCompareProvider: () => fetchCryptoComparePriceSnapshots({
-      baseUrl: env.SIGNAL_CRYPTOCOMPARE_API_BASE_URL,
-      apiKey: env.SIGNAL_CRYPTOCOMPARE_API_KEY,
-      timeoutMs: parsePositiveInteger(env.SIGNAL_DATA_TIMEOUT_MS, 8_000)
-    }),
-    stateDir: options.dataSourceStateDir ?? env.HOTPURSUIT_DATA_SOURCE_STATE_DIR,
-    cooldownMs: parsePositiveInteger(env.HOTPURSUIT_DATA_SOURCE_COOLDOWN_MS, 60_000)
-  }));
-  const newsProvider = options.newsProvider ?? (() => fetchRssNewsItems({
-    url: env.SIGNAL_NEWS_RSS_URL,
-    timeoutMs: parsePositiveInteger(env.SIGNAL_DATA_TIMEOUT_MS, 8_000),
-    translator: getNewsTranslatorFromEnv(env)
-  }));
+  const priceProvider =
+    options.priceProvider ??
+    (() =>
+      fetchPriceSnapshotsWithFallback({
+        coinGeckoProvider: () =>
+          fetchCoinGeckoPriceSnapshots({
+            baseUrl: env.SIGNAL_PRICE_API_BASE_URL,
+            apiKey: env.SIGNAL_PRICE_API_KEY,
+            timeoutMs: parsePositiveInteger(env.SIGNAL_DATA_TIMEOUT_MS, 8_000),
+          }),
+        cryptoCompareProvider: () =>
+          fetchCryptoComparePriceSnapshots({
+            baseUrl: env.SIGNAL_CRYPTOCOMPARE_API_BASE_URL,
+            apiKey: env.SIGNAL_CRYPTOCOMPARE_API_KEY,
+            timeoutMs: parsePositiveInteger(env.SIGNAL_DATA_TIMEOUT_MS, 8_000),
+          }),
+        stateDir: options.dataSourceStateDir ?? env.HOTPURSUIT_DATA_SOURCE_STATE_DIR,
+        cooldownMs: parsePositiveInteger(env.HOTPURSUIT_DATA_SOURCE_COOLDOWN_MS, 60_000),
+      }));
+  const newsProvider =
+    options.newsProvider ??
+    (() =>
+      fetchRssNewsItems({
+        url: env.SIGNAL_NEWS_RSS_URL,
+        timeoutMs: parsePositiveInteger(env.SIGNAL_DATA_TIMEOUT_MS, 8_000),
+        translator: getNewsTranslatorFromEnv(env),
+      }));
 
   const [priceResult, newsResult] = await Promise.allSettled([priceProvider(), newsProvider()]);
   const warnings: string[] = [];
@@ -80,7 +98,7 @@ export async function loadSignalDataSources(options: SignalDataSourceOptions = {
       mode,
       priceSnapshots: livePrices,
       newsItems: liveNews,
-      warnings
+      warnings,
     };
     await recordDataSourceMetric(result, startedAt, options.metricsStateDir);
     return result;
@@ -90,7 +108,7 @@ export async function loadSignalDataSources(options: SignalDataSourceOptions = {
     mode,
     priceSnapshots: mergePriceSnapshots(livePrices, mockPriceSnapshots),
     newsItems: mergeNewsItems(liveNews, mockNewsItems),
-    warnings
+    warnings,
   };
   await recordDataSourceMetric(result, startedAt, options.metricsStateDir);
   return result;
@@ -98,7 +116,8 @@ export async function loadSignalDataSources(options: SignalDataSourceOptions = {
 
 export async function fetchPriceSnapshotsWithFallback(options: PriceFallbackOptions = {}) {
   const coinGeckoProvider = options.coinGeckoProvider ?? (() => fetchCoinGeckoPriceSnapshots());
-  const cryptoCompareProvider = options.cryptoCompareProvider ?? (() => fetchCryptoComparePriceSnapshots());
+  const cryptoCompareProvider =
+    options.cryptoCompareProvider ?? (() => fetchCryptoComparePriceSnapshots());
   const healthOptions = { stateDir: options.stateDir, now: options.now };
 
   if (!(await isDataSourceInCooldown("coingecko", healthOptions))) {
@@ -110,7 +129,10 @@ export async function fetchPriceSnapshotsWithFallback(options: PriceFallbackOpti
       }
       throw new Error("coingecko returned no prices");
     } catch (error) {
-      await recordDataSourceError("coingecko", error, { ...healthOptions, cooldownMs: options.cooldownMs });
+      await recordDataSourceError("coingecko", error, {
+        ...healthOptions,
+        cooldownMs: options.cooldownMs,
+      });
       await recordDataSourceFallback("coingecko", healthOptions);
       // CryptoCompare is a network fallback when CoinGecko is unavailable.
     }
@@ -158,7 +180,11 @@ function errorMessage(value: unknown) {
   return value instanceof Error ? value.message : String(value);
 }
 
-async function recordDataSourceMetric(result: SignalDataSourceResult, startedAt: number, stateDir?: string) {
+async function recordDataSourceMetric(
+  result: SignalDataSourceResult,
+  startedAt: number,
+  stateDir?: string,
+) {
   if (!stateDir) return;
   try {
     await appendJsonLine(`${stateDir.replace(/\/+$/, "")}/data-source-load.jsonl`, {
@@ -171,9 +197,9 @@ async function recordDataSourceMetric(result: SignalDataSourceResult, startedAt:
         warnings: result.warnings,
         priceSources: Array.from(new Set(result.priceSnapshots.map((item) => item.source))),
         fallbackUsed: result.priceSnapshots.some((item) => item.source === "cryptocompare"),
-        latencyMs: Date.now() - startedAt
+        latencyMs: Date.now() - startedAt,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {

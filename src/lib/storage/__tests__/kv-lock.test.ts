@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { LockBusyError, __kvLockTestUtils, releaseLock, tryAcquireLock, withLock } from "@/lib/storage/kv-lock";
+import {
+  LockBusyError,
+  __kvLockTestUtils,
+  releaseLock,
+  tryAcquireLock,
+  withLock,
+} from "@/lib/storage/kv-lock";
 
 type SetOptions = { nx?: boolean; px?: number };
 type Entry = { value: string; expiresAt: number };
@@ -14,7 +20,7 @@ const mocks = vi.hoisted(() => ({
       return 1;
     }
     return 0;
-  })
+  }),
 }));
 
 vi.mock("@vercel/kv", () => ({
@@ -30,8 +36,8 @@ vi.mock("@vercel/kv", () => ({
       const existed = store.delete(key);
       return existed ? 1 : 0;
     }),
-    eval: mocks.eval
-  }
+    eval: mocks.eval,
+  },
 }));
 
 describe("kv-lock", () => {
@@ -105,9 +111,11 @@ describe("kv-lock", () => {
   });
 
   test("withLock releases when the wrapped function throws", async () => {
-    await expect(withLock("throwing", async () => {
-      throw new Error("boom");
-    })).rejects.toThrow("boom");
+    await expect(
+      withLock("throwing", async () => {
+        throw new Error("boom");
+      }),
+    ).rejects.toThrow("boom");
 
     await expect(tryAcquireLock("throwing")).resolves.not.toBeNull();
   });
@@ -115,7 +123,9 @@ describe("kv-lock", () => {
   test("withLock throws LockBusyError when wait window expires", async () => {
     await tryAcquireLock("busy");
 
-    await expect(withLock("busy", async () => "never", { waitMs: 10 })).rejects.toBeInstanceOf(LockBusyError);
+    await expect(withLock("busy", async () => "never", { waitMs: 10 })).rejects.toBeInstanceOf(
+      LockBusyError,
+    );
   });
 
   test("in-memory fallback works when KV env is missing", async () => {

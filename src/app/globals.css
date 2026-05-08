@@ -5,8 +5,14 @@
 :root {
   --brand-purple: #6c4fff;
   --brand-lime: #d1ff55;
-  --font-stack: var(--font-inter), var(--font-noto-sc), -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --coinw-brand-hex: #7650ff;
+  --coinw-brand-border-soft: rgba(118, 80, 255, 0.35);
+  --coinw-brand-border-strong: rgba(118, 80, 255, 0.6);
+  --coinw-brand-glow-soft: rgba(118, 80, 255, 0.18);
+  --coinw-brand-glow-strong: rgba(118, 80, 255, 0.32);
+  --font-stack:
+    var(--font-inter), var(--font-noto-sc), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 }
 
 html {
@@ -388,7 +394,9 @@ textarea:focus-visible,
   border: 1px solid rgba(255, 255, 255, 0.06);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.35s ease, border-color 0.35s ease;
+  transition:
+    opacity 0.35s ease,
+    border-color 0.35s ease;
 }
 
 .card-glow::after {
@@ -396,36 +404,47 @@ textarea:focus-visible,
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  border: 1px solid rgba(96, 186, 255, 0.65);
+  border: 1px solid var(--coinw-brand-border-soft);
   opacity: 0;
   pointer-events: none;
   box-shadow:
-    0 0 0 1px rgba(96, 186, 255, 0.24),
-    0 0 12px rgba(74, 136, 255, 0.28),
-    0 0 22px rgba(74, 136, 255, 0.16);
-  transition: opacity 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+    0 0 0 1px var(--coinw-brand-glow-soft),
+    0 0 12px var(--coinw-brand-glow-strong),
+    0 0 22px var(--coinw-brand-glow-soft);
+  transition:
+    opacity 0.35s ease,
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
 }
 
 .card-glow:hover {
-  border-color: rgba(102, 188, 255, 0.18);
+  border-color: var(--coinw-brand-border-soft);
   box-shadow:
     0 26px 60px -30px rgba(0, 0, 0, 0.92),
-    0 18px 48px -28px rgba(74, 136, 255, 0.36),
-    0 0 22px rgba(74, 136, 255, 0.08);
+    0 18px 48px -28px var(--coinw-brand-glow-strong),
+    0 0 22px var(--coinw-brand-glow-soft);
 }
 
 .card-glow:hover::before {
-  border-color: rgba(102, 188, 255, 0.28);
+  border-color: var(--coinw-brand-border-strong);
   opacity: 1;
 }
 
 .card-glow:hover::after {
   opacity: 1;
-  border-color: rgba(108, 196, 255, 0.78);
+  border-color: var(--coinw-brand-border-strong);
   box-shadow:
-    0 0 0 1px rgba(96, 186, 255, 0.3),
-    0 0 16px rgba(74, 136, 255, 0.34),
-    0 0 30px rgba(74, 136, 255, 0.2);
+    0 0 0 1px var(--coinw-brand-border-soft),
+    0 0 16px var(--coinw-brand-glow-strong),
+    0 0 30px var(--coinw-brand-glow-strong);
+}
+
+@media (hover: none) {
+  .card-glow:hover {
+    box-shadow:
+      0 18px 40px -24px rgba(0, 0, 0, 0.88),
+      0 10px 28px -18px var(--coinw-brand-glow-strong);
+  }
 }
 
 /* Scenario Claw 42 Agent card frame adapted from Uiverse reference provided by Dan. */
@@ -530,14 +549,7 @@ textarea:focus-visible,
   transform: translate(-50%, -50%) rotate(60deg);
   width: 999px;
   height: 999px;
-  background-image: conic-gradient(
-    #000,
-    #402fb5 5%,
-    #000 38%,
-    #000 50%,
-    #cf30aa 60%,
-    #000 87%
-  );
+  background-image: conic-gradient(#000, #402fb5 5%, #000 38%, #000 50%, #cf30aa 60%, #000 87%);
 }
 
 .scenario-agent-frame:hover > .scenario-agent-frame-dark::before {
@@ -567,7 +579,7 @@ textarea:focus-visible,
 
 /* Terminal glow */
 .terminal-glow {
-  box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.20);
+  box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.2);
 }
 
 /* Quick start terminal adapted from Uiverse reference provided by Dan. */
@@ -780,18 +792,12 @@ textarea:focus-visible,
 @keyframes claw42BlueBreathe {
   0%,
   100% {
-    filter:
-      saturate(1.15) brightness(1.08)
-      drop-shadow(0 0 5px rgba(74, 136, 255, 0.55))
-      drop-shadow(0 0 14px rgba(74, 136, 255, 0.4))
-      drop-shadow(0 0 30px rgba(74, 136, 255, 0.2));
+    filter: saturate(1.15) brightness(1.08) drop-shadow(0 0 5px rgba(74, 136, 255, 0.55))
+      drop-shadow(0 0 14px rgba(74, 136, 255, 0.4)) drop-shadow(0 0 30px rgba(74, 136, 255, 0.2));
   }
   50% {
-    filter:
-      saturate(1.3) brightness(1.2)
-      drop-shadow(0 0 12px rgba(74, 136, 255, 1))
-      drop-shadow(0 0 26px rgba(74, 136, 255, 0.75))
-      drop-shadow(0 0 48px rgba(74, 136, 255, 0.4));
+    filter: saturate(1.3) brightness(1.2) drop-shadow(0 0 12px rgba(74, 136, 255, 1))
+      drop-shadow(0 0 26px rgba(74, 136, 255, 0.75)) drop-shadow(0 0 48px rgba(74, 136, 255, 0.4));
   }
 }
 
@@ -886,7 +892,7 @@ textarea:focus-visible,
   .card-glow:hover {
     box-shadow:
       0 18px 40px -24px rgba(0, 0, 0, 0.88),
-      0 10px 28px -18px rgba(74, 136, 255, 0.32);
+      0 10px 28px -18px var(--coinw-brand-glow-strong);
   }
 
   .card-glow:hover::before {
@@ -899,11 +905,8 @@ textarea:focus-visible,
 
   .claw42-blue-breathe {
     animation: none;
-    filter:
-      saturate(1.2) brightness(1.12)
-      drop-shadow(0 0 8px rgba(74, 136, 255, 0.75))
-      drop-shadow(0 0 20px rgba(74, 136, 255, 0.5))
-      drop-shadow(0 0 40px rgba(74, 136, 255, 0.25));
+    filter: saturate(1.2) brightness(1.12) drop-shadow(0 0 8px rgba(74, 136, 255, 0.75))
+      drop-shadow(0 0 20px rgba(74, 136, 255, 0.5)) drop-shadow(0 0 40px rgba(74, 136, 255, 0.25));
   }
 
   .animate-typing-dot-1,
@@ -931,7 +934,7 @@ textarea:focus-visible,
 
 /* Copy button tooltip */
 .copy-btn::after {
-  content: 'Copied!';
+  content: "Copied!";
   position: absolute;
   top: -30px;
   left: 50%;

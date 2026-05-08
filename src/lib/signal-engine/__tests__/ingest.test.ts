@@ -6,8 +6,17 @@ describe("signal ingest", () => {
   test("ingests news into raw candidates with market evidence when price moves", () => {
     const [candidate] = ingestCandidates({
       newsItems: [makeNewsItem()],
-      priceSnapshots: [{ symbol: "BTC", price: 70000, change24h: 5.2, volumeChange24h: 40, source: "test-market", updatedAt: "2026-04-19T08:31:00.000Z" }],
-      calendarItems: []
+      priceSnapshots: [
+        {
+          symbol: "BTC",
+          price: 70000,
+          change24h: 5.2,
+          volumeChange24h: 40,
+          source: "test-market",
+          updatedAt: "2026-04-19T08:31:00.000Z",
+        },
+      ],
+      calendarItems: [],
     });
 
     expect(candidate.id).toBe("sig-btc-etf-flow");
@@ -17,9 +26,11 @@ describe("signal ingest", () => {
 
   test("falls back to inferred MARKET candidate when impacted assets are absent", () => {
     const [candidate] = ingestCandidates({
-      newsItems: [makeNewsItem({ impactedAssets: [], title: { zh: "宏观风险事件", en: "Macro risk event" } })],
+      newsItems: [
+        makeNewsItem({ impactedAssets: [], title: { zh: "宏观风险事件", en: "Macro risk event" } }),
+      ],
       priceSnapshots: [],
-      calendarItems: []
+      calendarItems: [],
     });
 
     expect(candidate.primaryAsset).toBe("MARKET");
@@ -32,9 +43,25 @@ describe("signal ingest", () => {
       newsItems: [],
       priceSnapshots: [],
       calendarItems: [
-        { id: "low", range: "today", name: { zh: "低影响", en: "Low impact" }, datetime: "2026-04-19T08:00:00.000Z", forecast: "1", actual: "--", impact: "low" },
-        { id: "cpi", range: "today", name: { zh: "CPI", en: "CPI" }, datetime: "2026-04-19T09:00:00.000Z", forecast: "2.9%", actual: "--", impact: "high" }
-      ]
+        {
+          id: "low",
+          range: "today",
+          name: { zh: "低影响", en: "Low impact" },
+          datetime: "2026-04-19T08:00:00.000Z",
+          forecast: "1",
+          actual: "--",
+          impact: "low",
+        },
+        {
+          id: "cpi",
+          range: "today",
+          name: { zh: "CPI", en: "CPI" },
+          datetime: "2026-04-19T09:00:00.000Z",
+          forecast: "2.9%",
+          actual: "--",
+          impact: "high",
+        },
+      ],
     });
 
     expect(candidates).toHaveLength(1);

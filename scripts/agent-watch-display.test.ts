@@ -17,15 +17,16 @@ import {
   directorModeForVisit,
   rememberDirectorEntries,
 } from "../src/modules/agent-watch/utils/watchSessionDirector";
-import {
-  agentWatchRedirectPath,
-  resolveAgentWatchLocale,
-} from "../src/modules/agent-watch/locale";
+import { agentWatchRedirectPath, resolveAgentWatchLocale } from "../src/modules/agent-watch/locale";
 import {
   buildHeroSpeechLines,
   cleanRobotAnalysisLine,
   mergeHeroSpeechLinePools,
 } from "../src/modules/landing/HeroScene/heroSpeechLines";
+import {
+  buildLoadingChatThread,
+  buildStreamChatThread,
+} from "../src/modules/agent-watch/utils/streamChatThreads";
 import type {
   AgentFocus,
   AgentMessage,
@@ -50,9 +51,7 @@ const pool: CoinPoolPayload = {
     { symbol: "ETH", price: 2_250.11, change24h: -2.67, category: "majors" },
     { symbol: "SOL", price: 82.88, change24h: -1.97, category: "majors" },
   ],
-  trending: [
-    { symbol: "DOGE", price: 0.18, change24h: 6.4, category: "trending" },
-  ],
+  trending: [{ symbol: "DOGE", price: 0.18, change24h: 6.4, category: "trending" }],
   opportunity: [
     { symbol: "AI", price: 0.12, change24h: -41.1, category: "opportunity" },
     { symbol: "BIO", price: 0.22, change24h: 20.1, category: "opportunity" },
@@ -127,7 +126,10 @@ const highEvent: FocusEvent = {
 assert.equal(formatCoinSymbol("btc"), "$BTC");
 assert.equal(formatCoinSymbol("$eth"), "$ETH");
 assert.equal(formatCoinSymbol("—"), "—");
-assert.equal(prefixLeadingCoinSymbol("AI 24h -41.1%（机会区异动）", "AI"), "$AI 24h -41.1%（机会区异动）");
+assert.equal(
+  prefixLeadingCoinSymbol("AI 24h -41.1%（机会区异动）", "AI"),
+  "$AI 24h -41.1%（机会区异动）",
+);
 assert.equal(prefixLeadingCoinSymbol("AI Agent 正在分析", "BTC"), "AI Agent 正在分析");
 assert.equal(prefixLeadingCoinSymbol("AI Agent 正在分析", "AI"), "AI Agent 正在分析");
 assert.equal(resolveAgentWatchLocale("zh_CN"), "zh_CN");
@@ -242,7 +244,11 @@ assert.deepEqual(mixedLocaleHeroLines?.slice(0, 2), [
   "42 is from The Hitchhiker's Guide to the Galaxy — the ultimate answer to the universe.",
 ]);
 assert.equal(
-  mergeHeroSpeechLinePools(["$BTC 24h +1.3%; trend needs resonance"], ["Every candle leaves a clue."], false)?.length,
+  mergeHeroSpeechLinePools(
+    ["$BTC 24h +1.3%; trend needs resonance"],
+    ["Every candle leaves a clue."],
+    false,
+  )?.length,
   1,
 );
 
@@ -260,7 +266,7 @@ assert.equal(discussion.responses.length, 3);
 assert.match(discussion.topic, /\$DOGE|\$BTC|\$AI/);
 
 const heartbeat = buildWatchSupplementalEntry({
-  now: 1_714_000_210_000,
+  now: 1_714_000_240_000,
   pool,
   focus,
   signals: [],
@@ -274,7 +280,7 @@ assert.match(heartbeat.content, /巡检|复核|扫描/);
 assert.match(heartbeat.content, /\$DOGE|\$BTC|\$AI/);
 
 const heartbeatDuringPriority = buildWatchSupplementalEntry({
-  now: 1_714_000_210_000,
+  now: 1_714_000_240_000,
   pool,
   focus,
   signals: [],
@@ -285,23 +291,63 @@ assert.ok(heartbeatDuringPriority);
 assert.equal(heartbeatDuringPriority.kind, "watch_update");
 assert.equal(heartbeatDuringPriority.updateType, "agent_heartbeat");
 
+const loadingThread = buildLoadingChatThread("zh_CN", 1_714_000_150_000);
+assert.equal(loadingThread.id, "boot:zh_CN");
+assert.equal(loadingThread.messages.length, 3);
+assert.deepEqual(
+  loadingThread.messages.map((message) => message.agentId),
+  ["beta", "alpha", "gamma"],
+);
+assert.ok(loadingThread.messages.every((message) => message.content.length > 0));
+
 const discussionChat = buildStreamChatMessages(discussion, pool);
 assert.equal(discussionChat.length, 3);
-assert.deepEqual(discussionChat.map((item) => item.agentId), ["alpha", "beta", "gamma"]);
+assert.deepEqual(
+  discussionChat.map((item) => item.agentId),
+  ["alpha", "beta", "gamma"],
+);
 assert.ok(discussionChat.every((item) => item.tag === "三方会诊"));
-assert.ok(discussionChat.every((item) => item.points.length >= 3));
 assert.deepEqual(
   discussionChat.map((item) => ({
     agentId: item.agentId,
     symbol: item.symbols[0],
-    current: item.points.find((point) => point.label === "现价")?.value,
   })),
   [
-    { agentId: "alpha", symbol: "DOGE", current: "0.18" },
-    { agentId: "beta", symbol: "BTC", current: "75,818" },
-    { agentId: "gamma", symbol: "AI", current: "0.12" },
+    { agentId: "alpha", symbol: "DOGE" },
+    { agentId: "beta", symbol: "BTC" },
+    { agentId: "gamma", symbol: "AI" },
   ],
 );
+
+const discussionThread = buildStreamChatThread(discussion, pool);
+assert.ok(discussionThread);
+assert.equal(discussionThread.messages.length, 3);
+assert.equal(discussionThread.messages[1]?.replyTo, discussionThread.messages[0]?.id);
+assert.equal(discussionThread.messages[1]?.mentioning, discussionThread.messages[0]?.agentId);
+assert.ok((discussionThread.messages[1]?.citedQuote?.length ?? 0) >= 5);
+assert.ok(
+  discussionThread.messages.every(
+    (message) => !/^\s*(破位|趋势|极端|回归|复核)[:：]/.test(message.content),
+  ),
+);
+assert.match(discussionThread.messages[1]!.content, /Alpha|老 K|你|这个点|先/);
+const discussionThreadAfterTickerRefresh = buildStreamChatThread(
+  discussion,
+  { ...pool, ts: pool.ts + 10_000 },
+  "zh_CN",
+);
+assert.deepEqual(
+  discussionThreadAfterTickerRefresh?.messages.map((message) => message.id),
+  discussionThread.messages.map((message) => message.id),
+);
+
+const heartbeatThread = buildStreamChatThread(heartbeat, pool);
+assert.ok(heartbeatThread);
+assert.equal(heartbeatThread.messages.length, 3);
+assert.equal(heartbeatThread.messages[1]?.replyTo, heartbeatThread.messages[0]?.id);
+assert.equal(heartbeatThread.messages[1]?.mentioning, heartbeatThread.messages[0]?.agentId);
+assert.ok((heartbeatThread.messages[1]?.citedQuote?.length ?? 0) >= 5);
+assert.ok(new Set(heartbeatThread.messages.map((message) => message.agentId)).size >= 2);
 
 const englishDiscussion = buildWatchSupplementalEntry({
   now: 1_714_000_180_000,
@@ -317,29 +363,21 @@ assert.equal(englishDiscussion.kind, "agent_discussion");
 assert.match(englishDiscussion.summary, /Alpha watches breakouts/);
 const englishDiscussionChat = buildStreamChatMessages(englishDiscussion, pool, "en_US");
 assert.equal(englishDiscussionChat[0].tag, "Agent huddle");
-assert.equal(englishDiscussionChat[0].points[0].label, "Current");
 assert.ok(englishDiscussionChat.every((item) => !/[\u4e00-\u9fff]/.test(item.content)));
 
 const discussionDisplayEntries = splitStreamEntryForDisplay(discussion);
-assert.equal(discussionDisplayEntries.length, 3);
-assert.deepEqual(discussionDisplayEntries.map(speakerForStreamEntry), ["alpha", "beta", "gamma"]);
-assert.ok(
-  discussionDisplayEntries.every(
-    (entry) => entry.kind === "agent_discussion" && entry.responses.length === 1,
-  ),
-);
+assert.equal(discussionDisplayEntries.length, 1);
+assert.equal(speakerForStreamEntry(discussion), null);
 
 const focusChat = buildStreamChatMessages(highEvent, pool);
 assert.equal(focusChat.length, 1);
 assert.equal(focusChat[0].tag, "高优信号");
 assert.equal(focusChat[0].symbols[0], "AI");
-assert.ok(focusChat[0].points.some((point) => point.label === "现价" && point.value !== "未形成"));
-assert.ok(thinkDurationForStreamEntry(highEvent, 0) < thinkDurationForStreamEntry(heartbeat, 0));
-assert.ok(thinkDurationForStreamEntry(highEvent, 0) >= 900);
-assert.ok(thinkDurationForStreamEntry(discussionDisplayEntries[0], 0) >= 1400);
-assert.ok(thinkDurationForStreamEntry(heartbeat, 0) >= 1800);
-assert.ok(gapDurationAfterStreamEntry(discussionDisplayEntries[0]) > 900);
-assert.ok(gapDurationAfterStreamEntry(heartbeat) > 700);
+assert.equal(thinkDurationForStreamEntry(highEvent, 0), 0);
+assert.equal(thinkDurationForStreamEntry(discussionDisplayEntries[0], 0), 0);
+assert.equal(thinkDurationForStreamEntry(heartbeat, 0), 0);
+assert.ok(gapDurationAfterStreamEntry(discussionDisplayEntries[0]) >= 9_000);
+assert.ok(gapDurationAfterStreamEntry(heartbeat) >= 3_000);
 assert.equal(displayScheduleStartDelay(10_000, 13_500), 3_500);
 assert.equal(displayScheduleStartDelay(10_000, 9_500), 0);
 assert.equal(displayScheduleStartDelay(10_000, 13_500, true), 0);
@@ -358,7 +396,6 @@ const liveAgentChat = buildStreamChatMessages(liveAgentMessage, pool);
 assert.equal(liveAgentChat.length, 1);
 assert.equal(liveAgentChat[0].symbols[0], "BTC");
 assert.match(liveAgentChat[0].content, /\$BTC/);
-assert.ok(liveAgentChat[0].points.some((point) => point.label === "突破观察" && point.value !== "未形成"));
 
 assert.equal(directorModeForVisit(100_000, null), "fresh");
 assert.equal(directorModeForVisit(100_000, 90_000), "resume");
@@ -376,7 +413,9 @@ const directorOpening = buildWatchDirectorOpening({
 });
 assert.ok(directorOpening.entries.length >= 2);
 assert.ok(directorOpening.entries.some((entry) => entry.kind === "agent_discussion"));
-const directorOpeningMessages = directorOpening.entries.flatMap((entry) => buildStreamChatMessages(entry, pool));
+const directorOpeningMessages = directorOpening.entries.flatMap((entry) =>
+  buildStreamChatMessages(entry, pool),
+);
 assert.ok(new Set(directorOpeningMessages.map((message) => message.agentId)).size >= 3);
 
 const remembered = rememberDirectorEntries(

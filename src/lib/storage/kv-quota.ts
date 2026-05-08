@@ -26,12 +26,12 @@ let warnedAboutFallback = false;
 function hasKvClient() {
   return Boolean(
     process.env.KV_REST_API_URL &&
-      process.env.KV_REST_API_TOKEN &&
-      kv &&
-      typeof kv.incrby === "function" &&
-      typeof kv.decrby === "function" &&
-      typeof kv.expire === "function" &&
-      typeof kv.get === "function",
+    process.env.KV_REST_API_TOKEN &&
+    kv &&
+    typeof kv.incrby === "function" &&
+    typeof kv.decrby === "function" &&
+    typeof kv.expire === "function" &&
+    typeof kv.get === "function",
   );
 }
 

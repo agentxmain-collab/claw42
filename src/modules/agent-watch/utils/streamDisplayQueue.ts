@@ -1,38 +1,8 @@
-import type {
-  AgentDiscussionEntry,
-  AgentId,
-  StreamEntry,
-  WatchUpdateEntry,
-} from "../types";
+import type { AgentId, StreamEntry } from "../types";
 
-const PRIORITY_THINK_MS = { min: 900, max: 1400 };
-const DISCUSSION_THINK_MS = { min: 1400, max: 2200 };
-const DEFAULT_THINK_MS = { min: 1800, max: 3000 };
-const PRIORITY_GAP_MS = 1100;
-const DISCUSSION_GAP_MS = 1300;
-const DEFAULT_GAP_MS = 900;
-
-function isWatchUpdate(entry: StreamEntry): entry is WatchUpdateEntry {
-  return entry.kind === "watch_update";
-}
-
-function isAgentDiscussion(entry: StreamEntry): entry is AgentDiscussionEntry {
-  return entry.kind === "agent_discussion";
-}
-
-function hashString(value: string): number {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-  return hash;
-}
-
-function boundedJitter(key: string, min: number, max: number): number {
-  const span = Math.max(0, max - min);
-  if (span === 0) return min;
-  return min + (hashString(key) % (span + 1));
-}
+const MESSAGE_REVEAL_BUDGET_MS = 2800;
+const THREAD_GAP_MS = 900;
+const MAX_THREAD_GAP_MS = 14_000;
 
 export function displayScheduleStartDelay(
   now: number,
@@ -44,44 +14,33 @@ export function displayScheduleStartDelay(
 }
 
 export function splitStreamEntryForDisplay(entry: StreamEntry): StreamEntry[] {
-  if (entry.kind === "collective_event") {
-    const responses = [entry.primaryResponse, ...entry.echoResponses]
-      .filter((response) => response.content.trim().length > 0);
-    if (responses.length <= 1) return [entry];
-
-    return responses.map((response) => ({
-      ...entry,
-      id: `${entry.id}-${response.agentId}`,
-      primaryResponse: response,
-      echoResponses: [],
-    }));
-  }
-
-  if (entry.kind === "conflict_event" && entry.responses.length > 1) {
-    return entry.responses.map((response) => ({
-      ...entry,
-      id: `${entry.id}-${response.agentId}`,
-      responses: [response],
-    }));
-  }
-
-  if (!isAgentDiscussion(entry) || entry.responses.length <= 1) return [entry];
-
-  return entry.responses.map((response) => ({
-    ...entry,
-    id: `${entry.id}-${response.agentId}`,
-    responses: [response],
-  }));
+  return [entry];
 }
 
 export function speakerForStreamEntry(entry: StreamEntry): AgentId | null {
-  if (entry.kind === "agent_message") return entry.agentId;
-  if (isWatchUpdate(entry)) return entry.agentId ?? "beta";
-  if (isAgentDiscussion(entry)) return entry.responses[0]?.agentId ?? null;
-  if (entry.kind === "focus_event") return entry.primaryResponse.agentId;
-  if (entry.kind === "collective_event") return entry.primaryResponse.agentId;
-  if (entry.kind === "conflict_event") return entry.responses[0]?.agentId ?? null;
+  void entry;
   return null;
+}
+
+function messageCountForStreamEntry(entry: StreamEntry): number {
+  if (entry.kind === "news_debate") return Math.max(1, entry.debate.chatThread.messages.length);
+  if (entry.kind === "chat_thread") return Math.max(1, entry.thread.messages.length);
+  if (entry.kind === "agent_discussion") return Math.max(1, entry.responses.length);
+  if (entry.kind === "collective_event") {
+    return Math.max(
+      1,
+      [entry.primaryResponse, ...entry.echoResponses].filter(
+        (response) => response.content.trim().length > 0,
+      ).length,
+    );
+  }
+  if (entry.kind === "conflict_event") {
+    return Math.max(
+      1,
+      entry.responses.filter((response) => response.content.trim().length > 0).length,
+    );
+  }
+  return 1;
 }
 
 export function thinkDurationForStreamEntry(
@@ -89,28 +48,16 @@ export function thinkDurationForStreamEntry(
   index = 0,
   reduceMotion = false,
 ): number {
+  void entry;
+  void index;
   if (reduceMotion) return 0;
-
-  const key = `${entry.id}:${index}`;
-  if (entry.kind === "focus_event" || entry.kind === "collective_event" || entry.kind === "conflict_event") {
-    return boundedJitter(key, PRIORITY_THINK_MS.min, PRIORITY_THINK_MS.max);
-  }
-
-  if (isAgentDiscussion(entry)) {
-    return boundedJitter(key, DISCUSSION_THINK_MS.min, DISCUSSION_THINK_MS.max);
-  }
-
-  return boundedJitter(key, DEFAULT_THINK_MS.min, DEFAULT_THINK_MS.max);
+  return 0;
 }
 
-export function gapDurationAfterStreamEntry(
-  entry: StreamEntry,
-  reduceMotion = false,
-): number {
+export function gapDurationAfterStreamEntry(entry: StreamEntry, reduceMotion = false): number {
   if (reduceMotion) return 120;
-  if (entry.kind === "focus_event" || entry.kind === "collective_event" || entry.kind === "conflict_event") {
-    return PRIORITY_GAP_MS;
-  }
-  if (isAgentDiscussion(entry)) return DISCUSSION_GAP_MS;
-  return DEFAULT_GAP_MS;
+  return Math.min(
+    MAX_THREAD_GAP_MS,
+    messageCountForStreamEntry(entry) * MESSAGE_REVEAL_BUDGET_MS + THREAD_GAP_MS,
+  );
 }

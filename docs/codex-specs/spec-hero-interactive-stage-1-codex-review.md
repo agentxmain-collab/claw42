@@ -22,4 +22,3 @@
 - 固定 coin slot 尺寸，所有涨缩只用 GPU transform。
 - 涨缩 transition 用 spring；抓爪和 mini player 分段动画用 reduced-motion 分支。
 - `< -90%` 只做静态 extreme-drop 视觉状态，不做闪烁。
-

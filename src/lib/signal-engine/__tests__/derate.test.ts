@@ -12,7 +12,12 @@ describe("signal derate", () => {
   });
 
   test("removes weak-evidence headliner status", () => {
-    const derated = derateSignal(makeSignal({ engine: { isHeadliner: true }, evidence: { pieces: [], multiSourceConfirm: false } }));
+    const derated = derateSignal(
+      makeSignal({
+        engine: { isHeadliner: true },
+        evidence: { pieces: [], multiSourceConfirm: false },
+      }),
+    );
 
     expect(derated.engine.isHeadliner).toBe(false);
     expect(derated.engine.rules).toContain("weak_evidence_derated");

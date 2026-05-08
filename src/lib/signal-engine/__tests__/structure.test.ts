@@ -11,7 +11,7 @@ const fallback: StructuredFields = {
   direction: "bullish",
   confidence: 66,
   impactLevel: "medium",
-  riskNotes: [{ zh: "默认风险提示", en: "Fallback risk note" }]
+  riskNotes: [{ zh: "默认风险提示", en: "Fallback risk note" }],
 };
 
 describe("signal structure", () => {
@@ -24,9 +24,9 @@ describe("signal structure", () => {
         direction: "neutral",
         confidence: 108,
         impact_level: "high",
-        risk_notes: [{ zh: "高位波动", en: "High volatility" }]
+        risk_notes: [{ zh: "高位波动", en: "High volatility" }],
       },
-      fallback
+      fallback,
     );
 
     expect(normalized.confidence).toBe(100);
@@ -48,7 +48,7 @@ describe("signal structure", () => {
       name: "broken-provider",
       async structure() {
         throw new Error("provider unavailable");
-      }
+      },
     };
 
     try {

@@ -1,4 +1,8 @@
-import type { NewsTranslationInput, NewsTranslationResult, NewsTranslator } from "@/lib/data-sources/news-provider";
+import type {
+  NewsTranslationInput,
+  NewsTranslationResult,
+  NewsTranslator,
+} from "@/lib/data-sources/news-provider";
 
 type EnvLike = Record<string, string | undefined>;
 

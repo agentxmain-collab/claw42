@@ -13,14 +13,14 @@ export function signalApiMeta(view: SignalView, meta: Record<string, unknown> = 
   return {
     ...meta,
     apiVersion: "1.1",
-    view
+    view,
   };
 }
 
 export function signalApiVersionMeta(meta: Record<string, unknown> = {}) {
   return {
     ...meta,
-    apiVersion: "1.1"
+    apiVersion: "1.1",
   };
 }
 
@@ -41,14 +41,14 @@ export function projectSignals(signals: SignalCard[], view: SignalView) {
 export function projectAssetBrief(brief: AssetBrief, view: SignalView) {
   return {
     ...brief,
-    relatedSignals: projectSignals(brief.relatedSignals, view)
+    relatedSignals: projectSignals(brief.relatedSignals, view),
   };
 }
 
 export function projectMajorEvent(majorEvent: MajorEventAnalysis, view: SignalView) {
   return {
     ...majorEvent,
-    event: majorEvent.event ? projectSignal(majorEvent.event, view) : null
+    event: majorEvent.event ? projectSignal(majorEvent.event, view) : null,
   };
 }
 

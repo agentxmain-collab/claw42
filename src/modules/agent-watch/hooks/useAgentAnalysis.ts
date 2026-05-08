@@ -13,7 +13,7 @@ interface UseAgentAnalysisOptions {
 
 export function useAgentAnalysis({
   enabled = true,
-  intervalMs = 60_000,
+  intervalMs = 30_000,
   locale = "zh_CN",
 }: UseAgentAnalysisOptions = {}) {
   const [data, setData] = useState<AgentAnalysisPayload | null>(null);

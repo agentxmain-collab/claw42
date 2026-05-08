@@ -70,13 +70,7 @@ function signalDescription(signal: SignalRecord, locale: AgentWatchLocale): stri
     : `${formatCoinSymbol(signal.symbol)} ${signal.type}`;
 }
 
-function SignalChip({
-  signal,
-  locale,
-}: {
-  signal: SignalRecord;
-  locale: AgentWatchLocale;
-}) {
+function SignalChip({ signal, locale }: { signal: SignalRecord; locale: AgentWatchLocale }) {
   const descriptionClass =
     typeof signal.payload.change24h === "number"
       ? priceDeltaColor(signal.payload.change24h)
@@ -88,18 +82,14 @@ function SignalChip({
       className={`flex shrink-0 items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.04] px-2.5 py-1.5 transition-colors hover:bg-white/[0.06] ${SEVERITY_CHIP[signal.severity]}`}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[signal.severity]}`} />
-      <span className="shrink-0 font-mono text-[10px] text-white/40">
-        {formatTime(signal.ts)}
-      </span>
+      <span className="shrink-0 font-mono text-[10px] text-white/40">{formatTime(signal.ts)}</span>
       <span className="shrink-0 font-mono text-[10px] font-bold text-white/65">
         {formatCoinSymbol(signal.symbol)}
       </span>
-      <span className="shrink-0 text-[10px] font-bold text-white/58">
+      <span className="text-white/58 shrink-0 text-[10px] font-bold">
         {SIGNAL_TYPE_LABEL[signal.type]}
       </span>
-      <span className={`whitespace-nowrap text-xs ${descriptionClass}`}>
-        {description}
-      </span>
+      <span className={`whitespace-nowrap text-xs ${descriptionClass}`}>{description}</span>
     </div>
   );
 }
@@ -119,7 +109,8 @@ export function MarketEventFeed({
   const reduceMotion = useReducedMotion();
   const latest = [...signals].sort((a, b) => b.ts - a.ts).slice(0, 12);
   const marqueeSignals = reduceMotion || latest.length <= 1 ? latest : [...latest, ...latest];
-  const animation = reduceMotion || latest.length <= 1 ? "none" : "claw42-marquee 60s linear infinite";
+  const animation =
+    reduceMotion || latest.length <= 1 ? "none" : "claw42-marquee 60s linear infinite";
 
   if (latest.length === 0) {
     return (

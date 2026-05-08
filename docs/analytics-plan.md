@@ -8,18 +8,18 @@ Data sink: `/api/analytics` writes anonymous structured events to Vercel logs wi
 
 Current events:
 
-| Event | Trigger | Key properties |
-| --- | --- | --- |
-| `page_view` | Locale page renders | `locale` |
-| `hero_cta_copy` | Hero primary CTA copies install command | `locale`, `surface` |
-| `hero_api_docs_click` | Hero secondary CTA outbound click | `locale`, `surface` |
-| `quick_start_copy` | Quick Start terminal copy button | `locale`, `surface` |
-| `daily_prompt_copy` | Daily report input copy | `locale`, `surface` |
-| `daily_cta_copy` | Daily report CTA copies subscription prompt | `locale`, `surface` |
-| `locale_dropdown_open` | Header language menu opens | `locale` |
-| `locale_select` | User selects a language | `from`, `to` |
-| `skill_card_click` | Skill ecosystem outbound CTA click | `locale`, `skill`, `index` |
-| `back_to_top_click` | Disclaimer logo back-to-top click | `locale` |
+| Event                  | Trigger                                     | Key properties             |
+| ---------------------- | ------------------------------------------- | -------------------------- |
+| `page_view`            | Locale page renders                         | `locale`                   |
+| `hero_cta_copy`        | Hero primary CTA copies install command     | `locale`, `surface`        |
+| `hero_api_docs_click`  | Hero secondary CTA outbound click           | `locale`, `surface`        |
+| `quick_start_copy`     | Quick Start terminal copy button            | `locale`, `surface`        |
+| `daily_prompt_copy`    | Daily report input copy                     | `locale`, `surface`        |
+| `daily_cta_copy`       | Daily report CTA copies subscription prompt | `locale`, `surface`        |
+| `locale_dropdown_open` | Header language menu opens                  | `locale`                   |
+| `locale_select`        | User selects a language                     | `from`, `to`               |
+| `skill_card_click`     | Skill ecosystem outbound CTA click          | `locale`, `skill`, `index` |
+| `back_to_top_click`    | Disclaimer logo back-to-top click           | `locale`                   |
 
 Default context attached by the client:
 

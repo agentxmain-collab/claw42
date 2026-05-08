@@ -8,11 +8,7 @@ import { formatAgentMessageTime } from "../utils/formatTime";
 import { AgentAvatar } from "./AgentAvatar";
 
 function splitMessageParts(content: string): string[] {
-  const normalized = content
-    .replace(/\s+/g, " ")
-    .replace(/；/g, "。")
-    .replace(/;/g, "。")
-    .trim();
+  const normalized = content.replace(/\s+/g, " ").replace(/；/g, "。").replace(/;/g, "。").trim();
   const parts = normalized
     .split("。")
     .map((item) => item.trim())
@@ -37,15 +33,14 @@ function AgentMessageContent({ message }: { message: AgentMessage }) {
         className="mt-1.5 rounded-xl border border-white/[0.08] bg-black/35 px-4 py-3 shadow-[0_10px_28px_rgba(0,0,0,0.22)]"
         style={{ borderLeft: `3px solid ${token.primary}` }}
       >
-        <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: token.primary }}>
+        <div
+          className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.2em]"
+          style={{ color: token.primary }}
+        >
           Trigger
         </div>
-        <p className="text-sm font-semibold leading-relaxed text-white/88">{trigger}</p>
-        {fail && (
-          <p className="mt-1.5 text-xs leading-relaxed text-white/48">
-            失效：{fail}
-          </p>
-        )}
+        <p className="text-white/88 text-sm font-semibold leading-relaxed">{trigger}</p>
+        {fail && <p className="text-white/48 mt-1.5 text-xs leading-relaxed">失效：{fail}</p>}
       </div>
     );
   }
@@ -63,7 +58,7 @@ function AgentMessageContent({ message }: { message: AgentMessage }) {
           >
             趋势
           </span>
-          <p className="text-sm leading-relaxed text-white/84">{trend}</p>
+          <p className="text-white/84 text-sm leading-relaxed">{trend}</p>
         </div>
         {action && (
           <div className="grid grid-cols-[3.25rem_1fr] gap-2 border-t border-white/[0.06] pt-2">
@@ -85,9 +80,9 @@ function AgentMessageContent({ message }: { message: AgentMessage }) {
       <p className="text-xs font-bold tracking-[0.16em]" style={{ color: token.primary }}>
         EXTREME WINDOW
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-white/82">{extreme}</p>
+      <p className="text-white/82 mt-2 text-sm leading-relaxed">{extreme}</p>
       {boundary && (
-        <p className="mt-2 rounded-lg bg-white/[0.04] px-3 py-2 text-xs leading-relaxed text-white/58">
+        <p className="text-white/58 mt-2 rounded-lg bg-white/[0.04] px-3 py-2 text-xs leading-relaxed">
           边界：{boundary}
         </p>
       )}

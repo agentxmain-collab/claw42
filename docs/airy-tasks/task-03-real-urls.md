@@ -11,10 +11,12 @@ Dan 给了真实的 CTA 跳转 URL：`https://github.com/connectCoinw/coinw-skil
 ## 变更范围
 
 ### 修改
+
 - `src/app/page.tsx` —— QuickStart terminal command + 5 处 CTA href
 - 可选：`src/lib/constants.ts` —— 抽一个 `COINW_SKILLS_URL` 常量（见 #3）
 
 ### 不动
+
 - 任何 i18n dict 字段（文案一字不改，只换 href / command）
 - Task 02 的结构 / 样式 / 动效 / 新 dict 字段
 
@@ -35,7 +37,7 @@ const command = "npx skills add https://github.com/connectCoinw/coinw-skills";
 Terminal body 的可视分词（原先是 `pip install claw42-sdk && claw42 run daily-report` 带绿色高亮）改为：
 
 ```tsx
-<div className="leading-relaxed break-all">
+<div className="break-all leading-relaxed">
   <span className="text-gray-500">$ </span>
   <span className="text-white">npx </span>
   <span className="text-green-400">skills add</span>
@@ -45,6 +47,7 @@ Terminal body 的可视分词（原先是 `pip install claw42-sdk && claw42 run 
 ```
 
 要点：
+
 - `skills add` 用绿色 `text-green-400`（保持和原 `claw42-sdk` 同色系，表示命令关键词）
 - URL 用紫色 `text-[#7c5cff]`（和全站主色对齐，让 URL 视觉上可识别）
 - 加 `break-all` 让长 URL 在窄屏上能换行不溢出终端框
@@ -53,13 +56,13 @@ Terminal body 的可视分词（原先是 `pip install claw42-sdk && claw42 run 
 
 5 处外链统一指向 `https://github.com/connectCoinw/coinw-skills`：
 
-| # | 位置 | 文件 / 组件 | 当前 href | 新 href |
-|---|------|-------------|-----------|---------|
-| 1 | Hero 主 CTA「立即开始 / Get Started」 | `page.tsx` HeroSection | `#signup` | `https://github.com/connectCoinw/coinw-skills` |
-| 2 | Hero 次 CTA「API 文档 / API Docs」 | `page.tsx` HeroSection | `#api-docs` | `https://github.com/connectCoinw/coinw-skills` |
-| 3 | Scenarios 主板块「立即试用 / Try Now」 | `page.tsx` ScenariosSection | `#signup` | `https://github.com/connectCoinw/coinw-skills` |
-| 4 | SkillsEco 卡片 1「Contract 了解详情」 | `SkillsEcoSection.tsx` | `#` | `https://github.com/connectCoinw/coinw-skills` |
-| 5 | SkillsEco 卡片 2「Spot 了解详情」 | `SkillsEcoSection.tsx` | `#` | `https://github.com/connectCoinw/coinw-skills` |
+| #   | 位置                                   | 文件 / 组件                 | 当前 href   | 新 href                                        |
+| --- | -------------------------------------- | --------------------------- | ----------- | ---------------------------------------------- |
+| 1   | Hero 主 CTA「立即开始 / Get Started」  | `page.tsx` HeroSection      | `#signup`   | `https://github.com/connectCoinw/coinw-skills` |
+| 2   | Hero 次 CTA「API 文档 / API Docs」     | `page.tsx` HeroSection      | `#api-docs` | `https://github.com/connectCoinw/coinw-skills` |
+| 3   | Scenarios 主板块「立即试用 / Try Now」 | `page.tsx` ScenariosSection | `#signup`   | `https://github.com/connectCoinw/coinw-skills` |
+| 4   | SkillsEco 卡片 1「Contract 了解详情」  | `SkillsEcoSection.tsx`      | `#`         | `https://github.com/connectCoinw/coinw-skills` |
+| 5   | SkillsEco 卡片 2「Spot 了解详情」      | `SkillsEcoSection.tsx`      | `#`         | `https://github.com/connectCoinw/coinw-skills` |
 
 **全部 5 个都是外链，统一加 `target="_blank" rel="noopener noreferrer"`**：
 
@@ -75,6 +78,7 @@ Terminal body 的可视分词（原先是 `pip install claw42-sdk && claw42 run 
 ```
 
 说明：
+
 - `target="_blank"` 让新 tab 打开——用户跳到 GitHub 看完还能回来
 - `rel="noopener noreferrer"` 是 `target="_blank"` 的标准安全配套，防止新页面反向操作 opener window
 
@@ -125,10 +129,12 @@ const command = `npx skills add ${COINW_SKILLS_URL}`;
 ## Commit 策略
 
 建议两个原子 commit：
+
 1. `feat(quickstart): switch CLI example to npx skills add <coinw-skills url>`
 2. `feat: wire all CTA hrefs to coinw-skills github repo`
 
 如果抽了常量，第 2 个 commit 前加一个：
+
 1. `chore: extract COINW_SKILLS_URL constant`
 
 ---
@@ -141,6 +147,6 @@ const command = `npx skills add ${COINW_SKILLS_URL}`;
 
 ---
 
-*Spec: F（总调度）*
-*日期: 2026-04-21*
-*分支: `feature/claw42-v1-1-polish`（和 task-02 同分支同 PR）*
+_Spec: F（总调度）_
+_日期: 2026-04-21_
+_分支: `feature/claw42-v1-1-polish`（和 task-02 同分支同 PR）_

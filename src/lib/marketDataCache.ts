@@ -74,9 +74,7 @@ function normalizeCoinGeckoPayload(payload: unknown): TickerMap {
   return {
     BTC: {
       price: Number(source.bitcoin?.usd ?? fallbackTickerData.tickers.BTC.price),
-      change24h: Number(
-        source.bitcoin?.usd_24h_change ?? fallbackTickerData.tickers.BTC.change24h,
-      ),
+      change24h: Number(source.bitcoin?.usd_24h_change ?? fallbackTickerData.tickers.BTC.change24h),
     },
     ETH: {
       price: Number(source.ethereum?.usd ?? fallbackTickerData.tickers.ETH.price),
@@ -86,15 +84,11 @@ function normalizeCoinGeckoPayload(payload: unknown): TickerMap {
     },
     SOL: {
       price: Number(source.solana?.usd ?? fallbackTickerData.tickers.SOL.price),
-      change24h: Number(
-        source.solana?.usd_24h_change ?? fallbackTickerData.tickers.SOL.change24h,
-      ),
+      change24h: Number(source.solana?.usd_24h_change ?? fallbackTickerData.tickers.SOL.change24h),
     },
     USDT: {
       price: Number(source.tether?.usd ?? fallbackTickerData.tickers.USDT.price),
-      change24h: Number(
-        source.tether?.usd_24h_change ?? fallbackTickerData.tickers.USDT.change24h,
-      ),
+      change24h: Number(source.tether?.usd_24h_change ?? fallbackTickerData.tickers.USDT.change24h),
     },
   };
 }
@@ -220,8 +214,7 @@ async function fetchOpportunityPool(): Promise<CoinTickerEntry[]> {
   });
   const sorted = [...filtered].sort(
     (a, b) =>
-      Number(b.price_change_percentage_24h ?? 0) -
-      Number(a.price_change_percentage_24h ?? 0),
+      Number(b.price_change_percentage_24h ?? 0) - Number(a.price_change_percentage_24h ?? 0),
   );
   const candidates = [...sorted.slice(0, 2), ...sorted.slice(-1)];
   const seen = new Set<string>();
@@ -371,7 +364,10 @@ function average(values: number[]): number | null {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function buildTimeframeSignal(candles: MarketCandle[] | undefined, periodSec: number): TimeframeSignal | null {
+function buildTimeframeSignal(
+  candles: MarketCandle[] | undefined,
+  periodSec: number,
+): TimeframeSignal | null {
   if (!candles || candles.length < 2) return null;
   const relevant = candles.slice(-COINW_TARGET_CANDLES);
   const closes = relevant.map((item) => item.close);
@@ -409,7 +405,10 @@ function buildTimeframeSignal(candles: MarketCandle[] | undefined, periodSec: nu
   };
 }
 
-function candlesForPair(candlesByPair: Record<string, MarketCandle[]>, symbol: Exclude<CoinSymbol, "USDT">) {
+function candlesForPair(
+  candlesByPair: Record<string, MarketCandle[]>,
+  symbol: Exclude<CoinSymbol, "USDT">,
+) {
   const pair = toCoinWPair(symbol);
   return candlesByPair[pair] ?? candlesByPair[pair.toLowerCase()];
 }
@@ -497,7 +496,9 @@ export async function getCoinPool(): Promise<CoinPoolPayload> {
   if (trendingResult.status === "rejected") {
     console.warn(
       "[claw42] trending fallback",
-      trendingResult.reason instanceof Error ? trendingResult.reason.message : trendingResult.reason,
+      trendingResult.reason instanceof Error
+        ? trendingResult.reason.message
+        : trendingResult.reason,
     );
   }
   if (opportunityResult.status === "rejected") {

@@ -100,6 +100,16 @@ function TickerChip({
   );
 }
 
+function LoadingTickerChip({ symbol }: { symbol: (typeof COINS)[number] }) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2 font-mono text-xs text-white/35 md:text-sm">
+      <span className="font-bold text-white/70">{formatCoinSymbol(symbol)}</span>
+      <span>--</span>
+      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white/35" aria-hidden="true" />
+    </div>
+  );
+}
+
 export function CoinTickerStrip({
   pool,
   tickers,
@@ -114,9 +124,8 @@ export function CoinTickerStrip({
   };
 }) {
   const majors = useMemo(() => pool?.majors ?? majorsFromTickers(tickers), [pool?.majors, tickers]);
-  const [expandedGroups, setExpandedGroups] = useState<Record<FoldableGroupKey, boolean>>(
-    readFoldState,
-  );
+  const [expandedGroups, setExpandedGroups] =
+    useState<Record<FoldableGroupKey, boolean>>(readFoldState);
   const groups = useMemo<Array<{ key: string; label: string; entries: CoinTickerEntry[] }>>(
     () => [
       { key: "majors", label: labels.majors, entries: majors },
@@ -200,6 +209,8 @@ export function CoinTickerStrip({
               tickerRefs={tickerRefs}
             />
           ))}
+          {(majorsGroup?.entries ?? []).length === 0 &&
+            COINS.map((symbol) => <LoadingTickerChip key={`loading-${symbol}`} symbol={symbol} />)}
 
           {foldableGroups.map((group, index) => {
             if (group.entries.length === 0) return null;
@@ -211,7 +222,7 @@ export function CoinTickerStrip({
                 onClick={() => toggleGroup(group.key)}
                 aria-expanded={expanded}
                 aria-label={`${expanded ? "Collapse" : "Expand"} ${group.label}`}
-                className={`rounded-md border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-xs text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white/82 ${
+                className={`hover:text-white/82 rounded-md border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-xs text-white/60 transition-colors hover:bg-white/[0.06] ${
                   index === 0 ? "ml-2" : ""
                 }`}
               >

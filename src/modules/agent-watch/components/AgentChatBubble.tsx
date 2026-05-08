@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import type { AgentChatMessage } from "../utils/streamChatMessages";
@@ -14,6 +15,19 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
   const meta = AGENT_META[message.agentId];
   const token = AGENT_COLOR_TOKEN[message.agentId];
   const timeLabel = formatAgentMessageTime(message.ts, locale);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!message.marketDataFetchedAt) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 10_000);
+    return () => window.clearInterval(timer);
+  }, [message.marketDataFetchedAt]);
+
+  const dataAgeLabel = message.marketDataFetchedAt
+    ? locale === "en_US"
+      ? `data ${Math.max(0, Math.round((now - message.marketDataFetchedAt) / 1000))}s ago`
+      : `数据 ${Math.max(0, Math.round((now - message.marketDataFetchedAt) / 1000))} 秒前`
+    : null;
 
   return (
     <motion.article
@@ -34,31 +48,22 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
           <span className="text-sm font-bold" style={{ color: token.primary }}>
             {meta.name}
           </span>
-          {message.tag && (
-            <span
-              className="rounded-full border px-2 py-0.5 text-[11px] font-semibold leading-none"
-              style={{
-                borderColor: token.soft,
-                color: token.primary,
-                backgroundColor: token.soft,
-              }}
-            >
-              {message.tag}
-            </span>
-          )}
           {message.symbols.slice(0, 3).map((symbol) => (
             <span
               key={symbol}
-              className="rounded-md border border-white/10 bg-white/[0.045] px-2 py-0.5 font-mono text-[11px] font-semibold leading-none text-white/72"
+              className="text-white/72 rounded-md border border-white/10 bg-white/[0.045] px-2 py-0.5 font-mono text-[11px] font-semibold leading-none"
             >
               {formatCoinSymbol(symbol)}
             </span>
           ))}
           <span className="font-mono text-xs text-white/35">{timeLabel}</span>
+          {dataAgeLabel && (
+            <span className="text-xs font-semibold text-emerald-300/70">{dataAgeLabel}</span>
+          )}
         </div>
 
         <div
-          className="relative mt-1 rounded-2xl rounded-tl-md border bg-[#19191c]/92 px-4 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.18)] backdrop-blur"
+          className="bg-[#19191c]/92 relative mt-1 rounded-2xl rounded-tl-md border px-4 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.18)] backdrop-blur"
           style={{ borderColor: token.soft }}
         >
           <span
@@ -67,26 +72,7 @@ export function AgentChatBubble({ message }: { message: AgentChatMessage }) {
             style={{ borderColor: token.soft }}
           />
 
-          <p className="text-sm font-semibold leading-relaxed text-white/86">
-            {message.content}
-          </p>
-
-          {message.points.length > 0 && (
-            <div className="mt-3 border-t border-white/[0.07] pt-2.5">
-              <div className="grid gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
-                {message.points.map((point) => (
-                  <div key={`${point.label}-${point.value}`} className="min-w-0">
-                    <div className="text-[11px] font-semibold leading-none text-white/38">
-                      {point.label}
-                    </div>
-                    <div className="mt-1 truncate font-mono text-xs font-semibold leading-none text-white/78">
-                      {point.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <p className="text-white/86 text-sm font-semibold leading-relaxed">{message.content}</p>
         </div>
       </div>
     </motion.article>

@@ -67,12 +67,14 @@ function buildStub(symbol: string, displayName: string, direction: HeroStrategyD
       {
         agentName: "Risk Agent",
         role: "Risk",
-        message: "Position size should stay light until volatility compresses below the session average.",
+        message:
+          "Position size should stay light until volatility compresses below the session average.",
       },
       {
         agentName: "Flow Agent",
         role: "Flow",
-        message: "Spot flow is active, but derivative leverage has not yet confirmed a clean follow-through.",
+        message:
+          "Spot flow is active, but derivative leverage has not yet confirmed a clean follow-through.",
       },
     ],
     strategyCard: {
@@ -87,7 +89,10 @@ function buildStub(symbol: string, displayName: string, direction: HeroStrategyD
 }
 
 const data = Object.fromEntries(
-  supportedSymbols.map((symbol) => [symbol, buildStub(symbol, names[symbol], directionBySymbol[symbol])]),
+  supportedSymbols.map((symbol) => [
+    symbol,
+    buildStub(symbol, names[symbol], directionBySymbol[symbol]),
+  ]),
 ) as Record<SupportedSymbol, HeroMiniPlayerData>;
 
 export async function fetchHeroMiniPlayerData(symbol: string): Promise<HeroMiniPlayerData> {
