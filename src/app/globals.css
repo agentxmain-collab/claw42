@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/satoshi/Satoshi-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/satoshi/Satoshi-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/satoshi/Satoshi-Bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/fonts/satoshi/Satoshi-Black.woff2") format("woff2");
+}
+
 :root {
   --brand-purple: #6c4fff;
   --brand-lime: #d1ff55;
@@ -13,6 +45,10 @@
   --font-stack:
     var(--font-inter), var(--font-noto-sc), -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
+  --font-language:
+    "Satoshi", var(--font-noto-sc), "Noto Sans TC", "Noto Sans JP", "Noto Sans Arabic",
+    "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: "Satoshi", var(--font-language);
 }
 
 html {
@@ -22,7 +58,7 @@ html {
 body {
   background: #000000;
   color: #ffffff;
-  font-family: var(--font-stack);
+  font-family: var(--font-language);
   overflow-x: hidden;
 }
 

@@ -18,7 +18,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-stack)"],
+        sans: ["var(--font-stack)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        language: ["var(--font-language)", "system-ui", "sans-serif"],
       },
       keyframes: {
         "fade-in-up": {
