@@ -30,6 +30,7 @@ function useIsMobile() {
 }
 
 const MOBILE_POSE_CYCLE: Pose[] = ["center", "left", "center", "right"];
+const HERO_BACKGROUND_POSITION = "center calc(100% + 16px)";
 
 /** Auto-cycle pose on mobile: center → left → center → right → repeat every 8 s. */
 function useMobilePoseCycle(isMobile: boolean, reduceMotion: boolean): Pose {
@@ -104,7 +105,7 @@ export function HeroScene() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
-          backgroundPosition: "center bottom",
+          backgroundPosition: HERO_BACKGROUND_POSITION,
           backgroundSize: "cover",
           transform: "translate3d(0, var(--claw42-hero-depth-bg-y, 0px), 0)",
         }}
@@ -127,7 +128,7 @@ export function HeroScene() {
         className="pointer-events-none absolute inset-0 z-[8]"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
-          backgroundPosition: "center bottom",
+          backgroundPosition: HERO_BACKGROUND_POSITION,
           backgroundSize: "cover",
           filter: "brightness(1.22) saturate(1.18)",
           mixBlendMode: "screen",
