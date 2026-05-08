@@ -45,6 +45,16 @@ const config: Config = {
         display: ["var(--font-display)", "system-ui", "sans-serif"],
         language: ["var(--font-language)", "system-ui", "sans-serif"],
       },
+      spacing: {
+        "section-x": "5.625rem",
+        "section-y": "7.5rem",
+      },
+      borderRadius: {
+        card: "1rem",
+        panel: "1.5rem",
+        chip: "5rem",
+        pill: "6.25rem",
+      },
       keyframes: {
         "fade-in-up": {
           "0%": { opacity: "0", transform: "translateY(40px)" },

@@ -66,6 +66,12 @@
     "Satoshi", var(--font-noto-sc), "Noto Sans TC", "Noto Sans JP", "Noto Sans Arabic",
     "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-display: "Satoshi", var(--font-language);
+  --spacing-section-x: 5.625rem;
+  --spacing-section-y: 7.5rem;
+  --radius-card: 1rem;
+  --radius-panel: 1.5rem;
+  --radius-chip: 5rem;
+  --radius-pill: 6.25rem;
 }
 
 html {
