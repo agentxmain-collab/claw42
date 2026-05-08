@@ -27,7 +27,30 @@
       "Don't ask why 42. If you know, you know.",
       "42 seconds ago I was reading on-chain data. Now it's your turn to ask."
     ],
-    "speechBubbleAriaLabel": "Claw 42 Agent speech bubble"
+    "speechBubbleAriaLabel": "Claw 42 Agent speech bubble",
+    "miniPlayer": {
+      "title": "[!! Åĝëñţ qüîçķ ţåçţîçš đëšķ !!]",
+      "loading": "[!! Åĝëñţ îš åñåľýžîñĝ... !!]",
+      "strategyDirection": {
+        "long": "[!! Ľöñĝ !!]",
+        "short": "[!! Šħöŕţ !!]",
+        "watch": "[!! Wåţçħ !!]"
+      },
+      "confidence": "[!! Çöñƒîđëñçë !!]",
+      "entry": "[!! Ëñţŕý !!]",
+      "stopLoss": "[!! Šţöp ľöšš !!]",
+      "target": "[!! Ţåŕĝëţ !!]"
+    },
+    "cta": {
+      "openAgentWatch": "[!! Wåţçħ ƒüľľ đîšçüşšîöñ → !!]",
+      "openCoinwAccount": "[!! Öpëñ ÇöîñW åççöüñţ → !!]",
+      "openCoinwAccountWithSymbol": "[!! Öpëñ ÇöîñW ţö ţŕåđë {symbol} → !!]"
+    },
+    "hint": {
+      "tapCoin": "[!! 👇 Ţåp åñý çöîñ ƒöŕ îñšţåñţ ÅÎ Åĝëñţ åñåľýšîš !!]",
+      "tapCoinMobile": "[!! Ţåp åñý çöîñ ƒöŕ ÅÎ Åĝëñţ åñåľýšîš !!]"
+    },
+    "miniPlayerClose": "[!! Çľöšë Åĝëñţ qüîçķ ţåçţîçš đëšķ !!]"
   },
   "quickStart": {
     "title": "Meet Your First AI Agent in 30 Seconds"

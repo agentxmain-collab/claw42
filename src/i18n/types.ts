@@ -25,6 +25,29 @@ export interface Dict {
     ctaSecondary: string;
     speechBubble: string[];
     speechBubbleAriaLabel: string;
+    miniPlayer: {
+      title: string;
+      loading: string;
+      strategyDirection: {
+        long: string;
+        short: string;
+        watch: string;
+      };
+      confidence: string;
+      entry: string;
+      stopLoss: string;
+      target: string;
+    };
+    cta: {
+      openAgentWatch: string;
+      openCoinwAccount: string;
+      openCoinwAccountWithSymbol: string;
+    };
+    hint: {
+      tapCoin: string;
+      tapCoinMobile: string;
+    };
+    miniPlayerClose: string;
   };
   quickStart: {
     title: string;

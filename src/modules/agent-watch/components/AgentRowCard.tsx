@@ -4,7 +4,7 @@ import { AGENT_COLOR_TOKEN, AGENT_META } from "../agents";
 import type { AgentFocus, AgentId, AgentStatus } from "../types";
 import { AgentAvatar } from "./AgentAvatar";
 
-function StatusDot({ status, label }: { status: AgentStatus; label: string }) {
+function StatusDot({ status }: { status: AgentStatus }) {
   const cls =
     status === "thinking"
       ? "bg-amber-400 animate-pulse"
@@ -13,9 +13,7 @@ function StatusDot({ status, label }: { status: AgentStatus; label: string }) {
         : status === "alert"
           ? "animate-pulse bg-rose-400 shadow-[0_0_10px_rgba(255,95,95,0.55)]"
           : "bg-white/20";
-  return (
-    <span aria-label={label} title={label} className={`inline-block h-2 w-2 rounded-full ${cls}`} />
-  );
+  return <span aria-hidden="true" className={`inline-block h-2 w-2 rounded-full ${cls}`} />;
 }
 
 function statusCopy(status: AgentStatus, statusLabels: AgentRowCardProps["statusLabels"]) {
@@ -64,14 +62,14 @@ export function AgentRowCard({ agentId, status, statusLabels, focusLabels }: Age
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="truncate text-base font-bold text-white">{meta.name}</span>
-            <StatusDot status={status} label={statusLabel} />
+            <StatusDot status={status} />
           </div>
-          <div className="text-white/42 mt-1 text-xs font-semibold">{statusLabel}</div>
+          <div className="mt-1 text-xs font-semibold text-[#8b8b8b]">{statusLabel}</div>
         </div>
       </div>
 
       {isActive && (
-        <div className="text-white/58 flex flex-1 items-center rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm font-semibold">
+        <div className="flex flex-1 items-center rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm font-semibold text-[#828282]">
           {status === "thinking"
             ? focusLabels.warmup
             : status === "alert"

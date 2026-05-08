@@ -1,10 +1,10 @@
 {
-  "name": "claw42",
+  "name": "claw42-temp",
   "version": "0.1.0",
   "private": true,
   "packageManager": "npm@10.8.0",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20"
   },
   "scripts": {
     "dev": "next dev",
@@ -13,33 +13,45 @@
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,md,json,css}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,md,json,css}\"",
-    "verify:agent-ip": "node scripts/verify-agent-ip.mjs",
-    "verify:news": "node scripts/verify-news.mjs",
-    "verify:chat-v3-final": "node scripts/run-ts.cjs scripts/verify-chat-v3-final.ts",
-    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run build"
+    "test:signal-engine": "vitest run src/lib/signal-engine/__tests__",
+    "test:kv-lock": "vitest run src/lib/storage/__tests__/kv-lock.test.ts",
+    "test:kv-rate-limiter": "vitest run src/lib/storage/__tests__/kv-rate-limiter.test.ts",
+    "test:kv-quota": "vitest run src/lib/storage/__tests__/kv-quota.test.ts",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,css,md}\"",
+    "verify:agent-ip": "tsx scripts/verify-agent-ip.ts",
+    "verify:news": "tsx scripts/verify-news.ts",
+    "verify:chat-v3-final": "tsx scripts/verify-chat-v3-final.ts",
+    "verify:metrics": "tsx scripts/verify-metrics.mjs",
+    "verify:a11y": "tsx scripts/verify-a11y.mjs",
+    "verify": "npm run format:check && npm run typecheck && npm run lint && npm run verify:agent-ip && npm run verify:news && npm run verify:chat-v3-final"
   },
   "dependencies": {
-    "@vercel/og": "^0.6.8",
+    "@vercel/kv": "^3.0.0",
+    "@vercel/og": "^0.8.5",
     "framer-motion": "^11.18.2",
-    "next": "14.2.35",
+    "next": "14.2.33",
     "posthog-js": "^1.372.3",
-    "react": "^18",
-    "react-dom": "^18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "recharts": "^2.15.4",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "web-vitals": "^4.2.4"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.35",
-    "postcss": "^8",
-    "prettier": "^3.3.3",
-    "prettier-plugin-tailwindcss": "^0.6.8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "@types/node": "^20.19.25",
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7",
+    "axe-core": "^4.10.2",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.33",
+    "playwright": "^1.56.1",
+    "postcss": "^8.5.6",
+    "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.6.14",
+    "tailwindcss": "^3.4.18",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
   }
 }

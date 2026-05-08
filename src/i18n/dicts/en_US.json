@@ -27,7 +27,30 @@
       "Don't ask why 42. If you know, you know.",
       "42 seconds ago I was reading on-chain data. Now it's your turn to ask."
     ],
-    "speechBubbleAriaLabel": "Claw 42 Agent speech bubble"
+    "speechBubbleAriaLabel": "Claw 42 Agent speech bubble",
+    "miniPlayer": {
+      "title": "Agent quick tactics desk",
+      "loading": "Agent is analyzing...",
+      "strategyDirection": {
+        "long": "Long",
+        "short": "Short",
+        "watch": "Watch"
+      },
+      "confidence": "Confidence",
+      "entry": "Entry",
+      "stopLoss": "Stop loss",
+      "target": "Target"
+    },
+    "cta": {
+      "openAgentWatch": "Watch full discussion →",
+      "openCoinwAccount": "Open CoinW account →",
+      "openCoinwAccountWithSymbol": "Open CoinW account to trade {symbol} →"
+    },
+    "hint": {
+      "tapCoin": "👇 Tap any coin for instant AI Agent analysis",
+      "tapCoinMobile": "Tap any coin for instant AI Agent analysis"
+    },
+    "miniPlayerClose": "Close Agent quick tactics desk"
   },
   "quickStart": {
     "title": "Meet Your First AI Agent in 30 Seconds"

@@ -18,7 +18,7 @@ export function SeedChip({ thread }: { thread: ChatThread }) {
           {formatCoinSymbol(symbol)}
         </span>
       ))}
-      <span className="min-w-0 truncate text-white/40">{thread.seed.title}</span>
+      <span className="min-w-0 truncate text-[#8b8b8b]">{thread.seed.title}</span>
     </div>
   );
 }

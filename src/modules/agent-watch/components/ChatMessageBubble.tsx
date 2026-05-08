@@ -32,7 +32,11 @@ function MentionBadge({ agentId }: { agentId: ChatMessage["agentId"] }) {
   return (
     <span
       className="rounded-full border px-2 py-0.5 text-[11px] font-bold leading-none"
-      style={{ borderColor: token.soft, color: token.primary, backgroundColor: token.soft }}
+      style={{
+        borderColor: token.primary,
+        color: token.primary,
+        backgroundColor: "rgba(0,0,0,0.35)",
+      }}
     >
       @{meta.name}
     </span>
@@ -132,7 +136,7 @@ export function ChatMessageBubble({
               {meta.name}
             </span>
             {message.mentioning && <MentionBadge agentId={message.mentioning} />}
-            <span className="font-mono text-xs text-white/35">
+            <span className="font-mono text-xs text-[#8b8b8b]">
               {formatAgentMessageTime(message.ts, locale)}
             </span>
             {age && <span className="text-xs font-semibold text-emerald-300/70">{age}</span>}
@@ -155,7 +159,7 @@ export function ChatMessageBubble({
           {isMerged && (
             <div className="mb-2 flex flex-wrap items-center gap-2">
               {message.mentioning && <MentionBadge agentId={message.mentioning} />}
-              <span className="font-mono text-xs text-white/30">
+              <span className="font-mono text-xs text-[#8b8b8b]">
                 {formatAgentMessageTime(message.ts, locale)}
               </span>
             </div>

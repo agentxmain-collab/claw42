@@ -220,6 +220,8 @@ export function CoinTickerStrip({
                 key={`toggle-${group.key}`}
                 type="button"
                 onClick={() => toggleGroup(group.key)}
+                aria-expanded={expanded}
+                aria-label={`${expanded ? "Collapse" : "Expand"} ${group.label}`}
                 className={`hover:text-white/82 rounded-md border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-xs text-white/60 transition-colors hover:bg-white/[0.06] ${
                   index === 0 ? "ml-2" : ""
                 }`}

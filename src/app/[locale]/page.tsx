@@ -10,6 +10,7 @@ import { ScenariosSection } from "@/modules/landing/ScenariosSection";
 import { SkillsEcoSection } from "@/modules/landing/SkillsEcoSection";
 import { StartTradeSection } from "@/modules/landing/StartTradeSection";
 import { HeroScene } from "@/modules/landing/HeroScene";
+import { HeroSceneInteractive } from "@/modules/landing/HeroSceneInteractive";
 import {
   fadeOnlyVariants,
   fadeScaleVariants,
@@ -17,6 +18,10 @@ import {
   getFadeUpTransition,
   motionViewport,
 } from "@/lib/motion";
+
+const HERO_INTERACTIVE_ENABLED =
+  process.env.HERO_INTERACTIVE_ENABLED === "true" ||
+  process.env.NEXT_PUBLIC_HERO_INTERACTIVE_ENABLED === "true";
 
 function ClipboardIcon() {
   return (
@@ -134,6 +139,7 @@ function QuickStartSection() {
                 whileTap={reduceMotion ? undefined : { scale: 0.98 }}
                 className="quickstart-copy-toggle copy-btn"
                 title="Copy to clipboard"
+                aria-label="Copy quick start command"
               >
                 {copied ? (
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -277,7 +283,7 @@ function DisclaimerSection() {
 export default function Home() {
   return (
     <main id="top" className="min-h-screen bg-black">
-      <HeroScene />
+      {HERO_INTERACTIVE_ENABLED ? <HeroSceneInteractive /> : <HeroScene />}
       <QuickStartSection />
       <ScenariosSection />
       <WhySection />
