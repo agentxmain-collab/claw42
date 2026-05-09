@@ -233,7 +233,9 @@
       "replay": "Replay",
       "newsTab": "News",
       "noNews": "No news yet"
-    }
+    },
+    "loadMore": "さらに表示",
+    "loadingMore": "読み込み中..."
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",

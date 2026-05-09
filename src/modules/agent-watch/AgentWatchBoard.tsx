@@ -235,8 +235,61 @@ export function AgentWatchBoard({
     const initialEntries = filterStreamEntries(entriesFromInitialThreads(initialChatThreads));
     return initialEntries.length > 0 ? initialEntries : [buildBootEntry(agentWatchLocale)];
   });
+  const [historyEntries, setHistoryEntries] = useState<StreamEntry[]>([]);
+  const [hasMoreHistory, setHasMoreHistory] = useState(false);
+  const [oldestHistoryTs, setOldestHistoryTs] = useState<number | null>(null);
+  const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
+
+  const applyHistoryPayload = useCallback(
+    (
+      data: { entries?: StreamEntry[]; hasMore?: boolean; oldestTs?: number | null },
+      mode: "replace" | "prepend",
+    ) => {
+      const chronologicalEntries = filterStreamEntries(
+        dedupeStreamEntries([...(data.entries ?? [])]),
+      ).sort((a, b) => a.ts - b.ts);
+      if (mode === "replace") {
+        setHistoryEntries(chronologicalEntries);
+        if (chronologicalEntries.length > 0) {
+          setLiveQueue((current) => current.filter((entry) => !entry.id.startsWith("boot-")));
+        }
+      } else {
+        setHistoryEntries((current) =>
+          dedupeStreamEntries([...chronologicalEntries, ...current]).sort((a, b) => a.ts - b.ts),
+        );
+      }
+      setHasMoreHistory(Boolean(data.hasMore));
+      setOldestHistoryTs(data.oldestTs ?? null);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/watch/history?limit=30", { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`watch history ${response.status}`);
+        return response.json() as Promise<{
+          entries: StreamEntry[];
+          hasMore: boolean;
+          oldestTs: number | null;
+        }>;
+      })
+      .then((payload) => {
+        if (!cancelled) applyHistoryPayload(payload, "replace");
+      })
+      .catch((error: unknown) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[claw42] watch history fetch failed", error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyHistoryPayload]);
 
   useEffect(() => {
     marketSignalsRef.current = marketSignals;
@@ -467,7 +520,33 @@ export function AgentWatchBoard({
     scheduleStreamEntries,
   ]);
 
-  const combinedEntries = useMemo(() => liveQueue, [liveQueue]);
+  const loadMoreHistory = useCallback(async () => {
+    if (!oldestHistoryTs || loadingMoreHistory) return;
+    setLoadingMoreHistory(true);
+    try {
+      const response = await fetch(`/api/watch/history?before=${oldestHistoryTs}&limit=30`, {
+        cache: "no-store",
+      });
+      if (!response.ok) throw new Error(`watch history ${response.status}`);
+      const payload = (await response.json()) as {
+        entries: StreamEntry[];
+        hasMore: boolean;
+        oldestTs: number | null;
+      };
+      applyHistoryPayload(payload, "prepend");
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[claw42] watch history load more failed", error);
+      }
+    } finally {
+      setLoadingMoreHistory(false);
+    }
+  }, [applyHistoryPayload, loadingMoreHistory, oldestHistoryTs]);
+
+  const combinedEntries = useMemo(
+    () => dedupeStreamEntries([...historyEntries, ...liveQueue]).sort((a, b) => a.ts - b.ts),
+    [historyEntries, liveQueue],
+  );
   const focusSymbols = useMemo(
     () =>
       Array.from(
@@ -570,6 +649,19 @@ export function AgentWatchBoard({
           locale={agentWatchLocale}
           newsDebateLabels={t.agentWatch.newsDebate}
         />
+
+        {hasMoreHistory && (
+          <button
+            type="button"
+            onClick={() => {
+              void loadMoreHistory();
+            }}
+            disabled={loadingMoreHistory}
+            className="mx-auto block rounded-full border border-white/10 bg-white/[0.04] px-6 py-2 text-sm font-semibold text-white/60 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingMoreHistory ? t.agentWatch.loadingMore : t.agentWatch.loadMore}
+          </button>
+        )}
 
         <p className="text-white/42 rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3 text-xs leading-relaxed">
           {agentWatchLocale === "en_US"
