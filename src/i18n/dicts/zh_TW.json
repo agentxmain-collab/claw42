@@ -235,7 +235,11 @@
       "noNews": "No news yet"
     },
     "loadMore": "查看更多",
-    "loadingMore": "載入中..."
+    "loadingMore": "載入中...",
+    "emptyState": {
+      "title": "AI 團隊正在等待重大事件",
+      "subtitle": "新的市場新聞或異常信號觸發後，多 Agent 辯論會出現在這裡"
+    }
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",

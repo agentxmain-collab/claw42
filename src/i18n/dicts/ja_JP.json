@@ -235,7 +235,11 @@
       "noNews": "No news yet"
     },
     "loadMore": "さらに表示",
-    "loadingMore": "読み込み中..."
+    "loadingMore": "読み込み中...",
+    "emptyState": {
+      "title": "AI チームは重要イベントを待機中",
+      "subtitle": "新しい市場ニュースや異常シグナルが発生すると、マルチ Agent の議論がここに表示されます"
+    }
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",
