@@ -2,6 +2,8 @@
 const nextConfig = {
   images: {
     formats: ["image/webp"],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   async headers() {
     return [
