@@ -132,16 +132,15 @@ export function HeroSceneInteractive() {
   return (
     <section
       ref={stageRef}
-      className="relative min-h-[800px] w-full overflow-hidden bg-black pt-[72px] md:h-screen md:max-h-[920px] md:min-h-[760px] md:pt-[80px]"
+      className="claw42-hero-scene relative min-h-[800px] w-full overflow-hidden bg-black pt-[72px] md:h-screen md:max-h-[920px] md:min-h-[760px] md:pt-[80px]"
       style={stageStyle}
     >
       <div
-        className="pointer-events-none absolute inset-0"
+        className="claw42-hero-background-art pointer-events-none absolute left-1/2"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
-          backgroundPosition: "center bottom",
-          backgroundSize: "cover",
-          transform: "translate3d(0, var(--claw42-hero-depth-bg-y, 0px), 0)",
+          transform:
+            "translate(-50%, calc(var(--claw42-hero-depth-bg-y, 0px) + var(--claw42-hero-pedestal-layer-shift, 0px)))",
         }}
       />
       <div
@@ -158,26 +157,6 @@ export function HeroSceneInteractive() {
             "radial-gradient(ellipse 120% 84% at 50% 44%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.46) 78%, rgba(0,0,0,0.96) 100%)",
         }}
       />
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-[8]"
-        style={{
-          backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
-          backgroundPosition: "center bottom",
-          backgroundSize: "cover",
-          filter: "brightness(1.18) saturate(1.12)",
-          mixBlendMode: "screen",
-          transform: "translate3d(0, var(--claw42-hero-depth-horizon-y, 0px), 0)",
-          WebkitMaskImage:
-            "linear-gradient(180deg, transparent 34%, black 46%, black 67%, transparent 76%)",
-          maskImage:
-            "linear-gradient(180deg, transparent 34%, black 46%, black 67%, transparent 76%)",
-        }}
-        animate={reduceMotion ? { opacity: 0.1 } : { opacity: [0.04, 0.13, 0.04] }}
-        transition={
-          reduceMotion ? { duration: 0 } : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
-        }
-      />
-
       <PedestalLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
       <RobotLayer
         robotRef={robotRef}

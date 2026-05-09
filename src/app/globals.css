@@ -135,10 +135,21 @@ textarea:focus-visible,
   z-index: 1;
 }
 
-.claw42-hero-bound-horizon {
-  width: var(--claw42-hero-bound-horizon-width, max(1600px, 128vw));
-  height: var(--claw42-hero-bound-horizon-height, clamp(520px, 58vw, 900px));
-  overflow: hidden;
+.claw42-hero-scene {
+  --claw42-hero-background-width: max(1600px, 128vw);
+  --claw42-hero-background-drop: clamp(240px, 19.5vw, 395px);
+  --claw42-hero-pedestal-layer-shift: 0px;
+}
+
+.claw42-hero-background-art {
+  bottom: calc(
+    var(--claw42-hero-pedestal-bottom, 31%) - var(--claw42-hero-background-drop, 320px)
+  );
+  z-index: 0;
+  width: var(--claw42-hero-background-width, max(1600px, 128vw));
+  aspect-ratio: 16 / 9;
+  background-position: center center;
+  background-size: 100% 100%;
 }
 
 @media (max-width: 1024px) {
@@ -147,9 +158,8 @@ textarea:focus-visible,
     --claw42-hero-robot-width: min(232px, 46vw);
     --claw42-hero-pedestal-bottom: 20%;
     --claw42-hero-pedestal-width: min(456px, 40vw);
-    --claw42-hero-bound-horizon-drop: min(154px, 19vw);
-    --claw42-hero-bound-horizon-height: clamp(456px, 72vw, 660px);
-    --claw42-hero-bound-horizon-width: max(1120px, 154vw);
+    --claw42-hero-background-drop: clamp(210px, 23.5vw, 260px);
+    --claw42-hero-pedestal-layer-shift: -21svh;
     --claw42-hero-pedestal-glow-bottom: 20%;
     --claw42-hero-pedestal-glow-width: min(340px, 29vw);
     --claw42-hero-pedestal-beam-bottom: 27%;
@@ -226,7 +236,7 @@ textarea:focus-visible,
   }
 
   .claw42-app-surface .claw42-hero-pedestal-layer {
-    transform: translateY(-21svh);
+    transform: translateY(var(--claw42-hero-pedestal-layer-shift, -21svh));
   }
 
   .claw42-app-surface .claw42-speech-bubble-root {
@@ -301,9 +311,9 @@ textarea:focus-visible,
     --claw42-hero-robot-width: min(232px, 46vw);
     --claw42-hero-pedestal-bottom: 20%;
     --claw42-hero-pedestal-width: min(456px, 40vw);
-    --claw42-hero-bound-horizon-drop: 0px;
-    --claw42-hero-bound-horizon-height: clamp(456px, 132vw, 520px);
-    --claw42-hero-bound-horizon-width: max(900px, 232vw);
+    --claw42-hero-background-width: max(900px, 232vw);
+    --claw42-hero-background-drop: 180px;
+    --claw42-hero-pedestal-layer-shift: -21svh;
     --claw42-hero-pedestal-glow-bottom: 20%;
     --claw42-hero-pedestal-glow-width: min(340px, 29vw);
     --claw42-hero-pedestal-beam-bottom: 27%;
@@ -387,7 +397,7 @@ textarea:focus-visible,
   }
 
   .claw42-hero-pedestal-layer {
-    transform: translateY(-21svh);
+    transform: translateY(var(--claw42-hero-pedestal-layer-shift, -21svh));
   }
 
   .claw42-speech-bubble-root {
