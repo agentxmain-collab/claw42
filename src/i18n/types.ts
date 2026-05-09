@@ -145,6 +145,8 @@ export interface Dict {
     };
     emptyHistory: string;
     loadingHistory: string;
+    loadMore: string;
+    loadingMore: string;
     coinPool: {
       majors: string;
       trending: string;

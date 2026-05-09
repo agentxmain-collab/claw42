@@ -233,7 +233,9 @@
       "replay": "Replay",
       "newsTab": "News",
       "noNews": "No news yet"
-    }
+    },
+    "loadMore": "Load more",
+    "loadingMore": "Loading..."
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",

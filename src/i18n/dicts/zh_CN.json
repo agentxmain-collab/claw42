@@ -233,7 +233,9 @@
       "replay": "复盘",
       "newsTab": "新闻",
       "noNews": "暂无新闻"
-    }
+    },
+    "loadMore": "查看更多",
+    "loadingMore": "加载中..."
   },
   "coinModal": {
     "closeAriaLabel": "关闭行情卡",

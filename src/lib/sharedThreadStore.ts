@@ -1,4 +1,5 @@
 import type { ChatThread, NewsItem, TriggerReason } from "@/lib/types";
+import { appendWatchEntry } from "@/lib/watchHistoryStore";
 
 export const LIMITS = {
   MAX_ACTIVE_THREADS_PER_SYMBOL: 1,
@@ -91,8 +92,17 @@ export async function getSharedThread(symbol: string): Promise<ChatThread | null
 export async function saveSharedThread(thread: ChatThread): Promise<void> {
   const symbol = normalizeThreadSymbol(thread.symbol ?? thread.seed.symbols[0] ?? "BTC");
   const nextThread = { ...thread, symbol };
+  const ts = Date.now();
   threads.set(symbol, nextThread);
-  broadcast(symbol, { type: "thread", thread: nextThread, ts: Date.now() });
+  void appendWatchEntry({
+    kind: "chat_thread",
+    id: `thread-${nextThread.id}-${nextThread.messages.length}-${nextThread.strategy?.id ?? "no-strategy"}-${ts}`,
+    ts,
+    thread: nextThread,
+  }).catch((error: unknown) => {
+    console.warn("[claw42] watch history append failed", error);
+  });
+  broadcast(symbol, { type: "thread", thread: nextThread, ts });
 
   const kv = await getKvClient();
   if (!kv) return;
