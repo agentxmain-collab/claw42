@@ -12,6 +12,10 @@ import { fadeUp } from "@/lib/motion";
 const ECO_ICON_SLUGS = ["eco-contract", "eco-spot"] as const;
 const ECO_HREFS = [URLS.CLAW42_SKILLS_REPO_CONTRACT, URLS.CLAW42_SKILLS_REPO_SPOT] as const;
 const ECO_CARD_IDS = ["contract", "spot"] as const;
+const ECO_ICON_IMAGE_CLASSES = [
+  "absolute left-[9.77px] top-[12.07px] h-[75.857px] w-[80.465px] max-w-none object-fill",
+  "absolute left-[9.77px] top-[14.07px] h-[75.857px] w-[80.465px] max-w-none object-fill",
+] as const;
 
 export function SkillsEcoSection() {
   const { t, locale } = useI18n();
@@ -65,14 +69,14 @@ export function SkillsEcoSection() {
             whileTap={{ scale: 0.98 }}
             className="card-glow flex flex-col rounded-card border border-border-token-primary bg-gradient-to-b from-bg-fill-card1 to-bg-fill-card1/30 p-6 md:p-8"
           >
-            <div className="mb-5 flex h-[68px] w-28 items-center justify-start">
+            <div className="relative mb-5 h-[100px] w-[100px] shrink-0">
               <Image
                 src={`/images/icons/${ECO_ICON_SLUGS[i] ?? ECO_ICON_SLUGS[0]}.png`}
                 alt=""
                 aria-hidden="true"
-                width={96}
-                height={60}
-                className="h-[60px] w-24 object-contain"
+                width={80}
+                height={76}
+                className={ECO_ICON_IMAGE_CLASSES[i] ?? ECO_ICON_IMAGE_CLASSES[0]}
               />
             </div>
             <h3 className="mb-3 text-xl font-bold text-fg-primary md:text-2xl">{card.title}</h3>
