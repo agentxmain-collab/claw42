@@ -142,15 +142,15 @@ function RealtimeMonitorCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-      className="card-glow flex flex-1 items-start gap-4 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
+      className="card-glow flex flex-1 items-center gap-4 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
     >
       <Image
         src="/images/icons/scenario-realtime.png"
         alt=""
         aria-hidden="true"
-        width={80}
-        height={80}
-        className="h-20 w-20 shrink-0 object-contain"
+        width={88}
+        height={59}
+        className="h-auto w-[88px] shrink-0 object-contain"
       />
       <div className="flex-1">
         <h3 className="mb-2 text-base font-semibold text-fg-primary md:text-lg">
@@ -180,15 +180,15 @@ function AutoTradeCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-      className="card-glow flex flex-1 items-start gap-4 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
+      className="card-glow flex flex-1 items-center gap-4 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
     >
       <Image
         src="/images/icons/scenario-auto-trade.png"
         alt=""
         aria-hidden="true"
-        width={80}
-        height={80}
-        className="h-20 w-20 shrink-0 object-contain"
+        width={88}
+        height={59}
+        className="h-auto w-[88px] shrink-0 object-contain"
       />
       <div className="flex-1">
         <h3 className="mb-2 text-base font-semibold text-fg-primary md:text-lg">
