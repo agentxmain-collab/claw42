@@ -1,4 +1,5 @@
 import type { CoinPoolPayload, SignalRecord, StreamEntry } from "@/modules/agent-watch/types";
+import { isAmbientChatterEnabled } from "@/lib/ambientChatter";
 
 export type ChatterPreferredKind =
   | "agent_discussion"
@@ -83,6 +84,10 @@ export function buildChatterPlan({
       : activity === "active"
         ? ACTIVE_INTERVAL_MS
         : QUIET_INTERVAL_MS;
+  if (!isAmbientChatterEnabled()) {
+    return { shouldSpeak: false, intervalMs, activity, preferredKinds: [] };
+  }
+
   const shouldSpeak = now - lastSpokeAt >= intervalMs;
 
   if (hasFreshPriority(visibleEntries, now)) {

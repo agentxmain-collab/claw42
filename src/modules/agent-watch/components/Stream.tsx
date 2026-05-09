@@ -111,7 +111,7 @@ export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
       contentClassName="h-[560px] overflow-y-auto px-4 py-4 md:px-6"
     >
       {uniqueEntries.length === 0 && !typingAgent && (
-        <div className="flex h-full items-center justify-center text-sm text-white/40">
+        <div className="flex h-full items-center justify-center text-sm text-white/65">
           {emptyLabel ?? "等待 Agent 开口..."}
         </div>
       )}

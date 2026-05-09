@@ -47,7 +47,6 @@ import {
   type WatchDirectorMode,
   writeWatchDirectorMemory,
 } from "./utils/watchSessionDirector";
-import { buildLoadingChatThread } from "./utils/streamChatThreads";
 
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 const STREAM_MAX_ENTRIES = 48;
@@ -59,16 +58,6 @@ function entriesFromInitialThreads(threads: ChatThread[]): ChatThreadEntry[] {
     ts: thread.messages[0]?.ts ?? thread.createdAt,
     thread,
   }));
-}
-
-function buildBootEntry(locale: ReturnType<typeof resolveAgentWatchLocale>): ChatThreadEntry {
-  const thread = buildLoadingChatThread(locale);
-  return {
-    kind: "chat_thread",
-    id: `boot-${locale}`,
-    ts: thread.createdAt,
-    thread,
-  };
 }
 
 function isAgentMessage(entry: StreamEntry): entry is AgentMessage {
@@ -233,7 +222,7 @@ export function AgentWatchBoard({
   const fiveSecondGuardRef = useRef(false);
   const [liveQueue, setLiveQueue] = useState<StreamEntry[]>(() => {
     const initialEntries = filterStreamEntries(entriesFromInitialThreads(initialChatThreads));
-    return initialEntries.length > 0 ? initialEntries : [buildBootEntry(agentWatchLocale)];
+    return initialEntries;
   });
   const [historyEntries, setHistoryEntries] = useState<StreamEntry[]>([]);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
@@ -427,6 +416,8 @@ export function AgentWatchBoard({
       memory,
       locale: agentWatchLocale,
     });
+    // Phase 6.0 round 2: director opening is disabled by default so it cannot create visible
+    // self-intro chatter. WATCH_AMBIENT_CHATTER_ENABLED restores the legacy opening entries.
     const directorEntries = filterStreamEntries(
       opening.entries.length > 0 ? opening.entries : entries,
     );
