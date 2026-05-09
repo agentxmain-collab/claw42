@@ -1,11 +1,26 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
 import { useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { trackEvent } from "@/lib/analytics";
 import { fadeUpVariants, getFadeUpTransition, motionViewport } from "@/lib/motion";
 import DailyBriefCard from "@/modules/landing/DailyBriefCard";
+
+function ScenarioIcon({ src }: { src: string }) {
+  return (
+    <div className="relative h-[88px] w-[88px] shrink-0" aria-hidden="true">
+      <Image
+        src={src}
+        alt=""
+        width={71}
+        height={80}
+        className="absolute left-[8.5px] top-[4.02px] h-[79.964px] w-[71.007px] max-w-none object-fill"
+      />
+    </div>
+  );
+}
 
 function DailyReportInput() {
   const { t, locale } = useI18n();
@@ -141,17 +156,20 @@ function RealtimeMonitorCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-      className="card-glow flex-1 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
+      className="card-glow flex flex-1 items-center gap-4 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
     >
-      <h3 className="mb-2 text-base font-semibold text-fg-primary md:text-lg">
-        {t.scenarios.realtime.title}
-      </h3>
-      <p className="text-xs leading-relaxed text-fg-secondary md:text-sm">
-        {t.scenarios.realtime.desc}
-      </p>
-      <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border-token-primary bg-bg-fill-card2 px-3 py-1.5 font-mono text-xs text-fg-primary">
-        <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" />
-        {t.scenarios.realtime.ticker}
+      <ScenarioIcon src="/images/icons/scenario-realtime.png" />
+      <div className="flex-1">
+        <h3 className="mb-2 text-base font-semibold text-fg-primary md:text-lg">
+          {t.scenarios.realtime.title}
+        </h3>
+        <p className="text-xs leading-relaxed text-fg-secondary md:text-sm">
+          {t.scenarios.realtime.desc}
+        </p>
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border-token-primary bg-bg-fill-card2 px-3 py-1.5 font-mono text-xs text-fg-primary">
+          <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.7)]" />
+          {t.scenarios.realtime.ticker}
+        </div>
       </div>
     </motion.div>
   );
@@ -169,17 +187,20 @@ function AutoTradeCard({ delay }: { delay: number }) {
       variants={fadeUpVariants(reduceMotion)}
       transition={getFadeUpTransition(delay)}
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-      className="card-glow flex-1 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
+      className="card-glow flex flex-1 items-center gap-4 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
     >
-      <h3 className="mb-2 text-base font-semibold text-fg-primary md:text-lg">
-        {t.scenarios.autoTrade.title}
-      </h3>
-      <p className="text-xs leading-relaxed text-fg-secondary md:text-sm">
-        {t.scenarios.autoTrade.desc}
-      </p>
-      <span className="mt-4 inline-flex text-xs font-semibold text-brand-purple">
-        {t.scenarios.autoTrade.cta}
-      </span>
+      <ScenarioIcon src="/images/icons/scenario-auto-trade.png" />
+      <div className="flex-1">
+        <h3 className="mb-2 text-base font-semibold text-fg-primary md:text-lg">
+          {t.scenarios.autoTrade.title}
+        </h3>
+        <p className="text-xs leading-relaxed text-fg-secondary md:text-sm">
+          {t.scenarios.autoTrade.desc}
+        </p>
+        <span className="mt-4 inline-flex text-xs font-semibold text-brand-purple">
+          {t.scenarios.autoTrade.cta}
+        </span>
+      </div>
     </motion.div>
   );
 }
