@@ -34,7 +34,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
-          bottom: "var(--claw42-hero-pedestal-glow-bottom, 41%)",
+          bottom: "var(--claw42-hero-pedestal-glow-bottom, 35%)",
           width: "var(--claw42-hero-pedestal-glow-width, min(340px, 24vw))",
           height: "min(190px, 16vw)",
           transform: depthTransform,
@@ -58,7 +58,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
-          bottom: "var(--claw42-hero-pedestal-beam-bottom, 43%)",
+          bottom: "var(--claw42-hero-pedestal-beam-bottom, 37%)",
           width: "min(206px, 17vw)",
           height: "min(286px, 24vw)",
           transform: depthTransform,
@@ -77,7 +77,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <div
         className="pointer-events-none absolute left-1/2 -translate-x-1/2 overflow-visible"
         style={{
-          bottom: "var(--claw42-hero-pedestal-rays-bottom, 44%)",
+          bottom: "var(--claw42-hero-pedestal-rays-bottom, 38%)",
           width: "min(232px, 19vw)",
           height: "min(292px, 24vw)",
           transform: depthTransform,
@@ -150,7 +150,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
-          bottom: "var(--claw42-hero-pedestal-top-glow-bottom, 48%)",
+          bottom: "var(--claw42-hero-pedestal-top-glow-bottom, 42%)",
           width: "min(260px, 22vw)",
           height: "min(132px, 10vw)",
           transform: depthTransform,
@@ -168,7 +168,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       <motion.div
         className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
-          bottom: "var(--claw42-hero-pedestal-orb-bottom, 47%)",
+          bottom: "var(--claw42-hero-pedestal-orb-bottom, 41%)",
           width: "min(196px, 16vw)",
           height: "min(196px, 16vw)",
           transform: depthTransform,
@@ -184,9 +184,24 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
       />
 
       <div
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+        style={{
+          bottom: "calc(var(--claw42-hero-pedestal-bottom, 31%) - min(36px, 2.5vw))",
+          width: "min(760px, 46vw)",
+          height: "min(112px, 7vw)",
+          transform: depthTransform,
+          zIndex: 16,
+          background:
+            "radial-gradient(ellipse 56% 72% at 50% 50%, rgba(210,196,255,0.34) 0%, rgba(159,130,255,0.22) 38%, rgba(124,92,255,0.08) 66%, transparent 100%)",
+          filter: "blur(12px)",
+          opacity: 0.76,
+        }}
+      />
+
+      <div
         className="pointer-events-none absolute left-1/2"
         style={{
-          bottom: "var(--claw42-hero-pedestal-bottom, 37%)",
+          bottom: "var(--claw42-hero-pedestal-bottom, 31%)",
           width: "var(--claw42-hero-pedestal-width, min(456px, 24vw))",
           transform: depthTransform,
           zIndex: 35,

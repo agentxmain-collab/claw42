@@ -109,15 +109,49 @@ textarea:focus-visible,
 
 .disclaimer-section {
   position: relative;
-  background:
-    linear-gradient(
-      to top,
-      var(--color-brand-purple) 0%,
-      rgba(82, 39, 255, 0.5) 15%,
-      rgba(82, 39, 255, 0.15) 35%,
-      transparent 60%
-    ),
-    var(--color-bg-primary);
+  overflow: hidden;
+  background: #000000;
+}
+
+.disclaimer-section::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 0;
+  height: clamp(120px, 14vw, 180px);
+  background: linear-gradient(
+    to top,
+    rgba(82, 39, 255, 0.72) 0%,
+    rgba(82, 39, 255, 0.34) 42%,
+    rgba(82, 39, 255, 0.1) 72%,
+    rgba(82, 39, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.disclaimer-section > div {
+  position: relative;
+  z-index: 1;
+}
+
+.claw42-hero-scene {
+  --claw42-hero-background-width: max(1600px, 128vw);
+  --claw42-hero-background-drop: calc(
+    var(--claw42-hero-pedestal-width, min(456px, 24vw)) - clamp(16px, 1.4vw, 28px)
+  );
+  --claw42-hero-pedestal-layer-shift: 0px;
+}
+
+.claw42-hero-background-art {
+  bottom: calc(
+    var(--claw42-hero-pedestal-bottom, 31%) - var(--claw42-hero-background-drop, 320px)
+  );
+  z-index: 0;
+  width: var(--claw42-hero-background-width, max(1600px, 128vw));
+  aspect-ratio: 16 / 9;
+  background-position: center center;
+  background-size: 100% 100%;
 }
 
 @media (max-width: 1024px) {
@@ -126,6 +160,10 @@ textarea:focus-visible,
     --claw42-hero-robot-width: min(232px, 46vw);
     --claw42-hero-pedestal-bottom: 20%;
     --claw42-hero-pedestal-width: min(456px, 40vw);
+    --claw42-hero-background-drop: calc(
+      var(--claw42-hero-pedestal-width, min(456px, 40vw)) - clamp(16px, 1.4vw, 28px)
+    );
+    --claw42-hero-pedestal-layer-shift: -21svh;
     --claw42-hero-pedestal-glow-bottom: 20%;
     --claw42-hero-pedestal-glow-width: min(340px, 29vw);
     --claw42-hero-pedestal-beam-bottom: 27%;
@@ -202,7 +240,7 @@ textarea:focus-visible,
   }
 
   .claw42-app-surface .claw42-hero-pedestal-layer {
-    transform: translateY(-21svh);
+    transform: translateY(var(--claw42-hero-pedestal-layer-shift, -21svh));
   }
 
   .claw42-app-surface .claw42-speech-bubble-root {
@@ -277,6 +315,9 @@ textarea:focus-visible,
     --claw42-hero-robot-width: min(232px, 46vw);
     --claw42-hero-pedestal-bottom: 20%;
     --claw42-hero-pedestal-width: min(456px, 40vw);
+    --claw42-hero-background-width: max(900px, 232vw);
+    --claw42-hero-background-drop: 180px;
+    --claw42-hero-pedestal-layer-shift: -21svh;
     --claw42-hero-pedestal-glow-bottom: 20%;
     --claw42-hero-pedestal-glow-width: min(340px, 29vw);
     --claw42-hero-pedestal-beam-bottom: 27%;
@@ -360,7 +401,7 @@ textarea:focus-visible,
   }
 
   .claw42-hero-pedestal-layer {
-    transform: translateY(-21svh);
+    transform: translateY(var(--claw42-hero-pedestal-layer-shift, -21svh));
   }
 
   .claw42-speech-bubble-root {
@@ -462,7 +503,7 @@ textarea:focus-visible,
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 0 solid transparent;
   opacity: 1;
   pointer-events: none;
   transition:
@@ -475,7 +516,7 @@ textarea:focus-visible,
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  border: 1px solid var(--color-border-brand);
+  border: 0 solid transparent;
   background: linear-gradient(
     to top,
     rgba(82, 39, 255, 0.4) 0%,
@@ -497,6 +538,18 @@ textarea:focus-visible,
 }
 
 .card-glow:hover::after {
+  opacity: 0;
+}
+
+.card-glow-bottom-gradient:hover {
+  border-color: transparent;
+}
+
+.card-glow-bottom-gradient:hover::before {
+  border-color: transparent;
+}
+
+.card-glow-bottom-gradient:hover::after {
   opacity: 1;
 }
 
@@ -507,6 +560,10 @@ textarea:focus-visible,
 
   .card-glow:hover::after {
     opacity: 0;
+  }
+
+  .card-glow-bottom-gradient:hover::after {
+    opacity: 1;
   }
 }
 
@@ -638,6 +695,21 @@ textarea:focus-visible,
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background-color: #0a0a0a;
+}
+
+@keyframes quick-start-caret-blink {
+  0%,
+  46% {
+    opacity: 1;
+  }
+  47%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.quick-start-caret {
+  animation: quick-start-caret-blink 0.9s steps(1, end) infinite;
 }
 
 /* Terminal glow */
@@ -779,6 +851,10 @@ textarea:focus-visible,
     opacity: 0;
   }
 
+  .card-glow-bottom-gradient:hover::after {
+    opacity: 1;
+  }
+
   .claw42-blue-breathe {
     animation: none;
     filter: saturate(1.2) brightness(1.12) drop-shadow(0 0 8px rgba(74, 136, 255, 0.75))
@@ -788,6 +864,7 @@ textarea:focus-visible,
   .animate-typing-dot-1,
   .animate-typing-dot-2,
   .animate-typing-dot-3,
+  .quick-start-caret,
   .animate-stream-in {
     animation: none;
   }

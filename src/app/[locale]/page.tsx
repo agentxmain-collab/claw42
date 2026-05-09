@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
@@ -22,6 +22,65 @@ import {
 const HERO_INTERACTIVE_ENABLED =
   process.env.HERO_INTERACTIVE_ENABLED === "true" ||
   process.env.NEXT_PUBLIC_HERO_INTERACTIVE_ENABLED === "true";
+
+type CommandSegment = {
+  text: string;
+  className: string;
+};
+
+function useLoopingTypedLength(targetLength: number, reduceMotion: boolean) {
+  const [length, setLength] = useState(reduceMotion ? targetLength : 0);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      setLength(targetLength);
+      return;
+    }
+
+    let intervalId: number | undefined;
+    let timeoutId: number | undefined;
+
+    const startTyping = () => {
+      setLength(0);
+      intervalId = window.setInterval(() => {
+        setLength((current) => {
+          const next = Math.min(current + 1, targetLength);
+          if (next >= targetLength) {
+            window.clearInterval(intervalId);
+            timeoutId = window.setTimeout(startTyping, 2200);
+          }
+          return next;
+        });
+      }, 34);
+    };
+
+    timeoutId = window.setTimeout(startTyping, 360);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [reduceMotion, targetLength]);
+
+  return length;
+}
+
+function renderCommandSegments(segments: CommandSegment[], maxLength?: number) {
+  let remaining = maxLength ?? Number.POSITIVE_INFINITY;
+
+  return segments.map((segment, index) => {
+    const visibleText = segment.text.slice(0, Math.max(0, remaining));
+    remaining -= segment.text.length;
+
+    if (!visibleText) return null;
+
+    return (
+      <span key={`${segment.text}-${index}`} className={segment.className}>
+        {visibleText}
+      </span>
+    );
+  });
+}
 
 function CopyIcon24() {
   return (
@@ -98,6 +157,13 @@ function QuickStartSection() {
   const reduceMotion = useReducedMotion();
   const [copied, setCopied] = useState(false);
   const command = `npx skills add ${COINW_SKILLS_URL}`;
+  const commandSegments: CommandSegment[] = [
+    { text: "npx ", className: "text-fg-primary" },
+    { text: "skills add", className: "text-brand-purple-bright" },
+    { text: " ", className: "text-fg-primary" },
+    { text: COINW_SKILLS_URL, className: "text-brand-purple-bright" },
+  ];
+  const typedLength = useLoopingTypedLength(command.length, reduceMotion ?? false);
 
   const handleCopy = async () => {
     try {
@@ -137,17 +203,22 @@ function QuickStartSection() {
           </span>
         </div>
         <div className="flex items-center justify-between bg-bg-primary p-6">
-          <div className="min-w-0 flex-1 overflow-x-auto">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <span className="sr-only">{command}</span>
             <div
-              className="flex w-max items-center gap-2 whitespace-nowrap text-[16px] leading-[24px] tracking-[0.15px]"
-              aria-label={command}
+              className="flex w-max items-center gap-2 whitespace-nowrap font-mono text-[16px] leading-[24px] tracking-[0.15px]"
+              aria-hidden="true"
             >
               <span className="text-brand-purple">$</span>
-              <span className="text-fg-primary">npx </span>
-              <span className="text-brand-purple-bright">skills add</span>
-              <span className="text-fg-primary"> </span>
-              <span className="text-brand-purple-bright">{COINW_SKILLS_URL}</span>
-              <span className="ml-1 inline-block h-5 w-1 bg-brand-purple" aria-hidden="true" />
+              <span className="relative">
+                <span className="invisible whitespace-pre" aria-hidden="true">
+                  {renderCommandSegments(commandSegments)}
+                </span>
+                <span className="absolute inset-y-0 left-0 whitespace-pre">
+                  {renderCommandSegments(commandSegments, typedLength)}
+                </span>
+              </span>
+              <span className="quick-start-caret ml-1 inline-block h-5 w-1 bg-brand-purple" aria-hidden="true" />
             </div>
           </div>
           <motion.button
@@ -192,7 +263,7 @@ function WhySection() {
             variants={fadeUpVariants(reduceMotion)}
             transition={getFadeUpTransition(i * 0.08)}
             whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-            className="card-glow group relative flex flex-col overflow-hidden rounded-card border border-border-token-primary bg-bg-fill-card1 p-8"
+            className="card-glow card-glow-bottom-gradient group relative flex flex-col overflow-hidden rounded-card border border-transparent bg-bg-fill-card1 p-8"
           >
             <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgba(173,163,255,0.15)]">
               <Image
@@ -220,33 +291,8 @@ function WhySection() {
   );
 }
 
-function StackedLogoGlow() {
-  // 双层叠加：底层完整 logo（深灰线条 + 蓝色），顶层仅蓝色像素分离版加 drop-shadow 呼吸。
-  // 这样 glow 只从眼睛/嘴/42 这些蓝色部分发出，深灰线条不参与发光（修复 v1 全体发光问题）。
-  // 蓝色版 PNG 由色彩分离脚本生成（B > R+15 且 B > G+15）。
-  return (
-    <span className="relative inline-block w-28 md:w-36">
-      <Image
-        src="/images/brand/claw42-stacked.png"
-        alt="Claw 42"
-        width={220}
-        height={220}
-        className="relative h-auto w-full object-contain"
-      />
-      <Image
-        src="/images/brand/claw42-stacked-blue.png"
-        alt=""
-        aria-hidden="true"
-        width={220}
-        height={220}
-        className="claw42-blue-breathe pointer-events-none absolute inset-0 h-auto w-full object-contain"
-      />
-    </span>
-  );
-}
-
 function DisclaimerSection() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
   return (
     <motion.section
@@ -267,17 +313,6 @@ function DisclaimerSection() {
               {para}
             </p>
           ))}
-        </div>
-
-        <div className="mt-10 flex justify-center">
-          <a
-            href="#top"
-            aria-label="Back to top"
-            onClick={() => trackEvent("back_to_top_click", { locale })}
-            className="group p-4 transition-transform duration-300 hover:scale-[1.03] md:p-5"
-          >
-            <StackedLogoGlow />
-          </a>
         </div>
       </div>
     </motion.section>
