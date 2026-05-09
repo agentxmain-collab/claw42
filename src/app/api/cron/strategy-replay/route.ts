@@ -5,9 +5,13 @@ import { tryOrchestrateNewsDebate, listNewsDebates } from "@/lib/debateOrchestra
 import { getCoinPool } from "@/lib/marketDataCache";
 import { adjustDebtFromReplays } from "@/lib/agentRelationship";
 import { evaluateStrategy, recordStrategyReplay } from "@/lib/strategyHistory";
+import { tryAcquireLock } from "@/lib/storage/kv-lock";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const STRATEGY_REPLAY_TRIGGER_LOCK_KEY = "cron:strategy-replay:trigger-now";
+const STRATEGY_REPLAY_TRIGGER_LOCK_MS = 5 * 60_000;
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -18,6 +22,23 @@ function isAuthorized(request: NextRequest) {
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const trigger = request.nextUrl.searchParams.get("trigger");
+  const triggerLock =
+    trigger === "now"
+      ? await tryAcquireLock(STRATEGY_REPLAY_TRIGGER_LOCK_KEY, {
+          ttlMs: STRATEGY_REPLAY_TRIGGER_LOCK_MS,
+          waitMs: 0,
+        })
+      : null;
+  if (trigger === "now" && !triggerLock) {
+    return NextResponse.json({
+      ok: true,
+      skipped: "strategy-replay trigger already ran within 5 minutes",
+      trigger,
+      servedAt: Date.now(),
+    });
   }
 
   const now = Date.now();
@@ -60,6 +81,8 @@ export async function GET(request: NextRequest) {
     fellBackFrom,
     generatedDebates: debates.length,
     replayed: replayed.length,
+    trigger,
+    triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,
     servedAt: now,
   });
 }

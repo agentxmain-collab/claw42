@@ -8,6 +8,7 @@ import type {
   WatchUpdateEntry,
 } from "../types";
 import type { AgentWatchLocale } from "../locale";
+import { isAmbientChatterEnabled } from "@/lib/ambientChatter";
 import { buildWatchSupplementalEntry } from "./watchSupplementalUpdates";
 
 export const WATCH_DIRECTOR_MEMORY_KEY = "claw42.watch.director.v1";
@@ -186,6 +187,10 @@ function buildSupplemental(
 }
 
 export function buildWatchDirectorOpening(input: WatchDirectorOpeningInput): WatchDirectorOpening {
+  if (!isAmbientChatterEnabled()) {
+    return { entries: [], mode: input.mode };
+  }
+
   const entries: StreamEntry[] = [];
   const analysisEntry = pickAnalysisEntry(input.analysisEntries, input.memory);
   pushEntry(entries, analysisEntry, input.memory);

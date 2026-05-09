@@ -37,6 +37,13 @@ export function threadKeyForSymbol(symbol: string): string {
   return `thread:${normalizeThreadSymbol(symbol)}`;
 }
 
+export function isContentfulThread(thread: ChatThread): boolean {
+  return Boolean(
+    thread.strategy?.id ||
+    (thread.seed?.type === "news" && (thread.seed.id || thread.seed.source || thread.seed.url)),
+  );
+}
+
 function symbolFromNews(news: NewsItem): string {
   return normalizeThreadSymbol(news.currencies[0] ?? "BTC");
 }
@@ -90,6 +97,16 @@ export async function getSharedThread(symbol: string): Promise<ChatThread | null
 }
 
 export async function saveSharedThread(thread: ChatThread): Promise<void> {
+  if (!isContentfulThread(thread)) {
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[claw42] skipped non-contentful shared thread", {
+        threadId: thread.id,
+        seedType: thread.seed?.type,
+      });
+    }
+    return;
+  }
+
   const symbol = normalizeThreadSymbol(thread.symbol ?? thread.seed.symbols[0] ?? "BTC");
   const nextThread = { ...thread, symbol };
   const ts = Date.now();
