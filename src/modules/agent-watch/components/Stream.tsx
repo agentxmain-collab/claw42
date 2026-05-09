@@ -22,6 +22,10 @@ interface StreamProps {
   typingAgent: AgentId | null;
   pool?: CoinPoolPayload;
   emptyLabel?: string;
+  emptyState?: {
+    title: string;
+    subtitle: string;
+  };
   locale?: AgentWatchLocale;
   newsDebateLabels: Dict["agentWatch"]["newsDebate"];
 }
@@ -78,7 +82,7 @@ function streamEntryScrollKey(entry: StreamEntry) {
 }
 
 export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
-  { entries, typingAgent, pool, emptyLabel, locale = "zh_CN", newsDebateLabels },
+  { entries, typingAgent, pool, emptyLabel, emptyState, locale = "zh_CN", newsDebateLabels },
   forwardedRef,
 ) {
   const scrollRef = useRef<ChatScrollContainerHandle>(null);
@@ -111,8 +115,21 @@ export const Stream = forwardRef<StreamHandle, StreamProps>(function Stream(
       contentClassName="h-[560px] overflow-y-auto px-4 py-4 md:px-6"
     >
       {uniqueEntries.length === 0 && !typingAgent && (
-        <div className="flex h-full items-center justify-center text-sm text-white/65">
-          {emptyLabel ?? "等待 Agent 开口..."}
+        <div className="flex h-full items-center justify-center px-4">
+          <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
+            <div
+              className="h-12 w-12 animate-pulse rounded-full border border-white/10 bg-white/[0.05]"
+              aria-hidden="true"
+            />
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-white">
+                {emptyState?.title ?? emptyLabel ?? "等待 Agent 开口..."}
+              </h3>
+              {emptyState?.subtitle && (
+                <p className="text-sm leading-relaxed text-white/55">{emptyState.subtitle}</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

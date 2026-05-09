@@ -235,7 +235,11 @@
       "noNews": "No news yet"
     },
     "loadMore": "Load more",
-    "loadingMore": "Loading..."
+    "loadingMore": "Loading...",
+    "emptyState": {
+      "title": "AI-команда очікує важливих подій",
+      "subtitle": "Мульти-Agent дебати зʼявляться тут, коли спрацює ринкова новина або аномальний сигнал."
+    }
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",

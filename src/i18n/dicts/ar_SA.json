@@ -235,7 +235,11 @@
       "noNews": "No news yet"
     },
     "loadMore": "Load more",
-    "loadingMore": "Loading..."
+    "loadingMore": "Loading...",
+    "emptyState": {
+      "title": "فريق الذكاء الاصطناعي ينتظر الأحداث المهمة",
+      "subtitle": "سيظهر نقاش الوكلاء هنا عند صدور خبر سوقي جديد أو إشارة غير عادية."
+    }
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",
