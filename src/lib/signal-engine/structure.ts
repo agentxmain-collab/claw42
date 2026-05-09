@@ -3,6 +3,7 @@ import { evaluateRules } from "@/lib/signal-engine/filter";
 import { impactFromScore, isHeadliner, scoreCandidate } from "@/lib/signal-engine/score";
 import { normalizeStructuredFields } from "@/lib/signal-engine/schema-guard";
 import { structureWithStub, stubStructuringProvider } from "@/lib/signal-engine/providers/stub";
+import { computeRating } from "@/lib/rating";
 import type { StructuredFields, StructuringProvider } from "@/lib/signal-engine/providers/types";
 import type { RawCandidate, RuleEvaluation } from "@/lib/signal-engine/types";
 import type { AssetImpactRef, SignalCard } from "@/types/signal";
@@ -86,6 +87,7 @@ function createSignalCard(
       confidence: structured.confidence,
       impactLevel: structured.impactLevel,
       riskNotes: structured.riskNotes,
+      rating: computeRating(structured.direction, structured.confidence),
     },
     impact: {
       primaryAsset: candidate.primaryAsset,

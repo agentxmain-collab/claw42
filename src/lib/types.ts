@@ -1,4 +1,5 @@
 import type { AgentId, CoinSymbol, SignalSeverity } from "@/modules/agent-watch/types";
+import type { Rating5Tier } from "@/lib/rating";
 
 export type FactionId = AgentId;
 
@@ -140,6 +141,7 @@ export interface FinalStrategy {
   id: string;
   symbol: string;
   direction: DebateDirection;
+  rating: Rating5Tier;
   entryCondition: string;
   stopLoss: number;
   takeProfit: number[];

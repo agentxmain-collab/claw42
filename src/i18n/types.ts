@@ -10,6 +10,14 @@ export type Locale =
   | "ar_SA"
   | "en_XA";
 
+export type RatingDict = {
+  StrongBuy: string;
+  Buy: string;
+  Hold: string;
+  Sell: string;
+  StrongSell: string;
+};
+
 export interface Dict {
   nav: {
     switchLangToEn: string; // 当前中文时按钮显示
@@ -200,6 +208,7 @@ export interface Dict {
       noNews: string;
     };
   };
+  rating: RatingDict;
   coinModal: {
     closeAriaLabel: string;
     goToWatchCta: string;

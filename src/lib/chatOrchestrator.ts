@@ -17,6 +17,7 @@ import {
 } from "@/lib/llmPromptBuilder";
 import { fetchLivePriceSnapshot, type TickerSnapshot } from "@/lib/news/livePriceFetch";
 import { validatePlainSpeech, plainSpeechRetryInstruction } from "@/lib/plainSpeechGuard";
+import { computeRating, confidenceFromConsensusRatio } from "@/lib/rating";
 import { buildCoinwDeeplink } from "@/lib/strategyDeeplink";
 import { strategyRetryInstruction, validateStrategyAgainstSnapshot } from "@/lib/strategyValidator";
 import type { SignalRecord } from "@/modules/agent-watch/types";
@@ -609,18 +610,21 @@ function buildStrategyFromRaw(
   const symbol = primarySymbol(seed);
   const id = `${seed.id}:strategy:${ts}`;
   const counts = fakeFollowCount(id, ts);
+  const direction = normalizeDirection(raw.direction);
+  const consensusRatio = normalizeConsensusRatio(raw.consensusRatio);
   const strategy: FinalStrategy = {
     id,
     symbol: String(raw.symbol ?? symbol)
       .replace(/^\$/, "")
       .toUpperCase(),
-    direction: normalizeDirection(raw.direction),
+    direction,
+    rating: computeRating(direction, confidenceFromConsensusRatio(consensusRatio)),
     entryCondition: String(raw.entryCondition ?? `${symbol} 等关键位确认`).slice(0, 100),
     stopLoss: Number(raw.stopLoss) || 0,
     takeProfit: Array.isArray(raw.takeProfit)
       ? raw.takeProfit.map(Number).filter((value) => Number.isFinite(value))
       : [],
-    consensusRatio: normalizeConsensusRatio(raw.consensusRatio),
+    consensusRatio,
     consensusAgents: Array.isArray(raw.consensusAgents)
       ? raw.consensusAgents.map(String).filter(isFactionId)
       : [],

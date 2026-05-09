@@ -246,5 +246,12 @@
     "goToWatchCta": "Go to Agent Live",
     "loadingPrice": "Loading market data",
     "agentCommentMissing": "Agent commentary available in Chinese only"
+  },
+  "rating": {
+    "StrongBuy": "Achat fort",
+    "Buy": "Achat",
+    "Hold": "Conserver",
+    "Sell": "Vente",
+    "StrongSell": "Vente forte"
   }
 }

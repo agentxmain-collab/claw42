@@ -246,5 +246,12 @@
     "goToWatchCta": "Go to Agent Live",
     "loadingPrice": "Loading market data",
     "agentCommentMissing": "Agent commentary available in Chinese only"
+  },
+  "rating": {
+    "StrongBuy": "Сильна купівля",
+    "Buy": "Купівля",
+    "Hold": "Утримувати",
+    "Sell": "Продаж",
+    "StrongSell": "Сильний продаж"
   }
 }

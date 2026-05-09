@@ -76,6 +76,7 @@ export function makeSignal(overrides: SignalOverrides = {}): SignalCard {
       confidence: 72,
       impactLevel: "high",
       riskNotes: [{ zh: "追高风险", en: "Chasing risk" }],
+      rating: "Buy",
     },
     impact: {
       primaryAsset: "BTC",

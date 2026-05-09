@@ -1,4 +1,5 @@
 import { isCredibleSource } from "@/lib/signal-engine/ingest";
+import { computeRating } from "@/lib/rating";
 import type { SignalCard } from "@/types/signal";
 
 export function derateSignal(signal: SignalCard): SignalCard {
@@ -9,6 +10,7 @@ export function derateSignal(signal: SignalCard): SignalCard {
   const hasSourceRisk =
     !isCredibleSource(signal.facts.source) && signal.facts.source !== "mock-market";
   const directionConflict = rules.has("direction_conflict");
+  const direction = hasLowConfidence ? null : signal.judgment.direction;
 
   return {
     ...signal,
@@ -18,7 +20,8 @@ export function derateSignal(signal: SignalCard): SignalCard {
     },
     judgment: {
       ...signal.judgment,
-      direction: hasLowConfidence ? null : signal.judgment.direction,
+      direction,
+      rating: computeRating(direction, signal.judgment.confidence),
       riskNotes: needsDefaultRisk
         ? [
             {
