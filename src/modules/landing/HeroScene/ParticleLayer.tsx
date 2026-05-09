@@ -23,13 +23,12 @@ interface Particle {
 
 const PARTICLE_COUNT_DESKTOP = 42;
 const PARTICLE_COUNT_MOBILE = 30;
-const PARTICLE_LIFE_MS = 1120;
-const PARTICLE_TRAIL_LENGTH = 18;
+const PARTICLE_LIFE_MS = 920;
 const ACTIVE_SPAWN_RADIUS = 18;
 const IDLE_SPAWN_RADIUS = 10;
 const AMBIENT_DRIFT_SPEED = 0.12;
 const FRICTION = 0.72;
-const CURSOR_PULL = 0.035;
+const CURSOR_PULL = 0.028;
 const ACTIVE_SPAWN_INTERVAL_MS = 18;
 const IDLE_SPAWN_INTERVAL_MS = 180;
 const IDLE_AFTER_MS = 520;
@@ -125,12 +124,9 @@ export function ParticleLayer({ stageRef, mouseX, mouseY, reduceMotion }: Partic
       }
 
       ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.lineCap = "round";
 
       const survivors: Particle[] = [];
       for (const particle of particlesRef.current) {
-        const previousX = particle.x;
-        const previousY = particle.y;
         particle.vx += (spawnCenter.x - particle.x) * CURSOR_PULL;
         particle.vy += (spawnCenter.y - particle.y) * CURSOR_PULL;
         particle.vx *= FRICTION;
@@ -141,30 +137,6 @@ export function ParticleLayer({ stageRef, mouseX, mouseY, reduceMotion }: Partic
 
         if (particle.life > 0) {
           const alpha = Math.min(0.72, particle.life * 0.74);
-          const trailAlpha = Math.min(0.42, particle.life * 0.42);
-          const velocityLength = Math.hypot(particle.vx, particle.vy);
-          const radialX = previousX - spawnCenter.x;
-          const radialY = previousY - spawnCenter.y;
-          const radialLength = Math.hypot(radialX, radialY) || 1;
-          const trailDirectionX =
-            velocityLength > 0.04 ? particle.vx / velocityLength : radialX / radialLength;
-          const trailDirectionY =
-            velocityLength > 0.04 ? particle.vy / velocityLength : radialY / radialLength;
-          const trailX = particle.x - trailDirectionX * PARTICLE_TRAIL_LENGTH;
-          const trailY = particle.y - trailDirectionY * PARTICLE_TRAIL_LENGTH;
-          const trailGradient = ctx.createLinearGradient(trailX, trailY, particle.x, particle.y);
-          trailGradient.addColorStop(0, `hsla(${particle.hue}, 90%, 65%, 0)`);
-          trailGradient.addColorStop(1, `hsla(${particle.hue}, 90%, 68%, ${trailAlpha})`);
-
-          ctx.beginPath();
-          ctx.strokeStyle = trailGradient;
-          ctx.lineWidth = Math.max(1, particle.size * 1.15);
-          ctx.shadowColor = `hsla(${particle.hue}, 90%, 60%, ${trailAlpha})`;
-          ctx.shadowBlur = 4;
-          ctx.moveTo(trailX, trailY);
-          ctx.lineTo(particle.x, particle.y);
-          ctx.stroke();
-
           ctx.beginPath();
           ctx.fillStyle = `hsla(${particle.hue}, 90%, 70%, ${alpha})`;
           ctx.shadowColor = `hsla(${particle.hue}, 90%, 60%, ${alpha})`;
