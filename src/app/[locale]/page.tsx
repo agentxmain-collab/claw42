@@ -263,7 +263,7 @@ function WhySection() {
             variants={fadeUpVariants(reduceMotion)}
             transition={getFadeUpTransition(i * 0.08)}
             whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
-            className="card-glow group relative flex flex-col overflow-hidden rounded-card border border-border-token-primary bg-bg-fill-card1 p-8"
+            className="card-glow card-glow-bottom-gradient group relative flex flex-col overflow-hidden rounded-card border border-transparent bg-bg-fill-card1 p-8"
           >
             <div className="mb-5 flex h-14 w-14 items-center justify-center overflow-hidden rounded-panel border border-border-token-primary bg-bg-primary">
               <Image

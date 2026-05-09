@@ -503,7 +503,7 @@ textarea:focus-visible,
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 0 solid transparent;
   opacity: 1;
   pointer-events: none;
   transition:
@@ -516,7 +516,7 @@ textarea:focus-visible,
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  border: 1px solid var(--color-border-brand);
+  border: 0 solid transparent;
   background: linear-gradient(
     to top,
     rgba(82, 39, 255, 0.4) 0%,
@@ -538,6 +538,18 @@ textarea:focus-visible,
 }
 
 .card-glow:hover::after {
+  opacity: 0;
+}
+
+.card-glow-bottom-gradient:hover {
+  border-color: transparent;
+}
+
+.card-glow-bottom-gradient:hover::before {
+  border-color: transparent;
+}
+
+.card-glow-bottom-gradient:hover::after {
   opacity: 1;
 }
 
@@ -548,6 +560,10 @@ textarea:focus-visible,
 
   .card-glow:hover::after {
     opacity: 0;
+  }
+
+  .card-glow-bottom-gradient:hover::after {
+    opacity: 1;
   }
 }
 
@@ -833,6 +849,10 @@ textarea:focus-visible,
 
   .card-glow:hover::after {
     opacity: 0;
+  }
+
+  .card-glow-bottom-gradient:hover::after {
+    opacity: 1;
   }
 
   .claw42-blue-breathe {
