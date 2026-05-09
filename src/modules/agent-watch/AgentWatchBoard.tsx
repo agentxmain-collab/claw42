@@ -247,9 +247,9 @@ export function AgentWatchBoard({
       data: { entries?: StreamEntry[]; hasMore?: boolean; oldestTs?: number | null },
       mode: "replace" | "prepend",
     ) => {
-      const chronologicalEntries = dedupeStreamEntries([...(data.entries ?? [])]).sort(
-        (a, b) => a.ts - b.ts,
-      );
+      const chronologicalEntries = filterStreamEntries(
+        dedupeStreamEntries([...(data.entries ?? [])]),
+      ).sort((a, b) => a.ts - b.ts);
       if (mode === "replace") {
         setHistoryEntries(chronologicalEntries);
         if (chronologicalEntries.length > 0) {
