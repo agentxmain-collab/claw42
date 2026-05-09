@@ -32,6 +32,29 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
   return (
     <div className="claw42-hero-pedestal-layer pointer-events-none absolute inset-0">
       <motion.div
+        className="claw42-hero-bound-horizon pointer-events-none absolute left-1/2"
+        style={{
+          bottom:
+            "calc(var(--claw42-hero-pedestal-bottom, 31%) - var(--claw42-hero-bound-horizon-drop, min(214px, 15vw)))",
+          backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
+          backgroundPosition: "center bottom",
+          backgroundSize: "cover",
+          filter: "brightness(1.22) saturate(1.18)",
+          mixBlendMode: "screen",
+          transform: depthTransform,
+          zIndex: 17,
+          WebkitMaskImage:
+            "linear-gradient(180deg, transparent 39%, black 50%, black 70%, transparent 80%)",
+          maskImage:
+            "linear-gradient(180deg, transparent 39%, black 50%, black 70%, transparent 80%)",
+        }}
+        animate={reduceMotion ? { opacity: 0.1 } : { opacity: [0.04, 0.14, 0.04] }}
+        transition={
+          reduceMotion ? { duration: 0 } : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
+        }
+      />
+
+      <motion.div
         className="pointer-events-none absolute left-1/2 -translate-x-1/2"
         style={{
           bottom: "var(--claw42-hero-pedestal-glow-bottom, 35%)",
