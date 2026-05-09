@@ -30,7 +30,6 @@ function useIsMobile() {
 }
 
 const MOBILE_POSE_CYCLE: Pose[] = ["center", "left", "center", "right"];
-
 /** Auto-cycle pose on mobile: center → left → center → right → repeat every 8 s. */
 function useMobilePoseCycle(isMobile: boolean, reduceMotion: boolean): Pose {
   const [idx, setIdx] = useState(0);
@@ -101,12 +100,11 @@ export function HeroScene() {
       style={{ ...stageStyle, perspective: "1200px" }}
     >
       <div
-        className="pointer-events-none absolute inset-0"
+        className="claw42-hero-background-art pointer-events-none absolute left-1/2"
         style={{
           backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
-          backgroundPosition: "center bottom",
-          backgroundSize: "cover",
-          transform: "translate3d(0, var(--claw42-hero-depth-bg-y, 0px), 0)",
+          transform:
+            "translate(-50%, calc(var(--claw42-hero-depth-bg-y, 0px) + var(--claw42-hero-pedestal-layer-shift, 0px)))",
         }}
       />
       <div
@@ -123,32 +121,6 @@ export function HeroScene() {
             "radial-gradient(ellipse 120% 84% at 50% 46%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.44) 78%, rgba(0,0,0,0.94) 100%)",
         }}
       />
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-[8]"
-        style={{
-          backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
-          backgroundPosition: "center bottom",
-          backgroundSize: "cover",
-          filter: "brightness(1.22) saturate(1.18)",
-          mixBlendMode: "screen",
-          transform: "translate3d(0, var(--claw42-hero-depth-horizon-y, 0px), 0)",
-          WebkitMaskImage:
-            "linear-gradient(180deg, transparent 38%, black 47%, black 66%, transparent 74%)",
-          maskImage:
-            "linear-gradient(180deg, transparent 38%, black 47%, black 66%, transparent 74%)",
-        }}
-        animate={
-          reduceMotion
-            ? { opacity: 0.1 }
-            : {
-                opacity: [0.04, 0.14, 0.04],
-              }
-        }
-        transition={
-          reduceMotion ? { duration: 0 } : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
-        }
-      />
-
       {/* z-10 Pedestal */}
       <PedestalLayer mouseX={mouseX} mouseY={mouseY} reduceMotion={reduceMotion} />
 
