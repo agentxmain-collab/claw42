@@ -65,14 +65,14 @@ export function SkillsEcoSection() {
             whileTap={{ scale: 0.98 }}
             className="card-glow flex flex-col rounded-card border border-border-token-primary bg-gradient-to-b from-bg-fill-card1 to-bg-fill-card1/30 p-6 md:p-8"
           >
-            <div className="mb-4 flex h-14 w-14 items-center justify-center overflow-hidden rounded-panel border border-border-token-primary bg-bg-primary">
+            <div className="mb-5 flex h-[68px] w-28 items-center justify-start">
               <Image
                 src={`/images/icons/${ECO_ICON_SLUGS[i] ?? ECO_ICON_SLUGS[0]}.png`}
                 alt=""
                 aria-hidden="true"
-                width={48}
-                height={48}
-                className="h-10 w-10 object-contain"
+                width={96}
+                height={60}
+                className="h-[60px] w-24 object-contain"
               />
             </div>
             <h3 className="mb-3 text-xl font-bold text-fg-primary md:text-2xl">{card.title}</h3>
