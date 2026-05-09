@@ -35,6 +35,7 @@ import {
   splitStreamEntryForDisplay,
   thinkDurationForStreamEntry,
 } from "./utils/streamDisplayQueue";
+import { filterStreamEntries } from "./utils/streamFilter";
 import { buildWatchSupplementalEntry } from "./utils/watchSupplementalUpdates";
 import { isAgentWatchLocale, resolveAgentWatchLocale } from "./locale";
 import {
@@ -231,7 +232,7 @@ export function AgentWatchBoard({
   const hasScheduledInitialRef = useRef(false);
   const fiveSecondGuardRef = useRef(false);
   const [liveQueue, setLiveQueue] = useState<StreamEntry[]>(() => {
-    const initialEntries = entriesFromInitialThreads(initialChatThreads);
+    const initialEntries = filterStreamEntries(entriesFromInitialThreads(initialChatThreads));
     return initialEntries.length > 0 ? initialEntries : [buildBootEntry(agentWatchLocale)];
   });
   const [historyEntries, setHistoryEntries] = useState<StreamEntry[]>([]);
@@ -329,7 +330,10 @@ export function AgentWatchBoard({
         setSpeakingAgent(null);
       }
 
-      const displayEntries = entries.flatMap(splitStreamEntryForDisplay);
+      const visibleEntries = filterStreamEntries(entries);
+      if (visibleEntries.length === 0) return;
+
+      const displayEntries = visibleEntries.flatMap(splitStreamEntryForDisplay);
       const scheduledAt = Date.now();
       let nextDelay = displayScheduleStartDelay(
         scheduledAt,
@@ -397,8 +401,10 @@ export function AgentWatchBoard({
         symbols: ["BTC"],
         severity: "neutral",
       };
-      rememberScheduledEntries([entry], now);
-      scheduleStreamEntries([entry]);
+      const visibleEntries = filterStreamEntries([entry]);
+      if (visibleEntries.length === 0) return;
+      rememberScheduledEntries(visibleEntries, now);
+      scheduleStreamEntries(visibleEntries);
     }, 3200);
 
     return () => window.clearTimeout(timer);
@@ -421,7 +427,10 @@ export function AgentWatchBoard({
       memory,
       locale: agentWatchLocale,
     });
-    const directorEntries = opening.entries.length > 0 ? opening.entries : entries;
+    const directorEntries = filterStreamEntries(
+      opening.entries.length > 0 ? opening.entries : entries,
+    );
+    if (directorEntries.length === 0) return;
     rememberScheduledEntries(directorEntries, now);
     const clearPending = !hasScheduledInitialRef.current;
     hasScheduledInitialRef.current = true;
@@ -449,7 +458,7 @@ export function AgentWatchBoard({
 
     const existingEntries = streamEntriesFromPayload(data);
     const visibleEntries = trimStreamEntries(
-      dedupeStreamEntries([...existingEntries, ...liveQueue]),
+      filterStreamEntries(dedupeStreamEntries([...existingEntries, ...liveQueue])),
     );
     const cutoff = now - DUPLICATE_CONTENT_WINDOW_MS * 2;
     for (const [key, ts] of Array.from(supplementalClaimRef.current.entries())) {
@@ -498,8 +507,10 @@ export function AgentWatchBoard({
 
     supplementalClaimRef.current.set(entry.dedupeKey, now);
     lastSupplementalAtRef.current = now;
-    rememberScheduledEntries([entry], now);
-    scheduleStreamEntries([entry]);
+    const visibleEntry = filterStreamEntries([entry]);
+    if (visibleEntry.length === 0) return;
+    rememberScheduledEntries(visibleEntry, now);
+    scheduleStreamEntries(visibleEntry);
   }, [
     agentWatchLocale,
     data,
