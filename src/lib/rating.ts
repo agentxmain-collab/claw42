@@ -56,10 +56,4 @@ export const RATING_BG: Record<Rating5Tier, string> = {
   StrongSell: "rgba(233, 80, 50, 0.15)",
 };
 
-export const RATING_ORDER: Rating5Tier[] = [
-  "StrongBuy",
-  "Buy",
-  "Hold",
-  "Sell",
-  "StrongSell",
-];
+export const RATING_ORDER: Rating5Tier[] = ["StrongBuy", "Buy", "Hold", "Sell", "StrongSell"];
