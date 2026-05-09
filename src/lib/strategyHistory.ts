@@ -1,16 +1,20 @@
 import type { AgentWinrate, FactionId, FinalStrategy, StrategyReplay } from "@/lib/types";
 import { getFactionIds } from "@/lib/factionRegistry";
+import { appendDecisionRecord } from "@/lib/team/decisionRecordStore";
+import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 
 const replayHistory: StrategyReplay[] = [];
 
-export function recordStrategyReplay(replay: StrategyReplay) {
+export async function recordStrategyReplay(replay: StrategyReplay) {
   const existingIndex = replayHistory.findIndex((item) => item.strategyId === replay.strategyId);
   if (existingIndex >= 0) {
     replayHistory[existingIndex] = replay;
-    return;
+  } else {
+    replayHistory.unshift(replay);
+    replayHistory.splice(300);
   }
-  replayHistory.unshift(replay);
-  replayHistory.splice(300);
+
+  await appendDecisionRecord(replayToDecisionRecord(replay));
 }
 
 export function listStrategyReplays(limit = 50): StrategyReplay[] {
@@ -39,6 +43,27 @@ export function evaluateStrategy(
     exitPrice,
     pnlPct,
     isWin: pnlPct > 0,
+  };
+}
+
+export function replayToDecisionRecord(replay: StrategyReplay): StrategyDecisionRecord {
+  return {
+    id: `legacy:${replay.strategyId}:${replay.evaluatedAt}`,
+    schemaVersion: 1,
+    recordSource: "legacy",
+    symbol: replay.symbol.toUpperCase(),
+    decisionOwnerId: "legacy",
+    contributorIds: [],
+    analystInputs: [],
+    sourceThreadId: null,
+    tradeDecisionId: null,
+    createdAt: new Date(replay.openedAt).toISOString(),
+    evaluationWindowEndsAt: null,
+    resolvedAt: new Date(replay.evaluatedAt).toISOString(),
+    resolvedOutcome: replay.isWin ? "hit_tp" : "hit_sl",
+    promptVersion: "legacy-strategy-replay-v1",
+    modelProvider: "legacy",
+    legacyFactionId: replay.legacyFactionId ?? null,
   };
 }
 

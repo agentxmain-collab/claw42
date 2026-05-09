@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     const entryPrice =
       strategy.stopLoss > 0 ? (strategy.stopLoss + ticker.price) / 2 : ticker.price;
     const replay = evaluateStrategy(strategy, entryPrice, ticker.price, now);
-    recordStrategyReplay(replay);
+    await recordStrategyReplay(replay);
     replayed.push(replay);
   }
   await adjustDebtFromReplays(replayed, now).catch((error) => {
