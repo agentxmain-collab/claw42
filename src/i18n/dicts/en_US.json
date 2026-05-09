@@ -235,7 +235,11 @@
       "noNews": "No news yet"
     },
     "loadMore": "Load more",
-    "loadingMore": "Loading..."
+    "loadingMore": "Loading...",
+    "emptyState": {
+      "title": "AI team standing by for major events",
+      "subtitle": "Multi-agent debate appears here when new market news or anomaly signals trigger."
+    }
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",

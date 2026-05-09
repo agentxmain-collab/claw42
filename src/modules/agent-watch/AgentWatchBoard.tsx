@@ -50,6 +50,7 @@ import {
 
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 const STREAM_MAX_ENTRIES = 48;
+const SHOW_TICKERS = process.env.NEXT_PUBLIC_WATCH_SHOW_TICKERS === "true";
 
 function entriesFromInitialThreads(threads: ChatThread[]): ChatThreadEntry[] {
   return threads.map((thread) => ({
@@ -211,6 +212,7 @@ export function AgentWatchBoard({
   });
   const processedGeneratedAtRef = useRef<number | null>(null);
   const streamRef = useRef<StreamHandle>(null);
+  const historySentinelRef = useRef<HTMLDivElement>(null);
   const timersRef = useRef<number[]>([]);
   const scheduledUntilRef = useRef(0);
   const marketSignalsRef = useRef(marketSignals);
@@ -534,6 +536,24 @@ export function AgentWatchBoard({
     }
   }, [applyHistoryPayload, loadingMoreHistory, oldestHistoryTs]);
 
+  useEffect(() => {
+    if (!hasMoreHistory || loadingMoreHistory) return;
+    const sentinel = historySentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void loadMoreHistory();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreHistory, loadMoreHistory, loadingMoreHistory]);
+
   const combinedEntries = useMemo(
     () => dedupeStreamEntries([...historyEntries, ...liveQueue]).sort((a, b) => a.ts - b.ts),
     [historyEntries, liveQueue],
@@ -594,21 +614,25 @@ export function AgentWatchBoard({
           focusSymbols={focusSymbols}
           locale={agentWatchLocale}
         />
-        <CoinTickerStrip
-          pool={data?.pool ?? tickerData?.pool}
-          tickers={data?.tickers ?? tickerData?.tickers}
-          labels={t.agentWatch.coinPool}
-        />
-        <CriticalNewsBanner
-          debate={data?.newsDebates?.[0] ?? null}
-          labels={t.agentWatch.newsDebate}
-        />
-        <MarketEventFeed
-          signals={marketSignals}
-          labels={t.agentWatch.marketEvent}
-          locale={agentWatchLocale}
-        />
-        <NewsFeedTicker debates={data?.newsDebates ?? []} labels={t.agentWatch.newsDebate} />
+        {SHOW_TICKERS && (
+          <>
+            <CoinTickerStrip
+              pool={data?.pool ?? tickerData?.pool}
+              tickers={data?.tickers ?? tickerData?.tickers}
+              labels={t.agentWatch.coinPool}
+            />
+            <CriticalNewsBanner
+              debate={data?.newsDebates?.[0] ?? null}
+              labels={t.agentWatch.newsDebate}
+            />
+            <MarketEventFeed
+              signals={marketSignals}
+              labels={t.agentWatch.marketEvent}
+              locale={agentWatchLocale}
+            />
+            <NewsFeedTicker debates={data?.newsDebates ?? []} labels={t.agentWatch.newsDebate} />
+          </>
+        )}
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {AGENT_ORDER.map((agentId) => (
@@ -623,13 +647,15 @@ export function AgentWatchBoard({
           ))}
         </div>
 
-        <NewContentBanner
-          visible={hasNewContent}
-          onDismiss={handleDismissNewContent}
-          onJumpToLatest={() => {
-            void handleJumpToLatest();
-          }}
-        />
+        {SHOW_TICKERS && (
+          <NewContentBanner
+            visible={hasNewContent}
+            onDismiss={handleDismissNewContent}
+            onJumpToLatest={() => {
+              void handleJumpToLatest();
+            }}
+          />
+        )}
 
         <Stream
           ref={streamRef}
@@ -637,21 +663,17 @@ export function AgentWatchBoard({
           typingAgent={typingAgent}
           pool={data?.pool}
           emptyLabel={t.agentWatch.emptyHistory}
+          emptyState={t.agentWatch.emptyState}
           locale={agentWatchLocale}
           newsDebateLabels={t.agentWatch.newsDebate}
         />
 
         {hasMoreHistory && (
-          <button
-            type="button"
-            onClick={() => {
-              void loadMoreHistory();
-            }}
-            disabled={loadingMoreHistory}
-            className="mx-auto block rounded-full border border-white/10 bg-white/[0.04] px-6 py-2 text-sm font-semibold text-white/60 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loadingMoreHistory ? t.agentWatch.loadingMore : t.agentWatch.loadMore}
-          </button>
+          <div
+            ref={historySentinelRef}
+            className="h-3 w-full"
+            aria-label={loadingMoreHistory ? t.agentWatch.loadingMore : undefined}
+          />
         )}
 
         <p className="text-white/42 rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3 text-xs leading-relaxed">

@@ -235,7 +235,11 @@
       "noNews": "No news yet"
     },
     "loadMore": "Load more",
-    "loadingMore": "Loading..."
+    "loadingMore": "Loading...",
+    "emptyState": {
+      "title": "L'equipe IA attend les evenements majeurs",
+      "subtitle": "Le debat multi-Agent apparaitra ici lorsqu une nouvelle de marche ou un signal anormal sera detecte."
+    }
   },
   "coinModal": {
     "closeAriaLabel": "Close market card",

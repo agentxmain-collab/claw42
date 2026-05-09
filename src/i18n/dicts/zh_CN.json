@@ -235,7 +235,11 @@
       "noNews": "暂无新闻"
     },
     "loadMore": "查看更多",
-    "loadingMore": "加载中..."
+    "loadingMore": "加载中...",
+    "emptyState": {
+      "title": "AI 团队正在等待重大事件",
+      "subtitle": "新的市场新闻或异常信号触发后，多 Agent 辩论会出现在这里"
+    }
   },
   "coinModal": {
     "closeAriaLabel": "关闭行情卡",
