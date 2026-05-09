@@ -1,7 +1,9 @@
 "use client";
 
 import type { Dict } from "@/i18n/types";
+import { useI18n } from "@/i18n/I18nProvider";
 import { trackEvent } from "@/lib/analytics";
+import { RATING_BG, RATING_COLOR } from "@/lib/rating";
 import type { FinalStrategy } from "@/lib/types";
 import { StrategyMiniChart } from "./StrategyMiniChart";
 
@@ -33,6 +35,7 @@ export function FinalStrategyBlock({
   strategy: FinalStrategy;
   labels: Dict["agentWatch"]["newsDebate"];
 }) {
+  const { t } = useI18n();
   const english = isEnglish(labels);
   const isExpired = strategy.expiresAt <= Date.now();
   const directionClass =
@@ -63,6 +66,15 @@ export function FinalStrategyBlock({
             </span>
             <span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-xs font-bold text-white/80">
               {directionChip(strategy.direction, english)}
+            </span>
+            <span
+              className="rounded-full px-2.5 py-0.5 text-xs font-bold"
+              style={{
+                color: RATING_COLOR[strategy.rating],
+                background: RATING_BG[strategy.rating],
+              }}
+            >
+              {t.rating[strategy.rating]}
             </span>
           </div>
 

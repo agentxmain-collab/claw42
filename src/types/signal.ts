@@ -1,5 +1,6 @@
 import type { LocalizedText, MarketDirection } from "@/types/common";
 import type { TimelineItem } from "@/types/news";
+import type { Rating5Tier } from "@/lib/rating";
 
 export type EventType =
   | "regulation"
@@ -46,6 +47,7 @@ export type SignalJudgment = {
   confidence: number;
   impactLevel: ImpactLevel;
   riskNotes: LocalizedText[];
+  rating: Rating5Tier;
 };
 
 export type AssetImpactRef = {

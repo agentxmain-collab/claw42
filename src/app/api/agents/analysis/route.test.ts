@@ -47,6 +47,7 @@ function buildSignal(symbol: string): SignalCard {
       confidence: 72,
       impactLevel: "high",
       riskNotes: [{ zh: "防假突破", en: "Avoid fake breakout" }],
+      rating: "Buy",
     },
     impact: {
       primaryAsset: symbol,

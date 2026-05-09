@@ -242,5 +242,12 @@
     "goToWatchCta": "去实时分析看他们继续聊",
     "loadingPrice": "行情数据获取中",
     "agentCommentMissing": "Agent 点评暂时不可用"
+  },
+  "rating": {
+    "StrongBuy": "强烈买入",
+    "Buy": "买入",
+    "Hold": "持有",
+    "Sell": "卖出",
+    "StrongSell": "强烈卖出"
   }
 }

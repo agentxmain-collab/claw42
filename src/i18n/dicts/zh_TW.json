@@ -242,5 +242,12 @@
     "goToWatchCta": "Go to Agent Live",
     "loadingPrice": "Loading market data",
     "agentCommentMissing": "Agent commentary available in Chinese only"
+  },
+  "rating": {
+    "StrongBuy": "強烈買入",
+    "Buy": "買入",
+    "Hold": "持有",
+    "Sell": "賣出",
+    "StrongSell": "強烈賣出"
   }
 }
