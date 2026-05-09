@@ -218,7 +218,10 @@ function QuickStartSection() {
                   {renderCommandSegments(commandSegments, typedLength)}
                 </span>
               </span>
-              <span className="quick-start-caret ml-1 inline-block h-5 w-1 bg-brand-purple" aria-hidden="true" />
+              <span
+                className="quick-start-caret ml-1 inline-block h-5 w-1 bg-brand-purple"
+                aria-hidden="true"
+              />
             </div>
           </div>
           <motion.button

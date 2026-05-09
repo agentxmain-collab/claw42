@@ -29,4 +29,3 @@ Every visual deployment report must include:
 - target base commit
 - whether the approved visual commit is an ancestor of the target base
 - deployment id and URL
-

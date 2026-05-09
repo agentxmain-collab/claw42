@@ -144,9 +144,7 @@ textarea:focus-visible,
 }
 
 .claw42-hero-background-art {
-  bottom: calc(
-    var(--claw42-hero-pedestal-bottom, 31%) - var(--claw42-hero-background-drop, 320px)
-  );
+  bottom: calc(var(--claw42-hero-pedestal-bottom, 31%) - var(--claw42-hero-background-drop, 320px));
   z-index: 0;
   width: var(--claw42-hero-background-width, max(1600px, 128vw));
   aspect-ratio: 16 / 9;
