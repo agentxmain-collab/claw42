@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { getTeamMember, type TeamMemberId } from "@/lib/team/teamRegistry";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import type { MarketTickerPayload } from "@/modules/agent-watch/types";
 import { CitationChip } from "./CitationChip";
 import { SignalCard } from "./SignalCard";
 import { TradeCardBlock } from "./TradeCardBlock";
@@ -109,6 +110,7 @@ export function DecisionTimeline({
   hasMore,
   onLoadMore,
   sentinelRef,
+  marketSnapshot,
 }: {
   events: PublicTimelineEvent[];
   loading?: boolean;
@@ -116,6 +118,7 @@ export function DecisionTimeline({
   hasMore?: boolean;
   onLoadMore?: () => void;
   sentinelRef?: (node: HTMLDivElement | null) => void;
+  marketSnapshot?: MarketTickerPayload | null;
 }) {
   const { t } = useI18n();
   const oneHourCutoff = useMemo(() => Date.now() - 60 * 60 * 1000, []);
@@ -126,6 +129,7 @@ export function DecisionTimeline({
       <ZeroState
         title={t.agentWatch.emptyState.title}
         subtitle={t.agentWatch.emptyState.subtitle}
+        marketSnapshot={marketSnapshot}
       />
     );
   }
