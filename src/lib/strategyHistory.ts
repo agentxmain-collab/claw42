@@ -2,6 +2,7 @@ import type { AgentWinrate, FactionId, FinalStrategy, StrategyReplay } from "@/l
 import { getFactionIds } from "@/lib/factionRegistry";
 import { appendDecisionRecord } from "@/lib/team/decisionRecordStore";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
+import { validateTradeDecision } from "@/lib/team/tradeDecision";
 
 const replayHistory: StrategyReplay[] = [];
 
@@ -19,6 +20,37 @@ export async function recordStrategyReplay(replay: StrategyReplay) {
 
 export function listStrategyReplays(limit = 50): StrategyReplay[] {
   return replayHistory.slice(0, limit);
+}
+
+export async function recordStrategyDecisionRecord(
+  record: StrategyDecisionRecord,
+  currentPrice: number,
+): Promise<StrategyDecisionRecord> {
+  const preparedRecord = prepareDecisionRecordForStorage(record, currentPrice);
+  await appendDecisionRecord(preparedRecord);
+  return preparedRecord;
+}
+
+function prepareDecisionRecordForStorage(
+  record: StrategyDecisionRecord,
+  currentPrice: number,
+): StrategyDecisionRecord {
+  if (!record.tradeDecision) return record;
+
+  const validation = validateTradeDecision(record.tradeDecision, currentPrice);
+  if (validation.valid) {
+    return {
+      ...record,
+      recordSource: "live",
+      tradeDecision: validation.decision,
+    };
+  }
+
+  return {
+    ...record,
+    recordSource: "paper",
+    tradeDecision: null,
+  };
 }
 
 export function evaluateStrategy(
@@ -56,7 +88,7 @@ export function replayToDecisionRecord(replay: StrategyReplay): StrategyDecision
     contributorIds: [],
     analystInputs: [],
     sourceThreadId: null,
-    tradeDecisionId: null,
+    tradeDecision: null,
     createdAt: new Date(replay.openedAt).toISOString(),
     evaluationWindowEndsAt: null,
     resolvedAt: new Date(replay.evaluatedAt).toISOString(),

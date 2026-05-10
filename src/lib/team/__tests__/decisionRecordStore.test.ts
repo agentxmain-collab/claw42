@@ -70,7 +70,7 @@ function makeRecord(overrides: Partial<StrategyDecisionRecord> = {}): StrategyDe
       },
     ],
     sourceThreadId: "thread-1",
-    tradeDecisionId: null,
+    tradeDecision: null,
     createdAt: "2026-05-10T00:00:00.000Z",
     evaluationWindowEndsAt: null,
     resolvedAt: null,

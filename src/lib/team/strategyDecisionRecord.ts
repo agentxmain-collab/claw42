@@ -1,5 +1,6 @@
 import type { DebateDirection, FactionId } from "@/lib/types";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
+import type { TradeDecision } from "@/lib/team/tradeDecision";
 
 export type RecordSource = "live" | "paper" | "legacy" | "backtest";
 
@@ -35,8 +36,11 @@ export interface StrategyDecisionRecord {
   analystInputs: AnalystInputRecord[];
   /** Chat/thread id that produced this decision, when known. */
   sourceThreadId: string | null;
-  /** Structured trade-card id. Null until spec-2 writes TradeDecision records. */
-  tradeDecisionId: string | null;
+  /**
+   * Structured trade card. Spec-1 wrote a null id placeholder; spec-2 stores the
+   * full TradeDecision object so later track-record views can audit the exact card.
+   */
+  tradeDecision: TradeDecision | null;
   /** ISO timestamp when the decision was created. */
   createdAt: string;
   /** ISO timestamp when this decision should be evaluated, if known. */
