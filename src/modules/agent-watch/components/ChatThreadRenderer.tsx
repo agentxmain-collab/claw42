@@ -4,10 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import type { Dict } from "@/i18n/types";
 import { useI18n } from "@/i18n/I18nProvider";
 import { trackEvent } from "@/lib/analytics";
-import type { ChatThread, NewsDebate } from "@/lib/types";
+import type { ChatMessage, ChatThread, NewsDebate } from "@/lib/types";
 import { resolveAgentWatchLocale } from "../locale";
 import type { AgentId } from "../types";
-import { ChatMessageBubble } from "./ChatMessageBubble";
 import { FinalStrategyBlock } from "./FinalStrategyBlock";
 import { InsufficientConsensus } from "./InsufficientConsensus";
 import { SeedChip } from "./SeedChip";
@@ -23,6 +22,18 @@ function hashString(value: string): number {
 
 function boundedDelay(key: string, min: number, max: number) {
   return min + (hashString(key) % (max - min + 1));
+}
+
+function DevChatLine({ message }: { message: ChatMessage }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-white/45">
+        <span>{message.agentId}</span>
+        {message.mentioning && <span>@{message.mentioning}</span>}
+      </div>
+      <p className="mt-1 text-sm leading-relaxed text-white/75">{message.content}</p>
+    </div>
+  );
 }
 
 export function ChatThreadRenderer({
@@ -124,12 +135,7 @@ export function ChatThreadRenderer({
     <section className="space-y-2">
       <SeedChip thread={thread} />
       {visibleMessages.map((message, index) => (
-        <ChatMessageBubble
-          key={message.id}
-          message={message}
-          previousMessage={visibleMessages[index - 1]}
-          history={visibleMessages}
-        />
+        <DevChatLine key={`${message.id}-${index}`} message={message} />
       ))}
       {typingAgent && <TypingIndicator agentId={typingAgent} locale={agentWatchLocale} />}
 

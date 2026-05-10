@@ -2,6 +2,7 @@ import { describe, expect, test, beforeEach, vi } from "vitest";
 import type { StreamEntry } from "@/modules/agent-watch/types";
 import {
   __resetWatchHistoryForTests,
+  appendWatchHistoryEntry,
   appendWatchEntry,
   getWatchHistory,
 } from "./watchHistoryStore";
@@ -58,5 +59,35 @@ describe("watchHistoryStore", () => {
 
     expect(result.entries).toHaveLength(100);
     expect(result.entries[0]?.id).toBe("entry-504");
+  });
+
+  test("windowMinutes limits the public history window", async () => {
+    const now = Date.now();
+    vi.setSystemTime(now);
+    await appendWatchEntry(entry("outside", now - 90 * 60_000));
+    await appendWatchEntry(entry("inside", now - 10 * 60_000));
+
+    const result = await getWatchHistory({ before: now, limit: 30, windowMinutes: 60 });
+
+    expect(result.entries.map((item) => item.id)).toEqual(["inside"]);
+  });
+
+  test("public append helper requires complete metadata", async () => {
+    const now = Date.now();
+    await expect(appendWatchHistoryEntry(entry("no-meta", now) as never)).rejects.toThrow(
+      "watch history entry meta is required",
+    );
+    await appendWatchHistoryEntry({
+      ...entry("with-meta", now),
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: ["ev_1"],
+      },
+    });
+
+    const result = await getWatchHistory({ before: now + 1, limit: 10 });
+    expect(result.entries.map((item) => item.id)).toEqual(["with-meta"]);
   });
 });

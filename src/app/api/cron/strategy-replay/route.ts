@@ -6,6 +6,8 @@ import { getCoinPool } from "@/lib/marketDataCache";
 import { adjustDebtFromReplays } from "@/lib/agentRelationship";
 import { evaluateStrategy, recordStrategyReplay } from "@/lib/strategyHistory";
 import { tryAcquireLock } from "@/lib/storage/kv-lock";
+import { triggerPmDecisionPipelineOnce } from "@/lib/team/pmDecisionTrigger";
+import type { NewsItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -44,9 +46,11 @@ export async function GET(request: NextRequest) {
   const now = Date.now();
   const { items, servedBy, fellBackFrom } = await fetchNewsWithChain({ limit: 8 });
   const debates = [];
+  const normalizedItems: NewsItem[] = [];
 
   for (const item of items) {
     const normalizedItem = await normalizeNewsItem(item, servedBy);
+    normalizedItems.push(normalizedItem);
     const debate = await tryOrchestrateNewsDebate(normalizedItem, now + debates.length * 1000);
     if (!debate) continue;
     debates.push(debate);
@@ -74,12 +78,19 @@ export async function GET(request: NextRequest) {
       console.warn("[claw42] relationship debt adjustment skipped", error);
     }
   });
+  const pmDecision = await triggerPmDecisionPipelineOnce({
+    triggerSource: trigger === "now" ? "user_visit_trigger" : "cron",
+    pool,
+    newsItems: normalizedItems,
+    now,
+  });
 
   return NextResponse.json({
     ok: true,
     servedBy,
     fellBackFrom,
     generatedDebates: debates.length,
+    pmDecisionGenerated: Boolean(pmDecision),
     replayed: replayed.length,
     trigger,
     triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,

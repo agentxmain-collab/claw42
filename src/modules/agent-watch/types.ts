@@ -1,4 +1,5 @@
 import type { ChatThread, NewsDebate } from "@/lib/types";
+import type { TradeDecision } from "@/lib/team/tradeDecision";
 
 export type CoinSymbol = "BTC" | "ETH" | "SOL" | "USDT";
 export type AgentId = "alpha" | "beta" | "gamma";
@@ -94,6 +95,29 @@ export interface SignalRecord {
   };
 }
 
+export type WatchEntryVisibility = "public" | "debug";
+export type WatchEntryImportance = "low" | "medium" | "high" | "critical";
+export type WatchEntrySourceTrigger =
+  | "market_signal"
+  | "news"
+  | "pm_decision"
+  | "team_discussion"
+  | "cron_heartbeat"
+  | "fallback";
+
+export interface WatchEntryMeta {
+  visibility: WatchEntryVisibility;
+  importance: WatchEntryImportance;
+  sourceTrigger: WatchEntrySourceTrigger;
+  evidenceIds: string[];
+  recordId?: string;
+  tradeDecision?: TradeDecision | null;
+}
+
+export interface WatchEntryWithMeta {
+  meta?: WatchEntryMeta;
+}
+
 export interface AgentFocus {
   agentId: AgentId;
   symbol: string;
@@ -154,6 +178,7 @@ export interface AgentMessage {
   symbols?: string[];
   triggerSignalId: string;
   marketDataFetchedAt?: number;
+  meta?: WatchEntryMeta;
 }
 
 export interface CollectiveEvent {
@@ -166,6 +191,7 @@ export interface CollectiveEvent {
   description: string;
   primaryResponse: StreamResponse;
   echoResponses: StreamResponse[];
+  meta?: WatchEntryMeta;
 }
 
 export interface FocusEvent {
@@ -177,6 +203,7 @@ export interface FocusEvent {
   severity: "alert";
   description: string;
   primaryResponse: StreamResponse;
+  meta?: WatchEntryMeta;
 }
 
 export interface ConflictEvent {
@@ -187,6 +214,7 @@ export interface ConflictEvent {
   description: string;
   conflictingAgents: [AgentId, AgentId];
   responses: StreamResponse[];
+  meta?: WatchEntryMeta;
 }
 
 export type WatchUpdateType =
@@ -209,6 +237,7 @@ export interface WatchUpdateEntry {
   symbols?: string[];
   marketDataFetchedAt?: number;
   severity: "neutral" | "watch";
+  meta?: WatchEntryMeta;
 }
 
 export interface AgentDiscussionEntry {
@@ -223,6 +252,7 @@ export interface AgentDiscussionEntry {
   responses: StreamResponse[];
   marketDataFetchedAt?: number;
   severity: "neutral" | "watch";
+  meta?: WatchEntryMeta;
 }
 
 export interface NewsDebateEntry {
@@ -230,6 +260,7 @@ export interface NewsDebateEntry {
   id: string;
   ts: number;
   debate: NewsDebate;
+  meta?: WatchEntryMeta;
 }
 
 export interface ChatThreadEntry {
@@ -237,6 +268,7 @@ export interface ChatThreadEntry {
   id: string;
   ts: number;
   thread: ChatThread;
+  meta?: WatchEntryMeta;
 }
 
 export type StreamEntry =

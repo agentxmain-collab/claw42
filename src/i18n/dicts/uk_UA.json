@@ -305,6 +305,19 @@
     "emptyState": {
       "title": "AI-команда очікує важливих подій",
       "subtitle": "Мульти-Agent дебати зʼявляться тут, коли спрацює ринкова новина або аномальний сигнал."
+    },
+    "timeline": {
+      "title": "Public decision timeline",
+      "recentHour": "Last 1 hour",
+      "olderWindow": "12h fallback window",
+      "showProcess": "Show decision process",
+      "showConclusion": "Show conclusion",
+      "market_signal": "Market signal",
+      "news": "News evidence",
+      "pm_decision": "PM decision",
+      "team_discussion": "Team discussion",
+      "cron_heartbeat": "System heartbeat",
+      "fallback": "Fallback"
     }
   },
   "coinModal": {

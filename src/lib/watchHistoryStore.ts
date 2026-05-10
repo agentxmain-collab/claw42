@@ -1,4 +1,4 @@
-import type { StreamEntry } from "@/modules/agent-watch/types";
+import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
 
 const RETENTION_MS = 12 * 60 * 60 * 1000;
 const KV_TTL_SECONDS = 13 * 60 * 60;
@@ -48,6 +48,32 @@ function appendMemoryEntry(entry: StreamEntry, now = Date.now()) {
   memoryStore.push(...pruned);
 }
 
+function hasCompleteMeta(meta: WatchEntryMeta | undefined): meta is WatchEntryMeta {
+  return Boolean(
+    meta &&
+    (meta.visibility === "public" || meta.visibility === "debug") &&
+    ["low", "medium", "high", "critical"].includes(meta.importance) &&
+    [
+      "market_signal",
+      "news",
+      "pm_decision",
+      "team_discussion",
+      "cron_heartbeat",
+      "fallback",
+    ].includes(meta.sourceTrigger) &&
+    Array.isArray(meta.evidenceIds),
+  );
+}
+
+export async function appendWatchHistoryEntry(
+  entry: StreamEntry & { meta: WatchEntryMeta },
+): Promise<void> {
+  if (!hasCompleteMeta(entry.meta)) {
+    throw new Error("watch history entry meta is required");
+  }
+  await appendWatchEntry(entry);
+}
+
 export async function appendWatchEntry(entry: StreamEntry): Promise<void> {
   const now = Date.now();
   const kv = await getKvClient();
@@ -66,15 +92,19 @@ export async function appendWatchEntry(entry: StreamEntry): Promise<void> {
   }
 }
 
-export async function getWatchHistory(options: { before?: number; limit?: number } = {}): Promise<{
+export async function getWatchHistory(
+  options: { before?: number; since?: number; limit?: number; windowMinutes?: number } = {},
+): Promise<{
   entries: StreamEntry[];
   hasMore: boolean;
   oldestTs: number | null;
 }> {
   const before = options.before ?? Date.now();
+  const since = options.since;
   const limit = Math.max(1, Math.min(options.limit ?? 30, 100));
   const now = Date.now();
-  const cutoff = now - RETENTION_MS;
+  const windowMs = Math.max(1, Math.min(options.windowMinutes ?? 720, 720)) * 60_000;
+  const cutoff = now - Math.min(RETENTION_MS, windowMs);
   const kv = await getKvClient();
   let all = memoryStore;
 
@@ -93,7 +123,10 @@ export async function getWatchHistory(options: { before?: number; limit?: number
   }
 
   const filtered = all
-    .filter((entry) => entry.ts < before && entry.ts >= cutoff)
+    .filter(
+      (entry) =>
+        entry.ts < before && entry.ts >= cutoff && (since === undefined || entry.ts > since),
+    )
     .sort((a, b) => b.ts - a.ts);
   const entries = filtered.slice(0, limit);
   const oldestTs = entries.length > 0 ? (entries[entries.length - 1]?.ts ?? null) : null;

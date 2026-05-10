@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { buildChatterPlan } from "@/lib/chatterGenerator";
 import type { ChatThread } from "@/lib/types";
+import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import { DecisionTimeline } from "@/components/agent-watch/DecisionTimeline";
 import { AGENT_ORDER } from "./agents";
 import { useAgentAnalysis, useMarketTicker } from "./hooks/useAgentAnalysis";
 import { useAgentHistory } from "./hooks/useAgentHistory";
@@ -13,19 +15,15 @@ import type {
   AgentDiscussionEntry,
   AgentMessage,
   AgentId,
-  AgentStatus,
   ChatThreadEntry,
   NewsDebateEntry,
   StreamEntry,
   WatchUpdateEntry,
 } from "./types";
-import { AgentRowCard } from "./components/AgentRowCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
 import { MarketEventFeed } from "./components/MarketEventFeed";
-import { Stream, type StreamHandle } from "./components/Stream";
 import { CriticalNewsBanner } from "./components/CriticalNewsBanner";
 import { NewsFeedTicker } from "./components/NewsFeedTicker";
-import { FactionPresenceBar } from "./components/FactionPresenceBar";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
 import {
@@ -51,6 +49,18 @@ import {
 const DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 const STREAM_MAX_ENTRIES = 48;
 const SHOW_TICKERS = process.env.NEXT_PUBLIC_WATCH_SHOW_TICKERS === "true";
+const PUBLIC_TIMELINE_MIN_ENTRIES = 30;
+const PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES = 60;
+const PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES = 720;
+
+interface PublicTimelinePayload {
+  events: PublicTimelineEvent[];
+  oldestTs: number | null;
+  hasMore: boolean;
+  windowMinutes: number;
+  servedAt: number;
+  nextPollMs?: number;
+}
 
 function entriesFromInitialThreads(threads: ChatThread[]): ChatThreadEntry[] {
   return threads.map((thread) => ({
@@ -211,8 +221,7 @@ export function AgentWatchBoard({
     limit: 12,
   });
   const processedGeneratedAtRef = useRef<number | null>(null);
-  const streamRef = useRef<StreamHandle>(null);
-  const historySentinelRef = useRef<HTMLDivElement>(null);
+  const historySentinelRef = useRef<HTMLDivElement | null>(null);
   const timersRef = useRef<number[]>([]);
   const scheduledUntilRef = useRef(0);
   const marketSignalsRef = useRef(marketSignals);
@@ -226,12 +235,14 @@ export function AgentWatchBoard({
     const initialEntries = filterStreamEntries(entriesFromInitialThreads(initialChatThreads));
     return initialEntries;
   });
-  const [historyEntries, setHistoryEntries] = useState<StreamEntry[]>([]);
-  const [hasMoreHistory, setHasMoreHistory] = useState(false);
-  const [oldestHistoryTs, setOldestHistoryTs] = useState<number | null>(null);
-  const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
-  const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
-  const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
+  const [, setHistoryEntries] = useState<StreamEntry[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<PublicTimelineEvent[]>([]);
+  const [timelineHasMore, setTimelineHasMore] = useState(false);
+  const [timelineOldestTs, setTimelineOldestTs] = useState<number | null>(null);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timelineLoadingMore, setTimelineLoadingMore] = useState(false);
+  const [, setTypingAgent] = useState<AgentId | null>(null);
+  const [, setSpeakingAgent] = useState<AgentId | null>(null);
 
   const applyHistoryPayload = useCallback(
     (
@@ -251,8 +262,52 @@ export function AgentWatchBoard({
           dedupeStreamEntries([...chronologicalEntries, ...current]).sort((a, b) => a.ts - b.ts),
         );
       }
-      setHasMoreHistory(Boolean(data.hasMore));
-      setOldestHistoryTs(data.oldestTs ?? null);
+    },
+    [],
+  );
+
+  const applyTimelinePayload = useCallback(
+    (payload: PublicTimelinePayload, mode: "replace" | "append") => {
+      const sorted = payload.events.slice().sort((a, b) => b.ts - a.ts);
+      setTimelineEvents((current) => {
+        const merged = mode === "replace" ? sorted : [...current, ...sorted];
+        const seen = new Set<string>();
+        return merged
+          .filter((event) => {
+            if (seen.has(event.id)) return false;
+            seen.add(event.id);
+            return true;
+          })
+          .sort((a, b) => b.ts - a.ts);
+      });
+      const oldestFromEvents =
+        sorted.length > 0
+          ? sorted.reduce((min, event) => Math.min(min, event.ts), sorted[0]!.ts)
+          : null;
+      setTimelineOldestTs(oldestFromEvents ?? payload.oldestTs ?? null);
+      setTimelineHasMore(Boolean(payload.hasMore));
+    },
+    [],
+  );
+
+  const fetchTimelineWindow = useCallback(
+    async ({
+      windowMinutes,
+      before,
+      limit = 100,
+    }: {
+      windowMinutes: number;
+      before?: number | null;
+      limit?: number;
+    }) => {
+      const params = new URLSearchParams({
+        windowMinutes: String(windowMinutes),
+        limit: String(limit),
+      });
+      if (before) params.set("before", String(before));
+      const response = await fetch(`/api/watch/timeline?${params}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`watch timeline ${response.status}`);
+      return (await response.json()) as PublicTimelinePayload;
     },
     [],
   );
@@ -281,6 +336,44 @@ export function AgentWatchBoard({
       cancelled = true;
     };
   }, [applyHistoryPayload]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setTimelineLoading(true);
+
+    async function loadTimeline() {
+      const primary = await fetchTimelineWindow({
+        windowMinutes: PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES,
+        limit: 100,
+      });
+      if (cancelled) return;
+      applyTimelinePayload(primary, "replace");
+
+      if (primary.events.length < PUBLIC_TIMELINE_MIN_ENTRIES) {
+        const fallback = await fetchTimelineWindow({
+          windowMinutes: PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES,
+          before: primary.oldestTs ?? Date.now(),
+          limit: 100,
+        });
+        if (cancelled) return;
+        applyTimelinePayload(fallback, "append");
+      }
+    }
+
+    loadTimeline()
+      .catch((error: unknown) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[claw42] public timeline fetch failed", error);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setTimelineLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyTimelinePayload, fetchTimelineWindow]);
 
   useEffect(() => {
     marketSignalsRef.current = marketSignals;
@@ -513,38 +606,34 @@ export function AgentWatchBoard({
     scheduleStreamEntries,
   ]);
 
-  const loadMoreHistory = useCallback(async () => {
-    if (!oldestHistoryTs || loadingMoreHistory) return;
-    setLoadingMoreHistory(true);
+  const loadMoreTimeline = useCallback(async () => {
+    if (!timelineOldestTs || timelineLoadingMore) return;
+    setTimelineLoadingMore(true);
     try {
-      const response = await fetch(`/api/watch/history?before=${oldestHistoryTs}&limit=30`, {
-        cache: "no-store",
+      const payload = await fetchTimelineWindow({
+        windowMinutes: PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES,
+        before: timelineOldestTs,
+        limit: 30,
       });
-      if (!response.ok) throw new Error(`watch history ${response.status}`);
-      const payload = (await response.json()) as {
-        entries: StreamEntry[];
-        hasMore: boolean;
-        oldestTs: number | null;
-      };
-      applyHistoryPayload(payload, "prepend");
+      applyTimelinePayload(payload, "append");
     } catch (error) {
       if (process.env.NODE_ENV !== "production") {
-        console.warn("[claw42] watch history load more failed", error);
+        console.warn("[claw42] public timeline load more failed", error);
       }
     } finally {
-      setLoadingMoreHistory(false);
+      setTimelineLoadingMore(false);
     }
-  }, [applyHistoryPayload, loadingMoreHistory, oldestHistoryTs]);
+  }, [applyTimelinePayload, fetchTimelineWindow, timelineLoadingMore, timelineOldestTs]);
 
   useEffect(() => {
-    if (!hasMoreHistory || loadingMoreHistory) return;
+    if (!timelineHasMore || timelineLoadingMore) return;
     const sentinel = historySentinelRef.current;
     if (!sentinel) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
-          void loadMoreHistory();
+          void loadMoreTimeline();
         }
       },
       { rootMargin: "200px" },
@@ -552,28 +641,7 @@ export function AgentWatchBoard({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMoreHistory, loadMoreHistory, loadingMoreHistory]);
-
-  const combinedEntries = useMemo(
-    () => dedupeStreamEntries([...historyEntries, ...liveQueue]).sort((a, b) => a.ts - b.ts),
-    [historyEntries, liveQueue],
-  );
-  const focusSymbols = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          [
-            ...(data?.focus?.map((focus) => focus.symbol) ?? []),
-            ...(data?.newsDebates?.[0]?.newsCurrencies ?? []),
-          ].filter(Boolean),
-        ),
-      ),
-    [data?.focus, data?.newsDebates],
-  );
-  const focusByAgent = useMemo(
-    () => new Map(data?.focus?.map((focus) => [focus.agentId, focus]) ?? []),
-    [data?.focus],
-  );
+  }, [loadMoreTimeline, timelineHasMore, timelineLoadingMore]);
 
   const handleDismissNewContent = useCallback(() => {
     dismissNewContent();
@@ -581,26 +649,8 @@ export function AgentWatchBoard({
 
   const handleJumpToLatest = useCallback(async () => {
     await refreshHistory();
-    streamRef.current?.scrollToLatest();
     dismissNewContent();
   }, [dismissNewContent, refreshHistory]);
-  const statusForAgent = useCallback(
-    (agentId: AgentId): AgentStatus => {
-      if (typingAgent === agentId) return "thinking";
-      if (speakingAgent === agentId) return "speaking";
-      const focus = focusByAgent.get(agentId);
-      const hasRecentAlert =
-        Boolean(focus) &&
-        marketSignals.some(
-          (signal) =>
-            signal.symbol.toUpperCase() === focus?.symbol.toUpperCase() &&
-            signal.severity === "alert" &&
-            Date.now() - signal.ts <= 2 * 60_000,
-        );
-      return hasRecentAlert ? "alert" : "idle";
-    },
-    [focusByAgent, marketSignals, speakingAgent, typingAgent],
-  );
 
   return (
     <section
@@ -609,11 +659,6 @@ export function AgentWatchBoard({
     >
       <div className="space-y-7">
         <TopicHeader t={t} />
-        <FactionPresenceBar
-          entries={combinedEntries}
-          focusSymbols={focusSymbols}
-          locale={agentWatchLocale}
-        />
         {SHOW_TICKERS && (
           <>
             <CoinTickerStrip
@@ -634,19 +679,6 @@ export function AgentWatchBoard({
           </>
         )}
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          {AGENT_ORDER.map((agentId) => (
-            <AgentRowCard
-              key={agentId}
-              agentId={agentId}
-              focus={focusByAgent.get(agentId) ?? null}
-              status={statusForAgent(agentId)}
-              statusLabels={t.agentWatch.sidebarStatus}
-              focusLabels={t.agentWatch.focusCard}
-            />
-          ))}
-        </div>
-
         {SHOW_TICKERS && (
           <NewContentBanner
             visible={hasNewContent}
@@ -657,24 +689,16 @@ export function AgentWatchBoard({
           />
         )}
 
-        <Stream
-          ref={streamRef}
-          entries={combinedEntries}
-          typingAgent={typingAgent}
-          pool={data?.pool}
-          emptyLabel={t.agentWatch.emptyHistory}
-          emptyState={t.agentWatch.emptyState}
-          locale={agentWatchLocale}
-          newsDebateLabels={t.agentWatch.newsDebate}
+        <DecisionTimeline
+          events={timelineEvents}
+          loading={timelineLoading}
+          loadingMore={timelineLoadingMore}
+          hasMore={timelineHasMore}
+          onLoadMore={loadMoreTimeline}
+          sentinelRef={(node) => {
+            historySentinelRef.current = node;
+          }}
         />
-
-        {hasMoreHistory && (
-          <div
-            ref={historySentinelRef}
-            className="h-3 w-full"
-            aria-label={loadingMoreHistory ? t.agentWatch.loadingMore : undefined}
-          />
-        )}
 
         <p className="text-white/42 rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-3 text-xs leading-relaxed">
           {agentWatchLocale === "en_US"
@@ -682,7 +706,7 @@ export function AgentWatchBoard({
             : "风险提示：本页面内容由 AI 根据公开行情数据自动生成，仅用于信息展示，不构成投资建议。请结合自身风险承受能力判断，交易决策由用户自行承担。"}
         </p>
 
-        {(isLoading || isHistoryLoading) && combinedEntries.length === 0 && (
+        {(isLoading || isHistoryLoading || timelineLoading) && timelineEvents.length === 0 && (
           <p className="text-center text-sm text-white/35">{t.agentWatch.loadingHistory}</p>
         )}
 

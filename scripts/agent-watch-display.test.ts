@@ -23,10 +23,7 @@ import {
   cleanRobotAnalysisLine,
   mergeHeroSpeechLinePools,
 } from "../src/modules/landing/HeroScene/heroSpeechLines";
-import {
-  buildLoadingChatThread,
-  buildStreamChatThread,
-} from "../src/modules/agent-watch/utils/streamChatThreads";
+import { buildLoadingChatThread, buildStreamChatThread } from "../src/lib/dev/streamChatThreads";
 import type {
   AgentFocus,
   AgentMessage,
