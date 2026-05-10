@@ -696,6 +696,7 @@ export function AgentWatchBoard({
           loadingMore={timelineLoadingMore}
           hasMore={timelineHasMore}
           onLoadMore={loadMoreTimeline}
+          marketSnapshot={tickerData}
           sentinelRef={(node) => {
             historySentinelRef.current = node;
           }}
