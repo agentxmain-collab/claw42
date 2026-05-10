@@ -34,6 +34,7 @@ import {
   thinkDurationForStreamEntry,
 } from "./utils/streamDisplayQueue";
 import { filterStreamEntries } from "./utils/streamFilter";
+import { fallbackBeforeForPublicTimeline } from "./utils/publicTimelineWindow";
 import { buildWatchSupplementalEntry } from "./utils/watchSupplementalUpdates";
 import { isAgentWatchLocale, resolveAgentWatchLocale } from "./locale";
 import {
@@ -352,7 +353,7 @@ export function AgentWatchBoard({
       if (primary.events.length < PUBLIC_TIMELINE_MIN_ENTRIES) {
         const fallback = await fetchTimelineWindow({
           windowMinutes: PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES,
-          before: primary.oldestTs ?? Date.now(),
+          before: fallbackBeforeForPublicTimeline(primary),
           limit: 100,
         });
         if (cancelled) return;
