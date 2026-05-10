@@ -26,7 +26,7 @@ import {
 import {
   buildLoadingChatThread,
   buildStreamChatThread,
-} from "../src/modules/agent-watch/utils/streamChatThreads";
+} from "../src/lib/dev/streamChatThreads";
 import type {
   AgentFocus,
   AgentMessage,

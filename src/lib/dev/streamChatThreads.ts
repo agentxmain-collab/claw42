@@ -1,10 +1,13 @@
-import type { ChatAction, ChatMessage, ChatThread, ConversationSeed } from "../../../lib/types";
-import { sanitizeChatContent } from "../../../lib/chatGuardrails";
-import type { AgentId, CoinPoolPayload, StreamEntry } from "../types";
-import type { AgentWatchLocale } from "../locale";
-import { AGENT_META, AGENT_ORDER } from "../agents";
-import { buildStreamChatMessages, type AgentChatMessage } from "./streamChatMessages";
-import { formatCoinSymbol } from "./symbolFormat";
+import type { ChatAction, ChatMessage, ChatThread, ConversationSeed } from "@/lib/types";
+import { sanitizeChatContent } from "@/lib/chatGuardrails";
+import type { AgentId, CoinPoolPayload, StreamEntry } from "@/modules/agent-watch/types";
+import type { AgentWatchLocale } from "@/modules/agent-watch/locale";
+import { AGENT_META, AGENT_ORDER } from "@/modules/agent-watch/agents";
+import {
+  buildStreamChatMessages,
+  type AgentChatMessage,
+} from "@/modules/agent-watch/utils/streamChatMessages";
+import { formatCoinSymbol } from "@/modules/agent-watch/utils/symbolFormat";
 
 const ACTION_SEQUENCE: ChatAction[] = ["open", "question", "rebut", "agree", "refocus", "comment"];
 const BREAKOUT_AGENT = AGENT_ORDER[0]!;
