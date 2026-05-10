@@ -305,6 +305,19 @@
     "emptyState": {
       "title": "AI チームは重要イベントを待機中",
       "subtitle": "新しい市場ニュースや異常シグナルが発生すると、マルチ Agent の議論がここに表示されます"
+    },
+    "timeline": {
+      "title": "Public decision timeline",
+      "recentHour": "Last 1 hour",
+      "olderWindow": "12h fallback window",
+      "showProcess": "Show decision process",
+      "showConclusion": "Show conclusion",
+      "market_signal": "Market signal",
+      "news": "News evidence",
+      "pm_decision": "PM decision",
+      "team_discussion": "Team discussion",
+      "cron_heartbeat": "System heartbeat",
+      "fallback": "Fallback"
     }
   },
   "coinModal": {

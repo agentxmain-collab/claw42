@@ -305,6 +305,19 @@
     "emptyState": {
       "title": "AI team standing by for major events",
       "subtitle": "Multi-agent debate appears here when new market news or anomaly signals trigger."
+    },
+    "timeline": {
+      "title": "Public decision timeline",
+      "recentHour": "Last 1 hour",
+      "olderWindow": "12h fallback window",
+      "showProcess": "Show decision process",
+      "showConclusion": "Show conclusion",
+      "market_signal": "Market signal",
+      "news": "News evidence",
+      "pm_decision": "PM decision",
+      "team_discussion": "Team discussion",
+      "cron_heartbeat": "System heartbeat",
+      "fallback": "Fallback"
     }
   },
   "coinModal": {

@@ -196,6 +196,19 @@ export interface Dict {
       title: string;
       subtitle: string;
     };
+    timeline: {
+      title: string;
+      recentHour: string;
+      olderWindow: string;
+      showProcess: string;
+      showConclusion: string;
+      market_signal: string;
+      news: string;
+      pm_decision: string;
+      team_discussion: string;
+      cron_heartbeat: string;
+      fallback: string;
+    };
     coinPool: {
       majors: string;
       trending: string;

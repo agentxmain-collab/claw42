@@ -305,6 +305,19 @@
     "emptyState": {
       "title": "AI 團隊正在等待重大事件",
       "subtitle": "新的市場新聞或異常信號觸發後，多 Agent 辯論會出現在這裡"
+    },
+    "timeline": {
+      "title": "公開決策時間線",
+      "recentHour": "最近 1 小時",
+      "olderWindow": "12 小時兜底窗口",
+      "showProcess": "展開決策過程",
+      "showConclusion": "展開最終結論",
+      "market_signal": "市場信號",
+      "news": "新聞證據",
+      "pm_decision": "PM 決策",
+      "team_discussion": "團隊討論",
+      "cron_heartbeat": "系統心跳",
+      "fallback": "兜底事件"
     }
   },
   "coinModal": {

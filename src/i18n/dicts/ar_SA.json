@@ -305,6 +305,19 @@
     "emptyState": {
       "title": "فريق الذكاء الاصطناعي ينتظر الأحداث المهمة",
       "subtitle": "سيظهر نقاش الوكلاء هنا عند صدور خبر سوقي جديد أو إشارة غير عادية."
+    },
+    "timeline": {
+      "title": "Public decision timeline",
+      "recentHour": "Last 1 hour",
+      "olderWindow": "12h fallback window",
+      "showProcess": "Show decision process",
+      "showConclusion": "Show conclusion",
+      "market_signal": "Market signal",
+      "news": "News evidence",
+      "pm_decision": "PM decision",
+      "team_discussion": "Team discussion",
+      "cron_heartbeat": "System heartbeat",
+      "fallback": "Fallback"
     }
   },
   "coinModal": {

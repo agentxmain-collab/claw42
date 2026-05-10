@@ -305,6 +305,19 @@
     "emptyState": {
       "title": "El equipo de IA espera eventos importantes",
       "subtitle": "El debate multi-Agent aparecerá aquí cuando se active una noticia de mercado o señal anómala."
+    },
+    "timeline": {
+      "title": "Public decision timeline",
+      "recentHour": "Last 1 hour",
+      "olderWindow": "12h fallback window",
+      "showProcess": "Show decision process",
+      "showConclusion": "Show conclusion",
+      "market_signal": "Market signal",
+      "news": "News evidence",
+      "pm_decision": "PM decision",
+      "team_discussion": "Team discussion",
+      "cron_heartbeat": "System heartbeat",
+      "fallback": "Fallback"
     }
   },
   "coinModal": {
