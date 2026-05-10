@@ -166,6 +166,72 @@
       "4. Past performance is not a reliable indicator of future performance. Before making any investment, carefully consider your experience, financial situation, investment objectives and risk tolerance, and consult an independent financial advisor. For more information, see our Risk Notice and Terms of Use."
     ]
   },
+  "team": {
+    "trackRecord": {
+      "title": "[Ţêåm Ţřåċƙ Řêċøřd]",
+      "subtitle": "[Pûbłîċ dêċîšîøň ħîšţøřý før ţħê 7-pêřšøň Ŵåţċħ ţêåm.]",
+      "totalDecisions": "[Dêċîšîøňš]",
+      "overallWinRate": "[Ŵîň řåţê]",
+      "teamNetReturn7d": "[7d ňêţ]",
+      "decisions": "[Dêċîšîøňš]",
+      "wins": "[Ŵîňš]",
+      "winRate": "[Ŵîň řåţê]",
+      "netReturn7d": "[7d ňêţ]",
+      "sampleSizeSmall": "[Šmåłł šåmpłê šîžê; øbšêřvê øňłý]",
+      "noRecords": "[Ńø pûbłîċ ţêåm ţřåċƙ řêċøřd ýêţ.]",
+      "aiDisclaimer": "[AI-ĝêňêřåţêd måřƙêţ vîêŵš åřê îňføřmåţîøňåł øňłý.]",
+      "source": {
+        "live": "[łîvê]",
+        "paper": "[påpêř]",
+        "legacy": "[łêĝåċý]",
+        "backtest": "[båċƙţêšţ]",
+        "mixed": "[mîxêd]",
+        "none": "[pêňdîňĝ]"
+      }
+    },
+    "fundamental_analyst": {
+      "displayName": "[Cħeň]",
+      "roleTitle": "[Fûňdåmëňţål Åňålýst]",
+      "shortBio": "[Šłøŵ, šţêådý, åňd føċûšêd øň åššêţ qûåłîţý ţħřøûgħ ċýċłêš.]",
+      "ariaLabel": "[Cħeň], [Fûňdåmëňţål Åňålýst]"
+    },
+    "news_analyst": {
+      "displayName": "[Mırâ]",
+      "roleTitle": "[Ńêŵš Åňålýst]",
+      "shortBio": "[Ŵåţċħêš ňêŵš åňd ňåřřåţîvê šħîfţš før måřƙêţ åţţêňţîøň.]",
+      "ariaLabel": "[Mırâ], [Ńêŵš Åňålýst]"
+    },
+    "chart_analyst": {
+      "displayName": "[K̃]",
+      "roleTitle": "[Čħårt Åňålýst]",
+      "shortBio": "[Řêådš ċħårtš åňd ƙêý łêvêłš, fîłţêřîňĝ ċħåšê ţřådêš.]",
+      "ariaLabel": "[K̃], [Čħårt Åňålýst]"
+    },
+    "onchain_analyst": {
+      "displayName": "[Vıt]",
+      "roleTitle": "[Øň-ċħåîň Åňålýst]",
+      "shortBio": "[Ţřåċƙš føłŵš, åċţîvîţý, åňd åňømåłîêš før řêåł pøšîţîøň ċħåňĝêš.]",
+      "ariaLabel": "[Vıt], [Øň-ċħåîň Åňålýst]"
+    },
+    "research_lead": {
+      "displayName": "[Łêäd]",
+      "roleTitle": "[Řêšêårċħ Łêåd]",
+      "shortBio": "[Čømprêššêš dîšåĝřêêmêňţ îňţø øňê êxêċûţåbłê jûdĝmêňţ.]",
+      "ariaLabel": "[Łêäd], [Řêšêårċħ Łêåd]"
+    },
+    "risk_lead": {
+      "displayName": "[Rıṡk]",
+      "roleTitle": "[Řîšƙ Łêåd]",
+      "shortBio": "[Čħåłłêňĝêš êvêřý šêţûp bý ňåmîňĝ îňvåłîdåţîøň fîřšţ.]",
+      "ariaLabel": "[Rıṡk], [Řîšƙ Łêåd]"
+    },
+    "pm": {
+      "displayName": "[P̃Ṁ]",
+      "roleTitle": "[Prødûċţ Måňågêr]",
+      "shortBio": "[Ţûřňš ţħê dîšċûššîøň îňţø å řêådåbłê ţřådê ċård.]",
+      "ariaLabel": "[P̃Ṁ], [Prødûċţ Måňågêr]"
+    }
+  },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
     "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",

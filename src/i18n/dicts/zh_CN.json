@@ -166,6 +166,72 @@
       "4. 记住过去的并非未来表现的可靠预测指标。在做出任何投资前，您应仔细考虑自己的投资经验、财务状况、投资目标和风险承受能力，并咨询独立财务顾问。更多信息请参阅我们的风险提示和使用条款。"
     ]
   },
+  "team": {
+    "trackRecord": {
+      "title": "团队战绩墙",
+      "subtitle": "7 人 Watch 团队的公开决策记录，区分 live / paper / backtest 来源。",
+      "totalDecisions": "累计决策",
+      "overallWinRate": "整体胜率",
+      "teamNetReturn7d": "7日净值",
+      "decisions": "决策",
+      "wins": "胜出",
+      "winRate": "胜率",
+      "netReturn7d": "7日净值",
+      "sampleSizeSmall": "样本量较小，仅作观察",
+      "noRecords": "暂无公开团队战绩，新的结构化决策生成后会自动累积。",
+      "aiDisclaimer": "AI 生成的市场判断仅供参考，不构成投资建议。决策风险自负。",
+      "source": {
+        "live": "live",
+        "paper": "paper",
+        "legacy": "legacy",
+        "backtest": "backtest",
+        "mixed": "mixed",
+        "none": "pending"
+      }
+    },
+    "fundamental_analyst": {
+      "displayName": "老陈",
+      "roleTitle": "基本面分析师",
+      "shortBio": "稳重慢热，擅长用基本面和周期框架拆解资产质量。",
+      "ariaLabel": "老陈, 基本面分析师"
+    },
+    "news_analyst": {
+      "displayName": "Mira",
+      "roleTitle": "新闻分析师",
+      "shortBio": "盯新闻和叙事变化，判断事件是否会改变市场注意力。",
+      "ariaLabel": "Mira, 新闻分析师"
+    },
+    "chart_analyst": {
+      "displayName": "K 哥",
+      "roleTitle": "图表分析师",
+      "shortBio": "只看图形和关键价位，用纪律过滤追涨冲动。",
+      "ariaLabel": "K 哥, 图表分析师"
+    },
+    "onchain_analyst": {
+      "displayName": "Vit",
+      "roleTitle": "链上分析师",
+      "shortBio": "跟踪链上资金、活跃度和异常流向，找真实筹码变化。",
+      "ariaLabel": "Vit, 链上分析师"
+    },
+    "research_lead": {
+      "displayName": "老 R",
+      "roleTitle": "研究负责人",
+      "shortBio": "汇总多位分析师观点，把分歧压缩成可执行判断。",
+      "ariaLabel": "老 R, 研究负责人"
+    },
+    "risk_lead": {
+      "displayName": "老 X",
+      "roleTitle": "风险负责人",
+      "shortBio": "专门泼冷水，先找失效条件，再谈机会。",
+      "ariaLabel": "老 X, 风险负责人"
+    },
+    "pm": {
+      "displayName": "PM",
+      "roleTitle": "产品经理",
+      "shortBio": "把讨论收敛成产品化交易卡，负责最终可读性。",
+      "ariaLabel": "PM, 产品经理"
+    }
+  },
   "agentWatch": {
     "pageTitle": "Live · 加密市场",
     "pageSubtitle": "3 个 Agent 同时盯盘。Alpha 看突破，Beta 看趋势，Gamma 看极端。",

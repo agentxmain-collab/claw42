@@ -166,6 +166,72 @@
       "4. Минулі результати не є надійним показником майбутніх. Перед будь-якими інвестиціями ретельно оцініть свій досвід, фінансове становище, інвестиційні цілі та толерантність до ризику, і проконсультуйтеся з незалежним фінансовим консультантом. Детальніше — у нашому Повідомленні про ризики та Умовах використання."
     ]
   },
+  "team": {
+    "trackRecord": {
+      "title": "Стіна результатів команди",
+      "subtitle": "Публічна історія рішень команди з 7 людей із джерелами live / paper / backtest.",
+      "totalDecisions": "Рішення",
+      "overallWinRate": "Win rate",
+      "teamNetReturn7d": "7д net",
+      "decisions": "Рішення",
+      "wins": "Перемоги",
+      "winRate": "Win rate",
+      "netReturn7d": "7д net",
+      "sampleSizeSmall": "Мала вибірка; лише для спостереження",
+      "noRecords": "Публічної історії команди ще немає. Нові структуровані рішення з’являться тут.",
+      "aiDisclaimer": "AI-згенеровані ринкові погляди мають лише інформаційний характер і не є інвестиційною порадою. Рішення ви ухвалюєте на власний ризик.",
+      "source": {
+        "live": "live",
+        "paper": "paper",
+        "legacy": "legacy",
+        "backtest": "backtest",
+        "mixed": "mixed",
+        "none": "pending"
+      }
+    },
+    "fundamental_analyst": {
+      "displayName": "Chen",
+      "roleTitle": "Фундаментальний аналітик",
+      "shortBio": "Спокійно оцінює якість активу через фундаментал і цикли.",
+      "ariaLabel": "Chen, Фундаментальний аналітик"
+    },
+    "news_analyst": {
+      "displayName": "Mira",
+      "roleTitle": "Новинний аналітик",
+      "shortBio": "Стежить за новинами та наративами, щоб побачити зміну уваги.",
+      "ariaLabel": "Mira, Новинний аналітик"
+    },
+    "chart_analyst": {
+      "displayName": "K",
+      "roleTitle": "Графічний аналітик",
+      "shortBio": "Читає графіки й ключові рівні, відсікаючи погоню за рухом.",
+      "ariaLabel": "K, Графічний аналітик"
+    },
+    "onchain_analyst": {
+      "displayName": "Vit",
+      "roleTitle": "Ончейн-аналітик",
+      "shortBio": "Відстежує потоки, активність та аномалії для реальних змін позиції.",
+      "ariaLabel": "Vit, Ончейн-аналітик"
+    },
+    "research_lead": {
+      "displayName": "Lead R",
+      "roleTitle": "Керівник досліджень",
+      "shortBio": "Зводить розбіжності аналітиків в одне виконуване судження.",
+      "ariaLabel": "Lead R, Керівник досліджень"
+    },
+    "risk_lead": {
+      "displayName": "Risk X",
+      "roleTitle": "Ризик-лід",
+      "shortBio": "Спершу шукає умови скасування, а вже потім говорить про шанс.",
+      "ariaLabel": "Risk X, Ризик-лід"
+    },
+    "pm": {
+      "displayName": "PM",
+      "roleTitle": "Продакт-менеджер",
+      "shortBio": "Перетворює дискусію на зрозумілу торгову картку.",
+      "ariaLabel": "PM, Продакт-менеджер"
+    }
+  },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
     "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",

@@ -32,6 +32,8 @@ export const ANALYTICS_EVENTS = [
   "strategy_skipped_self_reported",
   "chat_thread_view",
   "chat_message_action",
+  "watch_track_wall_view",
+  "team_member_card_click",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

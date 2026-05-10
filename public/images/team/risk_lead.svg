@@ -1,0 +1,6 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Risk X placeholder avatar">
+  <rect width="128" height="128" rx="32" fill="#1f1515"/>
+  <circle cx="64" cy="64" r="46" fill="#f59e0b" opacity="0.24"/>
+  <circle cx="64" cy="64" r="34" fill="#111111"/>
+  <text x="64" y="78" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800" fill="#f7f4ff">X</text>
+</svg>

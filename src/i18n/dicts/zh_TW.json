@@ -166,6 +166,72 @@
       "4. 記住過去的並非未來表現的可靠預測指標。在做出任何投資前,您應仔細考慮自己的投資經驗、財務狀況、投資目標和風險承受能力,並諮詢獨立財務顧問。更多資訊請參閱我們的風險提示和使用條款。"
     ]
   },
+  "team": {
+    "trackRecord": {
+      "title": "團隊戰績牆",
+      "subtitle": "7 人 Watch 團隊的公開決策記錄，區分 live / paper / backtest 來源。",
+      "totalDecisions": "累計決策",
+      "overallWinRate": "整體勝率",
+      "teamNetReturn7d": "7日淨值",
+      "decisions": "決策",
+      "wins": "勝出",
+      "winRate": "勝率",
+      "netReturn7d": "7日淨值",
+      "sampleSizeSmall": "樣本量較小，僅作觀察",
+      "noRecords": "暫無公開團隊戰績，新的結構化決策生成後會自動累積。",
+      "aiDisclaimer": "AI 生成的市場判斷僅供參考，不構成投資建議。決策風險自負。",
+      "source": {
+        "live": "live",
+        "paper": "paper",
+        "legacy": "legacy",
+        "backtest": "backtest",
+        "mixed": "mixed",
+        "none": "pending"
+      }
+    },
+    "fundamental_analyst": {
+      "displayName": "老陳",
+      "roleTitle": "基本面分析師",
+      "shortBio": "穩重慢熱，擅長用基本面和週期框架拆解資產品質。",
+      "ariaLabel": "老陳, 基本面分析師"
+    },
+    "news_analyst": {
+      "displayName": "Mira",
+      "roleTitle": "新聞分析師",
+      "shortBio": "盯新聞和敘事變化，判斷事件是否會改變市場注意力。",
+      "ariaLabel": "Mira, 新聞分析師"
+    },
+    "chart_analyst": {
+      "displayName": "K 哥",
+      "roleTitle": "圖表分析師",
+      "shortBio": "只看圖形和關鍵價位，用紀律過濾追漲衝動。",
+      "ariaLabel": "K 哥, 圖表分析師"
+    },
+    "onchain_analyst": {
+      "displayName": "Vit",
+      "roleTitle": "鏈上分析師",
+      "shortBio": "追蹤鏈上資金、活躍度和異常流向，找真實籌碼變化。",
+      "ariaLabel": "Vit, 鏈上分析師"
+    },
+    "research_lead": {
+      "displayName": "老 R",
+      "roleTitle": "研究負責人",
+      "shortBio": "彙總多位分析師觀點，把分歧壓縮成可執行判斷。",
+      "ariaLabel": "老 R, 研究負責人"
+    },
+    "risk_lead": {
+      "displayName": "老 X",
+      "roleTitle": "風險負責人",
+      "shortBio": "專門潑冷水，先找失效條件，再談機會。",
+      "ariaLabel": "老 X, 風險負責人"
+    },
+    "pm": {
+      "displayName": "PM",
+      "roleTitle": "產品經理",
+      "shortBio": "把討論收斂成產品化交易卡，負責最終可讀性。",
+      "ariaLabel": "PM, 產品經理"
+    }
+  },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
     "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",

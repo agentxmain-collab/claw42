@@ -1,3 +1,5 @@
+import type { TeamMemberId } from "@/lib/team/teamRegistry";
+
 export type Locale =
   | "zh_CN"
   | "zh_TW"
@@ -16,6 +18,40 @@ export type RatingDict = {
   Hold: string;
   Sell: string;
   StrongSell: string;
+};
+
+export type TeamMemberDict = {
+  displayName: string;
+  roleTitle: string;
+  shortBio: string;
+  ariaLabel: string;
+};
+
+export type TeamTrackRecordDict = {
+  title: string;
+  subtitle: string;
+  totalDecisions: string;
+  overallWinRate: string;
+  teamNetReturn7d: string;
+  decisions: string;
+  wins: string;
+  winRate: string;
+  netReturn7d: string;
+  sampleSizeSmall: string;
+  noRecords: string;
+  aiDisclaimer: string;
+  source: {
+    live: string;
+    paper: string;
+    legacy: string;
+    backtest: string;
+    mixed: string;
+    none: string;
+  };
+};
+
+export type TeamDict = Record<TeamMemberId, TeamMemberDict> & {
+  trackRecord: TeamTrackRecordDict;
 };
 
 export interface Dict {
@@ -133,6 +169,7 @@ export interface Dict {
     title: string;
     paragraphs: string[];
   };
+  team: TeamDict;
   agentWatch: {
     pageTitle: string;
     pageSubtitle: string;
