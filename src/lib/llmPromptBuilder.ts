@@ -9,6 +9,17 @@ import { PLAIN_SPEECH_PROMPT_BLOCK } from "@/lib/plainSpeechGuard";
 import { slangPolicyPrompt } from "@/lib/slangPolicy";
 import type { ChatAction, ChatMessage, ConversationSeed, FactionId, NewsItem } from "@/lib/types";
 
+export {
+  buildTradeDecisionPrompt,
+  generateTradeDecision,
+  resolvePMProviderSelection,
+  selectPMProvider,
+} from "@/lib/team/tradeDecisionPromptBuilder";
+export type {
+  PMProviderSelection,
+  TradeCardPromptContext,
+} from "@/lib/team/tradeDecisionPromptBuilder";
+
 const AGENT_IP_DIR = path.join(process.cwd(), "docs", "agent-ip");
 const ipDocCache: Partial<Record<FactionId, string>> = {};
 

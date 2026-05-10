@@ -15,6 +15,7 @@ export interface LLMInput {
   cacheKey?: string;
   cacheTTLSeconds?: number;
   taskTag: string;
+  providerOverride?: ProviderId;
 }
 
 export interface LLMOutput {

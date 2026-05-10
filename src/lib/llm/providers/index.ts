@@ -32,8 +32,9 @@ export function getProvider(providerId: ProviderId): LLMProvider {
   return PROVIDERS[providerId];
 }
 
-export function getProviderChain(): ProviderId[] {
+export function getProviderChain(providerOverride?: ProviderId): ProviderId[] {
   const chain: ProviderId[] = [];
+  if (providerOverride) pushUnique(chain, providerOverride);
   const primary = process.env.LLM_PRIMARY_PROVIDER;
   pushUnique(chain, isProviderId(primary) ? primary : "deepseek-chat");
   pushUnique(chain, "minimax");
@@ -61,7 +62,7 @@ export async function callWithChain(input: LLMInput): Promise<LLMOutput> {
   }
 
   let lastError: Error | null = null;
-  for (const providerId of getProviderChain()) {
+  for (const providerId of getProviderChain(input.providerOverride)) {
     const provider = getProvider(providerId);
     try {
       if (!(await provider.isHealthy())) continue;
