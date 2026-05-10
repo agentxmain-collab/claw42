@@ -166,6 +166,72 @@
       "4. 過去の実績は将来の成績を保証するものではありません。投資を行う前に、ご自身の投資経験、財務状況、投資目的およびリスク許容度を慎重に検討し、独立したファイナンシャルアドバイザーにご相談ください。詳しくは当社のリスク通知および利用規約をご参照ください。"
     ]
   },
+  "team": {
+    "trackRecord": {
+      "title": "チーム成績ウォール",
+      "subtitle": "7人のWatchチームの公開判断履歴を live / paper / backtest 別に表示します。",
+      "totalDecisions": "判断数",
+      "overallWinRate": "勝率",
+      "teamNetReturn7d": "7日損益",
+      "decisions": "判断",
+      "wins": "勝ち",
+      "winRate": "勝率",
+      "netReturn7d": "7日損益",
+      "sampleSizeSmall": "サンプルが少ないため参考表示です",
+      "noRecords": "公開チーム成績はまだありません。新しい構造化判断が自動で蓄積されます。",
+      "aiDisclaimer": "AIが生成した市場見解は情報提供のみであり、投資助言ではありません。判断は自己責任です。",
+      "source": {
+        "live": "live",
+        "paper": "paper",
+        "legacy": "legacy",
+        "backtest": "backtest",
+        "mixed": "mixed",
+        "none": "pending"
+      }
+    },
+    "fundamental_analyst": {
+      "displayName": "Chen",
+      "roleTitle": "ファンダメンタル分析担当",
+      "shortBio": "ファンダメンタルとサイクルで資産の質をゆっくり検証します。",
+      "ariaLabel": "Chen, ファンダメンタル分析担当"
+    },
+    "news_analyst": {
+      "displayName": "Mira",
+      "roleTitle": "ニュース分析担当",
+      "shortBio": "ニュースと物語の変化を追い、市場の注目が動いたかを見ます。",
+      "ariaLabel": "Mira, ニュース分析担当"
+    },
+    "chart_analyst": {
+      "displayName": "K",
+      "roleTitle": "チャート分析担当",
+      "shortBio": "チャートと重要水準だけを見て、追いかけ買いを抑えます。",
+      "ariaLabel": "K, チャート分析担当"
+    },
+    "onchain_analyst": {
+      "displayName": "Vit",
+      "roleTitle": "オンチェーン分析担当",
+      "shortBio": "資金フロー、活動量、異常値から本当のポジション変化を探します。",
+      "ariaLabel": "Vit, オンチェーン分析担当"
+    },
+    "research_lead": {
+      "displayName": "Lead R",
+      "roleTitle": "リサーチ責任者",
+      "shortBio": "複数の意見をまとめ、実行可能な判断へ圧縮します。",
+      "ariaLabel": "Lead R, リサーチ責任者"
+    },
+    "risk_lead": {
+      "displayName": "Risk X",
+      "roleTitle": "リスク責任者",
+      "shortBio": "機会の前にまず失効条件を確認します。",
+      "ariaLabel": "Risk X, リスク責任者"
+    },
+    "pm": {
+      "displayName": "PM",
+      "roleTitle": "プロダクトマネージャー",
+      "shortBio": "議論を読みやすい取引カードへ整理します。",
+      "ariaLabel": "PM, プロダクトマネージャー"
+    }
+  },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
     "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",

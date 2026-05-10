@@ -21,6 +21,9 @@ describe("TEAM_MEMBER_REGISTRY", () => {
 
       expect(member.promptDocPath).toBe(`docs/agent-ip/team/${id}.md`);
       expect(member.id).toBe(id);
+      expect(member.displayNameKey).toBe(`team.${id}.displayName`);
+      expect(member.roleTitleKey).toBe(`team.${id}.roleTitle`);
+      expect(member.avatarPath).toBe(`/images/team/${id}.svg`);
     }
   });
 });

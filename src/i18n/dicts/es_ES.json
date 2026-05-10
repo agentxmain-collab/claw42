@@ -166,6 +166,72 @@
       "4. El rendimiento pasado no es un indicador fiable del rendimiento futuro. Antes de invertir, considere cuidadosamente su experiencia, situación financiera, objetivos de inversión y tolerancia al riesgo, y consulte a un asesor financiero independiente. Para más información, consulte nuestro Aviso de riesgo y Condiciones de uso."
     ]
   },
+  "team": {
+    "trackRecord": {
+      "title": "Muro de resultados del equipo",
+      "subtitle": "Historial público de decisiones del equipo Watch de 7 personas, separado por live / paper / backtest.",
+      "totalDecisions": "Decisiones",
+      "overallWinRate": "Win rate",
+      "teamNetReturn7d": "Neto 7d",
+      "decisions": "Decisiones",
+      "wins": "Victorias",
+      "winRate": "Win rate",
+      "netReturn7d": "Neto 7d",
+      "sampleSizeSmall": "Muestra pequeña; solo observación",
+      "noRecords": "Aún no hay historial público del equipo. Las nuevas decisiones estructuradas se acumularán aquí.",
+      "aiDisclaimer": "Las opiniones de mercado generadas por AI son solo informativas y no constituyen asesoramiento de inversión. Decide bajo tu propio riesgo.",
+      "source": {
+        "live": "live",
+        "paper": "paper",
+        "legacy": "legacy",
+        "backtest": "backtest",
+        "mixed": "mixed",
+        "none": "pending"
+      }
+    },
+    "fundamental_analyst": {
+      "displayName": "Chen",
+      "roleTitle": "Analista fundamental",
+      "shortBio": "Evalúa con calma la calidad del activo con fundamentos y ciclos.",
+      "ariaLabel": "Chen, Analista fundamental"
+    },
+    "news_analyst": {
+      "displayName": "Mira",
+      "roleTitle": "Analista de noticias",
+      "shortBio": "Sigue noticias y narrativas para detectar cambios de atención.",
+      "ariaLabel": "Mira, Analista de noticias"
+    },
+    "chart_analyst": {
+      "displayName": "K",
+      "roleTitle": "Analista gráfico",
+      "shortBio": "Lee gráficos y niveles clave para filtrar entradas impulsivas.",
+      "ariaLabel": "K, Analista gráfico"
+    },
+    "onchain_analyst": {
+      "displayName": "Vit",
+      "roleTitle": "Analista on-chain",
+      "shortBio": "Rastrea flujos, actividad y anomalías para ver cambios reales de posición.",
+      "ariaLabel": "Vit, Analista on-chain"
+    },
+    "research_lead": {
+      "displayName": "Lead R",
+      "roleTitle": "Líder de investigación",
+      "shortBio": "Reduce desacuerdos en un juicio de mercado ejecutable.",
+      "ariaLabel": "Lead R, Líder de investigación"
+    },
+    "risk_lead": {
+      "displayName": "Risk X",
+      "roleTitle": "Líder de riesgo",
+      "shortBio": "Primero busca invalidación; después habla de oportunidad.",
+      "ariaLabel": "Risk X, Líder de riesgo"
+    },
+    "pm": {
+      "displayName": "PM",
+      "roleTitle": "Product manager",
+      "shortBio": "Convierte la discusión en una tarjeta de operación legible.",
+      "ariaLabel": "PM, Product manager"
+    }
+  },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
     "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",

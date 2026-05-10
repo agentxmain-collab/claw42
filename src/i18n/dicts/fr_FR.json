@@ -166,6 +166,72 @@
       "4. Les performances passées ne préjugent pas des performances futures. Avant tout investissement, évaluez soigneusement votre expérience, votre situation financière, vos objectifs d'investissement et votre tolérance au risque, et consultez un conseiller financier indépendant. Pour plus d'informations, consultez notre Avis de risque et nos Conditions d'utilisation."
     ]
   },
+  "team": {
+    "trackRecord": {
+      "title": "Mur de performance équipe",
+      "subtitle": "Historique public des décisions de l’équipe Watch de 7 personnes, séparé par live / paper / backtest.",
+      "totalDecisions": "Décisions",
+      "overallWinRate": "Taux de gain",
+      "teamNetReturn7d": "Net 7j",
+      "decisions": "Décisions",
+      "wins": "Gains",
+      "winRate": "Taux de gain",
+      "netReturn7d": "Net 7j",
+      "sampleSizeSmall": "Échantillon faible ; observation seulement",
+      "noRecords": "Aucun historique public pour l’instant. Les nouvelles décisions structurées s’accumuleront ici.",
+      "aiDisclaimer": "Les vues de marché générées par l’AI sont uniquement informatives et ne constituent pas un conseil en investissement. Décisions à vos risques.",
+      "source": {
+        "live": "live",
+        "paper": "paper",
+        "legacy": "legacy",
+        "backtest": "backtest",
+        "mixed": "mixed",
+        "none": "pending"
+      }
+    },
+    "fundamental_analyst": {
+      "displayName": "Chen",
+      "roleTitle": "Analyste fondamental",
+      "shortBio": "Évalue calmement la qualité des actifs via fondamentaux et cycles.",
+      "ariaLabel": "Chen, Analyste fondamental"
+    },
+    "news_analyst": {
+      "displayName": "Mira",
+      "roleTitle": "Analyste actualités",
+      "shortBio": "Suit les nouvelles et narratifs pour voir si l’attention du marché bouge.",
+      "ariaLabel": "Mira, Analyste actualités"
+    },
+    "chart_analyst": {
+      "displayName": "K",
+      "roleTitle": "Analyste graphique",
+      "shortBio": "Lit les graphiques et niveaux clés pour éviter les poursuites impulsives.",
+      "ariaLabel": "K, Analyste graphique"
+    },
+    "onchain_analyst": {
+      "displayName": "Vit",
+      "roleTitle": "Analyste on-chain",
+      "shortBio": "Suit flux, activité et anomalies pour repérer les vraies positions.",
+      "ariaLabel": "Vit, Analyste on-chain"
+    },
+    "research_lead": {
+      "displayName": "Lead R",
+      "roleTitle": "Responsable recherche",
+      "shortBio": "Condense les désaccords en un jugement exécutable.",
+      "ariaLabel": "Lead R, Responsable recherche"
+    },
+    "risk_lead": {
+      "displayName": "Risk X",
+      "roleTitle": "Responsable risque",
+      "shortBio": "Cherche l’invalidation avant de parler opportunité.",
+      "ariaLabel": "Risk X, Responsable risque"
+    },
+    "pm": {
+      "displayName": "PM",
+      "roleTitle": "Product manager",
+      "shortBio": "Transforme la discussion en carte de trade lisible.",
+      "ariaLabel": "PM, Product manager"
+    }
+  },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
     "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",

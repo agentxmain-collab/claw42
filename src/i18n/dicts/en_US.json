@@ -166,6 +166,72 @@
       "4. Past performance is not a reliable indicator of future performance. Before making any investment, carefully consider your experience, financial situation, investment objectives and risk tolerance, and consult an independent financial advisor. For more information, see our Risk Notice and Terms of Use."
     ]
   },
+  "team": {
+    "trackRecord": {
+      "title": "Team Track Record",
+      "subtitle": "Public decision history for the 7-person Watch team, separated by live / paper / backtest sources.",
+      "totalDecisions": "Decisions",
+      "overallWinRate": "Win rate",
+      "teamNetReturn7d": "7d net",
+      "decisions": "Decisions",
+      "wins": "Wins",
+      "winRate": "Win rate",
+      "netReturn7d": "7d net",
+      "sampleSizeSmall": "Small sample size; observe only",
+      "noRecords": "No public team track record yet. New structured decisions will accumulate here.",
+      "aiDisclaimer": "AI-generated market views are informational only and do not constitute investment advice. Decisions at your own risk.",
+      "source": {
+        "live": "live",
+        "paper": "paper",
+        "legacy": "legacy",
+        "backtest": "backtest",
+        "mixed": "mixed",
+        "none": "pending"
+      }
+    },
+    "fundamental_analyst": {
+      "displayName": "Chen",
+      "roleTitle": "Fundamental Analyst",
+      "shortBio": "Slow, steady, and focused on asset quality through fundamentals and cycles.",
+      "ariaLabel": "Chen, Fundamental Analyst"
+    },
+    "news_analyst": {
+      "displayName": "Mira",
+      "roleTitle": "News Analyst",
+      "shortBio": "Watches news and narrative shifts to judge whether attention is moving.",
+      "ariaLabel": "Mira, News Analyst"
+    },
+    "chart_analyst": {
+      "displayName": "K",
+      "roleTitle": "Chart Analyst",
+      "shortBio": "Reads charts and key levels, using discipline to filter chase trades.",
+      "ariaLabel": "K, Chart Analyst"
+    },
+    "onchain_analyst": {
+      "displayName": "Vit",
+      "roleTitle": "On-chain Analyst",
+      "shortBio": "Tracks flows, activity, and anomalies to spot real positioning changes.",
+      "ariaLabel": "Vit, On-chain Analyst"
+    },
+    "research_lead": {
+      "displayName": "Lead R",
+      "roleTitle": "Research Lead",
+      "shortBio": "Compresses analyst disagreement into one executable market judgment.",
+      "ariaLabel": "Lead R, Research Lead"
+    },
+    "risk_lead": {
+      "displayName": "Risk X",
+      "roleTitle": "Risk Lead",
+      "shortBio": "Challenges every setup by naming invalidation before opportunity.",
+      "ariaLabel": "Risk X, Risk Lead"
+    },
+    "pm": {
+      "displayName": "PM",
+      "roleTitle": "Product Manager",
+      "shortBio": "Turns the discussion into a readable productized trade card.",
+      "ariaLabel": "PM, Product Manager"
+    }
+  },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
     "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",

@@ -166,6 +166,72 @@
       "4. لا يُعدّ الأداء السابق مؤشّرًا موثوقًا للأداء المستقبلي. قبل اتخاذ أي قرار استثماري، ضع في الاعتبار بعناية خبرتك ووضعك المالي وأهدافك الاستثمارية وقدرتك على تحمّل المخاطر، واستشر مستشارًا ماليًا مستقلًّا. لمزيد من المعلومات، راجع إشعار المخاطر وشروط الاستخدام."
     ]
   },
+  "team": {
+    "trackRecord": {
+      "title": "جدار سجل الفريق",
+      "subtitle": "سجل قرارات عام لفريق Watch المكوّن من 7 أشخاص مع فصل live / paper / backtest.",
+      "totalDecisions": "القرارات",
+      "overallWinRate": "معدل الفوز",
+      "teamNetReturn7d": "صافي 7 أيام",
+      "decisions": "قرارات",
+      "wins": "فوز",
+      "winRate": "معدل الفوز",
+      "netReturn7d": "صافي 7 أيام",
+      "sampleSizeSmall": "حجم عينة صغير؛ للمتابعة فقط",
+      "noRecords": "لا يوجد سجل عام للفريق بعد. ستتراكم القرارات المنظمة الجديدة هنا.",
+      "aiDisclaimer": "آراء السوق المولدة بالذكاء الاصطناعي معلوماتية فقط ولا تشكل نصيحة استثمارية. قراراتك على مسؤوليتك.",
+      "source": {
+        "live": "live",
+        "paper": "paper",
+        "legacy": "legacy",
+        "backtest": "backtest",
+        "mixed": "mixed",
+        "none": "pending"
+      }
+    },
+    "fundamental_analyst": {
+      "displayName": "Chen",
+      "roleTitle": "محلل أساسي",
+      "shortBio": "يقيّم جودة الأصل بهدوء عبر الأساسيات والدورات.",
+      "ariaLabel": "Chen, محلل أساسي"
+    },
+    "news_analyst": {
+      "displayName": "Mira",
+      "roleTitle": "محلل أخبار",
+      "shortBio": "يتابع الأخبار والسرديات لمعرفة انتقال اهتمام السوق.",
+      "ariaLabel": "Mira, محلل أخبار"
+    },
+    "chart_analyst": {
+      "displayName": "K",
+      "roleTitle": "محلل رسوم بيانية",
+      "shortBio": "يقرأ الرسوم والمستويات المهمة لتجنب مطاردة الحركة.",
+      "ariaLabel": "K, محلل رسوم بيانية"
+    },
+    "onchain_analyst": {
+      "displayName": "Vit",
+      "roleTitle": "محلل على السلسلة",
+      "shortBio": "يتابع التدفقات والنشاط والشذوذ لرصد تغيّر التمركز الحقيقي.",
+      "ariaLabel": "Vit, محلل على السلسلة"
+    },
+    "research_lead": {
+      "displayName": "Lead R",
+      "roleTitle": "قائد البحث",
+      "shortBio": "يضغط اختلافات المحللين في حكم قابل للتنفيذ.",
+      "ariaLabel": "Lead R, قائد البحث"
+    },
+    "risk_lead": {
+      "displayName": "Risk X",
+      "roleTitle": "قائد المخاطر",
+      "shortBio": "يبحث عن شروط الإبطال قبل الحديث عن الفرصة.",
+      "ariaLabel": "Risk X, قائد المخاطر"
+    },
+    "pm": {
+      "displayName": "PM",
+      "roleTitle": "مدير المنتج",
+      "shortBio": "يحوّل النقاش إلى بطاقة تداول واضحة.",
+      "ariaLabel": "PM, مدير المنتج"
+    }
+  },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
     "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
