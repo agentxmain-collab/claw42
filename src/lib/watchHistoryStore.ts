@@ -87,15 +87,19 @@ export async function appendWatchEntry(entry: StreamEntry): Promise<void> {
   }
 }
 
-export async function getWatchHistory(options: { before?: number; limit?: number } = {}): Promise<{
+export async function getWatchHistory(
+  options: { before?: number; since?: number; limit?: number; windowMinutes?: number } = {},
+): Promise<{
   entries: StreamEntry[];
   hasMore: boolean;
   oldestTs: number | null;
 }> {
   const before = options.before ?? Date.now();
+  const since = options.since;
   const limit = Math.max(1, Math.min(options.limit ?? 30, 100));
   const now = Date.now();
-  const cutoff = now - RETENTION_MS;
+  const windowMs = Math.max(1, Math.min(options.windowMinutes ?? 720, 720)) * 60_000;
+  const cutoff = now - Math.min(RETENTION_MS, windowMs);
   const kv = await getKvClient();
   let all = memoryStore;
 
@@ -114,7 +118,12 @@ export async function getWatchHistory(options: { before?: number; limit?: number
   }
 
   const filtered = all
-    .filter((entry) => entry.ts < before && entry.ts >= cutoff)
+    .filter(
+      (entry) =>
+        entry.ts < before &&
+        entry.ts >= cutoff &&
+        (since === undefined || entry.ts > since),
+    )
     .sort((a, b) => b.ts - a.ts);
   const entries = filtered.slice(0, limit);
   const oldestTs = entries.length > 0 ? (entries[entries.length - 1]?.ts ?? null) : null;

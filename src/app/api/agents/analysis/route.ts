@@ -3,6 +3,7 @@ import { getAgentAnalysis } from "@/lib/agentAnalysis";
 import { generateText } from "@/lib/llm/generateText";
 import { rateLimit } from "@/lib/rateLimit";
 import { getHotSignals, getMajorEvent } from "@/lib/signal-engine";
+import { triggerPmDecisionPipelineOnce } from "@/lib/team/pmDecisionTrigger";
 import { resolveAgentWatchLocale } from "@/modules/agent-watch/locale";
 import type { AgentId } from "@/modules/agent-watch/types";
 import type { SignalCard } from "@/types/signal";
@@ -27,6 +28,14 @@ export async function GET(request: NextRequest) {
 
   const locale = resolveAgentWatchLocale(url.searchParams.get("locale") ?? "");
   const payload = await getAgentAnalysis(locale);
+  void triggerPmDecisionPipelineOnce({
+    triggerSource: "user_visit_trigger",
+    pool: payload.pool,
+  }).catch((error) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[claw42] PM decision trigger skipped", error);
+    }
+  });
   return NextResponse.json(payload);
 }
 

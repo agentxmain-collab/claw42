@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
+import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
 import { rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,13 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const beforeParam = url.searchParams.get("before");
   const limitParam = url.searchParams.get("limit");
+  const mode = url.searchParams.get("mode") === "debug" ? "debug" : "public";
+  if (
+    mode === "debug" &&
+    (process.env.NODE_ENV === "production" || request.headers.get("x-claw42-debug") !== "1")
+  ) {
+    return NextResponse.json({ error: "debug mode unavailable" }, { status: 403 });
+  }
   const before = beforeParam ? Number(beforeParam) : Date.now();
   const limit = limitParam ? Math.min(Number(limitParam), 100) : 30;
 
@@ -22,7 +30,24 @@ export async function GET(request: NextRequest) {
   }
 
   const result = await getWatchHistory({ before, limit });
-  return NextResponse.json(result, {
-    headers: { "Cache-Control": "no-store" },
+  if (mode === "debug") {
+    return NextResponse.json(result, {
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+
+  const events = filterPublicTimelineEvents(result.entries, {
+    mode: "public",
+    importanceThreshold: "high",
   });
+
+  return NextResponse.json(
+    {
+      ...result,
+      events,
+    },
+    {
+      headers: { "Cache-Control": "no-store" },
+    },
+  );
 }
