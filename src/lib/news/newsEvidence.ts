@@ -30,7 +30,10 @@ export function evidenceSeverityFromNews(item: NewsItem): NewsEvidenceSeverity {
   return "low";
 }
 
-export function newsItemToEvidence(item: NewsItem, fetchedAt = new Date().toISOString()): NewsEvidence {
+export function newsItemToEvidence(
+  item: NewsItem,
+  fetchedAt = new Date().toISOString(),
+): NewsEvidence {
   const publishedAt = new Date(item.publishedAt).toISOString();
   return {
     id: generateEvidenceId(item.url, publishedAt),
@@ -39,7 +42,9 @@ export function newsItemToEvidence(item: NewsItem, fetchedAt = new Date().toISOS
     url: item.url,
     publishedAt,
     fetchedAt,
-    symbol: Array.from(new Set(item.currencies.map((symbol) => symbol.replace(/^\$/, "").toUpperCase()))),
+    symbol: Array.from(
+      new Set(item.currencies.map((symbol) => symbol.replace(/^\$/, "").toUpperCase())),
+    ),
     impactSeverity: evidenceSeverityFromNews(item),
     summary: item.title,
   };

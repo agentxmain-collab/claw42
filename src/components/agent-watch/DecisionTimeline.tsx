@@ -50,12 +50,15 @@ function EventBody({ event }: { event: PublicTimelineEvent }) {
         <TradeCardBlock decision={event.payload.tradeDecision} />
         {rationales.length > 0 && (
           <details className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <summary className="cursor-pointer text-sm font-bold text-white/78">
+            <summary className="text-white/78 cursor-pointer text-sm font-bold">
               {t.agentWatch.timeline.showProcess}
             </summary>
             <div className="mt-3 space-y-3">
               {rationales.map(([memberId, text]) => (
-                <div key={memberId} className="rounded-xl bg-white/[0.035] p-3 text-sm leading-relaxed text-white/70">
+                <div
+                  key={memberId}
+                  className="rounded-xl bg-white/[0.035] p-3 text-sm leading-relaxed text-white/70"
+                >
                   <div className="mb-1 font-bold text-white">
                     {memberName(memberId as TeamMemberId, t.team)}
                   </div>
@@ -119,7 +122,12 @@ export function DecisionTimeline({
   let renderedBoundary = false;
 
   if (!loading && events.length === 0) {
-    return <ZeroState title={t.agentWatch.emptyState.title} subtitle={t.agentWatch.emptyState.subtitle} />;
+    return (
+      <ZeroState
+        title={t.agentWatch.emptyState.title}
+        subtitle={t.agentWatch.emptyState.subtitle}
+      />
+    );
   }
 
   return (

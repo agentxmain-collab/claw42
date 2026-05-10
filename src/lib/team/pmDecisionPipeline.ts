@@ -4,12 +4,16 @@ import { generateText } from "@/lib/llm/generateText";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { recordStrategyDecisionRecord } from "@/lib/strategyHistory";
 import type { StrategyDecisionRecord, AnalystInputRecord } from "@/lib/team/strategyDecisionRecord";
-import { generateTradeDecision, type Severity, type TradeDecision } from "@/lib/team/tradeDecisionPromptBuilder";
 import {
-  TEAM_MEMBER_REGISTRY,
-  type TeamMemberId,
-} from "@/lib/team/teamRegistry";
-import type { PublicTimelineEvent, PublicTimelineImportance } from "@/lib/watch/publicTimelineEvent";
+  generateTradeDecision,
+  type Severity,
+  type TradeDecision,
+} from "@/lib/team/tradeDecisionPromptBuilder";
+import { TEAM_MEMBER_REGISTRY, type TeamMemberId } from "@/lib/team/teamRegistry";
+import type {
+  PublicTimelineEvent,
+  PublicTimelineImportance,
+} from "@/lib/watch/publicTimelineEvent";
 import { appendWatchHistoryEntry } from "@/lib/watchHistoryStore";
 import type { SignalRecord } from "@/modules/agent-watch/types";
 import type { ChatThread } from "@/lib/types";
@@ -179,11 +183,17 @@ function marketContext(input: PmDecisionPipelineInput) {
 
 function newsContext(input: PmDecisionPipelineInput) {
   return input.recentNewsEvidence
-    .map((evidence) => `- ${evidence.id}: ${evidence.title} (${evidence.source}) ${evidence.summary}`)
+    .map(
+      (evidence) => `- ${evidence.id}: ${evidence.title} (${evidence.source}) ${evidence.summary}`,
+    )
     .join("\n");
 }
 
-async function buildMemberPrompt(memberId: TeamMemberId, input: PmDecisionPipelineInput, deps: PipelineDeps) {
+async function buildMemberPrompt(
+  memberId: TeamMemberId,
+  input: PmDecisionPipelineInput,
+  deps: PipelineDeps,
+) {
   const promptDoc = await (deps.loadPromptDoc ?? defaultLoadPromptDoc)(memberId);
   return `${promptDoc}
 
@@ -221,7 +231,10 @@ Return JSON only:
 
 ## Analyst outputs
 ${analystOutputs
-  .map((output) => `- ${output.memberId}: ${output.direction} ${output.confidence} ${output.rationale}`)
+  .map(
+    (output) =>
+      `- ${output.memberId}: ${output.direction} ${output.confidence} ${output.rationale}`,
+  )
   .join("\n")}
 
 ## Previous lead
@@ -235,22 +248,21 @@ ${newsContext(input) || "- none"}`;
 }
 
 function currentPriceFromSignals(signals: SignalRecord[]) {
-  const price = signals.find((signal) => typeof signal.payload.priceLevel === "number")?.payload.priceLevel;
+  const price = signals.find((signal) => typeof signal.payload.priceLevel === "number")?.payload
+    .priceLevel;
   return price && price > 0 ? price : 1;
 }
 
 function symbolFromInput(input: PmDecisionPipelineInput) {
-  return (
-    input.recentMarketSignals[0]?.symbol ??
-    input.recentNewsEvidence[0]?.symbol[0] ??
-    "BTC"
-  )
+  return (input.recentMarketSignals[0]?.symbol ?? input.recentNewsEvidence[0]?.symbol[0] ?? "BTC")
     .replace(/^\$/, "")
     .toUpperCase();
 }
 
 function toSeverity(input: PmDecisionPipelineInput): Severity {
-  const hasHighNews = input.recentNewsEvidence.some((evidence) => evidence.impactSeverity === "high");
+  const hasHighNews = input.recentNewsEvidence.some(
+    (evidence) => evidence.impactSeverity === "high",
+  );
   const hasAlertSignal = input.recentMarketSignals.some((signal) => signal.severity === "alert");
   return hasHighNews || hasAlertSignal ? "high" : "medium";
 }
@@ -301,7 +313,14 @@ function makeRecord({
     recordSource: "live",
     symbol,
     decisionOwnerId: "pm",
-    contributorIds: ["fundamental_analyst", "news_analyst", "chart_analyst", "onchain_analyst", "research_lead", "risk_lead"],
+    contributorIds: [
+      "fundamental_analyst",
+      "news_analyst",
+      "chart_analyst",
+      "onchain_analyst",
+      "research_lead",
+      "risk_lead",
+    ],
     analystInputs,
     sourceThreadId: null,
     tradeDecision,
@@ -315,7 +334,10 @@ function makeRecord({
   };
 }
 
-function makePublicTimelineEntry(record: StrategyDecisionRecord, evidenceIds: string[]): PublicTimelineEvent {
+function makePublicTimelineEntry(
+  record: StrategyDecisionRecord,
+  evidenceIds: string[],
+): PublicTimelineEvent {
   return {
     id: `public:${record.id}`,
     ts: Date.parse(record.createdAt),
@@ -371,6 +393,7 @@ function timelineEntryAsChatThread(
       sourceTrigger: "pm_decision",
       evidenceIds,
       recordId: record.id,
+      tradeDecision: record.tradeDecision,
     },
   };
 }
@@ -423,7 +446,9 @@ export async function runPmDecisionPipeline(
         rationale: output.rationale,
       })),
       riskNotes: [riskLead.rationale],
-      newsContext: input.recentNewsEvidence.map((evidence) => `${evidence.id}: ${evidence.summary}`),
+      newsContext: input.recentNewsEvidence.map(
+        (evidence) => `${evidence.id}: ${evidence.summary}`,
+      ),
       severity: toSeverity(input),
     });
     if (!tradeDecision) return null;

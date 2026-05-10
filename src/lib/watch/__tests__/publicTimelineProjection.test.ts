@@ -1,8 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { filterPublicTimelineEvents, projectStreamEntryToPublic } from "@/lib/watch/publicTimelineProjection";
+import {
+  filterPublicTimelineEvents,
+  projectStreamEntryToPublic,
+} from "@/lib/watch/publicTimelineProjection";
+import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { StreamEntry } from "@/modules/agent-watch/types";
 
 const now = Date.now();
+
+const tradeDecision: TradeDecision = {
+  id: "trade-1",
+  schemaVersion: 1,
+  symbol: "BTC",
+  generatedBy: "pm",
+  generatedAt: new Date(now).toISOString(),
+  direction: "long",
+  entryType: "market",
+  entryPrice: 76000,
+  entryRange: { low: 75500, high: 76500 },
+  stopLoss: 74800,
+  takeProfit: [78000],
+  positionSizing: 0.1,
+  timeHorizon: "intraday",
+  rating: 4,
+  confidence: 0.72,
+  evidenceIds: ["ev_1"],
+  riskNote: "Risk can fade",
+  invalidatesIf: "BTC loses 74800",
+  promptVersion: "test",
+  modelProvider: "stub",
+  severity: "high",
+};
 
 function focusEntry(overrides: Partial<StreamEntry> = {}): StreamEntry {
   return {
@@ -28,7 +56,14 @@ describe("publicTimelineProjection", () => {
 
   it("filters debug entries from public mode", () => {
     const event = projectStreamEntryToPublic(
-      focusEntry({ meta: { visibility: "debug", importance: "critical", sourceTrigger: "market_signal", evidenceIds: [] } }),
+      focusEntry({
+        meta: {
+          visibility: "debug",
+          importance: "critical",
+          sourceTrigger: "market_signal",
+          evidenceIds: [],
+        },
+      }),
     );
     expect(event).toBeNull();
   });
@@ -36,11 +71,21 @@ describe("publicTimelineProjection", () => {
   it("filters low and medium entries from public mode", () => {
     const low = focusEntry({
       id: "low",
-      meta: { visibility: "public", importance: "low", sourceTrigger: "market_signal", evidenceIds: [] },
+      meta: {
+        visibility: "public",
+        importance: "low",
+        sourceTrigger: "market_signal",
+        evidenceIds: [],
+      },
     });
     const medium = focusEntry({
       id: "medium",
-      meta: { visibility: "public", importance: "medium", sourceTrigger: "market_signal", evidenceIds: [] },
+      meta: {
+        visibility: "public",
+        importance: "medium",
+        sourceTrigger: "market_signal",
+        evidenceIds: [],
+      },
     });
     expect(filterPublicTimelineEvents([low, medium], { mode: "public" })).toHaveLength(0);
   });
@@ -55,7 +100,12 @@ describe("publicTimelineProjection", () => {
       content: "wait",
       dedupeKey: "quiet",
       severity: "neutral",
-      meta: { visibility: "public", importance: "critical", sourceTrigger: "fallback", evidenceIds: [] },
+      meta: {
+        visibility: "public",
+        importance: "critical",
+        sourceTrigger: "fallback",
+        evidenceIds: [],
+      },
     };
     expect(projectStreamEntryToPublic(entry)).toBeNull();
   });
@@ -81,7 +131,12 @@ describe("publicTimelineProjection", () => {
         status: "completed",
         createdAt: now,
       },
-      meta: { visibility: "public", importance: "critical", sourceTrigger: "pm_decision", evidenceIds: [] },
+      meta: {
+        visibility: "public",
+        importance: "critical",
+        sourceTrigger: "pm_decision",
+        evidenceIds: [],
+      },
     };
     expect(projectStreamEntryToPublic(entry)).toBeNull();
   });
@@ -113,10 +168,14 @@ describe("publicTimelineProjection", () => {
         sourceTrigger: "pm_decision",
         evidenceIds: ["ev_1"],
         recordId: "record-1",
+        tradeDecision,
       },
     };
     const event = projectStreamEntryToPublic(entry);
     expect(event?.payload.kind).toBe("pm_decision");
+    expect(event?.payload.kind === "pm_decision" ? event.payload.tradeDecision?.id : null).toBe(
+      "trade-1",
+    );
     expect(event?.evidenceIds).toEqual(["ev_1"]);
   });
 });

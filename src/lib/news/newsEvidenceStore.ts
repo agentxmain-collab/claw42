@@ -15,8 +15,8 @@ const memoryEvidence = new Map<string, NewsEvidence>();
 function hasKvConfig() {
   return Boolean(
     process.env.USE_PERSISTENT_KV === "true" &&
-      process.env.KV_REST_API_URL &&
-      process.env.KV_REST_API_TOKEN,
+    process.env.KV_REST_API_URL &&
+    process.env.KV_REST_API_TOKEN,
   );
 }
 
@@ -61,7 +61,10 @@ export async function getNewsEvidence(evidenceId: string): Promise<NewsEvidence 
 }
 
 async function localStoreFile() {
-  return process.env.NEWS_EVIDENCE_STORE_FILE ?? path.join(process.cwd(), ".cache", "news-evidence.jsonl");
+  return (
+    process.env.NEWS_EVIDENCE_STORE_FILE ??
+    path.join(process.cwd(), ".cache", "news-evidence.jsonl")
+  );
 }
 
 async function appendLocalEvidence(evidence: NewsEvidence) {

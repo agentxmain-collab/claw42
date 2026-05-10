@@ -1,4 +1,7 @@
-import type { PublicTimelineEvent, PublicTimelineImportance } from "@/lib/watch/publicTimelineEvent";
+import type {
+  PublicTimelineEvent,
+  PublicTimelineImportance,
+} from "@/lib/watch/publicTimelineEvent";
 import { PUBLIC_IMPORTANCE_ORDER } from "@/lib/watch/publicTimelineEvent";
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
 
@@ -10,7 +13,11 @@ export interface PublicTimelineProjectionOptions {
 function inferredMeta(entry: StreamEntry): WatchEntryMeta {
   if (entry.meta) return normalizeMeta(entry.meta);
 
-  if (entry.kind === "focus_event" || entry.kind === "collective_event" || entry.kind === "conflict_event") {
+  if (
+    entry.kind === "focus_event" ||
+    entry.kind === "collective_event" ||
+    entry.kind === "conflict_event"
+  ) {
     return {
       visibility: "public",
       importance: "high",
@@ -43,6 +50,7 @@ function normalizeMeta(meta: WatchEntryMeta): WatchEntryMeta {
     sourceTrigger: meta.sourceTrigger,
     evidenceIds: Array.isArray(meta.evidenceIds) ? meta.evidenceIds.filter(Boolean) : [],
     recordId: meta.recordId,
+    tradeDecision: meta.tradeDecision ?? null,
   };
 }
 
@@ -94,12 +102,15 @@ function pmDecisionPayload(
   return {
     kind: "pm_decision",
     recordId,
-    tradeDecision: null,
+    tradeDecision: meta.tradeDecision ?? null,
     rationaleByMember: {},
   };
 }
 
-function newsPayload(entry: StreamEntry, meta: WatchEntryMeta): PublicTimelineEvent["payload"] | null {
+function newsPayload(
+  entry: StreamEntry,
+  meta: WatchEntryMeta,
+): PublicTimelineEvent["payload"] | null {
   const evidenceId = meta.evidenceIds[0];
   if (!evidenceId) return null;
   if (entry.kind === "news_debate") {
@@ -128,7 +139,11 @@ export function projectStreamEntryToPublic(
     if (!passesImportance(meta.importance, threshold)) return null;
   }
 
-  if (entry.kind === "agent_message" || entry.kind === "watch_update" || entry.kind === "agent_discussion") {
+  if (
+    entry.kind === "agent_message" ||
+    entry.kind === "watch_update" ||
+    entry.kind === "agent_discussion"
+  ) {
     return null;
   }
 

@@ -26,7 +26,10 @@ function signalFromTicker(item: CoinTickerEntry, now: number): SignalRecord | nu
   };
 }
 
-export function marketSignalsFromPool(pool: CoinPoolPayload | undefined, now = Date.now()): SignalRecord[] {
+export function marketSignalsFromPool(
+  pool: CoinPoolPayload | undefined,
+  now = Date.now(),
+): SignalRecord[] {
   if (!pool) return [];
   return [...pool.majors, ...pool.trending, ...pool.opportunity]
     .map((item) => signalFromTicker(item, now))

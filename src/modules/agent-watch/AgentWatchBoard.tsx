@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { buildChatterPlan } from "@/lib/chatterGenerator";
@@ -15,18 +15,15 @@ import type {
   AgentDiscussionEntry,
   AgentMessage,
   AgentId,
-  AgentStatus,
   ChatThreadEntry,
   NewsDebateEntry,
   StreamEntry,
   WatchUpdateEntry,
 } from "./types";
-import { AgentRowCard } from "./components/AgentRowCard";
 import { CoinTickerStrip } from "./components/CoinTickerStrip";
 import { MarketEventFeed } from "./components/MarketEventFeed";
 import { CriticalNewsBanner } from "./components/CriticalNewsBanner";
 import { NewsFeedTicker } from "./components/NewsFeedTicker";
-import { FactionPresenceBar } from "./components/FactionPresenceBar";
 import { NewContentBanner } from "./components/NewContentBanner";
 import { TopicHeader } from "./components/TopicHeader";
 import {
@@ -238,14 +235,14 @@ export function AgentWatchBoard({
     const initialEntries = filterStreamEntries(entriesFromInitialThreads(initialChatThreads));
     return initialEntries;
   });
-  const [historyEntries, setHistoryEntries] = useState<StreamEntry[]>([]);
+  const [, setHistoryEntries] = useState<StreamEntry[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<PublicTimelineEvent[]>([]);
   const [timelineHasMore, setTimelineHasMore] = useState(false);
   const [timelineOldestTs, setTimelineOldestTs] = useState<number | null>(null);
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [timelineLoadingMore, setTimelineLoadingMore] = useState(false);
-  const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
-  const [speakingAgent, setSpeakingAgent] = useState<AgentId | null>(null);
+  const [, setTypingAgent] = useState<AgentId | null>(null);
+  const [, setSpeakingAgent] = useState<AgentId | null>(null);
 
   const applyHistoryPayload = useCallback(
     (
@@ -269,24 +266,29 @@ export function AgentWatchBoard({
     [],
   );
 
-  const applyTimelinePayload = useCallback((payload: PublicTimelinePayload, mode: "replace" | "append") => {
-    const sorted = payload.events.slice().sort((a, b) => b.ts - a.ts);
-    setTimelineEvents((current) => {
-      const merged = mode === "replace" ? sorted : [...current, ...sorted];
-      const seen = new Set<string>();
-      return merged
-        .filter((event) => {
-          if (seen.has(event.id)) return false;
-          seen.add(event.id);
-          return true;
-        })
-        .sort((a, b) => b.ts - a.ts);
-    });
-    const oldestFromEvents =
-      sorted.length > 0 ? sorted.reduce((min, event) => Math.min(min, event.ts), sorted[0]!.ts) : null;
-    setTimelineOldestTs(oldestFromEvents ?? payload.oldestTs ?? null);
-    setTimelineHasMore(Boolean(payload.hasMore));
-  }, []);
+  const applyTimelinePayload = useCallback(
+    (payload: PublicTimelinePayload, mode: "replace" | "append") => {
+      const sorted = payload.events.slice().sort((a, b) => b.ts - a.ts);
+      setTimelineEvents((current) => {
+        const merged = mode === "replace" ? sorted : [...current, ...sorted];
+        const seen = new Set<string>();
+        return merged
+          .filter((event) => {
+            if (seen.has(event.id)) return false;
+            seen.add(event.id);
+            return true;
+          })
+          .sort((a, b) => b.ts - a.ts);
+      });
+      const oldestFromEvents =
+        sorted.length > 0
+          ? sorted.reduce((min, event) => Math.min(min, event.ts), sorted[0]!.ts)
+          : null;
+      setTimelineOldestTs(oldestFromEvents ?? payload.oldestTs ?? null);
+      setTimelineHasMore(Boolean(payload.hasMore));
+    },
+    [],
+  );
 
   const fetchTimelineWindow = useCallback(
     async ({
@@ -641,27 +643,6 @@ export function AgentWatchBoard({
     return () => observer.disconnect();
   }, [loadMoreTimeline, timelineHasMore, timelineLoadingMore]);
 
-  const combinedEntries = useMemo(
-    () => dedupeStreamEntries([...historyEntries, ...liveQueue]).sort((a, b) => a.ts - b.ts),
-    [historyEntries, liveQueue],
-  );
-  const focusSymbols = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          [
-            ...(data?.focus?.map((focus) => focus.symbol) ?? []),
-            ...(data?.newsDebates?.[0]?.newsCurrencies ?? []),
-          ].filter(Boolean),
-        ),
-      ),
-    [data?.focus, data?.newsDebates],
-  );
-  const focusByAgent = useMemo(
-    () => new Map(data?.focus?.map((focus) => [focus.agentId, focus]) ?? []),
-    [data?.focus],
-  );
-
   const handleDismissNewContent = useCallback(() => {
     dismissNewContent();
   }, [dismissNewContent]);
@@ -670,23 +651,6 @@ export function AgentWatchBoard({
     await refreshHistory();
     dismissNewContent();
   }, [dismissNewContent, refreshHistory]);
-  const statusForAgent = useCallback(
-    (agentId: AgentId): AgentStatus => {
-      if (typingAgent === agentId) return "thinking";
-      if (speakingAgent === agentId) return "speaking";
-      const focus = focusByAgent.get(agentId);
-      const hasRecentAlert =
-        Boolean(focus) &&
-        marketSignals.some(
-          (signal) =>
-            signal.symbol.toUpperCase() === focus?.symbol.toUpperCase() &&
-            signal.severity === "alert" &&
-            Date.now() - signal.ts <= 2 * 60_000,
-        );
-      return hasRecentAlert ? "alert" : "idle";
-    },
-    [focusByAgent, marketSignals, speakingAgent, typingAgent],
-  );
 
   return (
     <section
@@ -695,11 +659,6 @@ export function AgentWatchBoard({
     >
       <div className="space-y-7">
         <TopicHeader t={t} />
-        <FactionPresenceBar
-          entries={combinedEntries}
-          focusSymbols={focusSymbols}
-          locale={agentWatchLocale}
-        />
         {SHOW_TICKERS && (
           <>
             <CoinTickerStrip
@@ -719,19 +678,6 @@ export function AgentWatchBoard({
             <NewsFeedTicker debates={data?.newsDebates ?? []} labels={t.agentWatch.newsDebate} />
           </>
         )}
-
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          {AGENT_ORDER.map((agentId) => (
-            <AgentRowCard
-              key={agentId}
-              agentId={agentId}
-              focus={focusByAgent.get(agentId) ?? null}
-              status={statusForAgent(agentId)}
-              statusLabels={t.agentWatch.sidebarStatus}
-              focusLabels={t.agentWatch.focusCard}
-            />
-          ))}
-        </div>
 
         {SHOW_TICKERS && (
           <NewContentBanner

@@ -27,22 +27,30 @@ export function SignalCard({ event }: { event: PublicTimelineEvent }) {
           {payload.signalType}
         </span>
         <span className="font-mono text-sm font-bold text-white">${payload.symbol}</span>
-        <span className={isCritical ? "text-xs font-bold text-rose-200" : "text-xs font-bold text-amber-200"}>
+        <span
+          className={
+            isCritical ? "text-xs font-bold text-rose-200" : "text-xs font-bold text-amber-200"
+          }
+        >
           {payload.severity}
         </span>
       </div>
       {payload.description && (
-        <p className="mt-3 text-sm leading-relaxed text-white/78">{payload.description}</p>
+        <p className="text-white/78 mt-3 text-sm leading-relaxed">{payload.description}</p>
       )}
       {(payload.threshold !== undefined || payload.observedValue !== undefined) && (
         <div className="mt-3 grid gap-2 text-xs text-white/55 md:grid-cols-2">
           <div className="rounded-xl bg-black/20 p-3">
             <div>Observed</div>
-            <div className="mt-1 font-mono font-bold text-white">{formatNumber(payload.observedValue)}</div>
+            <div className="mt-1 font-mono font-bold text-white">
+              {formatNumber(payload.observedValue)}
+            </div>
           </div>
           <div className="rounded-xl bg-black/20 p-3">
             <div>Threshold</div>
-            <div className="mt-1 font-mono font-bold text-white">{formatNumber(payload.threshold)}</div>
+            <div className="mt-1 font-mono font-bold text-white">
+              {formatNumber(payload.threshold)}
+            </div>
           </div>
         </div>
       )}

@@ -28,7 +28,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "debug mode unavailable" }, { status: 403 });
   }
 
-  const windowMinutes = Math.min(Math.max(numberParam(url.searchParams.get("windowMinutes"), 60), 1), 720);
+  const windowMinutes = Math.min(
+    Math.max(numberParam(url.searchParams.get("windowMinutes"), 60), 1),
+    720,
+  );
   const limit = Math.min(Math.max(numberParam(url.searchParams.get("limit"), 30), 1), 100);
   const before = numberParam(url.searchParams.get("before"), Date.now());
   const sinceParam = url.searchParams.get("since");
@@ -61,7 +64,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(
     {
       events,
-      oldestTs: events.length > 0 ? (events[events.length - 1]?.ts ?? result.oldestTs) : result.oldestTs,
+      oldestTs:
+        events.length > 0 ? (events[events.length - 1]?.ts ?? result.oldestTs) : result.oldestTs,
       hasMore: result.hasMore,
       windowMinutes,
       servedAt,

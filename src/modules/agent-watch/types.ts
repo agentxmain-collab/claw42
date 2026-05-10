@@ -1,4 +1,5 @@
 import type { ChatThread, NewsDebate } from "@/lib/types";
+import type { TradeDecision } from "@/lib/team/tradeDecision";
 
 export type CoinSymbol = "BTC" | "ETH" | "SOL" | "USDT";
 export type AgentId = "alpha" | "beta" | "gamma";
@@ -110,6 +111,7 @@ export interface WatchEntryMeta {
   sourceTrigger: WatchEntrySourceTrigger;
   evidenceIds: string[];
   recordId?: string;
+  tradeDecision?: TradeDecision | null;
 }
 
 export interface WatchEntryWithMeta {

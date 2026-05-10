@@ -40,7 +40,9 @@ export function TradeCardBlock({ decision }: { decision: TradeDecision | null | 
         <span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-xs font-bold text-white/80">
           {directionLabel(decision.direction)}
         </span>
-        <span className={`rounded-full border px-2 py-1 text-xs font-bold ${RATING_STYLES[decision.rating]}`}>
+        <span
+          className={`rounded-full border px-2 py-1 text-xs font-bold ${RATING_STYLES[decision.rating]}`}
+        >
           {decision.rating}/5
         </span>
         <span className="text-xs text-white/45">
@@ -51,7 +53,9 @@ export function TradeCardBlock({ decision }: { decision: TradeDecision | null | 
       <div className="mt-4 grid gap-2 text-sm md:grid-cols-3">
         <div className="rounded-xl bg-black/25 p-3">
           <div className="text-xs text-white/40">Entry</div>
-          <div className="mt-1 font-mono font-bold text-white">{formatPrice(decision.entryPrice)}</div>
+          <div className="mt-1 font-mono font-bold text-white">
+            {formatPrice(decision.entryPrice)}
+          </div>
         </div>
         <div className="rounded-xl bg-black/25 p-3">
           <div className="text-xs text-white/40">Stop loss</div>

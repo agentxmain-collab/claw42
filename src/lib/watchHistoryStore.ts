@@ -51,12 +51,17 @@ function appendMemoryEntry(entry: StreamEntry, now = Date.now()) {
 function hasCompleteMeta(meta: WatchEntryMeta | undefined): meta is WatchEntryMeta {
   return Boolean(
     meta &&
-      (meta.visibility === "public" || meta.visibility === "debug") &&
-      ["low", "medium", "high", "critical"].includes(meta.importance) &&
-      ["market_signal", "news", "pm_decision", "team_discussion", "cron_heartbeat", "fallback"].includes(
-        meta.sourceTrigger,
-      ) &&
-      Array.isArray(meta.evidenceIds),
+    (meta.visibility === "public" || meta.visibility === "debug") &&
+    ["low", "medium", "high", "critical"].includes(meta.importance) &&
+    [
+      "market_signal",
+      "news",
+      "pm_decision",
+      "team_discussion",
+      "cron_heartbeat",
+      "fallback",
+    ].includes(meta.sourceTrigger) &&
+    Array.isArray(meta.evidenceIds),
   );
 }
 
@@ -120,9 +125,7 @@ export async function getWatchHistory(
   const filtered = all
     .filter(
       (entry) =>
-        entry.ts < before &&
-        entry.ts >= cutoff &&
-        (since === undefined || entry.ts > since),
+        entry.ts < before && entry.ts >= cutoff && (since === undefined || entry.ts > since),
     )
     .sort((a, b) => b.ts - a.ts);
   const entries = filtered.slice(0, limit);
