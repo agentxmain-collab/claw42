@@ -9,6 +9,7 @@
 # testing
 /coverage
 /reports
+/.cache
 
 # next.js
 /.next/

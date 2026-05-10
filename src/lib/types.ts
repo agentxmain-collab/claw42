@@ -1,6 +1,10 @@
 import type { AgentId, CoinSymbol, SignalSeverity } from "@/modules/agent-watch/types";
 import type { Rating5Tier } from "@/lib/rating";
+export type { TeamMemberId } from "@/lib/team/teamRegistry";
 
+/**
+ * @deprecated 派系 IP 退役中，spec-4 删除。New Watch contracts should use TeamMemberId.
+ */
 export type FactionId = AgentId;
 
 export type NewsSourceMode = "mock" | "hybrid" | "live";
@@ -207,6 +211,7 @@ export interface StrategyReplay {
   exitPrice: number;
   pnlPct: number;
   isWin: boolean;
+  legacyFactionId?: FactionId | null;
 }
 
 export interface AgentWinrate {
