@@ -234,7 +234,7 @@
   },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
-    "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
+    "pageSubtitle": "7 人 AI 團隊即時盯盤，分析師 / 綜合 / 風控 / PM 協作產出每日策略。",
     "pageHeroTagline": "",
     "sidebarStatus": {
       "thinking": "",
@@ -244,7 +244,7 @@
     "bottomCta": "Open Agent →",
     "linkCardLiveBadge": "LIVE",
     "linkCardTitle": "3 Agents are watching the market",
-    "linkCardDesc": "Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
+    "linkCardDesc": "新聞、市場訊號、團隊決策匯聚於此。",
     "fallbackNotice": "",
     "banner": {
       "newContent": "New content →",

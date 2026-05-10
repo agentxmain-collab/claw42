@@ -234,7 +234,7 @@
   },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
-    "pageSubtitle": "3 Agents on watch. Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
+    "pageSubtitle": "A 7-member AI team watches live markets, with analysts, leads, risk control, and PM collaborating on daily strategy.",
     "pageHeroTagline": "",
     "sidebarStatus": {
       "thinking": "Thinking",
@@ -244,7 +244,7 @@
     "bottomCta": "Open Agent →",
     "linkCardLiveBadge": "LIVE",
     "linkCardTitle": "3 Agents are watching the market",
-    "linkCardDesc": "Alpha hunts breakouts, Beta follows trends, Gamma waits for extremes.",
+    "linkCardDesc": "News, market signals, and team decisions converge here.",
     "fallbackNotice": "",
     "banner": {
       "newContent": "New content →",
