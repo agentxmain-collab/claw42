@@ -1,6 +1,6 @@
 "use client";
 
-import type { MarketTickerPayload } from "@/modules/agent-watch/types";
+import type { CoinPoolPayload, MarketTickerPayload } from "@/modules/agent-watch/types";
 
 function formatPrice(price: number) {
   if (!Number.isFinite(price)) return "--";
@@ -22,9 +22,9 @@ export function ZeroState({
 }: {
   title: string;
   subtitle: string;
-  marketSnapshot?: MarketTickerPayload | null;
+  marketSnapshot?: (MarketTickerPayload | CoinPoolPayload) | null;
 }) {
-  const majors = marketSnapshot?.pool?.majors.slice(0, 3) ?? [];
+  const majors = majorTickersFromSnapshot(marketSnapshot).slice(0, 3);
 
   return (
     <div className="rounded-3xl border border-white/10 bg-white/[0.035] px-6 py-10 text-center shadow-[0_20px_80px_rgba(0,0,0,0.24)]">
@@ -62,4 +62,10 @@ export function ZeroState({
       )}
     </div>
   );
+}
+
+function majorTickersFromSnapshot(snapshot?: (MarketTickerPayload | CoinPoolPayload) | null) {
+  if (!snapshot) return [];
+  if ("majors" in snapshot && Array.isArray(snapshot.majors)) return snapshot.majors;
+  return snapshot.pool?.majors ?? [];
 }
