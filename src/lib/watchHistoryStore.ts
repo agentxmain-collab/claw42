@@ -1,4 +1,4 @@
-import type { StreamEntry } from "@/modules/agent-watch/types";
+import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
 
 const RETENTION_MS = 12 * 60 * 60 * 1000;
 const KV_TTL_SECONDS = 13 * 60 * 60;
@@ -46,6 +46,27 @@ function appendMemoryEntry(entry: StreamEntry, now = Date.now()) {
   const pruned = pruneEntries([...memoryStore, entry], now);
   memoryStore.length = 0;
   memoryStore.push(...pruned);
+}
+
+function hasCompleteMeta(meta: WatchEntryMeta | undefined): meta is WatchEntryMeta {
+  return Boolean(
+    meta &&
+      (meta.visibility === "public" || meta.visibility === "debug") &&
+      ["low", "medium", "high", "critical"].includes(meta.importance) &&
+      ["market_signal", "news", "pm_decision", "team_discussion", "cron_heartbeat", "fallback"].includes(
+        meta.sourceTrigger,
+      ) &&
+      Array.isArray(meta.evidenceIds),
+  );
+}
+
+export async function appendWatchHistoryEntry(
+  entry: StreamEntry & { meta: WatchEntryMeta },
+): Promise<void> {
+  if (!hasCompleteMeta(entry.meta)) {
+    throw new Error("watch history entry meta is required");
+  }
+  await appendWatchEntry(entry);
 }
 
 export async function appendWatchEntry(entry: StreamEntry): Promise<void> {

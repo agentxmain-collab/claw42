@@ -10,7 +10,7 @@ import {
   type TeamMemberId,
 } from "@/lib/team/teamRegistry";
 import type { PublicTimelineEvent, PublicTimelineImportance } from "@/lib/watch/publicTimelineEvent";
-import { appendWatchEntry } from "@/lib/watchHistoryStore";
+import { appendWatchHistoryEntry } from "@/lib/watchHistoryStore";
 import type { SignalRecord } from "@/modules/agent-watch/types";
 import type { ChatThread } from "@/lib/types";
 
@@ -48,7 +48,7 @@ interface PipelineDeps {
   generateLeadOutput?: (memberId: TeamMemberId, prompt: string) => Promise<LeadOutput>;
   generateTradeDecision?: typeof generateTradeDecision;
   recordStrategyDecisionRecord?: typeof recordStrategyDecisionRecord;
-  appendWatchEntry?: typeof appendWatchEntry;
+  appendWatchHistoryEntry?: typeof appendWatchHistoryEntry;
   loadPromptDoc?: (memberId: TeamMemberId) => Promise<string>;
 }
 
@@ -337,7 +337,10 @@ function makePublicTimelineEntry(record: StrategyDecisionRecord, evidenceIds: st
   };
 }
 
-function timelineEntryAsChatThread(record: StrategyDecisionRecord, evidenceIds: string[]): Parameters<typeof appendWatchEntry>[0] {
+function timelineEntryAsChatThread(
+  record: StrategyDecisionRecord,
+  evidenceIds: string[],
+): Parameters<typeof appendWatchHistoryEntry>[0] {
   const now = Date.parse(record.createdAt);
   const thread: ChatThread = {
     id: record.id,
@@ -387,7 +390,7 @@ export async function runPmDecisionPipeline(
   const generateLead = deps.generateLeadOutput ?? defaultGenerateLeadOutput;
   const tradeGenerator = deps.generateTradeDecision ?? generateTradeDecision;
   const recordWriter = deps.recordStrategyDecisionRecord ?? recordStrategyDecisionRecord;
-  const watchWriter = deps.appendWatchEntry ?? appendWatchEntry;
+  const watchWriter = deps.appendWatchHistoryEntry ?? appendWatchHistoryEntry;
 
   try {
     const analystPrompts = await Promise.all(

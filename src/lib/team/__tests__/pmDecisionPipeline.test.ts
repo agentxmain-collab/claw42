@@ -90,7 +90,7 @@ describe("runPmDecisionPipeline", () => {
 
   it("returns null and writes nothing when any LLM step fails", async () => {
     const recordStrategyDecisionRecord = vi.fn();
-    const appendWatchEntry = vi.fn();
+    const appendWatchHistoryEntry = vi.fn();
     const result = await runPmDecisionPipeline(
       {
         triggerSource: "user_visit_trigger",
@@ -105,18 +105,18 @@ describe("runPmDecisionPipeline", () => {
           return analystOutput(memberId);
         }),
         recordStrategyDecisionRecord,
-        appendWatchEntry,
+        appendWatchHistoryEntry,
       },
     );
 
     expect(result).toBeNull();
     expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
-    expect(appendWatchEntry).not.toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
   });
 
   it("writes decision record and public timeline entry on success", async () => {
     const recordStrategyDecisionRecord = vi.fn(async (record) => record);
-    const appendWatchEntry = vi.fn(async (entry: unknown) => {
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
       void entry;
     });
     const result = await runPmDecisionPipeline(
@@ -135,15 +135,15 @@ describe("runPmDecisionPipeline", () => {
         })),
         generateTradeDecision: vi.fn(async () => decision()),
         recordStrategyDecisionRecord,
-        appendWatchEntry,
+        appendWatchHistoryEntry,
       },
     );
 
     expect(result?.record.id).toBe("pm:BTC:1778407200000");
     expect(result?.publicTimelineEntry.payload.kind).toBe("pm_decision");
     expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
-    expect(appendWatchEntry).toHaveBeenCalledTimes(1);
-    const writtenEntry = appendWatchEntry.mock.calls[0]?.[0] as {
+    expect(appendWatchHistoryEntry).toHaveBeenCalledTimes(1);
+    const writtenEntry = appendWatchHistoryEntry.mock.calls[0]?.[0] as {
       meta?: { sourceTrigger?: string };
     };
     expect(writtenEntry.meta?.sourceTrigger).toBe("pm_decision");
