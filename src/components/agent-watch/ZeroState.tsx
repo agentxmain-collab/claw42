@@ -1,6 +1,10 @@
 "use client";
 
-import type { CoinPoolPayload, MarketTickerPayload } from "@/modules/agent-watch/types";
+import type {
+  CoinPoolPayload,
+  CoinTickerEntry,
+  MarketTickerPayload,
+} from "@/modules/agent-watch/types";
 
 function formatPrice(price: number) {
   if (!Number.isFinite(price)) return "--";
@@ -64,8 +68,16 @@ export function ZeroState({
   );
 }
 
-function majorTickersFromSnapshot(snapshot?: (MarketTickerPayload | CoinPoolPayload) | null) {
+function majorTickersFromSnapshot(
+  snapshot?: (MarketTickerPayload | CoinPoolPayload) | null,
+): CoinTickerEntry[] {
   if (!snapshot) return [];
-  if ("majors" in snapshot && Array.isArray(snapshot.majors)) return snapshot.majors;
+  if (isCoinPoolPayload(snapshot)) return snapshot.majors;
   return snapshot.pool?.majors ?? [];
+}
+
+function isCoinPoolPayload(
+  snapshot: MarketTickerPayload | CoinPoolPayload,
+): snapshot is CoinPoolPayload {
+  return "majors" in snapshot;
 }
