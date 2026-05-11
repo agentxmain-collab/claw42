@@ -1,4 +1,5 @@
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
+import { kv as vercelKv } from "@vercel/kv";
 
 const RETENTION_MS = 12 * 60 * 60 * 1000;
 const KV_TTL_SECONDS = 13 * 60 * 60;
@@ -12,7 +13,6 @@ interface KvClient {
 
 const USE_KV = process.env.USE_PERSISTENT_KV === "true";
 const memoryStore: StreamEntry[] = [];
-let kvClientPromise: Promise<KvClient | null> | null = null;
 let warnedKvFallback = false;
 
 function warnKvFallback(error: unknown) {
@@ -23,15 +23,7 @@ function warnKvFallback(error: unknown) {
 
 async function getKvClient(): Promise<KvClient | null> {
   if (!USE_KV) return null;
-  if (!kvClientPromise) {
-    kvClientPromise = new Function("return import('@vercel/kv')")()
-      .then((module: { kv?: KvClient }) => module.kv ?? null)
-      .catch((error: unknown) => {
-        warnKvFallback(error);
-        return null;
-      });
-  }
-  return kvClientPromise;
+  return vercelKv as KvClient;
 }
 
 function pruneEntries(entries: StreamEntry[], now = Date.now()): StreamEntry[] {
