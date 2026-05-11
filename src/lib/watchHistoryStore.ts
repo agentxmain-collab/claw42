@@ -1,10 +1,13 @@
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
 import { kv as vercelKv } from "@vercel/kv";
+import type { Locale } from "@/i18n/types";
+import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 
 const RETENTION_MS = 12 * 60 * 60 * 1000;
 const KV_TTL_SECONDS = 13 * 60 * 60;
 const MAX_ENTRIES_TOTAL = 500;
-const KV_KEY = "claw42:watch:history:v1";
+const LEGACY_KV_KEY = "claw42:watch:history:v1";
+const KV_KEY_PREFIX = "claw42:watch:history:v2:";
 
 interface KvClient {
   get<T>(key: string): Promise<T | null>;
@@ -12,7 +15,7 @@ interface KvClient {
 }
 
 const USE_KV = process.env.USE_PERSISTENT_KV === "true";
-const memoryStore: StreamEntry[] = [];
+const memoryStore = new Map<Locale, StreamEntry[]>();
 let warnedKvFallback = false;
 
 function warnKvFallback(error: unknown) {
@@ -35,9 +38,9 @@ function pruneEntries(entries: StreamEntry[], now = Date.now()): StreamEntry[] {
 }
 
 function appendMemoryEntry(entry: StreamEntry, now = Date.now()) {
-  const pruned = pruneEntries([...memoryStore, entry], now);
-  memoryStore.length = 0;
-  memoryStore.push(...pruned);
+  const locale = localeForEntry(entry);
+  const current = memoryStore.get(locale) ?? [];
+  memoryStore.set(locale, pruneEntries([...current, ensureEntryLocale(entry, locale)], now));
 }
 
 function hasCompleteMeta(meta: WatchEntryMeta | undefined): meta is WatchEntryMeta {
@@ -53,7 +56,8 @@ function hasCompleteMeta(meta: WatchEntryMeta | undefined): meta is WatchEntryMe
       "cron_heartbeat",
       "fallback",
     ].includes(meta.sourceTrigger) &&
-    Array.isArray(meta.evidenceIds),
+    Array.isArray(meta.evidenceIds) &&
+    meta.locale === normalizeWatchLocale(meta.locale),
   );
 }
 
@@ -68,24 +72,36 @@ export async function appendWatchHistoryEntry(
 
 export async function appendWatchEntry(entry: StreamEntry): Promise<void> {
   const now = Date.now();
+  const locale = localeForEntry(entry);
+  const normalizedEntry = ensureEntryLocale(entry, locale);
   const kv = await getKvClient();
   if (!kv) {
-    appendMemoryEntry(entry, now);
+    appendMemoryEntry(normalizedEntry, now);
     return;
   }
 
   try {
-    const existing = (await kv.get<StreamEntry[]>(KV_KEY)) ?? [];
-    const pruned = pruneEntries([...existing, entry], now);
-    await kv.set(KV_KEY, pruned, { ex: KV_TTL_SECONDS });
+    const key = kvKeyForLocale(locale);
+    const existing = (await kv.get<StreamEntry[]>(key)) ?? [];
+    const pruned = pruneEntries(
+      [...existing.map((item) => ensureEntryLocale(item, locale)), normalizedEntry],
+      now,
+    );
+    await kv.set(key, pruned, { ex: KV_TTL_SECONDS });
   } catch (error) {
     warnKvFallback(error);
-    appendMemoryEntry(entry, now);
+    appendMemoryEntry(normalizedEntry, now);
   }
 }
 
 export async function getWatchHistory(
-  options: { before?: number; since?: number; limit?: number; windowMinutes?: number } = {},
+  options: {
+    before?: number;
+    since?: number;
+    limit?: number;
+    windowMinutes?: number;
+    locale?: Locale;
+  } = {},
 ): Promise<{
   entries: StreamEntry[];
   hasMore: boolean;
@@ -95,22 +111,29 @@ export async function getWatchHistory(
   const since = options.since;
   const limit = Math.max(1, Math.min(options.limit ?? 30, 100));
   const now = Date.now();
+  const locale = normalizeWatchLocale(options.locale);
   const windowMs = Math.max(1, Math.min(options.windowMinutes ?? 720, 720)) * 60_000;
   const cutoff = now - Math.min(RETENTION_MS, windowMs);
   const kv = await getKvClient();
-  let all = memoryStore;
+  let all = memoryStore.get(locale) ?? [];
 
   if (kv) {
     try {
-      all = (await kv.get<StreamEntry[]>(KV_KEY)) ?? [];
-      const pruned = pruneEntries(all, now);
+      all = (await kv.get<StreamEntry[]>(kvKeyForLocale(locale))) ?? [];
+      if (all.length === 0 && locale === LEGACY_WATCH_LOCALE) {
+        all = (await kv.get<StreamEntry[]>(LEGACY_KV_KEY)) ?? [];
+      }
+      const pruned = pruneEntries(
+        all.map((entry) => ensureEntryLocale(entry, locale)),
+        now,
+      );
       if (pruned.length !== all.length) {
-        void kv.set(KV_KEY, pruned, { ex: KV_TTL_SECONDS }).catch(warnKvFallback);
+        void kv.set(kvKeyForLocale(locale), pruned, { ex: KV_TTL_SECONDS }).catch(warnKvFallback);
       }
       all = pruned;
     } catch (error) {
       warnKvFallback(error);
-      all = memoryStore;
+      all = memoryStore.get(locale) ?? [];
     }
   }
 
@@ -131,6 +154,25 @@ export async function getWatchHistory(
 }
 
 export function __resetWatchHistoryForTests() {
-  memoryStore.length = 0;
+  memoryStore.clear();
   warnedKvFallback = false;
+}
+
+function kvKeyForLocale(locale: Locale) {
+  return `${KV_KEY_PREFIX}${normalizeWatchLocale(locale)}`;
+}
+
+function localeForEntry(entry: StreamEntry) {
+  return normalizeWatchLocale(entry.meta?.locale);
+}
+
+function ensureEntryLocale(entry: StreamEntry, locale: Locale): StreamEntry {
+  if (!entry.meta) return entry;
+  return {
+    ...entry,
+    meta: {
+      ...entry.meta,
+      locale: normalizeWatchLocale(entry.meta.locale, locale),
+    },
+  };
 }

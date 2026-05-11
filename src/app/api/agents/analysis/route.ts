@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
   void triggerPmDecisionPipelineOnce({
     triggerSource: "user_visit_trigger",
     pool: payload.pool,
+    locale,
   }).catch((error) => {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[claw42] PM decision trigger skipped", error);

@@ -5,6 +5,7 @@ import { useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { buildChatterPlan } from "@/lib/chatterGenerator";
 import type { ChatThread } from "@/lib/types";
+import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import { DecisionTimeline } from "@/components/agent-watch/DecisionTimeline";
 import { AGENT_ORDER } from "./agents";
@@ -56,6 +57,7 @@ const PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES = 720;
 
 interface PublicTimelinePayload {
   events: PublicTimelineEvent[];
+  evidenceMap?: Record<string, NewsEvidence>;
   oldestTs: number | null;
   hasMore: boolean;
   windowMinutes: number;
@@ -238,6 +240,7 @@ export function AgentWatchBoard({
   });
   const [, setHistoryEntries] = useState<StreamEntry[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<PublicTimelineEvent[]>([]);
+  const [timelineEvidenceMap, setTimelineEvidenceMap] = useState<Record<string, NewsEvidence>>({});
   const [timelineHasMore, setTimelineHasMore] = useState(false);
   const [timelineOldestTs, setTimelineOldestTs] = useState<number | null>(null);
   const [timelineLoading, setTimelineLoading] = useState(false);
@@ -287,6 +290,11 @@ export function AgentWatchBoard({
           : null;
       setTimelineOldestTs(oldestFromEvents ?? payload.oldestTs ?? null);
       setTimelineHasMore(Boolean(payload.hasMore));
+      if (payload.evidenceMap) {
+        setTimelineEvidenceMap((current) =>
+          mode === "replace" ? (payload.evidenceMap ?? {}) : { ...current, ...payload.evidenceMap },
+        );
+      }
     },
     [],
   );
@@ -304,18 +312,19 @@ export function AgentWatchBoard({
       const params = new URLSearchParams({
         windowMinutes: String(windowMinutes),
         limit: String(limit),
+        locale: agentWatchLocale,
       });
       if (before) params.set("before", String(before));
       const response = await fetch(`/api/watch/timeline?${params}`, { cache: "no-store" });
       if (!response.ok) throw new Error(`watch timeline ${response.status}`);
       return (await response.json()) as PublicTimelinePayload;
     },
-    [],
+    [agentWatchLocale],
   );
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/watch/history?limit=30", { cache: "no-store" })
+    fetch(`/api/watch/history?limit=30&locale=${agentWatchLocale}`, { cache: "no-store" })
       .then((response) => {
         if (!response.ok) throw new Error(`watch history ${response.status}`);
         return response.json() as Promise<{
@@ -336,7 +345,7 @@ export function AgentWatchBoard({
     return () => {
       cancelled = true;
     };
-  }, [applyHistoryPayload]);
+  }, [agentWatchLocale, applyHistoryPayload]);
 
   useEffect(() => {
     let cancelled = false;
@@ -692,6 +701,7 @@ export function AgentWatchBoard({
 
         <DecisionTimeline
           events={timelineEvents}
+          evidenceMap={timelineEvidenceMap}
           loading={timelineLoading}
           loadingMore={timelineLoadingMore}
           hasMore={timelineHasMore}

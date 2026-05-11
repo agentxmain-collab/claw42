@@ -3,6 +3,7 @@ import { getFactionIds } from "@/lib/factionRegistry";
 import { appendDecisionRecord } from "@/lib/team/decisionRecordStore";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { validateTradeDecision } from "@/lib/team/tradeDecision";
+import { LEGACY_WATCH_LOCALE } from "@/lib/watch/locale";
 
 const replayHistory: StrategyReplay[] = [];
 
@@ -84,6 +85,7 @@ export function replayToDecisionRecord(replay: StrategyReplay): StrategyDecision
     schemaVersion: 1,
     recordSource: "legacy",
     symbol: replay.symbol.toUpperCase(),
+    locale: LEGACY_WATCH_LOCALE,
     decisionOwnerId: "legacy",
     contributorIds: [],
     analystInputs: [],

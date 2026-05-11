@@ -318,6 +318,9 @@
       "team_discussion": "Team discussion",
       "cron_heartbeat": "System heartbeat",
       "fallback": "Fallback"
+    },
+    "citationChip": {
+      "sourceUnavailable": "Источник недоступен"
     }
   },
   "coinModal": {

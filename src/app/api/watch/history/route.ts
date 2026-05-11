@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
 import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
 import { rateLimit } from "@/lib/rateLimit";
+import { localeFromRequestUrl } from "@/lib/watch/locale";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,6 +14,7 @@ export async function GET(request: NextRequest) {
   }
 
   const url = new URL(request.url);
+  const locale = localeFromRequestUrl(url, request.headers.get("accept-language"));
   const beforeParam = url.searchParams.get("before");
   const limitParam = url.searchParams.get("limit");
   const mode = url.searchParams.get("mode") === "debug" ? "debug" : "public";
@@ -29,21 +31,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "invalid query" }, { status: 400 });
   }
 
-  const result = await getWatchHistory({ before, limit });
+  const result = await getWatchHistory({ before, limit, locale });
   if (mode === "debug") {
-    return NextResponse.json(result, {
-      headers: { "Cache-Control": "no-store" },
-    });
+    return NextResponse.json(
+      { ...result, locale },
+      {
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   }
 
   const events = filterPublicTimelineEvents(result.entries, {
     mode: "public",
     importanceThreshold: "high",
+    locale,
   });
 
   return NextResponse.json(
     {
       ...result,
+      locale,
       events,
     },
     {

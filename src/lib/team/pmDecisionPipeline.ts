@@ -2,6 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { generateText } from "@/lib/llm/generateText";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
+import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { recordStrategyDecisionRecord } from "@/lib/strategyHistory";
 import type { StrategyDecisionRecord, AnalystInputRecord } from "@/lib/team/strategyDecisionRecord";
 import {
@@ -15,6 +16,13 @@ import type {
   PublicTimelineImportance,
 } from "@/lib/watch/publicTimelineEvent";
 import { appendWatchHistoryEntry } from "@/lib/watchHistoryStore";
+import type { Locale } from "@/i18n/types";
+import {
+  allTextMatchesLocale,
+  buildLocaleInstruction,
+  buildLocaleRetryInstruction,
+  normalizeWatchLocale,
+} from "@/lib/watch/locale";
 import type { SignalRecord } from "@/modules/agent-watch/types";
 import type { ChatThread } from "@/lib/types";
 
@@ -25,6 +33,7 @@ export interface PmDecisionPipelineInput {
   recentMarketSignals: SignalRecord[];
   recentNewsEvidence: NewsEvidence[];
   importanceThreshold?: PublicTimelineImportance;
+  locale?: Locale;
   now?: number;
 }
 
@@ -125,46 +134,78 @@ function parseObject(text: string): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
+function ensureLocaleText(locale: Locale, fields: string[], label: string) {
+  if (!allTextMatchesLocale(locale, fields)) {
+    throw new Error(`${label} output violated locale ${locale}`);
+  }
+}
+
 async function defaultGenerateAnalystOutput(
   memberId: TeamMemberId,
   prompt: string,
   allowedEvidenceIds: Set<string>,
+  locale: Locale,
 ): Promise<AnalystOutput> {
-  const text = await generateText(prompt, {
-    taskTag: `watch:pm-decision:${memberId}`,
-    temperature: 0.35,
-    maxTokens: 500,
-    enableGuardrails: false,
-  });
-  const parsed = parseObject(text);
-  const rationale = String(parsed.rationale ?? "").trim();
-  if (!rationale) throw new Error(`${memberId} missing rationale`);
-  return {
-    memberId,
-    direction: normalizeDirection(parsed.direction),
-    confidence: normalizeConfidence(parsed.confidence),
-    rationale,
-    citations: normalizeCitations(parsed.citations, allowedEvidenceIds),
-  };
+  let lastError: unknown = null;
+  for (const attempt of ["first", "retry"] as const) {
+    const text = await generateText(
+      attempt === "first" ? prompt : `${prompt}\n\n${buildLocaleRetryInstruction(locale)}`,
+      {
+        taskTag: `watch:pm-decision:${memberId}:${locale}:${attempt}`,
+        temperature: 0.35,
+        maxTokens: 500,
+        enableGuardrails: false,
+      },
+    );
+    try {
+      const parsed = parseObject(text);
+      const rationale = String(parsed.rationale ?? "").trim();
+      if (!rationale) throw new Error(`${memberId} missing rationale`);
+      ensureLocaleText(locale, [rationale], `${memberId} analyst`);
+      return {
+        memberId,
+        direction: normalizeDirection(parsed.direction),
+        confidence: normalizeConfidence(parsed.confidence),
+        rationale,
+        citations: normalizeCitations(parsed.citations, allowedEvidenceIds),
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(`${memberId} analyst generation failed`);
 }
 
 async function defaultGenerateLeadOutput(
   memberId: TeamMemberId,
   prompt: string,
+  locale: Locale,
 ): Promise<LeadOutput> {
-  const text = await generateText(prompt, {
-    taskTag: `watch:pm-decision:${memberId}`,
-    temperature: 0.25,
-    maxTokens: 520,
-    enableGuardrails: false,
-  });
-  const parsed = parseObject(text);
-  const rationale = String(parsed.rationale ?? parsed.thesis ?? parsed.rebuttal ?? "").trim();
-  if (!rationale) throw new Error(`${memberId} missing rationale`);
-  return {
-    rationale,
-    confidence: normalizeConfidence(parsed.confidence ?? parsed.consensusLevel),
-  };
+  let lastError: unknown = null;
+  for (const attempt of ["first", "retry"] as const) {
+    const text = await generateText(
+      attempt === "first" ? prompt : `${prompt}\n\n${buildLocaleRetryInstruction(locale)}`,
+      {
+        taskTag: `watch:pm-decision:${memberId}:${locale}:${attempt}`,
+        temperature: 0.25,
+        maxTokens: 520,
+        enableGuardrails: false,
+      },
+    );
+    try {
+      const parsed = parseObject(text);
+      const rationale = String(parsed.rationale ?? parsed.thesis ?? parsed.rebuttal ?? "").trim();
+      if (!rationale) throw new Error(`${memberId} missing rationale`);
+      ensureLocaleText(locale, [rationale], `${memberId} lead`);
+      return {
+        rationale,
+        confidence: normalizeConfidence(parsed.confidence ?? parsed.consensusLevel),
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(`${memberId} lead generation failed`);
 }
 
 function marketContext(input: PmDecisionPipelineInput) {
@@ -206,6 +247,9 @@ Return JSON only:
   "citations": ["evidenceId"]
 }
 
+## Locale
+${buildLocaleInstruction(normalizeWatchLocale(input.locale))}
+
 ## Market signals
 ${marketContext(input) || "- none"}
 
@@ -228,6 +272,9 @@ Return JSON only:
   "rationale": "short concrete ${memberId === "risk_lead" ? "risk rebuttal" : "research thesis"}",
   "confidence": 0.0_to_1.0
 }
+
+## Locale
+${buildLocaleInstruction(normalizeWatchLocale(input.locale))}
 
 ## Analyst outputs
 ${analystOutputs
@@ -283,6 +330,7 @@ function makeRecord({
   tradeDecision: TradeDecision | null;
 }): StrategyDecisionRecord {
   const symbol = symbolFromInput(input);
+  const locale = normalizeWatchLocale(input.locale);
   const analystInputs: AnalystInputRecord[] = [
     ...analystOutputs.map((output) => ({
       memberId: output.memberId,
@@ -312,6 +360,7 @@ function makeRecord({
     schemaVersion: 1,
     recordSource: "live",
     symbol,
+    locale,
     decisionOwnerId: "pm",
     contributorIds: [
       "fundamental_analyst",
@@ -345,6 +394,7 @@ function makePublicTimelineEntry(
     importance: "high",
     sourceTrigger: "pm_decision",
     evidenceIds,
+    locale: record.locale,
     payload: {
       kind: "pm_decision",
       recordId: record.id,
@@ -392,6 +442,7 @@ function timelineEntryAsChatThread(
       importance: "high",
       sourceTrigger: "pm_decision",
       evidenceIds,
+      locale: record.locale,
       recordId: record.id,
       tradeDecision: record.tradeDecision,
     },
@@ -405,12 +456,18 @@ export async function runPmDecisionPipeline(
   if (!shouldRunPipeline(input)) return null;
 
   const now = input.now ?? Date.now();
+  const locale = normalizeWatchLocale(input.locale);
+  const localizedInput = { ...input, locale };
   const allowedEvidenceIds = new Set(input.recentNewsEvidence.map((evidence) => evidence.id));
+  await Promise.all(input.recentNewsEvidence.map((evidence) => saveNewsEvidence(evidence)));
   const generateAnalyst =
     deps.generateAnalystOutput ??
     ((memberId: TeamMemberId, prompt: string) =>
-      defaultGenerateAnalystOutput(memberId, prompt, allowedEvidenceIds));
-  const generateLead = deps.generateLeadOutput ?? defaultGenerateLeadOutput;
+      defaultGenerateAnalystOutput(memberId, prompt, allowedEvidenceIds, locale));
+  const generateLead =
+    deps.generateLeadOutput ??
+    ((memberId: TeamMemberId, prompt: string) =>
+      defaultGenerateLeadOutput(memberId, prompt, locale));
   const tradeGenerator = deps.generateTradeDecision ?? generateTradeDecision;
   const recordWriter = deps.recordStrategyDecisionRecord ?? recordStrategyDecisionRecord;
   const watchWriter = deps.appendWatchHistoryEntry ?? appendWatchHistoryEntry;
@@ -419,7 +476,7 @@ export async function runPmDecisionPipeline(
     const analystPrompts = await Promise.all(
       ANALYST_IDS.map(async (memberId) => ({
         memberId,
-        prompt: await buildMemberPrompt(memberId, input, deps),
+        prompt: await buildMemberPrompt(memberId, localizedInput, deps),
       })),
     );
     const analystOutputs = await Promise.all(
@@ -428,16 +485,16 @@ export async function runPmDecisionPipeline(
 
     const researchLead = await generateLead(
       "research_lead",
-      await buildLeadPrompt("research_lead", input, analystOutputs, undefined, deps),
+      await buildLeadPrompt("research_lead", localizedInput, analystOutputs, undefined, deps),
     );
     const riskLead = await generateLead(
       "risk_lead",
-      await buildLeadPrompt("risk_lead", input, analystOutputs, researchLead, deps),
+      await buildLeadPrompt("risk_lead", localizedInput, analystOutputs, researchLead, deps),
     );
 
-    const currentPrice = currentPriceFromSignals(input.recentMarketSignals);
+    const currentPrice = currentPriceFromSignals(localizedInput.recentMarketSignals);
     const tradeDecision = await tradeGenerator({
-      symbol: symbolFromInput(input),
+      symbol: symbolFromInput(localizedInput),
       currentPrice,
       analystInputs: analystOutputs.map((output) => ({
         memberId: output.memberId,
@@ -446,21 +503,22 @@ export async function runPmDecisionPipeline(
         rationale: output.rationale,
       })),
       riskNotes: [riskLead.rationale],
-      newsContext: input.recentNewsEvidence.map(
+      newsContext: localizedInput.recentNewsEvidence.map(
         (evidence) => `${evidence.id}: ${evidence.summary}`,
       ),
-      severity: toSeverity(input),
+      severity: toSeverity(localizedInput),
+      locale,
     });
     if (!tradeDecision) return null;
 
     const evidenceIds = Array.from(
       new Set([
-        ...input.recentNewsEvidence.map((evidence) => evidence.id),
+        ...localizedInput.recentNewsEvidence.map((evidence) => evidence.id),
         ...analystOutputs.flatMap((output) => output.citations),
       ]),
     );
     const record = makeRecord({
-      input,
+      input: localizedInput,
       now,
       analystOutputs,
       researchLead,
@@ -480,6 +538,7 @@ export async function runPmDecisionPipeline(
   } catch (error) {
     console.warn("[claw42] PM decision pipeline failed", {
       triggerSource: input.triggerSource,
+      locale: normalizeWatchLocale(input.locale),
       error: error instanceof Error ? error.message : String(error),
     });
     return null;

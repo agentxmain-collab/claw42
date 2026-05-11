@@ -84,10 +84,53 @@ describe("watchHistoryStore", () => {
         importance: "high",
         sourceTrigger: "pm_decision",
         evidenceIds: ["ev_1"],
+        locale: "zh_CN",
       },
     });
 
     const result = await getWatchHistory({ before: now + 1, limit: 10 });
     expect(result.entries.map((item) => item.id)).toEqual(["with-meta"]);
+  });
+
+  test("keeps locale histories isolated with zh_CN as legacy default", async () => {
+    const now = Date.now();
+    await appendWatchHistoryEntry({
+      ...entry("zh", now - 2),
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: [],
+        locale: "zh_CN",
+      },
+    });
+    await appendWatchHistoryEntry({
+      ...entry("en", now - 1),
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: [],
+        locale: "en_US",
+      },
+    });
+
+    await expect(
+      appendWatchHistoryEntry({
+        ...entry("missing-locale", now),
+        meta: {
+          visibility: "public",
+          importance: "high",
+          sourceTrigger: "pm_decision",
+          evidenceIds: [],
+        } as never,
+      }),
+    ).rejects.toThrow("watch history entry meta is required");
+
+    expect((await getWatchHistory({ before: now + 1, locale: "zh_CN" })).entries).toHaveLength(1);
+    expect((await getWatchHistory({ before: now + 1, locale: "en_US" })).entries).toHaveLength(1);
+    expect((await getWatchHistory({ before: now + 1 })).entries.map((item) => item.id)).toEqual([
+      "zh",
+    ]);
   });
 });

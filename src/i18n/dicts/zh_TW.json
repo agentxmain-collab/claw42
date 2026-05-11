@@ -318,6 +318,9 @@
       "team_discussion": "團隊討論",
       "cron_heartbeat": "系統心跳",
       "fallback": "兜底事件"
+    },
+    "citationChip": {
+      "sourceUnavailable": "來源暫不可用"
     }
   },
   "coinModal": {

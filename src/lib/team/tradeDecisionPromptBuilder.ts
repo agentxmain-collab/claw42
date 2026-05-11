@@ -1,6 +1,14 @@
 import { callWithChain } from "@/lib/llm/providers";
 import type { ProviderId } from "@/lib/llm/providers/types";
 import type { TeamMemberId, TeamProviderId } from "@/lib/team/teamRegistry";
+import type { Locale } from "@/i18n/types";
+import {
+  allTextMatchesLocale,
+  buildLocaleInstruction,
+  buildLocaleRetryInstruction,
+  LEGACY_WATCH_LOCALE,
+  normalizeWatchLocale,
+} from "@/lib/watch/locale";
 import {
   validateTradeDecision,
   type Severity,
@@ -20,6 +28,7 @@ export interface TradeCardPromptContext {
   riskNotes: string[];
   newsContext: string[];
   severity: Severity;
+  locale?: Locale;
 }
 
 export interface PMProviderSelection {
@@ -75,6 +84,7 @@ function formatList(items: string[]): string {
 
 export function buildTradeDecisionPrompt(ctx: TradeCardPromptContext): string {
   const symbol = ctx.symbol.replace(/^\$/, "").toUpperCase();
+  const locale = normalizeWatchLocale(ctx.locale, LEGACY_WATCH_LOCALE);
   return `You are Portfolio Manager for Claw42.
 
 ## Task
@@ -101,6 +111,9 @@ ${formatList(ctx.riskNotes)}
 
 ## News context
 ${formatList(ctx.newsContext)}
+
+## Locale
+${buildLocaleInstruction(locale)}
 
 ## TradeDecision JSON schema
 {
@@ -161,39 +174,50 @@ function attachProvider(raw: unknown, provider: ProviderId): unknown {
 
 async function callPM(prompt: string, ctx: TradeCardPromptContext, attempt: "first" | "retry") {
   const selection = resolvePMProviderSelection(ctx.severity);
+  const locale = normalizeWatchLocale(ctx.locale, LEGACY_WATCH_LOCALE);
   return callWithChain({
     prompt,
     systemPrompt: SYSTEM_PROMPT,
     temperature: 0.2,
     maxTokens: 900,
     timeoutMs: 12_000,
-    taskTag: `team:trade-decision:${ctx.severity}:${attempt}`,
+    taskTag: `team:trade-decision:${ctx.severity}:${locale}:${attempt}`,
     providerOverride: selection.providerOverride,
   });
+}
+
+function decisionMatchesLocale(decision: TradeDecision, locale: Locale) {
+  return allTextMatchesLocale(locale, [decision.riskNote, decision.invalidatesIf]);
 }
 
 export async function generateTradeDecision(
   ctx: TradeCardPromptContext,
 ): Promise<TradeDecision | null> {
+  const locale = normalizeWatchLocale(ctx.locale, LEGACY_WATCH_LOCALE);
   const prompt = buildTradeDecisionPrompt(ctx);
 
   const firstOutput = await callPM(prompt, ctx, "first");
   let parsed = attachProvider(tryParseJson(firstOutput.text), firstOutput.provider);
   let validation = validateTradeDecision(parsed, ctx.currentPrice);
-  if (validation.valid) return validation.decision;
+  if (validation.valid && decisionMatchesLocale(validation.decision, locale)) {
+    return validation.decision;
+  }
 
   const retryPrompt = [
     prompt,
     "",
     "The previous JSON failed validation.",
-    `Errors: ${validation.errors.join("; ")}`,
+    `Errors: ${validation.valid ? `locale ${locale} mismatch` : validation.errors.join("; ")}`,
+    buildLocaleRetryInstruction(locale),
     "Return a corrected TradeDecision JSON object only.",
   ].join("\n");
 
   const retryOutput = await callPM(retryPrompt, ctx, "retry");
   parsed = attachProvider(tryParseJson(retryOutput.text), retryOutput.provider);
   validation = validateTradeDecision(parsed, ctx.currentPrice);
-  if (validation.valid) return validation.decision;
+  if (validation.valid && decisionMatchesLocale(validation.decision, locale)) {
+    return validation.decision;
+  }
 
   return null;
 }

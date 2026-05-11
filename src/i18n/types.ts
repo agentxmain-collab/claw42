@@ -209,6 +209,9 @@ export interface Dict {
       cron_heartbeat: string;
       fallback: string;
     };
+    citationChip: {
+      sourceUnavailable: string;
+    };
     coinPool: {
       majors: string;
       trending: string;

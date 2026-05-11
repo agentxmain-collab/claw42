@@ -1,4 +1,5 @@
 import type { DebateDirection, FactionId } from "@/lib/types";
+import type { Locale } from "@/i18n/types";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 
@@ -28,6 +29,8 @@ export interface StrategyDecisionRecord {
   recordSource: RecordSource;
   /** Uppercase market symbol such as BTC or ETH. */
   symbol: string;
+  /** Locale used for all natural-language decision text. */
+  locale: Locale;
   /** PM owner for new records; legacy data remains explicitly bucketed as legacy. */
   decisionOwnerId: TeamMemberId | "legacy";
   /** Analysts that contributed to the decision. Empty for legacy replay records. */
