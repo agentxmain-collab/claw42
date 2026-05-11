@@ -34,6 +34,11 @@ export const ANALYTICS_EVENTS = [
   "chat_message_action",
   "watch_track_wall_view",
   "team_member_card_click",
+  "workflow_panel_view",
+  "workflow_node_status_change",
+  "process_accordion_collapse",
+  "process_accordion_expand",
+  "pipeline_replay_trigger",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
