@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
+import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
 import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
 import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
@@ -67,6 +68,9 @@ export async function GET(request: NextRequest) {
     mode: "public",
     importanceThreshold: "high",
     locale,
+    decisionRecordsById: new Map(
+      (await readAllDecisionRecords(500, locale)).map((record) => [record.id, record]),
+    ),
   });
   const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
     0,
