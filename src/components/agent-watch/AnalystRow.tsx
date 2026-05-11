@@ -46,9 +46,7 @@ export function AnalystRow({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <div className="text-sm font-black text-white">{memberLabels.displayName}</div>
-            <div className="text-[11px] font-bold text-violet-100/60">
-              {memberLabels.roleTitle}
-            </div>
+            <div className="text-[11px] font-bold text-violet-100/60">{memberLabels.roleTitle}</div>
           </div>
           <p
             className={[

@@ -41,7 +41,7 @@ export function WorkflowNode({
   return (
     <div
       className={[
-        "relative min-h-[148px] rounded-2xl border bg-[#101012]/92 p-3 shadow-[0_18px_70px_rgba(0,0,0,0.28)] transition duration-300",
+        "bg-[#101012]/92 relative min-h-[148px] rounded-2xl border p-3 shadow-[0_18px_70px_rgba(0,0,0,0.28)] transition duration-300",
         isReplayActive ? "border-[#7650ff]/70 ring-1 ring-[#7650ff]/55" : "border-white/10",
       ].join(" ")}
     >
@@ -61,13 +61,11 @@ export function WorkflowNode({
             <h3 className="truncate text-sm font-black text-white">{memberLabels.displayName}</h3>
             <span className={`h-2 w-2 rounded-full ${STATUS_DOT_CLASS[status]}`} />
           </div>
-          <p className="mt-1 text-[11px] font-bold text-violet-100/75">
-            {memberLabels.roleTitle}
-          </p>
+          <p className="mt-1 text-[11px] font-bold text-violet-100/75">{memberLabels.roleTitle}</p>
         </div>
       </div>
 
-      <p className="mt-3 line-clamp-2 min-h-[36px] text-xs leading-relaxed text-white/52">
+      <p className="text-white/52 mt-3 line-clamp-2 min-h-[36px] text-xs leading-relaxed">
         {memberLabels.oneLineCapability}
       </p>
 
