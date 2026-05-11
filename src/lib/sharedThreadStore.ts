@@ -1,5 +1,6 @@
 import type { ChatThread, NewsItem, TriggerReason } from "@/lib/types";
 import { appendWatchEntry } from "@/lib/watchHistoryStore";
+import { kv as vercelKv } from "@vercel/kv";
 
 export const LIMITS = {
   MAX_ACTIVE_THREADS_PER_SYMBOL: 1,
@@ -25,7 +26,6 @@ const USE_KV = process.env.USE_PERSISTENT_KV === "true";
 const THREAD_TTL_SECONDS = 24 * 60 * 60;
 const threads = new Map<string, ChatThread>();
 const subscribers = new Map<string, Set<ReadableStreamDefaultController<Uint8Array>>>();
-let kvClientPromise: Promise<KvClient | null> | null = null;
 
 const encoder = new TextEncoder();
 
@@ -50,15 +50,7 @@ function symbolFromNews(news: NewsItem): string {
 
 async function getKvClient(): Promise<KvClient | null> {
   if (!USE_KV) return null;
-  if (!kvClientPromise) {
-    kvClientPromise = new Function("return import('@vercel/kv')")()
-      .then((module: { kv?: KvClient }) => module.kv ?? null)
-      .catch((error: unknown) => {
-        console.warn("[claw42] Vercel KV unavailable, falling back to in-memory", error);
-        return null;
-      });
-  }
-  return kvClientPromise;
+  return vercelKv as KvClient;
 }
 
 function encodeEvent(event: ThreadEvent): Uint8Array {
