@@ -3,11 +3,14 @@ import type {
   PublicTimelineImportance,
 } from "@/lib/watch/publicTimelineEvent";
 import { PUBLIC_IMPORTANCE_ORDER } from "@/lib/watch/publicTimelineEvent";
+import type { Locale } from "@/i18n/types";
+import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
 
 export interface PublicTimelineProjectionOptions {
   mode: "public" | "debug";
   importanceThreshold?: PublicTimelineImportance;
+  locale?: Locale;
 }
 
 function inferredMeta(entry: StreamEntry): WatchEntryMeta {
@@ -23,6 +26,7 @@ function inferredMeta(entry: StreamEntry): WatchEntryMeta {
       importance: "high",
       sourceTrigger: "market_signal",
       evidenceIds: [],
+      locale: LEGACY_WATCH_LOCALE,
     };
   }
 
@@ -32,6 +36,7 @@ function inferredMeta(entry: StreamEntry): WatchEntryMeta {
       importance: "medium",
       sourceTrigger: "news",
       evidenceIds: [],
+      locale: LEGACY_WATCH_LOCALE,
     };
   }
 
@@ -40,6 +45,7 @@ function inferredMeta(entry: StreamEntry): WatchEntryMeta {
     importance: "low",
     sourceTrigger: "fallback",
     evidenceIds: [],
+    locale: LEGACY_WATCH_LOCALE,
   };
 }
 
@@ -49,6 +55,7 @@ function normalizeMeta(meta: WatchEntryMeta): WatchEntryMeta {
     importance: meta.importance,
     sourceTrigger: meta.sourceTrigger,
     evidenceIds: Array.isArray(meta.evidenceIds) ? meta.evidenceIds.filter(Boolean) : [],
+    locale: normalizeWatchLocale(meta.locale),
     recordId: meta.recordId,
     tradeDecision: meta.tradeDecision ?? null,
   };
@@ -133,10 +140,12 @@ export function projectStreamEntryToPublic(
 ): PublicTimelineEvent | null {
   const meta = inferredMeta(entry);
   const threshold = options.importanceThreshold ?? "high";
+  const locale = normalizeWatchLocale(options.locale);
 
   if (options.mode === "public") {
     if (meta.visibility !== "public") return null;
     if (!passesImportance(meta.importance, threshold)) return null;
+    if (meta.locale !== locale) return null;
   }
 
   if (
@@ -161,6 +170,7 @@ export function projectStreamEntryToPublic(
     importance: meta.importance,
     sourceTrigger: meta.sourceTrigger,
     evidenceIds: meta.evidenceIds,
+    locale: meta.locale,
     payload,
   };
 }

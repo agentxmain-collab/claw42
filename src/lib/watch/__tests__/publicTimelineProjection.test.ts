@@ -62,6 +62,7 @@ describe("publicTimelineProjection", () => {
           importance: "critical",
           sourceTrigger: "market_signal",
           evidenceIds: [],
+          locale: "zh_CN",
         },
       }),
     );
@@ -76,6 +77,7 @@ describe("publicTimelineProjection", () => {
         importance: "low",
         sourceTrigger: "market_signal",
         evidenceIds: [],
+        locale: "zh_CN",
       },
     });
     const medium = focusEntry({
@@ -85,9 +87,39 @@ describe("publicTimelineProjection", () => {
         importance: "medium",
         sourceTrigger: "market_signal",
         evidenceIds: [],
+        locale: "zh_CN",
       },
     });
     expect(filterPublicTimelineEvents([low, medium], { mode: "public" })).toHaveLength(0);
+  });
+
+  it("filters public entries by requested locale", () => {
+    const zh = focusEntry({
+      id: "zh",
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "market_signal",
+        evidenceIds: [],
+        locale: "zh_CN",
+      },
+    });
+    const en = focusEntry({
+      id: "en",
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "market_signal",
+        evidenceIds: [],
+        locale: "en_US",
+      },
+    });
+
+    expect(
+      filterPublicTimelineEvents([zh, en], { mode: "public", locale: "en_US" }).map(
+        (event) => event.id,
+      ),
+    ).toEqual(["en"]);
   });
 
   it("does not project ambient chat-like entries", () => {
@@ -105,6 +137,7 @@ describe("publicTimelineProjection", () => {
         importance: "critical",
         sourceTrigger: "fallback",
         evidenceIds: [],
+        locale: "zh_CN",
       },
     };
     expect(projectStreamEntryToPublic(entry)).toBeNull();
@@ -136,6 +169,7 @@ describe("publicTimelineProjection", () => {
         importance: "critical",
         sourceTrigger: "pm_decision",
         evidenceIds: [],
+        locale: "zh_CN",
       },
     };
     expect(projectStreamEntryToPublic(entry)).toBeNull();
@@ -167,6 +201,7 @@ describe("publicTimelineProjection", () => {
         importance: "high",
         sourceTrigger: "pm_decision",
         evidenceIds: ["ev_1"],
+        locale: "zh_CN",
         recordId: "record-1",
         tradeDecision,
       },

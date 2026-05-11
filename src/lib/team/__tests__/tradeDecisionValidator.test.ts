@@ -140,7 +140,7 @@ describe("generateTradeDecision", () => {
       .mockResolvedValueOnce(llmOutput(JSON.stringify(makeDecision({ stopLoss: 101 }))))
       .mockResolvedValueOnce(llmOutput(JSON.stringify(makeDecision({ id: "retry-valid" }))));
 
-    const result = await generateTradeDecision(makePromptContext());
+    const result = await generateTradeDecision(makePromptContext({ locale: "en_US" }));
 
     expect(result?.id).toBe("retry-valid");
     expect(callWithChainMock).toHaveBeenCalledTimes(2);
@@ -152,7 +152,16 @@ describe("generateTradeDecision", () => {
       .mockResolvedValueOnce(llmOutput(JSON.stringify(makeDecision({ stopLoss: 101 }))))
       .mockResolvedValueOnce(llmOutput(JSON.stringify(makeDecision({ takeProfit: [95] }))));
 
-    await expect(generateTradeDecision(makePromptContext())).resolves.toBeNull();
+    await expect(generateTradeDecision(makePromptContext({ locale: "en_US" }))).resolves.toBeNull();
+    expect(callWithChainMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns null when retry output still mismatches the requested locale", async () => {
+    callWithChainMock
+      .mockResolvedValueOnce(llmOutput(JSON.stringify(makeDecision())))
+      .mockResolvedValueOnce(llmOutput(JSON.stringify(makeDecision({ id: "retry-english" }))));
+
+    await expect(generateTradeDecision(makePromptContext({ locale: "zh_CN" }))).resolves.toBeNull();
     expect(callWithChainMock).toHaveBeenCalledTimes(2);
   });
 });
@@ -192,7 +201,14 @@ function makeDecision(overrides: Partial<TradeDecision> = {}): TradeDecision {
   };
 }
 
-function makePromptContext() {
+function makePromptContext(overrides: Partial<Parameters<typeof generateTradeDecision>[0]> = {}) {
+  return {
+    ...makePromptContextBase(),
+    ...overrides,
+  };
+}
+
+function makePromptContextBase() {
   return {
     symbol: "BTC",
     currentPrice: CURRENT_PRICE,

@@ -2,9 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
 import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
+import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
+import { localeFromRequestUrl } from "@/lib/watch/locale";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const MAX_EVIDENCE_MAP_ITEMS = 120;
 
 function numberParam(value: string | null, fallback: number) {
   if (!value) return fallback;
@@ -23,6 +27,7 @@ export async function GET(request: NextRequest) {
   }
 
   const url = new URL(request.url);
+  const locale = localeFromRequestUrl(url, request.headers.get("accept-language"));
   const mode = url.searchParams.get("mode") === "debug" ? "debug" : "public";
   if (mode === "debug" && !canReadDebug(request)) {
     return NextResponse.json({ error: "debug mode unavailable" }, { status: 403 });
@@ -42,7 +47,7 @@ export async function GET(request: NextRequest) {
   }
 
   const servedAt = Date.now();
-  const result = await getWatchHistory({ before, since, limit, windowMinutes });
+  const result = await getWatchHistory({ before, since, limit, windowMinutes, locale });
   if (mode === "debug") {
     return NextResponse.json(
       {
@@ -50,6 +55,7 @@ export async function GET(request: NextRequest) {
         oldestTs: result.oldestTs,
         hasMore: result.hasMore,
         windowMinutes,
+        locale,
         servedAt,
         nextPollMs: 30_000,
       },
@@ -60,14 +66,27 @@ export async function GET(request: NextRequest) {
   const events = filterPublicTimelineEvents(result.entries, {
     mode: "public",
     importanceThreshold: "high",
+    locale,
   });
+  const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
+    0,
+    MAX_EVIDENCE_MAP_ITEMS,
+  );
+  const evidencePairs = await Promise.all(
+    evidenceIds.map(async (evidenceId) => [evidenceId, await getNewsEvidence(evidenceId)] as const),
+  );
+  const evidenceMap = Object.fromEntries(
+    evidencePairs.flatMap(([evidenceId, evidence]) => (evidence ? [[evidenceId, evidence]] : [])),
+  );
   return NextResponse.json(
     {
       events,
+      evidenceMap,
       oldestTs:
         events.length > 0 ? (events[events.length - 1]?.ts ?? result.oldestTs) : result.oldestTs,
       hasMore: result.hasMore,
       windowMinutes,
+      locale,
       servedAt,
       nextPollMs: servedAt % (3 * 60_000) < 30_000 ? 30_000 : 90_000,
     },

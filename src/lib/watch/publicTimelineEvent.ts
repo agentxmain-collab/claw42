@@ -1,5 +1,6 @@
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
+import type { Locale } from "@/i18n/types";
 
 export type PublicTimelineSourceTrigger =
   | "market_signal"
@@ -43,6 +44,7 @@ export interface PublicTimelineEvent {
   importance: PublicTimelineImportance;
   sourceTrigger: PublicTimelineSourceTrigger;
   evidenceIds: string[];
+  locale: Locale;
   payload: PublicTimelinePayload;
 }
 

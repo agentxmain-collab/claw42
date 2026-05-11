@@ -115,6 +115,7 @@ const rawDebugEntry: StreamEntry = {
     importance: "critical",
     sourceTrigger: "market_signal",
     evidenceIds: [],
+    locale: "zh_CN",
   },
 };
 
@@ -156,6 +157,7 @@ describe("public timeline projection chat filtering", () => {
         importance: "critical",
         sourceTrigger: "fallback",
         evidenceIds: [],
+        locale: "zh_CN",
       },
     };
 
@@ -178,6 +180,7 @@ describe("public timeline projection chat filtering", () => {
         importance: "critical",
         sourceTrigger: "fallback",
         evidenceIds: [],
+        locale: "zh_CN",
       },
     };
 

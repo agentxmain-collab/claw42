@@ -50,6 +50,58 @@ describe("decisionRecordStore", () => {
 
     expect(records.map((record) => record.id)).toEqual(["btc", "eth"]);
   });
+
+  test("isolates decision records by locale and defaults reads to zh_CN", async () => {
+    await appendDecisionRecord(makeRecord({ id: "zh", locale: "zh_CN" }));
+    await appendDecisionRecord(makeRecord({ id: "en", locale: "en_US" }));
+
+    expect((await readDecisionRecords("BTC", 10, "zh_CN")).map((record) => record.id)).toEqual([
+      "zh",
+    ]);
+    expect((await readDecisionRecords("BTC", 10, "en_US")).map((record) => record.id)).toEqual([
+      "en",
+    ]);
+    expect((await readDecisionRecords("BTC")).map((record) => record.id)).toEqual(["zh"]);
+  });
+
+  test("readAllDecisionRecords keeps locale buckets isolated", async () => {
+    await appendDecisionRecord(
+      makeRecord({
+        id: "zh-btc",
+        locale: "zh_CN",
+        symbol: "BTC",
+        createdAt: "2026-05-10T00:03:00.000Z",
+      }),
+    );
+    await appendDecisionRecord(
+      makeRecord({
+        id: "zh-eth",
+        locale: "zh_CN",
+        symbol: "ETH",
+        createdAt: "2026-05-10T00:02:00.000Z",
+      }),
+    );
+    await appendDecisionRecord(
+      makeRecord({
+        id: "en-btc",
+        locale: "en_US",
+        symbol: "BTC",
+        createdAt: "2026-05-10T00:01:00.000Z",
+      }),
+    );
+
+    expect((await readAllDecisionRecords(10, "zh_CN")).map((record) => record.id)).toEqual([
+      "zh-btc",
+      "zh-eth",
+    ]);
+    expect((await readAllDecisionRecords(10, "en_US")).map((record) => record.id)).toEqual([
+      "en-btc",
+    ]);
+    expect((await readAllDecisionRecords()).map((record) => record.id)).toEqual([
+      "zh-btc",
+      "zh-eth",
+    ]);
+  });
 });
 
 function makeRecord(overrides: Partial<StrategyDecisionRecord> = {}): StrategyDecisionRecord {
@@ -58,6 +110,7 @@ function makeRecord(overrides: Partial<StrategyDecisionRecord> = {}): StrategyDe
     schemaVersion: 1,
     recordSource: "paper",
     symbol: "BTC",
+    locale: "zh_CN",
     decisionOwnerId: "pm",
     contributorIds: ["chart_analyst"],
     analystInputs: [

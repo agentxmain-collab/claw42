@@ -140,12 +140,15 @@ describe("runPmDecisionPipeline", () => {
     );
 
     expect(result?.record.id).toBe("pm:BTC:1778407200000");
+    expect(result?.record.locale).toBe("zh_CN");
+    expect(result?.publicTimelineEntry.locale).toBe("zh_CN");
     expect(result?.publicTimelineEntry.payload.kind).toBe("pm_decision");
     expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
     expect(appendWatchHistoryEntry).toHaveBeenCalledTimes(1);
     const writtenEntry = appendWatchHistoryEntry.mock.calls[0]?.[0] as {
-      meta?: { sourceTrigger?: string };
+      meta?: { locale?: string; sourceTrigger?: string };
     };
     expect(writtenEntry.meta?.sourceTrigger).toBe("pm_decision");
+    expect(writtenEntry.meta?.locale).toBe("zh_CN");
   });
 });

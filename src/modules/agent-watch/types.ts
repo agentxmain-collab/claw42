@@ -1,5 +1,6 @@
 import type { ChatThread, NewsDebate } from "@/lib/types";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
+import type { Locale } from "@/i18n/types";
 
 export type CoinSymbol = "BTC" | "ETH" | "SOL" | "USDT";
 export type AgentId = "alpha" | "beta" | "gamma";
@@ -110,6 +111,7 @@ export interface WatchEntryMeta {
   importance: WatchEntryImportance;
   sourceTrigger: WatchEntrySourceTrigger;
   evidenceIds: string[];
+  locale: Locale;
   recordId?: string;
   tradeDecision?: TradeDecision | null;
 }

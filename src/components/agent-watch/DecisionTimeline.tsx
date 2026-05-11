@@ -3,9 +3,10 @@
 import { useMemo } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { getTeamMember, type TeamMemberId } from "@/lib/team/teamRegistry";
+import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { MarketTickerPayload } from "@/modules/agent-watch/types";
-import { CitationChip } from "./CitationChip";
+import { CitationChip, EvidenceMapProvider } from "./CitationChip";
 import { SignalCard } from "./SignalCard";
 import { TradeCardBlock } from "./TradeCardBlock";
 import { ZeroState } from "./ZeroState";
@@ -105,6 +106,7 @@ function EventBody({ event }: { event: PublicTimelineEvent }) {
 
 export function DecisionTimeline({
   events,
+  evidenceMap,
   loading,
   loadingMore,
   hasMore,
@@ -113,6 +115,7 @@ export function DecisionTimeline({
   marketSnapshot,
 }: {
   events: PublicTimelineEvent[];
+  evidenceMap: Record<string, NewsEvidence>;
   loading?: boolean;
   loadingMore?: boolean;
   hasMore?: boolean;
@@ -135,63 +138,65 @@ export function DecisionTimeline({
   }
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-4 md:p-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-200/75">
-            {t.agentWatch.timeline.recentHour}
-          </p>
-          <h2 className="mt-1 text-xl font-bold text-white">{t.agentWatch.timeline.title}</h2>
+    <EvidenceMapProvider value={evidenceMap}>
+      <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-4 md:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-200/75">
+              {t.agentWatch.timeline.recentHour}
+            </p>
+            <h2 className="mt-1 text-xl font-bold text-white">{t.agentWatch.timeline.title}</h2>
+          </div>
+          {loading && <span className="text-xs text-white/45">{t.agentWatch.loadingHistory}</span>}
         </div>
-        {loading && <span className="text-xs text-white/45">{t.agentWatch.loadingHistory}</span>}
-      </div>
 
-      <div className="space-y-4">
-        {events.map((event) => {
-          const showBoundary = !renderedBoundary && event.ts < oneHourCutoff;
-          if (showBoundary) renderedBoundary = true;
-          return (
-            <div key={event.id}>
-              {showBoundary && (
-                <div className="my-5 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-white/10" />
-                  <span className="text-xs font-bold text-white/35">
-                    {t.agentWatch.timeline.olderWindow}
-                  </span>
-                  <div className="h-px flex-1 bg-white/10" />
-                </div>
-              )}
-              <article className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-[11px] font-bold text-white/70">
-                    {t.agentWatch.timeline[event.sourceTrigger]}
-                  </span>
-                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] font-bold text-white/45">
-                    {event.importance}
-                  </span>
-                  <span className="font-mono text-xs text-white/35">{formatTime(event.ts)}</span>
-                  {event.evidenceIds.map((evidenceId, index) => (
-                    <CitationChip key={evidenceId} evidenceId={evidenceId} index={index} />
-                  ))}
-                </div>
-                <EventBody event={event} />
-              </article>
-            </div>
-          );
-        })}
-      </div>
+        <div className="space-y-4">
+          {events.map((event) => {
+            const showBoundary = !renderedBoundary && event.ts < oneHourCutoff;
+            if (showBoundary) renderedBoundary = true;
+            return (
+              <div key={event.id}>
+                {showBoundary && (
+                  <div className="my-5 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-white/10" />
+                    <span className="text-xs font-bold text-white/35">
+                      {t.agentWatch.timeline.olderWindow}
+                    </span>
+                    <div className="h-px flex-1 bg-white/10" />
+                  </div>
+                )}
+                <article className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-[11px] font-bold text-white/70">
+                      {t.agentWatch.timeline[event.sourceTrigger]}
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] font-bold text-white/45">
+                      {event.importance}
+                    </span>
+                    <span className="font-mono text-xs text-white/35">{formatTime(event.ts)}</span>
+                    {event.evidenceIds.map((evidenceId, index) => (
+                      <CitationChip key={evidenceId} evidenceId={evidenceId} index={index} />
+                    ))}
+                  </div>
+                  <EventBody event={event} />
+                </article>
+              </div>
+            );
+          })}
+        </div>
 
-      <div ref={sentinelRef} className="h-6" />
-      {hasMore && (
-        <button
-          type="button"
-          onClick={onLoadMore}
-          disabled={loadingMore}
-          className="mt-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/70 transition hover:border-white/25 hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          {loadingMore ? t.agentWatch.loadingMore : t.agentWatch.loadMore}
-        </button>
-      )}
-    </section>
+        <div ref={sentinelRef} className="h-6" />
+        {hasMore && (
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="mt-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/70 transition hover:border-white/25 hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {loadingMore ? t.agentWatch.loadingMore : t.agentWatch.loadMore}
+          </button>
+        )}
+      </section>
+    </EvidenceMapProvider>
   );
 }

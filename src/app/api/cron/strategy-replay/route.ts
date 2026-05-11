@@ -6,7 +6,11 @@ import { getCoinPool } from "@/lib/marketDataCache";
 import { adjustDebtFromReplays } from "@/lib/agentRelationship";
 import { evaluateStrategy, recordStrategyReplay } from "@/lib/strategyHistory";
 import { tryAcquireLock } from "@/lib/storage/kv-lock";
-import { triggerPmDecisionPipelineOnce } from "@/lib/team/pmDecisionTrigger";
+import {
+  triggerPmDecisionPipelineBatch,
+  triggerPmDecisionPipelineOnce,
+} from "@/lib/team/pmDecisionTrigger";
+import { localeFromRequestUrl } from "@/lib/watch/locale";
 import type { NewsItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +31,7 @@ export async function GET(request: NextRequest) {
   }
 
   const trigger = request.nextUrl.searchParams.get("trigger");
+  const locale = localeFromRequestUrl(request.nextUrl, request.headers.get("accept-language"));
   const triggerLock =
     trigger === "now"
       ? await tryAcquireLock(STRATEGY_REPLAY_TRIGGER_LOCK_KEY, {
@@ -78,19 +83,33 @@ export async function GET(request: NextRequest) {
       console.warn("[claw42] relationship debt adjustment skipped", error);
     }
   });
-  const pmDecision = await triggerPmDecisionPipelineOnce({
-    triggerSource: trigger === "now" ? "user_visit_trigger" : "cron",
-    pool,
-    newsItems: normalizedItems,
-    now,
-  });
+  const pmDecisionOutputs =
+    trigger === "now"
+      ? [
+          await triggerPmDecisionPipelineOnce({
+            triggerSource: "user_visit_trigger",
+            pool,
+            newsItems: normalizedItems,
+            locale,
+            now,
+          }),
+        ].filter(Boolean)
+      : await triggerPmDecisionPipelineBatch({
+          triggerSource: "cron",
+          pool,
+          newsItems: normalizedItems,
+          locale,
+          now,
+        });
 
   return NextResponse.json({
     ok: true,
     servedBy,
     fellBackFrom,
     generatedDebates: debates.length,
-    pmDecisionGenerated: Boolean(pmDecision),
+    locale,
+    pmDecisionGenerated: pmDecisionOutputs.length > 0,
+    generatedPmDecisions: pmDecisionOutputs.length,
     replayed: replayed.length,
     trigger,
     triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,

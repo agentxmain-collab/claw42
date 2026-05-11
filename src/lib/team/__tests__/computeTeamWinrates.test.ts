@@ -117,6 +117,7 @@ function makeRecord(overrides: Partial<StrategyDecisionRecord> = {}): StrategyDe
     schemaVersion: 1,
     recordSource: "live",
     symbol: "BTC",
+    locale: "zh_CN",
     decisionOwnerId: "pm",
     contributorIds: ["chart_analyst"],
     analystInputs: [],
