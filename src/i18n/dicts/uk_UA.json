@@ -193,43 +193,62 @@
       "displayName": "Chen",
       "roleTitle": "Фундаментальний аналітик",
       "shortBio": "Спокійно оцінює якість активу через фундаментал і цикли.",
-      "ariaLabel": "Chen, Фундаментальний аналітик"
+      "ariaLabel": "Chen, Фундаментальний аналітик",
+      "oneLineCapability": "Tests asset quality and cycle position"
     },
     "news_analyst": {
       "displayName": "Mira",
       "roleTitle": "Новинний аналітик",
       "shortBio": "Стежить за новинами та наративами, щоб побачити зміну уваги.",
-      "ariaLabel": "Mira, Новинний аналітик"
+      "ariaLabel": "Mira, Новинний аналітик",
+      "oneLineCapability": "Judges whether news shifts market attention"
     },
     "chart_analyst": {
       "displayName": "K",
       "roleTitle": "Графічний аналітик",
       "shortBio": "Читає графіки й ключові рівні, відсікаючи погоню за рухом.",
-      "ariaLabel": "K, Графічний аналітик"
+      "ariaLabel": "K, Графічний аналітик",
+      "oneLineCapability": "Marks key levels and invalidation zones"
     },
     "onchain_analyst": {
       "displayName": "Vit",
       "roleTitle": "Ончейн-аналітик",
       "shortBio": "Відстежує потоки, активність та аномалії для реальних змін позиції.",
-      "ariaLabel": "Vit, Ончейн-аналітик"
+      "ariaLabel": "Vit, Ончейн-аналітик",
+      "oneLineCapability": "Tracks flows, activity, and anomaly signals"
     },
     "research_lead": {
       "displayName": "Lead R",
       "roleTitle": "Керівник досліджень",
       "shortBio": "Зводить розбіжності аналітиків в одне виконуване судження.",
-      "ariaLabel": "Lead R, Керівник досліджень"
+      "ariaLabel": "Lead R, Керівник досліджень",
+      "oneLineCapability": "Compresses disagreement into one thesis"
     },
     "risk_lead": {
       "displayName": "Risk X",
       "roleTitle": "Ризик-лід",
       "shortBio": "Спершу шукає умови скасування, а вже потім говорить про шанс.",
-      "ariaLabel": "Risk X, Ризик-лід"
+      "ariaLabel": "Risk X, Ризик-лід",
+      "oneLineCapability": "Names invalidation and risk boundaries first"
     },
     "pm": {
       "displayName": "PM",
       "roleTitle": "Продакт-менеджер",
       "shortBio": "Перетворює дискусію на зрозумілу торгову картку.",
-      "ariaLabel": "PM, Продакт-менеджер"
+      "ariaLabel": "PM, Продакт-менеджер",
+      "oneLineCapability": "Turns team output into a decision card"
+    },
+    "workflowPanel": {
+      "title": "AI team workflow",
+      "description": "Seven roles move from analysis to synthesis, risk, and PM decision so signals become readable action.",
+      "mobileStageLabel": "Flow"
+    },
+    "workflowNode": {
+      "statusAnalyzing": "Analyzing",
+      "statusWaitingData": "Waiting data",
+      "statusCompletedRecently": "Just completed",
+      "statusIdle": "Idle",
+      "lastActivityPrefix": "Last activity"
     }
   },
   "agentWatch": {
@@ -317,7 +336,14 @@
       "pm_decision": "PM decision",
       "team_discussion": "Team discussion",
       "cron_heartbeat": "System heartbeat",
-      "fallback": "Fallback"
+      "fallback": "Fallback",
+      "processToggle": {
+        "analysts": "4 analyst views",
+        "leads": "Research lead + risk lead",
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "waitingMember": "Waiting for this role to analyze..."
+      }
     },
     "citationChip": {
       "sourceUnavailable": "Джерело недоступне"

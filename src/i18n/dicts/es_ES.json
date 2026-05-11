@@ -193,43 +193,62 @@
       "displayName": "Chen",
       "roleTitle": "Analista fundamental",
       "shortBio": "Evalúa con calma la calidad del activo con fundamentos y ciclos.",
-      "ariaLabel": "Chen, Analista fundamental"
+      "ariaLabel": "Chen, Analista fundamental",
+      "oneLineCapability": "Tests asset quality and cycle position"
     },
     "news_analyst": {
       "displayName": "Mira",
       "roleTitle": "Analista de noticias",
       "shortBio": "Sigue noticias y narrativas para detectar cambios de atención.",
-      "ariaLabel": "Mira, Analista de noticias"
+      "ariaLabel": "Mira, Analista de noticias",
+      "oneLineCapability": "Judges whether news shifts market attention"
     },
     "chart_analyst": {
       "displayName": "K",
       "roleTitle": "Analista gráfico",
       "shortBio": "Lee gráficos y niveles clave para filtrar entradas impulsivas.",
-      "ariaLabel": "K, Analista gráfico"
+      "ariaLabel": "K, Analista gráfico",
+      "oneLineCapability": "Marks key levels and invalidation zones"
     },
     "onchain_analyst": {
       "displayName": "Vit",
       "roleTitle": "Analista on-chain",
       "shortBio": "Rastrea flujos, actividad y anomalías para ver cambios reales de posición.",
-      "ariaLabel": "Vit, Analista on-chain"
+      "ariaLabel": "Vit, Analista on-chain",
+      "oneLineCapability": "Tracks flows, activity, and anomaly signals"
     },
     "research_lead": {
       "displayName": "Lead R",
       "roleTitle": "Líder de investigación",
       "shortBio": "Reduce desacuerdos en un juicio de mercado ejecutable.",
-      "ariaLabel": "Lead R, Líder de investigación"
+      "ariaLabel": "Lead R, Líder de investigación",
+      "oneLineCapability": "Compresses disagreement into one thesis"
     },
     "risk_lead": {
       "displayName": "Risk X",
       "roleTitle": "Líder de riesgo",
       "shortBio": "Primero busca invalidación; después habla de oportunidad.",
-      "ariaLabel": "Risk X, Líder de riesgo"
+      "ariaLabel": "Risk X, Líder de riesgo",
+      "oneLineCapability": "Names invalidation and risk boundaries first"
     },
     "pm": {
       "displayName": "PM",
       "roleTitle": "Product manager",
       "shortBio": "Convierte la discusión en una tarjeta de operación legible.",
-      "ariaLabel": "PM, Product manager"
+      "ariaLabel": "PM, Product manager",
+      "oneLineCapability": "Turns team output into a decision card"
+    },
+    "workflowPanel": {
+      "title": "AI team workflow",
+      "description": "Seven roles move from analysis to synthesis, risk, and PM decision so signals become readable action.",
+      "mobileStageLabel": "Flow"
+    },
+    "workflowNode": {
+      "statusAnalyzing": "Analyzing",
+      "statusWaitingData": "Waiting data",
+      "statusCompletedRecently": "Just completed",
+      "statusIdle": "Idle",
+      "lastActivityPrefix": "Last activity"
     }
   },
   "agentWatch": {
@@ -317,7 +336,14 @@
       "pm_decision": "PM decision",
       "team_discussion": "Team discussion",
       "cron_heartbeat": "System heartbeat",
-      "fallback": "Fallback"
+      "fallback": "Fallback",
+      "processToggle": {
+        "analysts": "4 analyst views",
+        "leads": "Research lead + risk lead",
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "waitingMember": "Waiting for this role to analyze..."
+      }
     },
     "citationChip": {
       "sourceUnavailable": "Fuente no disponible"

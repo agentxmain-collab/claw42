@@ -23,6 +23,7 @@ export type RatingDict = {
 export type TeamMemberDict = {
   displayName: string;
   roleTitle: string;
+  oneLineCapability: string;
   shortBio: string;
   ariaLabel: string;
 };
@@ -50,8 +51,24 @@ export type TeamTrackRecordDict = {
   };
 };
 
+export type TeamWorkflowPanelDict = {
+  title: string;
+  description: string;
+  mobileStageLabel: string;
+};
+
+export type TeamWorkflowNodeDict = {
+  statusAnalyzing: string;
+  statusWaitingData: string;
+  statusCompletedRecently: string;
+  statusIdle: string;
+  lastActivityPrefix: string;
+};
+
 export type TeamDict = Record<TeamMemberId, TeamMemberDict> & {
   trackRecord: TeamTrackRecordDict;
+  workflowPanel: TeamWorkflowPanelDict;
+  workflowNode: TeamWorkflowNodeDict;
 };
 
 export interface Dict {
@@ -202,6 +219,13 @@ export interface Dict {
       olderWindow: string;
       showProcess: string;
       showConclusion: string;
+      processToggle: {
+        analysts: string;
+        leads: string;
+        collapse: string;
+        expand: string;
+        waitingMember: string;
+      };
       market_signal: string;
       news: string;
       pm_decision: string;

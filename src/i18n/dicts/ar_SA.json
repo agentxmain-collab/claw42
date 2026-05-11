@@ -193,43 +193,62 @@
       "displayName": "Chen",
       "roleTitle": "محلل أساسي",
       "shortBio": "يقيّم جودة الأصل بهدوء عبر الأساسيات والدورات.",
-      "ariaLabel": "Chen, محلل أساسي"
+      "ariaLabel": "Chen, محلل أساسي",
+      "oneLineCapability": "Tests asset quality and cycle position"
     },
     "news_analyst": {
       "displayName": "Mira",
       "roleTitle": "محلل أخبار",
       "shortBio": "يتابع الأخبار والسرديات لمعرفة انتقال اهتمام السوق.",
-      "ariaLabel": "Mira, محلل أخبار"
+      "ariaLabel": "Mira, محلل أخبار",
+      "oneLineCapability": "Judges whether news shifts market attention"
     },
     "chart_analyst": {
       "displayName": "K",
       "roleTitle": "محلل رسوم بيانية",
       "shortBio": "يقرأ الرسوم والمستويات المهمة لتجنب مطاردة الحركة.",
-      "ariaLabel": "K, محلل رسوم بيانية"
+      "ariaLabel": "K, محلل رسوم بيانية",
+      "oneLineCapability": "Marks key levels and invalidation zones"
     },
     "onchain_analyst": {
       "displayName": "Vit",
       "roleTitle": "محلل على السلسلة",
       "shortBio": "يتابع التدفقات والنشاط والشذوذ لرصد تغيّر التمركز الحقيقي.",
-      "ariaLabel": "Vit, محلل على السلسلة"
+      "ariaLabel": "Vit, محلل على السلسلة",
+      "oneLineCapability": "Tracks flows, activity, and anomaly signals"
     },
     "research_lead": {
       "displayName": "Lead R",
       "roleTitle": "قائد البحث",
       "shortBio": "يضغط اختلافات المحللين في حكم قابل للتنفيذ.",
-      "ariaLabel": "Lead R, قائد البحث"
+      "ariaLabel": "Lead R, قائد البحث",
+      "oneLineCapability": "Compresses disagreement into one thesis"
     },
     "risk_lead": {
       "displayName": "Risk X",
       "roleTitle": "قائد المخاطر",
       "shortBio": "يبحث عن شروط الإبطال قبل الحديث عن الفرصة.",
-      "ariaLabel": "Risk X, قائد المخاطر"
+      "ariaLabel": "Risk X, قائد المخاطر",
+      "oneLineCapability": "Names invalidation and risk boundaries first"
     },
     "pm": {
       "displayName": "PM",
       "roleTitle": "مدير المنتج",
       "shortBio": "يحوّل النقاش إلى بطاقة تداول واضحة.",
-      "ariaLabel": "PM, مدير المنتج"
+      "ariaLabel": "PM, مدير المنتج",
+      "oneLineCapability": "Turns team output into a decision card"
+    },
+    "workflowPanel": {
+      "title": "AI team workflow",
+      "description": "Seven roles move from analysis to synthesis, risk, and PM decision so signals become readable action.",
+      "mobileStageLabel": "Flow"
+    },
+    "workflowNode": {
+      "statusAnalyzing": "Analyzing",
+      "statusWaitingData": "Waiting data",
+      "statusCompletedRecently": "Just completed",
+      "statusIdle": "Idle",
+      "lastActivityPrefix": "Last activity"
     }
   },
   "agentWatch": {
@@ -317,7 +336,14 @@
       "pm_decision": "PM decision",
       "team_discussion": "Team discussion",
       "cron_heartbeat": "System heartbeat",
-      "fallback": "Fallback"
+      "fallback": "Fallback",
+      "processToggle": {
+        "analysts": "4 analyst views",
+        "leads": "Research lead + risk lead",
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "waitingMember": "Waiting for this role to analyze..."
+      }
     },
     "citationChip": {
       "sourceUnavailable": "المصدر غير متاح"

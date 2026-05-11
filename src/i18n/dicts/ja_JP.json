@@ -193,43 +193,62 @@
       "displayName": "Chen",
       "roleTitle": "ファンダメンタル分析担当",
       "shortBio": "ファンダメンタルとサイクルで資産の質をゆっくり検証します。",
-      "ariaLabel": "Chen, ファンダメンタル分析担当"
+      "ariaLabel": "Chen, ファンダメンタル分析担当",
+      "oneLineCapability": "資産品質とサイクル位置を確認"
     },
     "news_analyst": {
       "displayName": "Mira",
       "roleTitle": "ニュース分析担当",
       "shortBio": "ニュースと物語の変化を追い、市場の注目が動いたかを見ます。",
-      "ariaLabel": "Mira, ニュース分析担当"
+      "ariaLabel": "Mira, ニュース分析担当",
+      "oneLineCapability": "ニュースが市場の注目を動かすか判断"
     },
     "chart_analyst": {
       "displayName": "K",
       "roleTitle": "チャート分析担当",
       "shortBio": "チャートと重要水準だけを見て、追いかけ買いを抑えます。",
-      "ariaLabel": "K, チャート分析担当"
+      "ariaLabel": "K, チャート分析担当",
+      "oneLineCapability": "重要価格帯と無効化ラインを示す"
     },
     "onchain_analyst": {
       "displayName": "Vit",
       "roleTitle": "オンチェーン分析担当",
       "shortBio": "資金フロー、活動量、異常値から本当のポジション変化を探します。",
-      "ariaLabel": "Vit, オンチェーン分析担当"
+      "ariaLabel": "Vit, オンチェーン分析担当",
+      "oneLineCapability": "資金フローと異常シグナルを追跡"
     },
     "research_lead": {
       "displayName": "Lead R",
       "roleTitle": "リサーチ責任者",
       "shortBio": "複数の意見をまとめ、実行可能な判断へ圧縮します。",
-      "ariaLabel": "Lead R, リサーチ責任者"
+      "ariaLabel": "Lead R, リサーチ責任者",
+      "oneLineCapability": "意見の差をひとつの仮説に集約"
     },
     "risk_lead": {
       "displayName": "Risk X",
       "roleTitle": "リスク責任者",
       "shortBio": "機会の前にまず失効条件を確認します。",
-      "ariaLabel": "Risk X, リスク責任者"
+      "ariaLabel": "Risk X, リスク責任者",
+      "oneLineCapability": "先に無効化条件とリスク境界を示す"
     },
     "pm": {
       "displayName": "PM",
       "roleTitle": "プロダクトマネージャー",
       "shortBio": "議論を読みやすい取引カードへ整理します。",
-      "ariaLabel": "PM, プロダクトマネージャー"
+      "ariaLabel": "PM, プロダクトマネージャー",
+      "oneLineCapability": "チーム判断を取引カードにまとめる"
+    },
+    "workflowPanel": {
+      "title": "AI チーム管制パネル",
+      "description": "7 つの役割が分析、統合、リスク、PM の順に連携し、市場シグナルを読める判断に変えます。",
+      "mobileStageLabel": "フロー"
+    },
+    "workflowNode": {
+      "statusAnalyzing": "分析中",
+      "statusWaitingData": "データ待ち",
+      "statusCompletedRecently": "直近完了",
+      "statusIdle": "待機中",
+      "lastActivityPrefix": "最新活動"
     }
   },
   "agentWatch": {
@@ -317,7 +336,14 @@
       "pm_decision": "PM decision",
       "team_discussion": "Team discussion",
       "cron_heartbeat": "System heartbeat",
-      "fallback": "Fallback"
+      "fallback": "Fallback",
+      "processToggle": {
+        "analysts": "4 名のアナリスト視点",
+        "leads": "統合リード + リスク担当",
+        "collapse": "閉じる",
+        "expand": "開く",
+        "waitingMember": "この役割の分析待ち..."
+      }
     },
     "citationChip": {
       "sourceUnavailable": "ソース一時利用不可"

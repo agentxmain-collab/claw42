@@ -193,43 +193,62 @@
       "displayName": "Chen",
       "roleTitle": "Analyste fondamental",
       "shortBio": "Évalue calmement la qualité des actifs via fondamentaux et cycles.",
-      "ariaLabel": "Chen, Analyste fondamental"
+      "ariaLabel": "Chen, Analyste fondamental",
+      "oneLineCapability": "Tests asset quality and cycle position"
     },
     "news_analyst": {
       "displayName": "Mira",
       "roleTitle": "Analyste actualités",
       "shortBio": "Suit les nouvelles et narratifs pour voir si l’attention du marché bouge.",
-      "ariaLabel": "Mira, Analyste actualités"
+      "ariaLabel": "Mira, Analyste actualités",
+      "oneLineCapability": "Judges whether news shifts market attention"
     },
     "chart_analyst": {
       "displayName": "K",
       "roleTitle": "Analyste graphique",
       "shortBio": "Lit les graphiques et niveaux clés pour éviter les poursuites impulsives.",
-      "ariaLabel": "K, Analyste graphique"
+      "ariaLabel": "K, Analyste graphique",
+      "oneLineCapability": "Marks key levels and invalidation zones"
     },
     "onchain_analyst": {
       "displayName": "Vit",
       "roleTitle": "Analyste on-chain",
       "shortBio": "Suit flux, activité et anomalies pour repérer les vraies positions.",
-      "ariaLabel": "Vit, Analyste on-chain"
+      "ariaLabel": "Vit, Analyste on-chain",
+      "oneLineCapability": "Tracks flows, activity, and anomaly signals"
     },
     "research_lead": {
       "displayName": "Lead R",
       "roleTitle": "Responsable recherche",
       "shortBio": "Condense les désaccords en un jugement exécutable.",
-      "ariaLabel": "Lead R, Responsable recherche"
+      "ariaLabel": "Lead R, Responsable recherche",
+      "oneLineCapability": "Compresses disagreement into one thesis"
     },
     "risk_lead": {
       "displayName": "Risk X",
       "roleTitle": "Responsable risque",
       "shortBio": "Cherche l’invalidation avant de parler opportunité.",
-      "ariaLabel": "Risk X, Responsable risque"
+      "ariaLabel": "Risk X, Responsable risque",
+      "oneLineCapability": "Names invalidation and risk boundaries first"
     },
     "pm": {
       "displayName": "PM",
       "roleTitle": "Product manager",
       "shortBio": "Transforme la discussion en carte de trade lisible.",
-      "ariaLabel": "PM, Product manager"
+      "ariaLabel": "PM, Product manager",
+      "oneLineCapability": "Turns team output into a decision card"
+    },
+    "workflowPanel": {
+      "title": "AI team workflow",
+      "description": "Seven roles move from analysis to synthesis, risk, and PM decision so signals become readable action.",
+      "mobileStageLabel": "Flow"
+    },
+    "workflowNode": {
+      "statusAnalyzing": "Analyzing",
+      "statusWaitingData": "Waiting data",
+      "statusCompletedRecently": "Just completed",
+      "statusIdle": "Idle",
+      "lastActivityPrefix": "Last activity"
     }
   },
   "agentWatch": {
@@ -317,7 +336,14 @@
       "pm_decision": "PM decision",
       "team_discussion": "Team discussion",
       "cron_heartbeat": "System heartbeat",
-      "fallback": "Fallback"
+      "fallback": "Fallback",
+      "processToggle": {
+        "analysts": "4 analyst views",
+        "leads": "Research lead + risk lead",
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "waitingMember": "Waiting for this role to analyze..."
+      }
     },
     "citationChip": {
       "sourceUnavailable": "Source indisponible"
