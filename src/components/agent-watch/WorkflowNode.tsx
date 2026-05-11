@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Image from "next/image";
 import type { Dict } from "@/i18n/types";
 import { getTeamMember, type TeamMemberId } from "@/lib/team/teamRegistry";

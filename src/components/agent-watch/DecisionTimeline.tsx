@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { usePipelineReplay } from "@/lib/team/usePipelineReplay";
