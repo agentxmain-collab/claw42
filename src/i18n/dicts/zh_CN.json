@@ -234,7 +234,7 @@
   },
   "agentWatch": {
     "pageTitle": "Live · 加密市场",
-    "pageSubtitle": "3 个 Agent 同时盯盘。Alpha 看突破，Beta 看趋势，Gamma 看极端。",
+    "pageSubtitle": "7 人 AI 团队实时盯盘，分析师 / 综合 / 风控 / PM 协作产出每日策略。",
     "pageHeroTagline": "",
     "sidebarStatus": {
       "thinking": "思考中",
@@ -244,7 +244,7 @@
     "bottomCta": "开始使用 Agent →",
     "linkCardLiveBadge": "LIVE",
     "linkCardTitle": "3 个 Agent 正在盯盘",
-    "linkCardDesc": "Alpha 看突破，Beta 看趋势，Gamma 看极端",
+    "linkCardDesc": "新闻、市场信号、团队决策汇聚于此。",
     "fallbackNotice": "",
     "banner": {
       "newContent": "有新内容 →",
