@@ -3,9 +3,9 @@ import React from "react";
 export function WorkflowConnectorSvg() {
   return (
     <svg
-      className="pointer-events-none absolute inset-x-8 top-1/2 hidden h-24 -translate-y-1/2 text-[#7650ff]/25 md:block"
+      className="pointer-events-none absolute inset-x-8 top-[58%] hidden h-72 -translate-y-1/2 text-[#7650ff]/25 md:block"
       aria-hidden="true"
-      viewBox="0 0 960 96"
+      viewBox="0 0 960 288"
       preserveAspectRatio="none"
     >
       <defs>
@@ -16,12 +16,39 @@ export function WorkflowConnectorSvg() {
         </linearGradient>
       </defs>
       <path
-        d="M12 18 C220 18 250 78 460 48 C650 20 720 78 948 78"
+        d="M120 26 C260 78 330 104 420 126"
         fill="none"
         stroke="url(#workflow-connector-gradient)"
         strokeLinecap="round"
         strokeWidth="2"
         strokeDasharray="12 18"
+        className="animate-[workflowDash_6s_linear_infinite] motion-reduce:animate-none"
+      />
+      <path
+        d="M840 26 C700 78 630 104 540 126"
+        fill="none"
+        stroke="url(#workflow-connector-gradient)"
+        strokeLinecap="round"
+        strokeWidth="2"
+        strokeDasharray="12 18"
+        className="animate-[workflowDash_6s_linear_infinite] motion-reduce:animate-none"
+      />
+      <path
+        d="M420 168 C448 214 512 214 540 168"
+        fill="none"
+        stroke="url(#workflow-connector-gradient)"
+        strokeLinecap="round"
+        strokeWidth="2"
+        strokeDasharray="12 18"
+        className="animate-[workflowDash_6s_linear_infinite] motion-reduce:animate-none"
+      />
+      <path
+        d="M480 188 C480 214 480 236 480 262"
+        fill="none"
+        stroke="url(#workflow-connector-gradient)"
+        strokeLinecap="round"
+        strokeWidth="2"
+        strokeDasharray="10 16"
         className="animate-[workflowDash_6s_linear_infinite] motion-reduce:animate-none"
       />
     </svg>

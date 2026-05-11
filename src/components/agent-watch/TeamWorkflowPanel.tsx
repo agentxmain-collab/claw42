@@ -73,7 +73,7 @@ function WorkflowStage({
 }) {
   const { t } = useI18n();
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div className={stageLayoutClassName(members.length)}>
       {members.map((memberId) => (
         <WorkflowNode
           key={memberId}
@@ -85,4 +85,16 @@ function WorkflowStage({
       ))}
     </div>
   );
+}
+
+function stageLayoutClassName(memberCount: number) {
+  if (memberCount === 1) {
+    return "mx-auto grid w-full grid-cols-1 gap-3 md:max-w-[calc(50%_-_0.375rem)] xl:max-w-[calc(25%_-_0.5625rem)]";
+  }
+
+  if (memberCount === 2) {
+    return "mx-auto grid w-full grid-cols-1 gap-3 md:grid-cols-2 xl:max-w-[calc(50%_-_0.375rem)]";
+  }
+
+  return "grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4";
 }
