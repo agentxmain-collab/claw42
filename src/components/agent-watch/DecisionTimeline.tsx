@@ -1,13 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { usePipelineReplay } from "@/lib/team/usePipelineReplay";
+import { useTeamActivityStatus } from "@/lib/team/useTeamActivityStatus";
 import { getTeamMember, type TeamMemberId } from "@/lib/team/teamRegistry";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { MarketTickerPayload } from "@/modules/agent-watch/types";
 import { CitationChip, EvidenceMapProvider } from "./CitationChip";
+import { ProcessAccordion } from "./ProcessAccordion";
 import { SignalCard } from "./SignalCard";
+import { TeamWorkflowPanel } from "./TeamWorkflowPanel";
 import { TradeCardBlock } from "./TradeCardBlock";
 import { ZeroState } from "./ZeroState";
 
@@ -19,7 +23,13 @@ function memberName(memberId: TeamMemberId, team: ReturnType<typeof useI18n>["t"
   return team[memberId]?.displayName ?? getTeamMember(memberId).id;
 }
 
-function EventBody({ event }: { event: PublicTimelineEvent }) {
+function EventBody({
+  event,
+  onReplayTrigger,
+}: {
+  event: PublicTimelineEvent;
+  onReplayTrigger?: (recordId: string) => void;
+}) {
   const { t } = useI18n();
 
   if (event.payload.kind === "market_signal") return <SignalCard event={event} />;
@@ -45,38 +55,10 @@ function EventBody({ event }: { event: PublicTimelineEvent }) {
   }
 
   if (event.payload.kind === "pm_decision") {
-    const payload = event.payload;
-    const rationales = Object.entries(payload.rationaleByMember);
     return (
       <div className="space-y-4">
         <TradeCardBlock decision={event.payload.tradeDecision} />
-        {rationales.length > 0 && (
-          <details className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <summary className="text-white/78 cursor-pointer text-sm font-bold">
-              {t.agentWatch.timeline.showProcess}
-            </summary>
-            <div className="mt-3 space-y-3">
-              {rationales.map(([memberId, text]) => (
-                <div
-                  key={memberId}
-                  className="rounded-xl bg-white/[0.035] p-3 text-sm leading-relaxed text-white/70"
-                >
-                  <div className="mb-1 font-bold text-white">
-                    {memberName(memberId as TeamMemberId, t.team)}
-                  </div>
-                  {text}
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {(payload.citationsByMember?.[memberId as TeamMemberId] ?? []).map(
-                      (evidenceId: string, index: number) => (
-                        <CitationChip key={evidenceId} evidenceId={evidenceId} index={index} />
-                      ),
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
+        <ProcessAccordion payload={event.payload} onReplayTrigger={onReplayTrigger} />
       </div>
     );
   }
@@ -124,22 +106,46 @@ export function DecisionTimeline({
   marketSnapshot?: MarketTickerPayload | null;
 }) {
   const { t } = useI18n();
+  const [replayRequest, setReplayRequest] = useState<{ recordId: string | null; key: number }>({
+    recordId: null,
+    key: 0,
+  });
+  const statuses = useTeamActivityStatus({ events, loading });
+  const replay = usePipelineReplay({
+    recordId: replayRequest.recordId,
+    enabled: Boolean(replayRequest.recordId),
+    replayKey: replayRequest.key,
+    triggerReason: "user_expand",
+  });
+  const triggerReplay = useCallback((recordId: string) => {
+    setReplayRequest((current) => ({
+      recordId,
+      key: current.key + 1,
+    }));
+  }, []);
   const oneHourCutoff = useMemo(() => Date.now() - 60 * 60 * 1000, []);
   let renderedBoundary = false;
 
   if (!loading && events.length === 0) {
     return (
-      <ZeroState
-        title={t.agentWatch.emptyState.title}
-        subtitle={t.agentWatch.emptyState.subtitle}
-        marketSnapshot={marketSnapshot}
-      />
+      <EvidenceMapProvider value={evidenceMap}>
+        <div className="space-y-4">
+          <TeamWorkflowPanel statuses={statuses} replayActiveMemberId={replay.activeMemberId} />
+          <ZeroState
+            title={t.agentWatch.emptyState.title}
+            subtitle={t.agentWatch.emptyState.subtitle}
+            marketSnapshot={marketSnapshot}
+          />
+        </div>
+      </EvidenceMapProvider>
     );
   }
 
   return (
     <EvidenceMapProvider value={evidenceMap}>
-      <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-4 md:p-6">
+      <div className="space-y-4">
+        <TeamWorkflowPanel statuses={statuses} replayActiveMemberId={replay.activeMemberId} />
+        <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-4 md:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-200/75">
@@ -178,7 +184,7 @@ export function DecisionTimeline({
                       <CitationChip key={evidenceId} evidenceId={evidenceId} index={index} />
                     ))}
                   </div>
-                  <EventBody event={event} />
+                  <EventBody event={event} onReplayTrigger={triggerReplay} />
                 </article>
               </div>
             );
@@ -196,7 +202,8 @@ export function DecisionTimeline({
             {loadingMore ? t.agentWatch.loadingMore : t.agentWatch.loadMore}
           </button>
         )}
-      </section>
+        </section>
+      </div>
     </EvidenceMapProvider>
   );
 }

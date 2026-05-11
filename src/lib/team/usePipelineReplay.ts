@@ -20,12 +20,14 @@ export function usePipelineReplay({
   recordId,
   enabled,
   triggerReason = "auto",
+  replayKey = 0,
   stepMs = 900,
   reduceMotion = false,
 }: {
   recordId: string | null;
   enabled: boolean;
   triggerReason?: PipelineReplayTriggerReason;
+  replayKey?: string | number;
   stepMs?: number;
   reduceMotion?: boolean;
 }) {
@@ -56,7 +58,7 @@ export function usePipelineReplay({
     }, stepMs);
 
     return () => window.clearInterval(interval);
-  }, [enabled, recordId, reduceMotion, stepMs, triggerReason]);
+  }, [enabled, recordId, reduceMotion, replayKey, stepMs, triggerReason]);
 
   const activeMemberId = useMemo(
     () => (activeIndex >= 0 ? PIPELINE_REPLAY_SEQUENCE[activeIndex] : null),

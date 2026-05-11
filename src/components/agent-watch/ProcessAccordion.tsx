@@ -22,7 +22,13 @@ const ANALYST_IDS: TeamMemberId[] = [
 
 const LEAD_IDS: TeamMemberId[] = ["research_lead", "risk_lead"];
 
-export function ProcessAccordion({ payload }: { payload: PmDecisionPayload }) {
+export function ProcessAccordion({
+  payload,
+  onReplayTrigger,
+}: {
+  payload: PmDecisionPayload;
+  onReplayTrigger?: (recordId: string) => void;
+}) {
   const { t } = useI18n();
   return (
     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -30,6 +36,7 @@ export function ProcessAccordion({ payload }: { payload: PmDecisionPayload }) {
         recordId={payload.recordId}
         section="analysts"
         title={t.agentWatch.timeline.processToggle.analysts}
+        onReplayTrigger={onReplayTrigger}
       >
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {ANALYST_IDS.map((memberId) => (
@@ -47,6 +54,7 @@ export function ProcessAccordion({ payload }: { payload: PmDecisionPayload }) {
         recordId={payload.recordId}
         section="leads"
         title={t.agentWatch.timeline.processToggle.leads}
+        onReplayTrigger={onReplayTrigger}
       >
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {LEAD_IDS.map((memberId) =>
@@ -77,11 +85,13 @@ function ProcessSection({
   section,
   title,
   children,
+  onReplayTrigger,
 }: {
   recordId: string;
   section: ProcessSectionId;
   title: string;
   children: ReactNode;
+  onReplayTrigger?: (recordId: string) => void;
 }) {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(true);
@@ -93,6 +103,7 @@ function ProcessSection({
       record_id: recordId,
       section,
     });
+    if (next) onReplayTrigger?.(recordId);
   };
 
   return (

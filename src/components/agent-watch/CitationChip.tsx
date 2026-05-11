@@ -35,13 +35,16 @@ export function CitationChip({
   evidenceId,
   index,
   label,
+  renderEmpty = false,
 }: {
   evidenceId: string;
   index: number;
   label?: string;
+  renderEmpty?: boolean;
 }) {
   const { t, locale } = useI18n();
   const evidence = useContext(EvidenceMapContext)[evidenceId];
+  if (!evidence && !renderEmpty) return null;
   const display = evidence
     ? `${evidence.source} · ${relativeTimeLabel(evidence.publishedAt, locale)}`
     : t.agentWatch.citationChip.sourceUnavailable;
