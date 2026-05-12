@@ -16,13 +16,14 @@ function formatClock(date: Date) {
 
 export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Props) {
   const [activeView, setActiveView] = useState<DispatchView>(initialView);
-  const [clock, setClock] = useState(() => formatClock(new Date()));
+  const [clock, setClock] = useState("19:31:42 · UTC+8");
   const [placeholder, setPlaceholder] = useState<{
     topic: DispatchTopic;
     actionLabel: string;
   } | null>(null);
 
   useEffect(() => {
+    setClock(formatClock(new Date()));
     const timer = window.setInterval(() => setClock(formatClock(new Date())), 1000);
     return () => window.clearInterval(timer);
   }, []);

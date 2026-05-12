@@ -6,7 +6,7 @@
     --line-2: rgba(255,255,255,0.14);
     --fg: #ffffff;
     --fg-2: #a6a6a6;
-    --fg-3: #737373;
+    --fg-3: #949494;
     --purple: #5227ff;
     --purple-2: #6c4fff;
     --lime: #d1ff55;
@@ -42,7 +42,7 @@
   }
   .root :global(.brand-mark::after) { content: ""; position: absolute; inset: 5px; border: 1.5px solid rgba(255,255,255,0.55); border-radius: 3px; }
   .root :global(.brand-sub) {
-    color: var(--fg-3); font-weight: 500; font-size: 11px;
+    color: var(--fg-2); font-weight: 500; font-size: 11px;
     border-left: 1px solid var(--line-2);
     padding-left: 12px; letter-spacing: 0.06em; text-transform: uppercase;
   }
@@ -55,7 +55,7 @@
   .root :global(.ttab) {
     padding: 8px 18px;
     font-size: 12px; font-weight: 700;
-    color: var(--fg-3);
+    color: var(--fg-2);
     border-radius: 9px;
     cursor: pointer;
     background: transparent; border: 0;
@@ -86,7 +86,7 @@
   }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   .root :global(.topbar-clock) {
-    font-size: 11px; color: var(--fg-3);
+    font-size: 11px; color: var(--fg-2);
     font-family: ui-monospace, monospace; letter-spacing: 0.04em;
   }
 
@@ -114,7 +114,7 @@
     border-bottom: 1px solid var(--line);
   }
   .root :global(.flow-header-left) { flex: 1; }
-  .root :global(.eyebrow) { font-size: 11px; color: var(--fg-3); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 10px; }
+  .root :global(.eyebrow) { font-size: 11px; color: var(--fg-2); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 10px; }
   .root :global(.v-flow .title), .root :global(.v-mkt .title) {
     font-size: 30px; font-weight: 900;
     line-height: 1.1; letter-spacing: 0;
@@ -128,7 +128,7 @@
   .root :global(.meta-row) { display: flex; gap: 28px; align-items: baseline; flex-shrink: 0; }
   .root :global(.meta-chip) { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
   .root :global(.meta-num) { font-size: 24px; font-weight: 900; color: var(--lime); letter-spacing: 0; line-height: 1; }
-  .root :global(.meta-lbl) { font-size: 9px; color: var(--fg-3); letter-spacing: 0.12em; text-transform: uppercase; }
+  .root :global(.meta-lbl) { font-size: 9px; color: var(--fg-2); letter-spacing: 0.12em; text-transform: uppercase; }
 
   .root :global(.flow-stages-v4) { display: flex; flex-direction: column; gap: 16px; }
   .root :global(.fstage4) {
@@ -179,7 +179,7 @@
     padding: 6px 12px;
     background: rgba(255,255,255,0.05);
     border-radius: 8px;
-    font-size: 10px; color: var(--fg-3);
+    font-size: 10px; color: var(--fg);
     letter-spacing: 0.06em; text-transform: uppercase;
     font-weight: 600;
     align-self: flex-start;
