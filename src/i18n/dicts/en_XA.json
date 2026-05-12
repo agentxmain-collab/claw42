@@ -193,43 +193,62 @@
       "displayName": "[Cħeň]",
       "roleTitle": "[Fûňdåmëňţål Åňålýst]",
       "shortBio": "[Šłøŵ, šţêådý, åňd føċûšêd øň åššêţ qûåłîţý ţħřøûgħ ċýċłêš.]",
-      "ariaLabel": "[Cħeň], [Fûňdåmëňţål Åňålýst]"
+      "ariaLabel": "[Cħeň], [Fûňdåmëňţål Åňålýst]",
+      "oneLineCapability": "Tests asset quality and cycle position"
     },
     "news_analyst": {
       "displayName": "[Mırâ]",
       "roleTitle": "[Ńêŵš Åňålýst]",
       "shortBio": "[Ŵåţċħêš ňêŵš åňd ňåřřåţîvê šħîfţš før måřƙêţ åţţêňţîøň.]",
-      "ariaLabel": "[Mırâ], [Ńêŵš Åňålýst]"
+      "ariaLabel": "[Mırâ], [Ńêŵš Åňålýst]",
+      "oneLineCapability": "Judges whether news shifts market attention"
     },
     "chart_analyst": {
       "displayName": "[K̃]",
       "roleTitle": "[Čħårt Åňålýst]",
       "shortBio": "[Řêådš ċħårtš åňd ƙêý łêvêłš, fîłţêřîňĝ ċħåšê ţřådêš.]",
-      "ariaLabel": "[K̃], [Čħårt Åňålýst]"
+      "ariaLabel": "[K̃], [Čħårt Åňålýst]",
+      "oneLineCapability": "Marks key levels and invalidation zones"
     },
     "onchain_analyst": {
       "displayName": "[Vıt]",
       "roleTitle": "[Øň-ċħåîň Åňålýst]",
       "shortBio": "[Ţřåċƙš føłŵš, åċţîvîţý, åňd åňømåłîêš før řêåł pøšîţîøň ċħåňĝêš.]",
-      "ariaLabel": "[Vıt], [Øň-ċħåîň Åňålýst]"
+      "ariaLabel": "[Vıt], [Øň-ċħåîň Åňålýst]",
+      "oneLineCapability": "Tracks flows, activity, and anomaly signals"
     },
     "research_lead": {
       "displayName": "[Łêäd]",
       "roleTitle": "[Řêšêårċħ Łêåd]",
       "shortBio": "[Čømprêššêš dîšåĝřêêmêňţ îňţø øňê êxêċûţåbłê jûdĝmêňţ.]",
-      "ariaLabel": "[Łêäd], [Řêšêårċħ Łêåd]"
+      "ariaLabel": "[Łêäd], [Řêšêårċħ Łêåd]",
+      "oneLineCapability": "Compresses disagreement into one thesis"
     },
     "risk_lead": {
       "displayName": "[Rıṡk]",
       "roleTitle": "[Řîšƙ Łêåd]",
       "shortBio": "[Čħåłłêňĝêš êvêřý šêţûp bý ňåmîňĝ îňvåłîdåţîøň fîřšţ.]",
-      "ariaLabel": "[Rıṡk], [Řîšƙ Łêåd]"
+      "ariaLabel": "[Rıṡk], [Řîšƙ Łêåd]",
+      "oneLineCapability": "Names invalidation and risk boundaries first"
     },
     "pm": {
       "displayName": "[P̃Ṁ]",
       "roleTitle": "[Prødûċţ Måňågêr]",
       "shortBio": "[Ţûřňš ţħê dîšċûššîøň îňţø å řêådåbłê ţřådê ċård.]",
-      "ariaLabel": "[P̃Ṁ], [Prødûċţ Måňågêr]"
+      "ariaLabel": "[P̃Ṁ], [Prødûċţ Måňågêr]",
+      "oneLineCapability": "Turns team output into a decision card"
+    },
+    "workflowPanel": {
+      "title": "AI team workflow",
+      "description": "Seven roles move from analysis to synthesis, risk, and PM decision so signals become readable action.",
+      "mobileStageLabel": "Flow"
+    },
+    "workflowNode": {
+      "statusAnalyzing": "Analyzing",
+      "statusWaitingData": "Waiting data",
+      "statusCompletedRecently": "Just completed",
+      "statusIdle": "Idle",
+      "lastActivityPrefix": "Last activity"
     }
   },
   "agentWatch": {
@@ -317,7 +336,14 @@
       "pm_decision": "PM decision",
       "team_discussion": "Team discussion",
       "cron_heartbeat": "System heartbeat",
-      "fallback": "Fallback"
+      "fallback": "Fallback",
+      "processToggle": {
+        "analysts": "4 analyst views",
+        "leads": "Research lead + risk lead",
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "waitingMember": "Waiting for this role to analyze..."
+      }
     },
     "citationChip": {
       "sourceUnavailable": "Source unavailable"

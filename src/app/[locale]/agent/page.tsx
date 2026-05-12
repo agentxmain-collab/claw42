@@ -1,9 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { redirect } from "next/navigation";
-import { TrackRecordWall } from "@/components/agent-watch/TrackRecordWall";
 import { loadRecentChatHistory } from "@/lib/chatHistoryStore";
-import { computeTeamWinrates } from "@/lib/team/computeTeamWinrates";
-import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { AgentWatchBoard } from "@/modules/agent-watch/AgentWatchBoard";
 import { agentWatchRedirectPath } from "@/modules/agent-watch/locale";
 
@@ -14,10 +11,7 @@ export default async function AgentPage({ params }: { params: Promise<{ locale: 
   const redirectPath = agentWatchRedirectPath(locale);
   if (redirectPath) redirect(redirectPath);
   noStore();
-  const [initialChatThreads, teamWinrates] = await Promise.all([
-    loadRecentChatHistory({ limit: 3, messagesPerChat: 5 }),
-    readAllDecisionRecords().then((records) => computeTeamWinrates(records)),
-  ]);
+  const initialChatThreads = await loadRecentChatHistory({ limit: 3, messagesPerChat: 5 });
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
@@ -36,9 +30,6 @@ export default async function AgentPage({ params }: { params: Promise<{ locale: 
         }}
       />
       <div className="relative z-10">
-        <div className="mx-auto w-full max-w-7xl px-4 pt-24 md:px-8 md:pt-28">
-          <TrackRecordWall winrates={teamWinrates} />
-        </div>
         <AgentWatchBoard initialChatThreads={initialChatThreads} />
       </div>
     </main>

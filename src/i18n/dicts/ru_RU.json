@@ -193,43 +193,62 @@
       "displayName": "Chen",
       "roleTitle": "Фундаментальный аналитик",
       "shortBio": "Спокойно оценивает качество актива через фундаментал и циклы.",
-      "ariaLabel": "Chen, Фундаментальный аналитик"
+      "ariaLabel": "Chen, Фундаментальный аналитик",
+      "oneLineCapability": "Tests asset quality and cycle position"
     },
     "news_analyst": {
       "displayName": "Mira",
       "roleTitle": "Новостной аналитик",
       "shortBio": "Следит за новостями и нарративами, чтобы понять сдвиг внимания.",
-      "ariaLabel": "Mira, Новостной аналитик"
+      "ariaLabel": "Mira, Новостной аналитик",
+      "oneLineCapability": "Judges whether news shifts market attention"
     },
     "chart_analyst": {
       "displayName": "K",
       "roleTitle": "Графический аналитик",
       "shortBio": "Читает графики и ключевые уровни, отсекая погоню за движением.",
-      "ariaLabel": "K, Графический аналитик"
+      "ariaLabel": "K, Графический аналитик",
+      "oneLineCapability": "Marks key levels and invalidation zones"
     },
     "onchain_analyst": {
       "displayName": "Vit",
       "roleTitle": "Ончейн-аналитик",
       "shortBio": "Отслеживает потоки, активность и аномалии для реальных изменений позиции.",
-      "ariaLabel": "Vit, Ончейн-аналитик"
+      "ariaLabel": "Vit, Ончейн-аналитик",
+      "oneLineCapability": "Tracks flows, activity, and anomaly signals"
     },
     "research_lead": {
       "displayName": "Lead R",
       "roleTitle": "Руководитель исследований",
       "shortBio": "Сводит разногласия аналитиков в одно исполнимое суждение.",
-      "ariaLabel": "Lead R, Руководитель исследований"
+      "ariaLabel": "Lead R, Руководитель исследований",
+      "oneLineCapability": "Compresses disagreement into one thesis"
     },
     "risk_lead": {
       "displayName": "Risk X",
       "roleTitle": "Риск-лид",
       "shortBio": "Сначала ищет условия отмены, и только потом обсуждает шанс.",
-      "ariaLabel": "Risk X, Риск-лид"
+      "ariaLabel": "Risk X, Риск-лид",
+      "oneLineCapability": "Names invalidation and risk boundaries first"
     },
     "pm": {
       "displayName": "PM",
       "roleTitle": "Продакт-менеджер",
       "shortBio": "Превращает обсуждение в понятную торговую карточку.",
-      "ariaLabel": "PM, Продакт-менеджер"
+      "ariaLabel": "PM, Продакт-менеджер",
+      "oneLineCapability": "Turns team output into a decision card"
+    },
+    "workflowPanel": {
+      "title": "AI team workflow",
+      "description": "Seven roles move from analysis to synthesis, risk, and PM decision so signals become readable action.",
+      "mobileStageLabel": "Flow"
+    },
+    "workflowNode": {
+      "statusAnalyzing": "Analyzing",
+      "statusWaitingData": "Waiting data",
+      "statusCompletedRecently": "Just completed",
+      "statusIdle": "Idle",
+      "lastActivityPrefix": "Last activity"
     }
   },
   "agentWatch": {
@@ -317,7 +336,14 @@
       "pm_decision": "PM decision",
       "team_discussion": "Team discussion",
       "cron_heartbeat": "System heartbeat",
-      "fallback": "Fallback"
+      "fallback": "Fallback",
+      "processToggle": {
+        "analysts": "4 analyst views",
+        "leads": "Research lead + risk lead",
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "waitingMember": "Waiting for this role to analyze..."
+      }
     },
     "citationChip": {
       "sourceUnavailable": "Источник недоступен"

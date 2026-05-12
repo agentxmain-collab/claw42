@@ -193,43 +193,62 @@
       "displayName": "Chen",
       "roleTitle": "Fundamental Analyst",
       "shortBio": "Slow, steady, and focused on asset quality through fundamentals and cycles.",
-      "ariaLabel": "Chen, Fundamental Analyst"
+      "ariaLabel": "Chen, Fundamental Analyst",
+      "oneLineCapability": "Tests asset quality and cycle position"
     },
     "news_analyst": {
       "displayName": "Mira",
       "roleTitle": "News Analyst",
       "shortBio": "Watches news and narrative shifts to judge whether attention is moving.",
-      "ariaLabel": "Mira, News Analyst"
+      "ariaLabel": "Mira, News Analyst",
+      "oneLineCapability": "Judges whether news shifts market attention"
     },
     "chart_analyst": {
       "displayName": "K",
       "roleTitle": "Chart Analyst",
       "shortBio": "Reads charts and key levels, using discipline to filter chase trades.",
-      "ariaLabel": "K, Chart Analyst"
+      "ariaLabel": "K, Chart Analyst",
+      "oneLineCapability": "Marks key levels and invalidation zones"
     },
     "onchain_analyst": {
       "displayName": "Vit",
       "roleTitle": "On-chain Analyst",
       "shortBio": "Tracks flows, activity, and anomalies to spot real positioning changes.",
-      "ariaLabel": "Vit, On-chain Analyst"
+      "ariaLabel": "Vit, On-chain Analyst",
+      "oneLineCapability": "Tracks flows, activity, and anomaly signals"
     },
     "research_lead": {
       "displayName": "Lead R",
       "roleTitle": "Research Lead",
       "shortBio": "Compresses analyst disagreement into one executable market judgment.",
-      "ariaLabel": "Lead R, Research Lead"
+      "ariaLabel": "Lead R, Research Lead",
+      "oneLineCapability": "Compresses disagreement into one thesis"
     },
     "risk_lead": {
       "displayName": "Risk X",
       "roleTitle": "Risk Lead",
       "shortBio": "Challenges every setup by naming invalidation before opportunity.",
-      "ariaLabel": "Risk X, Risk Lead"
+      "ariaLabel": "Risk X, Risk Lead",
+      "oneLineCapability": "Names invalidation and risk boundaries first"
     },
     "pm": {
       "displayName": "PM",
       "roleTitle": "Product Manager",
       "shortBio": "Turns the discussion into a readable productized trade card.",
-      "ariaLabel": "PM, Product Manager"
+      "ariaLabel": "PM, Product Manager",
+      "oneLineCapability": "Turns team output into a decision card"
+    },
+    "workflowPanel": {
+      "title": "AI team workflow",
+      "description": "Seven roles move from analysis to synthesis, risk, and PM decision so signals become readable action.",
+      "mobileStageLabel": "Flow"
+    },
+    "workflowNode": {
+      "statusAnalyzing": "Analyzing",
+      "statusWaitingData": "Waiting data",
+      "statusCompletedRecently": "Just completed",
+      "statusIdle": "Idle",
+      "lastActivityPrefix": "Last activity"
     }
   },
   "agentWatch": {
@@ -317,7 +336,14 @@
       "pm_decision": "PM decision",
       "team_discussion": "Team discussion",
       "cron_heartbeat": "System heartbeat",
-      "fallback": "Fallback"
+      "fallback": "Fallback",
+      "processToggle": {
+        "analysts": "4 analyst views",
+        "leads": "Research lead + risk lead",
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "waitingMember": "Waiting for this role to analyze..."
+      }
     },
     "citationChip": {
       "sourceUnavailable": "Source unavailable"

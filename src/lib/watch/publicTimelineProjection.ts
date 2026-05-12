@@ -4,6 +4,8 @@ import type {
 } from "@/lib/watch/publicTimelineEvent";
 import { PUBLIC_IMPORTANCE_ORDER } from "@/lib/watch/publicTimelineEvent";
 import type { Locale } from "@/i18n/types";
+import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
+import { isTeamMemberId, type TeamMemberId } from "@/lib/team/teamRegistry";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
 
@@ -11,6 +13,7 @@ export interface PublicTimelineProjectionOptions {
   mode: "public" | "debug";
   importanceThreshold?: PublicTimelineImportance;
   locale?: Locale;
+  decisionRecordsById?: ReadonlyMap<string, StrategyDecisionRecord>;
 }
 
 function inferredMeta(entry: StreamEntry): WatchEntryMeta {
@@ -102,16 +105,48 @@ function marketSignalPayload(entry: StreamEntry): PublicTimelineEvent["payload"]
 function pmDecisionPayload(
   entry: StreamEntry,
   meta: WatchEntryMeta,
+  decisionRecord?: StrategyDecisionRecord,
 ): PublicTimelineEvent["payload"] | null {
   if (entry.kind !== "chat_thread") return null;
   const recordId = meta.recordId ?? entry.thread.strategy?.id ?? null;
   if (!recordId) return null;
+  const derived = derivePmDecisionProcess(decisionRecord?.id === recordId ? decisionRecord : null);
   return {
     kind: "pm_decision",
     recordId,
-    tradeDecision: meta.tradeDecision ?? null,
-    rationaleByMember: {},
+    tradeDecision: meta.tradeDecision ?? decisionRecord?.tradeDecision ?? null,
+    rationaleByMember: derived.rationaleByMember,
+    citationsByMember: derived.citationsByMember,
   };
+}
+
+function derivePmDecisionProcess(record: StrategyDecisionRecord | null): {
+  rationaleByMember: Partial<Record<TeamMemberId, string>>;
+  citationsByMember: Partial<Record<TeamMemberId, string[]>>;
+} {
+  const rationaleByMember: Partial<Record<TeamMemberId, string>> = {};
+  const citationsByMember: Partial<Record<TeamMemberId, string[]>> = {};
+  if (!record) return { rationaleByMember, citationsByMember };
+
+  for (const input of record.analystInputs) {
+    const memberId = String(input.memberId);
+    if (!isTeamMemberId(memberId)) {
+      if (process.env.NODE_ENV !== "test") {
+        console.warn("[claw42] skipped unknown PM decision member", {
+          recordId: record.id,
+          memberId,
+        });
+      }
+      continue;
+    }
+
+    const rationale = input.rationale.trim();
+    if (rationale) rationaleByMember[memberId] = rationale;
+    const evidenceIds = input.evidenceIds.filter(Boolean);
+    if (evidenceIds.length > 0) citationsByMember[memberId] = evidenceIds;
+  }
+
+  return { rationaleByMember, citationsByMember };
 }
 
 function newsPayload(
@@ -159,7 +194,15 @@ export function projectStreamEntryToPublic(
   let payload: PublicTimelineEvent["payload"] | null = null;
   if (meta.sourceTrigger === "market_signal") payload = marketSignalPayload(entry);
   if (meta.sourceTrigger === "news") payload = newsPayload(entry, meta);
-  if (meta.sourceTrigger === "pm_decision") payload = pmDecisionPayload(entry, meta);
+  if (meta.sourceTrigger === "pm_decision") {
+    const recordId =
+      meta.recordId ?? (entry.kind === "chat_thread" ? entry.thread.strategy?.id : null);
+    payload = pmDecisionPayload(
+      entry,
+      meta,
+      recordId ? options.decisionRecordsById?.get(recordId) : undefined,
+    );
+  }
 
   if (!payload) return null;
 

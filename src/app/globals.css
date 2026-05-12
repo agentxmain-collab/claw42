@@ -773,6 +773,12 @@ textarea:focus-visible,
   }
 }
 
+@keyframes workflowDash {
+  to {
+    stroke-dashoffset: -60;
+  }
+}
+
 .claw42-marquee-track {
   will-change: transform;
 }

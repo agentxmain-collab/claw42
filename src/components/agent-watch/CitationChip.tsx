@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { createContext, useContext, type ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
@@ -35,13 +36,16 @@ export function CitationChip({
   evidenceId,
   index,
   label,
+  renderEmpty = false,
 }: {
   evidenceId: string;
   index: number;
   label?: string;
+  renderEmpty?: boolean;
 }) {
   const { t, locale } = useI18n();
   const evidence = useContext(EvidenceMapContext)[evidenceId];
+  if (!evidence && !renderEmpty) return null;
   const display = evidence
     ? `${evidence.source} · ${relativeTimeLabel(evidence.publishedAt, locale)}`
     : t.agentWatch.citationChip.sourceUnavailable;

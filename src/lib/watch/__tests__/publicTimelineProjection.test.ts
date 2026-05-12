@@ -4,6 +4,7 @@ import {
   projectStreamEntryToPublic,
 } from "@/lib/watch/publicTimelineProjection";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
+import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { StreamEntry } from "@/modules/agent-watch/types";
 
 const now = Date.now();
@@ -30,6 +31,48 @@ const tradeDecision: TradeDecision = {
   promptVersion: "test",
   modelProvider: "stub",
   severity: "high",
+};
+
+const decisionRecord: StrategyDecisionRecord = {
+  id: "record-1",
+  schemaVersion: 1,
+  recordSource: "live",
+  symbol: "BTC",
+  locale: "zh_CN",
+  decisionOwnerId: "pm",
+  contributorIds: ["fundamental_analyst", "research_lead", "risk_lead"],
+  analystInputs: [
+    {
+      memberId: "fundamental_analyst",
+      direction: "long",
+      confidence: 0.7,
+      rationale: "BTC spot demand is improving near 76000.",
+      evidenceIds: ["ev_1"],
+    },
+    {
+      memberId: "research_lead",
+      direction: "long",
+      confidence: 0.68,
+      rationale: "Research lead keeps the long thesis unless 74800 breaks.",
+      evidenceIds: ["ev_2"],
+    },
+    {
+      memberId: "risk_lead",
+      direction: "neutral",
+      confidence: 0.54,
+      rationale: "Risk lead wants confirmation above 76500.",
+      evidenceIds: [],
+    },
+  ],
+  sourceThreadId: "thread-2",
+  tradeDecision,
+  createdAt: new Date(now).toISOString(),
+  evaluationWindowEndsAt: null,
+  resolvedAt: null,
+  resolvedOutcome: null,
+  promptVersion: "test",
+  modelProvider: "stub",
+  legacyFactionId: null,
 };
 
 function focusEntry(overrides: Partial<StreamEntry> = {}): StreamEntry {
@@ -206,11 +249,21 @@ describe("publicTimelineProjection", () => {
         tradeDecision,
       },
     };
-    const event = projectStreamEntryToPublic(entry);
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map([[decisionRecord.id, decisionRecord]]),
+    });
     expect(event?.payload.kind).toBe("pm_decision");
     expect(event?.payload.kind === "pm_decision" ? event.payload.tradeDecision?.id : null).toBe(
       "trade-1",
     );
     expect(event?.evidenceIds).toEqual(["ev_1"]);
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.rationaleByMember.fundamental_analyst).toContain("spot demand");
+    expect(event.payload.rationaleByMember.research_lead).toContain("long thesis");
+    expect(event.payload.rationaleByMember.risk_lead).toContain("Risk lead");
+    expect(event.payload.citationsByMember?.fundamental_analyst).toEqual(["ev_1"]);
+    expect(event.payload.citationsByMember?.research_lead).toEqual(["ev_2"]);
+    expect(event.payload.citationsByMember?.risk_lead).toBeUndefined();
   });
 });

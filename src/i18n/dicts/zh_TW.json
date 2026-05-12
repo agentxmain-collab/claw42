@@ -193,43 +193,62 @@
       "displayName": "老陳",
       "roleTitle": "基本面分析師",
       "shortBio": "穩重慢熱，擅長用基本面和週期框架拆解資產品質。",
-      "ariaLabel": "老陳, 基本面分析師"
+      "ariaLabel": "老陳, 基本面分析師",
+      "oneLineCapability": "拆解資產品質與週期位置"
     },
     "news_analyst": {
       "displayName": "Mira",
       "roleTitle": "新聞分析師",
       "shortBio": "盯新聞和敘事變化，判斷事件是否會改變市場注意力。",
-      "ariaLabel": "Mira, 新聞分析師"
+      "ariaLabel": "Mira, 新聞分析師",
+      "oneLineCapability": "判斷新聞是否改變市場注意力"
     },
     "chart_analyst": {
       "displayName": "K 哥",
       "roleTitle": "圖表分析師",
       "shortBio": "只看圖形和關鍵價位，用紀律過濾追漲衝動。",
-      "ariaLabel": "K 哥, 圖表分析師"
+      "ariaLabel": "K 哥, 圖表分析師",
+      "oneLineCapability": "標記關鍵價位與結構失效"
     },
     "onchain_analyst": {
       "displayName": "Vit",
       "roleTitle": "鏈上分析師",
       "shortBio": "追蹤鏈上資金、活躍度和異常流向，找真實籌碼變化。",
-      "ariaLabel": "Vit, 鏈上分析師"
+      "ariaLabel": "Vit, 鏈上分析師",
+      "oneLineCapability": "追蹤鏈上資金與異常流向"
     },
     "research_lead": {
       "displayName": "老 R",
       "roleTitle": "研究負責人",
       "shortBio": "彙總多位分析師觀點，把分歧壓縮成可執行判斷。",
-      "ariaLabel": "老 R, 研究負責人"
+      "ariaLabel": "老 R, 研究負責人",
+      "oneLineCapability": "彙總分歧並形成主判斷"
     },
     "risk_lead": {
       "displayName": "老 X",
       "roleTitle": "風險負責人",
       "shortBio": "專門潑冷水，先找失效條件，再談機會。",
-      "ariaLabel": "老 X, 風險負責人"
+      "ariaLabel": "老 X, 風險負責人",
+      "oneLineCapability": "先找失效條件與風險邊界"
     },
     "pm": {
       "displayName": "PM",
       "roleTitle": "產品經理",
       "shortBio": "把討論收斂成產品化交易卡，負責最終可讀性。",
-      "ariaLabel": "PM, 產品經理"
+      "ariaLabel": "PM, 產品經理",
+      "oneLineCapability": "把團隊結論收斂成交易卡"
+    },
+    "workflowPanel": {
+      "title": "AI 團隊調度台",
+      "description": "7 個角色按分析、綜合、風控、PM 的順序協作，把市場訊號變成可讀決策。",
+      "mobileStageLabel": "流程"
+    },
+    "workflowNode": {
+      "statusAnalyzing": "分析中",
+      "statusWaitingData": "等資料",
+      "statusCompletedRecently": "剛完成",
+      "statusIdle": "待命",
+      "lastActivityPrefix": "最近活動"
     }
   },
   "agentWatch": {
@@ -317,7 +336,14 @@
       "pm_decision": "PM 決策",
       "team_discussion": "團隊討論",
       "cron_heartbeat": "系統心跳",
-      "fallback": "兜底事件"
+      "fallback": "兜底事件",
+      "processToggle": {
+        "analysts": "4 位分析師視角",
+        "leads": "綜合 Boss + 風險派",
+        "collapse": "收起",
+        "expand": "展開",
+        "waitingMember": "等待該角色分析..."
+      }
     },
     "citationChip": {
       "sourceUnavailable": "來源暫不可用"

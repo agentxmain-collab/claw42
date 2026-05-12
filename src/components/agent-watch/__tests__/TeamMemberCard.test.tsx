@@ -41,6 +41,7 @@ describe("TeamMemberCard", () => {
 const memberLabels = {
   displayName: "K",
   roleTitle: "Chart Analyst",
+  oneLineCapability: "Reads key levels.",
   shortBio: "Reads key levels.",
   ariaLabel: "K, Chart Analyst",
 };
@@ -67,6 +68,18 @@ const teamLabels: Dict["team"] = {
       mixed: "mixed",
       none: "pending",
     },
+  },
+  workflowPanel: {
+    title: "Workflow",
+    description: "Team workflow.",
+    mobileStageLabel: "Flow",
+  },
+  workflowNode: {
+    statusAnalyzing: "Analyzing",
+    statusWaitingData: "Waiting",
+    statusCompletedRecently: "Done",
+    statusIdle: "Idle",
+    lastActivityPrefix: "Last",
   },
   fundamental_analyst: memberLabels,
   news_analyst: memberLabels,
