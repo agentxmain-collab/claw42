@@ -111,10 +111,13 @@ function pmDecisionPayload(
   const recordId = meta.recordId ?? entry.thread.strategy?.id ?? null;
   if (!recordId) return null;
   const derived = derivePmDecisionProcess(decisionRecord?.id === recordId ? decisionRecord : null);
+  const tradeDecision = meta.tradeDecision ?? decisionRecord?.tradeDecision ?? null;
+  const symbol = decisionRecord?.symbol ?? tradeDecision?.symbol ?? "UNKNOWN";
   return {
     kind: "pm_decision",
     recordId,
-    tradeDecision: meta.tradeDecision ?? decisionRecord?.tradeDecision ?? null,
+    symbol,
+    tradeDecision,
     rationaleByMember: derived.rationaleByMember,
     citationsByMember: derived.citationsByMember,
   };

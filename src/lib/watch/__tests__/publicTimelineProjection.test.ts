@@ -259,6 +259,7 @@ describe("publicTimelineProjection", () => {
     );
     expect(event?.evidenceIds).toEqual(["ev_1"]);
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.symbol).toBe("BTC");
     expect(event.payload.rationaleByMember.fundamental_analyst).toContain("spot demand");
     expect(event.payload.rationaleByMember.research_lead).toContain("long thesis");
     expect(event.payload.rationaleByMember.risk_lead).toContain("Risk lead");

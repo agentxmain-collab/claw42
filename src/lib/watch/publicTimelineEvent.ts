@@ -27,6 +27,7 @@ export type PublicTimelinePayload =
   | {
       kind: "pm_decision";
       recordId: string;
+      symbol: string;
       tradeDecision?: TradeDecision | null;
       rationaleByMember: Partial<Record<TeamMemberId, string>>;
       citationsByMember?: Partial<Record<TeamMemberId, string[]>>;

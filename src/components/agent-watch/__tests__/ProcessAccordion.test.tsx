@@ -69,6 +69,7 @@ vi.mock("next/image", () => ({
 const payload: Extract<PublicTimelinePayload, { kind: "pm_decision" }> = {
   kind: "pm_decision",
   recordId: "record-1",
+  symbol: "BTC",
   tradeDecision: null,
   rationaleByMember: {
     fundamental_analyst: "BTC demand improves near 76000, so PM waits for confirmation.",

@@ -16,10 +16,10 @@ export const dispatchFlowStages: DispatchFlowStage[] = [
         avatarClass: "a-fund",
       },
       {
-        id: "sentiment_analyst",
-        name: "情绪分析师",
-        role: "Sentiment",
-        desc: "社交媒体 / 情绪打分",
+        id: "onchain_analyst",
+        name: "链上分析师",
+        role: "On-chain",
+        desc: "地址行为 / 资金流 / 链上活跃度",
         avatarClass: "a-sent",
       },
       {
@@ -228,14 +228,14 @@ export const dispatchTopics: DispatchTopic[] = [
           "Rewards Wallet 多链 swap 引入新流动性，但 24h 内 ETF 净流出 2.1 亿。<b>多空因素互抵</b>。",
       },
       {
-        id: "btc-sentiment-1",
+        id: "btc-onchain-1",
         stageId: "btc-stage-1",
-        agentId: "sentiment_analyst",
-        agentName: "情绪分析师",
+        agentId: "onchain_analyst",
+        agentName: "链上分析师",
         time: "19:23",
         dataAge: "数据 526 秒前",
         mentions: [],
-        content: 'X 24h 情绪打分 <b>48 / 100</b>，从昨日 62 大幅回落。"恐慌"提及率上升 32%。',
+        content: "活跃地址 24h 下滑 <b>3.8%</b>，交易所净流入升高，短线筹码开始偏防守。",
       },
       {
         id: "btc-fundamental-1",
@@ -254,7 +254,7 @@ export const dispatchTopics: DispatchTopic[] = [
         agentName: "看空研究员",
         time: "19:26",
         mentions: [],
-        content: "情绪转空 + 链上减仓 + ETF 流出 + 关键位附近，<b>四向背离</b>。建议 SHORT 80,537 失守。",
+        content: "链上减仓 + ETF 流出 + 关键位附近，<b>三向共振</b>。建议 SHORT 80,537 失守。",
       },
       {
         id: "btc-bull-1",
@@ -267,7 +267,7 @@ export const dispatchTopics: DispatchTopic[] = [
           agentName: "看空",
           text: "四向背离，建议 SHORT 80,537 失守",
         },
-        content: "情绪从 62 回落到 48 是正常修正，<b>不是恐慌</b>。新流动性可能抵消 ETF 流出。<b>等失守再确认</b>。",
+        content: "链上净流入可能只是短期换手，<b>不是趋势确认</b>。新流动性可能抵消 ETF 流出。<b>等失守再确认</b>。",
       },
       {
         id: "btc-trader-typing",
@@ -429,7 +429,7 @@ export const dispatchTopics: DispatchTopic[] = [
         id: "sol-stage-1",
         label: "阶段 1 · 信息收集 · 刚启动",
         status: "active",
-        note: "情绪 / 新闻 分析师等待数据源就绪",
+        note: "链上 / 新闻 分析师等待数据源就绪",
       },
       {
         id: "sol-stage-2",

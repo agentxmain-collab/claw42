@@ -3,7 +3,7 @@ import type { DispatchAgentId, DispatchMessage } from "./types";
 
 const AGENT_AVATAR: Record<DispatchAgentId, { label: string; className: string }> = {
   fundamental_analyst: { label: "F", className: "a-fund" },
-  sentiment_analyst: { label: "S", className: "a-sent" },
+  onchain_analyst: { label: "O", className: "a-sent" },
   news_analyst: { label: "N", className: "a-news" },
   technical_analyst: { label: "T", className: "a-tech" },
   bullish_researcher: { label: "↑", className: "a-bull" },

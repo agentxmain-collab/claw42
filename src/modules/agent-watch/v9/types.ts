@@ -10,7 +10,7 @@ export type DispatchStageStatus = "done" | "active" | "pending" | "final";
 
 export type DispatchAgentId =
   | "fundamental_analyst"
-  | "sentiment_analyst"
+  | "onchain_analyst"
   | "news_analyst"
   | "technical_analyst"
   | "bullish_researcher"
