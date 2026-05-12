@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { MarketTickerPayload } from "./types";
@@ -74,7 +74,21 @@ function tickersFromMarketSnapshot(snapshot: MarketTickerPayload | null): Dispat
   return entries.length > 0 ? entries : dispatchTickers;
 }
 
-function TopBar() {
+type DispatchMode = "live" | "history" | "backtest";
+
+const dispatchModes: Array<{ id: DispatchMode; label: string }> = [
+  { id: "live", label: "Live 实时" },
+  { id: "history", label: "History 历史" },
+  { id: "backtest", label: "Backtest" },
+];
+
+function TopBar({
+  activeMode,
+  onModeChange,
+}: {
+  activeMode: DispatchMode;
+  onModeChange: (mode: DispatchMode) => void;
+}) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#1a1a1a]/92 backdrop-blur-2xl">
       <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-3 px-4 py-3 md:px-8">
@@ -86,18 +100,20 @@ function TopBar() {
           </span>
         </div>
         <nav aria-label="Dispatch console mode" className="ml-auto flex flex-wrap gap-2">
-          {["Live 实时", "History 历史", "Backtest"].map((item, index) => (
+          {dispatchModes.map((item) => (
             <button
-              key={item}
+              key={item.id}
               type="button"
+              onClick={() => onModeChange(item.id)}
+              aria-pressed={activeMode === item.id}
               className={cx(
                 "rounded-full border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.16em] transition",
-                index === 0
+                activeMode === item.id
                   ? "border-[var(--coinw-brand-border-strong)] bg-white/[0.05] text-[#d1ff55]"
                   : "border-white/10 bg-white/[0.03] text-white/55 hover:text-white",
               )}
             >
-              {item}
+              {item.label}
             </button>
           ))}
           <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-[11px] font-bold text-white/50">
@@ -428,8 +444,15 @@ function PipelineBus() {
   );
 }
 
-function PipelineChat() {
+function PipelineChat({ activeIndex }: { activeIndex: number }) {
   const names = useMemo(() => new Map(dispatchAgents.map((agent) => [agent.id, agent.name])), []);
+  const visibleMessages = useMemo(() => {
+    return Array.from({ length: Math.min(4, pipelineChatMessages.length) }, (_, index) => {
+      const messageIndex = (activeIndex + index) % pipelineChatMessages.length;
+      return pipelineChatMessages[messageIndex];
+    });
+  }, [activeIndex]);
+
   return (
     <div className="rounded-[24px] border border-white/10 bg-[#1a1a1a] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -439,10 +462,15 @@ function PipelineChat() {
         </span>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
-        {pipelineChatMessages.slice(0, 4).map((message) => (
+        {visibleMessages.map((message, index) => (
           <article
             key={message.id}
-            className="rounded-2xl border border-white/10 bg-white/[0.05] p-3"
+            className={cx(
+              "rounded-2xl border bg-white/[0.05] p-3 transition duration-500",
+              index === 0
+                ? "border-[var(--coinw-brand-border-strong)] shadow-[0_0_0_1px_rgba(118,80,255,0.2)]"
+                : "border-white/10",
+            )}
           >
             <div className="flex items-center justify-between gap-2">
               <div className="font-mono text-[11px] font-bold text-[#d1ff55]">
@@ -520,7 +548,15 @@ function DrawerBlock({ label, items }: { label: string; items: string[] }) {
   );
 }
 
-function WorkflowPipeline({ selectedStrategyId }: { selectedStrategyId: string | null }) {
+function WorkflowPipeline({
+  selectedStrategyId,
+  activeChatIndex,
+  attentionPulse,
+}: {
+  selectedStrategyId: string | null;
+  activeChatIndex: number;
+  attentionPulse: boolean;
+}) {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const analysts = dispatchAgents.filter((agent) => agent.stage === "analyst");
   const leads = dispatchAgents.filter((agent) => agent.stage === "lead");
@@ -528,7 +564,13 @@ function WorkflowPipeline({ selectedStrategyId }: { selectedStrategyId: string |
   const selectedAgent = dispatchAgents.find((agent) => agent.id === selectedAgentId) ?? null;
 
   return (
-    <Panel labelledBy="dispatch-workflow-title" className="relative overflow-hidden">
+    <Panel
+      labelledBy="dispatch-workflow-title"
+      className={cx(
+        "relative overflow-hidden transition duration-500",
+        attentionPulse && "border-[var(--coinw-brand-border-strong)]",
+      )}
+    >
       <PipelineBus />
       <div className="relative z-10 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -595,7 +637,7 @@ function WorkflowPipeline({ selectedStrategyId }: { selectedStrategyId: string |
         {selectedAgent ? (
           <AgentDrawer agent={selectedAgent} onClose={() => setSelectedAgentId(null)} />
         ) : null}
-        <PipelineChat />
+        <PipelineChat activeIndex={activeChatIndex} />
       </div>
     </Panel>
   );
@@ -966,17 +1008,47 @@ export function DispatchConsole({
 }: DispatchConsoleProps) {
   const tickers = useMemo(() => tickersFromMarketSnapshot(marketSnapshot), [marketSnapshot]);
   const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>("s2");
+  const [activeMode, setActiveMode] = useState<DispatchMode>("live");
+  const [activeChatIndex, setActiveChatIndex] = useState(0);
+  const [attentionPulse, setAttentionPulse] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveChatIndex((current) => (current + 1) % pipelineChatMessages.length);
+    }, 3200);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  function handleModeChange(mode: DispatchMode) {
+    setActiveMode(mode);
+    if (mode === "history") {
+      setSelectedStrategyId("s1");
+    }
+    if (mode === "backtest") {
+      setSelectedStrategyId("s3");
+    }
+    setAttentionPulse(true);
+    window.setTimeout(() => setAttentionPulse(false), 900);
+  }
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-white">
-      <TopBar />
+      <TopBar activeMode={activeMode} onModeChange={handleModeChange} />
       <TickerStrip tickers={tickers} />
       <main className="mx-auto max-w-[1500px] space-y-6 px-4 py-8 md:px-8">
         <DispatchHeader events={events} evidenceMap={evidenceMap} loading={loading} />
-        <WorkflowPipeline selectedStrategyId={selectedStrategyId} />
+        <WorkflowPipeline
+          selectedStrategyId={selectedStrategyId}
+          activeChatIndex={activeChatIndex}
+          attentionPulse={attentionPulse}
+        />
         <StrategyOutcomes
           selectedStrategyId={selectedStrategyId}
-          onSelectStrategy={setSelectedStrategyId}
+          onSelectStrategy={(strategyId) => {
+            setSelectedStrategyId(strategyId);
+            setAttentionPulse(true);
+            window.setTimeout(() => setAttentionPulse(false), 900);
+          }}
         />
         <NewsAndMarketPulse />
         <p className="rounded-[24px] border border-white/10 bg-white/[0.05] px-4 py-3 text-xs leading-relaxed text-white/62">
