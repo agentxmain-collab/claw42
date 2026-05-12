@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { TopicBody } from "./TopicBody";
 import { TopicHead } from "./TopicHead";
+import { TopicStrategy } from "./TopicStrategy";
 import type { DispatchTopic } from "./types";
 
-export function Topic({ topic }: { topic: DispatchTopic }) {
+export function Topic({
+  topic,
+  onPlaceholder,
+}: {
+  topic: DispatchTopic;
+  onPlaceholder: (topic: DispatchTopic, actionLabel: string) => void;
+}) {
   const [collapsed, setCollapsed] = useState(topic.defaultCollapsed);
   const bodyId = `dispatch-topic-${topic.id}`;
 
@@ -16,6 +23,7 @@ export function Topic({ topic }: { topic: DispatchTopic }) {
         onToggle={() => setCollapsed((current) => !current)}
       />
       <TopicBody topic={topic} bodyId={bodyId} />
+      <TopicStrategy topic={topic} onPlaceholder={onPlaceholder} />
     </article>
   );
 }

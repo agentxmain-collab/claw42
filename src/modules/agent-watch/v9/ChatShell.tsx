@@ -10,7 +10,13 @@ function ChatShellStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function ChatShell({ topics }: { topics: DispatchTopic[] }) {
+export function ChatShell({
+  topics,
+  onPlaceholder,
+}: {
+  topics: DispatchTopic[];
+  onPlaceholder: (topic: DispatchTopic, actionLabel: string) => void;
+}) {
   const doneCount = topics.filter((topic) => topic.status === "done").length;
   const activeCount = topics.filter((topic) => topic.status === "active").length;
   const pendingCount = topics.filter((topic) => topic.status === "pending").length;
@@ -41,7 +47,7 @@ export function ChatShell({ topics }: { topics: DispatchTopic[] }) {
       <div className="chat-shell-body">
         {topics.map((topic, index) => (
           <div key={topic.id}>
-            <Topic topic={topic} />
+            <Topic topic={topic} onPlaceholder={onPlaceholder} />
             {index < topics.length - 1 ? (
               <div className="topic-separator" aria-hidden="true">
                 <span className="topic-separator-dot" />

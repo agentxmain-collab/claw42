@@ -1,7 +1,14 @@
 import { ChatShell } from "./ChatShell";
 import { dispatchTopics } from "./fixtureData";
+import type { DispatchTopic } from "./types";
 
-export function MarketAnalysisView({ onGotoFlow }: { onGotoFlow: () => void }) {
+export function MarketAnalysisView({
+  onGotoFlow,
+  onPlaceholder,
+}: {
+  onGotoFlow: () => void;
+  onPlaceholder: (topic: DispatchTopic, actionLabel: string) => void;
+}) {
   return (
     <>
       <header className="mkt-header">
@@ -17,7 +24,7 @@ export function MarketAnalysisView({ onGotoFlow }: { onGotoFlow: () => void }) {
         </button>
       </header>
 
-      <ChatShell topics={dispatchTopics} />
+      <ChatShell topics={dispatchTopics} onPlaceholder={onPlaceholder} />
     </>
   );
 }

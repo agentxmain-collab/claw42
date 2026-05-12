@@ -73,7 +73,12 @@ export interface DispatchStrategy {
   action: "wait" | "long" | "short" | "pending";
   actionLabel: string;
   name: string;
+  ticker: string;
   meta: string;
+  metaHighlight?: {
+    text: string;
+    tone: "ok" | "warn" | "lime";
+  };
   entry: string;
   stopLoss: string;
   takeProfit: string;
