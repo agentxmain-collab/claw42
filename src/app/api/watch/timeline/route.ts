@@ -5,6 +5,10 @@ import { getWatchHistory } from "@/lib/watchHistoryStore";
 import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
 import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
+import {
+  getStagingMockTimeline,
+  shouldUseStagingMockTimeline,
+} from "@/lib/watch/__fixtures__/stagingMockTimeline";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -48,7 +52,11 @@ export async function GET(request: NextRequest) {
   }
 
   const servedAt = Date.now();
-  const result = await getWatchHistory({ before, since, limit, windowMinutes, locale });
+  const stagingFixture = shouldUseStagingMockTimeline()
+    ? getStagingMockTimeline(locale, servedAt)
+    : null;
+  const result =
+    stagingFixture ?? (await getWatchHistory({ before, since, limit, windowMinutes, locale }));
   if (mode === "debug") {
     return NextResponse.json(
       {
@@ -68,20 +76,31 @@ export async function GET(request: NextRequest) {
     mode: "public",
     importanceThreshold: "high",
     locale,
-    decisionRecordsById: new Map(
-      (await readAllDecisionRecords(500, locale)).map((record) => [record.id, record]),
-    ),
+    decisionRecordsById:
+      stagingFixture?.decisionRecordsById ??
+      new Map((await readAllDecisionRecords(500, locale)).map((record) => [record.id, record])),
   });
   const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
     0,
     MAX_EVIDENCE_MAP_ITEMS,
   );
-  const evidencePairs = await Promise.all(
-    evidenceIds.map(async (evidenceId) => [evidenceId, await getNewsEvidence(evidenceId)] as const),
-  );
-  const evidenceMap = Object.fromEntries(
-    evidencePairs.flatMap(([evidenceId, evidence]) => (evidence ? [[evidenceId, evidence]] : [])),
-  );
+  const evidenceMap = stagingFixture
+    ? Object.fromEntries(
+        evidenceIds.flatMap((evidenceId) =>
+          stagingFixture.evidenceMap[evidenceId]
+            ? [[evidenceId, stagingFixture.evidenceMap[evidenceId]]]
+            : [],
+        ),
+      )
+    : Object.fromEntries(
+        (
+          await Promise.all(
+            evidenceIds.map(
+              async (evidenceId) => [evidenceId, await getNewsEvidence(evidenceId)] as const,
+            ),
+          )
+        ).flatMap(([evidenceId, evidence]) => (evidence ? [[evidenceId, evidence]] : [])),
+      );
   return NextResponse.json(
     {
       events,
