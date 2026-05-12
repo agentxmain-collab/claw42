@@ -9,17 +9,21 @@ import {
   dispatchConsoleStats,
   dispatchSources,
   dispatchTickers,
+  marketPulseItems,
   pipelineChatMessages,
   strategyHistory,
   strategyOutcomes,
   strategyVotes,
+  trendingTopics,
   type DispatchAgent,
   type DispatchAgentState,
   type DispatchSource,
   type DispatchTicker,
   type HistoryOutcome,
+  type MarketPulseItem,
   type StrategyDirection,
   type StrategyOutcome,
+  type TrendingTopic,
   type VoteDirection,
 } from "./dispatchConsoleData";
 
@@ -211,6 +215,18 @@ const historyOutcomeClasses: Record<HistoryOutcome, string> = {
   win: "border-[#3bd66f]/45 text-[#3bd66f]",
   loss: "border-[#ff6f7d]/45 text-[#ff6f7d]",
   invalid: "border-white/15 text-white/70",
+};
+
+const pulseKindLabel: Record<MarketPulseItem["kind"], string> = {
+  news: "news",
+  chain: "chain",
+  social: "social",
+};
+
+const pulseImpactClasses: Record<MarketPulseItem["impact"], string> = {
+  high: "border-[#ff6f7d]/45 bg-[#ff6f7d]/10 text-[#ff6f7d]",
+  medium: "border-[#d1ff55]/45 bg-[#d1ff55]/10 text-[#d1ff55]",
+  low: "border-white/15 bg-white/[0.06] text-white/70",
 };
 
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
@@ -819,6 +835,129 @@ function MiniStat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+function MarketPulseCard({ item }: { item: MarketPulseItem }) {
+  return (
+    <article className="rounded-[22px] border border-white/10 bg-[#1a1a1a] p-4 transition hover:border-[var(--coinw-brand-border-soft)]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-white/10 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
+            {pulseKindLabel[item.kind]}
+          </span>
+          <span
+            className={cx(
+              "rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em]",
+              pulseImpactClasses[item.impact],
+            )}
+          >
+            {item.impact}
+          </span>
+        </div>
+        <span className="font-mono text-[11px] font-bold text-white/62">
+          {item.date} · {item.time}
+        </span>
+      </div>
+      <h3 className="mt-3 text-base font-black leading-snug text-white">{item.title}</h3>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-white/62">
+          {item.source}
+        </span>
+        {item.agents.map((agent) => (
+          <span
+            key={`${item.id}-${agent}`}
+            className="rounded-full border border-[var(--coinw-brand-border-soft)] bg-[var(--coinw-brand-glow-soft)] px-2.5 py-1 text-[11px] font-bold text-[#b7a4ff]"
+          >
+            {agent}
+          </span>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function TrendingTopicRow({ topic }: { topic: TrendingTopic }) {
+  return (
+    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+      <div className="grid h-8 w-8 place-items-center rounded-xl border border-white/10 bg-[#1a1a1a] font-mono text-xs font-black text-white">
+        {topic.rank}
+      </div>
+      <div className="min-w-0">
+        <div className="truncate font-mono text-sm font-black text-white">{topic.tag}</div>
+        <div className="mt-0.5 font-mono text-[11px] text-white/62">heat {topic.heat}</div>
+      </div>
+      <span className={topic.direction === "up" ? "font-mono text-sm font-black text-[#3bd66f]" : "font-mono text-sm font-black text-[#ff6f7d]"}>
+        {topic.delta}
+      </span>
+    </div>
+  );
+}
+
+function NewsAndMarketPulse() {
+  const [activeKind, setActiveKind] = useState<MarketPulseItem["kind"] | "all">("all");
+  const visiblePulse =
+    activeKind === "all"
+      ? marketPulseItems
+      : marketPulseItems.filter((item) => item.kind === activeKind);
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+      <Panel labelledBy="dispatch-news-title">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <SectionEyebrow>News Panel · signal queue</SectionEyebrow>
+            <h2 id="dispatch-news-title" className="mt-2 text-2xl font-black text-white">
+              新闻与链上输入
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(["all", "news", "chain", "social"] as const).map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                onClick={() => setActiveKind(kind)}
+                aria-pressed={activeKind === kind}
+                className={cx(
+                  "rounded-full border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.14em] transition",
+                  activeKind === kind
+                    ? "border-[var(--coinw-brand-border-strong)] bg-[var(--coinw-brand-glow-soft)] text-[#d1ff55]"
+                    : "border-white/10 bg-[#1a1a1a] text-white/70 hover:text-white",
+                )}
+              >
+                {kind}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-5 grid gap-3 lg:grid-cols-2">
+          {visiblePulse.map((item) => (
+            <MarketPulseCard key={item.id} item={item} />
+          ))}
+        </div>
+      </Panel>
+
+      <Panel labelledBy="dispatch-pulse-title">
+        <SectionEyebrow>Market Pulse · attention</SectionEyebrow>
+        <h2 id="dispatch-pulse-title" className="mt-2 text-2xl font-black text-white">
+          市场脉搏
+        </h2>
+        <div className="mt-5 space-y-3">
+          {trendingTopics.map((topic) => (
+            <TrendingTopicRow key={topic.rank} topic={topic} />
+          ))}
+        </div>
+        <div className="mt-5 rounded-[22px] border border-[var(--coinw-brand-border-soft)] bg-[radial-gradient(circle_at_20%_0%,rgba(209,255,85,0.18),rgba(118,80,255,0.16)_45%,rgba(255,255,255,0.04)_100%)] p-4">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">
+            current synthesis
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-white/72">
+            叙事热度集中在 SOL 与 CPI，链上资金流提示短线抛压；调度台保留多头主线，
+            同时用小仓对冲吸收异常波动。
+          </p>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
 export function DispatchConsole({
   events,
   evidenceMap,
@@ -839,6 +978,7 @@ export function DispatchConsole({
           selectedStrategyId={selectedStrategyId}
           onSelectStrategy={setSelectedStrategyId}
         />
+        <NewsAndMarketPulse />
         <p className="rounded-[24px] border border-white/10 bg-white/[0.05] px-4 py-3 text-xs leading-relaxed text-white/62">
           风险提示：本页面内容由 AI 根据公开行情数据自动生成，仅用于信息展示，不构成投资建议。
           多策略输出展示团队观点分歧与风险缓冲，不代表必须执行全部策略。
