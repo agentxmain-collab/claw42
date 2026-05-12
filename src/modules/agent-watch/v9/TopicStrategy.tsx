@@ -1,5 +1,5 @@
 import React from "react";
-import type { DispatchTopic } from "./types";
+import type { DispatchTopic, DispatchTopicAction } from "./types";
 
 function StrategyValue({
   label,
@@ -23,7 +23,7 @@ export function TopicStrategy({
   onPlaceholder,
 }: {
   topic: DispatchTopic;
-  onPlaceholder: (topic: DispatchTopic, actionLabel: string) => void;
+  onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
   const { strategy } = topic;
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
@@ -59,14 +59,14 @@ export function TopicStrategy({
             className="cta-btn"
             type="button"
             disabled={strategy.follow.primaryDisabled}
-            onClick={() => onPlaceholder(topic, strategy.follow.primaryLabel)}
+            onClick={() => onPlaceholder(topic, strategy.follow.primaryLabel, "primary")}
           >
             {strategy.follow.primaryLabel}
           </button>
           <button
             className="cta-btn secondary"
             type="button"
-            onClick={() => onPlaceholder(topic, strategy.follow.secondaryLabel)}
+            onClick={() => onPlaceholder(topic, strategy.follow.secondaryLabel, "secondary")}
           >
             {strategy.follow.secondaryLabel}
           </button>

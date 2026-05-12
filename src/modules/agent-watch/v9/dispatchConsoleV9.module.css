@@ -337,6 +337,15 @@
     background: rgba(255,255,255,0.20);
   }
 
+  .root :global(.topic-empty) {
+    border: 1px dashed rgba(255,255,255,0.18);
+    border-radius: 8px;
+    padding: 28px 18px;
+    color: var(--fg-3);
+    text-align: center;
+    background: rgba(255,255,255,0.025);
+  }
+
   /* ===== Topic = independent card with neutral border ===== */
   .root :global(.topic) {
     background: rgba(255,255,255,0.022);

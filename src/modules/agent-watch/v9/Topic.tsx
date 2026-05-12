@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import { TopicBody } from "./TopicBody";
 import { TopicHead } from "./TopicHead";
 import { TopicStrategy } from "./TopicStrategy";
-import type { DispatchTopic } from "./types";
+import type { DispatchTopic, DispatchTopicAction } from "./types";
 
 export function Topic({
   topic,
   onPlaceholder,
 }: {
   topic: DispatchTopic;
-  onPlaceholder: (topic: DispatchTopic, actionLabel: string) => void;
+  onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
   const [collapsed, setCollapsed] = useState(topic.defaultCollapsed);
   const bodyId = `dispatch-topic-${topic.id}`;

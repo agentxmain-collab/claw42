@@ -1,6 +1,6 @@
 import React from "react";
 import { Topic } from "./Topic";
-import type { DispatchTopic } from "./types";
+import type { DispatchTopic, DispatchTopicAction } from "./types";
 
 function ChatShellStat({ label, value }: { label: string; value: number }) {
   return (
@@ -11,12 +11,12 @@ function ChatShellStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-export function ChatShell({
+export const ChatShell = React.memo(function ChatShell({
   topics,
   onPlaceholder,
 }: {
   topics: DispatchTopic[];
-  onPlaceholder: (topic: DispatchTopic, actionLabel: string) => void;
+  onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
   const doneCount = topics.filter((topic) => topic.status === "done").length;
   const activeCount = topics.filter((topic) => topic.status === "active").length;
@@ -46,17 +46,23 @@ export function ChatShell({
       </div>
 
       <div className="chat-shell-body">
-        {topics.map((topic, index) => (
-          <div key={topic.id}>
-            <Topic topic={topic} onPlaceholder={onPlaceholder} />
-            {index < topics.length - 1 ? (
-              <div className="topic-separator" aria-hidden="true">
-                <span className="topic-separator-dot" />
-              </div>
-            ) : null}
+        {topics.length === 0 ? (
+          <div className="topic-empty" role="status">
+            暂无符合公开展示条件的真实 PM 决策
           </div>
-        ))}
+        ) : (
+          topics.map((topic, index) => (
+            <div key={topic.id}>
+              <Topic topic={topic} onPlaceholder={onPlaceholder} />
+              {index < topics.length - 1 ? (
+                <div className="topic-separator" aria-hidden="true">
+                  <span className="topic-separator-dot" />
+                </div>
+              ) : null}
+            </div>
+          ))
+        )}
       </div>
     </section>
   );
-}
+});

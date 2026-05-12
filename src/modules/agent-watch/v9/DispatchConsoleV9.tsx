@@ -5,7 +5,12 @@ import styles from "./dispatchConsoleV9.module.css";
 import { FlowIntroView } from "./FlowIntroView";
 import { MarketAnalysisView } from "./MarketAnalysisView";
 import { WatchTabs } from "./WatchTabs";
-import type { DispatchConsoleV9Props, DispatchTopic, DispatchView } from "./types";
+import type {
+  DispatchConsoleV9Props,
+  DispatchTopic,
+  DispatchTopicAction,
+  DispatchView,
+} from "./types";
 
 function formatClock(date: Date) {
   const hh = String(date.getHours()).padStart(2, "0");
@@ -14,13 +19,8 @@ function formatClock(date: Date) {
   return `${hh}:${mm}:${ss} · UTC+8`;
 }
 
-export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Props) {
-  const [activeView, setActiveView] = useState<DispatchView>(initialView);
+function Clock() {
   const [clock, setClock] = useState("19:31:42 · UTC+8");
-  const [placeholder, setPlaceholder] = useState<{
-    topic: DispatchTopic;
-    actionLabel: string;
-  } | null>(null);
 
   useEffect(() => {
     setClock(formatClock(new Date()));
@@ -28,9 +28,34 @@ export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Pro
     return () => window.clearInterval(timer);
   }, []);
 
+  return <span className="topbar-clock">{clock}</span>;
+}
+
+export function DispatchConsoleV9({
+  topics,
+  initialView = "flow",
+  onViewChange,
+  onTopicAction,
+}: DispatchConsoleV9Props) {
+  const [activeView, setActiveView] = useState<DispatchView>(initialView);
+  const [placeholder, setPlaceholder] = useState<{
+    topic: DispatchTopic;
+    actionLabel: string;
+  } | null>(null);
+
   function changeView(view: DispatchView) {
     setActiveView(view);
+    onViewChange?.(view);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleTopicAction(
+    topic: DispatchTopic,
+    actionLabel: string,
+    action: DispatchTopicAction,
+  ) {
+    void onTopicAction?.(topic, actionLabel, action);
+    setPlaceholder({ topic, actionLabel });
   }
 
   return (
@@ -47,7 +72,7 @@ export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Pro
           <span className="live-dot" aria-hidden="true" />
           LIVE
         </span>
-        <span className="topbar-clock">{clock}</span>
+        <Clock />
       </div>
 
       <div
@@ -67,8 +92,9 @@ export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Pro
         hidden={activeView !== "mkt"}
       >
         <MarketAnalysisView
+          topics={topics}
           onGotoFlow={() => changeView("flow")}
-          onPlaceholder={(topic, actionLabel) => setPlaceholder({ topic, actionLabel })}
+          onPlaceholder={handleTopicAction}
         />
       </div>
       {placeholder ? (
