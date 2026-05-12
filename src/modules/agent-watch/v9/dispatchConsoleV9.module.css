@@ -709,7 +709,7 @@
   .root :global(.cta-meta b) { color: var(--warn); font-weight: 800; }
 
   .root::after {
-    content: ""; position: fixed; left: 0; right: 0; bottom: 0;
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0;
     height: 48px;
     background: linear-gradient(0deg, rgba(82,39,255,0.18), transparent);
     pointer-events: none; z-index: 5;
