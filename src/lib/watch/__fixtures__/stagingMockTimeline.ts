@@ -46,7 +46,12 @@ function text(locale: Locale, zh: string, en: string) {
   return locale === "zh_CN" || locale === "zh_TW" ? zh : en;
 }
 
-function evidence(id: string, symbol: "BTC" | "ETH", minutesAgo: number, now: number): NewsEvidence {
+function evidence(
+  id: string,
+  symbol: "BTC" | "ETH",
+  minutesAgo: number,
+  now: number,
+): NewsEvidence {
   const publishedAt = new Date(now - minutesAgo * 60_000).toISOString();
   return {
     id,

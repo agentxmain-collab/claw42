@@ -90,7 +90,7 @@ function TopBar({
   onModeChange: (mode: DispatchMode) => void;
 }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#1a1a1a]/92 backdrop-blur-2xl">
+    <header className="bg-[#1a1a1a]/92 sticky top-0 z-40 border-b border-white/10 backdrop-blur-2xl">
       <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-3 px-4 py-3 md:px-8">
         <div className="flex items-center gap-3 text-xl font-black tracking-tight text-white">
           <span className="h-4 w-4 rounded-full border border-[#d1ff55] bg-[var(--coinw-brand-hex)] shadow-[0_0_24px_rgba(118,80,255,0.6)]" />
@@ -177,22 +177,24 @@ function DispatchHeader({
         <h1 className="mt-3 max-w-4xl text-4xl font-black leading-tight text-white md:text-6xl">
           AI 团队 · 盯盘中
         </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/58 md:text-base">
+        <p className="text-white/58 mt-3 max-w-2xl text-sm leading-relaxed md:text-base">
           7 名 agent 正在把行情、新闻、链上和社交热点收敛为多策略输出。对话不是附属卡片，
           而是流水线里可见的工作产物。
         </p>
       </div>
-      <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-4 font-mono text-xs text-white/58">
+      <div className="text-white/58 rounded-[24px] border border-white/10 bg-white/[0.05] p-4 font-mono text-xs">
         <div>
           Session <span className="font-bold text-white">{dispatchConsoleStats.sessionId}</span>
         </div>
         <div>
           Heartbeat{" "}
-          <span className="font-bold text-[#d1ff55]">{dispatchConsoleStats.heartbeat}</span> ·
-          PM <span className="font-bold text-[#d1ff55]">{pmDecisionCount}</span> · Evidence{" "}
+          <span className="font-bold text-[#d1ff55]">{dispatchConsoleStats.heartbeat}</span> · PM{" "}
+          <span className="font-bold text-[#d1ff55]">{pmDecisionCount}</span> · Evidence{" "}
           <span className="font-bold text-[#d1ff55]">{evidenceCount}</span>
         </div>
-        <div className="mt-1 text-white/42">{loading ? "syncing timeline..." : "timeline ready"}</div>
+        <div className="text-white/42 mt-1">
+          {loading ? "syncing timeline..." : "timeline ready"}
+        </div>
       </div>
     </section>
   );
@@ -200,7 +202,8 @@ function DispatchHeader({
 
 const stateClasses: Record<DispatchAgentState, string> = {
   idle: "border-white/10 bg-white/[0.04] text-white/58",
-  analyzing: "border-[var(--coinw-brand-border-strong)] bg-[var(--coinw-brand-glow-soft)] text-[#b7a4ff]",
+  analyzing:
+    "border-[var(--coinw-brand-border-strong)] bg-[var(--coinw-brand-glow-soft)] text-[#b7a4ff]",
   done: "border-[#d1ff55]/40 bg-[#d1ff55]/10 text-[#d1ff55]",
 };
 
@@ -247,7 +250,7 @@ const pulseImpactClasses: Record<MarketPulseItem["impact"], string> = {
 
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-white/62">
+    <p className="text-white/62 font-mono text-[11px] font-bold uppercase tracking-[0.22em]">
       {children}
     </p>
   );
@@ -302,10 +305,10 @@ function SourceCard({ source }: { source: DispatchSource }) {
             <h3 className="text-sm font-black text-white">{source.label}</h3>
             <StatusBadge state={source.state} />
           </div>
-          <p className="mt-1 font-mono text-[11px] text-white/62">{source.meta}</p>
+          <p className="text-white/62 mt-1 font-mono text-[11px]">{source.meta}</p>
         </div>
       </div>
-      <ul className="mt-3 space-y-1.5 text-xs leading-relaxed text-white/56">
+      <ul className="text-white/56 mt-3 space-y-1.5 text-xs leading-relaxed">
         {source.packets.map((packet) => (
           <li key={packet} className="flex gap-2">
             <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#d1ff55]" />
@@ -362,27 +365,27 @@ function AgentCard({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="text-base font-black text-white">{agent.name}</h3>
-              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/62">
+              <p className="text-white/62 font-mono text-[11px] uppercase tracking-[0.16em]">
                 {agent.role} · {agent.englishRole}
               </p>
             </div>
             <StatusBadge state={agent.state} />
           </div>
-          <p className="mt-3 text-sm leading-relaxed text-white/58">{agent.capability}</p>
+          <p className="text-white/58 mt-3 text-sm leading-relaxed">{agent.capability}</p>
         </div>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div>
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/42">
+          <div className="text-white/42 font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
             当前任务
           </div>
-          <p className="mt-1 text-xs text-white/56">{agent.task}</p>
+          <p className="text-white/56 mt-1 text-xs">{agent.task}</p>
         </div>
         <div>
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/42">
+          <div className="text-white/42 font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
             输出
           </div>
-          <p className="mt-1 text-xs text-white/56">{agent.outputs.join(" / ")}</p>
+          <p className="text-white/56 mt-1 text-xs">{agent.outputs.join(" / ")}</p>
         </div>
       </div>
       {votes.length > 0 && (
@@ -390,7 +393,7 @@ function AgentCard({
           {votes.map((vote) => (
             <p
               key={`${vote.strategyId}-${vote.agentId}`}
-              className="text-xs leading-relaxed text-white/58"
+              className="text-white/58 text-xs leading-relaxed"
             >
               <span className="font-mono font-bold text-[#d1ff55]">{voteLabel[vote.vote]}</span>{" "}
               {vote.view}
@@ -479,7 +482,7 @@ function PipelineChat({ activeIndex }: { activeIndex: number }) {
                   <span className="text-white/62"> → {names.get(message.to) ?? message.to}</span>
                 ) : null}
               </div>
-              <span className="font-mono text-[10px] uppercase text-white/42">
+              <span className="text-white/42 font-mono text-[10px] uppercase">
                 {message.kind ?? "note"}
               </span>
             </div>
@@ -491,13 +494,7 @@ function PipelineChat({ activeIndex }: { activeIndex: number }) {
   );
 }
 
-function AgentDrawer({
-  agent,
-  onClose,
-}: {
-  agent: DispatchAgent;
-  onClose: () => void;
-}) {
+function AgentDrawer({ agent, onClose }: { agent: DispatchAgent; onClose: () => void }) {
   return (
     <aside className="rounded-[24px] border border-[var(--coinw-brand-border-soft)] bg-[#141414] p-5 shadow-[0_22px_90px_rgba(118,80,255,0.15)]">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -508,7 +505,7 @@ function AgentDrawer({
               selected node
             </p>
             <h3 className="mt-1 text-2xl font-black text-white">{agent.name}</h3>
-            <p className="mt-1 text-sm text-white/58">
+            <p className="text-white/58 mt-1 text-sm">
               {agent.role} · {agent.englishRole}
             </p>
           </div>
@@ -516,7 +513,7 @@ function AgentDrawer({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full border border-white/10 px-3 py-1.5 font-mono text-[11px] font-bold text-white/58 transition hover:text-white"
+          className="text-white/58 rounded-full border border-white/10 px-3 py-1.5 font-mono text-[11px] font-bold transition hover:text-white"
         >
           close
         </button>
@@ -533,7 +530,7 @@ function AgentDrawer({
 function DrawerBlock({ label, items }: { label: string; items: string[] }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/42">
+      <div className="text-white/42 font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
         {label}
       </div>
       <ul className="mt-3 space-y-2 text-xs leading-relaxed text-white/60">
@@ -646,7 +643,7 @@ function WorkflowPipeline({
 function StrategyMetric({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/62">
+      <div className="text-white/62 font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
         {label}
       </div>
       <div className="mt-1 font-mono text-sm font-black text-white">{value}</div>
@@ -708,10 +705,12 @@ function LatestStrategyCard({
             </span>
           </div>
           <h3 className="mt-4 text-3xl font-black text-white md:text-4xl">{outcome.symbol}</h3>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/70">{outcome.rationale}</p>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/70">
+            {outcome.rationale}
+          </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-right">
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/62">
+          <div className="text-white/62 font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
             confidence
           </div>
           <div className="mt-1 font-mono text-3xl font-black text-[#d1ff55]">
@@ -759,10 +758,10 @@ function ActiveStrategyCard({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <StrategyBadge outcome={outcome} />
-        <span className="font-mono text-[11px] font-bold text-white/62">{outcome.age}</span>
+        <span className="text-white/62 font-mono text-[11px] font-bold">{outcome.age}</span>
       </div>
       <h4 className="mt-3 text-xl font-black text-white">{outcome.symbol}</h4>
-      <p className="mt-2 min-h-[44px] text-sm leading-relaxed text-white/62">{outcome.rationale}</p>
+      <p className="text-white/62 mt-2 min-h-[44px] text-sm leading-relaxed">{outcome.rationale}</p>
       <ConfidenceBar value={outcome.confidence} />
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
         <StrategyMetric label="entry" value={outcome.entry} />
@@ -792,7 +791,7 @@ function StrategyHistoryTable() {
           >
             <div>
               <div className="font-black text-white">{record.symbol}</div>
-              <div className="mt-1 font-mono text-[11px] text-white/62">{record.age}</div>
+              <div className="text-white/62 mt-1 font-mono text-[11px]">{record.age}</div>
             </div>
             <div
               className={cx(
@@ -811,7 +810,7 @@ function StrategyHistoryTable() {
             >
               {record.outcome} · {record.pnl}
             </div>
-            <p className="text-sm leading-relaxed text-white/62">{record.note}</p>
+            <p className="text-white/62 text-sm leading-relaxed">{record.note}</p>
           </article>
         ))}
       </div>
@@ -871,7 +870,7 @@ function StrategyOutcomes({
 function MiniStat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-[#1a1a1a] px-3 py-2">
-      <div className="text-[10px] uppercase tracking-[0.14em] text-white/62">{label}</div>
+      <div className="text-white/62 text-[10px] uppercase tracking-[0.14em]">{label}</div>
       <div className="mt-1 font-black text-[#d1ff55]">{value}</div>
     </div>
   );
@@ -894,13 +893,13 @@ function MarketPulseCard({ item }: { item: MarketPulseItem }) {
             {item.impact}
           </span>
         </div>
-        <span className="font-mono text-[11px] font-bold text-white/62">
+        <span className="text-white/62 font-mono text-[11px] font-bold">
           {item.date} · {item.time}
         </span>
       </div>
       <h3 className="mt-3 text-base font-black leading-snug text-white">{item.title}</h3>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-white/62">
+        <span className="text-white/62 font-mono text-[11px] font-bold uppercase tracking-[0.12em]">
           {item.source}
         </span>
         {item.agents.map((agent) => (
@@ -924,9 +923,15 @@ function TrendingTopicRow({ topic }: { topic: TrendingTopic }) {
       </div>
       <div className="min-w-0">
         <div className="truncate font-mono text-sm font-black text-white">{topic.tag}</div>
-        <div className="mt-0.5 font-mono text-[11px] text-white/62">heat {topic.heat}</div>
+        <div className="text-white/62 mt-0.5 font-mono text-[11px]">heat {topic.heat}</div>
       </div>
-      <span className={topic.direction === "up" ? "font-mono text-sm font-black text-[#3bd66f]" : "font-mono text-sm font-black text-[#ff6f7d]"}>
+      <span
+        className={
+          topic.direction === "up"
+            ? "font-mono text-sm font-black text-[#3bd66f]"
+            : "font-mono text-sm font-black text-[#ff6f7d]"
+        }
+      >
         {topic.delta}
       </span>
     </div>
@@ -990,7 +995,7 @@ function NewsAndMarketPulse() {
           <div className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">
             current synthesis
           </div>
-          <p className="mt-3 text-sm leading-relaxed text-white/72">
+          <p className="text-white/72 mt-3 text-sm leading-relaxed">
             叙事热度集中在 SOL 与 CPI，链上资金流提示短线抛压；调度台保留多头主线，
             同时用小仓对冲吸收异常波动。
           </p>
@@ -1051,7 +1056,7 @@ export function DispatchConsole({
           }}
         />
         <NewsAndMarketPulse />
-        <p className="rounded-[24px] border border-white/10 bg-white/[0.05] px-4 py-3 text-xs leading-relaxed text-white/62">
+        <p className="text-white/62 rounded-[24px] border border-white/10 bg-white/[0.05] px-4 py-3 text-xs leading-relaxed">
           风险提示：本页面内容由 AI 根据公开行情数据自动生成，仅用于信息展示，不构成投资建议。
           多策略输出展示团队观点分歧与风险缓冲，不代表必须执行全部策略。
         </p>
