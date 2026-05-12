@@ -50,6 +50,7 @@ export interface DispatchStageMarker {
   id: string;
   label: string;
   status: DispatchStageStatus;
+  note?: string;
 }
 
 export interface DispatchMessage {

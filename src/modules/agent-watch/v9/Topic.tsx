@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TopicBody } from "./TopicBody";
 import { TopicHead } from "./TopicHead";
 import type { DispatchTopic } from "./types";
 
@@ -14,6 +15,7 @@ export function Topic({ topic }: { topic: DispatchTopic }) {
         collapsed={collapsed}
         onToggle={() => setCollapsed((current) => !current)}
       />
+      <TopicBody topic={topic} bodyId={bodyId} />
     </article>
   );
 }
