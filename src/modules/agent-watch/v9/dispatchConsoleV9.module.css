@@ -1,0 +1,242 @@
+.root {
+  --bg: #1a1a1a;
+  --card: #262626;
+  --card-2: #2d2d2d;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-2: rgba(255, 255, 255, 0.16);
+  --fg: #ffffff;
+  --fg-2: #a6a6a6;
+  --fg-3: #737373;
+  --purple: #5227ff;
+  --purple-2: #6c4fff;
+  --lime: #d1ff55;
+  --red: #e95032;
+  --ok: #14a739;
+  --warn: #fed500;
+  --content-max: 1240px;
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(82, 39, 255, 0.14), transparent 26%),
+    radial-gradient(circle at 86% 0%, rgba(209, 255, 85, 0.08), transparent 22%),
+    var(--bg);
+  color: var(--fg);
+  font-family: var(--font-language), var(--font-stack), system-ui, sans-serif;
+}
+
+.root::after {
+  content: "";
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  height: 48px;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(82, 39, 255, 0.18), transparent);
+}
+
+.root :global(*) {
+  box-sizing: border-box;
+}
+
+.root :global(button) {
+  font: inherit;
+}
+
+.root :global(.topbar) {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 68px;
+  padding: 0 34px;
+  background: rgba(26, 26, 26, 0.86);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(18px);
+}
+
+.root :global(.brand) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 240px;
+  color: var(--fg);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.root :global(.brand-mark) {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(209, 255, 85, 0.96), rgba(209, 255, 85, 0.28)),
+    #111111;
+  box-shadow: 0 0 28px rgba(209, 255, 85, 0.18);
+}
+
+.root :global(.brand-sub) {
+  margin-left: 8px;
+  padding-left: 12px;
+  color: var(--fg-3);
+  border-left: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.root :global(.topbar-tabs) {
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.root :global(.ttab) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 16px;
+  cursor: pointer;
+  color: var(--fg-2);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.root :global(.ttab:hover) {
+  color: var(--fg);
+}
+
+.root :global(.ttab.active) {
+  color: var(--fg);
+  background: var(--purple);
+  box-shadow: 0 12px 30px rgba(82, 39, 255, 0.28);
+}
+
+.root :global(.badge) {
+  display: inline-flex;
+  align-items: center;
+  height: 17px;
+  padding: 0 6px;
+  color: #111111;
+  border-radius: 999px;
+  background: var(--lime);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.root :global(.topbar-spacer) {
+  flex: 1;
+}
+
+.root :global(.live-pill-small) {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px;
+  color: var(--lime);
+  border: 1px solid rgba(209, 255, 85, 0.22);
+  border-radius: 999px;
+  background: rgba(209, 255, 85, 0.06);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.root :global(.live-dot) {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--lime);
+  box-shadow: 0 0 16px rgba(209, 255, 85, 0.72);
+  animation: dispatch-v9-pulse 1.2s ease-in-out infinite;
+}
+
+.root :global(.topbar-clock) {
+  min-width: 106px;
+  color: var(--fg-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.root :global(.view) {
+  display: none;
+  width: min(var(--content-max), calc(100vw - 68px));
+  margin: 0 auto;
+  padding: 38px 0 72px;
+  animation: dispatch-v9-fade-in-up 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.root :global(.view.active) {
+  display: block;
+}
+
+.root :global(.eyebrow) {
+  margin-bottom: 11px;
+  color: var(--lime);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.root :global(.title) {
+  margin: 0;
+  color: var(--fg);
+  font-size: 46px;
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.root :global(.accent) {
+  color: var(--lime);
+}
+
+.root :global(.subtitle) {
+  max-width: 650px;
+  margin: 16px 0 0;
+  color: var(--fg-2);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+@keyframes dispatch-v9-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dispatch-v9-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
