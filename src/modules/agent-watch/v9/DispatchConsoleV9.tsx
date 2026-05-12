@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./dispatchConsoleV9.module.css";
 import { FlowIntroView } from "./FlowIntroView";
 import { MarketAnalysisView } from "./MarketAnalysisView";

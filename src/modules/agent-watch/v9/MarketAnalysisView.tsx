@@ -1,3 +1,4 @@
+import React from "react";
 import { ChatShell } from "./ChatShell";
 import { dispatchTopics } from "./fixtureData";
 import type { DispatchTopic } from "./types";

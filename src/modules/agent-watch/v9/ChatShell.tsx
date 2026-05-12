@@ -1,3 +1,4 @@
+import React from "react";
 import { Topic } from "./Topic";
 import type { DispatchTopic } from "./types";
 

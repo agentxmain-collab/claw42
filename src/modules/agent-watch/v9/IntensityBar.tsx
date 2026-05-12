@@ -1,3 +1,5 @@
+import React from "react";
+
 export function IntensityBar({ value }: { value: number }) {
   return (
     <div className="intensity" aria-label={`激烈度 ${value}/5`}>

@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from "react";
+import React, { type KeyboardEvent } from "react";
 import type { DispatchView } from "./types";
 
 const DISPATCH_VIEWS: DispatchView[] = ["flow", "mkt"];

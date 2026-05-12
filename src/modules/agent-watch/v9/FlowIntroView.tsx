@@ -1,3 +1,4 @@
+import React from "react";
 import { dispatchFlowStages } from "./fixtureData";
 import type { DispatchFlowStage } from "./types";
 

@@ -1,3 +1,4 @@
+import React from "react";
 import type { DispatchTopic } from "./types";
 
 function StrategyValue({

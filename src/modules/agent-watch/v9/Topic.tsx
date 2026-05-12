@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { TopicBody } from "./TopicBody";
 import { TopicHead } from "./TopicHead";
 import { TopicStrategy } from "./TopicStrategy";

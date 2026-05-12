@@ -1,4 +1,4 @@
-import type { KeyboardEvent, MouseEvent } from "react";
+import React, { type KeyboardEvent, type MouseEvent } from "react";
 import { IntensityBar } from "./IntensityBar";
 import type { DispatchTopic } from "./types";
 

@@ -1,3 +1,4 @@
+import React from "react";
 import type { DispatchAgentId, DispatchMessage } from "./types";
 
 const AGENT_AVATAR: Record<DispatchAgentId, { label: string; className: string }> = {

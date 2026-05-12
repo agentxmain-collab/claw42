@@ -1,3 +1,4 @@
+import React from "react";
 import { MessageBubble } from "./MessageBubble";
 import type { DispatchStageMarker, DispatchTopic } from "./types";
 
