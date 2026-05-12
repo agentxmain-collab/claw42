@@ -11,8 +11,8 @@ function pmDecision(
   id: string,
   overrides: Partial<PublicTimelineEvent> & { symbol?: string } = {},
 ): PublicTimelineEvent {
-  const symbol = overrides.symbol ?? "BTC";
-  const { symbol: _symbol, ...eventOverrides } = overrides;
+  const { symbol: overrideSymbol, ...eventOverrides } = overrides;
+  const symbol = overrideSymbol ?? "BTC";
   return {
     id,
     ts: now,

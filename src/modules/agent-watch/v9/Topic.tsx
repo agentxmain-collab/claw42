@@ -14,8 +14,12 @@ export function Topic({
   const [collapsed, setCollapsed] = useState(topic.defaultCollapsed);
   const bodyId = `dispatch-topic-${topic.id}`;
 
+  const topicClassName = ["topic", topic.status, collapsed ? "collapsed" : ""]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <article className={`topic ${topic.status}${collapsed ? "collapsed" : ""}`}>
+    <article className={topicClassName}>
       <TopicHead
         topic={topic}
         bodyId={bodyId}

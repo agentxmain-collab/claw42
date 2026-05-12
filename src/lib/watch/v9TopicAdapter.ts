@@ -14,7 +14,6 @@ import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type {
-  DispatchAgentId,
   DispatchMessage,
   DispatchStageMarker,
   DispatchStrategy,
