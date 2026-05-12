@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import styles from "./dispatchConsoleV9.module.css";
 import { FlowIntroView } from "./FlowIntroView";
+import { MarketAnalysisView } from "./MarketAnalysisView";
 import { WatchTabs } from "./WatchTabs";
 import type { DispatchConsoleV9Props, DispatchView } from "./types";
 
@@ -59,7 +60,9 @@ export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Pro
         role="tabpanel"
         aria-labelledby="dispatch-tab-mkt"
         hidden={activeView !== "mkt"}
-      />
+      >
+        <MarketAnalysisView onGotoFlow={() => changeView("flow")} />
+      </div>
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import type { DispatchFlowStage } from "./types";
+import type { DispatchFlowStage, DispatchTopic } from "./types";
 
 export const dispatchFlowStages: DispatchFlowStage[] = [
   {
@@ -172,5 +172,108 @@ export const dispatchFlowStages: DispatchFlowStage[] = [
       { label: "回灌", value: "历史经验注入下次 prompt" },
       { label: "复利", value: "跨标的教训 / 越跑越懂" },
     ],
+  },
+];
+
+export const dispatchTopics: DispatchTopic[] = [
+  {
+    id: "btc-live-market-check",
+    symbol: "BTC",
+    status: "active",
+    title: "🔥 BTC live market check · BTC 距前低 0.35%，下方止损单密集",
+    originalUrl: "#",
+    startedAt: "19:22",
+    progress: "当前进行到阶段 3",
+    intensity: 3,
+    trigger: {
+      ticker: "$BTC",
+      text: "Rewards Wallet 多链 swap campaign + ETF 24h 净流出 2.1 亿",
+    },
+    stages: [],
+    messages: [],
+    strategy: {
+      action: "wait",
+      actionLabel: "分析中",
+      name: "本次决策",
+      meta: "3 个阶段已完成 · 交易员正在出方案 · 预计 1-2 分钟",
+      entry: "待定",
+      stopLoss: "待定",
+      takeProfit: "待定",
+      follow: {
+        primaryLabel: "等待方案",
+        primaryDisabled: true,
+        secondaryLabel: "提醒我",
+        watchCount: 77,
+        followCount: 0,
+        expiryNote: "等待出方案",
+      },
+    },
+    defaultCollapsed: false,
+  },
+  {
+    id: "eth-live-market-check",
+    symbol: "ETH",
+    status: "done",
+    title: "📉 ETH live market check · 4h 失守 EMA50，CEX 净流入扩大",
+    originalUrl: "#",
+    startedAt: "18:10",
+    progress: "28 分钟闭环",
+    intensity: 4,
+    trigger: {
+      ticker: "$ETH",
+      text: "ETH whale 转入 Binance 18.5M USD · 4h MACD 下穿零轴",
+    },
+    stages: [],
+    messages: [],
+    strategy: {
+      action: "short",
+      actionLabel: "SHORT 6%",
+      name: "已开仓",
+      meta: "已开仓 18:35 · 当前盈亏 +0.8%",
+      entry: "2,548 - 2,560",
+      stopLoss: "2,610",
+      takeProfit: "2,460 / 2,400",
+      follow: {
+        primaryLabel: "已跟单",
+        primaryDisabled: true,
+        secondaryLabel: "查看详情",
+        watchCount: 142,
+        followCount: 54,
+      },
+    },
+    defaultCollapsed: true,
+  },
+  {
+    id: "sol-live-market-check",
+    symbol: "SOL",
+    status: "pending",
+    title: "⚡ SOL live market check · 区间震荡 + 链上活跃地址下行",
+    originalUrl: "#",
+    startedAt: "19:30",
+    progress: "信息收集中",
+    intensity: 1,
+    trigger: {
+      ticker: "$SOL",
+      text: "SOL 168.4 区间震荡 24h · 链上活跃地址 −2.3%",
+    },
+    stages: [],
+    messages: [],
+    strategy: {
+      action: "pending",
+      actionLabel: "PENDING",
+      name: "尚未决策",
+      meta: "分析进行中 · 预计 2-3 分钟出方案",
+      entry: "待定",
+      stopLoss: "待定",
+      takeProfit: "待定",
+      follow: {
+        primaryLabel: "等待决策",
+        primaryDisabled: true,
+        secondaryLabel: "提醒我",
+        watchCount: 31,
+        followCount: 0,
+      },
+    },
+    defaultCollapsed: true,
   },
 ];
