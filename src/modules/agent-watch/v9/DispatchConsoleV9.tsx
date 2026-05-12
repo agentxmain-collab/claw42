@@ -77,7 +77,7 @@ export function DispatchConsoleV9({
 
       <div
         id="dispatch-panel-flow"
-        className={`view v-flow${activeView === "flow" ? " active" : ""}`}
+        className={`view v-flow${activeView === "flow" ? "active" : ""}`}
         role="tabpanel"
         aria-labelledby="dispatch-tab-flow"
         hidden={activeView !== "flow"}
@@ -86,7 +86,7 @@ export function DispatchConsoleV9({
       </div>
       <div
         id="dispatch-panel-mkt"
-        className={`view v-mkt${activeView === "mkt" ? " active" : ""}`}
+        className={`view v-mkt${activeView === "mkt" ? "active" : ""}`}
         role="tabpanel"
         aria-labelledby="dispatch-tab-mkt"
         hidden={activeView !== "mkt"}
@@ -108,7 +108,8 @@ export function DispatchConsoleV9({
             <div className="follow-placeholder-kicker">{placeholder.topic.trigger.ticker}</div>
             <h2 id="follow-placeholder-title">跟单功能开发中</h2>
             <p>
-              已记录「{placeholder.actionLabel}」占位操作。Phase A 不执行交易，后续会接入授权和风险确认流程。
+              已记录「{placeholder.actionLabel}」占位操作。Phase A
+              不执行交易，后续会接入授权和风险确认流程。
             </p>
             <button
               className="follow-placeholder-close"

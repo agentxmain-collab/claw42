@@ -123,7 +123,9 @@ describe("mapPublicTimelineEventsToTopics", () => {
   it("ignores non pm_decision events", () => {
     expect(
       mapPublicTimelineEventsToTopics({
-        events: [{ ...pmDecision(), payload: { kind: "news", evidenceId: "ev_1", symbols: ["BTC"] } }],
+        events: [
+          { ...pmDecision(), payload: { kind: "news", evidenceId: "ev_1", symbols: ["BTC"] } },
+        ],
         locale: "zh_CN",
         now,
       }),

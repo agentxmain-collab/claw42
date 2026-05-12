@@ -288,7 +288,11 @@ function makeStrategy(
     stopLoss: formatStopLoss(decision.stopLoss),
     takeProfit: formatTakeProfit(decision.takeProfit),
     follow: {
-      primaryLabel: stats?.userFollowed ? "已跟单" : decision.direction === "wait" ? "提醒我" : "跟单",
+      primaryLabel: stats?.userFollowed
+        ? "已跟单"
+        : decision.direction === "wait"
+          ? "提醒我"
+          : "跟单",
       primaryDisabled: Boolean(stats?.userFollowed) || decision.direction === "wait",
       secondaryLabel: "查看详情",
       watchCount: stats?.watchCount ?? 0,

@@ -15,7 +15,7 @@ export function Topic({
   const bodyId = `dispatch-topic-${topic.id}`;
 
   return (
-    <article className={`topic ${topic.status}${collapsed ? " collapsed" : ""}`}>
+    <article className={`topic ${topic.status}${collapsed ? "collapsed" : ""}`}>
       <TopicHead
         topic={topic}
         bodyId={bodyId}

@@ -35,7 +35,11 @@ function uniqueEvidenceIds(events: PmDecisionTimelineEvent[]) {
   return Array.from(new Set(events.flatMap((event) => event.evidenceIds))).filter(Boolean);
 }
 
-function groupAcceptsEvent(group: DispatchTopicGroup, event: PmDecisionTimelineEvent, symbol: string) {
+function groupAcceptsEvent(
+  group: DispatchTopicGroup,
+  event: PmDecisionTimelineEvent,
+  symbol: string,
+) {
   return (
     group.locale === event.locale &&
     group.symbol === symbol &&
@@ -61,9 +65,7 @@ export function groupPublicTimelineEventsByTopic(
   events: readonly PublicTimelineEvent[],
 ): DispatchTopicGroup[] {
   const groups: DispatchTopicGroup[] = [];
-  const decisions = events
-    .filter(isPmDecisionEvent)
-    .sort((a, b) => b.ts - a.ts);
+  const decisions = events.filter(isPmDecisionEvent).sort((a, b) => b.ts - a.ts);
 
   for (const event of decisions) {
     const symbol = normalizedSymbol(event);

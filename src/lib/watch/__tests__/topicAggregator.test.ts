@@ -69,8 +69,8 @@ describe("groupPublicTimelineEventsByTopic", () => {
   });
 
   it("skips events without a usable symbol", () => {
-    expect(groupPublicTimelineEventsByTopic([pmDecision("missing", { symbol: "UNKNOWN" })])).toEqual(
-      [],
-    );
+    expect(
+      groupPublicTimelineEventsByTopic([pmDecision("missing", { symbol: "UNKNOWN" })]),
+    ).toEqual([]);
   });
 });

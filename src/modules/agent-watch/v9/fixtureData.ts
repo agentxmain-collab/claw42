@@ -267,7 +267,8 @@ export const dispatchTopics: DispatchTopic[] = [
           agentName: "看空",
           text: "四向背离，建议 SHORT 80,537 失守",
         },
-        content: "链上净流入可能只是短期换手，**不是趋势确认**。新流动性可能抵消 ETF 流出。**等失守再确认**。",
+        content:
+          "链上净流入可能只是短期换手，**不是趋势确认**。新流动性可能抵消 ETF 流出。**等失守再确认**。",
       },
       {
         id: "btc-trader-typing",

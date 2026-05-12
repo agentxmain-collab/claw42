@@ -20,12 +20,8 @@ describe("dispatchAgentMapping", () => {
   });
 
   it("uses i18n team names when a source team member exists", () => {
-    expect(getDispatchAgentDisplayName("technical_analyst", "zh_CN", "chart_analyst")).toBe(
-      "K 哥",
-    );
-    expect(getDispatchAgentDisplayName("onchain_analyst", "en_US", "onchain_analyst")).toBe(
-      "Vit",
-    );
+    expect(getDispatchAgentDisplayName("technical_analyst", "zh_CN", "chart_analyst")).toBe("K 哥");
+    expect(getDispatchAgentDisplayName("onchain_analyst", "en_US", "onchain_analyst")).toBe("Vit");
   });
 
   it("keeps the synthetic role list free of removed v9 agents", () => {

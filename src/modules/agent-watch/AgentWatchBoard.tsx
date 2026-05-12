@@ -62,7 +62,9 @@ export function AgentWatchBoard() {
   const applyTimelinePayload = useCallback(
     (payload: PublicTimelinePayload, mode: "replace" | "append") => {
       const sorted = payload.events.slice().sort((a, b) => b.ts - a.ts);
-      setTimelineEvents((current) => (mode === "replace" ? sorted : mergeTimelineEvents(current, sorted)));
+      setTimelineEvents((current) =>
+        mode === "replace" ? sorted : mergeTimelineEvents(current, sorted),
+      );
       if (payload.evidenceMap) {
         setTimelineEvidenceMap((current) =>
           mode === "replace" ? (payload.evidenceMap ?? {}) : { ...current, ...payload.evidenceMap },
@@ -126,7 +128,10 @@ export function AgentWatchBoard() {
           if (!cancelled) applyTimelinePayload(fallback, "append");
         }
       } catch (error: unknown) {
-        if ((error as { name?: string }).name !== "AbortError" && process.env.NODE_ENV !== "production") {
+        if (
+          (error as { name?: string }).name !== "AbortError" &&
+          process.env.NODE_ENV !== "production"
+        ) {
           console.warn("[claw42] public timeline fetch failed", error);
         }
       } finally {
@@ -182,7 +187,9 @@ export function AgentWatchBoard() {
 
     function currentPollMs() {
       if (document.visibilityState === "hidden") return FOLLOW_STATS_HIDDEN_POLL_MS;
-      return activeDispatchView === "mkt" ? FOLLOW_STATS_MARKET_POLL_MS : FOLLOW_STATS_VISIBLE_POLL_MS;
+      return activeDispatchView === "mkt"
+        ? FOLLOW_STATS_MARKET_POLL_MS
+        : FOLLOW_STATS_VISIBLE_POLL_MS;
     }
 
     async function poll() {
@@ -194,7 +201,10 @@ export function AgentWatchBoard() {
           await fetchFollowStats(controller.signal);
         }
       } catch (error: unknown) {
-        if ((error as { name?: string }).name !== "AbortError" && process.env.NODE_ENV !== "production") {
+        if (
+          (error as { name?: string }).name !== "AbortError" &&
+          process.env.NODE_ENV !== "production"
+        ) {
           console.warn("[claw42] follow stats fetch failed", error);
         }
       } finally {

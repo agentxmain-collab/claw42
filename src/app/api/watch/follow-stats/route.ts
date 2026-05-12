@@ -21,10 +21,14 @@ function isValidRecordId(recordId: string) {
 
 function parseRecordIds(value: string | null) {
   if (!value) return [];
-  return Array.from(new Set(value.split(",").map((item) => item.trim()).filter(Boolean))).slice(
-    0,
-    MAX_RECORD_IDS,
-  );
+  return Array.from(
+    new Set(
+      value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ).slice(0, MAX_RECORD_IDS);
 }
 
 function getOrCreateAnonId(request: NextRequest) {
@@ -92,7 +96,11 @@ export async function POST(request: NextRequest) {
     return jsonWithAnonCookie({ error: "invalid_json" }, anon, { status: 400 });
   }
 
-  if (body.action !== "follow" || typeof body.recordId !== "string" || !isValidRecordId(body.recordId)) {
+  if (
+    body.action !== "follow" ||
+    typeof body.recordId !== "string" ||
+    !isValidRecordId(body.recordId)
+  ) {
     return jsonWithAnonCookie({ error: "invalid_follow_request" }, anon, { status: 400 });
   }
 

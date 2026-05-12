@@ -25,13 +25,13 @@ let warnedAboutFallback = false;
 function getKvClient(): KvFollowStatsClient | null {
   const available = Boolean(
     process.env.KV_REST_API_URL &&
-      process.env.KV_REST_API_TOKEN &&
-      kv &&
-      typeof kv.get === "function" &&
-      typeof kv.incr === "function" &&
-      typeof kv.sadd === "function" &&
-      typeof kv.sismember === "function" &&
-      typeof kv.expire === "function",
+    process.env.KV_REST_API_TOKEN &&
+    kv &&
+    typeof kv.get === "function" &&
+    typeof kv.incr === "function" &&
+    typeof kv.sadd === "function" &&
+    typeof kv.sismember === "function" &&
+    typeof kv.expire === "function",
   );
   return available ? (kv as KvFollowStatsClient) : null;
 }
@@ -122,10 +122,7 @@ export async function getFollowStats(
   return Object.fromEntries(pairs);
 }
 
-export async function followRecord(
-  recordId: string,
-  anonId: string,
-): Promise<FollowStatsSnapshot> {
+export async function followRecord(recordId: string, anonId: string): Promise<FollowStatsSnapshot> {
   const hashedAnonId = hashAnonIdForFollowStats(anonId);
 
   const client = getKvClient();
