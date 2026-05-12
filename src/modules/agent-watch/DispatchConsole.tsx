@@ -10,11 +10,16 @@ import {
   dispatchSources,
   dispatchTickers,
   pipelineChatMessages,
+  strategyHistory,
+  strategyOutcomes,
   strategyVotes,
   type DispatchAgent,
   type DispatchAgentState,
   type DispatchSource,
   type DispatchTicker,
+  type HistoryOutcome,
+  type StrategyDirection,
+  type StrategyOutcome,
   type VoteDirection,
 } from "./dispatchConsoleData";
 
@@ -184,6 +189,28 @@ const voteLabel: Record<VoteDirection, string> = {
   short: "空",
   wait: "观",
   agree: "同意",
+};
+
+const directionLabel: Record<StrategyDirection, string> = {
+  long: "多头",
+  short: "空头",
+  grid: "网格",
+  wait: "等待",
+};
+
+const directionClasses: Record<StrategyDirection, string> = {
+  long: "border-[#3bd66f]/45 bg-[#3bd66f]/12 text-[#3bd66f]",
+  short: "border-[#ff6f7d]/45 bg-[#ff6f7d]/12 text-[#ff6f7d]",
+  grid: "border-[var(--coinw-brand-border-strong)] bg-[var(--coinw-brand-glow-soft)] text-[#b7a4ff]",
+  wait: "border-white/15 bg-white/[0.06] text-white/70",
+};
+
+const historyOutcomeClasses: Record<HistoryOutcome, string> = {
+  pending: "border-[#d1ff55]/40 text-[#d1ff55]",
+  partial: "border-[var(--coinw-brand-border-strong)] text-[#b7a4ff]",
+  win: "border-[#3bd66f]/45 text-[#3bd66f]",
+  loss: "border-[#ff6f7d]/45 text-[#ff6f7d]",
+  invalid: "border-white/15 text-white/70",
 };
 
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
@@ -558,6 +585,240 @@ function WorkflowPipeline({ selectedStrategyId }: { selectedStrategyId: string |
   );
 }
 
+function StrategyMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/62">
+        {label}
+      </div>
+      <div className="mt-1 font-mono text-sm font-black text-white">{value}</div>
+    </div>
+  );
+}
+
+function ConfidenceBar({ value }: { value: number }) {
+  return (
+    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/[0.08]">
+      <div
+        className="h-full rounded-full bg-[linear-gradient(90deg,var(--coinw-brand-hex),#d1ff55)]"
+        style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+      />
+    </div>
+  );
+}
+
+function StrategyBadge({ outcome }: { outcome: StrategyOutcome }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em]",
+        directionClasses[outcome.direction],
+      )}
+    >
+      {directionLabel[outcome.direction]} · {outcome.formLabel}
+    </span>
+  );
+}
+
+function LatestStrategyCard({
+  outcome,
+  selected,
+  onSelect,
+}: {
+  outcome: StrategyOutcome;
+  selected: boolean;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(outcome.id)}
+      aria-pressed={selected}
+      className={cx(
+        "group w-full rounded-[24px] border p-5 text-left transition duration-300 md:p-6",
+        selected
+          ? "border-[var(--coinw-brand-border-strong)] bg-[radial-gradient(circle_at_80%_0%,rgba(118,80,255,0.22),rgba(255,255,255,0.05)_38%,rgba(255,255,255,0.04)_100%)] shadow-[0_22px_90px_rgba(118,80,255,0.22)]"
+          : "border-white/10 bg-white/[0.05] hover:border-[var(--coinw-brand-border-soft)]",
+      )}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <StrategyBadge outcome={outcome} />
+            <span className="rounded-full border border-[#d1ff55]/40 bg-[#d1ff55]/10 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#d1ff55]">
+              latest · {outcome.age}
+            </span>
+          </div>
+          <h3 className="mt-4 text-3xl font-black text-white md:text-4xl">{outcome.symbol}</h3>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/70">{outcome.rationale}</p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-right">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/62">
+            confidence
+          </div>
+          <div className="mt-1 font-mono text-3xl font-black text-[#d1ff55]">
+            {outcome.confidence}
+          </div>
+        </div>
+      </div>
+      <ConfidenceBar value={outcome.confidence} />
+      <div className="mt-5 grid gap-3 md:grid-cols-4">
+        <StrategyMetric label="entry" value={outcome.entry} />
+        <StrategyMetric label="stop" value={outcome.stop} />
+        <StrategyMetric label="target" value={outcome.target} />
+        <StrategyMetric label="size" value={outcome.size} />
+      </div>
+      <div className="mt-5 grid gap-3 md:grid-cols-4">
+        <StrategyMetric label="risk / reward" value={outcome.rr} />
+        <StrategyMetric label="long votes" value={outcome.votes.long} />
+        <StrategyMetric label="short votes" value={outcome.votes.short} />
+        <StrategyMetric label="wait votes" value={outcome.votes.wait} />
+      </div>
+    </button>
+  );
+}
+
+function ActiveStrategyCard({
+  outcome,
+  selected,
+  onSelect,
+}: {
+  outcome: StrategyOutcome;
+  selected: boolean;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(outcome.id)}
+      aria-pressed={selected}
+      className={cx(
+        "w-full rounded-[22px] border p-4 text-left transition duration-300",
+        selected
+          ? "border-[var(--coinw-brand-border-strong)] bg-[var(--coinw-brand-glow-soft)]"
+          : "border-white/10 bg-[#1a1a1a] hover:border-[var(--coinw-brand-border-soft)]",
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <StrategyBadge outcome={outcome} />
+        <span className="font-mono text-[11px] font-bold text-white/62">{outcome.age}</span>
+      </div>
+      <h4 className="mt-3 text-xl font-black text-white">{outcome.symbol}</h4>
+      <p className="mt-2 min-h-[44px] text-sm leading-relaxed text-white/62">{outcome.rationale}</p>
+      <ConfidenceBar value={outcome.confidence} />
+      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+        <StrategyMetric label="entry" value={outcome.entry} />
+        <StrategyMetric label="stop" value={outcome.stop} />
+      </div>
+    </button>
+  );
+}
+
+function StrategyHistoryTable() {
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[#1a1a1a]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+        <SectionEyebrow>历史策略 · 最近 7 条</SectionEyebrow>
+        <button
+          type="button"
+          className="rounded-full border border-white/10 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-white/70 transition hover:border-[var(--coinw-brand-border-soft)] hover:text-white"
+        >
+          查看全部历史 →
+        </button>
+      </div>
+      <div className="divide-y divide-white/10">
+        {strategyHistory.slice(0, 7).map((record) => (
+          <article
+            key={record.id}
+            className="grid gap-3 px-4 py-3 md:grid-cols-[1fr_0.7fr_0.7fr_0.7fr_1.4fr] md:items-center"
+          >
+            <div>
+              <div className="font-black text-white">{record.symbol}</div>
+              <div className="mt-1 font-mono text-[11px] text-white/62">{record.age}</div>
+            </div>
+            <div
+              className={cx(
+                "w-fit rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.12em]",
+                directionClasses[record.direction],
+              )}
+            >
+              {directionLabel[record.direction]} · {record.form}
+            </div>
+            <div className="font-mono text-sm font-black text-white">{record.confidence}</div>
+            <div
+              className={cx(
+                "w-fit rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.12em]",
+                historyOutcomeClasses[record.outcome],
+              )}
+            >
+              {record.outcome} · {record.pnl}
+            </div>
+            <p className="text-sm leading-relaxed text-white/62">{record.note}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StrategyOutcomes({
+  selectedStrategyId,
+  onSelectStrategy,
+}: {
+  selectedStrategyId: string | null;
+  onSelectStrategy: (id: string) => void;
+}) {
+  const latest = strategyOutcomes.find((outcome) => outcome.status === "latest");
+  const active = strategyOutcomes.filter((outcome) => outcome.status === "active");
+
+  return (
+    <Panel labelledBy="dispatch-strategy-title">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <SectionEyebrow>Strategy Outcomes · 3 tier disclosure</SectionEyebrow>
+          <h2 id="dispatch-strategy-title" className="mt-2 text-2xl font-black text-white">
+            多策略输出
+          </h2>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center font-mono text-xs">
+          <MiniStat label="total" value={dispatchConsoleStats.totalStrategies} />
+          <MiniStat label="hit rate" value={dispatchConsoleStats.hitRate} />
+          <MiniStat label="7d pnl" value={dispatchConsoleStats.sevenDayPnl} />
+        </div>
+      </div>
+      <div className="mt-5 space-y-4">
+        {latest ? (
+          <LatestStrategyCard
+            outcome={latest}
+            selected={selectedStrategyId === latest.id}
+            onSelect={onSelectStrategy}
+          />
+        ) : null}
+        <div className="grid gap-4 lg:grid-cols-3">
+          {active.map((outcome) => (
+            <ActiveStrategyCard
+              key={outcome.id}
+              outcome={outcome}
+              selected={selectedStrategyId === outcome.id}
+              onSelect={onSelectStrategy}
+            />
+          ))}
+        </div>
+        <StrategyHistoryTable />
+      </div>
+    </Panel>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#1a1a1a] px-3 py-2">
+      <div className="text-[10px] uppercase tracking-[0.14em] text-white/62">{label}</div>
+      <div className="mt-1 font-black text-[#d1ff55]">{value}</div>
+    </div>
+  );
+}
+
 export function DispatchConsole({
   events,
   evidenceMap,
@@ -565,7 +826,7 @@ export function DispatchConsole({
   marketSnapshot,
 }: DispatchConsoleProps) {
   const tickers = useMemo(() => tickersFromMarketSnapshot(marketSnapshot), [marketSnapshot]);
-  const [selectedStrategyId] = useState<string | null>("s2");
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>("s2");
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-white">
@@ -574,6 +835,10 @@ export function DispatchConsole({
       <main className="mx-auto max-w-[1500px] space-y-6 px-4 py-8 md:px-8">
         <DispatchHeader events={events} evidenceMap={evidenceMap} loading={loading} />
         <WorkflowPipeline selectedStrategyId={selectedStrategyId} />
+        <StrategyOutcomes
+          selectedStrategyId={selectedStrategyId}
+          onSelectStrategy={setSelectedStrategyId}
+        />
         <p className="rounded-[24px] border border-white/10 bg-white/[0.05] px-4 py-3 text-xs leading-relaxed text-white/62">
           风险提示：本页面内容由 AI 根据公开行情数据自动生成，仅用于信息展示，不构成投资建议。
           多策略输出展示团队观点分歧与风险缓冲，不代表必须执行全部策略。
