@@ -110,6 +110,11 @@ describe("mapPublicTimelineEventsToTopics", () => {
       },
     });
     expect(topic.stages).toHaveLength(6);
+    expect(topic.stages[5]).toMatchObject({
+      label: "阶段 6 · 复盘沉淀",
+      status: "pending",
+      note: "TODO：真实 memory_loop 尚未接入，等待写入",
+    });
     expect(topic.messages.map((message) => message.agentId)).toContain("technical_analyst");
     expect(topic.messages.map((message) => message.agentId)).toContain("portfolio_manager");
     expect("source" in topic).toBe(false);

@@ -133,7 +133,7 @@ function makeStages(topicId: string, hasTradeDecision: boolean): DispatchStageMa
       id: stageId(topicId, 6),
       label: "阶段 6 · 复盘沉淀",
       status: "pending",
-      note: "等待记忆回路写入",
+      note: "TODO：真实 memory_loop 尚未接入，等待写入",
     },
   ];
 }
