@@ -36,13 +36,13 @@ export function TopicBody({
         const stageMessages = topic.messages.filter((message) => message.stageId === stage.id);
 
         return (
-          <div key={stage.id}>
+          <React.Fragment key={stage.id}>
             <StageMarker stage={stage} />
             {stageMessages.map((message) => (
               <MessageBubble message={message} key={message.id} />
             ))}
             {stage.note ? <div className="pending-stub">{stage.note}</div> : null}
-          </div>
+          </React.Fragment>
         );
       })}
     </div>
