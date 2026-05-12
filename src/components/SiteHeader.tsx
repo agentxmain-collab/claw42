@@ -1,11 +1,15 @@
 "use client";
 
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useI18n } from "@/i18n/I18nProvider";
 import { LocaleDropdown } from "./LocaleDropdown";
 
 export function SiteHeader() {
   const { locale, t } = useI18n();
+  const pathname = usePathname();
+
+  if (pathname?.endsWith("/agent")) return null;
 
   return (
     <nav className="fixed left-0 right-0 top-0 z-[80] h-[72px] border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
