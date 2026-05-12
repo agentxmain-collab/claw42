@@ -1,0 +1,176 @@
+import type { DispatchFlowStage } from "./types";
+
+export const dispatchFlowStages: DispatchFlowStage[] = [
+  {
+    num: 1,
+    name: "信息收集",
+    tag: "ANALYSTS",
+    countLabel: "并行采集",
+    footerChip: "独立简报 · 不互相干扰",
+    agents: [
+      {
+        id: "fundamental_analyst",
+        name: "基本面分析师",
+        role: "Fundamentals",
+        desc: "财务 / 内在价值 / red flags",
+        avatarClass: "a-fund",
+      },
+      {
+        id: "sentiment_analyst",
+        name: "情绪分析师",
+        role: "Sentiment",
+        desc: "社交媒体 / 情绪打分",
+        avatarClass: "a-sent",
+      },
+      {
+        id: "news_analyst",
+        name: "新闻分析师",
+        role: "News",
+        desc: "全球新闻 / 宏观 / 事件",
+        avatarClass: "a-news",
+      },
+      {
+        id: "technical_analyst",
+        name: "技术分析师",
+        role: "Technical",
+        desc: "MACD / RSI / 价格模式",
+        avatarClass: "a-tech",
+      },
+    ],
+    detail: [
+      { label: "输入", value: "4 类原始信号源" },
+      { label: "流程", value: "4 名分析师并行 / 互不干扰" },
+      { label: "输出", value: "4 份独立简报 + 证据链" },
+    ],
+  },
+  {
+    num: 2,
+    name: "多空辩论",
+    tag: "RESEARCHERS",
+    countLabel: "多轮辩论",
+    variant: "debate",
+    footerChip: "多轮 debate · 拿出最强论据",
+    agents: [
+      {
+        id: "bullish_researcher",
+        name: "看多研究员",
+        role: "Bullish",
+        desc: "立论看多 / 守住牛市观点",
+        avatarClass: "a-bull",
+      },
+      {
+        id: "bearish_researcher",
+        name: "看空研究员",
+        role: "Bearish",
+        desc: "立论看空 / 守住熊市观点",
+        avatarClass: "a-bear",
+      },
+    ],
+    detail: [
+      { label: "输入", value: "4 分析师独立简报" },
+      { label: "流程", value: "多轮立论 / 反驳 / 压力测试" },
+      { label: "输出", value: "辩论纪要 + 双方核心证据" },
+    ],
+  },
+  {
+    num: 3,
+    name: "交易方案",
+    tag: "TRADER",
+    countLabel: "综合输出",
+    footerChip: "方向 · 时机 · 仓位 · 止损",
+    agents: [
+      {
+        id: "trader",
+        name: "交易员",
+        role: "Trader",
+        desc: "综合简报 + 辩论 → 可执行方案",
+        avatarClass: "a-trade",
+      },
+    ],
+    detail: [
+      { label: "输入", value: "4 简报 + 多空辩论纪要" },
+      { label: "决策", value: "方向 / 时机 / 仓位 / 止损" },
+      { label: "边界", value: "失效条件 + 风险线" },
+    ],
+  },
+  {
+    num: 4,
+    name: "风险审查",
+    tag: "RISK REVIEW",
+    countLabel: "三派审查",
+    variant: "debate",
+    footerChip: "波动 · 流动性 · 相关性",
+    agents: [
+      {
+        id: "aggressive_reviewer",
+        name: "激进派",
+        role: "Aggressive",
+        desc: "高仓位 / 追求最大收益",
+        avatarClass: "a-aggr",
+      },
+      {
+        id: "neutral_reviewer",
+        name: "中立派",
+        role: "Neutral",
+        desc: "平衡仓位 / 风险均衡",
+        avatarClass: "a-neut",
+      },
+      {
+        id: "conservative_reviewer",
+        name: "保守派",
+        role: "Conservative",
+        desc: "低仓位 / 守住下行风险",
+        avatarClass: "a-cons",
+      },
+    ],
+    detail: [
+      { label: "维度", value: "波动性 / 流动性 / 相关性" },
+      { label: "流程", value: "三派多轮辩论 / 修订方案" },
+      { label: "输出", value: "含风险边界的最终建议" },
+    ],
+  },
+  {
+    num: 5,
+    name: "最终决策",
+    tag: "PORTFOLIO MANAGER",
+    countLabel: "终审裁决",
+    variant: "final",
+    footerChip: "批准送执行 · 拒绝落档",
+    agents: [
+      {
+        id: "portfolio_manager",
+        name: "组合经理",
+        role: "Portfolio Manager",
+        desc: "全组合视角 · 二元裁决",
+        avatarClass: "a-pm",
+      },
+    ],
+    detail: [
+      { label: "视角", value: "全组合 + 风险预算 + 相关性" },
+      { label: "批准", value: "送交易所执行" },
+      { label: "拒绝", value: "落档进入复盘库" },
+    ],
+  },
+  {
+    num: 6,
+    name: "复盘沉淀",
+    tag: "MEMORY LOOP",
+    countLabel: "持续沉淀",
+    variant: "memory",
+    footerChip: "cross-run · reflection",
+    agents: [
+      {
+        id: "memory_loop",
+        name: "记忆回路",
+        role: "Reflection",
+        desc: "每次决策都让系统更聪明",
+        avatarClass: "a-mem",
+      },
+    ],
+    detail: [
+      { label: "落盘", value: "决策档案全量存档" },
+      { label: "回灌", value: "历史经验注入下次 prompt" },
+      { label: "复利", value: "跨标的教训 / 越跑越懂" },
+    ],
+  },
+];

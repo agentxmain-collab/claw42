@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import styles from "./dispatchConsoleV9.module.css";
+import { FlowIntroView } from "./FlowIntroView";
 import { WatchTabs } from "./WatchTabs";
 import type { DispatchConsoleV9Props, DispatchView } from "./types";
 
@@ -49,7 +50,9 @@ export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Pro
         role="tabpanel"
         aria-labelledby="dispatch-tab-flow"
         hidden={activeView !== "flow"}
-      />
+      >
+        <FlowIntroView onGotoMarket={() => changeView("mkt")} />
+      </div>
       <div
         id="dispatch-panel-mkt"
         className={`view v-mkt${activeView === "mkt" ? " active" : ""}`}
