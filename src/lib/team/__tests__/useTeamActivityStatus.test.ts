@@ -16,6 +16,7 @@ function pmDecision(ts: number): PublicTimelineEvent {
     payload: {
       kind: "pm_decision",
       recordId: "record-1",
+      symbol: "BTC",
       tradeDecision: null,
       rationaleByMember: {
         fundamental_analyst: "Fundamental rationale.",

@@ -1,15 +1,19 @@
 import React from "react";
 import { ChatShell } from "./ChatShell";
 import { dispatchTopics } from "./fixtureData";
-import type { DispatchTopic } from "./types";
+import type { DispatchTopic, DispatchTopicAction } from "./types";
 
-export function MarketAnalysisView({
+export const MarketAnalysisView = React.memo(function MarketAnalysisView({
+  topics,
   onGotoFlow,
   onPlaceholder,
 }: {
+  topics?: DispatchTopic[];
   onGotoFlow: () => void;
-  onPlaceholder: (topic: DispatchTopic, actionLabel: string) => void;
+  onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
+  const resolvedTopics = topics ?? dispatchTopics;
+
   return (
     <>
       <header className="mkt-header">
@@ -25,7 +29,7 @@ export function MarketAnalysisView({
         </button>
       </header>
 
-      <ChatShell topics={dispatchTopics} onPlaceholder={onPlaceholder} />
+      <ChatShell topics={resolvedTopics} onPlaceholder={onPlaceholder} />
     </>
   );
-}
+});

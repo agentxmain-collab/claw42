@@ -30,6 +30,13 @@ describe("DispatchConsoleV9", () => {
     expect(html).toContain("topic pending collapsed");
   });
 
+  test("renders an empty real-topic state without falling back to fixtures", () => {
+    const html = renderToStaticMarkup(<DispatchConsoleV9 initialView="mkt" topics={[]} />);
+
+    expect(html).toContain("暂无符合公开展示条件的真实 PM 决策");
+    expect(html).not.toContain("BTC live market check");
+  });
+
   test("keeps keyboard helpers deterministic for tabs and topic toggles", () => {
     expect(resolveDispatchTabKey("flow", "ArrowRight")).toBe("mkt");
     expect(resolveDispatchTabKey("mkt", "ArrowRight")).toBe("flow");

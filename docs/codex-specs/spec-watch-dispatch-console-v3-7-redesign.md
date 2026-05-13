@@ -12,30 +12,34 @@
 
 ## 0. Dan Q1-Q4 拍板（2026-05-12）
 
-| 编号 | 决策 |
-|---|---|
-| Q1 | **不做 mobile** — Phase A 只针对 desktop（≥ 1280px viewport），mobile 后续 phase |
-| Q2 | **字体用 CoinW 现有 stack**（不引 Satoshi from Fontshare CDN），跟 claw42.ai 落地页对齐 |
-| Q3 | **v3.6 retire = 立即删除 + git history 留档**（不留 unmounted dead code，git log 是 backup） |
-| Q4 | **跟单按钮显示 + 跳转占位**（视觉完整，点击不真执行交易，跳到占位页或弹窗） |
+| 编号 | 决策                                                                                         |
+| ---- | -------------------------------------------------------------------------------------------- |
+| Q1   | **不做 mobile** — Phase A 只针对 desktop（≥ 1280px viewport），mobile 后续 phase             |
+| Q2   | **字体用 CoinW 现有 stack**（不引 Satoshi from Fontshare CDN），跟 claw42.ai 落地页对齐      |
+| Q3   | **v3.6 retire = 立即删除 + git history 留档**（不留 unmounted dead code，git log 是 backup） |
+| Q4   | **跟单按钮显示 + 跳转占位**（视觉完整，点击不真执行交易，跳到占位页或弹窗）                  |
 
 ---
 
 ## 1. 现状盘点
 
 ### main HEAD（v3.6 已 merge）
+
 - `061c9c1` style(watch): format dispatch console merge
 - `2e65ad8` Merge patch v3.6: Dispatch Console watch shell
 - v3.5 + v3.6 都已 merge，baseline gate PASS
 
 ### v3.6 当前 staging
+
 - URL: `https://claw42-site-4g65pptxn-agentxmain-collabs-projects.vercel.app`
 - 渲染：`src/modules/agent-watch/DispatchConsole.tsx`（来自 Claude Design zip handoff）
 
 ### v3.6 残留隐藏 side effects（Codex 发现）
+
 `AgentWatchBoard.tsx` 当前仍在跑 `useAgentAnalysis` + `/api/watch/history` + `liveQueue` 调度 + 补充 chatter timer，即使返回只渲染 DispatchConsole。**v3.7 必须 clean 这些隐藏代码路径**。
 
 ### prod 状态
+
 - claw42.ai 仍是 Act1 落地页，v3.6 未上 prod → v3.7 retire v3.6 不影响线上
 
 ---
@@ -43,6 +47,7 @@
 ## 2. 变更范围
 
 ### 新建
+
 - `src/modules/agent-watch/v9/DispatchConsoleV9.tsx` — v9 整页主组件
 - `src/modules/agent-watch/v9/WatchTabs.tsx` — 顶部 tabs 切换
 - `src/modules/agent-watch/v9/FlowIntroView.tsx` — Tab 1 流程介绍
@@ -60,16 +65,19 @@
 - `src/modules/agent-watch/v9/__tests__/DispatchConsoleV9.test.tsx` — 渲染/折叠/tab 切换/keyboard a11y
 
 ### 修改
+
 - `src/modules/agent-watch/AgentWatchBoard.tsx`
   - 改为渲染 `<DispatchConsoleV9 />` 替代 `<DispatchConsole />`
   - **clean 隐藏 side effects**：移除/gate `useAgentAnalysis` + `/api/watch/history` 调用 + `liveQueue` 调度 + 补充 chatter timer（在 v9 fixture-only Phase A 不需要的部分）
   - 保留 `events / evidenceMap / marketSnapshot` 数据 props 透传（即使 v9 fixture-only 也保留接口，方便 Phase B 接真数据）
 
 ### 删除（git 删除 + history 留档）
+
 - `src/modules/agent-watch/DispatchConsole.tsx`
 - `src/modules/agent-watch/dispatchConsoleData.ts`
 
 ### 不动
+
 - `src/lib/watch/publicTimelineProjection.ts`（v3.5 数据桥）
 - `src/lib/watch/publicTimelineEvent.ts`
 - `src/lib/team/strategyDecisionRecord.ts`
@@ -104,6 +112,7 @@
 **铁律**：保留 v9 HTML 原 class 名 + 原 CSS rules，**不**做 Tailwind utility 近似。v9 是视觉权威。
 
 **实施方式**：
+
 - CSS 体系迁移到 `dispatchConsoleV9.module.css`（CSS module 或 scoped global block）
 - v9 HTML 的全局选择器（`html`, `body`, `body::after`, `.view`, `.title` 等）必须 scoped 到 `.dispatch-console-v9` 根
 - v9 HTML 内 `body::after` 紫色渐变 → 改为 `.dispatch-console-v9::after` fixed child overlay
@@ -118,66 +127,78 @@ export type DispatchTopicStatus = "active" | "done" | "pending";
 
 export interface DispatchTopic {
   id: string;
-  symbol: string;              // "BTC" / "ETH" / "SOL"
+  symbol: string; // "BTC" / "ETH" / "SOL"
   status: DispatchTopicStatus;
-  title: string;               // "🔥 BTC live market check · BTC 距前低 0.35%..."
-  source: string;              // "Claw42 TopicGenerator"
-  startedAt: string;           // "19:22"
-  progress: string;            // "当前进行到阶段 3" / "28 分钟闭环" / "信息收集中"
-  intensity: number;           // 1-5
+  title: string; // "🔥 BTC live market check · BTC 距前低 0.35%..."
+  source: string; // "Claw42 TopicGenerator"
+  startedAt: string; // "19:22"
+  progress: string; // "当前进行到阶段 3" / "28 分钟闭环" / "信息收集中"
+  intensity: number; // 1-5
   trigger: {
-    ticker: string;            // "$BTC"
-    text: string;              // "Rewards Wallet 多链 swap..."
+    ticker: string; // "$BTC"
+    text: string; // "Rewards Wallet 多链 swap..."
   };
   stages: DispatchStageMarker[];
   messages: DispatchMessage[];
   strategy: DispatchStrategy;
-  defaultCollapsed: boolean;   // active=false / done=true / pending=true
+  defaultCollapsed: boolean; // active=false / done=true / pending=true
 }
 
 export interface DispatchStageMarker {
   id: string;
-  label: string;               // "阶段 1 · 信息收集"
+  label: string; // "阶段 1 · 信息收集"
   status: "done" | "active" | "pending" | "final";
 }
 
 export interface DispatchMessage {
   id: string;
-  stageId: string;             // 属于哪个 stage
-  agentId: "fundamental_analyst" | "sentiment_analyst" | "news_analyst" | "technical_analyst" | "bullish_researcher" | "bearish_researcher" | "trader" | "aggressive_reviewer" | "neutral_reviewer" | "conservative_reviewer" | "portfolio_manager" | "memory_loop";
-  agentName: string;           // "技术分析师"
-  agentRole?: string;          // "Fundamentals · Round 1 立论"
-  time: string;                // "19:22"
-  dataAge?: string;            // "数据 526 秒前"
-  mentions: string[];          // ["@看空", "@保守"]
+  stageId: string; // 属于哪个 stage
+  agentId:
+    | "fundamental_analyst"
+    | "sentiment_analyst"
+    | "news_analyst"
+    | "technical_analyst"
+    | "bullish_researcher"
+    | "bearish_researcher"
+    | "trader"
+    | "aggressive_reviewer"
+    | "neutral_reviewer"
+    | "conservative_reviewer"
+    | "portfolio_manager"
+    | "memory_loop";
+  agentName: string; // "技术分析师"
+  agentRole?: string; // "Fundamentals · Round 1 立论"
+  time: string; // "19:22"
+  dataAge?: string; // "数据 526 秒前"
+  mentions: string[]; // ["@看空", "@保守"]
   quote?: { agentName: string; text: string };
-  content: string;             // 气泡内容，可含 <b> 标签
-  typing?: boolean;            // 显示 typing 3 dot
+  content: string; // 气泡内容，可含 <b> 标签
+  typing?: boolean; // 显示 typing 3 dot
 }
 
 export interface DispatchStrategy {
   action: "wait" | "long" | "short" | "pending";
-  actionLabel: string;         // "分析中" / "SHORT 6%" / "PENDING"
-  name: string;                // "本次决策" / "已开仓" / "尚未决策"
-  meta: string;                // "3 个阶段已完成 · 交易员正在出方案..."
-  entry: string;               // "突破 82,041 / 跌破 80,537" / "待定"
-  stopLoss: string;            // "79,500" / "待定"
-  takeProfit: string;          // "82,000 / 82,500" / "待定"
+  actionLabel: string; // "分析中" / "SHORT 6%" / "PENDING"
+  name: string; // "本次决策" / "已开仓" / "尚未决策"
+  meta: string; // "3 个阶段已完成 · 交易员正在出方案..."
+  entry: string; // "突破 82,041 / 跌破 80,537" / "待定"
+  stopLoss: string; // "79,500" / "待定"
+  takeProfit: string; // "82,000 / 82,500" / "待定"
   follow: {
-    primaryLabel: string;      // "我跟了" / "已跟单" / "等待方案"
+    primaryLabel: string; // "我跟了" / "已跟单" / "等待方案"
     primaryDisabled: boolean;
-    secondaryLabel: string;    // "我没跟" / "查看详情" / "提醒我"
+    secondaryLabel: string; // "我没跟" / "查看详情" / "提醒我"
     watchCount: number;
     followCount: number;
-    expiryNote?: string;       // "30m 后失效"
+    expiryNote?: string; // "30m 后失效"
   };
 }
 
 export interface DispatchFlowStage {
   num: 1 | 2 | 3 | 4 | 5 | 6;
-  name: string;                // "信息收集"
-  tag: string;                 // "ANALYSTS"
-  countLabel: string;          // "并行采集"
+  name: string; // "信息收集"
+  tag: string; // "ANALYSTS"
+  countLabel: string; // "并行采集"
   variant?: "debate" | "final" | "memory";
   agents: { id: string; name: string; role: string; desc: string; avatarClass: string }[];
   detail: { label: string; value: string }[];
@@ -188,6 +209,7 @@ export interface DispatchFlowStage {
 ### 5.3 跟单按钮处理（Q4 拍板）
 
 按钮显示但 click 时**不真执行**：
+
 - onClick = navigate to placeholder route（如 `/agent/follow/[topicId]`）或弹 modal 提示"功能开发中，暂不支持执行"
 - 占位页内容：感谢提示 + 通知订阅入口 + 回 `/agent` 链接
 - 已跟单状态的"已跟单"按钮始终 disabled
@@ -195,6 +217,7 @@ export interface DispatchFlowStage {
 ### 5.4 AgentWatchBoard 清理 scope（Codex 建议）
 
 `AgentWatchBoard.tsx` 当前在跑的隐藏 side effects 全部移除/gate：
+
 - `useAgentAnalysis` hook 调用
 - `/api/watch/history` fetch
 - `liveQueue` 调度（如有 polling/timer）
@@ -205,6 +228,7 @@ export interface DispatchFlowStage {
 ### 5.5 Accessibility 要求（Codex 建议）
 
 v9 HTML 原版 a11y 不达标，React 实施时必须补：
+
 - Tabs 用 `<button>` + `aria-selected` + `role="tab"` + `role="tablist"` + `aria-controls`
 - Topic toggle 用 `<button>` + `aria-expanded="true|false"` + `aria-controls`
 - Topic body region 用 `role="region"` + `aria-labelledby`
@@ -216,23 +240,27 @@ v9 HTML 原版 a11y 不达标，React 实施时必须补：
 ## 6. 具体要求（按 A0-A5 拆分）
 
 ### A0 — 视觉源契约 + 决策固定（0 天，本 spec 内）
+
 - v9 HTML 作为视觉权威
 - desktop 目标 viewport：1440×1000（主验收）+ 1280×800（边界验收）
 - mobile 不做（Q1）
 - 字体：CoinW 现有 stack（Q2）
 
 ### A1 — Scoped CSS shell（0.75-1.5 AI 天）
+
 - 建 `v9/` 目录 + `dispatchConsoleV9.module.css`
 - 移植 v9 :root tokens / topbar / tabs / 全局 layout / fadeInUp 动画
 - 所有 v9 全局选择器 scoped 到 `.dispatch-console-v9` 根
 - 验证：no global leakage（落地页 Act1 视觉不变）
 
 ### A2 — FlowIntroView（1-1.5 AI 天）
+
 - 6 stage horizontal cards（v4 layout：左侧 stage info + 右侧 agents grid + stage detail）
 - 11 角色 fixture data（基本面/情绪/新闻/技术/看多/看空/交易员/激进/中立/保守/PM/memory）
 - a11y：Tabs 控件 semantics
 
 ### A3 — MarketAnalysisView / ChatShell / Topic 卡片（1.5-2.5 AI 天）
+
 - chat-shell 大边界容器（含 head + body）
 - body height: calc(100vh - 280px) + min-height: 480px + overflow-y: auto + scrollbar 样式化
 - Topic 卡（独立 border + neutral 配色 + 状态色仅体现在内部 live-tag pill）
@@ -245,12 +273,14 @@ v9 HTML 原版 a11y 不达标，React 实施时必须补：
 - 跟单按钮 onClick → 跳转占位页（Q4）
 
 ### A4 — Entry 集成 + AgentWatchBoard 清理（0.75-1.25 AI 天）
+
 - `AgentWatchBoard.tsx` 替换渲染入口为 `<DispatchConsoleV9 />`
 - 移除/gate 老 side effects（`useAgentAnalysis` / `/api/watch/history` / `liveQueue` / 补充 chatter timer）
 - **删除** `DispatchConsole.tsx` + `dispatchConsoleData.ts`（git 删除）
 - grep 所有引用点 audit，确保删除后没有 broken import
 
 ### A5 — 验证 + staging（1-1.5 AI 天）
+
 - `npx tsc --noEmit` / `npm run lint` / `MINIMAX_API_KEY=dummy DEEPSEEK_API_KEY=dummy npm run build` / `npm run verify:a11y` / `npm run verify:metrics` / `npx vitest run` 全过
 - 自己跑 `npx vercel` 部署 staging（带 `STAGING_USE_FIXTURE=true` runtime env）
 - 自己跑 `vercel curl` 验证 `/api/watch/timeline` 仍返回 6 key rationaleByMember
@@ -262,6 +292,7 @@ v9 HTML 原版 a11y 不达标，React 实施时必须补：
 ## 7. 验收标准
 
 ### 编译 / Lint / Build
+
 - [ ] `npx tsc --noEmit` PASS
 - [ ] `npm run lint` PASS
 - [ ] `npm run build` PASS（带 dummy LLM API keys）
@@ -270,6 +301,7 @@ v9 HTML 原版 a11y 不达标，React 实施时必须补：
 - [ ] `npx vitest run` PASS
 
 ### 视觉对照（Codex 自己跑）
+
 - [ ] desktop 1440×1000 截图 vs v9 standalone HTML 像素级一致（允许字体微差异）
 - [ ] desktop 1280×800 截图 layout 不破坏
 - [ ] Tab 1（流程介绍）6 stage horizontal layout 与 v9 一致
@@ -278,6 +310,7 @@ v9 HTML 原版 a11y 不达标，React 实施时必须补：
 - [ ] 跟单按钮点击跳转占位（Q4）
 
 ### 行为 / 集成
+
 - [ ] AgentWatchBoard 老 side effects 已 clean（grep 确认 `useAgentAnalysis` / `/api/watch/history` 不再调用）
 - [ ] v3.6 `DispatchConsole.tsx` + `dispatchConsoleData.ts` 已删除
 - [ ] no broken import（`grep -rn "DispatchConsole" src/` 0 个 stale 引用）
@@ -285,12 +318,14 @@ v9 HTML 原版 a11y 不达标，React 实施时必须补：
 - [ ] staging API `/api/watch/timeline` 仍返回正确 events.length + 6 key rationaleByMember
 
 ### A11y
+
 - [ ] Tabs 含 `role="tab"` + `aria-selected` + 键盘左右箭头切换
 - [ ] Topic toggle 含 `aria-expanded` + 键盘 Enter/Space toggle
 - [ ] Topic body 含 `role="region"` + `aria-labelledby`
 - [ ] LIVE / active 状态变化用 `aria-live="polite"`
 
 ### Staging
+
 - [ ] `npx vercel`（不带 `--prod`）部署带 `STAGING_USE_FIXTURE=true` runtime env
 - [ ] preview URL 给 F 审核 + Dan 浏览器验收
 
@@ -326,15 +361,15 @@ v9 HTML 原版 a11y 不达标，React 实施时必须补：
 
 ## 10. 工作量预估（Codex 校准）
 
-| Phase A sub | 时间 |
-|---|---|
-| A0 视觉源契约 | 0（决策固定） |
-| A1 scoped CSS shell | 0.75-1.5 |
-| A2 FlowIntroView | 1-1.5 |
-| A3 MarketAnalysisView + ChatShell + Topic | 1.5-2.5 |
-| A4 entry 集成 + AgentWatchBoard 清理 + v3.6 删除 | 0.75-1.25 |
-| A5 验证 + staging | 1-1.5 |
-| **总计** | **5-8 AI 天** |
+| Phase A sub                                      | 时间          |
+| ------------------------------------------------ | ------------- |
+| A0 视觉源契约                                    | 0（决策固定） |
+| A1 scoped CSS shell                              | 0.75-1.5      |
+| A2 FlowIntroView                                 | 1-1.5         |
+| A3 MarketAnalysisView + ChatShell + Topic        | 1.5-2.5       |
+| A4 entry 集成 + AgentWatchBoard 清理 + v3.6 删除 | 0.75-1.25     |
+| A5 验证 + staging                                | 1-1.5         |
+| **总计**                                         | **5-8 AI 天** |
 
 （F 原估 7-12 AI 天，Codex 校准 5-8 因走 scoped CSS 转换不重写 Tailwind）
 
@@ -343,6 +378,7 @@ v9 HTML 原版 a11y 不达标，React 实施时必须补：
 ## 11. Phase B（独立 spec，本 spec 不实施）
 
 Phase B 范围（待 Phase A 完成 + 老板验收后启动）：
+
 - 真 chat 数据流（接 publicTimelineProjection 输出 → 转 Topic.messages）
 - 多 topic 动态生成（PM decision 聚合规则）
 - Intensity 激烈度算法（severity + agent 分歧度）

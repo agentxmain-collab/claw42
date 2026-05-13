@@ -16,10 +16,10 @@ export const dispatchFlowStages: DispatchFlowStage[] = [
         avatarClass: "a-fund",
       },
       {
-        id: "sentiment_analyst",
-        name: "情绪分析师",
-        role: "Sentiment",
-        desc: "社交媒体 / 情绪打分",
+        id: "onchain_analyst",
+        name: "链上分析师",
+        role: "On-chain",
+        desc: "地址行为 / 资金流 / 链上活跃度",
         avatarClass: "a-sent",
       },
       {
@@ -210,7 +210,7 @@ export const dispatchTopics: DispatchTopic[] = [
         dataAge: "数据 526 秒前",
         mentions: [],
         content:
-          "$BTC 现价 <b>80,730</b>，距 24h 低 80,537 仅 0.24%。下方止损单堆积，<b>失守 80,537 可能触发瀑布</b>。",
+          "$BTC 现价 **80,730**，距 24h 低 80,537 仅 0.24%。下方止损单堆积，**失守 80,537 可能触发瀑布**。",
       },
       {
         id: "btc-news-1",
@@ -225,17 +225,17 @@ export const dispatchTopics: DispatchTopic[] = [
           text: "失守 80,537 可能触发瀑布",
         },
         content:
-          "Rewards Wallet 多链 swap 引入新流动性，但 24h 内 ETF 净流出 2.1 亿。<b>多空因素互抵</b>。",
+          "Rewards Wallet 多链 swap 引入新流动性，但 24h 内 ETF 净流出 2.1 亿。**多空因素互抵**。",
       },
       {
-        id: "btc-sentiment-1",
+        id: "btc-onchain-1",
         stageId: "btc-stage-1",
-        agentId: "sentiment_analyst",
-        agentName: "情绪分析师",
+        agentId: "onchain_analyst",
+        agentName: "链上分析师",
         time: "19:23",
         dataAge: "数据 526 秒前",
         mentions: [],
-        content: 'X 24h 情绪打分 <b>48 / 100</b>，从昨日 62 大幅回落。"恐慌"提及率上升 32%。',
+        content: "活跃地址 24h 下滑 **3.8%**，交易所净流入升高，短线筹码开始偏防守。",
       },
       {
         id: "btc-fundamental-1",
@@ -245,7 +245,7 @@ export const dispatchTopics: DispatchTopic[] = [
         time: "19:24",
         dataAge: "数据 533 秒前",
         mentions: [],
-        content: "链上长持地址余额 24h <b>−0.4%</b>，首次出现减仓信号。<b>结构开始动摇</b>。",
+        content: "链上长持地址余额 24h **−0.4%**，首次出现减仓信号。**结构开始动摇**。",
       },
       {
         id: "btc-bear-1",
@@ -254,7 +254,7 @@ export const dispatchTopics: DispatchTopic[] = [
         agentName: "看空研究员",
         time: "19:26",
         mentions: [],
-        content: "情绪转空 + 链上减仓 + ETF 流出 + 关键位附近，<b>四向背离</b>。建议 SHORT 80,537 失守。",
+        content: "链上减仓 + ETF 流出 + 关键位附近，**三向共振**。建议 SHORT 80,537 失守。",
       },
       {
         id: "btc-bull-1",
@@ -267,7 +267,8 @@ export const dispatchTopics: DispatchTopic[] = [
           agentName: "看空",
           text: "四向背离，建议 SHORT 80,537 失守",
         },
-        content: "情绪从 62 回落到 48 是正常修正，<b>不是恐慌</b>。新流动性可能抵消 ETF 流出。<b>等失守再确认</b>。",
+        content:
+          "链上净流入可能只是短期换手，**不是趋势确认**。新流动性可能抵消 ETF 流出。**等失守再确认**。",
       },
       {
         id: "btc-trader-typing",
@@ -327,7 +328,7 @@ export const dispatchTopics: DispatchTopic[] = [
         agentName: "技术分析师",
         time: "18:11",
         mentions: [],
-        content: "$ETH <b>2,548</b>。4h 失守 EMA50（2,560），下方支撑 2,460。<b>下行结构成立</b>。",
+        content: "$ETH **2,548**。4h 失守 EMA50（2,560），下方支撑 2,460。**下行结构成立**。",
       },
       {
         id: "eth-bear-1",
@@ -336,7 +337,7 @@ export const dispatchTopics: DispatchTopic[] = [
         agentName: "看空研究员",
         time: "18:14",
         mentions: [],
-        content: "技术 + 资金面双重背离，<b>清晰偏空 SHORT</b>。",
+        content: "技术 + 资金面双重背离，**清晰偏空 SHORT**。",
       },
       {
         id: "eth-bull-1",
@@ -349,7 +350,7 @@ export const dispatchTopics: DispatchTopic[] = [
           agentName: "看空",
           text: "技术 + 资金面双重背离",
         },
-        content: "承认短期偏空。<b>仅注意 2,460 是关键支撑</b>。",
+        content: "承认短期偏空。**仅注意 2,460 是关键支撑**。",
       },
       {
         id: "eth-trader-1",
@@ -358,7 +359,7 @@ export const dispatchTopics: DispatchTopic[] = [
         agentName: "交易员",
         time: "18:20",
         mentions: [],
-        content: "方案 <b>SHORT</b>。入场 2,548-2,560 / 止损 2,610 / 止盈 2,460-2,400 / 仓位 6%。",
+        content: "方案 **SHORT**。入场 2,548-2,560 / 止损 2,610 / 止盈 2,460-2,400 / 仓位 6%。",
       },
       {
         id: "eth-neutral-1",
@@ -367,7 +368,7 @@ export const dispatchTopics: DispatchTopic[] = [
         agentName: "中立派",
         time: "18:30",
         mentions: ["@保守 @激进"],
-        content: "<b>采纳保守 6% · 拒绝加仓</b>。风险线 2,610 不动。",
+        content: "**采纳保守 6% · 拒绝加仓**。风险线 2,610 不动。",
       },
       {
         id: "eth-pm-1",
@@ -376,7 +377,7 @@ export const dispatchTopics: DispatchTopic[] = [
         agentName: "组合经理",
         time: "18:35",
         mentions: [],
-        content: "<b>批准 SHORT</b>。组合对冲性 SHORT，风险预算未超限。<b>已送执行</b>。",
+        content: "**批准 SHORT**。组合对冲性 SHORT，风险预算未超限。**已送执行**。",
       },
       {
         id: "eth-memory-1",
@@ -385,7 +386,7 @@ export const dispatchTopics: DispatchTopic[] = [
         agentName: "记忆回路",
         time: "18:38",
         mentions: [],
-        content: "已落盘 #s-4205。同标的 SHORT 30 日胜率 <b>58%</b>。经验已注入所有 agent prompt。",
+        content: "已落盘 #s-4205。同标的 SHORT 30 日胜率 **58%**。经验已注入所有 agent prompt。",
       },
     ],
     strategy: {
@@ -429,7 +430,7 @@ export const dispatchTopics: DispatchTopic[] = [
         id: "sol-stage-1",
         label: "阶段 1 · 信息收集 · 刚启动",
         status: "active",
-        note: "情绪 / 新闻 分析师等待数据源就绪",
+        note: "链上 / 新闻 分析师等待数据源就绪",
       },
       {
         id: "sol-stage-2",
@@ -446,7 +447,7 @@ export const dispatchTopics: DispatchTopic[] = [
         agentName: "技术分析师",
         time: "19:31",
         mentions: [],
-        content: "$SOL <b>168.4</b>。24h −2.1%。阻力 175 / 支撑 165。区间震荡。",
+        content: "$SOL **168.4**。24h −2.1%。阻力 175 / 支撑 165。区间震荡。",
       },
       {
         id: "sol-fundamental-typing",

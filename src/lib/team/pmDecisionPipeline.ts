@@ -398,6 +398,7 @@ function makePublicTimelineEntry(
     payload: {
       kind: "pm_decision",
       recordId: record.id,
+      symbol: record.symbol,
       tradeDecision: record.tradeDecision,
       rationaleByMember: Object.fromEntries(
         record.analystInputs.map((input) => [input.memberId, input.rationale]),

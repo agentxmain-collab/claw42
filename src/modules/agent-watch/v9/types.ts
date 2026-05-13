@@ -10,7 +10,7 @@ export type DispatchStageStatus = "done" | "active" | "pending" | "final";
 
 export type DispatchAgentId =
   | "fundamental_analyst"
-  | "sentiment_analyst"
+  | "onchain_analyst"
   | "news_analyst"
   | "technical_analyst"
   | "bullish_researcher"
@@ -111,9 +111,18 @@ export interface DispatchTopic {
   defaultCollapsed: boolean;
 }
 
+export type DispatchTopicAction = "primary" | "secondary";
+
 export interface DispatchConsoleV9Props {
   events?: PublicTimelineEvent[];
   evidenceMap?: Record<string, NewsEvidence>;
   marketSnapshot?: MarketTickerPayload | null;
+  topics?: DispatchTopic[];
   initialView?: DispatchView;
+  onViewChange?: (view: DispatchView) => void;
+  onTopicAction?: (
+    topic: DispatchTopic,
+    actionLabel: string,
+    action: DispatchTopicAction,
+  ) => void | Promise<void>;
 }

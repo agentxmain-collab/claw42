@@ -5,7 +5,12 @@ import styles from "./dispatchConsoleV9.module.css";
 import { FlowIntroView } from "./FlowIntroView";
 import { MarketAnalysisView } from "./MarketAnalysisView";
 import { WatchTabs } from "./WatchTabs";
-import type { DispatchConsoleV9Props, DispatchTopic, DispatchView } from "./types";
+import type {
+  DispatchConsoleV9Props,
+  DispatchTopic,
+  DispatchTopicAction,
+  DispatchView,
+} from "./types";
 
 function formatClock(date: Date) {
   const hh = String(date.getHours()).padStart(2, "0");
@@ -14,13 +19,8 @@ function formatClock(date: Date) {
   return `${hh}:${mm}:${ss} · UTC+8`;
 }
 
-export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Props) {
-  const [activeView, setActiveView] = useState<DispatchView>(initialView);
+function Clock() {
   const [clock, setClock] = useState("19:31:42 · UTC+8");
-  const [placeholder, setPlaceholder] = useState<{
-    topic: DispatchTopic;
-    actionLabel: string;
-  } | null>(null);
 
   useEffect(() => {
     setClock(formatClock(new Date()));
@@ -28,10 +28,42 @@ export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Pro
     return () => window.clearInterval(timer);
   }, []);
 
+  return <span className="topbar-clock">{clock}</span>;
+}
+
+export function DispatchConsoleV9({
+  topics,
+  initialView = "flow",
+  onViewChange,
+  onTopicAction,
+}: DispatchConsoleV9Props) {
+  const [activeView, setActiveView] = useState<DispatchView>(initialView);
+  const [placeholder, setPlaceholder] = useState<{
+    topic: DispatchTopic;
+    actionLabel: string;
+  } | null>(null);
+
   function changeView(view: DispatchView) {
     setActiveView(view);
+    onViewChange?.(view);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  function handleTopicAction(
+    topic: DispatchTopic,
+    actionLabel: string,
+    action: DispatchTopicAction,
+  ) {
+    void onTopicAction?.(topic, actionLabel, action);
+    setPlaceholder({ topic, actionLabel });
+  }
+
+  const flowClassName = ["view", "v-flow", activeView === "flow" ? "active" : ""]
+    .filter(Boolean)
+    .join(" ");
+  const marketClassName = ["view", "v-mkt", activeView === "mkt" ? "active" : ""]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <section className={`${styles.root} dispatch-console-v9`} aria-label="Claw42 dispatch console">
@@ -47,12 +79,12 @@ export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Pro
           <span className="live-dot" aria-hidden="true" />
           LIVE
         </span>
-        <span className="topbar-clock">{clock}</span>
+        <Clock />
       </div>
 
       <div
         id="dispatch-panel-flow"
-        className={`view v-flow${activeView === "flow" ? " active" : ""}`}
+        className={flowClassName}
         role="tabpanel"
         aria-labelledby="dispatch-tab-flow"
         hidden={activeView !== "flow"}
@@ -61,14 +93,15 @@ export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Pro
       </div>
       <div
         id="dispatch-panel-mkt"
-        className={`view v-mkt${activeView === "mkt" ? " active" : ""}`}
+        className={marketClassName}
         role="tabpanel"
         aria-labelledby="dispatch-tab-mkt"
         hidden={activeView !== "mkt"}
       >
         <MarketAnalysisView
+          topics={topics}
           onGotoFlow={() => changeView("flow")}
-          onPlaceholder={(topic, actionLabel) => setPlaceholder({ topic, actionLabel })}
+          onPlaceholder={handleTopicAction}
         />
       </div>
       {placeholder ? (
@@ -82,7 +115,8 @@ export function DispatchConsoleV9({ initialView = "flow" }: DispatchConsoleV9Pro
             <div className="follow-placeholder-kicker">{placeholder.topic.trigger.ticker}</div>
             <h2 id="follow-placeholder-title">跟单功能开发中</h2>
             <p>
-              已记录「{placeholder.actionLabel}」占位操作。Phase A 不执行交易，后续会接入授权和风险确认流程。
+              已记录「{placeholder.actionLabel}」占位操作。Phase A
+              不执行交易，后续会接入授权和风险确认流程。
             </p>
             <button
               className="follow-placeholder-close"
