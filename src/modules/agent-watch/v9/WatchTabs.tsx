@@ -7,9 +7,7 @@ export function resolveDispatchTabKey(current: DispatchView, key: string): Dispa
   const currentIndex = DISPATCH_VIEWS.indexOf(current);
   if (key === "ArrowRight") return DISPATCH_VIEWS[(currentIndex + 1) % DISPATCH_VIEWS.length]!;
   if (key === "ArrowLeft") {
-    return DISPATCH_VIEWS[
-      (currentIndex - 1 + DISPATCH_VIEWS.length) % DISPATCH_VIEWS.length
-    ]!;
+    return DISPATCH_VIEWS[(currentIndex - 1 + DISPATCH_VIEWS.length) % DISPATCH_VIEWS.length]!;
   }
   return current;
 }
@@ -32,7 +30,7 @@ export function WatchTabs({
     <div className="topbar-tabs" role="tablist" aria-label="Watch dispatch views">
       <button
         id="dispatch-tab-flow"
-        className={`ttab${activeView === "flow" ? " active" : ""}`}
+        className={["ttab", activeView === "flow" && "active"].filter(Boolean).join(" ")}
         type="button"
         role="tab"
         aria-selected={activeView === "flow"}
@@ -45,7 +43,7 @@ export function WatchTabs({
       </button>
       <button
         id="dispatch-tab-mkt"
-        className={`ttab${activeView === "mkt" ? " active" : ""}`}
+        className={["ttab", activeView === "mkt" && "active"].filter(Boolean).join(" ")}
         type="button"
         role="tab"
         aria-selected={activeView === "mkt"}

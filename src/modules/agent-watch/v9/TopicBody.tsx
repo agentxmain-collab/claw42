@@ -17,13 +17,7 @@ function StageMarker({ stage }: { stage: DispatchStageMarker }) {
   );
 }
 
-export function TopicBody({
-  topic,
-  bodyId,
-}: {
-  topic: DispatchTopic;
-  bodyId: string;
-}) {
+export function TopicBody({ topic, bodyId }: { topic: DispatchTopic; bodyId: string }) {
   return (
     <div
       id={bodyId}
