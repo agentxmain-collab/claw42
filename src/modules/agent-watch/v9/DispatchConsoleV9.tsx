@@ -58,6 +58,13 @@ export function DispatchConsoleV9({
     setPlaceholder({ topic, actionLabel });
   }
 
+  const flowClassName = ["view", "v-flow", activeView === "flow" ? "active" : ""]
+    .filter(Boolean)
+    .join(" ");
+  const marketClassName = ["view", "v-mkt", activeView === "mkt" ? "active" : ""]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <section className={`${styles.root} dispatch-console-v9`} aria-label="Claw42 dispatch console">
       <div className="topbar">
@@ -77,7 +84,7 @@ export function DispatchConsoleV9({
 
       <div
         id="dispatch-panel-flow"
-        className={`view v-flow${activeView === "flow" ? "active" : ""}`}
+        className={flowClassName}
         role="tabpanel"
         aria-labelledby="dispatch-tab-flow"
         hidden={activeView !== "flow"}
@@ -86,7 +93,7 @@ export function DispatchConsoleV9({
       </div>
       <div
         id="dispatch-panel-mkt"
-        className={`view v-mkt${activeView === "mkt" ? "active" : ""}`}
+        className={marketClassName}
         role="tabpanel"
         aria-labelledby="dispatch-tab-mkt"
         hidden={activeView !== "mkt"}
