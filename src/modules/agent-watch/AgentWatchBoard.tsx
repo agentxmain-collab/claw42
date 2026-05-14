@@ -61,8 +61,9 @@ export function AgentWatchBoard({
   console?: ComponentType<DispatchConsoleV9Props>;
   initialView?: DispatchView;
 }) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const agentWatchLocale = resolveAgentWatchLocale(locale);
+  const outcomeDict = t.agentWatch.dispatchV10.outcome;
   const [timelineEvents, setTimelineEvents] = useState<PublicTimelineEvent[]>([]);
   const [timelineEvidenceMap, setTimelineEvidenceMap] = useState<Record<string, NewsEvidence>>({});
   const [followStatsByRecordId, setFollowStatsByRecordId] = useState<
@@ -273,8 +274,9 @@ export function AgentWatchBoard({
         evidenceMap: timelineEvidenceMap,
         followStatsByRecordId,
         locale: agentWatchLocale,
+        outcomeDict,
       }),
-    [agentWatchLocale, followStatsByRecordId, timelineEvents, timelineEvidenceMap],
+    [agentWatchLocale, followStatsByRecordId, outcomeDict, timelineEvents, timelineEvidenceMap],
   );
 
   const broadcastFollowUpdate = useCallback((recordId: string) => {

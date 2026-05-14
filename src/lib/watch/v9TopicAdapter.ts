@@ -1,4 +1,4 @@
-import type { Locale } from "@/i18n/types";
+import type { DispatchV10OutcomeDict, Locale } from "@/i18n/types";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import {
   getDispatchAgentDisplayName,
@@ -31,6 +31,7 @@ export interface V9AdapterContext {
   evidenceMap?: Readonly<Record<string, NewsEvidence | undefined>>;
   followStatsByRecordId?: Readonly<Record<string, FollowStatsSnapshot | undefined>>;
   locale: Locale;
+  outcomeDict: DispatchV10OutcomeDict;
   now?: number;
 }
 
@@ -67,6 +68,10 @@ function formatPrice(value: number) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: value >= 100 ? 2 : 4,
   }).format(value);
+}
+
+function replaceVars(template: string, vars: Readonly<Record<string, string | number>>) {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => String(vars[key] ?? ""));
 }
 
 function formatEntry(entryRange: TradeDecision["entryRange"], entryPrice: number | null) {
@@ -167,6 +172,7 @@ function makeStages(
   topicId: string,
   hasTradeDecision: boolean,
   hasResolution = false,
+  outcomeDict: DispatchV10OutcomeDict,
 ): DispatchStageMarker[] {
   if (!hasTradeDecision) {
     return [
@@ -194,7 +200,7 @@ function makeStages(
           id: stageId(topicId, 6),
           label: "阶段 6 · 复盘沉淀",
           status: "pending",
-          note: "暂无复盘沉淀，等待结果回写",
+          note: outcomeDict.pending,
         },
   ];
 }
@@ -298,6 +304,7 @@ function makeResolutionMessage(
   event: PmDecisionTimelineEvent,
   locale: Locale,
   now: number,
+  outcomeDict: DispatchV10OutcomeDict,
 ): DispatchMessage | null {
   const resolution = event.payload.resolution;
   if (!resolution) return null;
@@ -312,27 +319,32 @@ function makeResolutionMessage(
     time: formatTime(timestamp),
     dataAge: formatDataAge(timestamp, now),
     mentions: [],
-    content: resolutionContent(resolution),
+    content: resolutionContent(resolution, outcomeDict),
   };
 }
 
 function resolutionContent(
   resolution: NonNullable<PmDecisionTimelineEvent["payload"]["resolution"]>,
+  outcomeDict: DispatchV10OutcomeDict,
 ) {
   const price =
-    typeof resolution.observedPrice === "number"
-      ? `观察价 ${formatPrice(resolution.observedPrice)}。`
-      : "";
+    typeof resolution.observedPrice === "number" ? formatPrice(resolution.observedPrice) : "N/A";
+  const reason =
+    resolution.reason && resolution.reason in outcomeDict.reason
+      ? outcomeDict.reason[resolution.reason]
+      : (resolution.reason ?? "");
 
   switch (resolution.outcome) {
     case "hit_tp":
-      return `结果 **止盈达成**。${price}这笔决策已进入复盘库，后续同类场景会引用本次证据链。`;
+      return replaceVars(outcomeDict.hit_tp, { price, reason });
     case "hit_sl":
-      return `结果 **止损触发**。${price}风险边界已生效，本次失效条件会回灌后续仓位判断。`;
+      return replaceVars(outcomeDict.hit_sl, { price, reason });
     case "expired":
-      return `结果 **到期未触发**。${price}机会窗口已关闭，记录为等待成本样本。`;
+      return replaceVars(outcomeDict.expired, { price, reason });
     case "manual_close":
-      return `结果 **人工关闭**。${price}本次人工干预已进入复盘库。`;
+      return replaceVars(outcomeDict.manual_close, { price, reason });
+    default:
+      return outcomeDict.pending;
   }
 }
 
@@ -341,6 +353,7 @@ function makeMessages(
   locale: Locale,
   now: number,
   hasRationale: boolean,
+  outcomeDict: DispatchV10OutcomeDict,
 ) {
   const topicId = group.id;
   const event = group.latestDecision;
@@ -348,7 +361,7 @@ function makeMessages(
     ...makeRationaleMessages({ event, topicId, locale, now }),
     makeTraderMessage(topicId, event, locale, hasRationale),
     makePmMessage(topicId, event, locale),
-    makeResolutionMessage(topicId, event, locale, now),
+    makeResolutionMessage(topicId, event, locale, now, outcomeDict),
   ].filter((message): message is DispatchMessage => Boolean(message));
 }
 
@@ -491,8 +504,13 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         ticker: `$${group.symbol}`,
         text: evidence?.summary || evidence?.title || `${group.symbol} 真实交易决策`,
       },
-      stages: makeStages(group.id, hasTradeDecision, Boolean(latest.payload.resolution)),
-      messages: makeMessages(group, ctx.locale, now, hasRationale),
+      stages: makeStages(
+        group.id,
+        hasTradeDecision,
+        Boolean(latest.payload.resolution),
+        ctx.outcomeDict,
+      ),
+      messages: makeMessages(group, ctx.locale, now, hasRationale, ctx.outcomeDict),
       strategy: makeStrategy(group, ctx.followStatsByRecordId?.[recordId], hasRationale),
       defaultCollapsed: index > 0,
     };
