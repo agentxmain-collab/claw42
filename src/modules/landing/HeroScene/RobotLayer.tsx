@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
+import { withBasePath } from "@/lib/basePath";
 import { useAgentAnalysis } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import { resolveAgentWatchLocale } from "@/modules/agent-watch/locale";
 import type { Pose } from "./useRobotPose";
@@ -20,8 +21,8 @@ interface RobotLayerProps {
 }
 
 const POSE_SRC: Record<"left" | "right", string> = {
-  left: "/images/hero/robot-left.png",
-  right: "/images/hero/robot-right.png",
+  left: withBasePath("/images/hero/robot-left.png"),
+  right: withBasePath("/images/hero/robot-right.png"),
 };
 
 const FACE_LAYOUT = {
@@ -259,7 +260,7 @@ export function RobotLayer({
                 }}
               >
                 <motion.img
-                  src="/images/hero/robot-eyes.png"
+                  src={withBasePath("/images/hero/robot-eyes.png")}
                   alt=""
                   aria-hidden="true"
                   draggable={false}
@@ -302,7 +303,7 @@ export function RobotLayer({
                   }
                 >
                   <motion.img
-                    src="/images/hero/robot-mouth.png"
+                    src={withBasePath("/images/hero/robot-mouth.png")}
                     alt=""
                     aria-hidden="true"
                     draggable={false}

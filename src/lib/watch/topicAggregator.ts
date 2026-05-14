@@ -23,7 +23,8 @@ function isPmDecisionEvent(event: PublicTimelineEvent): event is PmDecisionTimel
 }
 
 function normalizedSymbol(event: PmDecisionTimelineEvent) {
-  const symbol = event.payload.symbol.trim().toUpperCase();
+  if (typeof event.payload.symbol !== "string") return null;
+  const symbol = event.payload.symbol.trim().replace(/^\$+/, "").toUpperCase();
   return symbol && symbol !== "UNKNOWN" ? symbol : null;
 }
 

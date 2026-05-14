@@ -16,6 +16,15 @@ describe("replayToDecisionRecord", () => {
       expect(record.schemaVersion).toBe(1);
     },
   );
+
+  test("normalizes legacy replay symbols before returning decision records", () => {
+    const record = replayToDecisionRecord({
+      ...makeReplay("alpha"),
+      symbol: " $$eth ",
+    });
+
+    expect(record.symbol).toBe("ETH");
+  });
 });
 
 function makeReplay(legacyFactionId: FactionId): StrategyReplay {

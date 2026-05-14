@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
+import { withBasePath } from "@/lib/basePath";
 import type { CoinSymbol, TickerData, TickerMap } from "@/modules/agent-watch/types";
 import { formatCoinSymbol } from "@/modules/agent-watch/utils/symbolFormat";
 
@@ -41,7 +42,7 @@ const COINS: CoinConfig[] = [
   {
     symbol: "BTC",
     label: "Bitcoin",
-    src: "/images/hero/coin-btc.png",
+    src: withBasePath("/images/hero/coin-btc.png"),
     anchor: { top: "17%", left: "31%" },
     sizeClass: "w-[64px] md:w-[96px] lg:w-[106px]",
     calloutSide: "left",
@@ -55,7 +56,7 @@ const COINS: CoinConfig[] = [
   {
     symbol: "ETH",
     label: "Ethereum",
-    src: "/images/hero/coin-eth.png",
+    src: withBasePath("/images/hero/coin-eth.png"),
     anchor: { top: "18%", right: "31%" },
     sizeClass: "w-[56px] md:w-[80px] lg:w-[88px]",
     calloutSide: "right",
@@ -69,7 +70,7 @@ const COINS: CoinConfig[] = [
   {
     symbol: "SOL",
     label: "Solana",
-    src: "/images/hero/coin-sol.png",
+    src: withBasePath("/images/hero/coin-sol.png"),
     anchor: { top: "42%", left: "37%" },
     sizeClass: "w-[60px] md:w-[88px] lg:w-[96px]",
     calloutSide: "left",
@@ -83,7 +84,7 @@ const COINS: CoinConfig[] = [
   {
     symbol: "USDT",
     label: "Tether",
-    src: "/images/hero/coin-usdt.png",
+    src: withBasePath("/images/hero/coin-usdt.png"),
     anchor: { top: "42%", right: "37%" },
     sizeClass: "w-[60px] md:w-[88px] lg:w-[96px]",
     calloutSide: "right",

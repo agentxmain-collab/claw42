@@ -3,10 +3,8 @@ import { MessageBubble } from "./MessageBubble";
 import type { DispatchStageMarker, DispatchTopic } from "./types";
 
 function StageMarker({ stage }: { stage: DispatchStageMarker }) {
-  const statusClass = stage.status === "done" ? "" : ` ${stage.status}`;
-
   return (
-    <div className={`stage-marker${statusClass}`}>
+    <div className={`stage-marker ${stage.status}`}>
       <div className="line" />
       <span className="badge">
         {stage.status === "active" ? <span className="dot" aria-hidden="true" /> : null}

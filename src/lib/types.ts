@@ -268,7 +268,7 @@ export type DebateProjection =
   | ShareDebateProjection;
 
 export function normalizeDebateSymbol(symbol: string): string {
-  return symbol.replace(/^\$/, "").toUpperCase();
+  return symbol.trim().replace(/^\$+/, "").toUpperCase();
 }
 
 export function isCoreCoinSymbol(symbol: string): symbol is CoinSymbol {

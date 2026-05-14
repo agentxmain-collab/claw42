@@ -68,36 +68,6 @@ function FlowStageCard({ stage }: { stage: DispatchFlowStage }) {
 export function FlowIntroView({ onGotoMarket }: { onGotoMarket: () => void }) {
   return (
     <>
-      <header className="flow-header">
-        <div className="flow-header-left">
-          <div className="eyebrow">CLAW 42 · HOW IT WORKS</div>
-          <h1 className="title">
-            一笔交易决策 · <span className="accent">11 个角色 · 6 个阶段</span> 协同产出
-          </h1>
-          <p className="subtitle">
-            不是一个 AI 拍脑袋。每一步都有专人，每一次分歧被记录，每一笔结果都回灌下一轮。
-          </p>
-        </div>
-        <div className="meta-row" aria-label="Dispatch process summary">
-          <div className="meta-chip">
-            <span className="meta-num">11</span>
-            <span className="meta-lbl">Agents</span>
-          </div>
-          <div className="meta-chip">
-            <span className="meta-num">6</span>
-            <span className="meta-lbl">Stages</span>
-          </div>
-          <div className="meta-chip">
-            <span className="meta-num">2×</span>
-            <span className="meta-lbl">Debate</span>
-          </div>
-          <div className="meta-chip">
-            <span className="meta-num">∞</span>
-            <span className="meta-lbl">Memory</span>
-          </div>
-        </div>
-      </header>
-
       <div className="flow-stages-v4">
         {dispatchFlowStages.map((stage) => (
           <FlowStageCard key={stage.num} stage={stage} />

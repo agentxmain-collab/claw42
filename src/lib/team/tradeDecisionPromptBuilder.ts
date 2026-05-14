@@ -83,7 +83,7 @@ function formatList(items: string[]): string {
 }
 
 export function buildTradeDecisionPrompt(ctx: TradeCardPromptContext): string {
-  const symbol = ctx.symbol.replace(/^\$/, "").toUpperCase();
+  const symbol = ctx.symbol.trim().replace(/^\$+/, "").toUpperCase();
   const locale = normalizeWatchLocale(ctx.locale, LEGACY_WATCH_LOCALE);
   return `You are Portfolio Manager for Claw42.
 

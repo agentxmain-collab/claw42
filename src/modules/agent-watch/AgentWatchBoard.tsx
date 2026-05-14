@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
+import { apiPath } from "@/lib/basePath";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import {
   mapPublicTimelineEventsToTopics,
@@ -55,8 +56,10 @@ function mergeTimelineEvents(current: PublicTimelineEvent[], next: PublicTimelin
 
 export function AgentWatchBoard({
   console: Console = DispatchConsoleV9,
+  initialView = "mkt",
 }: {
   console?: ComponentType<DispatchConsoleV9Props>;
+  initialView?: DispatchView;
 }) {
   const { locale } = useI18n();
   const agentWatchLocale = resolveAgentWatchLocale(locale);
@@ -65,7 +68,7 @@ export function AgentWatchBoard({
   const [followStatsByRecordId, setFollowStatsByRecordId] = useState<
     Record<string, FollowStatsSnapshot>
   >({});
-  const [activeDispatchView, setActiveDispatchView] = useState<DispatchView>("flow");
+  const [activeDispatchView, setActiveDispatchView] = useState<DispatchView>(initialView);
   const nextTimelinePollMsRef = useRef(DEFAULT_TIMELINE_POLL_MS);
 
   const applyTimelinePayload = useCallback(
@@ -101,7 +104,10 @@ export function AgentWatchBoard({
         locale: agentWatchLocale,
       });
       if (before) params.set("before", String(before));
-      const response = await fetch(`/api/watch/timeline?${params}`, { cache: "no-store", signal });
+      const response = await fetch(apiPath(`/api/watch/timeline?${params}`), {
+        cache: "no-store",
+        signal,
+      });
       if (!response.ok) throw new Error(`watch timeline ${response.status}`);
       return (await response.json()) as PublicTimelinePayload;
     },
@@ -176,7 +182,7 @@ export function AgentWatchBoard({
     async (signal?: AbortSignal) => {
       if (!recordIdsKey) return;
       const params = new URLSearchParams({ recordIds: recordIdsKey });
-      const response = await fetch(`/api/watch/follow-stats?${params}`, {
+      const response = await fetch(apiPath(`/api/watch/follow-stats?${params}`), {
         cache: "no-store",
         credentials: "same-origin",
         signal,
@@ -306,7 +312,7 @@ export function AgentWatchBoard({
       });
 
       try {
-        const response = await fetch("/api/watch/follow-stats", {
+        const response = await fetch(apiPath("/api/watch/follow-stats"), {
           method: "POST",
           credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
@@ -334,6 +340,7 @@ export function AgentWatchBoard({
   return (
     <Console
       topics={topics}
+      initialView={initialView}
       onViewChange={setActiveDispatchView}
       onTopicAction={handleTopicAction}
       marketSnapshot={null}

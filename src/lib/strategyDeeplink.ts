@@ -7,7 +7,7 @@ export function buildCoinwDeeplink(strategy: FinalStrategy): string {
 
   // TODO(Dan): replace placeholder with the official CoinW affiliate URL template.
   const params = new URLSearchParams({
-    symbol: `${strategy.symbol.replace(/^\$/, "")}USDT`,
+    symbol: `${strategy.symbol.trim().replace(/^\$+/, "").toUpperCase()}USDT`,
     side: strategy.direction === "long" ? "buy" : "sell",
     sl: strategy.stopLoss.toString(),
     tp1: strategy.takeProfit[0]?.toString() ?? "",

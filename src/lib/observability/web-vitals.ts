@@ -1,8 +1,9 @@
 "use client";
 
 import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from "web-vitals";
+import { apiPath } from "@/lib/basePath";
 
-const ENDPOINT = "/api/observability/web-vitals";
+const ENDPOINT = apiPath("/api/observability/web-vitals");
 const SESSION_KEY = "claw42_observability_session_id";
 
 export function registerWebVitals() {

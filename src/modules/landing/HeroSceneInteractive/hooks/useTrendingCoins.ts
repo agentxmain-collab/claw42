@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiPath } from "@/lib/basePath";
 import type { HeroTrendingCoin, HeroTrendingCoinsResponse } from "../types/trending-coin";
 
 const SESSION_STORAGE_KEY = "hero_trending_session_v1";
@@ -94,7 +95,7 @@ export function useTrendingCoins() {
       const timeout = window.setTimeout(() => controller.abort(), 3500);
 
       try {
-        const res = await fetch("/api/hero/trending-coins", {
+        const res = await fetch(apiPath("/api/hero/trending-coins"), {
           headers: { accept: "application/json" },
           signal: controller.signal,
         });

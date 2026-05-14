@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
+import { withBasePath } from "@/lib/basePath";
 import { PedestalLayer } from "@/modules/landing/HeroScene/PedestalLayer";
 import { RobotLayer } from "@/modules/landing/HeroScene/RobotLayer";
 import { heroStageCssVars } from "@/modules/landing/HeroScene/heroStageMotion";
@@ -63,6 +64,7 @@ const desktopSlotClass: Record<CoinSlotId, string> = {
 };
 
 const slotIds: CoinSlotId[] = ["north-west", "north-east", "south-west", "south-east"];
+const HERO_BACKGROUND_IMAGE = withBasePath("/images/agents/hero-background-glow-1920x1080.png");
 
 type InteractiveStageStyle = CSSProperties & Record<`--claw42-hero-${string}`, string>;
 
@@ -138,7 +140,7 @@ export function HeroSceneInteractive() {
       <div
         className="claw42-hero-background-art pointer-events-none absolute left-1/2"
         style={{
-          backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
+          backgroundImage: `url('${HERO_BACKGROUND_IMAGE}')`,
           transform:
             "translate(-50%, calc(var(--claw42-hero-depth-bg-y, 0px) + var(--claw42-hero-pedestal-layer-shift, 0px)))",
         }}

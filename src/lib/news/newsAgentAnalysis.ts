@@ -15,8 +15,20 @@ function cacheKey(news: NewsItem, locale: string) {
   return `news-agent-analysis-${locale}-${news.id}`;
 }
 
+function formattedSymbols(currencies: string[]) {
+  return Array.from(
+    new Set(
+      currencies
+        .map((symbol) => symbol.trim().replace(/^\$+/, "").toUpperCase())
+        .filter((symbol) => /^[A-Z0-9]{2,12}$/.test(symbol)),
+    ),
+  )
+    .map((symbol) => `$${symbol}`)
+    .join(" / ");
+}
+
 function fallbackAnalysis(news: NewsItem, locale: string) {
-  const symbols = news.currencies.map((symbol) => `$${symbol}`).join(" / ");
+  const symbols = formattedSymbols(news.currencies);
   return locale === "en_US"
     ? `${symbols || "Market"} is on watch; wait for live price confirmation before acting.`
     : `${symbols || "市场"} 已进入观察；先等实时价格确认，不急着出手。`;

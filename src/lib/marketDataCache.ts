@@ -65,8 +65,8 @@ function fallbackTickers(): MarketTickerPayload {
 }
 
 function coinGeckoHeaders(): HeadersInit {
-  if (!process.env.COINGECKO_API_KEY) return {};
-  return { "x-cg-demo-api-key": process.env.COINGECKO_API_KEY };
+  const key = process.env.COINGECKO_API_KEY || process.env.COINGECKO_DEMO_KEY;
+  return key ? { "x-cg-demo-api-key": key } : {};
 }
 
 function normalizeCoinGeckoPayload(payload: unknown): TickerMap {

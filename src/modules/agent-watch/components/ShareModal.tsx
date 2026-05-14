@@ -1,6 +1,7 @@
 "use client";
 
 import type { Dict } from "@/i18n/types";
+import { apiPath } from "@/lib/basePath";
 import type { NewsDebate } from "@/lib/types";
 
 export function ShareModal({
@@ -19,7 +20,7 @@ export function ShareModal({
         <h3 className="text-lg font-bold text-white">{labels.share}</h3>
         <p className="mt-2 text-sm text-white/55">{debate.newsTitle}</p>
         <a
-          href={`/api/og/debate/${encodeURIComponent(debate.id)}`}
+          href={apiPath(`/api/og/debate/${encodeURIComponent(debate.id)}`)}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-4 inline-flex rounded-xl bg-white px-4 py-2 text-sm font-bold text-black"

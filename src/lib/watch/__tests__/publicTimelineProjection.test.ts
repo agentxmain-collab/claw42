@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDecisionRecordIndex,
   filterPublicTimelineEvents,
   projectStreamEntryToPublic,
 } from "@/lib/watch/publicTimelineProjection";
@@ -95,6 +96,34 @@ describe("publicTimelineProjection", () => {
     expect(event?.payload.kind).toBe("market_signal");
     expect(event?.visibility).toBe("public");
     expect(event?.importance).toBe("high");
+  });
+
+  it("normalizes public market signal symbols", () => {
+    const event = projectStreamEntryToPublic(focusEntry({ symbol: " $btc " }));
+
+    if (event?.payload.kind !== "market_signal") throw new Error("expected market signal payload");
+    expect(event.payload.symbol).toBe("BTC");
+  });
+
+  it("normalizes public news payload symbols", () => {
+    const event = projectStreamEntryToPublic({
+      kind: "news_debate",
+      id: "news-1",
+      ts: now,
+      debate: {
+        newsCurrencies: [" $eth ", "$$sol", "$"],
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "news",
+        evidenceIds: ["ev_1"],
+        locale: "zh_CN",
+      },
+    } as unknown as StreamEntry);
+
+    if (event?.payload.kind !== "news") throw new Error("expected news payload");
+    expect(event.payload.symbols).toEqual(["ETH", "SOL"]);
   });
 
   it("filters debug entries from public mode", () => {
@@ -257,7 +286,7 @@ describe("publicTimelineProjection", () => {
     expect(event?.payload.kind === "pm_decision" ? event.payload.tradeDecision?.id : null).toBe(
       "trade-1",
     );
-    expect(event?.evidenceIds).toEqual(["ev_1"]);
+    expect(event?.evidenceIds).toEqual(["ev_1", "ev_2"]);
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
     expect(event.payload.symbol).toBe("BTC");
     expect(event.payload.rationaleByMember.fundamental_analyst).toContain("spot demand");
@@ -266,5 +295,295 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.citationsByMember?.fundamental_analyst).toEqual(["ev_1"]);
     expect(event.payload.citationsByMember?.research_lead).toEqual(["ev_2"]);
     expect(event.payload.citationsByMember?.risk_lead).toBeUndefined();
+  });
+
+  it("prefers indexed decision record trade decisions over stale entry metadata", () => {
+    const staleTradeDecision: TradeDecision = {
+      ...tradeDecision,
+      id: "stale-trade",
+      symbol: "ETH",
+      direction: "short",
+      generatedAt: new Date(now - 60_000).toISOString(),
+    };
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-stale-meta",
+      ts: now,
+      thread: {
+        id: "thread-stale-meta",
+        seed: {
+          id: "seed",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["BTC"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: ["ev_1"],
+        locale: "zh_CN",
+        recordId: "record-1",
+        tradeDecision: staleTradeDecision,
+      },
+    };
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map([[decisionRecord.id, decisionRecord]]),
+    });
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.symbol).toBe("BTC");
+    expect(event.payload.tradeDecision?.id).toBe("trade-1");
+    expect(event.payload.tradeDecision?.direction).toBe("long");
+  });
+
+  it("normalizes PM decision payload symbols before API exposure", () => {
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-dirty-symbol",
+      ts: now,
+      thread: {
+        id: "thread-dirty-symbol",
+        seed: {
+          id: "seed",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["ETH"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: ["ev_1"],
+        locale: "zh_CN",
+        recordId: "record-1",
+        tradeDecision: {
+          ...tradeDecision,
+          symbol: " $$eth ",
+        },
+      },
+    };
+    const dirtyRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      symbol: " $$eth ",
+      tradeDecision: {
+        ...tradeDecision,
+        symbol: " $$eth ",
+      },
+    };
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map([[dirtyRecord.id, dirtyRecord]]),
+    });
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.symbol).toBe("ETH");
+    expect(event.payload.tradeDecision?.symbol).toBe("ETH");
+  });
+
+  it("projects legacy PM records without analyst input arrays", () => {
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-legacy-record",
+      ts: now,
+      thread: {
+        id: "thread-legacy-record",
+        seed: {
+          id: "seed",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["BTC"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: ["ev_1"],
+        locale: "zh_CN",
+        recordId: "record-1",
+        tradeDecision,
+      },
+    };
+    const legacyRecord = {
+      ...decisionRecord,
+      analystInputs: undefined,
+    } as unknown as StrategyDecisionRecord;
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map([[legacyRecord.id, legacyRecord]]),
+    });
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.tradeDecision?.id).toBe("trade-1");
+    expect(event.payload.rationaleByMember).toEqual({});
+    expect(event.payload.citationsByMember).toEqual({});
+  });
+
+  it("projects resolved PM decision outcome into the public payload", () => {
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-resolved",
+      ts: now,
+      thread: {
+        id: "thread-resolved",
+        seed: {
+          id: "seed",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["BTC"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: ["ev_1"],
+        locale: "zh_CN",
+        recordId: "record-1",
+        tradeDecision,
+      },
+    };
+    const resolvedRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      resolvedAt: new Date(now + 30 * 60_000).toISOString(),
+      resolvedOutcome: "hit_tp",
+      resolvedPrice: 78000,
+      resolutionReason: "take_profit_reached",
+      resolutionPriceSource: "coinw-kline",
+    };
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map([[resolvedRecord.id, resolvedRecord]]),
+    });
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.resolution).toEqual({
+      outcome: "hit_tp",
+      resolvedAt: new Date(now + 30 * 60_000).toISOString(),
+      observedPrice: 78000,
+      observedPriceSource: "coinw-kline",
+      reason: "take_profit_reached",
+    });
+  });
+
+  it("projects only the safe stage trace subset into PM decision payload", () => {
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-stage-trace",
+      ts: now,
+      thread: {
+        id: "thread-stage-trace",
+        seed: {
+          id: "seed",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["BTC"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: ["ev_1"],
+        locale: "zh_CN",
+        recordId: "record-1",
+        tradeDecision,
+      },
+    };
+    const recordWithTrace: StrategyDecisionRecord = {
+      ...decisionRecord,
+      stageTrace: [
+        {
+          stageId: "analyst_inputs",
+          label: "Analyst input generation",
+          status: "done",
+          observedAt: new Date(now).toISOString(),
+          startedAt: new Date(now - 200).toISOString(),
+          completedAt: new Date(now - 20).toISOString(),
+          durationMs: 180,
+          memberIds: ["fundamental_analyst"],
+          note: "internal note",
+          modelProvider: "private-provider",
+          promptVersion: "private-prompt",
+        },
+      ],
+    };
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map([[recordWithTrace.id, recordWithTrace]]),
+    });
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.stageTrace).toEqual([
+      {
+        stageId: "analyst_inputs",
+        status: "done",
+        observedAt: new Date(now).toISOString(),
+        memberIds: ["fundamental_analyst"],
+      },
+    ]);
+    expect(JSON.stringify(event.payload.stageTrace)).not.toContain("durationMs");
+    expect(JSON.stringify(event.payload.stageTrace)).not.toContain("startedAt");
+    expect(JSON.stringify(event.payload.stageTrace)).not.toContain("completedAt");
+    expect(JSON.stringify(event.payload.stageTrace)).not.toContain("internal note");
+    expect(JSON.stringify(event.payload.stageTrace)).not.toContain("Analyst input generation");
+    expect(JSON.stringify(event.payload.stageTrace)).not.toContain("private-provider");
+    expect(JSON.stringify(event.payload.stageTrace)).not.toContain("private-prompt");
+  });
+
+  it("keeps the newest duplicate decision record when building an index", () => {
+    const resolvedRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      resolvedAt: new Date(now + 30 * 60_000).toISOString(),
+      resolvedOutcome: "hit_tp",
+    };
+
+    const index = buildDecisionRecordIndex([resolvedRecord, decisionRecord]);
+
+    expect(index.get("record-1")?.resolvedOutcome).toBe("hit_tp");
   });
 });

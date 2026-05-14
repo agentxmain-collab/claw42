@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
-import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
+import {
+  buildDecisionRecordIndex,
+  filterPublicTimelineEvents,
+} from "@/lib/watch/publicTimelineProjection";
 import { rateLimit } from "@/lib/rateLimit";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
 
@@ -45,11 +49,13 @@ export async function GET(request: NextRequest) {
     mode: "public",
     importanceThreshold: "high",
     locale,
+    decisionRecordsById: buildDecisionRecordIndex(await readAllDecisionRecords(500, locale)),
   });
 
   return NextResponse.json(
     {
-      ...result,
+      oldestTs: result.oldestTs,
+      hasMore: result.hasMore,
       locale,
       events,
     },

@@ -3,25 +3,24 @@ import type { TeamMemberId } from "@/lib/team/teamRegistry";
 
 type LocaleNameMap = Record<TeamMemberId, string>;
 
-// TODO(spec-3-final): Dan 拍板终稿后替换这些占位人名。
 export const TEAM_DISPLAY_NAMES: Record<Locale, LocaleNameMap> = {
   zh_CN: {
-    fundamental_analyst: "老陈",
-    news_analyst: "Mira",
-    chart_analyst: "K 哥",
-    onchain_analyst: "Vit",
-    research_lead: "老 R",
-    risk_lead: "老 X",
-    pm: "PM",
+    fundamental_analyst: "基本面研究主管",
+    news_analyst: "宏观情报分析师",
+    chart_analyst: "技术策略主管",
+    onchain_analyst: "链上数据分析主管",
+    research_lead: "策略研究主管",
+    risk_lead: "风控总监",
+    pm: "首席投资官",
   },
   zh_TW: {
-    fundamental_analyst: "老陳",
-    news_analyst: "Mira",
-    chart_analyst: "K 哥",
-    onchain_analyst: "Vit",
-    research_lead: "老 R",
-    risk_lead: "老 X",
-    pm: "PM",
+    fundamental_analyst: "基本面研究主管",
+    news_analyst: "宏觀情報分析師",
+    chart_analyst: "技術策略主管",
+    onchain_analyst: "鏈上數據分析主管",
+    research_lead: "策略研究主管",
+    risk_lead: "風控總監",
+    pm: "首席投資官",
   },
   en_US: englishNames(),
   ja_JP: englishNames(),
@@ -31,13 +30,13 @@ export const TEAM_DISPLAY_NAMES: Record<Locale, LocaleNameMap> = {
   es_ES: englishNames(),
   ar_SA: englishNames(),
   en_XA: {
-    fundamental_analyst: "[Cħeň]",
-    news_analyst: "[Mırâ]",
-    chart_analyst: "[K̃]",
-    onchain_analyst: "[Vıt]",
-    research_lead: "[Łêäd]",
-    risk_lead: "[Rıṡk]",
-    pm: "[P̃Ṁ]",
+    fundamental_analyst: "[Fůňđâmêňţâļ Řêšêârĉħ Ļêâđ]",
+    news_analyst: "[Mâĉřô Îňţêļļîĝêňĉê Âňâļŷšţ]",
+    chart_analyst: "[Ţêĉħňîĉâļ Šţřâţêĝŷ Ļêâđ]",
+    onchain_analyst: "[Ôň-ĉħâîň Đâţâ Ļêâđ]",
+    research_lead: "[Šţřâţêĝŷ Řêšêârĉħ Ļêâđ]",
+    risk_lead: "[Řîšķ Đîřêĉţôř]",
+    pm: "[Ĉħîêƒ Îňvêšţmêňţ Ôƒƒîĉêř]",
   },
 };
 
@@ -47,12 +46,12 @@ export function getTeamDisplayName(memberId: TeamMemberId, locale: Locale) {
 
 function englishNames(): LocaleNameMap {
   return {
-    fundamental_analyst: "Chen",
-    news_analyst: "Mira",
-    chart_analyst: "K",
-    onchain_analyst: "Vit",
-    research_lead: "Lead R",
-    risk_lead: "Risk X",
-    pm: "PM",
+    fundamental_analyst: "Fundamental Research Lead",
+    news_analyst: "Macro Intelligence Analyst",
+    chart_analyst: "Technical Strategy Lead",
+    onchain_analyst: "On-chain Data Lead",
+    research_lead: "Strategy Research Lead",
+    risk_lead: "Risk Director",
+    pm: "Chief Investment Officer",
   };
 }

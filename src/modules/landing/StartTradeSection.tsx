@@ -2,12 +2,13 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
+import { withBasePath } from "@/lib/basePath";
 import { fadeUp, motionViewport } from "@/lib/motion";
 
 const STEP_ICON_SRCS = [
-  "/images/icons/step-key.png",
-  "/images/icons/step-authorize.png",
-  "/images/icons/step-launch.png",
+  withBasePath("/images/icons/step-key.png"),
+  withBasePath("/images/icons/step-authorize.png"),
+  withBasePath("/images/icons/step-launch.png"),
 ] as const;
 
 export function StartTradeSection() {

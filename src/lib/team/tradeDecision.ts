@@ -214,7 +214,7 @@ export function validateTradeDecision(raw: unknown, currentPrice: number): Valid
     decision: {
       id: raw.id as string,
       schemaVersion: 1,
-      symbol: (raw.symbol as string).replace(/^\$/, "").toUpperCase(),
+      symbol: (raw.symbol as string).trim().replace(/^\$+/, "").toUpperCase(),
       generatedBy: raw.generatedBy as TeamMemberId,
       generatedAt: raw.generatedAt as string,
       direction: direction as TradeDirection,

@@ -27,16 +27,20 @@ export async function GET(request: NextRequest) {
   }
 
   const locale = resolveAgentWatchLocale(url.searchParams.get("locale") ?? "");
-  const payload = await getAgentAnalysis(locale);
-  void triggerPmDecisionPipelineOnce({
-    triggerSource: "user_visit_trigger",
-    pool: payload.pool,
-    locale,
-  }).catch((error) => {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[claw42] PM decision trigger skipped", error);
-    }
-  });
+  const shouldTriggerPm = url.searchParams.get("pmTrigger") !== "0";
+  const shouldTriggerSignals = url.searchParams.get("signalTrigger") !== "0";
+  const payload = await getAgentAnalysis(locale, { signalTrigger: shouldTriggerSignals });
+  if (shouldTriggerPm) {
+    void triggerPmDecisionPipelineOnce({
+      triggerSource: "user_visit_trigger",
+      pool: payload.pool,
+      locale,
+    }).catch((error) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[claw42] PM decision trigger skipped", error);
+      }
+    });
+  }
   return NextResponse.json(payload);
 }
 

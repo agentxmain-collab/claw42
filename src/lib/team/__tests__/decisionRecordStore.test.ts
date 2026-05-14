@@ -7,6 +7,7 @@ import {
   appendDecisionRecord,
   readAllDecisionRecords,
   readDecisionRecords,
+  upsertDecisionRecord,
 } from "@/lib/team/decisionRecordStore";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 
@@ -36,6 +37,15 @@ describe("decisionRecordStore", () => {
 
     expect(records.map((record) => record.id)).toEqual(["newer", "older"]);
     expect(records.every((record) => record.symbol === "BTC")).toBe(true);
+  });
+
+  test("strips leading dollar signs when normalizing record symbols", async () => {
+    await appendDecisionRecord(makeRecord({ id: "cash-tag", symbol: " $$btc " }));
+
+    const records = await readDecisionRecords("BTC");
+
+    expect(records.map((record) => record.id)).toEqual(["cash-tag"]);
+    expect(records[0]?.symbol).toBe("BTC");
   });
 
   test("reads all records across symbols sorted by createdAt", async () => {
@@ -101,6 +111,26 @@ describe("decisionRecordStore", () => {
       "zh-btc",
       "zh-eth",
     ]);
+  });
+
+  test("upserts an existing record by id without duplicating it", async () => {
+    await appendDecisionRecord(makeRecord({ id: "record-resolve" }));
+    await upsertDecisionRecord(
+      makeRecord({
+        id: "record-resolve",
+        resolvedAt: "2026-05-10T01:00:00.000Z",
+        resolvedOutcome: "hit_tp",
+      }),
+    );
+
+    const records = await readDecisionRecords("BTC");
+
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({
+      id: "record-resolve",
+      resolvedOutcome: "hit_tp",
+      resolvedAt: "2026-05-10T01:00:00.000Z",
+    });
   });
 });
 

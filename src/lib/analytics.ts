@@ -1,4 +1,5 @@
 import posthog from "posthog-js";
+import { apiPath } from "@/lib/basePath";
 
 export const ANALYTICS_EVENTS = [
   "page_view",
@@ -128,17 +129,18 @@ export function trackEvent(event: AnalyticsEventName, properties: AnalyticsPrope
   if (typeof window === "undefined") return;
 
   const body = JSON.stringify(buildPayload(event, properties));
+  const endpoint = apiPath("/api/analytics");
   capturePosthog(event, properties);
 
   if (navigator.sendBeacon) {
     const blob = new Blob([body], { type: "application/json" });
-    if (navigator.sendBeacon("/api/analytics", blob)) return;
+    if (navigator.sendBeacon(endpoint, blob)) return;
   }
 
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), 3000);
 
-  void fetch("/api/analytics", {
+  void fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body,

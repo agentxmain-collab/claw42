@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_SC } from "next/font/google";
+import localFont from "next/font/local";
 import { notFound } from "next/navigation";
 import { AnalyticsPageView } from "@/components/AnalyticsPageView";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
@@ -8,11 +9,21 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { HTML_LANG, LOCALES, RTL_LOCALES, isLocale } from "@/i18n/locales";
 import type { Locale } from "@/i18n/types";
+import { SITE_URL } from "@/lib/basePath";
 
-const baseUrl = "https://claw42.ai";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+const satoshi = localFont({
+  src: [
+    { path: "../../../public/fonts/satoshi/Satoshi-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../../../public/fonts/satoshi/Satoshi-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../../../public/fonts/satoshi/Satoshi-Bold.woff2", weight: "700", style: "normal" },
+    { path: "../../../public/fonts/satoshi/Satoshi-Black.woff2", weight: "900", style: "normal" },
+  ],
+  variable: "--font-satoshi",
   display: "swap",
 });
 const notoSansSC = Noto_Sans_SC({
@@ -21,7 +32,7 @@ const notoSansSC = Noto_Sans_SC({
   variable: "--font-noto-sc",
   display: "swap",
 });
-const bodyFontClassName = `${inter.variable} ${notoSansSC.variable} font-language`;
+const bodyFontClassName = `${inter.variable} ${satoshi.variable} ${notoSansSC.variable} font-language`;
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -37,8 +48,10 @@ export async function generateMetadata({
 
   return {
     alternates: {
-      canonical: `${baseUrl}/${locale}`,
-      languages: Object.fromEntries(LOCALES.map((item) => [HTML_LANG[item], `${baseUrl}/${item}`])),
+      canonical: `${SITE_URL}/${locale}`,
+      languages: Object.fromEntries(
+        LOCALES.map((item) => [HTML_LANG[item], `${SITE_URL}/${item}`]),
+      ),
     },
   };
 }

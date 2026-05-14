@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { withBasePath } from "@/lib/basePath";
 
 interface PedestalLayerProps {
   mouseX: number;
@@ -225,7 +226,7 @@ export function PedestalLayer({ mouseX, mouseY, reduceMotion }: PedestalLayerPro
         />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/images/hero/pedestal.png"
+          src={withBasePath("/images/hero/pedestal.png")}
           alt=""
           aria-hidden="true"
           draggable={false}

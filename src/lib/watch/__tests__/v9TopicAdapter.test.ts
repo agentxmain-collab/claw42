@@ -98,8 +98,14 @@ describe("mapPublicTimelineEventsToTopics", () => {
       id: "record-1",
       symbol: "BTC",
       status: "done",
+      title: "BTC 实时行情分析 · ETF outflows rise and support is under pressure",
       originalUrl: "https://example.com/btc",
+      sourceLabel: "CoinDesk",
       intensity: 3,
+      trigger: {
+        ticker: "$BTC",
+        text: "ETF outflows rise and support is under pressure",
+      },
       strategy: {
         action: "short",
         actionLabel: "SHORT 6%",
@@ -113,10 +119,25 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.stages[5]).toMatchObject({
       label: "阶段 6 · 复盘沉淀",
       status: "pending",
-      note: "TODO：真实 memory_loop 尚未接入，等待写入",
+      note: "暂无复盘沉淀，等待结果回写",
     });
+    expect(topic.title).not.toContain("live market check");
+    expect(topic.stages[5]?.note).not.toContain("TODO");
     expect(topic.messages.map((message) => message.agentId)).toContain("technical_analyst");
     expect(topic.messages.map((message) => message.agentId)).toContain("portfolio_manager");
+    expect(topic.messages.map((message) => message.agentName)).toEqual(
+      expect.arrayContaining([
+        "技术策略主管",
+        "链上数据分析主管",
+        "策略研究主管",
+        "风控总监",
+        "交易策略总监",
+        "首席投资官",
+      ]),
+    );
+    expect(topic.messages.map((message) => message.agentName)).not.toEqual(
+      expect.arrayContaining(["K 哥", "Mira", "Vit", "老 R", "老 X", "PM", "决策经理"]),
+    );
     expect("source" in topic).toBe(false);
   });
 
@@ -147,5 +168,339 @@ describe("mapPublicTimelineEventsToTopics", () => {
 
     expect(topics).toHaveLength(1);
     expect(topics[0].id).toBe("latest-record");
+  });
+
+  it("orders strategy topics by trade decision generation time", () => {
+    const olderGeneratedDecision: TradeDecision = {
+      ...tradeDecision,
+      id: "trade-btc-older",
+      symbol: "BTC",
+      generatedAt: new Date(now - 30 * 60 * 1000).toISOString(),
+    };
+    const newerGeneratedDecision: TradeDecision = {
+      ...tradeDecision,
+      id: "trade-eth-newer",
+      symbol: "ETH",
+      generatedAt: new Date(now - 5 * 60 * 1000).toISOString(),
+    };
+    const btcEvent = pmDecisionWithRecordId("btc-record", {
+      id: "btc-event",
+      ts: now,
+      payload: {
+        kind: "pm_decision",
+        recordId: "btc-record",
+        symbol: "BTC",
+        tradeDecision: olderGeneratedDecision,
+        rationaleByMember: { research_lead: "BTC thesis is older." },
+        citationsByMember: {},
+      },
+    });
+    const ethEvent = pmDecisionWithRecordId("eth-record", {
+      id: "eth-event",
+      ts: now - 10 * 60 * 1000,
+      payload: {
+        kind: "pm_decision",
+        recordId: "eth-record",
+        symbol: "ETH",
+        tradeDecision: newerGeneratedDecision,
+        rationaleByMember: { research_lead: "ETH thesis is newer." },
+        citationsByMember: {},
+      },
+    });
+
+    const topics = mapPublicTimelineEventsToTopics({
+      events: [btcEvent, ethEvent],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topics.map((topic) => topic.id)).toEqual(["eth-record", "btc-record"]);
+  });
+
+  it("maps three complete real-shaped decision flows into stable topic cards", () => {
+    const decisions: Array<{ symbol: string; direction: TradeDecision["direction"]; ts: number }> =
+      [
+        { symbol: "BTC", direction: "long", ts: now },
+        { symbol: "ETH", direction: "short", ts: now - 5 * 60_000 },
+        { symbol: "SOL", direction: "wait", ts: now - 10 * 60_000 },
+      ];
+    const events = decisions.map(({ symbol, direction, ts }) =>
+      pmDecisionWithRecordId(`record-${symbol.toLowerCase()}`, {
+        id: `event-${symbol.toLowerCase()}`,
+        ts,
+        evidenceIds: [`ev_${symbol.toLowerCase()}`],
+        payload: {
+          kind: "pm_decision",
+          recordId: `record-${symbol.toLowerCase()}`,
+          symbol,
+          tradeDecision: {
+            ...tradeDecision,
+            id: `trade-${symbol.toLowerCase()}`,
+            symbol,
+            direction,
+            generatedAt: new Date(ts).toISOString(),
+            positionSizing: direction === "wait" ? 0 : 0.08,
+          },
+          rationaleByMember: {
+            chart_analyst: `${symbol} technical setup is actionable.`,
+            news_analyst: `${symbol} headline context is relevant.`,
+            research_lead: `${symbol} synthesis is complete.`,
+            risk_lead: `${symbol} risk boundary is defined.`,
+          },
+          citationsByMember: {
+            news_analyst: [`ev_${symbol.toLowerCase()}`],
+          },
+        },
+      }),
+    );
+
+    const topics = mapPublicTimelineEventsToTopics({
+      events,
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topics).toHaveLength(3);
+    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH", "SOL"]);
+    expect(topics.map((topic) => topic.defaultCollapsed)).toEqual([false, true, true]);
+    expect(topics.map((topic) => topic.stages.map((stage) => stage.status))).toEqual([
+      ["done", "done", "done", "done", "final", "pending"],
+      ["done", "done", "done", "done", "final", "pending"],
+      ["done", "done", "done", "done", "final", "pending"],
+    ]);
+    expect(topics.map((topic) => topic.strategy.actionLabel)).toEqual([
+      "LONG 8%",
+      "SHORT 8%",
+      "WAIT",
+    ]);
+  });
+
+  it("marks incomplete PM decisions with rationale as active analysis", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+    const [topic] = mapPublicTimelineEventsToTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            tradeDecision: null,
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.status).toBe("active");
+    expect(topic.title).toBe("BTC 实时行情分析 · 分析进行中");
+    expect(topic.progress).toBe("当前进行到阶段 3");
+    expect(topic.strategy).toMatchObject({
+      action: "pending",
+      actionLabel: "分析中",
+      name: "尚未决策",
+    });
+    expect(topic.messages.some((message) => message.typing)).toBe(true);
+  });
+
+  it("keeps empty incomplete PM decisions pending instead of active", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+    const [topic] = mapPublicTimelineEventsToTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            tradeDecision: null,
+            rationaleByMember: {},
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.status).toBe("pending");
+    expect(topic.title).toBe("BTC 实时行情分析 · 暂无决策更新");
+    expect(topic.progress).toBe("暂无决策更新");
+    expect(topic.strategy).toMatchObject({
+      action: "pending",
+      actionLabel: "等待中",
+      name: "暂无决策更新",
+      meta: "等待真实分析写入",
+      follow: {
+        primaryDisabled: true,
+      },
+    });
+    expect(topic.messages).toEqual([]);
+  });
+
+  it("keeps legacy PM events without rationale map pending", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+    const [topic] = mapPublicTimelineEventsToTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            kind: "pm_decision",
+            recordId: "legacy-record",
+            symbol: "BTC",
+            tradeDecision: null,
+          } as PublicTimelineEvent["payload"],
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.status).toBe("pending");
+    expect(topic.title).toBe("BTC 实时行情分析 · 暂无决策更新");
+    expect(topic.progress).toBe("暂无决策更新");
+    expect(topic.strategy).toMatchObject({
+      action: "pending",
+      name: "暂无决策更新",
+    });
+    expect(topic.messages).toEqual([]);
+  });
+
+  it("keeps malformed trade decisions active instead of rendering a completed strategy", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+    const [topic] = mapPublicTimelineEventsToTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            tradeDecision: { id: "partial-trade" } as TradeDecision,
+            rationaleByMember: {
+              research_lead: "BTC thesis is still being checked.",
+            },
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.status).toBe("active");
+    expect(topic.title).toBe("BTC 实时行情分析 · 分析进行中");
+    expect(topic.progress).toBe("当前进行到阶段 3");
+    expect(topic.stages.map((stage) => stage.status)).toEqual([
+      "done",
+      "done",
+      "active",
+      "pending",
+    ]);
+    expect(topic.strategy).toMatchObject({
+      action: "pending",
+      name: "尚未决策",
+    });
+  });
+
+  it("keeps trade decisions with malformed price fields active instead of crashing", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+    const [topic] = mapPublicTimelineEventsToTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            tradeDecision: {
+              ...tradeDecision,
+              entryRange: { low: "bad", high: 80700 } as unknown as TradeDecision["entryRange"],
+              takeProfit: [79000, "bad"] as unknown as TradeDecision["takeProfit"],
+            },
+            rationaleByMember: {
+              research_lead: "BTC thesis is still being checked.",
+            },
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.status).toBe("active");
+    expect(topic.strategy).toMatchObject({
+      action: "pending",
+      entry: "待定",
+      takeProfit: "待定",
+    });
+  });
+
+  it("renders resolved PM decisions as completed memory-loop stage", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+
+    const [topic] = mapPublicTimelineEventsToTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            resolution: {
+              outcome: "hit_tp",
+              resolvedAt: new Date(now + 30 * 60_000).toISOString(),
+              observedPrice: 78000,
+              reason: "take_profit_reached",
+            },
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.stages[5]).toMatchObject({
+      label: "阶段 6 · 复盘沉淀",
+      status: "done",
+    });
+    expect(topic.stages[5]?.note).toBeUndefined();
+    expect(topic.messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          agentId: "memory_loop",
+          agentName: "策略复盘主管",
+          stageId: topic.stages[5]?.id,
+          content: expect.stringContaining("止盈达成"),
+        }),
+      ]),
+    );
+    expect(topic.messages.find((message) => message.agentId === "memory_loop")?.content).toContain(
+      "78,000",
+    );
+  });
+
+  it("does not create a source link when no evidence url is available", () => {
+    const [topic] = mapPublicTimelineEventsToTopics({
+      events: [pmDecision()],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.originalUrl).toBeUndefined();
+    expect(topic.title).toBe("BTC 实时行情分析 · 真实交易决策已完成");
+    expect(topic.trigger.text).toBe("BTC 真实交易决策");
+  });
+
+  it("does not create a source link from blank evidence urls", () => {
+    const [topic] = mapPublicTimelineEventsToTopics({
+      events: [pmDecision()],
+      evidenceMap: {
+        ev_1: {
+          ...evidence,
+          url: "   ",
+        },
+      },
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.originalUrl).toBeUndefined();
+    expect(topic.sourceLabel).toBeUndefined();
   });
 });

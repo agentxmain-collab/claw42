@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { trackEvent } from "@/lib/analytics";
+import { withBasePath } from "@/lib/basePath";
 import { fadeUpVariants, getFadeUpTransition, motionViewport } from "@/lib/motion";
 import DailyBriefCard from "@/modules/landing/DailyBriefCard";
 
@@ -158,7 +159,7 @@ function RealtimeMonitorCard({ delay }: { delay: number }) {
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
       className="card-glow flex flex-1 items-center gap-4 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
     >
-      <ScenarioIcon src="/images/icons/scenario-realtime.png" />
+      <ScenarioIcon src={withBasePath("/images/icons/scenario-realtime.png")} />
       <div className="flex-1">
         <h3 className="mb-2 text-base font-semibold text-fg-primary md:text-lg">
           {t.scenarios.realtime.title}
@@ -189,7 +190,7 @@ function AutoTradeCard({ delay }: { delay: number }) {
       whileHover={reduceMotion ? undefined : { y: -8, scale: 1.01 }}
       className="card-glow flex flex-1 items-center gap-4 rounded-card border border-border-token-primary bg-bg-fill-card1 p-5 transition-[border-color,background-color] duration-500"
     >
-      <ScenarioIcon src="/images/icons/scenario-auto-trade.png" />
+      <ScenarioIcon src={withBasePath("/images/icons/scenario-auto-trade.png")} />
       <div className="flex-1">
         <h3 className="mb-2 text-base font-semibold text-fg-primary md:text-lg">
           {t.scenarios.autoTrade.title}

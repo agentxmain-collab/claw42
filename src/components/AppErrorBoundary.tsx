@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { withBasePath } from "@/lib/basePath";
 import { reportError } from "@/lib/observability/error-reporter";
 
 interface AppErrorBoundaryProps {
@@ -85,7 +86,7 @@ function ErrorFallback({ errorId, onReset }: { errorId: string | null; onReset: 
             Try again
           </button>
           <a
-            href="/"
+            href={withBasePath("/")}
             className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d1ff55]"
           >
             Back home

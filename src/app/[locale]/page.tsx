@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { withBasePath } from "@/lib/basePath";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
 import { ScenariosSection } from "@/modules/landing/ScenariosSection";
@@ -91,7 +92,7 @@ function CopyIcon24() {
         className="absolute left-[12.5%] top-[12.5%] size-[75%]"
         focusable="false"
       >
-        <use href="/icons/copy.svg#icon" />
+        <use href={withBasePath("/icons/copy.svg#icon")} />
       </svg>
     </span>
   );
@@ -270,7 +271,7 @@ function WhySection() {
           >
             <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgba(173,163,255,0.15)]">
               <Image
-                src={`/images/icons/${WHY_ICON_SLUGS[i] ?? WHY_ICON_SLUGS[0]}.svg`}
+                src={withBasePath(`/images/icons/${WHY_ICON_SLUGS[i] ?? WHY_ICON_SLUGS[0]}.svg`)}
                 alt=""
                 aria-hidden="true"
                 width={24}

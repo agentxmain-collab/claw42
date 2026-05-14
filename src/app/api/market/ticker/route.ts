@@ -11,7 +11,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
-  const payload = (await triggerSignalGeneration()) ?? (await getCoinPool());
+  const url = new URL(request.url);
+  const shouldTriggerSignals = url.searchParams.get("signalTrigger") !== "0";
+  const payload = shouldTriggerSignals
+    ? ((await triggerSignalGeneration()) ?? (await getCoinPool()))
+    : await getCoinPool();
   const status = payload.error && !payload.isStale && !payload.isFallback ? 503 : 200;
   return NextResponse.json(payload, { status });
 }

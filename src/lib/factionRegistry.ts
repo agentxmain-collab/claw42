@@ -1,4 +1,5 @@
 import type { AgentId, SignalType } from "@/modules/agent-watch/types";
+import { withBasePath } from "@/lib/basePath";
 import type { AgentEmotion, FactionId } from "@/lib/types";
 
 export interface FactionProfile {
@@ -26,7 +27,7 @@ export const FACTION_REGISTRY: Record<AgentId, FactionProfile> = {
     role: "breakout",
     color: "#ff5f5f",
     softColor: "rgba(255, 95, 95, 0.18)",
-    avatarBase: "/images/agents/alpha-120.png",
+    avatarBase: withBasePath("/images/agents/alpha-120.png"),
     ipDocFile: "老K.md",
     catchphrases: [
       "破位才是真信号，盘整就是装死",
@@ -54,7 +55,7 @@ export const FACTION_REGISTRY: Record<AgentId, FactionProfile> = {
     role: "trend",
     color: "#3a7bff",
     softColor: "rgba(58, 123, 255, 0.18)",
-    avatarBase: "/images/agents/beta-120.png",
+    avatarBase: withBasePath("/images/agents/beta-120.png"),
     ipDocFile: "老白.md",
     catchphrases: ["趋势是朋友，没确认别动", "逆势加仓是新手坟墓", "趋势没破慢慢加"],
     rivals: {
@@ -78,7 +79,7 @@ export const FACTION_REGISTRY: Record<AgentId, FactionProfile> = {
     role: "reversion",
     color: "#9b6bff",
     softColor: "rgba(155, 107, 255, 0.18)",
-    avatarBase: "/images/agents/gamma-120.png",
+    avatarBase: withBasePath("/images/agents/gamma-120.png"),
     ipDocFile: "老G.md",
     catchphrases: ["涨太狠就该跌，跌太狠就该涨", "市场永远反人性", "极端就是反转信号，等失速"],
     rivals: {

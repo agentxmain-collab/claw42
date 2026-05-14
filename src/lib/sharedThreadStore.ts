@@ -30,7 +30,7 @@ const subscribers = new Map<string, Set<ReadableStreamDefaultController<Uint8Arr
 const encoder = new TextEncoder();
 
 export function normalizeThreadSymbol(symbol: string): string {
-  return symbol.replace(/^\$/, "").trim().toUpperCase() || "BTC";
+  return symbol.trim().replace(/^\$+/, "").toUpperCase() || "BTC";
 }
 
 export function threadKeyForSymbol(symbol: string): string {

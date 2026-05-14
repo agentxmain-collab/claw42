@@ -31,7 +31,7 @@ export const ChatShell = React.memo(function ChatShell({
           </div>
           <div className="cs-icon-info">
             <div className="cs-title">AI 团队工作台</div>
-            <div className="cs-sub">claw42 TopicGenerator · session #cs-19:31</div>
+            <div className="cs-sub">实时交易决策流 · 自动更新</div>
           </div>
         </div>
         <div className="cs-head-right" aria-label="Topic status summary">
@@ -48,12 +48,12 @@ export const ChatShell = React.memo(function ChatShell({
       <div className="chat-shell-body">
         {topics.length === 0 ? (
           <div className="topic-empty" role="status">
-            暂无符合公开展示条件的真实 PM 决策
+            暂无决策更新
           </div>
         ) : (
           topics.map((topic, index) => (
             <div key={topic.id}>
-              <Topic topic={topic} onPlaceholder={onPlaceholder} />
+              <Topic topic={topic} latest={index === 0} onPlaceholder={onPlaceholder} />
               {index < topics.length - 1 ? (
                 <div className="topic-separator" aria-hidden="true">
                   <span className="topic-separator-dot" />

@@ -1,6 +1,7 @@
 import alphaSkill from "./skills/alpha.json";
 import betaSkill from "./skills/beta.json";
 import gammaSkill from "./skills/gamma.json";
+import { withBasePath } from "@/lib/basePath";
 import type { AgentDisplayMeta, AgentId, AgentSkill } from "./types";
 
 export const AGENT_COLOR_TOKEN: Record<AgentId, { primary: string; soft: string; glow: string }> = {
@@ -34,7 +35,7 @@ export const AGENT_META: Record<AgentId, AgentDisplayMeta> = {
     tagline: skillMap.alpha.tagline,
     color: AGENT_COLOR_TOKEN.alpha.primary,
     avatar: "A",
-    avatarSrc: "/images/agents/alpha-120.png",
+    avatarSrc: withBasePath("/images/agents/alpha-120.png"),
   },
   beta: {
     id: "beta",
@@ -42,7 +43,7 @@ export const AGENT_META: Record<AgentId, AgentDisplayMeta> = {
     tagline: skillMap.beta.tagline,
     color: AGENT_COLOR_TOKEN.beta.primary,
     avatar: "B",
-    avatarSrc: "/images/agents/beta-120.png",
+    avatarSrc: withBasePath("/images/agents/beta-120.png"),
   },
   gamma: {
     id: "gamma",
@@ -50,7 +51,7 @@ export const AGENT_META: Record<AgentId, AgentDisplayMeta> = {
     tagline: skillMap.gamma.tagline,
     color: AGENT_COLOR_TOKEN.gamma.primary,
     avatar: "G",
-    avatarSrc: "/images/agents/gamma-120.png",
+    avatarSrc: withBasePath("/images/agents/gamma-120.png"),
   },
 };
 

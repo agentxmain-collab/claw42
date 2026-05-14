@@ -6,6 +6,7 @@ const getHotSignalsMock = vi.hoisted(() => vi.fn());
 const getMajorEventMock = vi.hoisted(() => vi.fn());
 const generateTextMock = vi.hoisted(() => vi.fn());
 const getAgentAnalysisMock = vi.hoisted(() => vi.fn());
+const triggerPmDecisionPipelineOnceMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/signal-engine", () => ({
   getHotSignals: getHotSignalsMock,
@@ -18,6 +19,10 @@ vi.mock("@/lib/llm/generateText", () => ({
 
 vi.mock("@/lib/agentAnalysis", () => ({
   getAgentAnalysis: getAgentAnalysisMock,
+}));
+
+vi.mock("@/lib/team/pmDecisionTrigger", () => ({
+  triggerPmDecisionPipelineOnce: triggerPmDecisionPipelineOnceMock,
 }));
 
 import { GET } from "@/app/api/agents/analysis/route";
@@ -79,6 +84,8 @@ describe("/api/agents/analysis", () => {
     getMajorEventMock.mockReset();
     generateTextMock.mockReset();
     getAgentAnalysisMock.mockReset();
+    triggerPmDecisionPipelineOnceMock.mockReset();
+    triggerPmDecisionPipelineOnceMock.mockResolvedValue(null);
   });
 
   test("returns grounded single-agent analysis when symbol and agent are provided", async () => {
@@ -101,10 +108,26 @@ describe("/api/agents/analysis", () => {
       expect.stringContaining("SignalCard"),
       expect.objectContaining({ taskTag: "analysis:alpha:BTC" }),
     );
+    expect(triggerPmDecisionPipelineOnceMock).not.toHaveBeenCalled();
+  });
+
+  test("rejects partial grounded-analysis params without triggering PM generation", async () => {
+    const response = await GET(new NextRequest("https://claw42.ai/api/agents/analysis?symbol=BTC"));
+    const json = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(json).toEqual({ error: "symbol and agent required" });
+    expect(getAgentAnalysisMock).not.toHaveBeenCalled();
+    expect(generateTextMock).not.toHaveBeenCalled();
+    expect(triggerPmDecisionPipelineOnceMock).not.toHaveBeenCalled();
   });
 
   test("keeps the legacy locale payload path when no symbol or agent is provided", async () => {
-    getAgentAnalysisMock.mockResolvedValueOnce({ generatedAt: 1, stream: [] });
+    getAgentAnalysisMock.mockResolvedValueOnce({
+      generatedAt: 1,
+      stream: [],
+      pool: { majors: [] },
+    });
 
     const response = await GET(
       new NextRequest("https://claw42.ai/api/agents/analysis?locale=zh_CN"),
@@ -113,6 +136,33 @@ describe("/api/agents/analysis", () => {
 
     expect(response.status).toBe(200);
     expect(json).toMatchObject({ generatedAt: 1, stream: [] });
+    expect(triggerPmDecisionPipelineOnceMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        triggerSource: "user_visit_trigger",
+        locale: "zh_CN",
+        pool: { majors: [] },
+      }),
+    );
+  });
+
+  test("allows read-only legacy payload fetches without PM generation", async () => {
+    getAgentAnalysisMock.mockResolvedValueOnce({
+      generatedAt: 1,
+      stream: [],
+      pool: { majors: [] },
+    });
+
+    const response = await GET(
+      new NextRequest(
+        "https://claw42.ai/api/agents/analysis?locale=zh_CN&pmTrigger=0&signalTrigger=0",
+      ),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json).toMatchObject({ generatedAt: 1, stream: [] });
+    expect(getAgentAnalysisMock).toHaveBeenCalledWith("zh_CN", { signalTrigger: false });
+    expect(triggerPmDecisionPipelineOnceMock).not.toHaveBeenCalled();
   });
 
   test("returns explicit waiting response when SignalEngine has no grounded signal", async () => {

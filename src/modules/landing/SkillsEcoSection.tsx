@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { URLS } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
+import { withBasePath } from "@/lib/basePath";
 import { fadeUp } from "@/lib/motion";
 
 // 按卡片位置绑定品牌图标：0 → eco-contract（合约）, 1 → eco-spot（现货）
@@ -71,7 +72,7 @@ export function SkillsEcoSection() {
           >
             <div className="relative mb-5 h-[100px] w-[100px] shrink-0">
               <Image
-                src={`/images/icons/${ECO_ICON_SLUGS[i] ?? ECO_ICON_SLUGS[0]}.png`}
+                src={withBasePath(`/images/icons/${ECO_ICON_SLUGS[i] ?? ECO_ICON_SLUGS[0]}.png`)}
                 alt=""
                 aria-hidden="true"
                 width={80}

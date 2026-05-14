@@ -3,7 +3,15 @@ import { getHistoryMessages, getNewestGeneratedAt } from "@/lib/agentAnalysis";
 
 export const runtime = "nodejs";
 
+function canReadLegacyHistory(request: Request) {
+  return process.env.NODE_ENV !== "production" && request.headers.get("x-claw42-debug") === "1";
+}
+
 export async function GET(request: Request) {
+  if (!canReadLegacyHistory(request)) {
+    return NextResponse.json({ error: "debug history unavailable" }, { status: 403 });
+  }
+
   const url = new URL(request.url);
   const limitParam = url.searchParams.get("limit");
   const limit = limitParam ? parseInt(limitParam, 10) : 60;
@@ -14,8 +22,6 @@ export async function GET(request: Request) {
 
   const entries = getHistoryMessages(limit);
   const newestGeneratedAt = getNewestGeneratedAt();
-  const cacheControl =
-    entries.length === 0 ? "no-store" : "public, s-maxage=10, stale-while-revalidate=20";
 
   return NextResponse.json(
     {
@@ -25,7 +31,7 @@ export async function GET(request: Request) {
       entries,
     },
     {
-      headers: { "Cache-Control": cacheControl },
+      headers: { "Cache-Control": "no-store" },
     },
   );
 }
