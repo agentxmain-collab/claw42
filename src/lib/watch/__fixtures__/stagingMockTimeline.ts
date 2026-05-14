@@ -1,10 +1,14 @@
 import type { Locale } from "@/i18n/types";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
-import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
+import type {
+  DecisionOutcome,
+  DecisionResolutionReason,
+  StrategyDecisionRecord,
+} from "@/lib/team/strategyDecisionRecord";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import { normalizeWatchLocale } from "@/lib/watch/locale";
-import type { StreamEntry } from "@/modules/agent-watch/types";
+import type { MarketDataSource, StreamEntry } from "@/modules/agent-watch/types";
 
 const CONTRIBUTOR_IDS: TeamMemberId[] = [
   "fundamental_analyst",
@@ -17,6 +21,7 @@ const CONTRIBUTOR_IDS: TeamMemberId[] = [
 
 type DecisionFixtureInput = {
   symbol: "BTC" | "ETH";
+  idSuffix?: string;
   createdAt: number;
   locale: Locale;
   direction: "long" | "short";
@@ -28,6 +33,13 @@ type DecisionFixtureInput = {
   confidence: number;
   severity: "medium" | "high";
   evidence: NewsEvidence[];
+  resolution?: {
+    outcome: Exclude<DecisionOutcome, null>;
+    observedPrice: number;
+    reason?: DecisionResolutionReason | null;
+    observedPriceSource?: MarketDataSource | null;
+    resolvedAfterMinutes?: number;
+  };
 };
 
 export type StagingMockTimelineFixture = {
@@ -68,8 +80,9 @@ function evidence(
 
 function makeTradeDecision(input: DecisionFixtureInput): TradeDecision {
   const createdAtIso = new Date(input.createdAt).toISOString();
+  const idSuffix = input.idSuffix ? `-${input.idSuffix}` : "";
   return {
-    id: `staging-${input.symbol.toLowerCase()}-trade-v35`,
+    id: `staging-${input.symbol.toLowerCase()}${idSuffix}-trade-v35`,
     schemaVersion: 1,
     symbol: input.symbol,
     generatedBy: "pm",
@@ -101,7 +114,8 @@ function makeTradeDecision(input: DecisionFixtureInput): TradeDecision {
 }
 
 function makeDecisionRecord(input: DecisionFixtureInput): StrategyDecisionRecord {
-  const recordId = `staging-${input.symbol.toLowerCase()}-pm-decision-v35`;
+  const idSuffix = input.idSuffix ? `-${input.idSuffix}` : "";
+  const recordId = `staging-${input.symbol.toLowerCase()}${idSuffix}-pm-decision-v35`;
   const evidenceIds = input.evidence.map((item) => item.id);
   const createdAtIso = new Date(input.createdAt).toISOString();
   const evaluationWindowEndsAt = new Date(input.createdAt + 4 * 60 * 60_000).toISOString();
@@ -188,8 +202,15 @@ function makeDecisionRecord(input: DecisionFixtureInput): StrategyDecisionRecord
     tradeDecision,
     createdAt: createdAtIso,
     evaluationWindowEndsAt,
-    resolvedAt: null,
-    resolvedOutcome: null,
+    resolvedAt: input.resolution
+      ? new Date(
+          input.createdAt + (input.resolution.resolvedAfterMinutes ?? 30) * 60_000,
+        ).toISOString()
+      : null,
+    resolvedOutcome: input.resolution?.outcome ?? null,
+    resolvedPrice: input.resolution?.observedPrice ?? null,
+    resolutionReason: input.resolution?.reason ?? null,
+    resolutionPriceSource: input.resolution?.observedPriceSource ?? null,
     promptVersion: "staging-fixture-v3.5",
     modelProvider: "staging-fixture",
     legacyFactionId: null,
@@ -273,6 +294,94 @@ export function getStagingMockTimeline(
       confidence: 0.66,
       severity: "medium",
       evidence: ethEvidence,
+    }),
+    makeDecisionRecord({
+      symbol: "BTC",
+      idSuffix: "hit-tp",
+      createdAt: now - 390_000,
+      locale,
+      direction: "long",
+      entryPrice: 103900,
+      entryRange: { low: 103400, high: 104100 },
+      stopLoss: 101700,
+      takeProfit: [105600, 108000],
+      rating: 4,
+      confidence: 0.72,
+      severity: "high",
+      evidence: btcEvidence,
+      resolution: {
+        outcome: "hit_tp",
+        observedPrice: 105640,
+        reason: "take_profit_reached",
+        observedPriceSource: "coinw-kline",
+        resolvedAfterMinutes: 42,
+      },
+    }),
+    makeDecisionRecord({
+      symbol: "ETH",
+      idSuffix: "hit-sl",
+      createdAt: now - 540_000,
+      locale,
+      direction: "long",
+      entryPrice: 2540,
+      entryRange: { low: 2520, high: 2560 },
+      stopLoss: 2475,
+      takeProfit: [2630, 2720],
+      rating: 2,
+      confidence: 0.63,
+      severity: "medium",
+      evidence: ethEvidence,
+      resolution: {
+        outcome: "hit_sl",
+        observedPrice: 2472,
+        reason: "stop_loss_reached",
+        observedPriceSource: "coinw-kline",
+        resolvedAfterMinutes: 38,
+      },
+    }),
+    makeDecisionRecord({
+      symbol: "BTC",
+      idSuffix: "expired",
+      createdAt: now - 690_000,
+      locale,
+      direction: "short",
+      entryPrice: 104500,
+      entryRange: { low: 104200, high: 104900 },
+      stopLoss: 106200,
+      takeProfit: [102800, 101500],
+      rating: 3,
+      confidence: 0.65,
+      severity: "medium",
+      evidence: btcEvidence,
+      resolution: {
+        outcome: "expired",
+        observedPrice: 104120,
+        reason: "evaluation_window_elapsed",
+        observedPriceSource: "coinw-kline",
+        resolvedAfterMinutes: 240,
+      },
+    }),
+    makeDecisionRecord({
+      symbol: "ETH",
+      idSuffix: "manual-close",
+      createdAt: now - 840_000,
+      locale,
+      direction: "long",
+      entryPrice: 2560,
+      entryRange: { low: 2535, high: 2580 },
+      stopLoss: 2488,
+      takeProfit: [2660, 2760],
+      rating: 3,
+      confidence: 0.68,
+      severity: "medium",
+      evidence: ethEvidence,
+      resolution: {
+        outcome: "manual_close",
+        observedPrice: 2552,
+        reason: null,
+        observedPriceSource: "coinw-kline",
+        resolvedAfterMinutes: 24,
+      },
     }),
   ];
   const entries = records.map(makeTimelineEntry);
