@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claw42 · 流程介绍 + 行情分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800;900&family=Noto+Sans+SC:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ── tokens ─────────────────────────────────────────────────────────── */
+  :root{
+    --bg:#000; --card:#171717;
+    --line:rgba(255,255,255,0.08); --line-2:rgba(255,255,255,0.14);
+    --fg:#fff; --fg-2:#a6a6a6; --fg-3:#949494;
+    --purple:#5227ff; --purple-2:#7c5cff;
+    --lime:#d1ff55; --err:#e95032; --ok:#14a739; --warn:#fed500;
+    --radius-card:16px; --radius-panel:24px;
+    --content-max:1240px;
+    --font-display:"Manrope","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);color:var(--fg);
+    font-family:var(--font-display);
+    font-size:14px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;overflow-x:hidden;
+  }
+  ::selection{background:var(--purple);color:#fff;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  /* ── top nav ────────────────────────────────────────────────────────── */
+  nav.topnav{
+    position:fixed;left:0;right:0;top:0;z-index:80;height:72px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    background:rgba(0,0,0,0.8);backdrop-filter:blur(12px);
+    display:flex;align-items:center;justify-content:space-between;padding:0 32px;
+  }
+  .nav-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:-0.01em;}
+  .nav-logo .robot{
+    width:34px;height:34px;border-radius:9px;
+    background:linear-gradient(135deg,#5227ff,#7c5cff);
+    display:grid;place-items:center;color:#fff;
+    box-shadow:0 4px 16px rgba(82,39,255,0.32);
+  }
+  .nav-logo .wordmark{letter-spacing:-0.02em;}
+  .nav-logo .wordmark .num{color:var(--purple-2);}
+  .nav-right{display:flex;align-items:center;gap:12px;}
+  .nav-btn{
+    height:44px;padding:0 16px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:13.5px;font-weight:600;
+    background:rgba(255,255,255,0.08);
+    border:1px solid transparent;transition:background .15s;
+  }
+  .nav-btn:hover{background:rgba(255,255,255,0.15);}
+  .nav-btn .green-dot{
+    width:8px;height:8px;border-radius:50%;background:var(--ok);
+    box-shadow:0 0 0 3px rgba(20,167,57,0.2);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  .nav-btn.lang{border:1px solid rgba(255,255,255,0.12);padding-right:32px;position:relative;}
+  .nav-btn.lang svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:rgba(255,255,255,0.7);}
+
+  /* ── shell ──────────────────────────────────────────────────────────── */
+  main{position:relative;padding-top:72px;min-height:100vh;overflow:hidden;}
+  main::before,main::after{content:"";position:absolute;inset:0;pointer-events:none;}
+  main::before{background:radial-gradient(ellipse 120% 60% at 50% 0%, rgba(124,92,255,0.18), transparent 60%);}
+  main::after{background:radial-gradient(ellipse 80% 40% at 50% 30%, rgba(58,123,255,0.06), transparent 70%);}
+  .console{position:relative;z-index:1;max-width:var(--content-max);margin:0 auto;padding:36px 48px 60px;}
+
+  /* ── HERO ───────────────────────────────────────────────────────────── */
+  .hero{
+    position:relative;border-radius:var(--radius-panel);overflow:hidden;
+    border:1px solid rgba(124,92,255,0.24);
+    background:
+      radial-gradient(ellipse 70% 70% at 78% 50%, rgba(124,92,255,0.28), transparent 60%),
+      radial-gradient(ellipse 50% 70% at 30% 100%, rgba(82,39,255,0.18), transparent 65%),
+      linear-gradient(180deg, #1a1230 0%, #0a0817 100%);
+    display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+    align-items:stretch;margin-bottom:28px;min-height:500px;
+  }
+  .hero::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg, transparent, rgba(209,255,85,0.5), rgba(124,92,255,0.55), transparent);
+    pointer-events:none;z-index:5;
+  }
+  .hero::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(ellipse 80% 100% at 50% 50%, #000 30%, transparent 80%);
+    -webkit-mask-image:radial-gradient(ellipse 80% 100% at 50% 50%, #000 30%, transparent 80%);
+    z-index:0;
+  }
+
+  .hero-left{position:relative;z-index:2;padding:42px 44px 38px;display:flex;flex-direction:column;gap:22px;}
+  .hero-eyebrow{
+    display:inline-flex;align-items:center;gap:10px;align-self:flex-start;
+    padding:6px 12px;border-radius:999px;
+    background:rgba(209,255,85,0.1);border:1px solid rgba(209,255,85,0.34);
+    font-size:10.5px;color:var(--lime);font-weight:700;
+    font-family:var(--font-mono);letter-spacing:0.14em;text-transform:uppercase;
+  }
+  .hero-eyebrow .p{
+    width:6px;height:6px;border-radius:50%;background:var(--lime);
+    box-shadow:0 0 0 3px rgba(209,255,85,0.18);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  .hero-title{font-size:42px;font-weight:900;line-height:1.1;letter-spacing:-0.022em;margin:0;color:#fff;}
+  .hero-title .accent{color:var(--lime);}
+  .hero-sub{font-size:15px;color:rgba(255,255,255,0.78);line-height:1.65;max-width:540px;margin:0;}
+  .hero-sub b{color:#fff;font-weight:700;}
+
+  .hero-meta{
+    display:flex;gap:0;border-top:1px solid rgba(255,255,255,0.1);
+    padding-top:20px;margin-top:auto;
+  }
+  .hero-meta .cell{flex:1;display:flex;flex-direction:column;gap:6px;padding-right:18px;}
+  .hero-meta .cell + .cell{padding-left:18px;border-left:1px solid rgba(255,255,255,0.07);}
+  .hero-meta .v{font-size:28px;font-weight:900;line-height:1;letter-spacing:-0.03em;color:#fff;}
+  .hero-meta .v.lime{color:var(--lime);}
+  .hero-meta .v.purple{color:var(--purple-2);}
+  .hero-meta .k{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-3);font-family:var(--font-mono);font-weight:600;}
+
+  .topbar-tabs{
+    display:flex;gap:4px;padding:4px;
+    background:rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.06);
+    border-radius:12px;width:fit-content;align-self:flex-start;
+  }
+  .ttab{
+    padding:8px 18px;font-size:12px;font-weight:700;color:var(--fg-2);
+    border-radius:9px;display:inline-flex;align-items:center;gap:8px;
+    transition:color .2s,background .2s,box-shadow .2s;
+  }
+  .ttab.active{background:#1f1937;color:#fff;box-shadow:inset 0 0 0 1px rgba(209,255,85,0.5);}
+  .ttab:hover{color:#fff;background:rgba(255,255,255,0.06);}
+  .ttab .badge{padding:2px 7px;background:var(--lime);color:#1a1a1a;border-radius:5px;font-size:9px;letter-spacing:0.05em;font-weight:800;}
+
+  /* ── HERO right · CONSTELLATION ───────────────────────────────────── */
+  .hero-right{position:relative;z-index:2;padding:0;display:flex;align-items:center;justify-content:center;}
+  .constellation{
+    position:relative;width:100%;height:100%;
+    min-height:500px;
+  }
+  .constellation .ground{
+    position:absolute;left:50%;bottom:6%;transform:translateX(-50%);
+    width:62%;aspect-ratio:1/1;border-radius:50%;
+    background:radial-gradient(ellipse at 50% 50%, rgba(209,255,85,0.16), rgba(124,92,255,0.18) 36%, transparent 70%);
+    z-index:0;pointer-events:none;
+    mask:linear-gradient(180deg, #000 50%, transparent);
+    -webkit-mask:linear-gradient(180deg, #000 50%, transparent);
+  }
+  .constellation svg.web{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;}
+
+  /* center robot character */
+  .core{
+    position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);
+    z-index:4;
+  }
+  .core .head{
+    width:108px;height:96px;border-radius:30px;
+    background:linear-gradient(180deg, #2a1c5f, #1a1042);
+    border:2px solid rgba(209,255,85,0.34);
+    position:relative;
+    box-shadow:0 0 64px rgba(82,39,255,0.5),
+               inset 0 4px 0 rgba(255,255,255,0.16),
+               inset 0 -8px 16px rgba(82,39,255,0.32);
+  }
+  .core .head::before{
+    /* antenna */
+    content:"";position:absolute;left:50%;top:-22px;transform:translateX(-50%);
+    width:2px;height:18px;background:rgba(255,255,255,0.42);
+  }
+  .core .head::after{
+    content:"";position:absolute;left:50%;top:-26px;transform:translateX(-50%);
+    width:8px;height:8px;border-radius:50%;background:var(--lime);
+    box-shadow:0 0 14px var(--lime), 0 0 4px rgba(255,255,255,0.6);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  .core .face{
+    position:absolute;inset:18px 12px;border-radius:16px;
+    background:radial-gradient(ellipse at 50% 50%, #050918, #02030a);
+    border:1px solid rgba(255,255,255,0.08);
+    display:flex;align-items:center;justify-content:center;gap:18px;
+  }
+  .core .eye{
+    width:14px;height:18px;border-radius:7px;
+    background:#7ee0ff;
+    box-shadow:0 0 14px #7ee0ff, 0 0 28px rgba(126,224,255,0.5);
+    animation:eyeBlink 4.2s ease-in-out infinite;
+  }
+  .core .eye.right{animation-delay:0.05s;}
+  @keyframes eyeBlink{0%,92%,100%{transform:scaleY(1);}94%,96%{transform:scaleY(0.1);}}
+  .core .podium{
+    position:absolute;left:50%;bottom:-44px;transform:translateX(-50%);
+    width:160px;height:36px;border-radius:50%;
+    background:radial-gradient(ellipse at 50% 30%, rgba(124,92,255,0.7), rgba(124,92,255,0.1) 70%);
+    filter:blur(0.3px);z-index:-1;
+  }
+  .core .podium::before,.core .podium::after{
+    content:"";position:absolute;left:50%;transform:translateX(-50%);border-radius:50%;
+    border:1px solid rgba(124,92,255,0.35);
+  }
+  .core .podium::before{width:140px;height:30px;top:6px;border-color:rgba(209,255,85,0.34);}
+  .core .podium::after{width:96px;height:18px;top:14px;border-color:rgba(124,92,255,0.5);}
+
+  /* expanding rings from core */
+  .core .ring{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:130px;height:130px;border-radius:50%;
+    border:1px solid rgba(209,255,85,0.32);
+    animation:ringExpand 3.8s ease-out infinite;
+    pointer-events:none;
+  }
+  .core .ring.d{animation-delay:1.9s;border-color:rgba(124,92,255,0.36);}
+  @keyframes ringExpand{
+    0%{opacity:0.7;transform:translate(-50%,-50%) scale(0.7);}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(2.6);}
+  }
+
+  /* agent orbit node — robot-faced avatar */
+  .anode{
+    position:absolute;z-index:3;transform:translate(-50%,-50%);
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    animation:float 5s ease-in-out infinite;
+  }
+  .anode:nth-child(2n){animation-delay:0.6s;}
+  .anode:nth-child(3n){animation-delay:1.2s;}
+  .anode:nth-child(5n){animation-delay:1.8s;}
+  @keyframes float{0%,100%{transform:translate(-50%,-50%) translateY(0);}50%{transform:translate(-50%,-50%) translateY(-4px);}}
+  .anode .av{
+    position:relative;width:42px;height:40px;border-radius:12px;
+    display:grid;place-items:center;
+    border:1px solid rgba(255,255,255,0.18);
+    background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015));
+    box-shadow:0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.16);
+    transition:transform .25s cubic-bezier(.2,.7,.3,1),box-shadow .25s,border-color .25s;
+    overflow:visible;
+  }
+  .anode .av::before{
+    /* antenna */
+    content:"";position:absolute;left:50%;top:-7px;transform:translateX(-50%);
+    width:1.5px;height:6px;background:rgba(255,255,255,0.5);
+  }
+  .anode .av::after{
+    content:"";position:absolute;left:50%;top:-10px;transform:translateX(-50%);
+    width:4px;height:4px;border-radius:50%;background:var(--lime);
+    box-shadow:0 0 6px var(--lime);
+  }
+  .anode .av .screen{
+    width:30px;height:22px;border-radius:6px;
+    background:radial-gradient(ellipse at 50% 50%, #050918, #02030a);
+    border:1px solid rgba(255,255,255,0.1);
+    display:flex;align-items:center;justify-content:center;gap:4px;
+  }
+  .anode .av .screen .e{
+    width:4px;height:5px;border-radius:50%;
+    background:var(--eye, #7ee0ff);
+    box-shadow:0 0 5px var(--eye, #7ee0ff);
+  }
+  .anode:hover .av{transform:scale(1.14);box-shadow:0 12px 28px rgba(124,92,255,0.42);}
+  .anode .tip{
+    font-size:9px;color:var(--fg-3);font-family:var(--font-mono);letter-spacing:0.08em;
+    white-space:nowrap;text-transform:uppercase;font-weight:700;opacity:0.74;
+  }
+
+  /* agent color variants — use CSS var --eye for eye color */
+  .a-fund .av .screen{background:radial-gradient(ellipse at 50% 50%, #161e3a, #050918);} .a-fund{--eye:#8aa2d4;}
+  .a-sent .av .screen{background:radial-gradient(ellipse at 50% 50%, #261438, #08020f);} .a-sent{--eye:#c89dd4;}
+  .a-news .av .screen{background:radial-gradient(ellipse at 50% 50%, #14261c, #020a04);} .a-news{--eye:#92c692;}
+  .a-tech .av .screen{background:radial-gradient(ellipse at 50% 50%, #2e2418, #0a0805);} .a-tech{--eye:#d4b482;}
+  .a-bull .av .screen{background:radial-gradient(ellipse at 50% 50%, #102c1f, #02080a);} .a-bull{--eye:#7ad19a;}
+  .a-bear .av .screen{background:radial-gradient(ellipse at 50% 50%, #2c1414, #0a0202);} .a-bear{--eye:#ff8e76;}
+  .a-trade .av .screen{background:radial-gradient(ellipse at 50% 50%, #161630, #020208);} .a-trade{--eye:#9aa0d4;}
+  .a-aggr .av .screen{background:radial-gradient(ellipse at 50% 50%, #2e1f14, #0a0602);} .a-aggr{--eye:#d49872;}
+  .a-neut .av .screen{background:radial-gradient(ellipse at 50% 50%, #1c1c1f, #060608);} .a-neut{--eye:#b6b6b6;}
+  .a-cons .av .screen{background:radial-gradient(ellipse at 50% 50%, #142632, #02080a);} .a-cons{--eye:#7ab2d4;}
+  .a-pm .av{border-color:rgba(209,255,85,0.42);} .a-pm .av .screen{background:radial-gradient(ellipse at 50% 50%, #1b2606, #020803);} .a-pm{--eye:#d1ff55;}
+  .a-pm .av::after{background:var(--lime);box-shadow:0 0 10px var(--lime);}
+
+  /* speech-dot indicator — pure visual, no text */
+  .speech-dot{
+    position:absolute;top:-10px;right:-10px;z-index:5;
+    display:inline-flex;align-items:center;gap:2.5px;
+    padding:4px 7px;border-radius:999px;
+    background:rgba(15,12,35,0.95);
+    border:1px solid rgba(209,255,85,0.42);
+    box-shadow:0 4px 14px rgba(0,0,0,0.4), 0 0 0 3px rgba(209,255,85,0.06);
+  }
+  .speech-dot .d{width:3.5px;height:3.5px;border-radius:50%;background:var(--lime);animation:tdot 1.4s ease-in-out infinite;}
+  .speech-dot .d:nth-child(2){animation-delay:0.18s;}
+  .speech-dot .d:nth-child(3){animation-delay:0.36s;}
+  @keyframes tdot{0%,80%,100%{opacity:0.2;}40%{opacity:1;}}
+  .speech-dot.purple{border-color:rgba(124,92,255,0.46);box-shadow:0 4px 14px rgba(0,0,0,0.4), 0 0 0 3px rgba(124,92,255,0.06);}
+  .speech-dot.purple .d{background:var(--purple-2);}
+
+  /* ── PANELS (flow vs mkt) ─────────────────────────────────────────── */
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* ── flow stages (6 cards) — same as v9 ──────────────────────────── */
+  .flow-stages-v4{display:flex;flex-direction:column;gap:16px;}
+  .fstage4{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius-panel);padding:22px 26px;
+    display:flex;flex-direction:row;gap:26px;align-items:stretch;
+    position:relative;overflow:hidden;
+    transition:border-color .35s,box-shadow .35s,transform .35s cubic-bezier(.2,.7,.3,1);
+  }
+  .fstage4:hover{border-color:rgba(82,39,255,0.48);box-shadow:0 18px 54px rgba(0,0,0,0.24);transform:translateY(-1px);}
+  .fstage4.debate{border-color:rgba(82,39,255,0.3);}
+  .fstage4.final{border-color:rgba(209,255,85,0.4);background:linear-gradient(90deg, rgba(209,255,85,0.04), transparent 40%), var(--card);}
+  .fstage4.final:hover{border-color:rgba(209,255,85,0.58);}
+  .fstage4.memory{border-style:dashed;border-color:rgba(255,255,255,0.18);background:rgba(82,39,255,0.04);}
+  .fstage4.memory:hover{border-color:rgba(82,39,255,0.44);}
+  .fstage4-side{flex:0 0 220px;display:flex;flex-direction:column;gap:12px;padding-right:22px;border-right:1px solid var(--line);}
+  .fs4-head{display:flex;align-items:baseline;gap:14px;}
+  .fs4-num{font-size:34px;font-weight:900;color:var(--fg);line-height:1;letter-spacing:-0.03em;}
+  .fs4-meta{display:flex;flex-direction:column;gap:3px;}
+  .fs4-name{font-size:17px;font-weight:800;line-height:1.2;letter-spacing:-0.005em;margin:0;}
+  .fs4-tag{font-size:10px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;font-family:var(--font-mono);}
+  .fs4-cnt{font-size:13px;color:var(--fg);padding:7px 14px;background:rgba(255,255,255,0.06);border:1px solid transparent;border-radius:999px;font-weight:700;align-self:flex-start;transition:background .2s,border-color .2s,color .2s;}
+  .fstage4:hover .fs4-cnt{background:rgba(82,39,255,0.16);border-color:rgba(82,39,255,0.28);color:var(--purple-2);}
+  .fstage4.final:hover .fs4-cnt{background:rgba(209,255,85,0.16);border-color:rgba(209,255,85,0.34);color:var(--lime);}
+  .fs4-side-chip{margin-top:auto;padding:6px 12px;background:rgba(255,255,255,0.05);border:1px solid transparent;border-radius:8px;font-size:10px;color:var(--fg);letter-spacing:0.06em;text-transform:uppercase;font-weight:600;align-self:flex-start;font-family:var(--font-mono);transition:background .2s,border-color .2s,color .2s;}
+  .fstage4:hover .fs4-side-chip{background:rgba(82,39,255,0.16);border-color:rgba(82,39,255,0.26);color:var(--purple-2);}
+  .fstage4.final:hover .fs4-side-chip{background:rgba(209,255,85,0.14);border-color:rgba(209,255,85,0.3);color:var(--lime);}
+  .fstage4-body{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;}
+  .fagents{display:grid;gap:10px;}
+  .fagents-1{grid-template-columns:320px;}
+  .fagents-2{grid-template-columns:repeat(2,320px);}
+  .fagents-3{grid-template-columns:repeat(3,1fr);max-width:820px;}
+  .fagents-4{grid-template-columns:repeat(4,1fr);}
+  .fagent{background:rgba(255,255,255,0.025);border:1px solid var(--line);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:6px;min-height:72px;transition:border-color .25s,background .25s,box-shadow .25s,transform .25s cubic-bezier(.2,.7,.3,1);}
+  .fagent:hover{border-color:rgba(82,39,255,0.42);background:rgba(82,39,255,0.075);box-shadow:0 10px 28px rgba(0,0,0,0.18);transform:translateY(-1px);}
+  .fstage4.final .fagent:hover{border-color:rgba(209,255,85,0.42);background:rgba(209,255,85,0.075);}
+  .fagent-head{display:flex;align-items:center;gap:10px;}
+  .fagent-avatar{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:800;flex-shrink:0;transition:box-shadow .25s;}
+  .fagent:hover .fagent-avatar{box-shadow:0 0 18px rgba(82,39,255,0.22);}
+  .fstage4.final .fagent:hover .fagent-avatar{box-shadow:0 0 18px rgba(209,255,85,0.22);}
+  .fagent-info{flex:1;min-width:0;}
+  .fagent-name{font-size:12.5px;font-weight:800;line-height:1.2;}
+  .fagent-role{font-size:9px;color:var(--fg-3);margin-top:2px;letter-spacing:0.06em;font-family:var(--font-mono);}
+  .fagent-desc{font-size:11px;color:var(--fg-2);line-height:1.5;}
+  .fstage4-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px;margin-top:auto;transition:border-color .25s,background .25s,box-shadow .25s;}
+  .fstage4-detail:hover{border-color:rgba(82,39,255,0.34);background:rgba(82,39,255,0.055);box-shadow:0 10px 28px rgba(0,0,0,0.14);}
+  .fstage4.final .fstage4-detail:hover{border-color:rgba(209,255,85,0.34);background:rgba(209,255,85,0.055);}
+  .fsd-col{display:flex;flex-direction:column;gap:4px;}
+  .fsd-label{color:var(--fg-3);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;font-family:var(--font-mono);}
+  .fsd-value{color:var(--fg-2);font-size:12px;line-height:1.45;}
+
+  /* solid avatar colors for fagent cards (text labels, like v9) */
+  .fagent-avatar.a-fund{background:#2a3145;color:#8aa2d4;}
+  .fagent-avatar.a-sent{background:#3a2a45;color:#c89dd4;}
+  .fagent-avatar.a-news{background:#2a3a2a;color:#92c692;}
+  .fagent-avatar.a-tech{background:#45402a;color:#d4b482;}
+  .fagent-avatar.a-bull{background:#2a4533;color:#7ad19a;}
+  .fagent-avatar.a-bear{background:#452a2a;color:#d48a7a;}
+  .fagent-avatar.a-trade{background:#2a2a45;color:#9aa0d4;}
+  .fagent-avatar.a-aggr{background:#45382a;color:#d49872;}
+  .fagent-avatar.a-neut{background:#38383a;color:#b6b6b6;}
+  .fagent-avatar.a-cons{background:#2a3a45;color:#7ab2d4;}
+  .fagent-avatar.a-pm{background:rgba(209,255,85,0.16);color:var(--lime);}
+  .fagent-avatar.a-mem{background:rgba(82,39,255,0.22);color:var(--purple-2);}
+
+  .flow-footer-cta{margin-top:32px;display:flex;justify-content:space-between;align-items:center;gap:16px;padding-top:20px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .flow-footer-note{font-size:12.5px;color:var(--fg-3);}
+  .flow-footer-note b{color:var(--fg-2);font-weight:600;}
+  .switch-to-debate{padding:12px 22px;background:var(--lime);color:#1a1a1a;border-radius:12px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:8px;transition:transform .15s,box-shadow .15s;}
+  .switch-to-debate:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(209,255,85,0.32);}
+
+  /* ── chat-shell / topic / msg (from v9) ───────────────────────────── */
+  .chat-shell{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-panel);overflow:hidden;}
+  .chat-shell-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:rgba(82,39,255,0.06);border-bottom:1px solid var(--line-2);}
+  .cs-head-left{display:flex;align-items:center;gap:12px;}
+  .cs-icon{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--purple),var(--purple-2));display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:#fff;}
+  .cs-icon-info{display:flex;flex-direction:column;gap:2px;}
+  .cs-title{font-size:14px;font-weight:800;}
+  .cs-sub{font-size:11px;color:var(--fg-3);font-family:var(--font-mono);letter-spacing:0.04em;}
+  .cs-head-right{display:flex;align-items:center;gap:12px;}
+  .cs-stat{display:flex;align-items:baseline;gap:6px;font-size:11px;color:var(--fg-3);letter-spacing:0.04em;}
+  .cs-stat b{color:var(--fg);font-weight:800;font-size:13px;font-family:var(--font-mono);}
+  .cs-divider{width:1px;height:14px;background:var(--line-2);}
+  .chat-shell-body{padding:20px 22px 24px;background:rgba(0,0,0,0.1);max-height:calc(100vh - 160px);min-height:540px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.14) transparent;}
+  .chat-shell-body::-webkit-scrollbar{width:8px;}
+  .chat-shell-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:4px;}
+  .chat-shell-body::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2);}
+
+  .topic{background:rgba(255,255,255,0.022);border:1px solid var(--line);border-radius:var(--radius-card);overflow:hidden;position:relative;transition:border-color .35s,box-shadow .35s,transform .35s cubic-bezier(.2,.7,.3,1);}
+  .topic.latest{border-color:rgba(209,255,85,0.18);box-shadow:0 14px 42px rgba(0,0,0,0.18);}
+  .topic.latest::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg, transparent, rgba(209,255,85,0.32), transparent);pointer-events:none;}
+  .topic:hover{border-color:rgba(82,39,255,0.46);box-shadow:0 18px 54px rgba(0,0,0,0.24);transform:translateY(-1px);}
+  .topic.done:hover{border-color:rgba(20,167,57,0.42);}
+  .topic-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,0.015);cursor:pointer;position:relative;transition:background .2s;}
+  .topic-head:hover{background:rgba(255,255,255,0.03);}
+  .topic.collapsed .topic-head{border-bottom:0;}
+  .topic.collapsed .topic-body,.topic.collapsed .topic-strategy{display:none;}
+  .topic-separator{display:flex;align-items:center;justify-content:center;padding:14px 0;pointer-events:none;}
+  .topic-separator::before,.topic-separator::after{content:"";flex:1;height:1px;background:linear-gradient(90deg, transparent, var(--line-2) 30%, var(--line-2) 70%, transparent);}
+  .topic-separator-dot{margin:0 12px;width:4px;height:4px;border-radius:50%;background:var(--line-2);}
+  .topic-toggle{position:absolute;top:18px;right:22px;min-width:86px;height:36px;padding:0 14px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid var(--line-2);display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--fg-2);font-weight:700;letter-spacing:0.04em;transition:background .2s,color .2s,border-color .2s;}
+  .topic-toggle::before{content:"▾";font-size:11px;transition:transform .25s cubic-bezier(.2,.7,.3,1);}
+  .topic-toggle::after{content:"收起";}
+  .topic.collapsed .topic-toggle::after{content:"展开";}
+  .topic.collapsed .topic-toggle::before{transform:rotate(-90deg);}
+  .topic-head:hover .topic-toggle{background:rgba(209,255,85,0.16);color:var(--lime);border-color:rgba(209,255,85,0.36);}
+  .topic-eyebrow{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--fg-3);letter-spacing:0.06em;margin-bottom:10px;}
+  .live-tag{display:inline-flex;align-items:center;gap:6px;color:#ff8b80;font-weight:700;}
+  .live-tag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--err);animation:pulse 1.4s ease-in-out infinite;}
+  .topic.done .live-tag{color:var(--ok);}
+  .topic.done .live-tag::before{background:var(--ok);animation:none;}
+  .topic-source{color:var(--fg-3);}
+  .topic-title{font-size:18px;font-weight:800;line-height:1.35;margin:0 0 8px 0;}
+  .topic-meta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .intensity{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg-3);letter-spacing:0.08em;text-transform:uppercase;font-weight:700;}
+  .intensity-dots{display:flex;gap:3px;}
+  .intensity-dot{width:14px;height:7px;border-radius:3px;background:rgba(255,255,255,0.08);}
+  .intensity-dot.on{background:var(--lime);}
+  .intensity-dot.on.warm{background:var(--warn);}
+  .intensity-dot.on.hot{background:var(--err);}
+  .intensity-score{font-family:var(--font-mono);color:var(--fg-2);font-size:12px;margin-left:4px;}
+  .trigger{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--fg-3);}
+  .trigger-pill{padding:4px 10px;background:rgba(255,255,255,0.06);border-radius:999px;font-size:11px;font-weight:700;color:var(--fg-2);font-family:var(--font-mono);}
+  .trigger-pill.ticker{color:var(--lime);}
+  .trigger-text{color:var(--fg-3);font-size:11px;line-height:1.4;}
+  .topic-body{padding:16px 22px 4px;display:flex;flex-direction:column;gap:14px;}
+  .msg{display:flex;gap:12px;align-items:flex-start;}
+  .msg-avatar{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;}
+  .msg-avatar.a-fund{background:#2a3145;color:#8aa2d4;}
+  .msg-avatar.a-sent{background:#3a2a45;color:#c89dd4;}
+  .msg-avatar.a-news{background:#2a3a2a;color:#92c692;}
+  .msg-avatar.a-tech{background:#45402a;color:#d4b482;}
+  .msg-avatar.a-bull{background:#2a4533;color:#7ad19a;}
+  .msg-avatar.a-bear{background:#452a2a;color:#d48a7a;}
+  .msg-avatar.a-trade{background:#2a2a45;color:#9aa0d4;}
+  .msg-avatar.a-aggr{background:#45382a;color:#d49872;}
+  .msg-avatar.a-neut{background:#38383a;color:#b6b6b6;}
+  .msg-avatar.a-cons{background:#2a3a45;color:#7ab2d4;}
+  .msg-avatar.a-pm{background:rgba(209,255,85,0.16);color:var(--lime);}
+  .msg-avatar.a-mem{background:rgba(82,39,255,0.22);color:var(--purple-2);}
+  .msg-body{flex:1;min-width:0;}
+  .msg-meta{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;flex-wrap:wrap;}
+  .msg-name{font-size:12px;font-weight:700;color:var(--fg);}
+  .msg-mention{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(225,68,79,0.18);color:#ff8b80;}
+  .msg-time{font-size:10px;color:var(--fg-3);font-family:var(--font-mono);}
+  .msg-data-age{font-size:10px;color:var(--fg-3);}
+  .msg-data-age::before{content:"·";margin-right:6px;color:var(--fg-3);}
+  .msg-bubble{background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:14px;border-top-left-radius:4px;padding:10px 14px;font-size:13px;color:var(--fg-2);line-height:1.55;}
+  .msg-bubble b{color:var(--fg);font-weight:700;}
+  .msg-quote{background:rgba(255,255,255,0.04);border-left:2px solid var(--purple-2);border-radius:4px;padding:8px 10px;font-size:12px;color:var(--fg-3);margin-bottom:8px;line-height:1.5;}
+  .msg-quote::before{content:"↳ ";color:var(--purple-2);font-weight:700;margin-right:4px;}
+  .msg-quote .q-name{color:var(--purple-2);font-weight:700;margin-right:6px;}
+
+  .stage-marker{display:flex;align-items:center;gap:10px;margin:8px 0 4px;padding:6px 0;}
+  .stage-marker .line{flex:1;height:1px;background:var(--line);}
+  .stage-marker .badge{padding:5px 11px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:0.04em;white-space:nowrap;background:rgba(255,255,255,0.035);color:var(--fg-3);border:1px solid rgba(255,255,255,0.1);}
+  .stage-marker.done .line{background:rgba(20,167,57,0.1);}
+  .stage-marker.done .badge{background:rgba(20,167,57,0.055);color:rgba(170,220,185,0.76);border-color:rgba(20,167,57,0.14);}
+  .stage-marker.final .line{background:rgba(209,255,85,0.16);}
+  .stage-marker.final .badge{background:rgba(209,255,85,0.1);color:var(--lime);border-color:rgba(209,255,85,0.24);}
+
+  /* topic-strategy */
+  .topic-strategy{margin:18px 22px 22px;padding:24px 28px;border:1px solid rgba(209,255,85,0.16);border-left:3px solid var(--lime);border-radius:14px;background:linear-gradient(135deg, rgba(209,255,85,0.035), rgba(209,255,85,0.012) 62%, var(--card));display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr auto;gap:28px;align-items:center;position:relative;overflow:hidden;transition:background .18s,border-color .18s,box-shadow .18s;}
+  .topic-strategy.latest::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg, transparent, rgba(209,255,85,0.5), transparent);pointer-events:none;}
+  .topic-strategy:hover{border-color:rgba(209,255,85,0.44);background:linear-gradient(135deg, rgba(209,255,85,0.14), rgba(209,255,85,0.065) 58%, rgba(38,38,38,0.96));box-shadow:0 14px 36px rgba(0,0,0,0.18);}
+  .strat-head{display:flex;flex-direction:column;gap:6px;}
+  .strat-head .row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .strategy-latest-badge{padding:4px 9px;border-radius:999px;background:rgba(209,255,85,0.12);border:1px solid rgba(209,255,85,0.24);color:var(--lime);font-size:10px;font-weight:800;letter-spacing:0.06em;}
+  .strat-head .name{font-size:16px;font-weight:900;color:var(--fg);}
+  .strat-head .ticker{font-size:16px;font-weight:900;color:var(--lime);font-family:var(--font-mono);}
+  .strat-head .action{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:800;letter-spacing:0.06em;}
+  .strat-head .action.long{background:rgba(20,167,57,0.22);color:var(--ok);}
+  .strat-head .action.short{background:rgba(225,68,79,0.22);color:var(--err);}
+  .strat-head .meta{font-size:12px;color:var(--fg-2);margin-top:4px;line-height:1.5;}
+  .strat-head .meta .ok{color:var(--ok);}
+  .strat-field{display:flex;flex-direction:column;gap:6px;}
+  .strat-field .lbl{font-size:10px;color:var(--fg-3);letter-spacing:0.12em;text-transform:uppercase;font-weight:700;}
+  .strat-field .val{font-size:15px;font-weight:800;color:var(--fg);font-family:var(--font-mono);}
+  .strat-field .val.warn{color:var(--err);}
+  .strat-field .val.lime{color:var(--lime);}
+  .strat-cta{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+  .cta-row{display:flex;gap:8px;}
+  .cta-btn{padding:11px 22px;background:var(--lime);color:#1a1a1a;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;transition:background .2s,transform .12s;}
+  .cta-btn:hover{background:#c4f045;}
+  .cta-btn.secondary{background:rgba(255,255,255,0.06);color:var(--fg-2);border:1px solid var(--line);}
+  .cta-btn.secondary:hover{background:rgba(255,255,255,0.1);color:var(--fg);border-color:var(--line-2);}
+  .cta-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .cta-meta{font-size:11px;color:var(--fg-3);text-align:right;}
+  .cta-meta b{color:var(--warn);font-weight:800;}
+
+  /* ── responsive ───────────────────────────────────────────────────── */
+  @media (max-width:1100px){
+    .hero{grid-template-columns:1fr;min-height:0;}
+    .hero-right{padding:0 0 24px;}
+    .constellation{min-height:440px;}
+    .hero-left{padding:32px 28px 28px;}
+    .hero-title{font-size:30px;}
+  }
+  @media (max-width:880px){
+    .console{padding:24px 18px 48px;}
+    .fstage4{flex-direction:column;gap:16px;}
+    .fstage4-side{flex:none;padding:0 0 14px;border-right:0;border-bottom:1px solid var(--line);}
+    .fagents-1,.fagents-2,.fagents-3,.fagents-4{grid-template-columns:1fr;max-width:none;}
+    .fstage4-detail{grid-template-columns:1fr;}
+    .topic-strategy{grid-template-columns:1fr;gap:16px;}
+    .strat-cta{align-items:flex-start;}
+    nav.topnav{padding:0 18px;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="/" class="nav-logo">
+    <span class="robot" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <rect x="4" y="7" width="16" height="12" rx="3" stroke="#fff" stroke-width="1.8"/>
+        <circle cx="9" cy="13" r="1.4" fill="#d1ff55"/>
+        <circle cx="15" cy="13" r="1.4" fill="#d1ff55"/>
+        <path d="M12 4v3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="12" cy="3" r="1.2" fill="#d1ff55"/>
+      </svg>
+    </span>
+    <span class="wordmark">claw<span class="num">42</span></span>
+  </a>
+  <div class="nav-right">
+    <a href="#" class="nav-btn"><span class="green-dot"></span><span>实时分析</span></a>
+    <button class="nav-btn lang" type="button">
+      <span>简体中文</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</nav>
+
+<main>
+  <section class="console" aria-label="Claw42 dispatch console">
+
+    <!-- ── HERO ───────────────────────────────────────────────────── -->
+    <section class="hero" aria-label="claw42 brand">
+      <div class="hero-left">
+        <div class="hero-eyebrow"><span class="p"></span>claw 42 · dispatch console</div>
+        <h1 class="hero-title">
+          一笔交易决策 · <span class="accent">11 个角色 · 6 个阶段</span> 协同产出
+        </h1>
+        <p class="hero-sub">不是一个 AI 拍脑袋。<b>每一步都有专人</b>，每一次分歧被记录，每一笔结果都回灌下一轮。</p>
+
+        <div class="hero-meta">
+          <div class="cell"><span class="v">11</span><span class="k">Agents</span></div>
+          <div class="cell"><span class="v lime">6</span><span class="k">Stages</span></div>
+          <div class="cell"><span class="v purple">2×</span><span class="k">Debate</span></div>
+          <div class="cell"><span class="v lime">∞</span><span class="k">Memory</span></div>
+        </div>
+
+        <div class="topbar-tabs" role="tablist">
+          <button class="ttab active" type="button" role="tab" data-panel="flow" aria-selected="true">流程介绍</button>
+          <button class="ttab" type="button" role="tab" data-panel="mkt" aria-selected="false">行情分析 <span class="badge">LIVE</span></button>
+        </div>
+      </div>
+
+      <!-- right: constellation (robot-faced agents around central character) -->
+      <div class="hero-right" aria-hidden="true">
+        <div class="constellation">
+          <div class="ground"></div>
+
+          <!-- SVG layer: gentle dotted arcs between non-adjacent nodes -->
+          <svg class="web" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <radialGradient id="dotG" cx="0.5" cy="0.5" r="0.5">
+                <stop offset="0" stop-color="rgba(124,92,255,0.32)"/>
+                <stop offset="1" stop-color="rgba(124,92,255,0)"/>
+              </radialGradient>
+            </defs>
+            <!-- 2 concentric dotted orbits -->
+            <circle cx="250" cy="245" r="140" fill="none" stroke="rgba(124,92,255,0.16)" stroke-width="1" stroke-dasharray="2 4"/>
+            <circle cx="250" cy="245" r="210" fill="none" stroke="rgba(209,255,85,0.12)" stroke-width="1" stroke-dasharray="2 5"/>
+            <!-- soft connection arcs between random pairs (faint, NO arrows) -->
+            <g fill="none" stroke="rgba(124,92,255,0.32)" stroke-width="1" stroke-dasharray="3 3">
+              <path d="M 250 105 Q 320 170 393 175"/>
+              <path d="M 393 175 Q 360 290 320 360"/>
+              <path d="M 320 360 Q 240 405 180 360"/>
+              <path d="M 180 360 Q 130 280 107 175"/>
+              <path d="M 107 175 Q 175 130 250 105"/>
+            </g>
+            <g fill="none" stroke="rgba(209,255,85,0.32)" stroke-width="1" stroke-dasharray="2 4">
+              <path d="M 250 35 Q 380 55 440 165"/>
+              <path d="M 440 165 Q 460 320 380 425"/>
+              <path d="M 380 425 Q 260 480 120 425"/>
+              <path d="M 120 425 Q 40 320 60 165"/>
+              <path d="M 60 165 Q 120 55 250 35"/>
+            </g>
+            <!-- random tiny dots scattered along orbits to suggest signal traffic -->
+            <g fill="url(#dotG)">
+              <circle cx="320" cy="125" r="3"/>
+              <circle cx="380" cy="225" r="3"/>
+              <circle cx="290" cy="370" r="3"/>
+              <circle cx="150" cy="320" r="3"/>
+              <circle cx="115" cy="200" r="3"/>
+            </g>
+          </svg>
+
+          <!-- core robot character -->
+          <div class="core">
+            <span class="ring"></span>
+            <span class="ring d"></span>
+            <div class="head">
+              <div class="face">
+                <span class="eye"></span>
+                <span class="eye right"></span>
+              </div>
+            </div>
+            <div class="podium"></div>
+          </div>
+
+          <!-- inner ring · 5 nodes (pentagon) -->
+          <div class="anode a-fund" style="left:58.7%;top:23.4%;"><div class="av"><div class="screen"><span class="e"></span><span class="e"></span></div></div><div class="tip">Fund</div></div>
+          <div class="anode a-sent" style="left:78%;top:48%;">
+            <div class="av">
+              <div class="screen"><span class="e"></span><span class="e"></span></div>
+              <span class="speech-dot"><span class="d"></span><span class="d"></span><span class="d"></span></span>
+            </div>
+            <div class="tip">Chain</div>
+          </div>
+          <div class="anode a-news" style="left:58.7%;top:74.6%;"><div class="av"><div class="screen"><span class="e"></span><span class="e"></span></div></div><div class="tip">News</div></div>
+          <div class="anode a-tech" style="left:27.3%;top:64.5%;"><div class="av"><div class="screen"><span class="e"></span><span class="e"></span></div></div><div class="tip">Tech</div></div>
+          <div class="anode a-bull" style="left:27.3%;top:33.5%;">
+            <div class="av">
+              <div class="screen"><span class="e"></span><span class="e"></span></div>
+              <span class="speech-dot purple"><span class="d"></span><span class="d"></span><span class="d"></span></span>
+            </div>
+            <div class="tip">Bull</div>
+          </div>
+
+          <!-- outer ring · 6 nodes (hexagon) -->
+          <div class="anode a-bear" style="left:70%;top:13.4%;"><div class="av"><div class="screen"><span class="e"></span><span class="e"></span></div></div><div class="tip">Bear</div></div>
+          <div class="anode a-trade" style="left:90%;top:48%;">
+            <div class="av">
+              <div class="screen"><span class="e"></span><span class="e"></span></div>
+              <span class="speech-dot"><span class="d"></span><span class="d"></span><span class="d"></span></span>
+            </div>
+            <div class="tip">Trader</div>
+          </div>
+          <div class="anode a-aggr" style="left:70%;top:84.6%;"><div class="av"><div class="screen"><span class="e"></span><span class="e"></span></div></div><div class="tip">Aggr</div></div>
+          <div class="anode a-neut" style="left:30%;top:84.6%;"><div class="av"><div class="screen"><span class="e"></span><span class="e"></span></div></div><div class="tip">Neut</div></div>
+          <div class="anode a-cons" style="left:10%;top:48%;"><div class="av"><div class="screen"><span class="e"></span><span class="e"></span></div></div><div class="tip">Cons</div></div>
+          <div class="anode a-pm" style="left:30%;top:13.4%;">
+            <div class="av">
+              <div class="screen"><span class="e"></span><span class="e"></span></div>
+              <span class="speech-dot"><span class="d"></span><span class="d"></span><span class="d"></span></span>
+            </div>
+            <div class="tip">PM</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PANEL · 流程介绍 ───────────────────────────────────────── -->
+    <section id="panel-flow" class="panel active" role="tabpanel">
+      <div class="flow-stages-v4">
+
+        <article class="fstage4">
+          <div class="fstage4-side">
+            <div class="fs4-head"><span class="fs4-num">1</span><div class="fs4-meta"><h2 class="fs4-name">信息收集</h2><div class="fs4-tag">ANALYSTS</div></div></div>
+            <span class="fs4-cnt">并行采集</span>
+            <span class="fs4-side-chip">独立简报 · 不互相干扰</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-4">
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-fund">F</div><div class="fagent-info"><div class="fagent-name">基本面研究主管</div><div class="fagent-role">Fundamentals</div></div></div><div class="fagent-desc">财务 / 内在价值 / red flags</div></div>
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-sent">O</div><div class="fagent-info"><div class="fagent-name">链上数据分析主管</div><div class="fagent-role">On-chain</div></div></div><div class="fagent-desc">地址行为 / 资金流 / 链上活跃度</div></div>
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-news">N</div><div class="fagent-info"><div class="fagent-name">宏观情报分析师</div><div class="fagent-role">News</div></div></div><div class="fagent-desc">全球新闻 / 宏观 / 事件</div></div>
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-tech">T</div><div class="fagent-info"><div class="fagent-name">技术策略主管</div><div class="fagent-role">Technical</div></div></div><div class="fagent-desc">MACD / RSI / 价格模式</div></div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">4 类原始信号源</span></div>
+              <div class="fsd-col"><span class="fsd-label">流程</span><span class="fsd-value">4 位研究角色并行 / 互不干扰</span></div>
+              <div class="fsd-col"><span class="fsd-label">输出</span><span class="fsd-value">4 份独立简报 + 证据链</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="fstage4 debate">
+          <div class="fstage4-side">
+            <div class="fs4-head"><span class="fs4-num">2</span><div class="fs4-meta"><h2 class="fs4-name">多空辩论</h2><div class="fs4-tag">RESEARCHERS</div></div></div>
+            <span class="fs4-cnt">多轮辩论</span>
+            <span class="fs4-side-chip">多轮 debate · 拿出最强论据</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-2">
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-bull">↑</div><div class="fagent-info"><div class="fagent-name">多头策略师</div><div class="fagent-role">Bullish</div></div></div><div class="fagent-desc">立论看多 / 守住牛市观点</div></div>
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-bear">↓</div><div class="fagent-info"><div class="fagent-name">空头策略师</div><div class="fagent-role">Bearish</div></div></div><div class="fagent-desc">立论看空 / 守住熊市观点</div></div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">4 份研究简报</span></div>
+              <div class="fsd-col"><span class="fsd-label">流程</span><span class="fsd-value">多轮立论 / 反驳 / 压力测试</span></div>
+              <div class="fsd-col"><span class="fsd-label">输出</span><span class="fsd-value">辩论纪要 + 双方核心证据</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="fstage4">
+          <div class="fstage4-side">
+            <div class="fs4-head"><span class="fs4-num">3</span><div class="fs4-meta"><h2 class="fs4-name">交易方案</h2><div class="fs4-tag">TRADER</div></div></div>
+            <span class="fs4-cnt">综合输出</span>
+            <span class="fs4-side-chip">方向 · 时机 · 仓位 · 止损</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-1">
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-trade">$</div><div class="fagent-info"><div class="fagent-name">交易策略总监</div><div class="fagent-role">Trader</div></div></div><div class="fagent-desc">综合简报 + 辩论 → 可执行方案</div></div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">4 简报 + 多空辩论纪要</span></div>
+              <div class="fsd-col"><span class="fsd-label">决策</span><span class="fsd-value">方向 / 时机 / 仓位 / 止损</span></div>
+              <div class="fsd-col"><span class="fsd-label">边界</span><span class="fsd-value">失效条件 + 风险线</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="fstage4 debate">
+          <div class="fstage4-side">
+            <div class="fs4-head"><span class="fs4-num">4</span><div class="fs4-meta"><h2 class="fs4-name">风险审查</h2><div class="fs4-tag">RISK REVIEW</div></div></div>
+            <span class="fs4-cnt">三派审查</span>
+            <span class="fs4-side-chip">波动 · 流动性 · 相关性</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-3">
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-aggr">A</div><div class="fagent-info"><div class="fagent-name">收益进攻官</div><div class="fagent-role">Aggressive</div></div></div><div class="fagent-desc">高仓位 / 追求最大收益</div></div>
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-neut">N</div><div class="fagent-info"><div class="fagent-name">组合平衡官</div><div class="fagent-role">Neutral</div></div></div><div class="fagent-desc">平衡仓位 / 风险均衡</div></div>
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-cons">C</div><div class="fagent-info"><div class="fagent-name">风险防御官</div><div class="fagent-role">Conservative</div></div></div><div class="fagent-desc">低仓位 / 守住下行风险</div></div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">维度</span><span class="fsd-value">波动性 / 流动性 / 相关性</span></div>
+              <div class="fsd-col"><span class="fsd-label">流程</span><span class="fsd-value">三派多轮辩论 / 修订方案</span></div>
+              <div class="fsd-col"><span class="fsd-label">输出</span><span class="fsd-value">含风险边界的最终建议</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="fstage4 final">
+          <div class="fstage4-side">
+            <div class="fs4-head"><span class="fs4-num">5</span><div class="fs4-meta"><h2 class="fs4-name">最终决策</h2><div class="fs4-tag">PORTFOLIO MANAGER</div></div></div>
+            <span class="fs4-cnt">终审裁决</span>
+            <span class="fs4-side-chip">批准送执行 · 拒绝落档</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-1">
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-pm">PM</div><div class="fagent-info"><div class="fagent-name">首席投资官</div><div class="fagent-role">Portfolio Manager</div></div></div><div class="fagent-desc">全组合视角 · 二元裁决</div></div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">视角</span><span class="fsd-value">全组合 + 风险预算 + 相关性</span></div>
+              <div class="fsd-col"><span class="fsd-label">批准</span><span class="fsd-value">送交易所执行</span></div>
+              <div class="fsd-col"><span class="fsd-label">拒绝</span><span class="fsd-value">落档进入复盘库</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="fstage4 memory">
+          <div class="fstage4-side">
+            <div class="fs4-head"><span class="fs4-num">6</span><div class="fs4-meta"><h2 class="fs4-name">复盘沉淀</h2><div class="fs4-tag">MEMORY LOOP</div></div></div>
+            <span class="fs4-cnt">持续沉淀</span>
+            <span class="fs4-side-chip">cross-run · reflection</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-1">
+              <div class="fagent"><div class="fagent-head"><div class="fagent-avatar a-mem">∞</div><div class="fagent-info"><div class="fagent-name">策略复盘主管</div><div class="fagent-role">Reflection</div></div></div><div class="fagent-desc">每次决策都让系统更聪明</div></div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">落盘</span><span class="fsd-value">决策档案全量存档</span></div>
+              <div class="fsd-col"><span class="fsd-label">回灌</span><span class="fsd-value">历史经验注入下次 prompt</span></div>
+              <div class="fsd-col"><span class="fsd-label">复利</span><span class="fsd-value">跨标的教训 / 越跑越懂</span></div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <div class="flow-footer-cta">
+        <div class="flow-footer-note"><b>每一步都有专人</b> · 每一次分歧被记录 · 每一笔结果被复盘</div>
+        <button class="switch-to-debate" type="button" data-go="mkt">查看实时 AI 团队工作 →</button>
+      </div>
+    </section>
+
+    <!-- ── PANEL · 行情分析 ───────────────────────────────────────── -->
+    <section id="panel-mkt" class="panel" role="tabpanel">
+      <section class="chat-shell">
+        <div class="chat-shell-head">
+          <div class="cs-head-left">
+            <div class="cs-icon">●</div>
+            <div class="cs-icon-info">
+              <div class="cs-title">AI 团队工作台</div>
+              <div class="cs-sub">实时交易决策流 · 自动更新</div>
+            </div>
+          </div>
+          <div class="cs-head-right">
+            <div class="cs-stat"><span>热点</span><b>3</b></div>
+            <div class="cs-divider"></div>
+            <div class="cs-stat"><span>已闭环</span><b>3</b></div>
+            <div class="cs-divider"></div>
+            <div class="cs-stat"><span>辩论中</span><b>0</b></div>
+            <div class="cs-divider"></div>
+            <div class="cs-stat"><span>起步</span><b>0</b></div>
+          </div>
+        </div>
+        <div class="chat-shell-body">
+
+          <!-- TOPIC 1 — BTC -->
+          <article class="topic done latest">
+            <div class="topic-head">
+              <button class="topic-toggle" type="button" aria-expanded="true"></button>
+              <div class="topic-eyebrow"><span class="live-tag">已闭环</span><span class="topic-source">· 19:22 起 · 31 分钟闭环</span></div>
+              <h2 class="topic-title">BTC 决策流 · 前低压迫 + ETF 流出，批准轻仓 SHORT</h2>
+              <div class="topic-meta-row">
+                <div class="intensity">激烈度<div class="intensity-dots"><span class="intensity-dot on hot"></span><span class="intensity-dot on hot"></span><span class="intensity-dot on hot"></span><span class="intensity-dot on warm"></span><span class="intensity-dot"></span></div><span class="intensity-score">4/5</span></div>
+                <div class="trigger"><span class="trigger-pill ticker">$BTC</span><span class="trigger-text">距 24h 前低 0.24% · ETF 24h 净流出 2.1 亿 · 交易所净流入升高</span></div>
+              </div>
+            </div>
+            <div class="topic-body">
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 1 · 信息收集</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-tech">T</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">技术策略主管</span><span class="msg-time">19:22</span><span class="msg-data-age">数据 526 秒前</span></div><div class="msg-bubble">$BTC 现价 <b>80,730</b>，距 24h 低 80,537 仅 0.24%。下方止损单堆积，<b>失守前低可能触发连续卖盘</b>。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-news">N</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">宏观情报分析师</span><span class="msg-mention">@技术策略主管</span><span class="msg-time">19:23</span><span class="msg-data-age">数据 530 秒前</span></div><div class="msg-bubble"><div class="msg-quote"><span class="q-name">技术策略主管：</span>失守前低可能触发连续卖盘</div>ETF 24h 净流出 2.1 亿，Rewards Wallet 活动带来新流动性，但短线不能抵消资金流出。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-sent">O</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">链上数据分析主管</span><span class="msg-time">19:24</span></div><div class="msg-bubble">活跃地址 24h 下滑 <b>3.8%</b>，交易所净流入升高，短线筹码开始偏防守。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-fund">F</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">基本面研究主管</span><span class="msg-time">19:25</span></div><div class="msg-bubble">长持地址余额 24h <b>-0.4%</b>，不是趋势反转证据，但足够构成短线风险折价。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 2 · 多空辩论</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-bear">↓</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">空头策略师</span><span class="msg-time">19:27</span></div><div class="msg-bubble">链上减仓 + ETF 流出 + 关键位附近，三向共振。主张 <b>SHORT 80,520 附近反抽失败</b>。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-bull">↑</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">多头策略师</span><span class="msg-mention">@空头策略师</span><span class="msg-time">19:28</span></div><div class="msg-bubble"><div class="msg-quote"><span class="q-name">空头策略师：</span>三向共振</div>不反对短线偏空，但 BTC 下方流动性强，不建议追空，必须限定仓位和止损。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 3 · 交易方案</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-trade">$</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">交易策略总监</span><span class="msg-time">19:34</span></div><div class="msg-bubble">方案：<b>SHORT 5%</b>。入场 80,520-80,740 / 止损 81,260 / 止盈 79,200、78,400。只做跌破后的反抽失败，不追市价。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 4 · 风险审查</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-cons">C</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">风险防御官</span><span class="msg-time">19:39</span></div><div class="msg-bubble">同意方向，要求仓位从 7% 降至 <b>5%</b>，并把止损固定在 81,260，避免假跌破扫损。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-neut">N</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">组合平衡官</span><span class="msg-mention">@风险防御官</span><span class="msg-time">19:41</span></div><div class="msg-bubble">采纳 5% 仓位。该 SHORT 与已有 ETH SHORT 相关性偏高，不能再加杠杆。</div></div></div>
+
+              <div class="stage-marker final"><div class="line"></div><span class="badge">阶段 5 · 最终决策</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-pm">PM</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">首席投资官</span><span class="msg-time">19:46</span></div><div class="msg-bubble"><b>批准 SHORT 5%</b>。理由：短线结构和资金流同向，组合风险预算仍在上限内。送执行，但不允许手动加仓。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 6 · 复盘沉淀</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-mem">∞</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">策略复盘主管</span><span class="msg-time">19:53</span></div><div class="msg-bubble">已落盘 #s-4318。标记经验：BTC 前低附近只执行"反抽失败"条件，不追第一根跌破 K 线。</div></div></div>
+            </div>
+
+            <div class="topic-strategy latest">
+              <div class="strat-head">
+                <div class="row1"><span class="strategy-latest-badge">最新策略</span><span class="name">已批准</span><span class="ticker">$BTC</span><span class="action short">SHORT 5%</span></div>
+                <div class="meta">批准 19:46 · 执行条件：反抽失败</div>
+              </div>
+              <div class="strat-field"><span class="lbl">入场</span><span class="val">80,520 - 80,740</span></div>
+              <div class="strat-field"><span class="lbl">止损</span><span class="val warn">81,260</span></div>
+              <div class="strat-field"><span class="lbl">止盈</span><span class="val lime">79,200 / 78,400</span></div>
+              <div class="strat-cta">
+                <div class="cta-row"><button class="cta-btn">执行占位</button><button class="cta-btn secondary">查看详情</button></div>
+                <div class="cta-meta">218 人在看 · <b>73 已跟单</b></div>
+              </div>
+            </div>
+          </article>
+
+          <div class="topic-separator"><span class="topic-separator-dot"></span></div>
+
+          <!-- TOPIC 2 — ETH -->
+          <article class="topic done">
+            <div class="topic-head">
+              <button class="topic-toggle" type="button" aria-expanded="true"></button>
+              <div class="topic-eyebrow"><span class="live-tag">已闭环</span><span class="topic-source">· 18:10 起 · 28 分钟闭环</span></div>
+              <h2 class="topic-title">ETH 决策流 · 4h 失守 EMA50，批准组合对冲 SHORT</h2>
+              <div class="topic-meta-row">
+                <div class="intensity">激烈度<div class="intensity-dots"><span class="intensity-dot on hot"></span><span class="intensity-dot on hot"></span><span class="intensity-dot on hot"></span><span class="intensity-dot on warm"></span><span class="intensity-dot"></span></div><span class="intensity-score">4/5</span></div>
+                <div class="trigger"><span class="trigger-pill ticker">$ETH</span><span class="trigger-text">Whale 转入 Binance 18.5M USD · 4h MACD 下穿零轴</span></div>
+              </div>
+            </div>
+            <div class="topic-body">
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 1 · 信息收集</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-tech">T</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">技术策略主管</span><span class="msg-time">18:11</span></div><div class="msg-bubble">$ETH <b>2,548</b>。4h 失守 EMA50（2,560），下方支撑 2,460。<b>下行结构成立</b>。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-sent">O</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">链上数据分析主管</span><span class="msg-time">18:12</span></div><div class="msg-bubble">鲸鱼地址向 Binance 转入 18.5M USD，交易所净流入扩大，短线卖压风险上升。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-news">N</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">宏观情报分析师</span><span class="msg-time">18:13</span></div><div class="msg-bubble">ETF 资金流无明显支撑，市场叙事转向 BTC 主导，ETH 缺少独立催化。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 2 · 多空辩论</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-bear">↓</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">空头策略师</span><span class="msg-time">18:14</span></div><div class="msg-bubble">技术 + 资金面双重背离，主张 <b>SHORT</b>，目标先看 2,460。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-bull">↑</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">多头策略师</span><span class="msg-mention">@空头策略师</span><span class="msg-time">18:15</span></div><div class="msg-bubble"><div class="msg-quote"><span class="q-name">空头策略师：</span>技术 + 资金面双重背离</div>承认短期偏空，但 2,460 是关键支撑。需要止盈分批，不能一口气看太深。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 3 · 交易方案</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-trade">$</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">交易策略总监</span><span class="msg-time">18:20</span></div><div class="msg-bubble">方案 <b>SHORT 6%</b>。入场 2,548-2,560 / 止损 2,610 / 止盈 2,460、2,400。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 4 · 风险审查</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-aggr">A</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">收益进攻官</span><span class="msg-time">18:27</span></div><div class="msg-bubble">支持 8% 仓位，但需要接受 2,610 止损被扫风险。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-neut">N</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">组合平衡官</span><span class="msg-mention">@收益进攻官</span><span class="msg-mention">@风险防御官</span><span class="msg-time">18:30</span></div><div class="msg-bubble"><b>采纳 6% · 拒绝加仓</b>。和 BTC 风险方向重合，不能同时放大空头暴露。</div></div></div>
+
+              <div class="stage-marker final"><div class="line"></div><span class="badge">阶段 5 · 最终决策</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-pm">PM</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">首席投资官</span><span class="msg-time">18:35</span></div><div class="msg-bubble"><b>批准 SHORT 6%</b>。组合对冲性 SHORT，风险预算未超限，已送执行。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 6 · 复盘沉淀</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-mem">∞</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">策略复盘主管</span><span class="msg-time">18:38</span></div><div class="msg-bubble">已落盘 #s-4205。同类 ETH SHORT 30 日胜率 <b>58%</b>。经验已注入下一轮工作流。</div></div></div>
+            </div>
+
+            <div class="topic-strategy">
+              <div class="strat-head">
+                <div class="row1"><span class="name">已开仓</span><span class="ticker">$ETH</span><span class="action short">SHORT 6%</span></div>
+                <div class="meta">已开仓 18:35 · 当前盈亏 <b class="ok">+0.8%</b></div>
+              </div>
+              <div class="strat-field"><span class="lbl">入场</span><span class="val">2,548 - 2,560</span></div>
+              <div class="strat-field"><span class="lbl">止损</span><span class="val warn">2,610</span></div>
+              <div class="strat-field"><span class="lbl">止盈</span><span class="val lime">2,460 / 2,400</span></div>
+              <div class="strat-cta">
+                <div class="cta-row"><button class="cta-btn" disabled>已跟单</button><button class="cta-btn secondary">查看详情</button></div>
+                <div class="cta-meta">142 人在看 · <b>54 已跟单</b></div>
+              </div>
+            </div>
+          </article>
+
+          <div class="topic-separator"><span class="topic-separator-dot"></span></div>
+
+          <!-- TOPIC 3 — SOL -->
+          <article class="topic done">
+            <div class="topic-head">
+              <button class="topic-toggle" type="button" aria-expanded="true"></button>
+              <div class="topic-eyebrow"><span class="live-tag">已闭环</span><span class="topic-source">· 19:30 起 · 22 分钟闭环</span></div>
+              <h2 class="topic-title">SOL 决策流 · 区间下沿守住，批准小仓位反弹 LONG</h2>
+              <div class="topic-meta-row">
+                <div class="intensity">激烈度<div class="intensity-dots"><span class="intensity-dot on hot"></span><span class="intensity-dot on hot"></span><span class="intensity-dot on warm"></span><span class="intensity-dot"></span><span class="intensity-dot"></span></div><span class="intensity-score">3/5</span></div>
+                <div class="trigger"><span class="trigger-pill ticker">$SOL</span><span class="trigger-text">165 支撑三次回踩未破 · DEX 成交量回升 · 空头拥挤度下降</span></div>
+              </div>
+            </div>
+            <div class="topic-body">
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 1 · 信息收集</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-tech">T</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">技术策略主管</span><span class="msg-time">19:31</span></div><div class="msg-bubble">$SOL <b>168.4</b>。支撑 165 三次回踩未破，阻力 175。当前更像区间下沿反弹。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-sent">O</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">链上数据分析主管</span><span class="msg-time">19:32</span></div><div class="msg-bubble">DEX 成交量 4h 回升 <b>11%</b>，活跃地址虽弱但没有继续恶化。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-news">N</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">宏观情报分析师</span><span class="msg-time">19:33</span></div><div class="msg-bubble">暂无单独利空。市场关注点仍在 BTC/ETH，SOL 适合小仓位条件单，不适合追高。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 2 · 多空辩论</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-bull">↑</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">多头策略师</span><span class="msg-time">19:36</span></div><div class="msg-bubble">区间下沿守住 + 成交量回升，主张 <b>LONG 反弹到 174-176</b>。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-bear">↓</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">空头策略师</span><span class="msg-mention">@多头策略师</span><span class="msg-time">19:37</span></div><div class="msg-bubble"><div class="msg-quote"><span class="q-name">多头策略师：</span>LONG 反弹到 174-176</div>只能做小仓位。BTC 若跌破前低，SOL 会被动补跌，止损必须贴近 164。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 3 · 交易方案</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-trade">$</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">交易策略总监</span><span class="msg-time">19:42</span></div><div class="msg-bubble">方案 <b>LONG 4%</b>。入场 167.8-168.8 / 止损 164.2 / 止盈 174.5、176.8。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 4 · 风险审查</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-cons">C</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">风险防御官</span><span class="msg-time">19:45</span></div><div class="msg-bubble">同意小仓位，但如果 BTC 同步跌破 80,500，SOL 方案自动失效。</div></div></div>
+              <div class="msg"><div class="msg-avatar a-aggr">A</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">收益进攻官</span><span class="msg-time">19:46</span></div><div class="msg-bubble">不建议提高仓位。反弹空间有限，优势来自风险收益比，不来自方向强度。</div></div></div>
+
+              <div class="stage-marker final"><div class="line"></div><span class="badge">阶段 5 · 最终决策</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-pm">PM</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">首席投资官</span><span class="msg-time">19:50</span></div><div class="msg-bubble"><b>批准 LONG 4%</b>。仅限区间反弹，触发 BTC 风险线则撤单，不转为追涨。</div></div></div>
+
+              <div class="stage-marker done"><div class="line"></div><span class="badge">阶段 6 · 复盘沉淀</span><div class="line"></div></div>
+              <div class="msg"><div class="msg-avatar a-mem">∞</div><div class="msg-body"><div class="msg-meta"><span class="msg-name">策略复盘主管</span><span class="msg-time">19:52</span></div><div class="msg-bubble">已落盘 #s-4321。标记经验：SOL 区间反弹策略必须绑定 BTC 风险线，避免单币种误判。</div></div></div>
+            </div>
+
+            <div class="topic-strategy">
+              <div class="strat-head">
+                <div class="row1"><span class="name">已批准</span><span class="ticker">$SOL</span><span class="action long">LONG 4%</span></div>
+                <div class="meta">批准 19:50 · 条件单等待执行</div>
+              </div>
+              <div class="strat-field"><span class="lbl">入场</span><span class="val">167.8 - 168.8</span></div>
+              <div class="strat-field"><span class="lbl">止损</span><span class="val warn">164.2</span></div>
+              <div class="strat-field"><span class="lbl">止盈</span><span class="val lime">174.5 / 176.8</span></div>
+              <div class="strat-cta">
+                <div class="cta-row"><button class="cta-btn">执行占位</button><button class="cta-btn secondary">查看详情</button></div>
+                <div class="cta-meta">96 人在看 · <b>28 已跟单</b></div>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </section>
+    </section>
+
+  </section>
+</main>
+
+<script>
+  // tab toggle
+  const tabs = document.querySelectorAll('.ttab');
+  const panels = {
+    flow: document.getElementById('panel-flow'),
+    mkt:  document.getElementById('panel-mkt'),
+  };
+  function setTab(name){
+    tabs.forEach(t => {
+      const on = t.dataset.panel === name;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    Object.entries(panels).forEach(([k, el]) => el.classList.toggle('active', k === name));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.panel)));
+  // footer CTA jumps to mkt
+  document.querySelectorAll('[data-go]').forEach(b =>
+    b.addEventListener('click', () => {
+      setTab(b.dataset.go);
+      panels[b.dataset.go].scrollIntoView({behavior:'smooth', block:'start'});
+    })
+  );
+
+  // topic collapse
+  document.querySelectorAll('.topic').forEach(topic => {
+    const head = topic.querySelector('.topic-head');
+    const btn = topic.querySelector('.topic-toggle');
+    function toggle(){
+      const collapsed = topic.classList.toggle('collapsed');
+      btn.setAttribute('aria-expanded', String(!collapsed));
+    }
+    btn.addEventListener('click', e => {e.stopPropagation();toggle();});
+    head.addEventListener('click', e => {
+      if (e.target.closest('.topic-toggle')) return;
+      toggle();
+    });
+  });
+</script>
+
+</body>
+</html>
