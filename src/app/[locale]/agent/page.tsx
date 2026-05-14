@@ -2,6 +2,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { redirect } from "next/navigation";
 import { AgentWatchBoard } from "@/modules/agent-watch/AgentWatchBoard";
 import { agentWatchRedirectPath } from "@/modules/agent-watch/locale";
+import { DispatchConsoleV10 } from "@/modules/agent-watch/v10/DispatchConsoleV10";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function AgentPage({ params }: { params: Promise<{ locale: 
         }}
       />
       <div className="relative z-10">
-        <AgentWatchBoard />
+        <AgentWatchBoard console={DispatchConsoleV10} />
       </div>
     </main>
   );
