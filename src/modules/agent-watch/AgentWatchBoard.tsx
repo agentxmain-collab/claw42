@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import {
@@ -9,7 +9,12 @@ import {
 } from "@/lib/watch/v9TopicAdapter";
 import { useI18n } from "@/i18n/I18nProvider";
 import { DispatchConsoleV9 } from "./v9/DispatchConsoleV9";
-import type { DispatchTopic, DispatchTopicAction, DispatchView } from "./v9/types";
+import type {
+  DispatchConsoleV9Props,
+  DispatchTopic,
+  DispatchTopicAction,
+  DispatchView,
+} from "./v9/types";
 import { resolveAgentWatchLocale } from "./locale";
 import { fallbackBeforeForPublicTimeline } from "./utils/publicTimelineWindow";
 
@@ -48,7 +53,11 @@ function mergeTimelineEvents(current: PublicTimelineEvent[], next: PublicTimelin
     .sort((a, b) => b.ts - a.ts);
 }
 
-export function AgentWatchBoard() {
+export function AgentWatchBoard({
+  console: Console = DispatchConsoleV9,
+}: {
+  console?: ComponentType<DispatchConsoleV9Props>;
+}) {
   const { locale } = useI18n();
   const agentWatchLocale = resolveAgentWatchLocale(locale);
   const [timelineEvents, setTimelineEvents] = useState<PublicTimelineEvent[]>([]);
@@ -323,7 +332,7 @@ export function AgentWatchBoard() {
   );
 
   return (
-    <DispatchConsoleV9
+    <Console
       topics={topics}
       onViewChange={setActiveDispatchView}
       onTopicAction={handleTopicAction}
