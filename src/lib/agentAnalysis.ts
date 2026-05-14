@@ -204,16 +204,19 @@ type LiveCacheEntry = {
   staleUntil: number;
 };
 
+type AgentAnalysisOptions = {
+  signalTrigger?: boolean;
+};
+
 type TimedCacheEntry = {
   value: AgentAnalysisPayload;
   expiresAt: number;
 };
 
 const liveCaches: Partial<Record<AgentWatchLocale, LiveCacheEntry>> = {};
-const backgroundRefreshInFlight: Partial<Record<AgentWatchLocale, boolean>> = {};
+const backgroundRefreshInFlight: Record<string, boolean> = {};
 const staticFallbackCaches: Partial<Record<AgentWatchLocale, TimedCacheEntry>> = {};
-const analysisRefreshInFlight: Partial<Record<AgentWatchLocale, Promise<AgentAnalysisPayload>>> =
-  {};
+const analysisRefreshInFlight: Record<string, Promise<AgentAnalysisPayload>> = {};
 const HISTORY_BUFFER_MAX_MESSAGES = 200;
 const HISTORY_DUPLICATE_CONTENT_WINDOW_MS = 5 * 60_000;
 let historyBuffer: HistoryMessageEntry[] = [];
@@ -1809,8 +1812,21 @@ async function buildNewsDebates(
   }
 }
 
-async function refreshAnalysis(locale: AgentWatchLocale): Promise<AgentAnalysisPayload> {
-  const pool = (await triggerSignalGeneration()) ?? (await getCoinPool());
+function shouldTriggerSignalGeneration(options: AgentAnalysisOptions = {}) {
+  return options.signalTrigger !== false;
+}
+
+function analysisRefreshKey(locale: AgentWatchLocale, options: AgentAnalysisOptions = {}) {
+  return `${locale}:${shouldTriggerSignalGeneration(options) ? "signal" : "read"}`;
+}
+
+async function refreshAnalysis(
+  locale: AgentWatchLocale,
+  options: AgentAnalysisOptions = {},
+): Promise<AgentAnalysisPayload> {
+  const pool = shouldTriggerSignalGeneration(options)
+    ? ((await triggerSignalGeneration()) ?? (await getCoinPool()))
+    : await getCoinPool();
   const { tickers } = pool;
   const generatedAt = Date.now();
   const recentSignals = getSignalsByWindow(COLLECTIVE_EVENT_WINDOW_MS);
@@ -1924,20 +1940,25 @@ async function refreshAnalysis(locale: AgentWatchLocale): Promise<AgentAnalysisP
   return value;
 }
 
-function refreshAnalysisOnce(locale: AgentWatchLocale): Promise<AgentAnalysisPayload> {
-  const inFlight = analysisRefreshInFlight[locale];
+function refreshAnalysisOnce(
+  locale: AgentWatchLocale,
+  options: AgentAnalysisOptions = {},
+): Promise<AgentAnalysisPayload> {
+  const key = analysisRefreshKey(locale, options);
+  const inFlight = analysisRefreshInFlight[key];
   if (inFlight) return inFlight;
 
-  const promise = refreshAnalysis(locale).finally(() => {
-    delete analysisRefreshInFlight[locale];
+  const promise = refreshAnalysis(locale, options).finally(() => {
+    delete analysisRefreshInFlight[key];
   });
-  analysisRefreshInFlight[locale] = promise;
+  analysisRefreshInFlight[key] = promise;
 
   return promise;
 }
 
 export async function getAgentAnalysis(
   locale: AgentWatchLocale = "zh_CN",
+  options: AgentAnalysisOptions = {},
 ): Promise<AgentAnalysisPayload> {
   const now = Date.now();
   const cached = liveCaches[locale];
@@ -1953,14 +1974,15 @@ export async function getAgentAnalysis(
 
   const staleCache = liveCaches[locale];
   if (staleCache && staleCache.staleUntil > now) {
-    if (!backgroundRefreshInFlight[locale]) {
-      backgroundRefreshInFlight[locale] = true;
-      void refreshAnalysisOnce(locale).finally(() => {
-        backgroundRefreshInFlight[locale] = false;
+    const key = analysisRefreshKey(locale, options);
+    if (!backgroundRefreshInFlight[key]) {
+      backgroundRefreshInFlight[key] = true;
+      void refreshAnalysisOnce(locale, options).finally(() => {
+        backgroundRefreshInFlight[key] = false;
       });
     }
     return { ...staleCache.value, source: "cache", servedAt: now };
   }
 
-  return refreshAnalysisOnce(locale);
+  return refreshAnalysisOnce(locale, options);
 }

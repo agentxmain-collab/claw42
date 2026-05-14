@@ -2,7 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
-import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
+import {
+  buildDecisionRecordIndex,
+  filterPublicTimelineEvents,
+} from "@/lib/watch/publicTimelineProjection";
 import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
 import {
@@ -19,6 +22,12 @@ function numberParam(value: string | null, fallback: number) {
   if (!value) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function strictNumberParam(value: string | null, fallback: number) {
+  if (!value) return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
 function canReadDebug(request: NextRequest) {
@@ -43,9 +52,9 @@ export async function GET(request: NextRequest) {
     720,
   );
   const limit = Math.min(Math.max(numberParam(url.searchParams.get("limit"), 30), 1), 100);
-  const before = numberParam(url.searchParams.get("before"), Date.now());
+  const before = strictNumberParam(url.searchParams.get("before"), Date.now());
   const sinceParam = url.searchParams.get("since");
-  const since = sinceParam ? numberParam(sinceParam, 0) : undefined;
+  const since = sinceParam ? strictNumberParam(sinceParam, 0) : undefined;
 
   if (!Number.isFinite(before) || (since !== undefined && !Number.isFinite(since))) {
     return NextResponse.json({ error: "invalid query" }, { status: 400 });
@@ -78,7 +87,7 @@ export async function GET(request: NextRequest) {
     locale,
     decisionRecordsById:
       stagingFixture?.decisionRecordsById ??
-      new Map((await readAllDecisionRecords(500, locale)).map((record) => [record.id, record])),
+      buildDecisionRecordIndex(await readAllDecisionRecords(500, locale)),
   });
   const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
     0,

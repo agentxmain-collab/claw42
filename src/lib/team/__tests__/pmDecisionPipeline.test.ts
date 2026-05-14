@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { runPmDecisionPipeline } from "@/lib/team/pmDecisionPipeline";
+import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
@@ -91,6 +92,7 @@ describe("runPmDecisionPipeline", () => {
   it("returns null and writes nothing when any LLM step fails", async () => {
     const recordStrategyDecisionRecord = vi.fn();
     const appendWatchHistoryEntry = vi.fn();
+    const updateDecisionRecord = vi.fn();
     const result = await runPmDecisionPipeline(
       {
         triggerSource: "user_visit_trigger",
@@ -106,18 +108,55 @@ describe("runPmDecisionPipeline", () => {
         }),
         recordStrategyDecisionRecord,
         appendWatchHistoryEntry,
+        updateDecisionRecord,
       },
     );
 
     expect(result).toBeNull();
     expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
     expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+    expect(updateDecisionRecord).not.toHaveBeenCalled();
+  });
+
+  it("returns null and writes nothing when evidence persistence fails", async () => {
+    const generateAnalystOutput = vi.fn(async (memberId) => analystOutput(memberId));
+    const recordStrategyDecisionRecord = vi.fn();
+    const appendWatchHistoryEntry = vi.fn();
+    const updateDecisionRecord = vi.fn();
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        saveNewsEvidence: vi.fn(async () => {
+          throw new Error("evidence store unavailable");
+        }),
+        loadPromptDoc: async () => "prompt",
+        generateAnalystOutput,
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord,
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(generateAnalystOutput).not.toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+    expect(updateDecisionRecord).not.toHaveBeenCalled();
   });
 
   it("writes decision record and public timeline entry on success", async () => {
     const recordStrategyDecisionRecord = vi.fn(async (record) => record);
     const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
       void entry;
+    });
+    const updateDecisionRecord = vi.fn(async (record: StrategyDecisionRecord) => {
+      void record;
     });
     const result = await runPmDecisionPipeline(
       {
@@ -136,6 +175,7 @@ describe("runPmDecisionPipeline", () => {
         generateTradeDecision: vi.fn(async () => decision()),
         recordStrategyDecisionRecord,
         appendWatchHistoryEntry,
+        updateDecisionRecord,
       },
     );
 
@@ -143,12 +183,158 @@ describe("runPmDecisionPipeline", () => {
     expect(result?.record.locale).toBe("zh_CN");
     expect(result?.publicTimelineEntry.locale).toBe("zh_CN");
     expect(result?.publicTimelineEntry.payload.kind).toBe("pm_decision");
+    if (result?.publicTimelineEntry.payload.kind !== "pm_decision") {
+      throw new Error("expected pm decision payload");
+    }
+    expect(result.publicTimelineEntry.payload.stageTrace?.map((stage) => stage.stageId)).toEqual([
+      "analyst_inputs",
+      "research_lead",
+      "risk_lead",
+      "trade_decision",
+      "record_write",
+      "public_timeline",
+    ]);
+    expect(
+      result.publicTimelineEntry.payload.stageTrace?.find(
+        (stage) => stage.stageId === "public_timeline",
+      )?.status,
+    ).toBe("done");
     expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
+    const writtenRecord = recordStrategyDecisionRecord.mock.calls[0]?.[0] as StrategyDecisionRecord;
+    expect(writtenRecord.stageTrace?.map((stage) => stage.stageId)).toEqual([
+      "analyst_inputs",
+      "research_lead",
+      "risk_lead",
+      "trade_decision",
+      "record_write",
+      "public_timeline",
+    ]);
+    expect(writtenRecord.stageTrace?.[0]).toMatchObject({
+      status: "done",
+      memberIds: ["fundamental_analyst", "news_analyst", "chart_analyst", "onchain_analyst"],
+      note: "4 analyst outputs",
+      startedAt: expect.any(String),
+      completedAt: expect.any(String),
+      durationMs: expect.any(Number),
+    });
+    expect(writtenRecord.stageTrace?.[0]?.durationMs).toBeGreaterThanOrEqual(0);
+    expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("note");
+    expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("startedAt");
+    expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("completedAt");
+    expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("durationMs");
+    expect(
+      writtenRecord.stageTrace?.find((stage) => stage.stageId === "record_write"),
+    ).toMatchObject({
+      status: "done",
+      startedAt: expect.any(String),
+    });
+    expect(
+      writtenRecord.stageTrace?.find((stage) => stage.stageId === "trade_decision"),
+    ).toMatchObject({
+      modelProvider: "stub",
+      promptVersion: "test",
+      startedAt: expect.any(String),
+      completedAt: expect.any(String),
+      durationMs: expect.any(Number),
+    });
+    expect(
+      writtenRecord.stageTrace?.find((stage) => stage.stageId === "public_timeline"),
+    ).toMatchObject({
+      status: "pending",
+    });
     expect(appendWatchHistoryEntry).toHaveBeenCalledTimes(1);
+    expect(updateDecisionRecord).toHaveBeenCalledTimes(1);
+    const completedRecord = updateDecisionRecord.mock.calls[0]?.[0] as StrategyDecisionRecord;
+    expect(
+      completedRecord.stageTrace?.find((stage) => stage.stageId === "public_timeline"),
+    ).toMatchObject({
+      status: "done",
+      durationMs: expect.any(Number),
+    });
+    expect(
+      completedRecord.stageTrace?.find((stage) => stage.stageId === "record_write"),
+    ).toMatchObject({
+      status: "done",
+      durationMs: expect.any(Number),
+    });
     const writtenEntry = appendWatchHistoryEntry.mock.calls[0]?.[0] as {
       meta?: { locale?: string; sourceTrigger?: string };
     };
     expect(writtenEntry.meta?.sourceTrigger).toBe("pm_decision");
     expect(writtenEntry.meta?.locale).toBe("zh_CN");
+  });
+
+  it("normalizes input symbols before creating PM records", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+    const generateTradeDecision = vi.fn(async () => decision({ symbol: "ETH" }));
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal({ symbol: " $$eth " })],
+        recentNewsEvidence: [evidence({ symbol: ["ETH"] })],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async (memberId) => ({
+          rationale: `${memberId} rationale`,
+          confidence: 0.7,
+        })),
+        generateTradeDecision,
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord: vi.fn(async (record: StrategyDecisionRecord) => {
+          void record;
+        }),
+      },
+    );
+
+    expect(generateTradeDecision).toHaveBeenCalledWith(expect.objectContaining({ symbol: "ETH" }));
+    expect(result?.record.id).toBe("pm:ETH:1778407200000");
+    expect(result?.record.symbol).toBe("ETH");
+    expect(result?.publicTimelineEntry.payload).toMatchObject({
+      kind: "pm_decision",
+      symbol: "ETH",
+    });
+  });
+
+  it("keeps the PM output when the non-critical stage trace update fails", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+    const updateDecisionRecord = vi.fn(async () => {
+      throw new Error("trace update unavailable");
+    });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async (memberId) => ({
+          rationale: `${memberId} rationale`,
+          confidence: 0.7,
+        })),
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord,
+      },
+    );
+
+    expect(result?.record.id).toBe("pm:BTC:1778407200000");
+    expect(appendWatchHistoryEntry).toHaveBeenCalledTimes(1);
+    expect(updateDecisionRecord).toHaveBeenCalledTimes(1);
   });
 });

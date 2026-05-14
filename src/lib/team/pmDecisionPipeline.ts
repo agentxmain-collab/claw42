@@ -4,7 +4,14 @@ import { generateText } from "@/lib/llm/generateText";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { recordStrategyDecisionRecord } from "@/lib/strategyHistory";
-import type { StrategyDecisionRecord, AnalystInputRecord } from "@/lib/team/strategyDecisionRecord";
+import { upsertDecisionRecord } from "@/lib/team/decisionRecordStore";
+import type {
+  StrategyDecisionRecord,
+  AnalystInputRecord,
+  DecisionStageTraceId,
+  DecisionStageTraceStatus,
+  DecisionStageTraceEntry,
+} from "@/lib/team/strategyDecisionRecord";
 import {
   generateTradeDecision,
   type Severity,
@@ -15,6 +22,7 @@ import type {
   PublicTimelineEvent,
   PublicTimelineImportance,
 } from "@/lib/watch/publicTimelineEvent";
+import { publicStageTraceFromRecord } from "@/lib/watch/publicTimelineProjection";
 import { appendWatchHistoryEntry } from "@/lib/watchHistoryStore";
 import type { Locale } from "@/i18n/types";
 import {
@@ -57,13 +65,25 @@ interface LeadOutput {
 }
 
 interface PipelineDeps {
+  saveNewsEvidence?: typeof saveNewsEvidence;
   generateAnalystOutput?: (memberId: TeamMemberId, prompt: string) => Promise<AnalystOutput>;
   generateLeadOutput?: (memberId: TeamMemberId, prompt: string) => Promise<LeadOutput>;
   generateTradeDecision?: typeof generateTradeDecision;
   recordStrategyDecisionRecord?: typeof recordStrategyDecisionRecord;
+  updateDecisionRecord?: (record: StrategyDecisionRecord) => Promise<void>;
   appendWatchHistoryEntry?: typeof appendWatchHistoryEntry;
   loadPromptDoc?: (memberId: TeamMemberId) => Promise<string>;
 }
+
+interface StageAuditMark {
+  startedAtMs: number;
+  startedAt: string;
+  completedAt?: string;
+  durationMs?: number;
+  note?: string;
+}
+
+type StageAuditMap = Partial<Record<DecisionStageTraceId, StageAuditMark>>;
 
 const ANALYST_IDS: TeamMemberId[] = [
   "fundamental_analyst",
@@ -302,7 +322,8 @@ function currentPriceFromSignals(signals: SignalRecord[]) {
 
 function symbolFromInput(input: PmDecisionPipelineInput) {
   return (input.recentMarketSignals[0]?.symbol ?? input.recentNewsEvidence[0]?.symbol[0] ?? "BTC")
-    .replace(/^\$/, "")
+    .trim()
+    .replace(/^\$+/, "")
     .toUpperCase();
 }
 
@@ -314,6 +335,39 @@ function toSeverity(input: PmDecisionPipelineInput): Severity {
   return hasHighNews || hasAlertSignal ? "high" : "medium";
 }
 
+function startStage(audit: StageAuditMap, stageId: DecisionStageTraceId) {
+  const startedAtMs = Date.now();
+  audit[stageId] = {
+    startedAtMs,
+    startedAt: new Date(startedAtMs).toISOString(),
+  };
+}
+
+function completeStage(audit: StageAuditMap, stageId: DecisionStageTraceId, note?: string) {
+  const completedAtMs = Date.now();
+  const existing = audit[stageId] ?? {
+    startedAtMs: completedAtMs,
+    startedAt: new Date(completedAtMs).toISOString(),
+  };
+  audit[stageId] = {
+    ...existing,
+    completedAt: new Date(completedAtMs).toISOString(),
+    durationMs: Math.max(0, completedAtMs - existing.startedAtMs),
+    ...(note ? { note } : {}),
+  };
+}
+
+function stageAuditFields(audit: StageAuditMap, stageId: DecisionStageTraceId) {
+  const mark = audit[stageId];
+  if (!mark) return {};
+  return {
+    startedAt: mark.startedAt,
+    ...(mark.completedAt ? { completedAt: mark.completedAt } : {}),
+    ...(mark.durationMs !== undefined ? { durationMs: mark.durationMs } : {}),
+    ...(mark.note ? { note: mark.note } : {}),
+  };
+}
+
 function makeRecord({
   input,
   now,
@@ -321,6 +375,7 @@ function makeRecord({
   researchLead,
   riskLead,
   tradeDecision,
+  stageAudit,
 }: {
   input: PmDecisionPipelineInput;
   now: number;
@@ -328,9 +383,11 @@ function makeRecord({
   researchLead: LeadOutput;
   riskLead: LeadOutput;
   tradeDecision: TradeDecision | null;
+  stageAudit: StageAuditMap;
 }): StrategyDecisionRecord {
   const symbol = symbolFromInput(input);
   const locale = normalizeWatchLocale(input.locale);
+  const observedAt = new Date(now).toISOString();
   const analystInputs: AnalystInputRecord[] = [
     ...analystOutputs.map((output) => ({
       memberId: output.memberId,
@@ -371,6 +428,7 @@ function makeRecord({
       "risk_lead",
     ],
     analystInputs,
+    stageTrace: makeStageTrace(observedAt, tradeDecision, stageAudit),
     sourceThreadId: null,
     tradeDecision,
     createdAt: new Date(now).toISOString(),
@@ -380,6 +438,89 @@ function makeRecord({
     promptVersion: PROMPT_VERSION,
     modelProvider: tradeDecision?.modelProvider ?? "llm-chain",
     legacyFactionId: null,
+  };
+}
+
+function makeStageTrace(
+  observedAt: string,
+  tradeDecision: TradeDecision | null,
+  stageAudit: StageAuditMap,
+): DecisionStageTraceEntry[] {
+  return [
+    {
+      stageId: "analyst_inputs",
+      label: "Analyst input generation",
+      status: "done",
+      observedAt,
+      memberIds: ANALYST_IDS,
+      ...stageAuditFields(stageAudit, "analyst_inputs"),
+    },
+    {
+      stageId: "research_lead",
+      label: "Research synthesis",
+      status: "done",
+      observedAt,
+      memberIds: ["research_lead"],
+      ...stageAuditFields(stageAudit, "research_lead"),
+    },
+    {
+      stageId: "risk_lead",
+      label: "Risk review",
+      status: "done",
+      observedAt,
+      memberIds: ["risk_lead"],
+      ...stageAuditFields(stageAudit, "risk_lead"),
+    },
+    {
+      stageId: "trade_decision",
+      label: "PM trade decision",
+      status: "done",
+      observedAt,
+      memberIds: ["pm"],
+      ...stageAuditFields(stageAudit, "trade_decision"),
+      ...(tradeDecision
+        ? {
+            modelProvider: tradeDecision.modelProvider,
+            promptVersion: tradeDecision.promptVersion,
+          }
+        : {}),
+    },
+    {
+      stageId: "record_write",
+      label: "Decision record persistence",
+      status: "pending",
+      observedAt,
+      ...stageAuditFields(stageAudit, "record_write"),
+    },
+    {
+      stageId: "public_timeline",
+      label: "Public timeline projection",
+      status: "pending",
+      observedAt,
+      ...stageAuditFields(stageAudit, "public_timeline"),
+    },
+  ];
+}
+
+function withStageTraceStatus(
+  record: StrategyDecisionRecord,
+  stageId: DecisionStageTraceId,
+  status: DecisionStageTraceStatus,
+  observedAt: string,
+  audit?: StageAuditMap,
+): StrategyDecisionRecord {
+  return {
+    ...record,
+    stageTrace: record.stageTrace?.map((stage) =>
+      stage.stageId === stageId
+        ? {
+            ...stage,
+            status,
+            observedAt,
+            ...(audit ? stageAuditFields(audit, stageId) : {}),
+          }
+        : stage,
+    ),
   };
 }
 
@@ -406,6 +547,7 @@ function makePublicTimelineEntry(
       citationsByMember: Object.fromEntries(
         record.analystInputs.map((input) => [input.memberId, input.evidenceIds]),
       ),
+      stageTrace: publicStageTraceFromRecord(record),
     },
   };
 }
@@ -460,7 +602,7 @@ export async function runPmDecisionPipeline(
   const locale = normalizeWatchLocale(input.locale);
   const localizedInput = { ...input, locale };
   const allowedEvidenceIds = new Set(input.recentNewsEvidence.map((evidence) => evidence.id));
-  await Promise.all(input.recentNewsEvidence.map((evidence) => saveNewsEvidence(evidence)));
+  const evidenceWriter = deps.saveNewsEvidence ?? saveNewsEvidence;
   const generateAnalyst =
     deps.generateAnalystOutput ??
     ((memberId: TeamMemberId, prompt: string) =>
@@ -471,9 +613,15 @@ export async function runPmDecisionPipeline(
       defaultGenerateLeadOutput(memberId, prompt, locale));
   const tradeGenerator = deps.generateTradeDecision ?? generateTradeDecision;
   const recordWriter = deps.recordStrategyDecisionRecord ?? recordStrategyDecisionRecord;
+  const recordUpdater = deps.updateDecisionRecord ?? upsertDecisionRecord;
   const watchWriter = deps.appendWatchHistoryEntry ?? appendWatchHistoryEntry;
+  const stageAudit: StageAuditMap = {};
 
   try {
+    await Promise.all(
+      localizedInput.recentNewsEvidence.map((evidence) => evidenceWriter(evidence)),
+    );
+    startStage(stageAudit, "analyst_inputs");
     const analystPrompts = await Promise.all(
       ANALYST_IDS.map(async (memberId) => ({
         memberId,
@@ -483,17 +631,23 @@ export async function runPmDecisionPipeline(
     const analystOutputs = await Promise.all(
       analystPrompts.map(({ memberId, prompt }) => generateAnalyst(memberId, prompt)),
     );
+    completeStage(stageAudit, "analyst_inputs", `${analystOutputs.length} analyst outputs`);
 
+    startStage(stageAudit, "research_lead");
     const researchLead = await generateLead(
       "research_lead",
       await buildLeadPrompt("research_lead", localizedInput, analystOutputs, undefined, deps),
     );
+    completeStage(stageAudit, "research_lead", "research synthesis generated");
+    startStage(stageAudit, "risk_lead");
     const riskLead = await generateLead(
       "risk_lead",
       await buildLeadPrompt("risk_lead", localizedInput, analystOutputs, researchLead, deps),
     );
+    completeStage(stageAudit, "risk_lead", "risk review generated");
 
     const currentPrice = currentPriceFromSignals(localizedInput.recentMarketSignals);
+    startStage(stageAudit, "trade_decision");
     const tradeDecision = await tradeGenerator({
       symbol: symbolFromInput(localizedInput),
       currentPrice,
@@ -511,6 +665,7 @@ export async function runPmDecisionPipeline(
       locale,
     });
     if (!tradeDecision) return null;
+    completeStage(stageAudit, "trade_decision", `${tradeDecision.direction} trade card generated`);
 
     const evidenceIds = Array.from(
       new Set([
@@ -525,16 +680,50 @@ export async function runPmDecisionPipeline(
       researchLead,
       riskLead,
       tradeDecision,
+      stageAudit,
     });
-    const writtenRecord = await recordWriter(record, currentPrice);
+    startStage(stageAudit, "record_write");
+    const recordWriteObservedAt = new Date(Date.now()).toISOString();
+    const recordForStorage = withStageTraceStatus(
+      record,
+      "record_write",
+      "done",
+      recordWriteObservedAt,
+      stageAudit,
+    );
+    const writtenRecord = await recordWriter(recordForStorage, currentPrice);
     if (!writtenRecord.tradeDecision) return null;
+    completeStage(stageAudit, "record_write", "decision record persisted");
 
-    const publicTimelineEntry = makePublicTimelineEntry(writtenRecord, evidenceIds);
+    startStage(stageAudit, "public_timeline");
     await watchWriter(timelineEntryAsChatThread(writtenRecord, evidenceIds));
+    completeStage(stageAudit, "public_timeline", "watch history projection written");
+    const completedRecord = withStageTraceStatus(
+      withStageTraceStatus(
+        writtenRecord,
+        "record_write",
+        "done",
+        new Date(Date.now()).toISOString(),
+        stageAudit,
+      ),
+      "public_timeline",
+      "done",
+      new Date(Date.now()).toISOString(),
+      stageAudit,
+    );
+    try {
+      await recordUpdater(completedRecord);
+    } catch (error) {
+      console.warn("[claw42] PM stage trace completion update skipped", {
+        recordId: completedRecord.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    const publicTimelineEntry = makePublicTimelineEntry(completedRecord, evidenceIds);
     return {
-      record: writtenRecord,
+      record: completedRecord,
       publicTimelineEntry,
-      tradeDecision: writtenRecord.tradeDecision,
+      tradeDecision: completedRecord.tradeDecision,
     };
   } catch (error) {
     console.warn("[claw42] PM decision pipeline failed", {

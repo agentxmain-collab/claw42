@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { localeCookiePath, stripBasePathFromPathname } from "@/lib/basePath";
 import { LOCALES } from "./locales";
 import type { Dict, Locale } from "./types";
 
@@ -49,9 +50,9 @@ export function I18nProvider({
 
   const switchLocale = useCallback(
     (next: Locale) => {
-      document.cookie = `claw42-locale=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+      document.cookie = `claw42-locale=${next}; path=${localeCookiePath()}; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
 
-      const segments = pathname.split("/").filter(Boolean);
+      const segments = stripBasePathFromPathname(pathname).split("/").filter(Boolean);
       if (segments.length > 0 && (LOCALES as readonly string[]).includes(segments[0])) {
         segments[0] = next;
       } else {

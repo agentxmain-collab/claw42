@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { checkRateLimit } from "@/lib/storage/kv-rate-limiter";
-import { followRecord, getFollowStats } from "@/lib/watch/followStatsStore";
+import {
+  followRecord,
+  getFollowStats,
+  hashAnonIdForFollowStats,
+} from "@/lib/watch/followStatsStore";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -68,9 +72,11 @@ function jsonWithAnonCookie(
 
 async function canMutateFollowStats(request: NextRequest, anonId: string) {
   const ip = getClientIp(request);
+  const ipRateLimitKey = hashAnonIdForFollowStats(ip);
+  const anonRateLimitKey = hashAnonIdForFollowStats(anonId);
   const [ipLimit, anonLimit] = await Promise.all([
-    checkRateLimit(`watch-follow:ip:${ip}`, { max: 30, windowMs: 60_000 }),
-    checkRateLimit(`watch-follow:anon:${anonId}`, { max: 10, windowMs: 60_000 }),
+    checkRateLimit(`watch-follow:ip:${ipRateLimitKey}`, { max: 30, windowMs: 60_000 }),
+    checkRateLimit(`watch-follow:anon:${anonRateLimitKey}`, { max: 10, windowMs: 60_000 }),
   ]);
   return ipLimit.allowed && anonLimit.allowed;
 }

@@ -14,7 +14,7 @@ function distancePct(current: number, target: number): number {
 }
 
 function normalizeSymbol(symbol: string): string {
-  return symbol.replace(/^\$/, "").toUpperCase();
+  return symbol.trim().replace(/^\$+/, "").toUpperCase();
 }
 
 function directionReason(direction: DebateDirection, current: number, strategy: FinalStrategy) {

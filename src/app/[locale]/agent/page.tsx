@@ -2,12 +2,21 @@ import { unstable_noStore as noStore } from "next/cache";
 import { redirect } from "next/navigation";
 import { AgentWatchBoard } from "@/modules/agent-watch/AgentWatchBoard";
 import { agentWatchRedirectPath } from "@/modules/agent-watch/locale";
+import { resolveDispatchInitialView } from "@/modules/agent-watch/v9/initialView";
 import { DispatchConsoleV10 } from "@/modules/agent-watch/v10/DispatchConsoleV10";
 
 export const dynamic = "force-dynamic";
 
-export default async function AgentPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function AgentPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams?: Promise<{ view?: string | string[] }>;
+}) {
   const { locale } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const initialView = resolveDispatchInitialView(resolvedSearchParams.view);
   const redirectPath = agentWatchRedirectPath(locale);
   if (redirectPath) redirect(redirectPath);
   noStore();
@@ -29,7 +38,7 @@ export default async function AgentPage({ params }: { params: Promise<{ locale: 
         }}
       />
       <div className="relative z-10">
-        <AgentWatchBoard console={DispatchConsoleV10} />
+        <AgentWatchBoard console={DispatchConsoleV10} initialView={initialView} />
       </div>
     </main>
   );

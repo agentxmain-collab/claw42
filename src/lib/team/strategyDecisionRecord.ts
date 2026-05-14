@@ -2,10 +2,16 @@ import type { DebateDirection, FactionId } from "@/lib/types";
 import type { Locale } from "@/i18n/types";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
+import type { MarketDataSource } from "@/modules/agent-watch/types";
 
 export type RecordSource = "live" | "paper" | "legacy" | "backtest";
 
 export type DecisionOutcome = "hit_tp" | "hit_sl" | "expired" | "manual_close" | null;
+
+export type DecisionResolutionReason =
+  | "take_profit_reached"
+  | "stop_loss_reached"
+  | "evaluation_window_elapsed";
 
 export interface AnalystInputRecord {
   /** Team member who contributed this input. */
@@ -18,6 +24,41 @@ export interface AnalystInputRecord {
   rationale: string;
   /** Structured evidence ids; populated by the news citation layer in spec-4. */
   evidenceIds: string[];
+}
+
+export type DecisionStageTraceId =
+  | "analyst_inputs"
+  | "research_lead"
+  | "risk_lead"
+  | "trade_decision"
+  | "record_write"
+  | "public_timeline";
+
+export type DecisionStageTraceStatus = "done" | "pending" | "skipped" | "failed";
+
+export interface DecisionStageTraceEntry {
+  /** Internal compressed pipeline stage id. This is not the public V9 stage id. */
+  stageId: DecisionStageTraceId;
+  /** Short stable label for debugging and future replay. */
+  label: string;
+  /** Current stage status at record creation time. */
+  status: DecisionStageTraceStatus;
+  /** ISO timestamp when this stage was observed by the pipeline. */
+  observedAt: string;
+  /** Internal ISO timestamp for stage start, when measured. Not part of public trace. */
+  startedAt?: string;
+  /** Internal ISO timestamp for stage completion, when measured. Not part of public trace. */
+  completedAt?: string;
+  /** Internal elapsed time for this compressed stage, when measured. Not part of public trace. */
+  durationMs?: number;
+  /** Team members involved in this internal stage, when applicable. */
+  memberIds?: TeamMemberId[];
+  /** Optional short machine-readable detail. */
+  note?: string;
+  /** Internal model/provider label used by this stage, if known. Not part of public trace. */
+  modelProvider?: string;
+  /** Internal prompt version used by this stage, if known. Not part of public trace. */
+  promptVersion?: string;
 }
 
 export interface StrategyDecisionRecord {
@@ -37,6 +78,8 @@ export interface StrategyDecisionRecord {
   contributorIds: TeamMemberId[];
   /** Per-analyst decision inputs. Empty until spec-2/spec-4 populate structured evidence. */
   analystInputs: AnalystInputRecord[];
+  /** Non-public internal trace of the compressed PM decision pipeline. */
+  stageTrace?: DecisionStageTraceEntry[];
   /** Chat/thread id that produced this decision, when known. */
   sourceThreadId: string | null;
   /**
@@ -52,6 +95,12 @@ export interface StrategyDecisionRecord {
   resolvedAt: string | null;
   /** Resolution state used by the track-record wall. */
   resolvedOutcome: DecisionOutcome;
+  /** Market price observed when the decision resolved, if available. */
+  resolvedPrice?: number | null;
+  /** Machine-readable reason for the resolved outcome, if available. */
+  resolutionReason?: DecisionResolutionReason | null;
+  /** Market data source used for the resolution price, if available. */
+  resolutionPriceSource?: MarketDataSource | null;
   /** Prompt version used to generate the decision. */
   promptVersion: string;
   /** Provider/model family used to generate the decision. */

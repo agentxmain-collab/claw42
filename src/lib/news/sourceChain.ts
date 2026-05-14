@@ -8,6 +8,7 @@ import {
   CRYPTOPANIC_SOURCE,
   getSourceChain,
   getStandbySources,
+  isNewsSourceId,
   RSS_COINDESK_SOURCE,
   RSS_COINTELEGRAPH_SOURCE,
   RSS_DECRYPT_SOURCE,
@@ -25,9 +26,11 @@ import { RssNewsAdapter } from "@/lib/news/adapters/rss-adapter";
 import type { NewsAdapter } from "@/lib/news/adapters/types";
 import mockNews from "./mock-news.json";
 
+export type NewsChainServedBy = NewsSourceId | "mock";
+
 export interface NewsChainResult {
   items: NewsItem[];
-  servedBy: NewsSourceId;
+  servedBy: NewsChainServedBy;
   fellBackFrom: NewsSourceId[];
 }
 
@@ -48,8 +51,17 @@ function shouldUseStandbySources() {
 
 function chainSources(): NewsSourceConfig[] {
   const sources = getSourceChain();
-  if (!shouldUseStandbySources()) return sources;
-  return [...sources, ...getStandbySources()];
+  const fullChain = shouldUseStandbySources() ? [...sources, ...getStandbySources()] : sources;
+  const preferredSource = process.env.NEWS_PRIMARY_SOURCE;
+  if (!preferredSource || !isNewsSourceId(preferredSource)) return fullChain;
+
+  const index = fullChain.findIndex((source) => source.id === preferredSource);
+  if (index <= 0) return fullChain;
+
+  const preferred = fullChain[index];
+  return preferred
+    ? [preferred, ...fullChain.slice(0, index), ...fullChain.slice(index + 1)]
+    : fullChain;
 }
 
 function mockItems(limit: number): NewsItem[] {
@@ -129,9 +141,14 @@ export async function fetchNewsWithChain(opts: { limit: number }): Promise<NewsC
     fellBackFrom.push(source.id);
   }
 
+  recordNewsEvent("news_fetched", {
+    served_by: "mock",
+    fellback_count: fellBackFrom.length,
+  });
+
   return {
     items: mockItems(opts.limit),
-    servedBy: CRYPTOPANIC_SOURCE.id,
+    servedBy: "mock",
     fellBackFrom,
   };
 }

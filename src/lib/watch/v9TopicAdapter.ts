@@ -83,10 +83,66 @@ function formatStopLoss(stopLoss: number | null) {
   return typeof stopLoss === "number" ? formatPrice(stopLoss) : "待定";
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function renderableTradeDecision(event: PmDecisionTimelineEvent): TradeDecision | null {
+  const decision = event.payload.tradeDecision;
+  if (!decision || typeof decision !== "object") return null;
+  if (
+    decision.direction !== "long" &&
+    decision.direction !== "short" &&
+    decision.direction !== "wait"
+  ) {
+    return null;
+  }
+  if (
+    typeof decision.generatedAt !== "string" ||
+    !Number.isFinite(Date.parse(decision.generatedAt))
+  ) {
+    return null;
+  }
+  if (!Array.isArray(decision.takeProfit) || !decision.takeProfit.every(isFiniteNumber))
+    return null;
+  if (!isFiniteNumber(decision.positionSizing)) return null;
+  if (!isFiniteNumber(decision.confidence)) return null;
+  if (decision.entryPrice !== null && decision.entryPrice !== undefined) {
+    if (!isFiniteNumber(decision.entryPrice)) return null;
+  }
+  if (decision.entryRange !== null && decision.entryRange !== undefined) {
+    if (
+      typeof decision.entryRange !== "object" ||
+      !isFiniteNumber(decision.entryRange.low) ||
+      !isFiniteNumber(decision.entryRange.high)
+    ) {
+      return null;
+    }
+  }
+  if (decision.stopLoss !== null && decision.stopLoss !== undefined) {
+    if (!isFiniteNumber(decision.stopLoss)) return null;
+  }
+  if (typeof decision.timeHorizon !== "string") return null;
+  if (typeof decision.riskNote !== "string") return null;
+  if (typeof decision.invalidatesIf !== "string") return null;
+  return decision;
+}
+
 function firstEvidence(group: DispatchTopicGroup, evidenceMap: V9AdapterContext["evidenceMap"]) {
   return group.evidenceIds
     .map((evidenceId) => evidenceMap?.[evidenceId])
     .find((evidence): evidence is NewsEvidence => Boolean(evidence));
+}
+
+function originalEvidenceUrl(evidence: NewsEvidence | undefined) {
+  const url = evidence?.url.trim();
+  if (!url || url === "#") return undefined;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? url : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function stageId(topicId: string, stage: number) {
@@ -107,7 +163,11 @@ function stageForMember(memberId: TeamMemberId) {
   return 5;
 }
 
-function makeStages(topicId: string, hasTradeDecision: boolean): DispatchStageMarker[] {
+function makeStages(
+  topicId: string,
+  hasTradeDecision: boolean,
+  hasResolution = false,
+): DispatchStageMarker[] {
   if (!hasTradeDecision) {
     return [
       { id: stageId(topicId, 1), label: "阶段 1 · 信息收集", status: "done" },
@@ -117,7 +177,7 @@ function makeStages(topicId: string, hasTradeDecision: boolean): DispatchStageMa
         id: stageId(topicId, 4),
         label: "阶段 4-6 · 等待中",
         status: "pending",
-        note: "风险审查 / PM 终审 / 复盘 按顺序触发",
+        note: "风险审查 / 最终决策 / 复盘 按顺序触发",
       },
     ];
   }
@@ -128,12 +188,14 @@ function makeStages(topicId: string, hasTradeDecision: boolean): DispatchStageMa
     { id: stageId(topicId, 3), label: "阶段 3 · 交易方案", status: "done" },
     { id: stageId(topicId, 4), label: "阶段 4 · 风险审查", status: "done" },
     { id: stageId(topicId, 5), label: "阶段 5 · 最终决策", status: "final" },
-    {
-      id: stageId(topicId, 6),
-      label: "阶段 6 · 复盘沉淀",
-      status: "pending",
-      note: "TODO：真实 memory_loop 尚未接入，等待写入",
-    },
+    hasResolution
+      ? { id: stageId(topicId, 6), label: "阶段 6 · 复盘沉淀", status: "done" }
+      : {
+          id: stageId(topicId, 6),
+          label: "阶段 6 · 复盘沉淀",
+          status: "pending",
+          note: "暂无复盘沉淀，等待结果回写",
+        },
   ];
 }
 
@@ -148,9 +210,10 @@ function makeRationaleMessages({
   locale: Locale;
   now: number;
 }) {
-  const directionHint = event.payload.tradeDecision?.direction;
+  const directionHint = renderableTradeDecision(event)?.direction;
+  const rationaleByMember = event.payload.rationaleByMember ?? {};
   return TEAM_MESSAGE_ORDER.flatMap((memberId): DispatchMessage[] => {
-    const rationale = event.payload.rationaleByMember[memberId]?.trim();
+    const rationale = rationaleByMember[memberId]?.trim();
     if (!rationale) return [];
     const agentId = mapTeamMemberToDispatchAgent(memberId, directionHint);
     const stage = stageForMember(memberId);
@@ -173,8 +236,10 @@ function makeTraderMessage(
   topicId: string,
   event: PmDecisionTimelineEvent,
   locale: Locale,
+  hasRationale: boolean,
 ): DispatchMessage | null {
-  const decision = event.payload.tradeDecision;
+  const decision = renderableTradeDecision(event);
+  if (!decision && !hasRationale) return null;
   if (!decision) {
     return {
       id: `${event.payload.recordId}-trader-typing`,
@@ -209,7 +274,7 @@ function makePmMessage(
   event: PmDecisionTimelineEvent,
   locale: Locale,
 ): DispatchMessage | null {
-  const decision = event.payload.tradeDecision;
+  const decision = renderableTradeDecision(event);
   if (!decision) return null;
   const direction = decision.direction.toUpperCase();
   const content =
@@ -228,30 +293,84 @@ function makePmMessage(
   };
 }
 
-function makeMessages(group: DispatchTopicGroup, locale: Locale, now: number) {
+function makeResolutionMessage(
+  topicId: string,
+  event: PmDecisionTimelineEvent,
+  locale: Locale,
+  now: number,
+): DispatchMessage | null {
+  const resolution = event.payload.resolution;
+  if (!resolution) return null;
+  const resolvedAt = Date.parse(resolution.resolvedAt);
+  const timestamp = Number.isFinite(resolvedAt) ? resolvedAt : event.ts;
+
+  return {
+    id: `${event.payload.recordId}-resolution`,
+    stageId: stageId(topicId, 6),
+    agentId: "memory_loop",
+    agentName: getDispatchAgentDisplayName("memory_loop", locale),
+    time: formatTime(timestamp),
+    dataAge: formatDataAge(timestamp, now),
+    mentions: [],
+    content: resolutionContent(resolution),
+  };
+}
+
+function resolutionContent(
+  resolution: NonNullable<PmDecisionTimelineEvent["payload"]["resolution"]>,
+) {
+  const price =
+    typeof resolution.observedPrice === "number"
+      ? `观察价 ${formatPrice(resolution.observedPrice)}。`
+      : "";
+
+  switch (resolution.outcome) {
+    case "hit_tp":
+      return `结果 **止盈达成**。${price}这笔决策已进入复盘库，后续同类场景会引用本次证据链。`;
+    case "hit_sl":
+      return `结果 **止损触发**。${price}风险边界已生效，本次失效条件会回灌后续仓位判断。`;
+    case "expired":
+      return `结果 **到期未触发**。${price}机会窗口已关闭，记录为等待成本样本。`;
+    case "manual_close":
+      return `结果 **人工关闭**。${price}本次人工干预已进入复盘库。`;
+  }
+}
+
+function makeMessages(
+  group: DispatchTopicGroup,
+  locale: Locale,
+  now: number,
+  hasRationale: boolean,
+) {
   const topicId = group.id;
   const event = group.latestDecision;
   return [
     ...makeRationaleMessages({ event, topicId, locale, now }),
-    makeTraderMessage(topicId, event, locale),
+    makeTraderMessage(topicId, event, locale, hasRationale),
     makePmMessage(topicId, event, locale),
+    makeResolutionMessage(topicId, event, locale, now),
   ].filter((message): message is DispatchMessage => Boolean(message));
 }
 
 function makeStrategy(
   group: DispatchTopicGroup,
   stats: FollowStatsSnapshot | undefined,
+  hasRationale: boolean,
 ): DispatchStrategy {
-  const decision = group.latestDecision.payload.tradeDecision;
+  const decision = renderableTradeDecision(group.latestDecision);
   const ticker = `$${group.symbol}`;
 
   if (!decision) {
+    const actionLabel = hasRationale ? "分析中" : "等待中";
+    const name = hasRationale ? "尚未决策" : "暂无决策更新";
+    const meta = hasRationale ? "分析进行中 · 等待交易方案" : "等待真实分析写入";
+
     return {
       action: "pending",
-      actionLabel: "PENDING",
-      name: "尚未决策",
+      actionLabel,
+      name,
       ticker,
-      meta: "分析进行中 · 等待交易方案",
+      meta,
       entry: "待定",
       stopLoss: "待定",
       takeProfit: "待定",
@@ -301,37 +420,68 @@ function makeStrategy(
   };
 }
 
-function makeTitle(group: DispatchTopicGroup, evidence?: NewsEvidence) {
-  const suffix = evidence?.summary || evidence?.title || "真实 PM 决策已完成";
-  return `${group.symbol} live market check · ${suffix}`;
+function makeTitle(
+  group: DispatchTopicGroup,
+  hasRenderableTradeDecision: boolean,
+  hasRationale: boolean,
+  evidence?: NewsEvidence,
+) {
+  if (!hasRenderableTradeDecision && !hasRationale) {
+    return `${group.symbol} 实时行情分析 · 暂无决策更新`;
+  }
+
+  const suffix =
+    evidence?.summary ||
+    evidence?.title ||
+    (hasRenderableTradeDecision ? "真实交易决策已完成" : "分析进行中");
+  return `${group.symbol} 实时行情分析 · ${suffix}`;
 }
 
-function makeProgress(group: DispatchTopicGroup, now: number) {
-  const decision = group.latestDecision.payload.tradeDecision;
-  if (!decision) return "当前进行到阶段 3";
+function makeProgress(
+  group: DispatchTopicGroup,
+  now: number,
+  hasRenderableTradeDecision: boolean,
+  hasRationale: boolean,
+) {
+  if (!hasRenderableTradeDecision) return hasRationale ? "当前进行到阶段 3" : "暂无决策更新";
   return `${minutesBetween(group.startedAt, now)} 分钟闭环`;
+}
+
+function strategySortTime(group: DispatchTopicGroup) {
+  const generatedAt = renderableTradeDecision(group.latestDecision)?.generatedAt;
+  if (!generatedAt) return group.latestAt;
+  const parsed = Date.parse(generatedAt);
+  return Number.isFinite(parsed) ? parsed : group.latestAt;
 }
 
 export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): DispatchTopic[] {
   const now = ctx.now ?? Date.now();
-  const groups = groupPublicTimelineEventsByTopic(ctx.events);
+  const groups = groupPublicTimelineEventsByTopic(ctx.events).sort(
+    (a, b) => strategySortTime(b) - strategySortTime(a) || b.latestAt - a.latestAt,
+  );
 
   return groups.map((group, index) => {
     const evidence = firstEvidence(group, ctx.evidenceMap);
+    const originalUrl = originalEvidenceUrl(evidence);
     const latest = group.latestDecision;
     const recordId = latest.payload.recordId;
-    const confidence = latest.payload.tradeDecision?.confidence;
-    const hasTradeDecision = Boolean(latest.payload.tradeDecision);
-    const status = hasTradeDecision ? "done" : "pending";
+    const tradeDecision = renderableTradeDecision(latest);
+    const confidence = tradeDecision?.confidence;
+    const hasTradeDecision = Boolean(tradeDecision);
+    const hasRationale = Object.values(latest.payload.rationaleByMember ?? {}).some((value) =>
+      value?.trim(),
+    );
+    const status = hasTradeDecision ? "done" : hasRationale ? "active" : "pending";
 
     return {
       id: recordId,
       symbol: group.symbol,
       status,
-      title: makeTitle(group, evidence),
-      originalUrl: evidence?.url ?? "#",
+      title: makeTitle(group, hasTradeDecision, hasRationale, evidence),
+      originalUrl,
+      sourceLabel: originalUrl ? evidence?.source : undefined,
       startedAt: formatTime(group.startedAt),
-      progress: makeProgress(group, now),
+      progress: makeProgress(group, now, hasTradeDecision, hasRationale),
       intensity: calculateTopicIntensity({
         event: latest,
         evidenceMap: ctx.evidenceMap,
@@ -339,11 +489,11 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       }),
       trigger: {
         ticker: `$${group.symbol}`,
-        text: evidence?.summary || evidence?.title || `${group.symbol} PM decision`,
+        text: evidence?.summary || evidence?.title || `${group.symbol} 真实交易决策`,
       },
-      stages: makeStages(group.id, hasTradeDecision),
-      messages: makeMessages(group, ctx.locale, now),
-      strategy: makeStrategy(group, ctx.followStatsByRecordId?.[recordId]),
+      stages: makeStages(group.id, hasTradeDecision, Boolean(latest.payload.resolution)),
+      messages: makeMessages(group, ctx.locale, now, hasRationale),
+      strategy: makeStrategy(group, ctx.followStatsByRecordId?.[recordId], hasRationale),
       defaultCollapsed: index > 0,
     };
   });

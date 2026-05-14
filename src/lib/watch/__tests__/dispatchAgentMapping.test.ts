@@ -19,9 +19,19 @@ describe("dispatchAgentMapping", () => {
     expect(mapTeamMemberToDispatchAgent("risk_lead", "wait")).toBe("neutral_reviewer");
   });
 
-  it("uses i18n team names when a source team member exists", () => {
-    expect(getDispatchAgentDisplayName("technical_analyst", "zh_CN", "chart_analyst")).toBe("K 哥");
-    expect(getDispatchAgentDisplayName("onchain_analyst", "en_US", "onchain_analyst")).toBe("Vit");
+  it("uses senior functional titles when a source team member exists", () => {
+    expect(getDispatchAgentDisplayName("technical_analyst", "zh_CN", "chart_analyst")).toBe(
+      "技术策略主管",
+    );
+    expect(getDispatchAgentDisplayName("news_analyst", "zh_CN", "news_analyst")).toBe(
+      "宏观情报分析师",
+    );
+    expect(getDispatchAgentDisplayName("onchain_analyst", "en_US", "onchain_analyst")).toBe(
+      "On-chain Data Lead",
+    );
+    expect(getDispatchAgentDisplayName("trader", "zh_CN")).toBe("交易策略总监");
+    expect(getDispatchAgentDisplayName("aggressive_reviewer", "zh_CN")).toBe("收益进攻官");
+    expect(getDispatchAgentDisplayName("portfolio_manager", "zh_CN", "pm")).toBe("首席投资官");
   });
 
   it("keeps the synthetic role list free of removed v9 agents", () => {

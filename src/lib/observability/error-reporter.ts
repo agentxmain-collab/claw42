@@ -1,8 +1,9 @@
 "use client";
 
 import type { ErrorInfo } from "react";
+import { apiPath } from "@/lib/basePath";
 
-const ENDPOINT = "/api/observability/errors";
+const ENDPOINT = apiPath("/api/observability/errors");
 const SESSION_KEY = "claw42_error_session_id";
 
 export type ErrorReportContext = Record<string, unknown> | ErrorInfo;

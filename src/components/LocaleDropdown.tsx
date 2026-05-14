@@ -8,13 +8,15 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/locales";
 import type { Locale } from "@/i18n/types";
 import { trackEvent } from "@/lib/analytics";
+import { stripBasePathFromPathname } from "@/lib/basePath";
 import { AGENT_WATCH_LOCALES } from "@/modules/agent-watch/locale";
 
 export function LocaleDropdown() {
   const { locale, switchLocale } = useI18n();
   const pathname = usePathname();
+  const appPathname = stripBasePathFromPathname(pathname);
   const reduceMotion = useReducedMotion();
-  const isAgentWatchRoute = pathname.split("/").filter(Boolean)[1] === "agent";
+  const isAgentWatchRoute = appPathname.split("/").filter(Boolean)[1] === "agent";
   const localeOptions: readonly Locale[] = isAgentWatchRoute ? AGENT_WATCH_LOCALES : LOCALES;
   const [isOpen, setIsOpen] = useState(false);
   const [activeLocale, setActiveLocale] = useState<Locale>(locale);

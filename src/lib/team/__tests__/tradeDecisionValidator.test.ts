@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { validateTradeDecision, type TradeDecision } from "@/lib/team/tradeDecision";
 import {
+  buildTradeDecisionPrompt,
   generateTradeDecision,
   resolvePMProviderSelection,
 } from "@/lib/team/tradeDecisionPromptBuilder";
@@ -22,6 +23,13 @@ describe("validateTradeDecision", () => {
       expect(result.decision.symbol).toBe("BTC");
       expect(result.decision.takeProfit).toEqual([106, 112]);
     }
+  });
+
+  it("normalizes dollar-prefixed symbols with surrounding whitespace", () => {
+    const result = validateTradeDecision(makeDecision({ symbol: " $$btc " }), CURRENT_PRICE);
+
+    expect(result.valid).toBe(true);
+    if (result.valid) expect(result.decision.symbol).toBe("BTC");
   });
 
   it("rejects long stopLoss above entry", () => {
@@ -163,6 +171,17 @@ describe("generateTradeDecision", () => {
 
     await expect(generateTradeDecision(makePromptContext({ locale: "zh_CN" }))).resolves.toBeNull();
     expect(callWithChainMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("buildTradeDecisionPrompt", () => {
+  it("normalizes dollar-prefixed prompt symbols before rendering the schema", () => {
+    const prompt = buildTradeDecisionPrompt(makePromptContext({ symbol: " $$eth " }));
+
+    expect(prompt).toContain("symbol: ETH");
+    expect(prompt).toContain('"symbol": "ETH"');
+    expect(prompt).not.toContain(" $ETH ");
+    expect(prompt).not.toContain("$$");
   });
 });
 

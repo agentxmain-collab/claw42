@@ -5,6 +5,7 @@ export type NewsEvidenceSeverity = "low" | "medium" | "high";
 export interface NewsEvidence {
   id: string;
   source: string;
+  sourceDomain?: string;
   title: string;
   url: string;
   publishedAt: string;
@@ -30,21 +31,55 @@ export function evidenceSeverityFromNews(item: NewsItem): NewsEvidenceSeverity {
   return "low";
 }
 
+function normalizeEvidenceSymbol(symbol: string) {
+  return symbol.trim().replace(/^\$+/, "").toUpperCase();
+}
+
+function normalizeSourceDomain(value: string | undefined) {
+  const domain = value?.trim().toLowerCase();
+  if (!domain) return undefined;
+  return (
+    domain
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .split("/")[0] || undefined
+  );
+}
+
+function sourceDomainFromNews(item: NewsItem) {
+  const explicitDomain = normalizeSourceDomain(item.sourceDomain);
+  if (explicitDomain) return explicitDomain;
+  try {
+    return normalizeSourceDomain(new URL(item.url).hostname);
+  } catch {
+    return undefined;
+  }
+}
+
+function safeIsoDate(value: unknown, fallback: string) {
+  const date = new Date(value as string | number | Date);
+  if (Number.isFinite(date.getTime())) return date.toISOString();
+  const fallbackDate = new Date(fallback);
+  return Number.isFinite(fallbackDate.getTime())
+    ? fallbackDate.toISOString()
+    : new Date().toISOString();
+}
+
 export function newsItemToEvidence(
   item: NewsItem,
   fetchedAt = new Date().toISOString(),
 ): NewsEvidence {
-  const publishedAt = new Date(item.publishedAt).toISOString();
+  const normalizedFetchedAt = safeIsoDate(fetchedAt, new Date().toISOString());
+  const publishedAt = safeIsoDate(item.publishedAt, normalizedFetchedAt);
   return {
     id: generateEvidenceId(item.url, publishedAt),
     source: item.source,
+    sourceDomain: sourceDomainFromNews(item),
     title: item.title,
     url: item.url,
     publishedAt,
-    fetchedAt,
-    symbol: Array.from(
-      new Set(item.currencies.map((symbol) => symbol.replace(/^\$/, "").toUpperCase())),
-    ),
+    fetchedAt: normalizedFetchedAt,
+    symbol: Array.from(new Set(item.currencies.map(normalizeEvidenceSymbol).filter(Boolean))),
     impactSeverity: evidenceSeverityFromNews(item),
     summary: item.title,
   };

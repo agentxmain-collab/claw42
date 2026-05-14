@@ -1,4 +1,5 @@
 import type {
+  PublicDecisionStageTraceEntry,
   PublicTimelineEvent,
   PublicTimelineImportance,
 } from "@/lib/watch/publicTimelineEvent";
@@ -14,6 +15,28 @@ export interface PublicTimelineProjectionOptions {
   importanceThreshold?: PublicTimelineImportance;
   locale?: Locale;
   decisionRecordsById?: ReadonlyMap<string, StrategyDecisionRecord>;
+}
+
+export function buildDecisionRecordIndex(
+  records: readonly StrategyDecisionRecord[],
+): Map<string, StrategyDecisionRecord> {
+  const index = new Map<string, StrategyDecisionRecord>();
+  for (const record of records) {
+    if (!index.has(record.id)) index.set(record.id, record);
+  }
+  return index;
+}
+
+export function publicStageTraceFromRecord(
+  record: StrategyDecisionRecord | null,
+): PublicDecisionStageTraceEntry[] | undefined {
+  if (!record?.stageTrace?.length) return undefined;
+  return record.stageTrace.map((stage) => ({
+    stageId: stage.stageId,
+    status: stage.status,
+    observedAt: stage.observedAt,
+    ...(stage.memberIds?.length ? { memberIds: stage.memberIds } : {}),
+  }));
 }
 
 function inferredMeta(entry: StreamEntry): WatchEntryMeta {
@@ -71,11 +94,40 @@ function passesImportance(
   return PUBLIC_IMPORTANCE_ORDER[importance] >= PUBLIC_IMPORTANCE_ORDER[threshold];
 }
 
+function normalizePublicSymbol(symbol: string | undefined | null) {
+  const normalized = symbol?.trim().replace(/^\$+/, "").toUpperCase() ?? "";
+  return /^[A-Z0-9]{2,12}$/.test(normalized) ? normalized : null;
+}
+
+function normalizePublicSymbols(symbols: string[]) {
+  return Array.from(new Set(symbols.map(normalizePublicSymbol).filter(Boolean))) as string[];
+}
+
+function normalizePublicTradeDecision(
+  decision: StrategyDecisionRecord["tradeDecision"] | null | undefined,
+): StrategyDecisionRecord["tradeDecision"] | null {
+  if (!decision) return null;
+  return {
+    ...decision,
+    symbol: normalizePublicSymbol(decision.symbol) ?? "UNKNOWN",
+  };
+}
+
+function uniqueEvidenceIds(ids: unknown[]) {
+  return Array.from(
+    new Set(
+      ids
+        .filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+        .map((id) => id.trim()),
+    ),
+  );
+}
+
 function marketSignalPayload(entry: StreamEntry): PublicTimelineEvent["payload"] | null {
   if (entry.kind === "focus_event") {
     return {
       kind: "market_signal",
-      symbol: entry.symbol,
+      symbol: normalizePublicSymbol(entry.symbol) ?? "UNKNOWN",
       signalType: entry.signalType,
       severity: entry.severity,
       description: entry.description,
@@ -84,7 +136,7 @@ function marketSignalPayload(entry: StreamEntry): PublicTimelineEvent["payload"]
   if (entry.kind === "collective_event") {
     return {
       kind: "market_signal",
-      symbol: entry.symbols[0] ?? "MARKET",
+      symbol: normalizePublicSymbol(entry.symbols[0]) ?? "MARKET",
       signalType: entry.signalType,
       severity: "alert",
       description: entry.description,
@@ -93,7 +145,7 @@ function marketSignalPayload(entry: StreamEntry): PublicTimelineEvent["payload"]
   if (entry.kind === "conflict_event") {
     return {
       kind: "market_signal",
-      symbol: entry.symbol,
+      symbol: normalizePublicSymbol(entry.symbol) ?? "UNKNOWN",
       signalType: "conflict",
       severity: "alert",
       description: entry.description,
@@ -110,9 +162,15 @@ function pmDecisionPayload(
   if (entry.kind !== "chat_thread") return null;
   const recordId = meta.recordId ?? entry.thread.strategy?.id ?? null;
   if (!recordId) return null;
-  const derived = derivePmDecisionProcess(decisionRecord?.id === recordId ? decisionRecord : null);
-  const tradeDecision = meta.tradeDecision ?? decisionRecord?.tradeDecision ?? null;
-  const symbol = decisionRecord?.symbol ?? tradeDecision?.symbol ?? "UNKNOWN";
+  const indexedRecord = decisionRecord?.id === recordId ? decisionRecord : null;
+  const derived = derivePmDecisionProcess(indexedRecord);
+  const tradeDecision = normalizePublicTradeDecision(
+    indexedRecord?.tradeDecision ?? meta.tradeDecision ?? null,
+  );
+  const symbol =
+    normalizePublicSymbol(indexedRecord?.symbol) ??
+    normalizePublicSymbol(tradeDecision?.symbol) ??
+    "UNKNOWN";
   return {
     kind: "pm_decision",
     recordId,
@@ -120,6 +178,19 @@ function pmDecisionPayload(
     tradeDecision,
     rationaleByMember: derived.rationaleByMember,
     citationsByMember: derived.citationsByMember,
+    stageTrace: publicStageTraceFromRecord(indexedRecord),
+    resolution: resolutionFromRecord(indexedRecord),
+  };
+}
+
+function resolutionFromRecord(record: StrategyDecisionRecord | null) {
+  if (!record?.resolvedOutcome || !record.resolvedAt) return undefined;
+  return {
+    outcome: record.resolvedOutcome,
+    resolvedAt: record.resolvedAt,
+    ...(typeof record.resolvedPrice === "number" ? { observedPrice: record.resolvedPrice } : {}),
+    ...(record.resolutionPriceSource ? { observedPriceSource: record.resolutionPriceSource } : {}),
+    ...(record.resolutionReason ? { reason: record.resolutionReason } : {}),
   };
 }
 
@@ -131,7 +202,8 @@ function derivePmDecisionProcess(record: StrategyDecisionRecord | null): {
   const citationsByMember: Partial<Record<TeamMemberId, string[]>> = {};
   if (!record) return { rationaleByMember, citationsByMember };
 
-  for (const input of record.analystInputs) {
+  const analystInputs = Array.isArray(record.analystInputs) ? record.analystInputs : [];
+  for (const input of analystInputs) {
     const memberId = String(input.memberId);
     if (!isTeamMemberId(memberId)) {
       if (process.env.NODE_ENV !== "test") {
@@ -143,13 +215,28 @@ function derivePmDecisionProcess(record: StrategyDecisionRecord | null): {
       continue;
     }
 
-    const rationale = input.rationale.trim();
+    const rationale = typeof input.rationale === "string" ? input.rationale.trim() : "";
     if (rationale) rationaleByMember[memberId] = rationale;
-    const evidenceIds = input.evidenceIds.filter(Boolean);
+    const evidenceIds = Array.isArray(input.evidenceIds) ? input.evidenceIds.filter(Boolean) : [];
     if (evidenceIds.length > 0) citationsByMember[memberId] = evidenceIds;
   }
 
   return { rationaleByMember, citationsByMember };
+}
+
+function evidenceIdsForPayload(metaEvidenceIds: string[], payload: PublicTimelineEvent["payload"]) {
+  if (payload.kind === "news") {
+    return uniqueEvidenceIds([...metaEvidenceIds, payload.evidenceId]);
+  }
+  if (payload.kind !== "pm_decision") {
+    return uniqueEvidenceIds(metaEvidenceIds);
+  }
+
+  return uniqueEvidenceIds([
+    ...metaEvidenceIds,
+    ...Object.values(payload.citationsByMember ?? {}).flatMap((ids) => ids ?? []),
+    ...(payload.tradeDecision?.evidenceIds ?? []),
+  ]);
 }
 
 function newsPayload(
@@ -162,7 +249,7 @@ function newsPayload(
     return {
       kind: "news",
       evidenceId,
-      symbols: entry.debate.newsCurrencies,
+      symbols: normalizePublicSymbols(entry.debate.newsCurrencies),
     };
   }
   return {
@@ -215,7 +302,7 @@ export function projectStreamEntryToPublic(
     visibility: meta.visibility,
     importance: meta.importance,
     sourceTrigger: meta.sourceTrigger,
-    evidenceIds: meta.evidenceIds,
+    evidenceIds: evidenceIdsForPayload(meta.evidenceIds, payload),
     locale: meta.locale,
     payload,
   };

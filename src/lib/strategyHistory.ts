@@ -7,6 +7,10 @@ import { LEGACY_WATCH_LOCALE } from "@/lib/watch/locale";
 
 const replayHistory: StrategyReplay[] = [];
 
+function normalizeSymbol(symbol: string) {
+  return symbol.trim().replace(/^\$+/, "").toUpperCase();
+}
+
 export async function recordStrategyReplay(replay: StrategyReplay) {
   const existingIndex = replayHistory.findIndex((item) => item.strategyId === replay.strategyId);
   if (existingIndex >= 0) {
@@ -84,7 +88,7 @@ export function replayToDecisionRecord(replay: StrategyReplay): StrategyDecision
     id: `legacy:${replay.strategyId}:${replay.evaluatedAt}`,
     schemaVersion: 1,
     recordSource: "legacy",
-    symbol: replay.symbol.toUpperCase(),
+    symbol: normalizeSymbol(replay.symbol),
     locale: LEGACY_WATCH_LOCALE,
     decisionOwnerId: "legacy",
     contributorIds: [],

@@ -6,6 +6,10 @@ export function isTopicToggleKey(key: string) {
   return key === "Enter" || key === " ";
 }
 
+function hasOriginalUrl(value: string | undefined) {
+  return Boolean(value && value !== "#");
+}
+
 export function TopicHead({
   topic,
   bodyId,
@@ -30,6 +34,7 @@ export function TopicHead({
 
   const liveLabel =
     topic.status === "done" ? "已闭环" : topic.status === "pending" ? "起步中" : "LIVE 辩论";
+  const showOriginalLink = hasOriginalUrl(topic.originalUrl);
 
   return (
     <div className="topic-head" onClick={handleHeadClick}>
@@ -51,13 +56,15 @@ export function TopicHead({
       <h2 id={`${bodyId}-title`} className="topic-title">
         {topic.title}
       </h2>
-      <a
-        className="topic-original"
-        href={topic.originalUrl}
-        onClick={(event) => event.stopPropagation()}
-      >
-        原文 →
-      </a>
+      {showOriginalLink ? (
+        <a
+          className="topic-original"
+          href={topic.originalUrl}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {topic.sourceLabel ? `原文 · ${topic.sourceLabel}` : "原文"} →
+        </a>
+      ) : null}
       <div className="topic-meta-row">
         <IntensityBar value={topic.intensity} />
         <div className="trigger">

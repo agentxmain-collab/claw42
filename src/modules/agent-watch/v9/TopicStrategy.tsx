@@ -20,9 +20,11 @@ function StrategyValue({
 
 export function TopicStrategy({
   topic,
+  latest = false,
   onPlaceholder,
 }: {
   topic: DispatchTopic;
+  latest?: boolean;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
   const { strategy } = topic;
@@ -33,9 +35,10 @@ export function TopicStrategy({
       : `${strategy.follow.watchCount} 人在看 · `;
 
   return (
-    <div className="topic-strategy">
+    <div className={["topic-strategy", latest ? "latest" : ""].filter(Boolean).join(" ")}>
       <div className="strat-head">
         <div className="row1">
+          {latest ? <span className="strategy-latest-badge">最新策略</span> : null}
           <span className="name">{strategy.name}</span>
           <span className="ticker">{strategy.ticker}</span>
           <span className={`action ${strategy.action}`}>{strategy.actionLabel}</span>

@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { apiPath } from "@/lib/basePath";
 import { priceDeltaColor } from "@/modules/agent-watch/utils/priceDeltaColor";
 import { formatCoinSymbol } from "@/modules/agent-watch/utils/symbolFormat";
 import { fadeUpVariants, getFadeUpTransition, motionViewport } from "@/lib/motion";
@@ -44,7 +45,9 @@ function useDailyBrief(locale: string): DailyBriefData | null {
 
     async function load() {
       try {
-        const response = await fetch(`/api/daily-brief?locale=${encodeURIComponent(locale)}`);
+        const response = await fetch(
+          apiPath(`/api/daily-brief?locale=${encodeURIComponent(locale)}`),
+        );
         if (!response.ok) throw new Error(`daily-brief ${response.status}`);
         const payload = (await response.json()) as DailyBriefData;
         if (mounted) setData(payload);

@@ -73,4 +73,33 @@ describe("groupPublicTimelineEventsByTopic", () => {
       groupPublicTimelineEventsByTopic([pmDecision("missing", { symbol: "UNKNOWN" })]),
     ).toEqual([]);
   });
+
+  it("normalizes lowercase and dollar-prefixed PM symbols before grouping", () => {
+    const groups = groupPublicTimelineEventsByTopic([
+      pmDecision("dollar-symbol", { symbol: "$$btc" }),
+    ]);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({
+      id: "zh_CN:BTC:dollar-symbol",
+      symbol: "BTC",
+    });
+  });
+
+  it("skips malformed PM events with non-string symbols", () => {
+    const malformed = pmDecision("malformed");
+    if (malformed.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+
+    expect(
+      groupPublicTimelineEventsByTopic([
+        {
+          ...malformed,
+          payload: {
+            ...malformed.payload,
+            symbol: null,
+          } as unknown as PublicTimelineEvent["payload"],
+        },
+      ]),
+    ).toEqual([]);
+  });
 });

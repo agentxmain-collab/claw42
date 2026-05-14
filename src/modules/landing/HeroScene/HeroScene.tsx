@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { COINW_SKILLS_URL } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
+import { withBasePath } from "@/lib/basePath";
 import { useMarketTicker } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import { useMouseNormalized } from "./useMouseNormalized";
 import { heroStageCssVars } from "./heroStageMotion";
@@ -30,6 +31,7 @@ function useIsMobile() {
 }
 
 const MOBILE_POSE_CYCLE: Pose[] = ["center", "left", "center", "right"];
+const HERO_BACKGROUND_IMAGE = withBasePath("/images/agents/hero-background-glow-1920x1080.png");
 /** Auto-cycle pose on mobile: center → left → center → right → repeat every 8 s. */
 function useMobilePoseCycle(isMobile: boolean, reduceMotion: boolean): Pose {
   const [idx, setIdx] = useState(0);
@@ -102,7 +104,7 @@ export function HeroScene() {
       <div
         className="claw42-hero-background-art pointer-events-none absolute left-1/2"
         style={{
-          backgroundImage: "url('/images/agents/hero-background-glow-1920x1080.png')",
+          backgroundImage: `url('${HERO_BACKGROUND_IMAGE}')`,
           transform:
             "translate(-50%, calc(var(--claw42-hero-depth-bg-y, 0px) + var(--claw42-hero-pedestal-layer-shift, 0px)))",
         }}

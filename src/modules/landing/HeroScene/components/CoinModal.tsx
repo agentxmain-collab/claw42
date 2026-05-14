@@ -4,15 +4,16 @@ import { useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
+import { withBasePath } from "@/lib/basePath";
 import { AGENT_ORDER, AGENT_META } from "@/modules/agent-watch/agents";
 import { useAgentAnalysis, useMarketTicker } from "@/modules/agent-watch/hooks/useAgentAnalysis";
 import type { CoinSymbol, TickerMap } from "@/modules/agent-watch/types";
 
 const COIN_META: Record<CoinSymbol, { name: string; image: string }> = {
-  BTC: { name: "Bitcoin", image: "/images/hero/coin-btc.png" },
-  ETH: { name: "Ethereum", image: "/images/hero/coin-eth.png" },
-  SOL: { name: "Solana", image: "/images/hero/coin-sol.png" },
-  USDT: { name: "Tether", image: "/images/hero/coin-usdt.png" },
+  BTC: { name: "Bitcoin", image: withBasePath("/images/hero/coin-btc.png") },
+  ETH: { name: "Ethereum", image: withBasePath("/images/hero/coin-eth.png") },
+  SOL: { name: "Solana", image: withBasePath("/images/hero/coin-sol.png") },
+  USDT: { name: "Tether", image: withBasePath("/images/hero/coin-usdt.png") },
 };
 
 function formatPrice(symbol: CoinSymbol, tickers?: TickerMap) {
@@ -144,7 +145,7 @@ export function CoinModal({ symbol, onClose }: { symbol: CoinSymbol; onClose: ()
             {t.coinModal.closeAriaLabel}
           </button>
           <a
-            href={`/${locale}/agent`}
+            href={withBasePath(`/${locale}/agent`)}
             className="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-[#7c5cff] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#8e6bff]"
           >
             {t.coinModal.goToWatchCta} →

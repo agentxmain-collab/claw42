@@ -7,14 +7,21 @@ import type { DispatchTopic, DispatchTopicAction } from "./types";
 export function Topic({
   topic,
   onPlaceholder,
+  latest = false,
 }: {
   topic: DispatchTopic;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
+  latest?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(topic.defaultCollapsed);
   const bodyId = `dispatch-topic-${topic.id}`;
 
-  const topicClassName = ["topic", topic.status, collapsed ? "collapsed" : ""]
+  const topicClassName = [
+    "topic",
+    topic.status,
+    latest ? "latest" : "",
+    collapsed ? "collapsed" : "",
+  ]
     .filter(Boolean)
     .join(" ");
 
@@ -27,7 +34,7 @@ export function Topic({
         onToggle={() => setCollapsed((current) => !current)}
       />
       <TopicBody topic={topic} bodyId={bodyId} />
-      <TopicStrategy topic={topic} onPlaceholder={onPlaceholder} />
+      <TopicStrategy topic={topic} latest={latest} onPlaceholder={onPlaceholder} />
     </article>
   );
 }

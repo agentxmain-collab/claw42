@@ -1,3 +1,5 @@
+import { withBasePath } from "@/lib/basePath";
+
 export type TeamMemberId =
   | "fundamental_analyst"
   | "news_analyst"
@@ -31,7 +33,7 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     displayNameKey: "team.fundamental_analyst.displayName",
     roleTitleKey: "team.fundamental_analyst.roleTitle",
     oneLineCapability: "team.fundamental_analyst.oneLineCapability",
-    avatarPath: "/images/team/fundamental_analyst.svg",
+    avatarPath: withBasePath("/images/team/fundamental_analyst.svg"),
   },
   news_analyst: {
     id: "news_analyst",
@@ -41,7 +43,7 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     displayNameKey: "team.news_analyst.displayName",
     roleTitleKey: "team.news_analyst.roleTitle",
     oneLineCapability: "team.news_analyst.oneLineCapability",
-    avatarPath: "/images/team/news_analyst.svg",
+    avatarPath: withBasePath("/images/team/news_analyst.svg"),
   },
   chart_analyst: {
     id: "chart_analyst",
@@ -51,7 +53,7 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     displayNameKey: "team.chart_analyst.displayName",
     roleTitleKey: "team.chart_analyst.roleTitle",
     oneLineCapability: "team.chart_analyst.oneLineCapability",
-    avatarPath: "/images/team/chart_analyst.svg",
+    avatarPath: withBasePath("/images/team/chart_analyst.svg"),
   },
   onchain_analyst: {
     id: "onchain_analyst",
@@ -61,7 +63,7 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     displayNameKey: "team.onchain_analyst.displayName",
     roleTitleKey: "team.onchain_analyst.roleTitle",
     oneLineCapability: "team.onchain_analyst.oneLineCapability",
-    avatarPath: "/images/team/onchain_analyst.svg",
+    avatarPath: withBasePath("/images/team/onchain_analyst.svg"),
   },
   research_lead: {
     id: "research_lead",
@@ -71,7 +73,7 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     displayNameKey: "team.research_lead.displayName",
     roleTitleKey: "team.research_lead.roleTitle",
     oneLineCapability: "team.research_lead.oneLineCapability",
-    avatarPath: "/images/team/research_lead.svg",
+    avatarPath: withBasePath("/images/team/research_lead.svg"),
   },
   risk_lead: {
     id: "risk_lead",
@@ -81,7 +83,7 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     displayNameKey: "team.risk_lead.displayName",
     roleTitleKey: "team.risk_lead.roleTitle",
     oneLineCapability: "team.risk_lead.oneLineCapability",
-    avatarPath: "/images/team/risk_lead.svg",
+    avatarPath: withBasePath("/images/team/risk_lead.svg"),
   },
   pm: {
     id: "pm",
@@ -92,7 +94,7 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     displayNameKey: "team.pm.displayName",
     roleTitleKey: "team.pm.roleTitle",
     oneLineCapability: "team.pm.oneLineCapability",
-    avatarPath: "/images/team/pm.svg",
+    avatarPath: withBasePath("/images/team/pm.svg"),
   },
 };
 

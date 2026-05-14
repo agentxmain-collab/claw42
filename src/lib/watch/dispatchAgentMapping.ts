@@ -37,27 +37,27 @@ export function mapTeamMemberToDispatchAgent(
 }
 
 const ZH_SYNTHETIC_DISPLAY_NAMES: Partial<Record<DispatchAgentId, string>> = {
-  technical_analyst: "技术分析师",
-  bullish_researcher: "看多研究员",
-  bearish_researcher: "看空研究员",
-  trader: "交易员",
-  aggressive_reviewer: "激进派",
-  neutral_reviewer: "中立派",
-  conservative_reviewer: "保守派",
-  portfolio_manager: "PM",
-  memory_loop: "记忆回路",
+  technical_analyst: "技术策略主管",
+  bullish_researcher: "多头策略师",
+  bearish_researcher: "空头策略师",
+  trader: "交易策略总监",
+  aggressive_reviewer: "收益进攻官",
+  neutral_reviewer: "组合平衡官",
+  conservative_reviewer: "风险防御官",
+  portfolio_manager: "首席投资官",
+  memory_loop: "策略复盘主管",
 };
 
 const EN_SYNTHETIC_DISPLAY_NAMES: Partial<Record<DispatchAgentId, string>> = {
-  technical_analyst: "Technical Analyst",
-  bullish_researcher: "Bullish Researcher",
-  bearish_researcher: "Bearish Researcher",
-  trader: "Trader",
-  aggressive_reviewer: "Aggressive Reviewer",
-  neutral_reviewer: "Neutral Reviewer",
-  conservative_reviewer: "Conservative Reviewer",
-  portfolio_manager: "PM",
-  memory_loop: "Memory Loop",
+  technical_analyst: "Technical Strategy Lead",
+  bullish_researcher: "Bullish Strategist",
+  bearish_researcher: "Bearish Strategist",
+  trader: "Trading Strategy Director",
+  aggressive_reviewer: "Return Offensive Officer",
+  neutral_reviewer: "Portfolio Balance Officer",
+  conservative_reviewer: "Risk Defense Officer",
+  portfolio_manager: "Chief Investment Officer",
+  memory_loop: "Strategy Review Lead",
 };
 
 function isChineseLocale(locale: Locale) {

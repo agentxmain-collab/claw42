@@ -9,6 +9,7 @@ type KvListClient = {
   lpush(key: string, value: string): Promise<unknown>;
   ltrim(key: string, start: number, stop: number): Promise<unknown>;
   lrange(key: string, start: number, stop: number): Promise<unknown[]>;
+  lrem(key: string, count: number, value: string): Promise<unknown>;
   sadd(key: string, value: string): Promise<unknown>;
   smembers(key: string): Promise<unknown[]>;
 };
@@ -47,6 +48,25 @@ export async function appendDecisionRecord(record: StrategyDecisionRecord): Prom
     await appendLocalRecord(normalizedRecord);
   } catch {
     appendMemoryRecord(normalizedRecord);
+  }
+}
+
+export async function upsertDecisionRecord(record: StrategyDecisionRecord): Promise<void> {
+  const normalizedRecord = normalizeRecord(record);
+  if (hasKvConfig()) {
+    try {
+      await upsertKvRecord(normalizedRecord);
+      return;
+    } catch {
+      upsertMemoryRecord(normalizedRecord);
+      return;
+    }
+  }
+
+  try {
+    await upsertLocalRecord(normalizedRecord);
+  } catch {
+    upsertMemoryRecord(normalizedRecord);
   }
 }
 
@@ -137,6 +157,22 @@ function normalizeRecord(record: StrategyDecisionRecord): StrategyDecisionRecord
   };
 }
 
+async function upsertKvRecord(record: StrategyDecisionRecord) {
+  const client = kv as KvListClient;
+  const key = kvSymbolKey(record.locale, record.symbol);
+  const values = await client.lrange(key, 0, KV_LINE_CAP - 1);
+  await Promise.all(
+    values
+      .filter((value) => rawRecordId(value) === record.id)
+      .map((value) =>
+        client.lrem(key, 0, typeof value === "string" ? value : JSON.stringify(value)),
+      ),
+  );
+  await client.lpush(key, JSON.stringify(record));
+  await client.ltrim(key, 0, KV_LINE_CAP - 1);
+  await client.sadd(kvSymbolIndexKey(record.locale), record.symbol);
+}
+
 async function appendLocalRecord(record: StrategyDecisionRecord) {
   const file = await localStoreFile(record.locale, record.symbol);
   await fs.mkdir(path.dirname(file), { recursive: true });
@@ -145,6 +181,20 @@ async function appendLocalRecord(record: StrategyDecisionRecord) {
     .then((content) => content.split("\n").filter(Boolean))
     .catch(() => []);
   const next = [...existing, JSON.stringify(record)].slice(-LOCAL_LINE_CAP);
+  await fs.writeFile(file, `${next.join("\n")}\n`, "utf8");
+}
+
+async function upsertLocalRecord(record: StrategyDecisionRecord) {
+  const file = await localStoreFile(record.locale, record.symbol);
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  const existing = await fs
+    .readFile(file, "utf8")
+    .then((content) => content.split("\n").filter(Boolean))
+    .catch(() => []);
+  const next = [
+    ...existing.filter((line) => rawRecordId(line) !== record.id),
+    JSON.stringify(record),
+  ].slice(-LOCAL_LINE_CAP);
   await fs.writeFile(file, `${next.join("\n")}\n`, "utf8");
 }
 
@@ -175,6 +225,19 @@ function appendMemoryRecord(record: StrategyDecisionRecord) {
   memoryRecords.set(key, [record, ...existing].slice(0, LOCAL_LINE_CAP));
 }
 
+function upsertMemoryRecord(record: StrategyDecisionRecord) {
+  warnMemoryFallbackOnce();
+  const key = memoryKey(record.locale, record.symbol);
+  const existing = memoryRecords.get(key) ?? [];
+  memoryRecords.set(
+    key,
+    [record, ...existing.filter((existingRecord) => existingRecord.id !== record.id)].slice(
+      0,
+      LOCAL_LINE_CAP,
+    ),
+  );
+}
+
 function readMemoryRecords(locale: Locale, symbol: string, limit: number) {
   warnMemoryFallbackOnce();
   const normalizedLocale = normalizeWatchLocale(locale);
@@ -202,6 +265,11 @@ function parseRecord(value: unknown) {
   } catch {
     return null;
   }
+}
+
+function rawRecordId(value: unknown) {
+  const parsed = parseRecord(value);
+  return isStrategyDecisionRecord(parsed) ? parsed.id : null;
 }
 
 function normalizeParsedRecord(value: unknown) {
@@ -256,6 +324,7 @@ function normalizeSymbol(symbol: string) {
   return (
     symbol
       .trim()
+      .replace(/^\$+/, "")
       .toUpperCase()
       .replace(/[^A-Z0-9_-]/g, "_") || "UNKNOWN"
   );

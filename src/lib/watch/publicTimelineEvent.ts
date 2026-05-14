@@ -1,6 +1,13 @@
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
+import type {
+  DecisionOutcome,
+  DecisionResolutionReason,
+  DecisionStageTraceId,
+  DecisionStageTraceStatus,
+} from "@/lib/team/strategyDecisionRecord";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { Locale } from "@/i18n/types";
+import type { MarketDataSource } from "@/modules/agent-watch/types";
 
 export type PublicTimelineSourceTrigger =
   | "market_signal"
@@ -12,6 +19,13 @@ export type PublicTimelineSourceTrigger =
 
 export type PublicTimelineImportance = "low" | "medium" | "high" | "critical";
 export type PublicTimelineVisibility = "public" | "debug";
+
+export interface PublicDecisionStageTraceEntry {
+  stageId: DecisionStageTraceId;
+  status: DecisionStageTraceStatus;
+  observedAt: string;
+  memberIds?: TeamMemberId[];
+}
 
 export type PublicTimelinePayload =
   | {
@@ -31,6 +45,14 @@ export type PublicTimelinePayload =
       tradeDecision?: TradeDecision | null;
       rationaleByMember: Partial<Record<TeamMemberId, string>>;
       citationsByMember?: Partial<Record<TeamMemberId, string[]>>;
+      stageTrace?: PublicDecisionStageTraceEntry[];
+      resolution?: {
+        outcome: Exclude<DecisionOutcome, null>;
+        resolvedAt: string;
+        observedPrice?: number;
+        observedPriceSource?: MarketDataSource;
+        reason?: DecisionResolutionReason;
+      };
     }
   | {
       kind: "team_discussion";

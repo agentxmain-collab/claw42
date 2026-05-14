@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import styles from "./dispatchConsoleV9.module.css";
 import { FlowIntroView } from "./FlowIntroView";
 import { MarketAnalysisView } from "./MarketAnalysisView";
@@ -12,23 +12,47 @@ import type {
   DispatchView,
 } from "./types";
 
-function formatClock(date: Date) {
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
-  return `${hh}:${mm}:${ss} · UTC+8`;
-}
-
-function Clock() {
-  const [clock, setClock] = useState("19:31:42 · UTC+8");
-
-  useEffect(() => {
-    setClock(formatClock(new Date()));
-    const timer = window.setInterval(() => setClock(formatClock(new Date())), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  return <span className="topbar-clock">{clock}</span>;
+function DispatchPageHeader({
+  activeView,
+  onViewChange,
+}: {
+  activeView: DispatchView;
+  onViewChange: (view: DispatchView) => void;
+}) {
+  return (
+    <header className="dispatch-page-header">
+      <div className="dispatch-page-title-row">
+        <div className="dispatch-page-copy">
+          <div className="eyebrow">CLAW 42 · DISPATCH CONSOLE</div>
+          <h1 className="title">
+            一笔交易决策 · <span className="accent">11 个角色 · 6 个阶段</span> 协同产出
+          </h1>
+          <p className="subtitle">
+            不是一个 AI 拍脑袋。每一步都有专人，每一次分歧被记录，每一笔结果都回灌下一轮。
+          </p>
+        </div>
+        <div className="meta-row" aria-label="Dispatch process summary">
+          <div className="meta-chip">
+            <span className="meta-num">11</span>
+            <span className="meta-lbl">Agents</span>
+          </div>
+          <div className="meta-chip">
+            <span className="meta-num">6</span>
+            <span className="meta-lbl">Stages</span>
+          </div>
+          <div className="meta-chip">
+            <span className="meta-num">2×</span>
+            <span className="meta-lbl">Debate</span>
+          </div>
+          <div className="meta-chip">
+            <span className="meta-num">∞</span>
+            <span className="meta-lbl">Memory</span>
+          </div>
+        </div>
+      </div>
+      <WatchTabs activeView={activeView} onViewChange={onViewChange} />
+    </header>
+  );
 }
 
 export function DispatchConsoleV9({
@@ -67,20 +91,7 @@ export function DispatchConsoleV9({
 
   return (
     <section className={`${styles.root} dispatch-console-v9`} aria-label="Claw42 dispatch console">
-      <div className="topbar">
-        <div className="brand">
-          <div className="brand-mark" aria-hidden="true" />
-          <span>claw42</span>
-          <span className="brand-sub">DISPATCH · 调度台</span>
-        </div>
-        <WatchTabs activeView={activeView} onViewChange={changeView} />
-        <div className="topbar-spacer" />
-        <span className="live-pill-small" aria-live="polite">
-          <span className="live-dot" aria-hidden="true" />
-          LIVE
-        </span>
-        <Clock />
-      </div>
+      <DispatchPageHeader activeView={activeView} onViewChange={changeView} />
 
       <div
         id="dispatch-panel-flow"
@@ -98,11 +109,7 @@ export function DispatchConsoleV9({
         aria-labelledby="dispatch-tab-mkt"
         hidden={activeView !== "mkt"}
       >
-        <MarketAnalysisView
-          topics={topics}
-          onGotoFlow={() => changeView("flow")}
-          onPlaceholder={handleTopicAction}
-        />
+        <MarketAnalysisView topics={topics} onPlaceholder={handleTopicAction} />
       </div>
       {placeholder ? (
         <div className="follow-placeholder-backdrop" role="presentation">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { apiPath } from "@/lib/basePath";
 import type { HistoryMessageEntry } from "../types";
 
 interface UseAgentHistoryOptions {
@@ -28,7 +29,7 @@ export function useAgentHistory({
     if (!enabled) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/agents/history?limit=${initialLimit}`, {
+      const response = await fetch(apiPath(`/api/agents/history?limit=${initialLimit}`), {
         cache: "no-store",
       });
       if (!response.ok) throw new Error(`history ${response.status}`);

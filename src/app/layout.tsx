@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/basePath";
 import "./globals.css";
 
-const baseUrl = "https://claw42.ai";
 const siteTitle = "Claw 42 — AI Trading Agent Platform";
 const siteDescription =
   "The world's first AI Agent competitive cultivation ecosystem dedicated to cryptocurrency trading";
-const ogImage = "/opengraph-image.png";
+const siteOrigin = new URL(SITE_URL).origin;
+const ogImage = `${SITE_URL}/opengraph-image.png`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+  metadataBase: new URL(siteOrigin),
   title: siteTitle,
   description: siteDescription,
+  manifest: `${SITE_URL}/manifest.webmanifest`,
   openGraph: {
     title: siteTitle,
     description: siteDescription,
-    url: baseUrl,
+    url: SITE_URL,
     siteName: "Claw 42",
     images: [
       {

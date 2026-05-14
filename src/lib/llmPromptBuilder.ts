@@ -23,6 +23,16 @@ export type {
 const AGENT_IP_DIR = path.join(process.cwd(), "docs", "agent-ip");
 const ipDocCache: Partial<Record<FactionId, string>> = {};
 
+function normalizePromptSymbol(symbol: string) {
+  return symbol.trim().replace(/^\$+/, "").toUpperCase();
+}
+
+function normalizePromptSymbols(symbols: string[]) {
+  return Array.from(
+    new Set(symbols.map(normalizePromptSymbol).filter((symbol) => /^[A-Z0-9]{2,12}$/.test(symbol))),
+  );
+}
+
 export async function loadAgentIp(agentId: FactionId): Promise<string> {
   if (ipDocCache[agentId]) return ipDocCache[agentId]!;
   const faction = getFaction(agentId);
@@ -45,7 +55,7 @@ export function seedFromNews(news: NewsItem, createdAt: number): ConversationSee
     type: isGeneratedTopic ? "chitchat" : "news",
     title: news.title,
     description: news.title,
-    symbols: news.currencies.map((symbol) => symbol.replace(/^\$/, "").toUpperCase()),
+    symbols: normalizePromptSymbols(news.currencies),
     sentiment: news.sentiment,
     source: news.source,
     url: news.url,
@@ -72,7 +82,7 @@ function liveMarketBlock(snapshot: TickerSnapshot | null, seed: ConversationSeed
 }
 
 function primarySymbol(seed: ConversationSeed): string {
-  return seed.symbols[0]?.replace(/^\$/, "").toUpperCase() || "BTC";
+  return normalizePromptSymbol(seed.symbols[0] ?? "") || "BTC";
 }
 
 function formatInvariantPrice(value: number | undefined): string {

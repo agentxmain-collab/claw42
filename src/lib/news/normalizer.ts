@@ -1,6 +1,7 @@
 import { generateText } from "@/lib/llm/generateText";
+import { extractCurrenciesFromText, sentimentFromText } from "@/lib/news/adapters/types";
 import type { NewsItem, NewsSentiment } from "@/lib/types";
-import type { NewsSourceId } from "@/lib/news/sourceRegistry";
+import type { NewsChainServedBy } from "@/lib/news/sourceChain";
 
 interface NormalizedFields {
   sentiment?: NewsSentiment;
@@ -15,7 +16,22 @@ function missingFields(item: NewsItem): Array<"sentiment" | "currencies"> {
 }
 
 export function shouldNormalizeNewsItem(item: NewsItem) {
-  return missingFields(item).length > 0;
+  return missingFields(applyLocalNormalization(item)).length > 0;
+}
+
+function applyLocalNormalization(item: NewsItem): NewsItem {
+  const normalizedCurrencies = normalizeCurrencies(item.currencies) ?? [];
+  const currencies =
+    normalizedCurrencies.length > 0
+      ? normalizedCurrencies
+      : extractCurrenciesFromText(item.title, item.source, item.sourceDomain, item.url);
+  const sentiment = item.sentiment === "neutral" ? sentimentFromText(item.title) : item.sentiment;
+
+  return {
+    ...item,
+    currencies,
+    sentiment,
+  };
 }
 
 function parseObject(text: string): Record<string, unknown> {
@@ -36,7 +52,7 @@ function normalizeCurrencies(value: unknown): string[] | undefined {
   return Array.from(
     new Set(
       value
-        .map((item) => String(item).replace(/^\$/, "").toUpperCase().trim())
+        .map((item) => String(item).trim().replace(/^\$+/, "").toUpperCase())
         .filter((item) => /^[A-Z0-9]{2,12}$/.test(item)),
     ),
   ).slice(0, 5);
@@ -65,12 +81,16 @@ Rules:
 - JSON only`;
 }
 
-export async function normalizeNewsItem(item: NewsItem, sourceId: NewsSourceId): Promise<NewsItem> {
-  const missing = missingFields(item);
-  if (missing.length === 0) return item;
+export async function normalizeNewsItem(
+  item: NewsItem,
+  sourceId: NewsChainServedBy,
+): Promise<NewsItem> {
+  const locallyNormalized = applyLocalNormalization(item);
+  const missing = missingFields(locallyNormalized);
+  if (missing.length === 0) return locallyNormalized;
 
   try {
-    const text = await generateText(buildPrompt(item, missing), {
+    const text = await generateText(buildPrompt(locallyNormalized, missing), {
       taskTag: `news:normalizer:${sourceId}`,
       temperature: 0.2,
       maxTokens: 240,
@@ -84,9 +104,9 @@ export async function normalizeNewsItem(item: NewsItem, sourceId: NewsSourceId):
       currencies: normalizeCurrencies(parsed.currencies),
     };
     const next = {
-      ...item,
-      sentiment: fields.sentiment ?? item.sentiment,
-      currencies: fields.currencies?.length ? fields.currencies : item.currencies,
+      ...locallyNormalized,
+      sentiment: fields.sentiment ?? locallyNormalized.sentiment,
+      currencies: fields.currencies?.length ? fields.currencies : locallyNormalized.currencies,
     };
 
     console.info(
@@ -102,6 +122,6 @@ export async function normalizeNewsItem(item: NewsItem, sourceId: NewsSourceId):
     if (process.env.NODE_ENV !== "production") {
       console.warn("[news] normalizer skipped", error);
     }
-    return item;
+    return locallyNormalized;
   }
 }

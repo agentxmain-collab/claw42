@@ -1,20 +1,26 @@
 "use client";
 
+import React from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/i18n/I18nProvider";
+import { stripBasePathFromPathname, withBasePath } from "@/lib/basePath";
 import { LocaleDropdown } from "./LocaleDropdown";
 
 export function SiteHeader() {
   const { locale, t } = useI18n();
   const pathname = usePathname();
-
-  if (pathname?.endsWith("/agent")) return null;
+  const appPathname = stripBasePathFromPathname(pathname);
+  const isAgentRoute = appPathname.split("/").filter(Boolean)[1] === "agent";
+  const agentLinkClassName = [
+    "hidden h-11 items-center rounded-full px-4 text-sm font-semibold transition-all hover:bg-white/[0.08] hover:text-white md:inline-flex",
+    isAgentRoute ? "bg-white/[0.08] text-white" : "text-white/80",
+  ].join(" ");
 
   return (
     <nav className="fixed left-0 right-0 top-0 z-[80] h-[72px] border-b border-white/[0.06] bg-black/80 backdrop-blur-xl">
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between px-6 md:px-10 lg:px-16">
-        <a href={`/${locale}`} className="flex shrink-0 items-center gap-3">
+        <a href={withBasePath(`/${locale}`)} className="flex shrink-0 items-center gap-3">
           {/*
            * 双层叠加：底层完整 logo（深灰线条 + 蓝色），顶层仅蓝色像素分离版加 drop-shadow 呼吸。
            * glow 只从眼睛/嘴/42 这些蓝色部分发出，深灰线条不参与发光。
@@ -22,7 +28,7 @@ export function SiteHeader() {
            */}
           <span className="relative inline-block h-14 md:h-[60px] lg:h-16">
             <Image
-              src="/images/brand/claw42-horizontal.png"
+              src={withBasePath("/images/brand/claw42-horizontal.png")}
               alt="Claw 42"
               width={270}
               height={90}
@@ -30,7 +36,7 @@ export function SiteHeader() {
               className="relative h-full w-auto object-contain"
             />
             <Image
-              src="/images/brand/claw42-horizontal-blue.png"
+              src={withBasePath("/images/brand/claw42-horizontal-blue.png")}
               alt=""
               aria-hidden="true"
               width={270}
@@ -43,8 +49,9 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-3">
           <a
-            href={`/${locale}/agent`}
-            className="hidden h-11 items-center rounded-full px-4 text-sm font-semibold text-white/80 transition-all hover:bg-white/[0.08] hover:text-white md:inline-flex"
+            href={withBasePath(`/${locale}/agent`)}
+            className={agentLinkClassName}
+            aria-current={isAgentRoute ? "page" : undefined}
           >
             <span className="relative flex items-center gap-2">
               <span className="bg-cw-green h-2 w-2 animate-pulse rounded-full" />

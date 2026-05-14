@@ -14,6 +14,7 @@ Task 15 used CryptoPanic as the single news intake source. Task 16 research foun
 - Move CryptoPanic to `status: "standby"` in `NEWS_SOURCE_REGISTRY`.
 - Do not include standby sources in the default SourceChain.
 - Allow standby activation only through `NEWS_ENABLE_STANDBY_SOURCES=1`.
+- If CryptoPanic must become the first source during standby rollback, set both `NEWS_ENABLE_STANDBY_SOURCES=1` and `NEWS_PRIMARY_SOURCE=cryptopanic`.
 - Delete the legacy direct `src/lib/api/cryptopanic.ts` entrypoint so production code consumes SourceChain consistently.
 
 ## Consequences
@@ -31,7 +32,7 @@ Task 15 used CryptoPanic as the single news intake source. Task 16 research foun
 
 **Rollback**
 
-Set `NEWS_ENABLE_STANDBY_SOURCES=1`, or promote CryptoPanic back to `active` in `NEWS_SOURCE_REGISTRY` if Dan explicitly decides to use it again.
+Set `NEWS_ENABLE_STANDBY_SOURCES=1` to add CryptoPanic to the end of the chain, set `NEWS_PRIMARY_SOURCE=cryptopanic` as well to make it first, or promote CryptoPanic back to `active` in `NEWS_SOURCE_REGISTRY` if Dan explicitly decides to use it again.
 
 ## References
 

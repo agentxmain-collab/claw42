@@ -97,7 +97,8 @@ export interface DispatchTopic {
   symbol: string;
   status: DispatchTopicStatus;
   title: string;
-  originalUrl: string;
+  originalUrl?: string;
+  sourceLabel?: string;
   startedAt: string;
   progress: string;
   intensity: number;

@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCALES, matchLocale } from "./i18n/locales";
+import { stripBasePathFromPathname } from "./lib/basePath";
 import { agentWatchRedirectPath } from "./modules/agent-watch/locale";
 
 const LOCALE_COOKIE = "claw42-locale";
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const pathname = stripBasePathFromPathname(request.nextUrl.pathname);
 
   const hasLocale = LOCALES.some(
     (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
