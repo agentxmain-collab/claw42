@@ -9,8 +9,14 @@ export function useStageEntryAnimation(containerRef: RefObject<HTMLElement>) {
     const cards = Array.from(container.querySelectorAll<HTMLElement>(".fstage4"));
     if (cards.length === 0) return;
 
+    const revealAll = () => {
+      cards.forEach((card, index) => {
+        window.setTimeout(() => card.classList.add("in-view"), index * 90);
+      });
+    };
+
     if (!("IntersectionObserver" in window)) {
-      cards.forEach((card) => card.classList.add("in-view"));
+      revealAll();
       return;
     }
 
@@ -31,6 +37,10 @@ export function useStageEntryAnimation(containerRef: RefObject<HTMLElement>) {
     );
 
     cards.forEach((card) => observer.observe(card));
-    return () => observer.disconnect();
+    const fallbackTimer = window.setTimeout(revealAll, 900);
+    return () => {
+      window.clearTimeout(fallbackTimer);
+      observer.disconnect();
+    };
   }, [containerRef]);
 }
