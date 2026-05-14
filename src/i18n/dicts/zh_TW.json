@@ -347,6 +347,293 @@
     },
     "citationChip": {
       "sourceUnavailable": "來源暫不可用"
+    },
+    "dispatchV10": {
+      "ariaLabel": "Claw42 调度台",
+      "hero": {
+        "ariaLabel": "Claw42 交易决策流介绍",
+        "eyebrow": "claw 42 · dispatch console",
+        "titlePrefix": "一筆交易決策 ·",
+        "titleAccent": "11 個角色 · 6 個階段",
+        "titleSuffix": "協同產出",
+        "subtitle": "不是一個 AI 拍腦袋。<b>每一步都有專人</b>，每一次分歧被記錄，每一筆結果都回灌下一輪。",
+        "metaAriaLabel": "交易决策流程摘要",
+        "meta": [
+          {
+            "value": "11",
+            "label": "Agents"
+          },
+          {
+            "value": "6",
+            "label": "Stages"
+          },
+          {
+            "value": "2×",
+            "label": "Debate"
+          },
+          {
+            "value": "∞",
+            "label": "Memory"
+          }
+        ]
+      },
+      "tabs": {
+        "flow": "流程介紹",
+        "market": "行情分析",
+        "live": "LIVE"
+      },
+      "roles": {
+        "fundamental": {
+          "name": "基本面研究主管",
+          "role": "Fundamentals",
+          "desc": "财务 / 内在价值 / red flags",
+          "readoutRole": "基本面研究主管",
+          "stat": "briefs · 4 / 24h"
+        },
+        "onchain": {
+          "name": "链上数据分析主管",
+          "role": "On-chain",
+          "desc": "地址行为 / 资金流 / 链上活跃度",
+          "readoutRole": "链上数据分析主管",
+          "stat": "signals · 12 / 24h"
+        },
+        "news": {
+          "name": "宏观情报分析师",
+          "role": "News",
+          "desc": "全球新闻 / 宏观 / 事件",
+          "readoutRole": "宏观情报分析师",
+          "stat": "feeds · 38 / 24h"
+        },
+        "technical": {
+          "name": "技术策略主管",
+          "role": "Technical",
+          "desc": "MACD / RSI / 价格模式",
+          "readoutRole": "技术策略主管",
+          "stat": "signals · 22 / 24h"
+        },
+        "bullish": {
+          "name": "多头策略师",
+          "role": "Bullish",
+          "desc": "立论看多 / 守住牛市观点",
+          "readoutRole": "多头策略师",
+          "stat": "argued · 9 cases"
+        },
+        "bearish": {
+          "name": "空头策略师",
+          "role": "Bearish",
+          "desc": "立论看空 / 守住熊市观点",
+          "readoutRole": "空头策略师",
+          "stat": "argued · 9 cases"
+        },
+        "trader": {
+          "name": "交易策略总监",
+          "role": "Trader",
+          "desc": "综合简报 + 辩论 → 可执行方案",
+          "readoutRole": "交易策略总监",
+          "stat": "proposed · 6"
+        },
+        "aggressive": {
+          "name": "收益进攻官",
+          "role": "Aggressive",
+          "desc": "高仓位 / 追求最大收益",
+          "readoutRole": "收益进攻官",
+          "stat": "reviews · 6"
+        },
+        "neutral": {
+          "name": "组合平衡官",
+          "role": "Neutral",
+          "desc": "平衡仓位 / 风险均衡",
+          "readoutRole": "组合平衡官",
+          "stat": "reviews · 6"
+        },
+        "conservative": {
+          "name": "风险防御官",
+          "role": "Conservative",
+          "desc": "低仓位 / 守住下行风险",
+          "readoutRole": "风险防御官",
+          "stat": "reviews · 6"
+        },
+        "portfolioManager": {
+          "name": "首席投资官",
+          "role": "Portfolio Manager",
+          "desc": "全组合视角 · 二元裁决",
+          "readoutRole": "首席投资官",
+          "stat": "decisions · 3"
+        },
+        "memoryLoop": {
+          "name": "策略复盘主管",
+          "role": "Reflection",
+          "desc": "每次决策都让系统更聪明",
+          "readoutRole": "策略复盘主管",
+          "stat": "lessons · rolling"
+        }
+      },
+      "flow": {
+        "ariaLabel": "六阶段交易决策流程",
+        "stages": [
+          {
+            "name": "信息收集",
+            "tag": "ANALYSTS",
+            "countLabel": "并行采集",
+            "footerChip": "独立简报 · 不互相干扰",
+            "detail": [
+              {
+                "label": "输入",
+                "value": "4 类原始信号源"
+              },
+              {
+                "label": "流程",
+                "value": "4 位研究角色并行 / 互不干扰"
+              },
+              {
+                "label": "输出",
+                "value": "4 份独立简报 + 证据链"
+              }
+            ]
+          },
+          {
+            "name": "多空辩论",
+            "tag": "RESEARCHERS",
+            "countLabel": "多轮辩论",
+            "footerChip": "多轮 debate · 拿出最强论据",
+            "detail": [
+              {
+                "label": "输入",
+                "value": "4 份研究简报"
+              },
+              {
+                "label": "流程",
+                "value": "多轮立论 / 反驳 / 压力测试"
+              },
+              {
+                "label": "输出",
+                "value": "辩论纪要 + 双方核心证据"
+              }
+            ]
+          },
+          {
+            "name": "交易方案",
+            "tag": "TRADER",
+            "countLabel": "综合输出",
+            "footerChip": "方向 · 时机 · 仓位 · 止损",
+            "detail": [
+              {
+                "label": "输入",
+                "value": "4 简报 + 多空辩论纪要"
+              },
+              {
+                "label": "决策",
+                "value": "方向 / 时机 / 仓位 / 止损"
+              },
+              {
+                "label": "边界",
+                "value": "失效条件 + 风险线"
+              }
+            ]
+          },
+          {
+            "name": "风险审查",
+            "tag": "RISK REVIEW",
+            "countLabel": "三派审查",
+            "footerChip": "波动 · 流动性 · 相关性",
+            "detail": [
+              {
+                "label": "维度",
+                "value": "波动性 / 流动性 / 相关性"
+              },
+              {
+                "label": "流程",
+                "value": "三派多轮辩论 / 修订方案"
+              },
+              {
+                "label": "输出",
+                "value": "含风险边界的最终建议"
+              }
+            ]
+          },
+          {
+            "name": "最终决策",
+            "tag": "PORTFOLIO MANAGER",
+            "countLabel": "终审裁决",
+            "footerChip": "批准送执行 · 拒绝落档",
+            "detail": [
+              {
+                "label": "视角",
+                "value": "全组合 + 风险预算 + 相关性"
+              },
+              {
+                "label": "批准",
+                "value": "送交易所执行"
+              },
+              {
+                "label": "拒绝",
+                "value": "落档进入复盘库"
+              }
+            ]
+          },
+          {
+            "name": "复盘沉淀",
+            "tag": "MEMORY LOOP",
+            "countLabel": "持续沉淀",
+            "footerChip": "cross-run · reflection",
+            "detail": [
+              {
+                "label": "落盘",
+                "value": "决策档案全量存档"
+              },
+              {
+                "label": "回灌",
+                "value": "历史经验注入下次 prompt"
+              },
+              {
+                "label": "复利",
+                "value": "跨标的教训 / 越跑越懂"
+              }
+            ]
+          }
+        ],
+        "footerStrong": "每一步都有专人",
+        "footerText": "每一次分歧被記錄 · 每一筆結果被複盤",
+        "footerCta": "查看实时 AI 团队工作 →"
+      },
+      "market": {
+        "ariaLabel": "AI 团队工作台",
+        "title": "AI 团队工作台",
+        "subtitle": "实时交易决策流 · 自动更新",
+        "statsAriaLabel": "决策流状态摘要",
+        "hot": "熱點",
+        "closed": "已閉環",
+        "debating": "辯論中",
+        "started": "起步",
+        "empty": "暫無決策更新",
+        "statusDone": "已闭环",
+        "statusPending": "起步中",
+        "statusActive": "LIVE 辯論",
+        "collapse": "收起",
+        "expand": "展开",
+        "original": "原文 →",
+        "progressAriaLabel": "决策流程进度",
+        "progressLabels": [
+          "01 信息收集",
+          "02 多空辩论",
+          "03 交易方案",
+          "04 风险审查",
+          "05 最终决策",
+          "06 复盘沉淀"
+        ],
+        "latestStrategy": "最新策略",
+        "entry": "入场",
+        "stopLoss": "止损",
+        "takeProfit": "止盈",
+        "watchReminder": "人订阅提醒",
+        "watchCount": "人在看",
+        "followed": "已跟單"
+      },
+      "placeholder": {
+        "title": "跟单功能开发中",
+        "body": "已记录「{action}」占位操作。当前版本不执行交易，后续会接入授权和风险确认流程。",
+        "close": "返回调度台"
+      }
     }
   },
   "coinModal": {

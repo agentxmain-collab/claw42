@@ -347,6 +347,293 @@
     },
     "citationChip": {
       "sourceUnavailable": "Source unavailable"
+    },
+    "dispatchV10": {
+      "ariaLabel": "Claw42 dispatch console",
+      "hero": {
+        "ariaLabel": "Claw42 trade decision flow",
+        "eyebrow": "claw 42 · dispatch console",
+        "titlePrefix": "One trade decision ·",
+        "titleAccent": "11 roles · 6 stages",
+        "titleSuffix": "produced together",
+        "subtitle": "Not one AI guessing. <b>Every step has an owner</b>, every disagreement is recorded, and every result feeds the next round.",
+        "metaAriaLabel": "Trade decision flow summary",
+        "meta": [
+          {
+            "value": "11",
+            "label": "Agents"
+          },
+          {
+            "value": "6",
+            "label": "Stages"
+          },
+          {
+            "value": "2×",
+            "label": "Debate"
+          },
+          {
+            "value": "∞",
+            "label": "Memory"
+          }
+        ]
+      },
+      "tabs": {
+        "flow": "Process",
+        "market": "Market Analysis",
+        "live": "LIVE"
+      },
+      "roles": {
+        "fundamental": {
+          "name": "Fundamental Research Lead",
+          "role": "Fundamentals",
+          "desc": "Financials / intrinsic value / red flags",
+          "readoutRole": "Fundamental Research Lead",
+          "stat": "briefs · 4 / 24h"
+        },
+        "onchain": {
+          "name": "On-chain Data Lead",
+          "role": "On-chain",
+          "desc": "Address behavior / flows / activity",
+          "readoutRole": "On-chain Data Lead",
+          "stat": "signals · 12 / 24h"
+        },
+        "news": {
+          "name": "Macro Intelligence Analyst",
+          "role": "News",
+          "desc": "Global news / macro / events",
+          "readoutRole": "Macro Intelligence Analyst",
+          "stat": "feeds · 38 / 24h"
+        },
+        "technical": {
+          "name": "Technical Strategy Lead",
+          "role": "Technical",
+          "desc": "MACD / RSI / price structure",
+          "readoutRole": "Technical Strategy Lead",
+          "stat": "signals · 22 / 24h"
+        },
+        "bullish": {
+          "name": "Bullish Strategist",
+          "role": "Bullish",
+          "desc": "Build and defend the bull case",
+          "readoutRole": "Bullish Strategist",
+          "stat": "argued · 9 cases"
+        },
+        "bearish": {
+          "name": "Bearish Strategist",
+          "role": "Bearish",
+          "desc": "Build and defend the bear case",
+          "readoutRole": "Bearish Strategist",
+          "stat": "argued · 9 cases"
+        },
+        "trader": {
+          "name": "Trade Strategy Director",
+          "role": "Trader",
+          "desc": "Briefs + debate → executable plan",
+          "readoutRole": "Trade Strategy Director",
+          "stat": "proposed · 6"
+        },
+        "aggressive": {
+          "name": "Return Offense Officer",
+          "role": "Aggressive",
+          "desc": "Higher exposure / maximize upside",
+          "readoutRole": "Return Offense Officer",
+          "stat": "reviews · 6"
+        },
+        "neutral": {
+          "name": "Portfolio Balance Officer",
+          "role": "Neutral",
+          "desc": "Balanced exposure / risk parity",
+          "readoutRole": "Portfolio Balance Officer",
+          "stat": "reviews · 6"
+        },
+        "conservative": {
+          "name": "Risk Defense Officer",
+          "role": "Conservative",
+          "desc": "Lower exposure / protect downside",
+          "readoutRole": "Risk Defense Officer",
+          "stat": "reviews · 6"
+        },
+        "portfolioManager": {
+          "name": "Chief Investment Officer",
+          "role": "Portfolio Manager",
+          "desc": "Portfolio-level view · binary call",
+          "readoutRole": "Chief Investment Officer",
+          "stat": "decisions · 3"
+        },
+        "memoryLoop": {
+          "name": "Strategy Review Lead",
+          "role": "Reflection",
+          "desc": "Every decision improves the system",
+          "readoutRole": "Strategy Review Lead",
+          "stat": "lessons · rolling"
+        }
+      },
+      "flow": {
+        "ariaLabel": "Six-stage trade decision flow",
+        "stages": [
+          {
+            "name": "Signal Intake",
+            "tag": "ANALYSTS",
+            "countLabel": "Parallel collection",
+            "footerChip": "Independent briefs · no cross-talk",
+            "detail": [
+              {
+                "label": "Input",
+                "value": "4 raw signal families"
+              },
+              {
+                "label": "Process",
+                "value": "4 research roles in parallel"
+              },
+              {
+                "label": "Output",
+                "value": "4 independent briefs + evidence trail"
+              }
+            ]
+          },
+          {
+            "name": "Bull / Bear Debate",
+            "tag": "RESEARCHERS",
+            "countLabel": "Multi-round debate",
+            "footerChip": "Debate rounds · strongest arguments",
+            "detail": [
+              {
+                "label": "Input",
+                "value": "4 research briefs"
+              },
+              {
+                "label": "Process",
+                "value": "Claims / rebuttals / stress test"
+              },
+              {
+                "label": "Output",
+                "value": "Debate memo + key evidence"
+              }
+            ]
+          },
+          {
+            "name": "Trade Plan",
+            "tag": "TRADER",
+            "countLabel": "Synthesis output",
+            "footerChip": "Direction · timing · size · stop",
+            "detail": [
+              {
+                "label": "Input",
+                "value": "Briefs + debate memo"
+              },
+              {
+                "label": "Decision",
+                "value": "Direction / timing / size / stop"
+              },
+              {
+                "label": "Boundary",
+                "value": "Invalidation + risk line"
+              }
+            ]
+          },
+          {
+            "name": "Risk Review",
+            "tag": "RISK REVIEW",
+            "countLabel": "Three-way review",
+            "footerChip": "Volatility · liquidity · correlation",
+            "detail": [
+              {
+                "label": "Lens",
+                "value": "Volatility / liquidity / correlation"
+              },
+              {
+                "label": "Process",
+                "value": "Three risk stances revise the plan"
+              },
+              {
+                "label": "Output",
+                "value": "Final proposal with risk boundary"
+              }
+            ]
+          },
+          {
+            "name": "Final Decision",
+            "tag": "PORTFOLIO MANAGER",
+            "countLabel": "Final call",
+            "footerChip": "Approve to execution · reject to archive",
+            "detail": [
+              {
+                "label": "View",
+                "value": "Portfolio + risk budget + correlation"
+              },
+              {
+                "label": "Approve",
+                "value": "Send to exchange execution"
+              },
+              {
+                "label": "Reject",
+                "value": "Archive for review library"
+              }
+            ]
+          },
+          {
+            "name": "Review Memory",
+            "tag": "MEMORY LOOP",
+            "countLabel": "Continuous learning",
+            "footerChip": "cross-run · reflection",
+            "detail": [
+              {
+                "label": "Archive",
+                "value": "Full decision record stored"
+              },
+              {
+                "label": "Feedback",
+                "value": "Lessons injected into next prompt"
+              },
+              {
+                "label": "Compounding",
+                "value": "Cross-symbol lessons accumulate"
+              }
+            ]
+          }
+        ],
+        "footerStrong": "Every step has an owner",
+        "footerText": "Every disagreement is recorded · every result is reviewed",
+        "footerCta": "View live AI team work →"
+      },
+      "market": {
+        "ariaLabel": "AI team workspace",
+        "title": "AI Team Workspace",
+        "subtitle": "Live trade decision flow · auto-updating",
+        "statsAriaLabel": "Decision flow status summary",
+        "hot": "Topics",
+        "closed": "Closed",
+        "debating": "Debating",
+        "started": "Started",
+        "empty": "No decision updates yet",
+        "statusDone": "Closed",
+        "statusPending": "Starting",
+        "statusActive": "LIVE Debate",
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "original": "Source →",
+        "progressAriaLabel": "Decision progress",
+        "progressLabels": [
+          "01 Signal Intake",
+          "02 Debate",
+          "03 Trade Plan",
+          "04 Risk Review",
+          "05 Final Call",
+          "06 Review Memory"
+        ],
+        "latestStrategy": "Latest Strategy",
+        "entry": "Entry",
+        "stopLoss": "Stop",
+        "takeProfit": "Target",
+        "watchReminder": "watch alerts",
+        "watchCount": "watching",
+        "followed": "followed"
+      },
+      "placeholder": {
+        "title": "Copy-trading is in development",
+        "body": "Recorded the placeholder action \"{action}\". This version does not execute trades; authorization and risk confirmation will be connected later.",
+        "close": "Back to console"
+      }
     }
   },
   "coinModal": {

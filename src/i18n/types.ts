@@ -71,6 +71,94 @@ export type TeamDict = Record<TeamMemberId, TeamMemberDict> & {
   workflowNode: TeamWorkflowNodeDict;
 };
 
+export type DispatchV10AgentRoleId =
+  | "fundamental"
+  | "onchain"
+  | "news"
+  | "technical"
+  | "bullish"
+  | "bearish"
+  | "trader"
+  | "aggressive"
+  | "neutral"
+  | "conservative"
+  | "portfolioManager"
+  | "memoryLoop";
+
+export type DispatchV10RoleDict = {
+  name: string;
+  role: string;
+  desc: string;
+  readoutRole: string;
+  stat: string;
+};
+
+export type DispatchV10StageDict = {
+  name: string;
+  tag: string;
+  countLabel: string;
+  footerChip: string;
+  detail: Array<{ label: string; value: string }>;
+};
+
+export type DispatchV10Dict = {
+  ariaLabel: string;
+  hero: {
+    ariaLabel: string;
+    eyebrow: string;
+    titlePrefix: string;
+    titleAccent: string;
+    titleSuffix: string;
+    subtitle: string;
+    metaAriaLabel: string;
+    meta: Array<{ value: string; label: string }>;
+  };
+  tabs: {
+    flow: string;
+    market: string;
+    live: string;
+  };
+  roles: Record<DispatchV10AgentRoleId, DispatchV10RoleDict>;
+  flow: {
+    ariaLabel: string;
+    stages: DispatchV10StageDict[];
+    footerStrong: string;
+    footerText: string;
+    footerCta: string;
+  };
+  market: {
+    ariaLabel: string;
+    title: string;
+    subtitle: string;
+    statsAriaLabel: string;
+    hot: string;
+    closed: string;
+    debating: string;
+    started: string;
+    empty: string;
+    statusDone: string;
+    statusPending: string;
+    statusActive: string;
+    collapse: string;
+    expand: string;
+    original: string;
+    progressAriaLabel: string;
+    progressLabels: string[];
+    latestStrategy: string;
+    entry: string;
+    stopLoss: string;
+    takeProfit: string;
+    watchReminder: string;
+    watchCount: string;
+    followed: string;
+  };
+  placeholder: {
+    title: string;
+    body: string;
+    close: string;
+  };
+};
+
 export interface Dict {
   nav: {
     switchLangToEn: string; // 当前中文时按钮显示
@@ -284,6 +372,7 @@ export interface Dict {
       newsTab: string;
       noNews: string;
     };
+    dispatchV10: DispatchV10Dict;
   };
   rating: RatingDict;
   coinModal: {
