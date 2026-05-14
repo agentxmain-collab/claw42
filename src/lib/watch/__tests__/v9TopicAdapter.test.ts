@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
+import arSA from "@/i18n/dicts/ar_SA.json";
+import enUS from "@/i18n/dicts/en_US.json";
+import jaJP from "@/i18n/dicts/ja_JP.json";
+import zhCN from "@/i18n/dicts/zh_CN.json";
+import type { Dict, DispatchV10OutcomeDict, Locale } from "@/i18n/types";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
-import { mapPublicTimelineEventsToTopics } from "@/lib/watch/v9TopicAdapter";
+import { mapPublicTimelineEventsToTopics, type V9AdapterContext } from "@/lib/watch/v9TopicAdapter";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 
 const now = Date.UTC(2026, 4, 13, 8, 0, 0);
@@ -41,6 +46,26 @@ const evidence: NewsEvidence = {
   impactSeverity: "high",
   summary: "ETF outflows rise and support is under pressure",
 };
+
+const OUTCOME_DICTS: Record<"zh_CN" | "en_US" | "ja_JP" | "ar_SA", DispatchV10OutcomeDict> = {
+  zh_CN: (zhCN as Dict).agentWatch.dispatchV10.outcome,
+  en_US: (enUS as Dict).agentWatch.dispatchV10.outcome,
+  ja_JP: (jaJP as Dict).agentWatch.dispatchV10.outcome,
+  ar_SA: (arSA as Dict).agentWatch.dispatchV10.outcome,
+};
+
+function outcomeDictFor(locale: Locale) {
+  return OUTCOME_DICTS[(locale as keyof typeof OUTCOME_DICTS) ?? "zh_CN"] ?? OUTCOME_DICTS.zh_CN;
+}
+
+function mapTopics(
+  ctx: Omit<V9AdapterContext, "outcomeDict"> & { outcomeDict?: DispatchV10OutcomeDict },
+) {
+  return mapPublicTimelineEventsToTopics({
+    ...ctx,
+    outcomeDict: ctx.outcomeDict ?? outcomeDictFor(ctx.locale),
+  });
+}
 
 function pmDecision(overrides: Partial<PublicTimelineEvent> = {}): PublicTimelineEvent {
   return {
@@ -82,9 +107,40 @@ function pmDecisionWithRecordId(recordId: string, overrides: Partial<PublicTimel
   };
 }
 
+function withResolution(
+  outcome: NonNullable<
+    Extract<PublicTimelineEvent["payload"], { kind: "pm_decision" }>["resolution"]
+  >["outcome"],
+  overrides: Partial<
+    NonNullable<Extract<PublicTimelineEvent["payload"], { kind: "pm_decision" }>["resolution"]>
+  > = {},
+): PublicTimelineEvent {
+  const event = pmDecision();
+  if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      resolution: {
+        outcome,
+        resolvedAt: new Date(now + 30 * 60_000).toISOString(),
+        observedPrice: 78000,
+        observedPriceSource: "coinw-kline",
+        reason:
+          outcome === "hit_sl"
+            ? "stop_loss_reached"
+            : outcome === "expired"
+              ? "evaluation_window_elapsed"
+              : "take_profit_reached",
+        ...overrides,
+      },
+    },
+  };
+}
+
 describe("mapPublicTimelineEventsToTopics", () => {
   it("adapts a real pm_decision event into a v9 dispatch topic", () => {
-    const [topic] = mapPublicTimelineEventsToTopics({
+    const [topic] = mapTopics({
       events: [pmDecision()],
       evidenceMap: { ev_1: evidence },
       followStatsByRecordId: {
@@ -141,9 +197,23 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect("source" in topic).toBe(false);
   });
 
+  it("localizes pending memory-loop notes for unresolved decisions", () => {
+    const [topic] = mapTopics({
+      events: [pmDecision()],
+      locale: "en_US",
+      now,
+    });
+
+    expect(topic.stages[5]).toMatchObject({
+      label: "阶段 6 · 复盘沉淀",
+      status: "pending",
+      note: "No review memory yet; awaiting outcome writeback.",
+    });
+  });
+
   it("ignores non pm_decision events", () => {
     expect(
-      mapPublicTimelineEventsToTopics({
+      mapTopics({
         events: [
           { ...pmDecision(), payload: { kind: "news", evidenceId: "ev_1", symbols: ["BTC"] } },
         ],
@@ -154,7 +224,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
   });
 
   it("uses the latest decision when multiple decisions aggregate into one topic", () => {
-    const topics = mapPublicTimelineEventsToTopics({
+    const topics = mapTopics({
       events: [
         pmDecisionWithRecordId("old-record", {
           id: "old-event",
@@ -208,7 +278,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       },
     });
 
-    const topics = mapPublicTimelineEventsToTopics({
+    const topics = mapTopics({
       events: [btcEvent, ethEvent],
       locale: "zh_CN",
       now,
@@ -254,7 +324,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       }),
     );
 
-    const topics = mapPublicTimelineEventsToTopics({
+    const topics = mapTopics({
       events,
       locale: "zh_CN",
       now,
@@ -278,7 +348,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
   it("marks incomplete PM decisions with rationale as active analysis", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
-    const [topic] = mapPublicTimelineEventsToTopics({
+    const [topic] = mapTopics({
       events: [
         {
           ...event,
@@ -306,7 +376,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
   it("keeps empty incomplete PM decisions pending instead of active", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
-    const [topic] = mapPublicTimelineEventsToTopics({
+    const [topic] = mapTopics({
       events: [
         {
           ...event,
@@ -339,7 +409,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
   it("keeps legacy PM events without rationale map pending", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
-    const [topic] = mapPublicTimelineEventsToTopics({
+    const [topic] = mapTopics({
       events: [
         {
           ...event,
@@ -368,7 +438,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
   it("keeps malformed trade decisions active instead of rendering a completed strategy", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
-    const [topic] = mapPublicTimelineEventsToTopics({
+    const [topic] = mapTopics({
       events: [
         {
           ...event,
@@ -403,7 +473,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
   it("keeps trade decisions with malformed price fields active instead of crashing", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
-    const [topic] = mapPublicTimelineEventsToTopics({
+    const [topic] = mapTopics({
       events: [
         {
           ...event,
@@ -436,7 +506,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
 
-    const [topic] = mapPublicTimelineEventsToTopics({
+    const [topic] = mapTopics({
       events: [
         {
           ...event,
@@ -475,8 +545,63 @@ describe("mapPublicTimelineEventsToTopics", () => {
     );
   });
 
+  it.each([
+    ["hit_sl", "Result **stop loss hit**", "stop-loss threshold reached"],
+    ["expired", "Result **evaluation window expired**", "evaluation window elapsed"],
+    ["manual_close", "Result **manually closed**", "manual_close"],
+  ] as const)("renders %s memory-loop outcomes with en_US copy", (outcome, copy, reason) => {
+    const [topic] = mapTopics({
+      events: [
+        withResolution(outcome, outcome === "manual_close" ? { reason: undefined } : undefined),
+      ],
+      locale: "en_US",
+      now,
+    });
+
+    const content = topic.messages.find((message) => message.agentId === "memory_loop")?.content;
+    expect(content).toContain(copy);
+    expect(content).not.toMatch(/[止损盈平]/);
+    if (outcome === "manual_close") expect(content).not.toContain(reason);
+    else expect(content).toContain(reason);
+  });
+
+  it.each(["hit_tp", "hit_sl", "expired", "manual_close"] as const)(
+    "localizes %s memory-loop copy across locale matrix",
+    (outcome) => {
+      for (const locale of ["zh_CN", "en_US", "ja_JP", "ar_SA"] as const) {
+        const [topic] = mapTopics({
+          events: [
+            withResolution(outcome, outcome === "manual_close" ? { reason: undefined } : undefined),
+          ],
+          locale,
+          now,
+        });
+        const content = topic.messages.find(
+          (message) => message.agentId === "memory_loop",
+        )?.content;
+
+        expect(content).toBeTruthy();
+        if (locale !== "zh_CN") {
+          expect(content).not.toMatch(/[止损盈平]/);
+        }
+      }
+    },
+  );
+
+  it("falls back to the pending memory copy for dirty outcome values", () => {
+    const [topic] = mapTopics({
+      events: [withResolution("dirty" as "hit_tp")],
+      locale: "en_US",
+      now,
+    });
+
+    expect(topic.messages.find((message) => message.agentId === "memory_loop")?.content).toBe(
+      "No review memory yet; awaiting outcome writeback.",
+    );
+  });
+
   it("does not create a source link when no evidence url is available", () => {
-    const [topic] = mapPublicTimelineEventsToTopics({
+    const [topic] = mapTopics({
       events: [pmDecision()],
       locale: "zh_CN",
       now,
@@ -488,7 +613,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
   });
 
   it("does not create a source link from blank evidence urls", () => {
-    const [topic] = mapPublicTimelineEventsToTopics({
+    const [topic] = mapTopics({
       events: [pmDecision()],
       evidenceMap: {
         ev_1: {
