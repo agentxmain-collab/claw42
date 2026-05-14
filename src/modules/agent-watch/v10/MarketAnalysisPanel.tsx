@@ -285,7 +285,7 @@ export function MarketAnalysisPanel({
   const pendingCount = resolvedTopics.filter((topic) => topic.status === "pending").length;
 
   return (
-    <div className={v9Styles.root}>
+    <div className={`${v9Styles.root} v10-market-root`}>
       <section className="chat-shell" aria-label={dict.market.ariaLabel}>
         <div className="chat-shell-head">
           <div className="cs-head-left">

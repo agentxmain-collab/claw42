@@ -1209,6 +1209,12 @@
   background: var(--card);
 }
 
+.dispatchConsoleV10 :global(.v10-market-root) {
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
+}
+
 .dispatchConsoleV10 :global(.chat-shell-head) {
   background: rgb(82 39 255 / 6%);
 }
