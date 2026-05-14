@@ -60,21 +60,7 @@
   pointer-events: none;
   background:
     radial-gradient(ellipse 56% 70% at 72% 52%, rgb(124 92 255 / 34%), transparent 60%),
-    radial-gradient(ellipse 30% 14% at 70% 92%, rgb(209 255 85 / 18%), transparent 70%),
     radial-gradient(ellipse 50% 80% at 28% 100%, rgb(82 39 255 / 16%), transparent 70%);
-}
-
-.dispatchConsoleV10 :global(.hero::after) {
-  content: "";
-  position: absolute;
-  inset: -20px;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgb(255 255 255 / 1.8%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 1.8%) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 70% 100% at 60% 50%, #000 30%, transparent 80%);
 }
 
 .dispatchConsoleV10 :global(.hero-left) {
@@ -303,8 +289,8 @@
   border-radius: 50%;
   background: radial-gradient(
     ellipse at 50% 35%,
-    rgb(209 255 85 / 18%),
-    rgb(124 92 255 / 16%) 38%,
+    rgb(124 92 255 / 20%),
+    rgb(124 92 255 / 12%) 42%,
     transparent 70%
   );
   mask: linear-gradient(180deg, #000 55%, transparent);
@@ -464,20 +450,20 @@
 }
 
 .dispatchConsoleV10 :global(.anode.tier-a) {
-  --size: 60px;
+  --size: 68px;
 
   z-index: 5;
 }
 
 .dispatchConsoleV10 :global(.anode.tier-b) {
-  --size: 44px;
+  --size: 50px;
 
   z-index: 4;
   opacity: 0.95;
 }
 
 .dispatchConsoleV10 :global(.anode.tier-c) {
-  --size: 38px;
+  --size: 44px;
 
   z-index: 3;
   opacity: 0.78;
