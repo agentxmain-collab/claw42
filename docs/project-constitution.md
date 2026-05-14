@@ -96,9 +96,9 @@
 
 ---
 
-*版本：v0.1 (2026-05-13 首发，基于 v2.5 共建 Codex 草案 § 6a + zd 第 2-4 轮整合 + Dan 终审 APPROVED)*
-*Amendment v0.1.1 (2026-05-14 — Rule 2 amend，双发布线认知，Dan Q-1 (c) 拍板)*
-*下次回看：claw42 下一次 prod release 前*
+_版本：v0.1 (2026-05-13 首发，基于 v2.5 共建 Codex 草案 § 6a + zd 第 2-4 轮整合 + Dan 终审 APPROVED)_
+_Amendment v0.1.1 (2026-05-14 — Rule 2 amend，双发布线认知，Dan Q-1 (c) 拍板)_
+_下次回看：claw42 下一次 prod release 前_
 
 ---
 
