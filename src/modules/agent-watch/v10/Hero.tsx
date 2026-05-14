@@ -31,14 +31,9 @@ export function Hero({
           <span className="title-prefix">{dict.hero.titlePrefix}</span>
           <span className="accent accent-stack">
             <span className="accent-line">{primaryAccent}</span>
-            {secondaryAccent ? (
-              <span className="accent-line accent-line-secondary">
-                {secondaryAccent} <span className="title-suffix">{dict.hero.titleSuffix}</span>
-              </span>
-            ) : (
-              <span className="title-suffix">{dict.hero.titleSuffix}</span>
-            )}
+            {secondaryAccent ? <span className="accent-line accent-line-secondary">{secondaryAccent}</span> : null}
           </span>
+          <span className="title-suffix">{dict.hero.titleSuffix}</span>
         </h1>
         <p
           className="hero-sub"
