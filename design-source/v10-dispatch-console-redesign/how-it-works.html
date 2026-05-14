@@ -76,21 +76,19 @@
 
   /* ── HERO (no border, blends with page; enlarged) ─────────────── */
   .hero{
-    position:relative;overflow:visible;
+    position:relative;z-index:0;isolation:isolate;overflow:visible;
     display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);
     align-items:stretch;margin-bottom:36px;
     min-height:640px;
   }
   /* depth backdrop: large radial glow */
   .hero::before{
-    content:"";position:absolute;inset:-110px -320px -340px -180px;
-    z-index:0;pointer-events:none;
+    content:"";position:absolute;top:-120px;bottom:-520px;left:50%;width:160vw;transform:translateX(-50%);
+    z-index:-1;pointer-events:none;
     background:
-      radial-gradient(ellipse 68% 76% at 70% 43%, rgba(124,92,255,0.28), transparent 76%),
-      radial-gradient(ellipse 96% 86% at 62% 58%, rgba(44,24,125,0.14), transparent 86%),
-      radial-gradient(ellipse 62% 86% at 30% 78%, rgba(82,39,255,0.1), transparent 86%);
-    mask-image:radial-gradient(ellipse 98% 92% at 54% 42%, #000 0 42%, rgba(0,0,0,0.62) 72%, transparent 100%);
-    -webkit-mask-image:radial-gradient(ellipse 98% 92% at 54% 42%, #000 0 42%, rgba(0,0,0,0.62) 72%, transparent 100%);
+      radial-gradient(ellipse 26% 34% at 69% 38%, rgba(124,92,255,0.28) 0, rgba(124,92,255,0.13) 34%, transparent 72%),
+      radial-gradient(ellipse 42% 44% at 67% 46%, rgba(44,24,125,0.12) 0, rgba(44,24,125,0.06) 38%, transparent 76%),
+      radial-gradient(ellipse 34% 40% at 34% 46%, rgba(82,39,255,0.07) 0, transparent 78%);
   }
 
   .hero-left{position:relative;z-index:2;padding:48px 32px 36px 8px;display:flex;flex-direction:column;gap:24px;}
@@ -247,12 +245,10 @@
   }
   /* hologram scanlines overlaid */
   .constellation::after{
-    content:"";position:absolute;inset:-180px -260px -180px -220px;pointer-events:none;z-index:8;
-    background:
-      radial-gradient(ellipse 82% 88% at 54% 45%, rgba(124,92,255,0.045), transparent 86%),
-      repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(124,180,255,0.017) 3px, rgba(124,180,255,0.017) 4px);
-    mask-image:radial-gradient(ellipse 88% 92% at 54% 45%, #000 0 34%, rgba(0,0,0,0.52) 68%, transparent 100%);
-    -webkit-mask-image:radial-gradient(ellipse 88% 92% at 54% 45%, #000 0 34%, rgba(0,0,0,0.52) 68%, transparent 100%);
+    content:"";position:absolute;inset:-80px -90px;pointer-events:none;z-index:8;
+    background:repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(124,180,255,0.014) 3px, rgba(124,180,255,0.014) 4px);
+    mask-image:radial-gradient(ellipse 62% 66% at 54% 45%, #000 0 36%, rgba(0,0,0,0.48) 54%, transparent 72%);
+    -webkit-mask-image:radial-gradient(ellipse 62% 66% at 54% 45%, #000 0 36%, rgba(0,0,0,0.48) 54%, transparent 72%);
     mix-blend-mode:screen;
     animation:scanlineDrift 6s linear infinite;
   }
