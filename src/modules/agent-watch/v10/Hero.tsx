@@ -13,6 +13,13 @@ export function Hero({
   activeView: DispatchView;
   onViewChange: (view: DispatchView) => void;
 }) {
+  const accentParts = dict.hero.titleAccent
+    .split("·")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const primaryAccent = accentParts[0] ?? dict.hero.titleAccent;
+  const secondaryAccent = accentParts.slice(1).join(" · ");
+
   return (
     <section className="hero" aria-label={dict.hero.ariaLabel}>
       <div className="hero-left">
@@ -21,8 +28,17 @@ export function Hero({
           {dict.hero.eyebrow}
         </div>
         <h1 className="hero-title">
-          {dict.hero.titlePrefix} <span className="accent">{dict.hero.titleAccent}</span>{" "}
-          {dict.hero.titleSuffix}
+          <span className="title-prefix">{dict.hero.titlePrefix}</span>
+          <span className="accent accent-stack">
+            <span className="accent-line">{primaryAccent}</span>
+            {secondaryAccent ? (
+              <span className="accent-line accent-line-secondary">
+                {secondaryAccent} <span className="title-suffix">{dict.hero.titleSuffix}</span>
+              </span>
+            ) : (
+              <span className="title-suffix">{dict.hero.titleSuffix}</span>
+            )}
+          </span>
         </h1>
         <p
           className="hero-sub"

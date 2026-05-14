@@ -13,7 +13,9 @@ describe("Hero v10", () => {
       <Hero dict={dict} activeView="flow" onViewChange={() => undefined} />,
     );
 
-    expect(html).toContain("11 个角色 · 6 个阶段");
+    expect(html).toContain("11 个角色");
+    expect(html).toContain("6 个阶段");
+    expect(html).toContain("协同产出");
     expect(html).toContain("流程介绍");
     expect(html).toContain("行情分析");
     expect((html.match(/class="anode/g) ?? []).length).toBe(11);
