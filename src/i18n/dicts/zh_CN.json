@@ -468,6 +468,18 @@
           "stat": "lessons · rolling"
         }
       },
+      "outcome": {
+        "hit_tp": "结果 **止盈达成**。观察价 {price}。原因：{reason}。这笔决策已进入复盘库，后续同类场景会引用本次证据链。",
+        "hit_sl": "结果 **止损触发**。观察价 {price}。原因：{reason}。风险边界已生效，本次失效条件会回灌后续仓位判断。",
+        "expired": "结果 **到期未触发**。观察价 {price}。原因：{reason}。机会窗口已关闭，记录为等待成本样本。",
+        "manual_close": "结果 **人工关闭**。观察价 {price}。本次人工干预已进入复盘库。",
+        "pending": "暂无复盘沉淀，等待结果回写",
+        "reason": {
+          "take_profit_reached": "止盈条件达成",
+          "stop_loss_reached": "止损条件触发",
+          "evaluation_window_elapsed": "评估窗口结束"
+        }
+      },
       "flow": {
         "ariaLabel": "六阶段交易决策流程",
         "stages": [

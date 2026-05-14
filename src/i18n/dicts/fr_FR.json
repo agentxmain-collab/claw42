@@ -468,6 +468,18 @@
           "stat": "lessons · rolling"
         }
       },
+      "outcome": {
+        "hit_tp": "Résultat : **objectif de profit atteint**. Prix observé {price}. Raison : {reason}. Cette décision est ajoutée à la mémoire de revue pour les configurations similaires.",
+        "hit_sl": "Résultat : **limite de risque déclenchée**. Prix observé {price}. Raison : {reason}. Cette condition d’invalidation alimentera les prochains arbitrages de taille.",
+        "expired": "Résultat : **fenêtre d’évaluation expirée**. Prix observé {price}. Raison : {reason}. La fenêtre d’opportunité est close et enregistrée comme coût d’attente.",
+        "manual_close": "Résultat : **clôture manuelle**. Prix observé {price}. Cette intervention est ajoutée à la mémoire de revue.",
+        "pending": "Aucune revue pour l’instant ; en attente de l’écriture du résultat.",
+        "reason": {
+          "take_profit_reached": "seuil de prise de profit atteint",
+          "stop_loss_reached": "limite de risque déclenchée",
+          "evaluation_window_elapsed": "fenêtre d’évaluation expirée"
+        }
+      },
       "flow": {
         "ariaLabel": "Six-stage trade decision flow",
         "stages": [

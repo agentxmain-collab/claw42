@@ -101,6 +101,19 @@ export type DispatchV10StageDict = {
   detail: Array<{ label: string; value: string }>;
 };
 
+export type DispatchV10OutcomeDict = {
+  hit_tp: string;
+  hit_sl: string;
+  expired: string;
+  manual_close: string;
+  pending: string;
+  reason: {
+    take_profit_reached: string;
+    stop_loss_reached: string;
+    evaluation_window_elapsed: string;
+  };
+};
+
 export type DispatchV10Dict = {
   ariaLabel: string;
   hero: {
@@ -119,6 +132,7 @@ export type DispatchV10Dict = {
     live: string;
   };
   roles: Record<DispatchV10AgentRoleId, DispatchV10RoleDict>;
+  outcome: DispatchV10OutcomeDict;
   flow: {
     ariaLabel: string;
     stages: DispatchV10StageDict[];

@@ -468,6 +468,18 @@
           "stat": "lessons · rolling"
         }
       },
+      "outcome": {
+        "hit_tp": "Resultado: **objetivo de beneficio alcanzado**. Precio observado {price}. Motivo: {reason}. Esta decisión se guardó en la memoria de revisión para escenarios similares.",
+        "hit_sl": "Resultado: **límite de riesgo activado**. Precio observado {price}. Motivo: {reason}. Esta condición de invalidación alimentará futuras decisiones de tamaño.",
+        "expired": "Resultado: **ventana de evaluación vencida**. Precio observado {price}. Motivo: {reason}. La oportunidad se cerró y queda registrada como muestra de coste de espera.",
+        "manual_close": "Resultado: **cierre manual**. Precio observado {price}. Esta intervención se guardó en la memoria de revisión.",
+        "pending": "Aún no hay revisión; esperando la escritura del resultado.",
+        "reason": {
+          "take_profit_reached": "umbral de toma de beneficios alcanzado",
+          "stop_loss_reached": "límite de riesgo activado",
+          "evaluation_window_elapsed": "ventana de evaluación vencida"
+        }
+      },
       "flow": {
         "ariaLabel": "Six-stage trade decision flow",
         "stages": [
