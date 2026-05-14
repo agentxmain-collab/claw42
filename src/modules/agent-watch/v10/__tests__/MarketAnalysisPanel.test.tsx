@@ -8,16 +8,19 @@ import { MarketAnalysisPanel } from "../MarketAnalysisPanel";
 const dict = (zhCN as Dict).agentWatch.dispatchV10;
 
 describe("MarketAnalysisPanel v10", () => {
-  test("keeps empty real-topic state empty instead of falling back to fixtures", () => {
+  test("renders three demo decision flows when real topics are empty", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel topics={[]} dict={dict} onPlaceholder={() => undefined} />,
     );
 
-    expect(html).toContain("暂无决策更新");
-    expect(html).not.toContain("BTC live market check");
+    expect(html).not.toContain("暂无决策更新");
+    expect(html).toContain("BTC 决策流");
+    expect(html).toContain("ETH 决策流");
+    expect(html).toContain("SOL 决策流");
+    expect(html).toContain("阶段 6 · 复盘沉淀");
   });
 
-  test("renders latest strategy and normalized role titles for default fixtures", () => {
+  test("renders latest strategy and normalized role titles for demo topics", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel dict={dict} onPlaceholder={() => undefined} />,
     );

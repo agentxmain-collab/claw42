@@ -2,11 +2,11 @@
 
 import React, { useMemo, useState } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
-import { dispatchTopics } from "../v9/fixtureData";
 import { IntensityBar } from "../v9/IntensityBar";
 import { TopicBody } from "../v9/TopicBody";
 import type { DispatchTopic, DispatchTopicAction, DispatchStageStatus } from "../v9/types";
 import v9Styles from "../v9/dispatchConsoleV9.module.css";
+import { dispatchV10DemoTopics } from "./demoTopics";
 import { v9AgentToV10Role } from "./staticContent";
 
 function ChatShellStat({ label, value }: { label: string; value: number }) {
@@ -274,7 +274,10 @@ export function MarketAnalysisPanel({
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
   const resolvedTopics = useMemo(
-    () => (topics ?? dispatchTopics).map((topic) => normalizeTopicNames(topic, dict.roles)),
+    () =>
+      (topics && topics.length > 0 ? topics : dispatchV10DemoTopics).map((topic) =>
+        normalizeTopicNames(topic, dict.roles),
+      ),
     [dict.roles, topics],
   );
   const doneCount = resolvedTopics.filter((topic) => topic.status === "done").length;
