@@ -54,7 +54,12 @@ export function Constellation({ dict, active }: { dict: DispatchV10Dict; active:
               strokeDasharray="5 8"
               className="chat-arc"
             >
-              <path d="M 250 150 Q 322 168 353 203 Q 382 268 345 333 Q 285 372 210 383 Q 130 358 100 271 Q 78 178 161 111 Q 248 56 347 101 Q 442 170 439 277 Q 412 402 306 446 Q 178 462 86 392 Q 0 308 42 153" />
+              <path d="M 345 102.6 L 250 259.2" />
+              <path d="M 160 113.4 L 250 259.2" />
+              <path d="M 40 151.2 L 250 259.2" />
+              <path d="M 355 205.2 L 250 259.2" />
+              <path d="M 440 275.4 L 250 259.2" />
+              <path d="M 250 151.2 L 250 259.2" />
             </g>
             <g
               fill="none"
@@ -63,7 +68,11 @@ export function Constellation({ dict, active }: { dict: DispatchV10Dict; active:
               strokeDasharray="3 8"
               className="chat-arc slow"
             >
-              <path d="M 250 250 Q 178 280 200 335 Q 250 392 312 358 Q 348 308 318 252 Q 274 198 220 218 Q 178 248 208 285" />
+              <path d="M 250 259.2 L 305 448.2" />
+              <path d="M 250 259.2 L 85 394.2" />
+              <path d="M 250 259.2 L 100 270" />
+              <path d="M 250 259.2 L 345 334.8" />
+              <path d="M 250 259.2 L 210 383.4" />
             </g>
             <g fill="url(#dispatch-v10-dot)">
               {[
