@@ -55,12 +55,25 @@
 .dispatchConsoleV10 :global(.hero::before) {
   content: "";
   position: absolute;
-  inset: -40px -80px -20px;
+  inset: -110px -320px -340px -180px;
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 56% 70% at 72% 52%, rgb(124 92 255 / 34%), transparent 60%),
-    radial-gradient(ellipse 50% 80% at 28% 100%, rgb(82 39 255 / 16%), transparent 70%);
+    radial-gradient(ellipse 68% 76% at 70% 43%, rgb(124 92 255 / 28%), transparent 76%),
+    radial-gradient(ellipse 96% 86% at 62% 58%, rgb(44 24 125 / 14%), transparent 86%),
+    radial-gradient(ellipse 62% 86% at 30% 78%, rgb(82 39 255 / 10%), transparent 86%);
+  mask-image: radial-gradient(
+    ellipse 98% 92% at 54% 42%,
+    #000 0 42%,
+    rgb(0 0 0 / 62%) 72%,
+    transparent 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 98% 92% at 54% 42%,
+    #000 0 42%,
+    rgb(0 0 0 / 62%) 72%,
+    transparent 100%
+  );
 }
 
 .dispatchConsoleV10 :global(.hero-left) {
@@ -265,15 +278,29 @@
 .dispatchConsoleV10 :global(.constellation::after) {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -180px -260px -180px -220px;
   z-index: 8;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent 0,
-    transparent 3px,
-    rgb(124 180 255 / 2.5%) 3px,
-    rgb(124 180 255 / 2.5%) 4px
+  background:
+    radial-gradient(ellipse 82% 88% at 54% 45%, rgb(124 92 255 / 4.5%), transparent 86%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 3px,
+      rgb(124 180 255 / 1.7%) 3px,
+      rgb(124 180 255 / 1.7%) 4px
+    );
+  mask-image: radial-gradient(
+    ellipse 88% 92% at 54% 45%,
+    #000 0 34%,
+    rgb(0 0 0 / 52%) 68%,
+    transparent 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 88% 92% at 54% 45%,
+    #000 0 34%,
+    rgb(0 0 0 / 52%) 68%,
+    transparent 100%
   );
   mix-blend-mode: screen;
   animation: dispatch-v10-scanline 6s linear infinite;
