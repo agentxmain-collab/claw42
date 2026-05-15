@@ -66,6 +66,7 @@ export function AgentWatchBoard({
   const outcomeDict = t.agentWatch.dispatchV10.outcome;
   const roundDict = t.agentWatch.dispatchV10.round;
   const stageStatusDict = t.agentWatch.dispatchV10.stageStatus;
+  const topicRankingDict = t.agentWatch.dispatchV10.topicRanking;
   const [timelineEvents, setTimelineEvents] = useState<PublicTimelineEvent[]>([]);
   const [timelineEvidenceMap, setTimelineEvidenceMap] = useState<Record<string, NewsEvidence>>({});
   const [followStatsByRecordId, setFollowStatsByRecordId] = useState<
@@ -279,6 +280,7 @@ export function AgentWatchBoard({
         outcomeDict,
         roundDict,
         stageStatusDict,
+        topicRankingDict,
       }),
     [
       agentWatchLocale,
@@ -286,6 +288,7 @@ export function AgentWatchBoard({
       outcomeDict,
       roundDict,
       stageStatusDict,
+      topicRankingDict,
       timelineEvents,
       timelineEvidenceMap,
     ],

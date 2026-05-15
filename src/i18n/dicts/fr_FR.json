@@ -707,6 +707,10 @@
         "in_progressNote": "Cette étape écrit une mise à jour partielle",
         "done": "Terminé",
         "memoryPending": "La revue attend le retour du résultat"
+      },
+      "topicRanking": {
+        "explanation_template": "{symbol} est classé #{rank} grâce à {news_count} actus + {confidence}% de confiance",
+        "rank_label": "Rang #{rank}"
       }
     }
   },

@@ -707,6 +707,10 @@
         "in_progressNote": "تكتب هذه المرحلة تحديثا جزئيا",
         "done": "مكتمل",
         "memoryPending": "المراجعة تنتظر كتابة النتيجة"
+      },
+      "topicRanking": {
+        "explanation_template": "{symbol} في المرتبة #{rank} بسبب {news_count} أخبار + ثقة {confidence}%",
+        "rank_label": "الترتيب #{rank}"
       }
     }
   },

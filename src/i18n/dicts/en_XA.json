@@ -707,6 +707,10 @@
         "in_progressNote": "[This stage is writing a partial update]",
         "done": "[Done]",
         "memoryPending": "[Review waits for outcome writeback]"
+      },
+      "topicRanking": {
+        "explanation_template": "[{symbol} ranks #{rank} from {news_count} news items + {confidence}% confidence]",
+        "rank_label": "[Rank #{rank}]"
       }
     }
   },

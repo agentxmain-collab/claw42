@@ -2,6 +2,7 @@ import type {
   DispatchV10OutcomeDict,
   DispatchV10RoundDict,
   DispatchV10StageStatusDict,
+  DispatchV10TopicRankingDict,
   Locale,
 } from "@/i18n/types";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
@@ -9,7 +10,7 @@ import {
   getDispatchAgentDisplayName,
   mapTeamMemberToDispatchAgent,
 } from "@/lib/watch/dispatchAgentMapping";
-import { calculateTopicIntensity } from "@/lib/watch/intensityCalculator";
+import { calculateTopicRankingScore, formatTopicRanking } from "@/lib/watch/topicRanking";
 import {
   groupPublicTimelineEventsByTopic,
   type DispatchTopicGroup,
@@ -40,6 +41,7 @@ export interface V9AdapterContext {
   outcomeDict: DispatchV10OutcomeDict;
   roundDict: DispatchV10RoundDict;
   stageStatusDict: DispatchV10StageStatusDict;
+  topicRankingDict: DispatchV10TopicRankingDict;
   now?: number;
 }
 
@@ -655,17 +657,31 @@ function strategySortTime(group: DispatchTopicGroup) {
 
 export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): DispatchTopic[] {
   const now = ctx.now ?? Date.now();
-  const groups = groupPublicTimelineEventsByTopic(ctx.events).sort(
-    (a, b) => strategySortTime(b) - strategySortTime(a) || b.latestAt - a.latestAt,
-  );
+  const rankedGroups = groupPublicTimelineEventsByTopic(ctx.events)
+    .map((group) => {
+      const tradeDecision = renderableTradeDecision(group.latestDecision);
+      return {
+        group,
+        ranking: calculateTopicRankingScore({
+          event: group.latestDecision,
+          evidenceMap: ctx.evidenceMap,
+          confidence: tradeDecision?.confidence,
+        }),
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.ranking.score - a.ranking.score ||
+        strategySortTime(b.group) - strategySortTime(a.group) ||
+        b.group.latestAt - a.group.latestAt,
+    );
 
-  return groups.map((group, index) => {
+  return rankedGroups.map(({ group, ranking }, index) => {
     const evidence = firstEvidence(group, ctx.evidenceMap);
     const originalUrl = originalEvidenceUrl(evidence);
     const latest = group.latestDecision;
     const recordId = latest.payload.recordId;
     const tradeDecision = renderableTradeDecision(latest);
-    const confidence = tradeDecision?.confidence;
     const hasTradeDecision = Boolean(tradeDecision);
     const hasRationale = hasEventRationale(latest);
     const hasMemoryLoop = hasMemoryLoopRationale(latest);
@@ -680,10 +696,12 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       sourceLabel: originalUrl ? evidence?.source : undefined,
       startedAt: formatTime(group.startedAt),
       progress: makeProgress(group, now, hasTradeDecision, hasRationale),
-      intensity: calculateTopicIntensity({
-        event: latest,
-        evidenceMap: ctx.evidenceMap,
-        confidence,
+      intensity: ranking.intensity,
+      topicRanking: formatTopicRanking({
+        symbol: group.symbol,
+        rank: index + 1,
+        ranking,
+        dict: ctx.topicRankingDict,
       }),
       trigger: {
         ticker: `$${group.symbol}`,

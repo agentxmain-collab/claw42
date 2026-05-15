@@ -28,7 +28,7 @@ const CONTRIBUTOR_IDS: TeamMemberId[] = [
 ];
 
 type DecisionFixtureInput = {
-  symbol: "BTC" | "ETH" | "SOL";
+  symbol: "BTC" | "ETH" | "SOL" | "XRP";
   idSuffix?: string;
   createdAt: number;
   locale: Locale;
@@ -69,9 +69,10 @@ function text(locale: Locale, zh: string, en: string) {
 
 function evidence(
   id: string,
-  symbol: "BTC" | "ETH" | "SOL",
+  symbol: "BTC" | "ETH" | "SOL" | "XRP",
   minutesAgo: number,
   now: number,
+  impactSeverity: NewsEvidence["impactSeverity"] = "medium",
 ): NewsEvidence {
   const publishedAt = new Date(now - minutesAgo * 60_000).toISOString();
   return {
@@ -82,7 +83,7 @@ function evidence(
     publishedAt,
     fetchedAt: new Date(now).toISOString(),
     symbol: [symbol],
-    impactSeverity: "medium",
+    impactSeverity,
     summary: `${symbol}/USDT is available on CoinW with active market depth and intraday movement.`,
   };
 }
@@ -508,8 +509,8 @@ export function getStagingMockTimeline(
 ): StagingMockTimelineFixture {
   const locale = normalizeWatchLocale(localeInput);
   const btcEvidence = [
-    evidence("staging-ev-btc-coinw-depth", "BTC", 22, now),
-    evidence("staging-ev-btc-volatility", "BTC", 31, now),
+    evidence("staging-ev-btc-coinw-depth", "BTC", 22, now, "high"),
+    evidence("staging-ev-btc-volatility", "BTC", 31, now, "high"),
   ];
   const ethEvidence = [
     evidence("staging-ev-eth-coinw-depth", "ETH", 27, now),
@@ -518,6 +519,10 @@ export function getStagingMockTimeline(
   const solEvidence = [
     evidence("staging-ev-sol-coinw-depth", "SOL", 12, now),
     evidence("staging-ev-sol-volatility", "SOL", 18, now),
+  ];
+  const xrpEvidence = [
+    evidence("staging-ev-xrp-coinw-depth", "XRP", 36, now, "low"),
+    evidence("staging-ev-xrp-volatility", "XRP", 44, now, "low"),
   ];
   const records = [
     makePartialDecisionRecord({
@@ -554,6 +559,20 @@ export function getStagingMockTimeline(
       confidence: 0.66,
       severity: "medium",
       evidence: ethEvidence,
+    }),
+    makeDecisionRecord({
+      symbol: "XRP",
+      createdAt: now - 330_000,
+      locale,
+      direction: "short",
+      entryPrice: 0.524,
+      entryRange: { low: 0.516, high: 0.529 },
+      stopLoss: 0.548,
+      takeProfit: [0.501, 0.486],
+      rating: 2,
+      confidence: 0.52,
+      severity: "medium",
+      evidence: xrpEvidence,
     }),
     makeDecisionRecord({
       symbol: "BTC",
@@ -645,7 +664,7 @@ export function getStagingMockTimeline(
     }),
   ];
   const entries = records.map(makeTimelineEntry);
-  const evidenceItems = [...btcEvidence, ...ethEvidence, ...solEvidence];
+  const evidenceItems = [...btcEvidence, ...ethEvidence, ...solEvidence, ...xrpEvidence];
 
   return {
     entries,

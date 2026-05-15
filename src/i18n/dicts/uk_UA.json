@@ -707,6 +707,10 @@
         "in_progressNote": "Етап записує часткове оновлення",
         "done": "Готово",
         "memoryPending": "Розбір чекає запису результату"
+      },
+      "topicRanking": {
+        "explanation_template": "{symbol} має ранг #{rank}: {news_count} новин + {confidence}% впевненості",
+        "rank_label": "Ранг #{rank}"
       }
     }
   },

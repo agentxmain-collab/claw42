@@ -63,6 +63,32 @@ function TopicProgress({ topic, dict }: { topic: DispatchTopic; dict: DispatchV1
   );
 }
 
+function topicRankingScore(topic: DispatchTopic) {
+  return topic.topicRanking?.score ?? -1;
+}
+
+function orderTopicsByRanking(topics: DispatchTopic[]) {
+  return topics
+    .map((topic, index) => ({ topic, index }))
+    .sort(
+      (left, right) =>
+        topicRankingScore(right.topic) - topicRankingScore(left.topic) || left.index - right.index,
+    )
+    .map(({ topic }) => topic);
+}
+
+function TopicRankingV10({ topic }: { topic: DispatchTopic }) {
+  const ranking = topic.topicRanking;
+  if (!ranking) return null;
+
+  return (
+    <div className="topic-ranking" data-topic-ranking-score={ranking.score}>
+      <span className="topic-ranking-label">{ranking.rankLabel}</span>
+      <span className="topic-ranking-text">{ranking.explanation}</span>
+    </div>
+  );
+}
+
 function hasOriginalUrl(topic: DispatchTopic) {
   return Boolean(topic.originalUrl && topic.originalUrl !== "#");
 }
@@ -260,6 +286,7 @@ function TopicCardV10({
       />
       <TopicBody topic={topic} bodyId={bodyId} />
       <TopicStrategyV10 topic={topic} latest={latest} dict={dict} onPlaceholder={onPlaceholder} />
+      <TopicRankingV10 topic={topic} />
     </article>
   );
 }
@@ -273,13 +300,12 @@ export function MarketAnalysisPanel({
   dict: DispatchV10Dict;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
-  const resolvedTopics = useMemo(
-    () =>
-      (topics && topics.length > 0 ? topics : dispatchV10DemoTopics).map((topic) =>
-        normalizeTopicNames(topic, dict.roles),
-      ),
-    [dict.roles, topics],
-  );
+  const resolvedTopics = useMemo(() => {
+    const normalizedTopics = (topics && topics.length > 0 ? topics : dispatchV10DemoTopics).map(
+      (topic) => normalizeTopicNames(topic, dict.roles),
+    );
+    return orderTopicsByRanking(normalizedTopics);
+  }, [dict.roles, topics]);
   const doneCount = resolvedTopics.filter((topic) => topic.status === "done").length;
   const activeCount = resolvedTopics.filter((topic) => topic.status === "active").length;
   const pendingCount = resolvedTopics.filter((topic) => topic.status === "pending").length;
