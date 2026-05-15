@@ -20,11 +20,18 @@ export type TeamRoleId = "analyst" | "lead" | "pm";
 
 export type TeamProviderId = "deepseek" | "minimax" | "claude-haiku" | "claude-opus";
 
+export interface PersistentPersonality {
+  riskBias: "conservative" | "balanced" | "aggressive";
+  focusStyle: "data-heavy" | "story-heavy" | "contrarian";
+  voiceTone: "terse" | "analytical" | "dramatic" | "skeptical";
+}
+
 export interface TeamMember {
   id: TeamMemberId;
   role: TeamRoleId;
   promptDocPath: string;
   defaultProvider: TeamProviderId;
+  persistentPersonality: PersistentPersonality;
   displayNameKey: string;
   roleTitleKey: string;
   oneLineCapability: string;
@@ -37,6 +44,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "analyst",
     promptDocPath: "docs/agent-ip/team/fundamental_analyst.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "balanced",
+      focusStyle: "data-heavy",
+      voiceTone: "analytical",
+    },
     displayNameKey: "team.fundamental_analyst.displayName",
     roleTitleKey: "team.fundamental_analyst.roleTitle",
     oneLineCapability: "team.fundamental_analyst.oneLineCapability",
@@ -47,6 +59,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "analyst",
     promptDocPath: "docs/agent-ip/team/news_analyst.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "balanced",
+      focusStyle: "story-heavy",
+      voiceTone: "terse",
+    },
     displayNameKey: "team.news_analyst.displayName",
     roleTitleKey: "team.news_analyst.roleTitle",
     oneLineCapability: "team.news_analyst.oneLineCapability",
@@ -57,6 +74,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "analyst",
     promptDocPath: "docs/agent-ip/team/chart_analyst.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "balanced",
+      focusStyle: "data-heavy",
+      voiceTone: "terse",
+    },
     displayNameKey: "team.chart_analyst.displayName",
     roleTitleKey: "team.chart_analyst.roleTitle",
     oneLineCapability: "team.chart_analyst.oneLineCapability",
@@ -67,6 +89,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "analyst",
     promptDocPath: "docs/agent-ip/team/onchain_analyst.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "balanced",
+      focusStyle: "data-heavy",
+      voiceTone: "terse",
+    },
     displayNameKey: "team.onchain_analyst.displayName",
     roleTitleKey: "team.onchain_analyst.roleTitle",
     oneLineCapability: "team.onchain_analyst.oneLineCapability",
@@ -77,6 +104,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "lead",
     promptDocPath: "docs/agent-ip/team/research_lead.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "balanced",
+      focusStyle: "story-heavy",
+      voiceTone: "analytical",
+    },
     displayNameKey: "team.research_lead.displayName",
     roleTitleKey: "team.research_lead.roleTitle",
     oneLineCapability: "team.research_lead.oneLineCapability",
@@ -87,6 +119,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "lead",
     promptDocPath: "docs/agent-ip/team/risk_lead.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "conservative",
+      focusStyle: "data-heavy",
+      voiceTone: "analytical",
+    },
     displayNameKey: "team.risk_lead.displayName",
     roleTitleKey: "team.risk_lead.roleTitle",
     oneLineCapability: "team.risk_lead.oneLineCapability",
@@ -97,6 +134,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "pm",
     promptDocPath: "docs/agent-ip/team/pm.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "balanced",
+      focusStyle: "data-heavy",
+      voiceTone: "analytical",
+    },
     displayNameKey: "team.pm.displayName",
     roleTitleKey: "team.pm.roleTitle",
     oneLineCapability: "team.pm.oneLineCapability",
@@ -107,6 +149,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "lead",
     promptDocPath: "docs/agent-ip/team/bullish_researcher.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "aggressive",
+      focusStyle: "story-heavy",
+      voiceTone: "dramatic",
+    },
     displayNameKey: "team.bullish_researcher.displayName",
     roleTitleKey: "team.bullish_researcher.roleTitle",
     oneLineCapability: "team.bullish_researcher.oneLineCapability",
@@ -117,6 +164,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "lead",
     promptDocPath: "docs/agent-ip/team/bearish_researcher.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "conservative",
+      focusStyle: "contrarian",
+      voiceTone: "skeptical",
+    },
     displayNameKey: "team.bearish_researcher.displayName",
     roleTitleKey: "team.bearish_researcher.roleTitle",
     oneLineCapability: "team.bearish_researcher.oneLineCapability",
@@ -127,6 +179,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "lead",
     promptDocPath: "docs/agent-ip/team/trader.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "balanced",
+      focusStyle: "data-heavy",
+      voiceTone: "terse",
+    },
     displayNameKey: "team.trader.displayName",
     roleTitleKey: "team.trader.roleTitle",
     oneLineCapability: "team.trader.oneLineCapability",
@@ -137,6 +194,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "lead",
     promptDocPath: "docs/agent-ip/team/aggressive_reviewer.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "aggressive",
+      focusStyle: "story-heavy",
+      voiceTone: "dramatic",
+    },
     displayNameKey: "team.aggressive_reviewer.displayName",
     roleTitleKey: "team.aggressive_reviewer.roleTitle",
     oneLineCapability: "team.aggressive_reviewer.oneLineCapability",
@@ -147,6 +209,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "lead",
     promptDocPath: "docs/agent-ip/team/neutral_reviewer.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "balanced",
+      focusStyle: "contrarian",
+      voiceTone: "analytical",
+    },
     displayNameKey: "team.neutral_reviewer.displayName",
     roleTitleKey: "team.neutral_reviewer.roleTitle",
     oneLineCapability: "team.neutral_reviewer.oneLineCapability",
@@ -157,6 +224,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "lead",
     promptDocPath: "docs/agent-ip/team/conservative_reviewer.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "conservative",
+      focusStyle: "data-heavy",
+      voiceTone: "skeptical",
+    },
     displayNameKey: "team.conservative_reviewer.displayName",
     roleTitleKey: "team.conservative_reviewer.roleTitle",
     oneLineCapability: "team.conservative_reviewer.oneLineCapability",
@@ -167,6 +239,11 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     role: "lead",
     promptDocPath: "docs/agent-ip/team/memory_loop.md",
     defaultProvider: "deepseek",
+    persistentPersonality: {
+      riskBias: "balanced",
+      focusStyle: "contrarian",
+      voiceTone: "skeptical",
+    },
     displayNameKey: "team.memory_loop.displayName",
     roleTitleKey: "team.memory_loop.roleTitle",
     oneLineCapability: "team.memory_loop.oneLineCapability",
