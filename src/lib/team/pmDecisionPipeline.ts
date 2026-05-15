@@ -58,6 +58,8 @@ import type { ChatThread } from "@/lib/types";
 
 export type PmDecisionTriggerSource = "cron" | "user_visit_trigger";
 
+const TEAM_LLM_TIMEOUT_MS = 25_000;
+
 export interface PmDecisionPipelineInput {
   triggerSource: PmDecisionTriggerSource;
   recentMarketSignals: SignalRecord[];
@@ -242,6 +244,7 @@ async function defaultGenerateAnalystOutput(
         providerOverride: mapTeamProviderToProviderId(
           TEAM_MEMBER_REGISTRY[memberId].defaultProvider,
         ),
+        timeoutMs: TEAM_LLM_TIMEOUT_MS,
       },
     );
     try {
@@ -350,6 +353,7 @@ async function defaultGenerateLeadOutput(
         providerOverride: mapTeamProviderToProviderId(
           TEAM_MEMBER_REGISTRY[memberId].defaultProvider,
         ),
+        timeoutMs: TEAM_LLM_TIMEOUT_MS,
       },
     );
     try {

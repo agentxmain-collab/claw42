@@ -16,6 +16,7 @@ export interface GenerateTextOptions {
   cacheTTLSeconds?: number;
   enableGuardrails?: boolean;
   providerOverride?: ProviderId;
+  timeoutMs?: number;
 }
 
 export async function generateText(prompt: string, options: GenerateTextOptions): Promise<string> {
@@ -38,11 +39,11 @@ export async function generateText(prompt: string, options: GenerateTextOptions)
     systemPrompt: options.systemPrompt,
     temperature: options.temperature,
     maxTokens: options.maxTokens,
-    timeoutMs: 10_000,
     cacheKey,
     cacheTTLSeconds: options.cacheTTLSeconds,
     taskTag: options.taskTag,
     providerOverride: options.providerOverride,
+    timeoutMs: options.timeoutMs,
   });
 
   if (options.enableGuardrails === false || !hasMechanicalOutput(output.text, options.taskTag)) {
@@ -54,7 +55,7 @@ export async function generateText(prompt: string, options: GenerateTextOptions)
     systemPrompt: options.systemPrompt,
     temperature: options.temperature,
     maxTokens: options.maxTokens,
-    timeoutMs: 10_000,
+    timeoutMs: options.timeoutMs ?? 10_000,
     taskTag: `${options.taskTag}:guardrail-retry`,
     providerOverride: options.providerOverride,
   });
