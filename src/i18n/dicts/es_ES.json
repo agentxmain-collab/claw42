@@ -521,12 +521,13 @@
         "hit_tp": "Resultado: **objetivo de beneficio alcanzado**. Precio observado {price}. Motivo: {reason}. Esta decisión se guardó en la memoria de revisión para escenarios similares.",
         "hit_sl": "Resultado: **límite de riesgo activado**. Precio observado {price}. Motivo: {reason}. Esta condición de invalidación alimentará futuras decisiones de tamaño.",
         "expired": "Resultado: **ventana de evaluación vencida**. Precio observado {price}. Motivo: {reason}. La oportunidad se cerró y queda registrada como muestra de coste de espera.",
-        "manual_close": "Resultado: **cierre manual**. Precio observado {price}. Esta intervención se guardó en la memoria de revisión.",
+        "manual_close": "Resultado: **cierre manual**. Precio observado {price}. Motivo: {reason}. Esta intervención se guardó en la memoria de revisión.",
         "pending": "Aún no hay revisión; esperando la escritura del resultado.",
         "reason": {
           "take_profit_reached": "umbral de toma de beneficios alcanzado",
           "stop_loss_reached": "límite de riesgo activado",
-          "evaluation_window_elapsed": "ventana de evaluación vencida"
+          "evaluation_window_elapsed": "ventana de evaluación vencida",
+          "manual_close_requested": "un administrador solicitó cierre manual"
         }
       },
       "flow": {
@@ -743,6 +744,10 @@
         "mock_fail": "Falló el seguimiento simulado",
         "real_label_future": "Seguir"
       }
+    },
+    "admin": {
+      "unauthorized": "Token de administrador inválido",
+      "idempotency_conflict": "Esta decisión ya tiene resultado y no puede cerrarse manualmente de nuevo"
     }
   },
   "coinModal": {

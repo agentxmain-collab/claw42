@@ -111,7 +111,13 @@ export type DispatchV10OutcomeDict = {
     take_profit_reached: string;
     stop_loss_reached: string;
     evaluation_window_elapsed: string;
+    manual_close_requested: string;
   };
+};
+
+export type AgentWatchAdminDict = {
+  unauthorized: string;
+  idempotency_conflict: string;
 };
 
 export type DispatchV10RoundDict = {
@@ -445,6 +451,7 @@ export interface Dict {
       noNews: string;
     };
     dispatchV10: DispatchV10Dict;
+    admin: AgentWatchAdminDict;
   };
   rating: RatingDict;
   coinModal: {

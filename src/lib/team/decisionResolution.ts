@@ -10,7 +10,7 @@ import type { MarketDataSource } from "@/modules/agent-watch/types";
 export type { DecisionResolutionReason };
 
 export interface DecisionResolutionResult {
-  outcome: Exclude<DecisionOutcome, null | "manual_close">;
+  outcome: Exclude<DecisionOutcome, null>;
   resolvedAt: string;
   observedPrice: number;
   observedPriceSource: MarketDataSource | null;

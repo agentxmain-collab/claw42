@@ -521,12 +521,13 @@
         "hit_tp": "結果 **止盈達成**。觀察價 {price}。原因：{reason}。這筆決策已進入復盤庫，後續同類場景會引用本次證據鏈。",
         "hit_sl": "結果 **止損觸發**。觀察價 {price}。原因：{reason}。風險邊界已生效，本次失效條件會回灌後續倉位判斷。",
         "expired": "結果 **到期未觸發**。觀察價 {price}。原因：{reason}。機會窗口已關閉，記錄為等待成本樣本。",
-        "manual_close": "結果 **人工關閉**。觀察價 {price}。本次人工干預已進入復盤庫。",
+        "manual_close": "結果 **人工關閉**。觀察價 {price}。原因：{reason}。本次人工干預已進入復盤庫。",
         "pending": "暫無復盤沉澱，等待結果回寫",
         "reason": {
           "take_profit_reached": "止盈條件達成",
           "stop_loss_reached": "止損條件觸發",
-          "evaluation_window_elapsed": "評估窗口結束"
+          "evaluation_window_elapsed": "評估窗口結束",
+          "manual_close_requested": "管理員請求人工平倉"
         }
       },
       "flow": {
@@ -743,6 +744,10 @@
         "mock_fail": "模擬跟單失敗",
         "real_label_future": "跟單"
       }
+    },
+    "admin": {
+      "unauthorized": "管理員權杖無效",
+      "idempotency_conflict": "該決策已有結果，不能重複人工關閉"
     }
   },
   "coinModal": {

@@ -11,7 +11,8 @@ export type DecisionOutcome = "hit_tp" | "hit_sl" | "expired" | "manual_close" |
 export type DecisionResolutionReason =
   | "take_profit_reached"
   | "stop_loss_reached"
-  | "evaluation_window_elapsed";
+  | "evaluation_window_elapsed"
+  | "manual_close_requested";
 
 export type StrategyDecisionRecordSchemaVersion = 1 | 2;
 

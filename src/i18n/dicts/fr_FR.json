@@ -521,12 +521,13 @@
         "hit_tp": "Résultat : **objectif de profit atteint**. Prix observé {price}. Raison : {reason}. Cette décision est ajoutée à la mémoire de revue pour les configurations similaires.",
         "hit_sl": "Résultat : **limite de risque déclenchée**. Prix observé {price}. Raison : {reason}. Cette condition d’invalidation alimentera les prochains arbitrages de taille.",
         "expired": "Résultat : **fenêtre d’évaluation expirée**. Prix observé {price}. Raison : {reason}. La fenêtre d’opportunité est close et enregistrée comme coût d’attente.",
-        "manual_close": "Résultat : **clôture manuelle**. Prix observé {price}. Cette intervention est ajoutée à la mémoire de revue.",
+        "manual_close": "Résultat : **clôture manuelle**. Prix observé {price}. Motif : {reason}. Cette intervention est ajoutée à la mémoire de revue.",
         "pending": "Aucune revue pour l’instant ; en attente de l’écriture du résultat.",
         "reason": {
           "take_profit_reached": "seuil de prise de profit atteint",
           "stop_loss_reached": "limite de risque déclenchée",
-          "evaluation_window_elapsed": "fenêtre d’évaluation expirée"
+          "evaluation_window_elapsed": "fenêtre d’évaluation expirée",
+          "manual_close_requested": "un administrateur a demandé la clôture manuelle"
         }
       },
       "flow": {
@@ -743,6 +744,10 @@
         "mock_fail": "Échec du suivi simulé",
         "real_label_future": "Suivre"
       }
+    },
+    "admin": {
+      "unauthorized": "Jeton administrateur invalide",
+      "idempotency_conflict": "Cette décision a déjà un résultat et ne peut pas être clôturée manuellement de nouveau"
     }
   },
   "coinModal": {
