@@ -160,6 +160,7 @@ async function resolveOpenPmDecisions(
     let resolved = 0;
 
     for (const record of records) {
+      if (record.resolvedOutcome === "manual_close") continue;
       if (record.resolvedOutcome || !record.tradeDecision) continue;
       const symbol =
         normalizeResolutionSymbol(record.symbol) ??

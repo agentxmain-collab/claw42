@@ -521,12 +521,13 @@
         "hit_tp": "結果 **利益確定に到達**。観測価格 {price}。理由：{reason}。この判断はレビュー記憶に保存され、類似局面で参照されます。",
         "hit_sl": "結果 **リスク境界に到達**。観測価格 {price}。理由：{reason}。失効条件は今後のポジション判断に反映されます。",
         "expired": "結果 **評価期間が終了**。観測価格 {price}。理由：{reason}。機会ウィンドウは閉じ、待機コストのサンプルとして記録されます。",
-        "manual_close": "結果 **手動クローズ**。観測価格 {price}。この介入はレビュー記憶に保存されます。",
+        "manual_close": "結果 **手動クローズ**。観測価格 {price}。理由：{reason}。この介入はレビュー記憶に保存されます。",
         "pending": "レビュー記憶はまだありません。結果の書き戻しを待っています。",
         "reason": {
           "take_profit_reached": "利益確定条件に到達",
           "stop_loss_reached": "リスク境界条件に到達",
-          "evaluation_window_elapsed": "評価期間が終了"
+          "evaluation_window_elapsed": "評価期間が終了",
+          "manual_close_requested": "管理者が手動クローズを要求"
         }
       },
       "flow": {
@@ -743,6 +744,10 @@
         "mock_fail": "模擬フォロー失敗",
         "real_label_future": "フォロー"
       }
+    },
+    "admin": {
+      "unauthorized": "管理者トークンが無効です",
+      "idempotency_conflict": "この決定はすでに結果があり、再度手動クローズできません"
     }
   },
   "coinModal": {

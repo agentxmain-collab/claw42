@@ -775,11 +775,14 @@ describe("mapPublicTimelineEventsToTopics", () => {
   it.each([
     ["hit_sl", "Result **stop loss hit**", "stop-loss threshold reached"],
     ["expired", "Result **evaluation window expired**", "evaluation window elapsed"],
-    ["manual_close", "Result **manually closed**", "manual_close"],
+    ["manual_close", "Result **manually closed**", "administrator requested manual close"],
   ] as const)("renders %s memory-loop outcomes with en_US copy", (outcome, copy, reason) => {
     const [topic] = mapTopics({
       events: [
-        withResolution(outcome, outcome === "manual_close" ? { reason: undefined } : undefined),
+        withResolution(
+          outcome,
+          outcome === "manual_close" ? { reason: "manual_close_requested" } : undefined,
+        ),
       ],
       locale: "en_US",
       now,
@@ -788,8 +791,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     const content = topic.messages.find((message) => message.agentId === "memory_loop")?.content;
     expect(content).toContain(copy);
     expect(content).not.toMatch(/[止损盈平]/);
-    if (outcome === "manual_close") expect(content).not.toContain(reason);
-    else expect(content).toContain(reason);
+    expect(content).toContain(reason);
   });
 
   it.each(["hit_tp", "hit_sl", "expired", "manual_close"] as const)(

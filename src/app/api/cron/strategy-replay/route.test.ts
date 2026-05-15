@@ -335,4 +335,36 @@ describe("/api/cron/strategy-replay", () => {
       "coinw-kline",
     );
   });
+
+  it("does not re-evaluate already manually closed PM decisions", async () => {
+    readAllDecisionRecordsMock.mockResolvedValueOnce([
+      {
+        id: "pm:BTC:manual-close",
+        symbol: "BTC",
+        tradeDecision: { id: "trade:BTC:manual-close", symbol: "BTC" },
+        resolvedOutcome: "manual_close",
+      },
+      {
+        id: "pm:BTC:open",
+        symbol: "BTC",
+        tradeDecision: { id: "trade:BTC:open", symbol: "BTC" },
+        resolvedOutcome: null,
+      },
+    ]);
+
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),
+    );
+    const payload = await response.json();
+
+    expect(payload.resolvedPmDecisions).toBe(1);
+    expect(resolveDecisionRecordFromPriceMock).toHaveBeenCalledTimes(1);
+    expect(resolveDecisionRecordFromPriceMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "pm:BTC:open" }),
+      101000,
+      expect.any(Number),
+      undefined,
+      "coinw-kline",
+    );
+  });
 });

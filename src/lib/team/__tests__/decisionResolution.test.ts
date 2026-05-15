@@ -4,6 +4,7 @@ import {
   evaluateDecisionResolution,
   resolveDecisionRecordFromPrice,
 } from "@/lib/team/decisionResolution";
+import { manualCloseDecisionRecord } from "@/lib/team/manualCloseHandler";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 
@@ -101,6 +102,26 @@ describe("evaluateDecisionResolution", () => {
 
     expect(result).toBeNull();
     expect(writerCalls).toHaveLength(0);
+  });
+
+  it("supports a manual_close writer result through the shared apply path", async () => {
+    const writerCalls: StrategyDecisionRecord[] = [];
+    const result = await manualCloseDecisionRecord({
+      recordId: "record-1",
+      locale: "zh_CN",
+      now,
+      observedPrice: 103,
+      readRecords: async () => [record()],
+      writeRecord: async (nextRecord) => {
+        writerCalls.push(nextRecord);
+      },
+    });
+
+    expect(result.resolution.outcome).toBe("manual_close");
+    expect(result.record.resolvedOutcome).toBe("manual_close");
+    expect(result.record.resolutionReason).toBe("manual_close_requested");
+    expect(result.record.resolutionPriceSource).toBe("admin_manual");
+    expect(writerCalls).toHaveLength(1);
   });
 });
 

@@ -509,7 +509,10 @@ function resolutionContent(
     case "expired":
       return replaceVars(outcomeDict.expired, { price, reason });
     case "manual_close":
-      return replaceVars(outcomeDict.manual_close, { price, reason });
+      return replaceVars(outcomeDict.manual_close, {
+        price,
+        reason: reason || outcomeDict.reason.manual_close_requested,
+      });
     default:
       return outcomeDict.pending;
   }

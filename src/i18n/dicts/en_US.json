@@ -521,12 +521,13 @@
         "hit_tp": "Result **take profit hit**. Observed price {price}. Reason: {reason}. This decision has been added to review memory for similar future setups.",
         "hit_sl": "Result **stop loss hit**. Observed price {price}. Reason: {reason}. The risk boundary worked and this invalidation will feed future sizing calls.",
         "expired": "Result **evaluation window expired**. Observed price {price}. Reason: {reason}. The opportunity window closed and is recorded as an opportunity-cost sample.",
-        "manual_close": "Result **manually closed**. Observed price {price}. This manual intervention has been added to review memory.",
+        "manual_close": "Result **manually closed**. Observed price {price}. Reason: {reason}. This manual intervention has been added to review memory.",
         "pending": "No review memory yet; awaiting outcome writeback.",
         "reason": {
           "take_profit_reached": "take-profit threshold reached",
           "stop_loss_reached": "stop-loss threshold reached",
-          "evaluation_window_elapsed": "evaluation window elapsed"
+          "evaluation_window_elapsed": "evaluation window elapsed",
+          "manual_close_requested": "administrator requested manual close"
         }
       },
       "flow": {
@@ -743,6 +744,10 @@
         "mock_fail": "Mock follow failed",
         "real_label_future": "Follow"
       }
+    },
+    "admin": {
+      "unauthorized": "Invalid admin token",
+      "idempotency_conflict": "This decision already has an outcome and cannot be manually closed again"
     }
   },
   "coinModal": {
