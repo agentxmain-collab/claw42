@@ -1,22 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
-import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
-import { getWatchHistory } from "@/lib/watchHistoryStore";
-import {
-  buildDecisionRecordIndex,
-  filterPublicTimelineEvents,
-} from "@/lib/watch/publicTimelineProjection";
-import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
-import {
-  getStagingMockTimeline,
-  shouldUseStagingMockTimeline,
-} from "@/lib/watch/__fixtures__/stagingMockTimeline";
+import { buildWatchTimelinePayload } from "@/lib/watch/publicTimelinePayload";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const MAX_EVIDENCE_MAP_ITEMS = 120;
 
 function numberParam(value: string | null, fallback: number) {
   if (!value) return fallback;
@@ -60,68 +48,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "invalid query" }, { status: 400 });
   }
 
-  const servedAt = Date.now();
-  const stagingFixture = shouldUseStagingMockTimeline()
-    ? getStagingMockTimeline(locale, servedAt)
-    : null;
-  const result =
-    stagingFixture ?? (await getWatchHistory({ before, since, limit, windowMinutes, locale }));
-  if (mode === "debug") {
-    return NextResponse.json(
-      {
-        entries: result.entries,
-        oldestTs: result.oldestTs,
-        hasMore: result.hasMore,
-        windowMinutes,
-        locale,
-        servedAt,
-        nextPollMs: 30_000,
-      },
-      { headers: { "Cache-Control": "no-store" } },
-    );
-  }
-
-  const events = filterPublicTimelineEvents(result.entries, {
-    mode: "public",
-    importanceThreshold: "high",
-    locale,
-    decisionRecordsById:
-      stagingFixture?.decisionRecordsById ??
-      buildDecisionRecordIndex(await readAllDecisionRecords(500, locale)),
-  });
-  const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
-    0,
-    MAX_EVIDENCE_MAP_ITEMS,
-  );
-  const evidenceMap = stagingFixture
-    ? Object.fromEntries(
-        evidenceIds.flatMap((evidenceId) =>
-          stagingFixture.evidenceMap[evidenceId]
-            ? [[evidenceId, stagingFixture.evidenceMap[evidenceId]]]
-            : [],
-        ),
-      )
-    : Object.fromEntries(
-        (
-          await Promise.all(
-            evidenceIds.map(
-              async (evidenceId) => [evidenceId, await getNewsEvidence(evidenceId)] as const,
-            ),
-          )
-        ).flatMap(([evidenceId, evidence]) => (evidence ? [[evidenceId, evidence]] : [])),
-      );
   return NextResponse.json(
-    {
-      events,
-      evidenceMap,
-      oldestTs:
-        events.length > 0 ? (events[events.length - 1]?.ts ?? result.oldestTs) : result.oldestTs,
-      hasMore: result.hasMore,
-      windowMinutes,
+    await buildWatchTimelinePayload({
+      mode,
       locale,
-      servedAt,
-      nextPollMs: servedAt % (3 * 60_000) < 30_000 ? 30_000 : 90_000,
-    },
+      before,
+      since,
+      limit,
+      windowMinutes,
+    }),
     { headers: { "Cache-Control": "no-store" } },
   );
 }

@@ -8,6 +8,7 @@ const KV_TTL_SECONDS = 13 * 60 * 60;
 const MAX_ENTRIES_TOTAL = 500;
 const LEGACY_KV_KEY = "claw42:watch:history:v1";
 const KV_KEY_PREFIX = "claw42:watch:history:v2:";
+const KV_VERSION_KEY_PREFIX = "claw42:watch:history:version:v1:";
 
 interface KvClient {
   get<T>(key: string): Promise<T | null>;
@@ -16,6 +17,7 @@ interface KvClient {
 
 const USE_KV = process.env.USE_PERSISTENT_KV === "true";
 const memoryStore = new Map<Locale, StreamEntry[]>();
+const memoryVersions = new Map<Locale, number>();
 let warnedKvFallback = false;
 
 function warnKvFallback(error: unknown) {
@@ -41,6 +43,22 @@ function appendMemoryEntry(entry: StreamEntry, now = Date.now()) {
   const locale = localeForEntry(entry);
   const current = memoryStore.get(locale) ?? [];
   memoryStore.set(locale, pruneEntries([...current, ensureEntryLocale(entry, locale)], now));
+}
+
+function bumpMemoryVersion(locale: Locale, now = Date.now()) {
+  memoryVersions.set(locale, now);
+}
+
+async function bumpWatchHistoryVersion(locale: Locale, now = Date.now()) {
+  bumpMemoryVersion(locale, now);
+  const kv = await getKvClient();
+  if (!kv) return;
+
+  try {
+    await kv.set(kvVersionKeyForLocale(locale), now, { ex: KV_TTL_SECONDS });
+  } catch (error) {
+    warnKvFallback(error);
+  }
 }
 
 function hasCompleteMeta(meta: WatchEntryMeta | undefined): meta is WatchEntryMeta {
@@ -77,6 +95,7 @@ export async function appendWatchEntry(entry: StreamEntry): Promise<void> {
   const kv = await getKvClient();
   if (!kv) {
     appendMemoryEntry(normalizedEntry, now);
+    await bumpWatchHistoryVersion(locale, now);
     return;
   }
 
@@ -88,9 +107,11 @@ export async function appendWatchEntry(entry: StreamEntry): Promise<void> {
       now,
     );
     await kv.set(key, pruned, { ex: KV_TTL_SECONDS });
+    await bumpWatchHistoryVersion(locale, now);
   } catch (error) {
     warnKvFallback(error);
     appendMemoryEntry(normalizedEntry, now);
+    await bumpWatchHistoryVersion(locale, now);
   }
 }
 
@@ -155,11 +176,31 @@ export async function getWatchHistory(
 
 export function __resetWatchHistoryForTests() {
   memoryStore.clear();
+  memoryVersions.clear();
   warnedKvFallback = false;
+}
+
+export async function getWatchHistoryVersion(localeInput: Locale): Promise<number> {
+  const locale = normalizeWatchLocale(localeInput);
+  const kv = await getKvClient();
+  if (kv) {
+    try {
+      return (
+        (await kv.get<number>(kvVersionKeyForLocale(locale))) ?? memoryVersions.get(locale) ?? 0
+      );
+    } catch (error) {
+      warnKvFallback(error);
+    }
+  }
+  return memoryVersions.get(locale) ?? 0;
 }
 
 function kvKeyForLocale(locale: Locale) {
   return `${KV_KEY_PREFIX}${normalizeWatchLocale(locale)}`;
+}
+
+function kvVersionKeyForLocale(locale: Locale) {
+  return `${KV_VERSION_KEY_PREFIX}${normalizeWatchLocale(locale)}`;
 }
 
 function localeForEntry(entry: StreamEntry) {

@@ -1,0 +1,125 @@
+import type { Locale } from "@/i18n/types";
+import type { NewsEvidence } from "@/lib/news/newsEvidence";
+import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
+import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import type { StreamEntry } from "@/modules/agent-watch/types";
+import { getWatchHistory } from "@/lib/watchHistoryStore";
+import {
+  getStagingMockTimeline,
+  shouldUseStagingMockTimeline,
+} from "@/lib/watch/__fixtures__/stagingMockTimeline";
+import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import {
+  buildDecisionRecordIndex,
+  filterPublicTimelineEvents,
+} from "@/lib/watch/publicTimelineProjection";
+
+const MAX_EVIDENCE_MAP_ITEMS = 120;
+
+export type WatchTimelineMode = "public" | "debug";
+
+export interface PublicWatchTimelinePayload {
+  events: PublicTimelineEvent[];
+  evidenceMap: Record<string, NewsEvidence>;
+  oldestTs: number | null;
+  hasMore: boolean;
+  windowMinutes: number;
+  locale: Locale;
+  servedAt: number;
+  nextPollMs: number;
+}
+
+export interface DebugWatchTimelinePayload {
+  entries: StreamEntry[];
+  oldestTs: number | null;
+  hasMore: boolean;
+  windowMinutes: number;
+  locale: Locale;
+  servedAt: number;
+  nextPollMs: number;
+}
+
+export type WatchTimelinePayload = PublicWatchTimelinePayload | DebugWatchTimelinePayload;
+
+export interface WatchTimelinePayloadOptions {
+  mode: WatchTimelineMode;
+  locale: Locale;
+  before: number;
+  since?: number;
+  limit: number;
+  windowMinutes: number;
+  servedAt?: number;
+}
+
+export function resolveWatchTimelineNextPollMs(servedAt: number) {
+  return servedAt % (3 * 60_000) < 30_000 ? 30_000 : 90_000;
+}
+
+export async function buildWatchTimelinePayload({
+  mode,
+  locale,
+  before,
+  since,
+  limit,
+  windowMinutes,
+  servedAt = Date.now(),
+}: WatchTimelinePayloadOptions): Promise<WatchTimelinePayload> {
+  const stagingFixture = shouldUseStagingMockTimeline()
+    ? getStagingMockTimeline(locale, servedAt)
+    : null;
+  const result =
+    stagingFixture ?? (await getWatchHistory({ before, since, limit, windowMinutes, locale }));
+  if (mode === "debug") {
+    return {
+      entries: result.entries,
+      oldestTs: result.oldestTs,
+      hasMore: result.hasMore,
+      windowMinutes,
+      locale,
+      servedAt,
+      nextPollMs: 30_000,
+    };
+  }
+
+  const events = filterPublicTimelineEvents(result.entries, {
+    mode: "public",
+    importanceThreshold: "high",
+    locale,
+    decisionRecordsById:
+      stagingFixture?.decisionRecordsById ??
+      buildDecisionRecordIndex(await readAllDecisionRecords(500, locale)),
+  });
+  const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
+    0,
+    MAX_EVIDENCE_MAP_ITEMS,
+  );
+  const evidenceMap = stagingFixture
+    ? Object.fromEntries(
+        evidenceIds.flatMap((evidenceId) =>
+          stagingFixture.evidenceMap[evidenceId]
+            ? [[evidenceId, stagingFixture.evidenceMap[evidenceId]]]
+            : [],
+        ),
+      )
+    : Object.fromEntries(
+        (
+          await Promise.all(
+            evidenceIds.map(
+              async (evidenceId) => [evidenceId, await getNewsEvidence(evidenceId)] as const,
+            ),
+          )
+        ).flatMap(([evidenceId, evidence]) => (evidence ? [[evidenceId, evidence]] : [])),
+      );
+
+  return {
+    events,
+    evidenceMap,
+    oldestTs:
+      events.length > 0 ? (events[events.length - 1]?.ts ?? result.oldestTs) : result.oldestTs,
+    hasMore: result.hasMore,
+    windowMinutes,
+    locale,
+    servedAt,
+    nextPollMs: resolveWatchTimelineNextPollMs(servedAt),
+  };
+}

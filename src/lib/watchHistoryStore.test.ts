@@ -4,6 +4,7 @@ import {
   __resetWatchHistoryForTests,
   appendWatchHistoryEntry,
   appendWatchEntry,
+  getWatchHistoryVersion,
   getWatchHistory,
 } from "./watchHistoryStore";
 
@@ -132,5 +133,24 @@ describe("watchHistoryStore", () => {
     expect((await getWatchHistory({ before: now + 1 })).entries.map((item) => item.id)).toEqual([
       "zh",
     ]);
+  });
+
+  test("bumps a locale version when a watch entry is appended", async () => {
+    const now = Date.now();
+    expect(await getWatchHistoryVersion("zh_CN")).toBe(0);
+
+    await appendWatchHistoryEntry({
+      ...entry("versioned", now),
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: [],
+        locale: "zh_CN",
+      },
+    });
+
+    expect(await getWatchHistoryVersion("zh_CN")).toBeGreaterThanOrEqual(now);
+    expect(await getWatchHistoryVersion("en_US")).toBe(0);
   });
 });
