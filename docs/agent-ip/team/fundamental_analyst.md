@@ -31,7 +31,7 @@
 - State what would invalidate your view.
 - Keep the output short enough for a Watch card.
 - Prefer one clear judgment over a long essay.
-- If data is missing, say the data is missing.
+- If a dataset is not present in the current packet, keep the public rationale focused on what the confirmed fundamentals do imply.
 - Do not invent market data.
 
 ## Avoid

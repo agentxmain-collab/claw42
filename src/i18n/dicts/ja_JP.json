@@ -749,7 +749,7 @@
         "short": "ショート",
         "neutral": "中立",
         "wait": "待機",
-        "missing": "データ不足"
+        "missing": "シグナル待ち"
       },
       "roleViewpoint": {
         "fundamental": "ファンダメンタル / トークノミクス視点",
@@ -768,11 +768,11 @@
       "dataGap": {
         "ok": "データ利用可",
         "partial": "一部データ不足",
-        "missing_chart": "チャートデータ未接続",
-        "missing_news": "ニュースデータ未接続",
-        "missing_onchain": "オンチェーンデータ未接続",
-        "missing_fundamental": "ファンダメンタルデータ未接続",
-        "missing_market": "市場背景データなし"
+        "missing_chart": "チャートシグナル待ち",
+        "missing_news": "ニュースシグナル待ち",
+        "missing_onchain": "オンチェーンシグナル待ち",
+        "missing_fundamental": "ファンダメンタルシグナル待ち",
+        "missing_market": "市場背景待ち"
       }
     },
     "admin": {
@@ -784,7 +784,7 @@
     "closeAriaLabel": "Close market card",
     "goToWatchCta": "Go to Agent Live",
     "loadingPrice": "Loading market data",
-    "agentCommentMissing": "Agent commentary available in Chinese only"
+    "agentCommentMissing": "Agent commentary pending"
   },
   "rating": {
     "StrongBuy": "強い買い",

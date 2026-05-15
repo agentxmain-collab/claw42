@@ -74,22 +74,22 @@ const MEMBER_MANDATES: Record<TeamMemberId, string> = {
   onchain_analyst:
     "You are the onchain analyst. Use only onchain/protocol activity evidence and broad market context. Do not evaluate chart patterns, news, or tokenomics.",
   research_lead:
-    "You are the research lead. Synthesize available role outputs and evidence gaps; identify which domain carries the strongest signal.",
+    "You are the research lead. Synthesize available role outputs and identify which domain carries the strongest signal.",
   risk_lead:
-    "You are the risk lead. Focus on downside, invalidation, data gaps, stale evidence, and reasons to reduce or wait.",
-  pm: "You are the portfolio manager. Turn evidence and role inputs into an auditable decision without inventing missing data.",
+    "You are the risk lead. Focus on downside, invalidation, stale evidence, and reasons to reduce or wait.",
+  pm: "You are the portfolio manager. Turn evidence and role inputs into an auditable decision using only confirmed signals.",
   bullish_researcher:
-    "You are the bullish researcher. Build the strongest long thesis from available evidence, while naming missing data explicitly.",
+    "You are the bullish researcher. Build the strongest long thesis from available evidence and state how much conviction it deserves.",
   bearish_researcher:
-    "You are the bearish researcher. Build the strongest short or avoid thesis from available evidence, while naming missing data explicitly.",
+    "You are the bearish researcher. Build the strongest short or avoid thesis from available evidence and state how much conviction it deserves.",
   trader:
     "You are the execution strategist. Focus on entry quality, kline confirmation, liquidity, invalidation, and position sizing.",
   aggressive_reviewer:
-    "You are the aggressive reviewer. Test whether the setup justifies speed and risk; do not ignore data gaps.",
+    "You are the aggressive reviewer. Test whether the setup justifies speed and risk using confirmed signals.",
   neutral_reviewer:
     "You are the neutral reviewer. Weigh evidence on both sides and call out when the correct stance is wait.",
   conservative_reviewer:
-    "You are the conservative reviewer. Require strong evidence before endorsing risk; missing domains should lower confidence.",
+    "You are the conservative reviewer. Require strong evidence before endorsing risk; thin signal coverage should lower confidence.",
   memory_loop:
     "You are the memory loop. Compare this setup with prior decision patterns and state what should be remembered for post-trade review.",
 };
@@ -100,7 +100,11 @@ function section(
   items: TypedEvidenceItem[],
   summary: string,
 ): EvidenceContextSection {
-  return { status, items, summary: summary || `${domain} evidence unavailable` };
+  return { status, items, summary: summary || publicFallbackSummary(domain) };
+}
+
+function publicFallbackSummary(domain: EvidenceDomain) {
+  return `No independent ${domain} signal was available in the current evidence window.`;
 }
 
 function statusFromItems(items: TypedEvidenceItem[]): AnalystDataStatus {
@@ -255,31 +259,41 @@ export async function buildEvidenceContextPack({
         recentMarketSignals
           .slice(0, 4)
           .map((signal) => `${signal.symbol} ${signal.type} ${signal.severity}`)
-          .join(" / ") || "No market signal context provided.",
+          .join(" / ") || publicFallbackSummary("market"),
     },
   ];
 
   return {
     symbol: normalizedSymbol,
-    chart: section("chart", statusFromItems(chart), chart, summarize(chart, "No chart evidence.")),
-    news: section("news", statusFromItems(news), news, summarize(news, "No news evidence.")),
+    chart: section(
+      "chart",
+      statusFromItems(chart),
+      chart,
+      summarize(chart, publicFallbackSummary("chart")),
+    ),
+    news: section(
+      "news",
+      statusFromItems(news),
+      news,
+      summarize(news, publicFallbackSummary("news")),
+    ),
     onchain: section(
       "onchain",
       statusFromItems(onchain),
       onchain,
-      summarize(onchain, "No onchain evidence."),
+      summarize(onchain, publicFallbackSummary("onchain")),
     ),
     fundamental: section(
       "fundamental",
       statusFromItems(fundamentalItems),
       fundamentalItems,
-      summarize(fundamentalItems, "No fundamental evidence."),
+      summarize(fundamentalItems, publicFallbackSummary("fundamental")),
     ),
     market: section(
       "market",
       statusFromItems(market),
       market,
-      summarize(market, "No broad market context."),
+      summarize(market, publicFallbackSummary("market")),
     ),
     dataStatus: {
       chart: statusFromItems(chart),
@@ -312,7 +326,7 @@ export function formatRoleEvidenceContext(memberId: TeamMemberId, pack: Evidence
   const sections = domains
     .map((domain) => {
       const section = pack[domain];
-      return `### ${domain} evidence (${section.status})
+      return `### ${domain} evidence
 ${section.summary}`;
     })
     .join("\n\n");
@@ -320,8 +334,9 @@ ${section.summary}`;
   return `## Role mandate
 ${MEMBER_MANDATES[memberId]}
 
-## Data status
-${domains.map((domain) => `- ${domain}: ${pack.dataStatus[domain]}`).join("\n")}
+## Public output discipline
+Use only the evidence below. If the signal set is thin, lower confidence and describe the basis for caution.
+Do not mention backend connectors, data ingestion status, unprovided datasets, service health, or fallback execution.
 
 ${sections}`;
 }

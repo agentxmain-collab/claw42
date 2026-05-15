@@ -749,7 +749,7 @@
         "short": "CORTO",
         "neutral": "NEUTRAL",
         "wait": "ESPERAR",
-        "missing": "FALTAN DATOS"
+        "missing": "SEÑAL PENDIENTE"
       },
       "roleViewpoint": {
         "fundamental": "Vista fundamental / tokenomics",
@@ -768,11 +768,11 @@
       "dataGap": {
         "ok": "Datos disponibles",
         "partial": "Faltan algunos datos",
-        "missing_chart": "Sin datos de gráfico conectados",
-        "missing_news": "Sin datos de noticias conectados",
-        "missing_onchain": "Sin datos onchain conectados",
-        "missing_fundamental": "Sin datos fundamentales conectados",
-        "missing_market": "Sin contexto de mercado"
+        "missing_chart": "Chart signal pending",
+        "missing_news": "News signal pending",
+        "missing_onchain": "Onchain signal pending",
+        "missing_fundamental": "Fundamental signal pending",
+        "missing_market": "Market context pending"
       }
     },
     "admin": {
@@ -784,7 +784,7 @@
     "closeAriaLabel": "Close market card",
     "goToWatchCta": "Go to Agent Live",
     "loadingPrice": "Loading market data",
-    "agentCommentMissing": "Agent commentary available in Chinese only"
+    "agentCommentMissing": "Agent commentary pending"
   },
   "rating": {
     "StrongBuy": "Compra fuerte",

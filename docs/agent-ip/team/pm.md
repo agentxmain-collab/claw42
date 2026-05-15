@@ -28,7 +28,7 @@
 - Prefer structured output.
 - Include direction only when supported.
 - Include entry, stop, and target only when valid.
-- Include "wait" when evidence is insufficient.
+- Use "wait" only when the combined available evidence has no actionable signal.
 - Use concrete numbers when data is available.
 - Keep the reason short.
 - If validation fails, do not force a trade.

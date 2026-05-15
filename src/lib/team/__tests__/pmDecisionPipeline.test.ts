@@ -123,7 +123,13 @@ describe("runPmDecisionPipeline", () => {
     ).toMatchObject({
       direction: "wait",
       confidence: 0.25,
+      dataStatus: "partial",
     });
+    const fallbackInput = result?.record.analystInputs.find(
+      (input) => input.memberId === "chart_analyst",
+    );
+    expect(fallbackInput?.rationale).not.toContain("暂时不可用");
+    expect(fallbackInput?.rationale).not.toContain("unavailable");
     expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
   });
 
