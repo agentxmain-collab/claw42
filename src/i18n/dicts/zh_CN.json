@@ -169,7 +169,7 @@
   "team": {
     "trackRecord": {
       "title": "团队战绩墙",
-      "subtitle": "7 人 Watch 团队的公开决策记录，区分 live / paper / backtest 来源。",
+      "subtitle": "14 人 Watch 团队的公开决策记录，区分 live / paper / backtest 来源。",
       "totalDecisions": "累计决策",
       "overallWinRate": "整体胜率",
       "teamNetReturn7d": "7日净值",
@@ -238,9 +238,58 @@
       "ariaLabel": "PM, 产品经理",
       "oneLineCapability": "把团队结论收敛成交易卡"
     },
+    "bullish_researcher": {
+      "displayName": "多头研究总监",
+      "roleTitle": "多头研究总监",
+      "shortBio": "负责验证上行 thesis 的证据质量与失效条件。",
+      "ariaLabel": "多头研究总监, 多头研究总监",
+      "oneLineCapability": "验证上行 thesis 和失效条件"
+    },
+    "bearish_researcher": {
+      "displayName": "空头研究总监",
+      "roleTitle": "空头研究总监",
+      "shortBio": "负责验证下行 thesis、反转风险与不交易理由。",
+      "ariaLabel": "空头研究总监, 空头研究总监",
+      "oneLineCapability": "验证下行 thesis 和反转风险"
+    },
+    "trader": {
+      "displayName": "交易策略总监",
+      "roleTitle": "交易策略总监",
+      "shortBio": "把分歧转成可执行方案，明确入场、止损和等待条件。",
+      "ariaLabel": "交易策略总监, 交易策略总监",
+      "oneLineCapability": "把分歧转成可执行方案"
+    },
+    "aggressive_reviewer": {
+      "displayName": "收益进攻总监",
+      "roleTitle": "收益进攻总监",
+      "shortBio": "评估机会是否值得更进攻的仓位和执行节奏。",
+      "ariaLabel": "收益进攻总监, 收益进攻总监",
+      "oneLineCapability": "判断是否值得进攻仓位"
+    },
+    "neutral_reviewer": {
+      "displayName": "组合平衡总监",
+      "roleTitle": "组合平衡总监",
+      "shortBio": "在机会和风险之间校准仓位、等待条件和组合影响。",
+      "ariaLabel": "组合平衡总监, 组合平衡总监",
+      "oneLineCapability": "平衡机会、仓位和风险"
+    },
+    "conservative_reviewer": {
+      "displayName": "风险防御总监",
+      "roleTitle": "风险防御总监",
+      "shortBio": "负责找出会阻断或降低仓位的关键下行条件。",
+      "ariaLabel": "风险防御总监, 风险防御总监",
+      "oneLineCapability": "找出阻断交易的风险条件"
+    },
+    "memory_loop": {
+      "displayName": "策略复盘总监",
+      "roleTitle": "策略复盘总监",
+      "shortBio": "把当前决策和历史教训连接，记录下一轮要验证的点。",
+      "ariaLabel": "策略复盘总监, 策略复盘总监",
+      "oneLineCapability": "把历史教训回灌下一轮"
+    },
     "workflowPanel": {
       "title": "AI 团队调度台",
-      "description": "7 个角色按分析、综合、风控、PM 的顺序协作，把市场信号变成可读决策。",
+      "description": "14 个角色按信息、辩论、方案、风控、裁决、复盘协作，把市场信号变成可读决策。",
       "mobileStageLabel": "流程"
     },
     "workflowNode": {
@@ -253,7 +302,7 @@
   },
   "agentWatch": {
     "pageTitle": "Live · 加密市场",
-    "pageSubtitle": "7 人 AI 团队实时盯盘，分析师 / 综合 / 风控 / PM 协作产出每日策略。",
+    "pageSubtitle": "14 人 AI 团队实时盯盘，研究、辩论、方案、风控、裁决、复盘协作产出每日策略。",
     "pageHeroTagline": "",
     "sidebarStatus": {
       "thinking": "思考中",
@@ -412,17 +461,17 @@
           "stat": "signals · 22 / 24h"
         },
         "bullish": {
-          "name": "多头策略师",
+          "name": "多头研究总监",
           "role": "Bullish",
-          "desc": "立论看多 / 守住牛市观点",
-          "readoutRole": "多头策略师",
+          "desc": "上行 thesis / 多头证据 / 失效条件",
+          "readoutRole": "多头研究总监",
           "stat": "argued · 9 cases"
         },
         "bearish": {
-          "name": "空头策略师",
+          "name": "空头研究总监",
           "role": "Bearish",
-          "desc": "立论看空 / 守住熊市观点",
-          "readoutRole": "空头策略师",
+          "desc": "下行 thesis / 反转风险 / 不交易理由",
+          "readoutRole": "空头研究总监",
           "stat": "argued · 9 cases"
         },
         "trader": {
@@ -433,24 +482,24 @@
           "stat": "proposed · 6"
         },
         "aggressive": {
-          "name": "收益进攻官",
+          "name": "收益进攻总监",
           "role": "Aggressive",
-          "desc": "高仓位 / 追求最大收益",
-          "readoutRole": "收益进攻官",
+          "desc": "高仓位 / 机会成本 / 进攻节奏",
+          "readoutRole": "收益进攻总监",
           "stat": "reviews · 6"
         },
         "neutral": {
-          "name": "组合平衡官",
+          "name": "组合平衡总监",
           "role": "Neutral",
-          "desc": "平衡仓位 / 风险均衡",
-          "readoutRole": "组合平衡官",
+          "desc": "仓位平衡 / 风险均衡 / 等待条件",
+          "readoutRole": "组合平衡总监",
           "stat": "reviews · 6"
         },
         "conservative": {
-          "name": "风险防御官",
+          "name": "风险防御总监",
           "role": "Conservative",
-          "desc": "低仓位 / 守住下行风险",
-          "readoutRole": "风险防御官",
+          "desc": "低仓位 / 止损纪律 / 下行保护",
+          "readoutRole": "风险防御总监",
           "stat": "reviews · 6"
         },
         "portfolioManager": {

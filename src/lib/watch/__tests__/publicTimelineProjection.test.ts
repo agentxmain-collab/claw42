@@ -6,6 +6,7 @@ import {
 } from "@/lib/watch/publicTimelineProjection";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
+import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { StreamEntry } from "@/modules/agent-watch/types";
 
 const now = Date.now();
@@ -295,6 +296,77 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.citationsByMember?.fundamental_analyst).toEqual(["ev_1"]);
     expect(event.payload.citationsByMember?.research_lead).toEqual(["ev_2"]);
     expect(event.payload.citationsByMember?.risk_lead).toBeUndefined();
+  });
+
+  it("projects all fourteen real team member rationales", () => {
+    const members: TeamMemberId[] = [
+      "fundamental_analyst",
+      "news_analyst",
+      "chart_analyst",
+      "onchain_analyst",
+      "research_lead",
+      "risk_lead",
+      "pm",
+      "bullish_researcher",
+      "bearish_researcher",
+      "trader",
+      "aggressive_reviewer",
+      "neutral_reviewer",
+      "conservative_reviewer",
+      "memory_loop",
+    ];
+    const fullRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-14",
+      contributorIds: members,
+      analystInputs: members.map((memberId) => ({
+        memberId,
+        direction: memberId === "bearish_researcher" ? "short" : "long",
+        confidence: 0.65,
+        rationale: `${memberId} rationale`,
+        evidenceIds: memberId === "pm" ? ["ev_1"] : [],
+      })),
+    };
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-14",
+      ts: now,
+      thread: {
+        id: "thread-14",
+        seed: {
+          id: "seed-14",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["BTC"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: [],
+        locale: "zh_CN",
+        recordId: "record-14",
+        tradeDecision,
+      },
+    };
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map([[fullRecord.id, fullRecord]]),
+    });
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(Object.keys(event.payload.rationaleByMember).sort()).toEqual([...members].sort());
+    expect(event.payload.citationsByMember?.pm).toEqual(["ev_1"]);
+    expect(event.evidenceIds).toEqual(["ev_1"]);
   });
 
   it("prefers indexed decision record trade decisions over stale entry metadata", () => {

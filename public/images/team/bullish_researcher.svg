@@ -1,0 +1,6 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bullish researcher placeholder avatar">
+  <rect width="128" height="128" rx="32" fill="#141414"/>
+  <circle cx="64" cy="64" r="46" fill="#d1ff55" opacity="0.2"/>
+  <circle cx="64" cy="64" r="34" fill="#101018"/>
+  <text x="64" y="78" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800" fill="#f7f4ff">BR</text>
+</svg>

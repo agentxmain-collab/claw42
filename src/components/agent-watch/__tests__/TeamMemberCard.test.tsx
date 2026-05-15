@@ -88,4 +88,11 @@ const teamLabels: Dict["team"] = {
   research_lead: memberLabels,
   risk_lead: memberLabels,
   pm: memberLabels,
+  bullish_researcher: memberLabels,
+  bearish_researcher: memberLabels,
+  trader: memberLabels,
+  aggressive_reviewer: memberLabels,
+  neutral_reviewer: memberLabels,
+  conservative_reviewer: memberLabels,
+  memory_loop: memberLabels,
 };

@@ -7,7 +7,14 @@ export type TeamMemberId =
   | "onchain_analyst"
   | "research_lead"
   | "risk_lead"
-  | "pm";
+  | "pm"
+  | "bullish_researcher"
+  | "bearish_researcher"
+  | "trader"
+  | "aggressive_reviewer"
+  | "neutral_reviewer"
+  | "conservative_reviewer"
+  | "memory_loop";
 
 export type TeamRoleId = "analyst" | "lead" | "pm";
 
@@ -95,6 +102,76 @@ export const TEAM_MEMBER_REGISTRY: Record<TeamMemberId, TeamMember> = {
     roleTitleKey: "team.pm.roleTitle",
     oneLineCapability: "team.pm.oneLineCapability",
     avatarPath: withBasePath("/images/team/pm.svg"),
+  },
+  bullish_researcher: {
+    id: "bullish_researcher",
+    role: "lead",
+    promptDocPath: "docs/agent-ip/team/bullish_researcher.md",
+    defaultProvider: "deepseek",
+    displayNameKey: "team.bullish_researcher.displayName",
+    roleTitleKey: "team.bullish_researcher.roleTitle",
+    oneLineCapability: "team.bullish_researcher.oneLineCapability",
+    avatarPath: withBasePath("/images/team/bullish_researcher.svg"),
+  },
+  bearish_researcher: {
+    id: "bearish_researcher",
+    role: "lead",
+    promptDocPath: "docs/agent-ip/team/bearish_researcher.md",
+    defaultProvider: "deepseek",
+    displayNameKey: "team.bearish_researcher.displayName",
+    roleTitleKey: "team.bearish_researcher.roleTitle",
+    oneLineCapability: "team.bearish_researcher.oneLineCapability",
+    avatarPath: withBasePath("/images/team/bearish_researcher.svg"),
+  },
+  trader: {
+    id: "trader",
+    role: "lead",
+    promptDocPath: "docs/agent-ip/team/trader.md",
+    defaultProvider: "minimax",
+    displayNameKey: "team.trader.displayName",
+    roleTitleKey: "team.trader.roleTitle",
+    oneLineCapability: "team.trader.oneLineCapability",
+    avatarPath: withBasePath("/images/team/trader.svg"),
+  },
+  aggressive_reviewer: {
+    id: "aggressive_reviewer",
+    role: "lead",
+    promptDocPath: "docs/agent-ip/team/aggressive_reviewer.md",
+    defaultProvider: "deepseek",
+    displayNameKey: "team.aggressive_reviewer.displayName",
+    roleTitleKey: "team.aggressive_reviewer.roleTitle",
+    oneLineCapability: "team.aggressive_reviewer.oneLineCapability",
+    avatarPath: withBasePath("/images/team/aggressive_reviewer.svg"),
+  },
+  neutral_reviewer: {
+    id: "neutral_reviewer",
+    role: "lead",
+    promptDocPath: "docs/agent-ip/team/neutral_reviewer.md",
+    defaultProvider: "deepseek",
+    displayNameKey: "team.neutral_reviewer.displayName",
+    roleTitleKey: "team.neutral_reviewer.roleTitle",
+    oneLineCapability: "team.neutral_reviewer.oneLineCapability",
+    avatarPath: withBasePath("/images/team/neutral_reviewer.svg"),
+  },
+  conservative_reviewer: {
+    id: "conservative_reviewer",
+    role: "lead",
+    promptDocPath: "docs/agent-ip/team/conservative_reviewer.md",
+    defaultProvider: "deepseek",
+    displayNameKey: "team.conservative_reviewer.displayName",
+    roleTitleKey: "team.conservative_reviewer.roleTitle",
+    oneLineCapability: "team.conservative_reviewer.oneLineCapability",
+    avatarPath: withBasePath("/images/team/conservative_reviewer.svg"),
+  },
+  memory_loop: {
+    id: "memory_loop",
+    role: "lead",
+    promptDocPath: "docs/agent-ip/team/memory_loop.md",
+    defaultProvider: "minimax",
+    displayNameKey: "team.memory_loop.displayName",
+    roleTitleKey: "team.memory_loop.roleTitle",
+    oneLineCapability: "team.memory_loop.oneLineCapability",
+    avatarPath: withBasePath("/images/team/memory_loop.svg"),
   },
 };
 

@@ -40,9 +40,15 @@ const TEAM_MESSAGE_ORDER: TeamMemberId[] = [
   "news_analyst",
   "onchain_analyst",
   "fundamental_analyst",
+  "bullish_researcher",
+  "bearish_researcher",
   "research_lead",
+  "trader",
+  "aggressive_reviewer",
+  "neutral_reviewer",
+  "conservative_reviewer",
   "risk_lead",
-  "pm",
+  "memory_loop",
 ];
 
 function formatTime(ts: number) {
@@ -164,7 +170,17 @@ function stageForMember(memberId: TeamMemberId) {
     return 1;
   }
   if (memberId === "research_lead") return 2;
+  if (memberId === "bullish_researcher" || memberId === "bearish_researcher") return 2;
+  if (memberId === "trader") return 3;
   if (memberId === "risk_lead") return 4;
+  if (
+    memberId === "aggressive_reviewer" ||
+    memberId === "neutral_reviewer" ||
+    memberId === "conservative_reviewer"
+  ) {
+    return 4;
+  }
+  if (memberId === "memory_loop") return 6;
   return 5;
 }
 
@@ -172,6 +188,7 @@ function makeStages(
   topicId: string,
   hasTradeDecision: boolean,
   hasResolution = false,
+  hasMemoryLoop = false,
   outcomeDict: DispatchV10OutcomeDict,
 ): DispatchStageMarker[] {
   if (!hasTradeDecision) {
@@ -194,7 +211,7 @@ function makeStages(
     { id: stageId(topicId, 3), label: "阶段 3 · 交易方案", status: "done" },
     { id: stageId(topicId, 4), label: "阶段 4 · 风险审查", status: "done" },
     { id: stageId(topicId, 5), label: "阶段 5 · 最终决策", status: "final" },
-    hasResolution
+    hasResolution || hasMemoryLoop
       ? { id: stageId(topicId, 6), label: "阶段 6 · 复盘沉淀", status: "done" }
       : {
           id: stageId(topicId, 6),
@@ -484,6 +501,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
     const hasRationale = Object.values(latest.payload.rationaleByMember ?? {}).some((value) =>
       value?.trim(),
     );
+    const hasMemoryLoop = Boolean(latest.payload.rationaleByMember?.memory_loop?.trim());
     const status = hasTradeDecision ? "done" : hasRationale ? "active" : "pending";
 
     return {
@@ -508,6 +526,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         group.id,
         hasTradeDecision,
         Boolean(latest.payload.resolution),
+        hasMemoryLoop,
         ctx.outcomeDict,
       ),
       messages: makeMessages(group, ctx.locale, now, hasRationale, ctx.outcomeDict),

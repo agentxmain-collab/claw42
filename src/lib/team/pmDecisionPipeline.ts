@@ -17,7 +17,7 @@ import {
   type Severity,
   type TradeDecision,
 } from "@/lib/team/tradeDecisionPromptBuilder";
-import { TEAM_MEMBER_REGISTRY, type TeamMemberId } from "@/lib/team/teamRegistry";
+import { TEAM_MEMBER_IDS, TEAM_MEMBER_REGISTRY, type TeamMemberId } from "@/lib/team/teamRegistry";
 import type {
   PublicTimelineEvent,
   PublicTimelineImportance,
@@ -85,12 +85,24 @@ interface StageAuditMark {
 
 type StageAuditMap = Partial<Record<DecisionStageTraceId, StageAuditMark>>;
 
-const ANALYST_IDS: TeamMemberId[] = [
+const CORE_ANALYST_IDS: TeamMemberId[] = [
   "fundamental_analyst",
   "news_analyst",
   "chart_analyst",
   "onchain_analyst",
 ];
+
+const UPGRADED_MEMBER_IDS: TeamMemberId[] = [
+  "bullish_researcher",
+  "bearish_researcher",
+  "trader",
+  "aggressive_reviewer",
+  "neutral_reviewer",
+  "conservative_reviewer",
+  "memory_loop",
+];
+
+const PIPELINE_INPUT_MEMBER_IDS: TeamMemberId[] = [...CORE_ANALYST_IDS, ...UPGRADED_MEMBER_IDS];
 
 const PROMPT_VERSION = "pm-decision-pipeline-v1";
 
@@ -194,6 +206,66 @@ async function defaultGenerateAnalystOutput(
     }
   }
   throw lastError instanceof Error ? lastError : new Error(`${memberId} analyst generation failed`);
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeout = setTimeout(
+      () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
+      timeoutMs,
+    );
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeout) clearTimeout(timeout);
+  });
+}
+
+function fallbackAnalystOutput(
+  memberId: TeamMemberId,
+  locale: Locale,
+  error: unknown,
+): AnalystOutput {
+  if (process.env.NODE_ENV !== "test") {
+    console.warn("[claw42] PM analyst role fallback used", {
+      memberId,
+      locale,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+  const rationale =
+    locale === "zh_CN" || locale === "zh_TW"
+      ? `${memberId} 暂时不可用，使用中性占位继续生成决策。`
+      : `${memberId} unavailable; continuing with a neutral fallback.`;
+  return {
+    memberId,
+    direction: "neutral",
+    confidence: 0.25,
+    rationale,
+    citations: [],
+  };
+}
+
+async function generateAnalystWithFallback({
+  memberId,
+  prompt,
+  generateAnalyst,
+  locale,
+}: {
+  memberId: TeamMemberId;
+  prompt: string;
+  generateAnalyst: (memberId: TeamMemberId, prompt: string) => Promise<AnalystOutput>;
+  locale: Locale;
+}) {
+  try {
+    return await withTimeout(
+      generateAnalyst(memberId, prompt),
+      30_000,
+      `PM analyst generation ${memberId}`,
+    );
+  } catch (error) {
+    return fallbackAnalystOutput(memberId, locale, error);
+  }
 }
 
 async function defaultGenerateLeadOutput(
@@ -410,6 +482,18 @@ function makeRecord({
       rationale: riskLead.rationale,
       evidenceIds: input.recentNewsEvidence.map((evidence) => evidence.id),
     },
+    {
+      memberId: "pm",
+      direction:
+        tradeDecision?.direction === "long" || tradeDecision?.direction === "short"
+          ? tradeDecision.direction
+          : "neutral",
+      confidence: tradeDecision?.confidence ?? 0.5,
+      rationale: tradeDecision
+        ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
+        : "PM returned no decision.",
+      evidenceIds: tradeDecision?.evidenceIds ?? [],
+    },
   ];
 
   return {
@@ -419,14 +503,7 @@ function makeRecord({
     symbol,
     locale,
     decisionOwnerId: "pm",
-    contributorIds: [
-      "fundamental_analyst",
-      "news_analyst",
-      "chart_analyst",
-      "onchain_analyst",
-      "research_lead",
-      "risk_lead",
-    ],
+    contributorIds: TEAM_MEMBER_IDS,
     analystInputs,
     stageTrace: makeStageTrace(observedAt, tradeDecision, stageAudit),
     sourceThreadId: null,
@@ -452,7 +529,7 @@ function makeStageTrace(
       label: "Analyst input generation",
       status: "done",
       observedAt,
-      memberIds: ANALYST_IDS,
+      memberIds: PIPELINE_INPUT_MEMBER_IDS,
       ...stageAuditFields(stageAudit, "analyst_inputs"),
     },
     {
@@ -623,13 +700,15 @@ export async function runPmDecisionPipeline(
     );
     startStage(stageAudit, "analyst_inputs");
     const analystPrompts = await Promise.all(
-      ANALYST_IDS.map(async (memberId) => ({
+      PIPELINE_INPUT_MEMBER_IDS.map(async (memberId) => ({
         memberId,
         prompt: await buildMemberPrompt(memberId, localizedInput, deps),
       })),
     );
     const analystOutputs = await Promise.all(
-      analystPrompts.map(({ memberId, prompt }) => generateAnalyst(memberId, prompt)),
+      analystPrompts.map(({ memberId, prompt }) =>
+        generateAnalystWithFallback({ memberId, prompt, generateAnalyst, locale }),
+      ),
     );
     completeStage(stageAudit, "analyst_inputs", `${analystOutputs.length} analyst outputs`);
 
@@ -648,15 +727,30 @@ export async function runPmDecisionPipeline(
 
     const currentPrice = currentPriceFromSignals(localizedInput.recentMarketSignals);
     startStage(stageAudit, "trade_decision");
-    const tradeDecision = await tradeGenerator({
-      symbol: symbolFromInput(localizedInput),
-      currentPrice,
-      analystInputs: analystOutputs.map((output) => ({
+    const tradeInputs = [
+      ...analystOutputs.map((output) => ({
         memberId: output.memberId,
         direction: output.direction,
         confidence: output.confidence,
         rationale: output.rationale,
       })),
+      {
+        memberId: "research_lead" as const,
+        direction: "neutral" as const,
+        confidence: researchLead.confidence,
+        rationale: researchLead.rationale,
+      },
+      {
+        memberId: "risk_lead" as const,
+        direction: "neutral" as const,
+        confidence: riskLead.confidence,
+        rationale: riskLead.rationale,
+      },
+    ];
+    const tradeDecision = await tradeGenerator({
+      symbol: symbolFromInput(localizedInput),
+      currentPrice,
+      analystInputs: tradeInputs,
       riskNotes: [riskLead.rationale],
       newsContext: localizedInput.recentNewsEvidence.map(
         (evidence) => `${evidence.id}: ${evidence.summary}`,
@@ -671,6 +765,7 @@ export async function runPmDecisionPipeline(
       new Set([
         ...localizedInput.recentNewsEvidence.map((evidence) => evidence.id),
         ...analystOutputs.flatMap((output) => output.citations),
+        ...(tradeDecision.evidenceIds ?? []),
       ]),
     );
     const record = makeRecord({

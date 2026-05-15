@@ -534,7 +534,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       expect.arrayContaining([
         expect.objectContaining({
           agentId: "memory_loop",
-          agentName: "策略复盘主管",
+          agentName: "策略复盘总监",
           stageId: topic.stages[5]?.id,
           content: expect.stringContaining("止盈达成"),
         }),

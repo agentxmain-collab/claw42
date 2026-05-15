@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { TEAM_MEMBER_IDS, TEAM_MEMBER_REGISTRY, getTeamMember } from "@/lib/team/teamRegistry";
 
 describe("TEAM_MEMBER_REGISTRY", () => {
-  test("contains the seven Watch team members", () => {
+  test("contains the fourteen Watch team members", () => {
     expect(TEAM_MEMBER_IDS).toEqual([
       "fundamental_analyst",
       "news_analyst",
@@ -11,8 +11,15 @@ describe("TEAM_MEMBER_REGISTRY", () => {
       "research_lead",
       "risk_lead",
       "pm",
+      "bullish_researcher",
+      "bearish_researcher",
+      "trader",
+      "aggressive_reviewer",
+      "neutral_reviewer",
+      "conservative_reviewer",
+      "memory_loop",
     ]);
-    expect(Object.keys(TEAM_MEMBER_REGISTRY)).toHaveLength(7);
+    expect(Object.keys(TEAM_MEMBER_REGISTRY)).toHaveLength(14);
   });
 
   test("references prompt document paths for each member", () => {
