@@ -262,6 +262,25 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.messages.map((message) => message.agentName)).not.toEqual(
       expect.arrayContaining(["K 哥", "Mira", "Vit", "老 R", "老 X", "PM", "决策经理"]),
     );
+    expect(topic.messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          agentId: "bearish_researcher",
+          sourceMemberId: "research_lead",
+          agentName: "策略研究主管",
+        }),
+        expect.objectContaining({
+          agentId: "neutral_reviewer",
+          sourceMemberId: "risk_lead",
+          agentName: "风控总监",
+        }),
+        expect.objectContaining({
+          agentId: "portfolio_manager",
+          sourceMemberId: "pm",
+          agentName: "首席投资官",
+        }),
+      ]),
+    );
     expect("source" in topic).toBe(false);
   });
 
@@ -604,6 +623,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       expect.arrayContaining(["Round one detailed chart view.", "Round two refined chart view."]),
     );
     expect(topic.messages[0]).toMatchObject({
+      sourceMemberId: "chart_analyst",
       direction: "short",
       directionLabel: "SHORT",
       confidence: 0.6,
