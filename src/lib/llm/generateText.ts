@@ -1,4 +1,5 @@
 import { callWithChain } from "@/lib/llm/providers";
+import type { ProviderId } from "@/lib/llm/providers";
 import {
   applyGuardrails,
   buildGuardrailRetryPrompt,
@@ -14,12 +15,22 @@ export interface GenerateTextOptions {
   enableCache?: boolean;
   cacheTTLSeconds?: number;
   enableGuardrails?: boolean;
+  providerOverride?: ProviderId;
 }
 
 export async function generateText(prompt: string, options: GenerateTextOptions): Promise<string> {
   const cacheKey =
     options.enableCache !== false
-      ? hashCacheKey(prompt, options.taskTag, options.systemPrompt)
+      ? hashCacheKey(
+          prompt,
+          options.taskTag,
+          [
+            options.systemPrompt,
+            options.providerOverride ? `provider:${options.providerOverride}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        )
       : undefined;
 
   const output = await callWithChain({
@@ -31,6 +42,7 @@ export async function generateText(prompt: string, options: GenerateTextOptions)
     cacheKey,
     cacheTTLSeconds: options.cacheTTLSeconds,
     taskTag: options.taskTag,
+    providerOverride: options.providerOverride,
   });
 
   if (options.enableGuardrails === false || !hasMechanicalOutput(output.text, options.taskTag)) {
@@ -44,6 +56,7 @@ export async function generateText(prompt: string, options: GenerateTextOptions)
     maxTokens: options.maxTokens,
     timeoutMs: 10_000,
     taskTag: `${options.taskTag}:guardrail-retry`,
+    providerOverride: options.providerOverride,
   });
 
   return applyGuardrails(retryOutput.text, options.taskTag);

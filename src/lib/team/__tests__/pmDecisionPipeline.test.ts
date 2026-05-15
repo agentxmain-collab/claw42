@@ -121,7 +121,7 @@ describe("runPmDecisionPipeline", () => {
     expect(
       result?.record.analystInputs.find((input) => input.memberId === "chart_analyst"),
     ).toMatchObject({
-      direction: "neutral",
+      direction: "wait",
       confidence: 0.25,
     });
     expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);

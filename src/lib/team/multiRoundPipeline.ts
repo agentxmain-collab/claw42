@@ -1,4 +1,5 @@
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
+import type { AnalystDataStatus, AnalystDirection } from "@/lib/team/strategyDecisionRecord";
 
 export const PM_DECISION_ANALYST_ROUNDS = 2;
 
@@ -10,9 +11,12 @@ export interface MultiRoundAnalystCandidate {
 export interface MultiRoundAnalystOutput {
   memberId: TeamMemberId;
   round: number;
-  direction: "long" | "short" | "neutral";
+  direction: AnalystDirection;
   confidence: number;
   rationale: string;
+  oneLineSummary?: string;
+  detailedRationale?: string;
+  dataStatus?: AnalystDataStatus;
   citations: string[];
   observedAt: string;
 }
@@ -25,9 +29,12 @@ export interface RunMultiRoundAnalystDebateInput {
     round: number,
   ) => Promise<{
     memberId: TeamMemberId;
-    direction: "long" | "short" | "neutral";
+    direction: AnalystDirection;
     confidence: number;
     rationale: string;
+    oneLineSummary?: string;
+    detailedRationale?: string;
+    dataStatus?: AnalystDataStatus;
     citations: string[];
   }>;
   now?: () => number;

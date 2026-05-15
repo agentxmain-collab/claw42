@@ -26,6 +26,18 @@ describe("generateText adapter", () => {
     expect(text).toMatch(/^\[STUB:test:generate:/);
   });
 
+  it("passes providerOverride into the shared provider chain", async () => {
+    process.env.LLM_PRIMARY_PROVIDER = "deepseek-chat";
+
+    const text = await generateText("hello", {
+      taskTag: "test:override",
+      enableCache: false,
+      providerOverride: "stub",
+    });
+
+    expect(text).toMatch(/^\[STUB:test:override:/);
+  });
+
   it("hashes and stores cache entries", async () => {
     const key = hashCacheKey("prompt", "test:cache", "system");
     await setCache(key, {
