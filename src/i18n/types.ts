@@ -140,6 +140,26 @@ export type DispatchV10TopicRankingDict = {
   rank_label: string;
 };
 
+export type DispatchV10DirectionDict = {
+  long: string;
+  short: string;
+  neutral: string;
+  wait: string;
+  missing: string;
+};
+
+export type DispatchV10DataGapDict = {
+  ok: string;
+  partial: string;
+  missing_chart: string;
+  missing_news: string;
+  missing_onchain: string;
+  missing_fundamental: string;
+  missing_market: string;
+};
+
+export type DispatchV10RoleViewpointDict = Record<DispatchV10AgentRoleId, string>;
+
 export type DispatchV10HistoryDict = {
   wall_title: string;
   outcome_label: string;
@@ -195,6 +215,9 @@ export type DispatchV10Dict = {
   round: DispatchV10RoundDict;
   stageStatus: DispatchV10StageStatusDict;
   topicRanking: DispatchV10TopicRankingDict;
+  direction: DispatchV10DirectionDict;
+  roleViewpoint: DispatchV10RoleViewpointDict;
+  dataGap: DispatchV10DataGapDict;
   history: DispatchV10HistoryDict;
   followTrade: DispatchV10FollowTradeDict;
   flow: {

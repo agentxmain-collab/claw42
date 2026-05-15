@@ -1,10 +1,22 @@
 import type {
+  Dict,
+  DispatchV10AgentRoleId,
   DispatchV10OutcomeDict,
   DispatchV10RoundDict,
   DispatchV10StageStatusDict,
   DispatchV10TopicRankingDict,
   Locale,
 } from "@/i18n/types";
+import arSA from "@/i18n/dicts/ar_SA.json";
+import enUS from "@/i18n/dicts/en_US.json";
+import enXA from "@/i18n/dicts/en_XA.json";
+import esES from "@/i18n/dicts/es_ES.json";
+import frFR from "@/i18n/dicts/fr_FR.json";
+import jaJP from "@/i18n/dicts/ja_JP.json";
+import ruRU from "@/i18n/dicts/ru_RU.json";
+import ukUA from "@/i18n/dicts/uk_UA.json";
+import zhCN from "@/i18n/dicts/zh_CN.json";
+import zhTW from "@/i18n/dicts/zh_TW.json";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import {
   getDispatchAgentDisplayName,
@@ -60,6 +72,56 @@ const TEAM_MESSAGE_ORDER: TeamMemberId[] = [
   "risk_lead",
   "memory_loop",
 ];
+
+const DISPATCH_DICTS: Record<Locale, Dict["agentWatch"]["dispatchV10"]> = {
+  zh_CN: (zhCN as Dict).agentWatch.dispatchV10,
+  zh_TW: (zhTW as Dict).agentWatch.dispatchV10,
+  en_US: (enUS as Dict).agentWatch.dispatchV10,
+  ru_RU: (ruRU as Dict).agentWatch.dispatchV10,
+  uk_UA: (ukUA as Dict).agentWatch.dispatchV10,
+  ja_JP: (jaJP as Dict).agentWatch.dispatchV10,
+  fr_FR: (frFR as Dict).agentWatch.dispatchV10,
+  es_ES: (esES as Dict).agentWatch.dispatchV10,
+  ar_SA: (arSA as Dict).agentWatch.dispatchV10,
+  en_XA: (enXA as Dict).agentWatch.dispatchV10,
+};
+
+const ROLE_VIEWPOINT_KEY: Record<TeamMemberId, DispatchV10AgentRoleId> = {
+  fundamental_analyst: "fundamental",
+  news_analyst: "news",
+  chart_analyst: "technical",
+  onchain_analyst: "onchain",
+  research_lead: "bullish",
+  risk_lead: "conservative",
+  pm: "portfolioManager",
+  bullish_researcher: "bullish",
+  bearish_researcher: "bearish",
+  trader: "trader",
+  aggressive_reviewer: "aggressive",
+  neutral_reviewer: "neutral",
+  conservative_reviewer: "conservative",
+  memory_loop: "memoryLoop",
+};
+
+function dispatchDict(locale: Locale) {
+  return DISPATCH_DICTS[locale] ?? DISPATCH_DICTS.zh_CN;
+}
+
+function dataGapLabel(
+  memberId: TeamMemberId,
+  status: DispatchMessage["dataStatus"],
+  locale: Locale,
+) {
+  if (!status) return undefined;
+  const dict = dispatchDict(locale).dataGap;
+  if (status === "ok") return dict.ok;
+  if (status === "partial") return dict.partial;
+  if (memberId === "chart_analyst") return dict.missing_chart;
+  if (memberId === "news_analyst") return dict.missing_news;
+  if (memberId === "onchain_analyst") return dict.missing_onchain;
+  if (memberId === "fundamental_analyst") return dict.missing_fundamental;
+  return dict.missing_market;
+}
 
 function formatTime(ts: number) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -375,7 +437,17 @@ function makeRationaleMessages({
               dataAge: formatDataAge(event.ts, now),
               roundLabel,
               mentions: [],
-              content: rationale,
+              content: entry?.detailedRationale?.trim() || rationale,
+              direction: entry?.direction,
+              directionLabel: entry?.direction
+                ? dispatchDict(locale).direction[entry.direction]
+                : undefined,
+              confidence: entry?.confidence,
+              oneLineSummary: entry?.oneLineSummary,
+              detailedRationale: entry?.detailedRationale,
+              dataStatus: entry?.dataStatus,
+              dataStatusLabel: dataGapLabel(memberId, entry?.dataStatus, locale),
+              roleViewpoint: dispatchDict(locale).roleViewpoint[ROLE_VIEWPOINT_KEY[memberId]],
             },
           ];
         });
@@ -624,17 +696,28 @@ function makeTitle(
   group: DispatchTopicGroup,
   hasRenderableTradeDecision: boolean,
   hasRationale: boolean,
+) {
+  if (!hasRenderableTradeDecision && !hasRationale) {
+    return `${group.symbol} 实时行情分析`;
+  }
+
+  return `${group.symbol} 实时行情分析`;
+}
+
+function makeExplanation(
+  group: DispatchTopicGroup,
+  hasRenderableTradeDecision: boolean,
+  hasRationale: boolean,
   evidence?: NewsEvidence,
 ) {
   if (!hasRenderableTradeDecision && !hasRationale) {
-    return `${group.symbol} 实时行情分析 · 暂无决策更新`;
+    return "暂无决策更新";
   }
-
   const suffix =
     evidence?.summary ||
     evidence?.title ||
     (hasRenderableTradeDecision ? "真实交易决策已完成" : "分析进行中");
-  return `${group.symbol} 实时行情分析 · ${suffix}`;
+  return suffix;
 }
 
 function makeProgress(
@@ -694,7 +777,8 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       id: recordId,
       symbol: group.symbol,
       status,
-      title: makeTitle(group, hasTradeDecision, hasRationale, evidence),
+      title: makeTitle(group, hasTradeDecision, hasRationale),
+      explanation: makeExplanation(group, hasTradeDecision, hasRationale, evidence),
       originalUrl,
       sourceLabel: originalUrl ? evidence?.source : undefined,
       startedAt: formatTime(group.startedAt),

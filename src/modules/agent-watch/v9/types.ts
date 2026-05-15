@@ -1,6 +1,7 @@
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { DispatchV10FollowTradeDict } from "@/i18n/types";
+import type { AnalystDataStatus, AnalystDirection } from "@/lib/team/strategyDecisionRecord";
 import type { MarketTickerPayload } from "../types";
 
 export type DispatchView = "flow" | "mkt";
@@ -68,6 +69,14 @@ export interface DispatchMessage {
     text: string;
   };
   content: string;
+  direction?: AnalystDirection;
+  directionLabel?: string;
+  confidence?: number;
+  oneLineSummary?: string;
+  detailedRationale?: string;
+  dataStatus?: AnalystDataStatus;
+  dataStatusLabel?: string;
+  roleViewpoint?: string;
   typing?: boolean;
 }
 
@@ -99,6 +108,7 @@ export interface DispatchTopic {
   symbol: string;
   status: DispatchTopicStatus;
   title: string;
+  explanation?: string;
   originalUrl?: string;
   sourceLabel?: string;
   startedAt: string;

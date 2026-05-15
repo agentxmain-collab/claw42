@@ -212,6 +212,9 @@ function publicRoundsForInput(
         direction: round.direction,
         confidence: round.confidence,
         rationale: round.rationale.trim(),
+        oneLineSummary: summaryForRound(round.oneLineSummary, round.rationale),
+        detailedRationale: detailForRound(round.detailedRationale, round.rationale),
+        dataStatus: round.dataStatus ?? "ok",
         ...(round.evidenceIds.length > 0 ? { evidenceIds: round.evidenceIds.filter(Boolean) } : {}),
         ...(round.observedAt ? { observedAt: round.observedAt } : {}),
       }));
@@ -226,11 +229,25 @@ function publicRoundsForInput(
       direction: input.direction,
       confidence: input.confidence,
       rationale,
+      oneLineSummary: summaryForRound(input.oneLineSummary, rationale),
+      detailedRationale: detailForRound(input.detailedRationale, rationale),
+      dataStatus: input.dataStatus ?? "ok",
       ...(Array.isArray(input.evidenceIds) && input.evidenceIds.length > 0
         ? { evidenceIds: input.evidenceIds.filter(Boolean) }
         : {}),
     },
   ];
+}
+
+function summaryForRound(summary: string | undefined, rationale: string) {
+  const cleaned = summary?.trim();
+  if (cleaned) return cleaned;
+  const fallback = rationale.trim().replace(/\s+/g, " ");
+  return fallback.length > 80 ? `${fallback.slice(0, 79).trim()}…` : fallback;
+}
+
+function detailForRound(detail: string | undefined, rationale: string) {
+  return detail?.trim() || rationale.trim();
 }
 
 export function publicDecisionProcessFromRecord(record: StrategyDecisionRecord | null): {
