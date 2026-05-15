@@ -1,4 +1,9 @@
-import type { DispatchV10OutcomeDict, DispatchV10RoundDict, Locale } from "@/i18n/types";
+import type {
+  DispatchV10OutcomeDict,
+  DispatchV10RoundDict,
+  DispatchV10StageStatusDict,
+  Locale,
+} from "@/i18n/types";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import {
   getDispatchAgentDisplayName,
@@ -13,6 +18,7 @@ import {
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
+import type { DecisionStageTraceId } from "@/lib/team/strategyDecisionRecord";
 import type {
   DispatchMessage,
   DispatchStageMarker,
@@ -33,6 +39,7 @@ export interface V9AdapterContext {
   locale: Locale;
   outcomeDict: DispatchV10OutcomeDict;
   roundDict: DispatchV10RoundDict;
+  stageStatusDict: DispatchV10StageStatusDict;
   now?: number;
 }
 
@@ -198,7 +205,14 @@ function makeStages(
   hasResolution = false,
   hasMemoryLoop = false,
   outcomeDict: DispatchV10OutcomeDict,
+  stageStatusDict: DispatchV10StageStatusDict,
+  event?: PmDecisionTimelineEvent,
 ): DispatchStageMarker[] {
+  const trace = event?.payload.stageTrace;
+  if (!hasTradeDecision && trace?.length) {
+    return makePartialStages(topicId, trace, stageStatusDict, hasResolution || hasMemoryLoop);
+  }
+
   if (!hasTradeDecision) {
     return [
       { id: stageId(topicId, 1), label: "阶段 1 · 信息收集", status: "done" },
@@ -228,6 +242,92 @@ function makeStages(
           note: outcomeDict.pending,
         },
   ];
+}
+
+function makePartialStages(
+  topicId: string,
+  trace: NonNullable<PmDecisionTimelineEvent["payload"]["stageTrace"]>,
+  stageStatusDict: DispatchV10StageStatusDict,
+  hasMemoryLoop: boolean,
+): DispatchStageMarker[] {
+  const statusFor = (stageId: DecisionStageTraceId) =>
+    trace.find((entry) => entry.stageId === stageId)?.status ?? "pending";
+  const mappedStatus = (status: ReturnType<typeof statusFor>) => {
+    if (status === "done") return "done" as const;
+    if (status === "in_progress") return "in_progress" as const;
+    return "pending" as const;
+  };
+  const labelWithStatus = (stage: number, name: string, status: ReturnType<typeof statusFor>) =>
+    status === "in_progress"
+      ? `阶段 ${stage} · ${name} · ${stageStatusDict.in_progress}`
+      : `阶段 ${stage} · ${name}`;
+  const noteFor = (status: ReturnType<typeof statusFor>) =>
+    status === "in_progress"
+      ? stageStatusDict.in_progressNote
+      : status === "pending"
+        ? stageStatusDict.pending
+        : undefined;
+  const analystStatus = statusFor("analyst_inputs");
+  const researchStatus = statusFor("research_lead");
+  const tradeStatus = statusFor("trade_decision");
+  const riskStatus = statusFor("risk_lead");
+
+  return [
+    {
+      id: stageId(topicId, 1),
+      label: labelWithStatus(1, "信息收集", analystStatus),
+      status: mappedStatus(analystStatus),
+      note: noteFor(analystStatus),
+    },
+    {
+      id: stageId(topicId, 2),
+      label: labelWithStatus(2, "多空辩论", researchStatus),
+      status: mappedStatus(researchStatus),
+      note: noteFor(researchStatus),
+    },
+    {
+      id: stageId(topicId, 3),
+      label: labelWithStatus(3, "交易方案", tradeStatus),
+      status: mappedStatus(tradeStatus),
+      note: noteFor(tradeStatus),
+    },
+    {
+      id: stageId(topicId, 4),
+      label: labelWithStatus(4, "风险审查", riskStatus),
+      status: mappedStatus(riskStatus),
+      note: noteFor(riskStatus),
+    },
+    { id: stageId(topicId, 5), label: "阶段 5 · 最终决策", status: "pending" },
+    hasMemoryLoop
+      ? { id: stageId(topicId, 6), label: "阶段 6 · 复盘沉淀", status: "done" }
+      : {
+          id: stageId(topicId, 6),
+          label: "阶段 6 · 复盘沉淀",
+          status: "pending",
+          note: stageStatusDict.memoryPending,
+        },
+  ];
+}
+
+function currentStageFromTrace(event: PmDecisionTimelineEvent) {
+  const trace = event.payload.stageTrace;
+  const active = trace?.find((stage) => stage.status === "in_progress");
+  if (!active) return null;
+  switch (active.stageId) {
+    case "analyst_inputs":
+      return 1;
+    case "research_lead":
+      return 2;
+    case "trade_decision":
+      return 3;
+    case "risk_lead":
+      return 4;
+    case "record_write":
+    case "public_timeline":
+      return 5;
+    default:
+      return null;
+  }
 }
 
 function makeRationaleMessages({
@@ -309,6 +409,8 @@ function makeTraderMessage(
 ): DispatchMessage | null {
   const decision = renderableTradeDecision(event);
   if (!decision && !hasRationale) return null;
+  const currentStage = currentStageFromTrace(event);
+  if (!decision && currentStage !== null && currentStage < 3) return null;
   if (!decision) {
     return {
       id: `${event.payload.recordId}-trader-typing`,
@@ -536,7 +638,11 @@ function makeProgress(
   hasRenderableTradeDecision: boolean,
   hasRationale: boolean,
 ) {
-  if (!hasRenderableTradeDecision) return hasRationale ? "当前进行到阶段 3" : "暂无决策更新";
+  if (!hasRenderableTradeDecision) {
+    const currentStage = currentStageFromTrace(group.latestDecision);
+    if (currentStage) return `当前进行到阶段 ${currentStage}`;
+    return hasRationale ? "当前进行到阶段 3" : "暂无决策更新";
+  }
   return `${minutesBetween(group.startedAt, now)} 分钟闭环`;
 }
 
@@ -589,6 +695,8 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         Boolean(latest.payload.resolution),
         hasMemoryLoop,
         ctx.outcomeDict,
+        ctx.stageStatusDict,
+        latest,
       ),
       messages: makeMessages(group, ctx.locale, now, hasRationale, ctx.outcomeDict, ctx.roundDict),
       strategy: makeStrategy(group, ctx.followStatsByRecordId?.[recordId], hasRationale),

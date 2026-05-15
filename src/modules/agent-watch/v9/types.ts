@@ -6,7 +6,7 @@ export type DispatchView = "flow" | "mkt";
 
 export type DispatchTopicStatus = "active" | "done" | "pending";
 
-export type DispatchStageStatus = "done" | "active" | "pending" | "final";
+export type DispatchStageStatus = "done" | "active" | "in_progress" | "pending" | "final";
 
 export type DispatchAgentId =
   | "fundamental_analyst"

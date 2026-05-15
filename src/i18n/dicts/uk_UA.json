@@ -700,6 +700,13 @@
         "separator": "Раунд {round} · {mode}",
         "single": "один прохід",
         "multi": "багатораундові дебати"
+      },
+      "stageStatus": {
+        "pending": "Очікує",
+        "in_progress": "В процесі",
+        "in_progressNote": "Етап записує часткове оновлення",
+        "done": "Готово",
+        "memoryPending": "Розбір чекає запису результату"
       }
     }
   },

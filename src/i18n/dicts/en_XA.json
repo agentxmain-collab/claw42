@@ -700,6 +700,13 @@
         "separator": "Round {round} · {mode}",
         "single": "single pass",
         "multi": "multi-round debate"
+      },
+      "stageStatus": {
+        "pending": "[Pending]",
+        "in_progress": "[In progress]",
+        "in_progressNote": "[This stage is writing a partial update]",
+        "done": "[Done]",
+        "memoryPending": "[Review waits for outcome writeback]"
       }
     }
   },

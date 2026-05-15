@@ -4,6 +4,7 @@ import { generateText } from "@/lib/llm/generateText";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { recordStrategyDecisionRecord } from "@/lib/strategyHistory";
+import { writeDecisionStagePartial } from "@/lib/team/decisionStageWriter";
 import { upsertDecisionRecord } from "@/lib/team/decisionRecordStore";
 import type {
   StrategyDecisionRecord,
@@ -54,6 +55,7 @@ export interface PmDecisionPipelineInput {
   importanceThreshold?: PublicTimelineImportance;
   locale?: Locale;
   now?: number;
+  partialStageUpdates?: boolean;
 }
 
 export interface PmDecisionPipelineOutput {
@@ -82,6 +84,7 @@ interface PipelineDeps {
   generateTradeDecision?: typeof generateTradeDecision;
   recordStrategyDecisionRecord?: typeof recordStrategyDecisionRecord;
   updateDecisionRecord?: (record: StrategyDecisionRecord) => Promise<void>;
+  writeDecisionStagePartial?: typeof writeDecisionStagePartial;
   appendWatchHistoryEntry?: typeof appendWatchHistoryEntry;
   loadPromptDoc?: (memberId: TeamMemberId) => Promise<string>;
 }
@@ -600,6 +603,100 @@ function makeRecord({
   };
 }
 
+function makePartialRecord({
+  input,
+  now,
+  analystOutputs,
+  analystRoundOutputs,
+  researchLead,
+  riskLead,
+  activeStage,
+  stageAudit,
+}: {
+  input: PmDecisionPipelineInput;
+  now: number;
+  analystOutputs: AnalystOutput[];
+  analystRoundOutputs: MultiRoundAnalystOutput[];
+  researchLead?: LeadOutput;
+  riskLead?: LeadOutput;
+  activeStage: "research_lead" | "risk_lead" | "trade_decision";
+  stageAudit: StageAuditMap;
+}): StrategyDecisionRecord {
+  const symbol = symbolFromInput(input);
+  const locale = normalizeWatchLocale(input.locale);
+  const observedAt = new Date().toISOString();
+  const analystInputs: AnalystInputRecord[] = analystOutputs.map((output) => ({
+    memberId: output.memberId,
+    direction: output.direction,
+    confidence: output.confidence,
+    rationale: output.rationale,
+    evidenceIds: output.citations,
+    rounds: analystRoundsForMember(output.memberId, analystRoundOutputs),
+  }));
+
+  if (researchLead) {
+    analystInputs.push({
+      memberId: "research_lead",
+      direction: "neutral",
+      confidence: researchLead.confidence,
+      rationale: researchLead.rationale,
+      evidenceIds: input.recentNewsEvidence.map((evidence) => evidence.id),
+      rounds: singleRoundRecord({
+        direction: "neutral",
+        confidence: researchLead.confidence,
+        rationale: researchLead.rationale,
+        evidenceIds: input.recentNewsEvidence.map((evidence) => evidence.id),
+        observedAt,
+      }),
+    });
+  }
+
+  if (riskLead) {
+    analystInputs.push({
+      memberId: "risk_lead",
+      direction: "neutral",
+      confidence: riskLead.confidence,
+      rationale: riskLead.rationale,
+      evidenceIds: input.recentNewsEvidence.map((evidence) => evidence.id),
+      rounds: singleRoundRecord({
+        direction: "neutral",
+        confidence: riskLead.confidence,
+        rationale: riskLead.rationale,
+        evidenceIds: input.recentNewsEvidence.map((evidence) => evidence.id),
+        observedAt,
+      }),
+    });
+  }
+
+  return {
+    id: `pm:${symbol}:${now}`,
+    schemaVersion: 2,
+    recordSource: "live",
+    symbol,
+    locale,
+    decisionOwnerId: "pm",
+    contributorIds: TEAM_MEMBER_IDS,
+    analystInputs,
+    stageTrace: makePartialStageTrace({
+      observedAt,
+      activeStage,
+      researchLead,
+      riskLead,
+      stageAudit,
+      analystRoundOutputs,
+    }),
+    sourceThreadId: null,
+    tradeDecision: null,
+    createdAt: new Date(now).toISOString(),
+    evaluationWindowEndsAt: null,
+    resolvedAt: null,
+    resolvedOutcome: null,
+    promptVersion: PROMPT_VERSION,
+    modelProvider: "llm-chain",
+    legacyFactionId: null,
+  };
+}
+
 function makeStageTrace(
   observedAt: string,
   tradeDecision: TradeDecision | null,
@@ -679,6 +776,92 @@ function makeStageTrace(
   ];
 }
 
+function makePartialStageTrace({
+  observedAt,
+  activeStage,
+  researchLead,
+  riskLead,
+  stageAudit,
+  analystRoundOutputs,
+}: {
+  observedAt: string;
+  activeStage: "research_lead" | "risk_lead" | "trade_decision";
+  researchLead?: LeadOutput;
+  riskLead?: LeadOutput;
+  stageAudit: StageAuditMap;
+  analystRoundOutputs: readonly MultiRoundAnalystOutput[];
+}): DecisionStageTraceEntry[] {
+  const analystRounds: DispatchStageRoundRecord[] = Array.from(
+    { length: PM_DECISION_ANALYST_ROUNDS },
+    (_, index) => {
+      const round = index + 1;
+      const roundOutputs = analystRoundOutputs.filter((output) => output.round === round);
+      return {
+        round,
+        label: round === 1 ? "Independent analyst pass" : "Refinement pass",
+        status: "done" as const,
+        observedAt: roundOutputs.at(-1)?.observedAt ?? observedAt,
+        memberIds: roundOutputs.map((output) => output.memberId),
+        note: `${roundOutputs.length} analyst outputs`,
+      };
+    },
+  );
+  const researchStatus =
+    activeStage === "research_lead" ? "in_progress" : researchLead ? "done" : "pending";
+  const riskStatus = activeStage === "risk_lead" ? "in_progress" : riskLead ? "done" : "pending";
+  const tradeStatus = activeStage === "trade_decision" ? "in_progress" : "pending";
+
+  return [
+    {
+      stageId: "analyst_inputs",
+      label: "Analyst input generation",
+      status: "done",
+      observedAt,
+      memberIds: PIPELINE_INPUT_MEMBER_IDS,
+      rounds: analystRounds,
+      ...stageAuditFields(stageAudit, "analyst_inputs"),
+    },
+    {
+      stageId: "research_lead",
+      label: "Research synthesis",
+      status: researchStatus,
+      observedAt,
+      memberIds: ["research_lead"],
+      ...stageAuditFields(stageAudit, "research_lead"),
+    },
+    {
+      stageId: "risk_lead",
+      label: "Risk review",
+      status: riskStatus,
+      observedAt,
+      memberIds: ["risk_lead"],
+      ...stageAuditFields(stageAudit, "risk_lead"),
+    },
+    {
+      stageId: "trade_decision",
+      label: "PM trade decision",
+      status: tradeStatus,
+      observedAt,
+      memberIds: ["pm"],
+      ...stageAuditFields(stageAudit, "trade_decision"),
+    },
+    {
+      stageId: "record_write",
+      label: "Decision record persistence",
+      status: "pending",
+      observedAt,
+      ...stageAuditFields(stageAudit, "record_write"),
+    },
+    {
+      stageId: "public_timeline",
+      label: "Public timeline projection",
+      status: "pending",
+      observedAt,
+      ...stageAuditFields(stageAudit, "public_timeline"),
+    },
+  ];
+}
+
 function withStageTraceStatus(
   record: StrategyDecisionRecord,
   stageId: DecisionStageTraceId,
@@ -725,6 +908,18 @@ function makePublicTimelineEntry(
       stageTrace: publicStageTraceFromRecord(record),
     },
   };
+}
+
+function evidenceIdsForPartial(
+  input: PmDecisionPipelineInput,
+  analystRoundOutputs: readonly MultiRoundAnalystOutput[],
+) {
+  return Array.from(
+    new Set([
+      ...input.recentNewsEvidence.map((evidence) => evidence.id),
+      ...analystRoundOutputs.flatMap((output) => output.citations),
+    ]),
+  );
 }
 
 function timelineEntryAsChatThread(
@@ -789,8 +984,29 @@ export async function runPmDecisionPipeline(
   const tradeGenerator = deps.generateTradeDecision ?? generateTradeDecision;
   const recordWriter = deps.recordStrategyDecisionRecord ?? recordStrategyDecisionRecord;
   const recordUpdater = deps.updateDecisionRecord ?? upsertDecisionRecord;
+  const partialStageWriter = deps.writeDecisionStagePartial ?? writeDecisionStagePartial;
   const watchWriter = deps.appendWatchHistoryEntry ?? appendWatchHistoryEntry;
   const stageAudit: StageAuditMap = {};
+  let partialHistoryPublished = false;
+
+  async function publishPartialStage(record: StrategyDecisionRecord, evidenceIds: string[]) {
+    if (!localizedInput.partialStageUpdates) return record;
+    try {
+      const partialRecord = await partialStageWriter(record);
+      if (!partialHistoryPublished) {
+        await watchWriter(timelineEntryAsChatThread(partialRecord, evidenceIds));
+        partialHistoryPublished = true;
+      }
+      return partialRecord;
+    } catch (error) {
+      console.warn("[claw42] PM partial stage update skipped", {
+        recordId: record.id,
+        stageTrace: record.stageTrace?.map((stage) => `${stage.stageId}:${stage.status}`),
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return record;
+    }
+  }
 
   try {
     await Promise.all(
@@ -816,12 +1032,35 @@ export async function runPmDecisionPipeline(
     );
 
     startStage(stageAudit, "research_lead");
+    await publishPartialStage(
+      makePartialRecord({
+        input: localizedInput,
+        now,
+        analystOutputs: latestAnalystOutputs,
+        analystRoundOutputs,
+        activeStage: "research_lead",
+        stageAudit,
+      }),
+      evidenceIdsForPartial(localizedInput, analystRoundOutputs),
+    );
     const researchLead = await generateLead(
       "research_lead",
       await buildLeadPrompt("research_lead", localizedInput, latestAnalystOutputs, undefined, deps),
     );
     completeStage(stageAudit, "research_lead", "research synthesis generated");
     startStage(stageAudit, "risk_lead");
+    await publishPartialStage(
+      makePartialRecord({
+        input: localizedInput,
+        now,
+        analystOutputs: latestAnalystOutputs,
+        analystRoundOutputs,
+        researchLead,
+        activeStage: "risk_lead",
+        stageAudit,
+      }),
+      evidenceIdsForPartial(localizedInput, analystRoundOutputs),
+    );
     const riskLead = await generateLead(
       "risk_lead",
       await buildLeadPrompt("risk_lead", localizedInput, latestAnalystOutputs, researchLead, deps),
@@ -830,6 +1069,19 @@ export async function runPmDecisionPipeline(
 
     const currentPrice = currentPriceFromSignals(localizedInput.recentMarketSignals);
     startStage(stageAudit, "trade_decision");
+    await publishPartialStage(
+      makePartialRecord({
+        input: localizedInput,
+        now,
+        analystOutputs: latestAnalystOutputs,
+        analystRoundOutputs,
+        researchLead,
+        riskLead,
+        activeStage: "trade_decision",
+        stageAudit,
+      }),
+      evidenceIdsForPartial(localizedInput, analystRoundOutputs),
+    );
     const tradeInputs = [
       ...latestAnalystOutputs.map((output) => ({
         memberId: output.memberId,
@@ -895,7 +1147,9 @@ export async function runPmDecisionPipeline(
     completeStage(stageAudit, "record_write", "decision record persisted");
 
     startStage(stageAudit, "public_timeline");
-    await watchWriter(timelineEntryAsChatThread(writtenRecord, evidenceIds));
+    if (!partialHistoryPublished) {
+      await watchWriter(timelineEntryAsChatThread(writtenRecord, evidenceIds));
+    }
     completeStage(stageAudit, "public_timeline", "watch history projection written");
     const completedRecord = withStageTraceStatus(
       withStageTraceStatus(

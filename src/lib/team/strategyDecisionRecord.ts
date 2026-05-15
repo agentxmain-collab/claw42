@@ -53,7 +53,7 @@ export type DecisionStageTraceId =
   | "record_write"
   | "public_timeline";
 
-export type DecisionStageTraceStatus = "done" | "pending" | "skipped" | "failed";
+export type DecisionStageTraceStatus = "done" | "in_progress" | "pending" | "skipped" | "failed";
 
 export interface DispatchStageRoundRecord {
   /** One-based round number inside this compressed internal stage. */
@@ -102,6 +102,8 @@ export interface StrategyDecisionRecord {
   id: string;
   /** Schema version for future migrations. */
   schemaVersion: StrategyDecisionRecordSchemaVersion;
+  /** Monotonic writer version for partial-stage CAS updates. */
+  recordVersion?: number;
   /** Origin of this record: real live output, paper output, old legacy replay, or backtest. */
   recordSource: RecordSource;
   /** Uppercase market symbol such as BTC or ETH. */

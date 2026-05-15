@@ -165,6 +165,7 @@ export async function triggerPmDecisionPipelineOnce({
   locale = LEGACY_WATCH_LOCALE,
   symbol,
   now = Date.now(),
+  partialStageUpdates = true,
   onAudit,
 }: {
   triggerSource: "cron" | "user_visit_trigger";
@@ -173,6 +174,7 @@ export async function triggerPmDecisionPipelineOnce({
   locale?: Locale;
   symbol?: string;
   now?: number;
+  partialStageUpdates?: boolean;
   onAudit?: PmDecisionTriggerAuditSink;
 }) {
   const normalizedLocale = normalizeWatchLocale(locale);
@@ -259,6 +261,7 @@ export async function triggerPmDecisionPipelineOnce({
       importanceThreshold: "high",
       locale: normalizedLocale,
       now,
+      partialStageUpdates,
     });
     if (result) {
       onAudit?.({
@@ -288,6 +291,7 @@ export async function triggerPmDecisionPipelineBatch({
   newsItems = [],
   locale = LEGACY_WATCH_LOCALE,
   now = Date.now(),
+  partialStageUpdates = true,
   onAudit,
 }: {
   triggerSource: "cron" | "user_visit_trigger";
@@ -295,6 +299,7 @@ export async function triggerPmDecisionPipelineBatch({
   newsItems?: NewsItem[];
   locale?: Locale;
   now?: number;
+  partialStageUpdates?: boolean;
   onAudit?: PmDecisionTriggerAuditSink;
 }) {
   const outputs = [];
@@ -306,6 +311,7 @@ export async function triggerPmDecisionPipelineBatch({
       locale,
       symbol,
       now,
+      partialStageUpdates,
       onAudit,
     });
     if (output) outputs.push(output);

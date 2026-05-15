@@ -700,6 +700,13 @@
         "separator": "Tour {round} · {mode}",
         "single": "passage unique",
         "multi": "débat multi-tours"
+      },
+      "stageStatus": {
+        "pending": "En attente",
+        "in_progress": "En cours",
+        "in_progressNote": "Cette étape écrit une mise à jour partielle",
+        "done": "Terminé",
+        "memoryPending": "La revue attend le retour du résultat"
       }
     }
   },
