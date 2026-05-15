@@ -17,6 +17,14 @@ const CONTRIBUTOR_IDS: TeamMemberId[] = [
   "onchain_analyst",
   "research_lead",
   "risk_lead",
+  "pm",
+  "bullish_researcher",
+  "bearish_researcher",
+  "trader",
+  "aggressive_reviewer",
+  "neutral_reviewer",
+  "conservative_reviewer",
+  "memory_loop",
 ];
 
 type DecisionFixtureInput = {
@@ -121,6 +129,21 @@ function makeDecisionRecord(input: DecisionFixtureInput): StrategyDecisionRecord
   const evaluationWindowEndsAt = new Date(input.createdAt + 4 * 60 * 60_000).toISOString();
   const tradeDecision = makeTradeDecision(input);
   const direction = input.direction;
+  const rationale = (memberId: TeamMemberId, zh: string, en: string) => ({
+    memberId,
+    direction:
+      memberId === "bearish_researcher"
+        ? ("short" as const)
+        : memberId === "risk_lead" ||
+            memberId === "neutral_reviewer" ||
+            memberId === "conservative_reviewer" ||
+            memberId === "memory_loop"
+          ? ("neutral" as const)
+          : direction,
+    confidence: 0.64,
+    rationale: text(input.locale, zh, en),
+    evidenceIds,
+  });
 
   return {
     id: recordId,
@@ -131,72 +154,76 @@ function makeDecisionRecord(input: DecisionFixtureInput): StrategyDecisionRecord
     decisionOwnerId: "pm",
     contributorIds: CONTRIBUTOR_IDS,
     analystInputs: [
-      {
-        memberId: "fundamental_analyst",
-        direction,
-        confidence: 0.7,
-        rationale: text(
-          input.locale,
-          `${input.symbol} 的 CoinW 盘面成交和深度支持短线继续观察，基本面没有否定当前方向。`,
-          `${input.symbol} CoinW turnover and depth keep the short-term setup watchable; fundamentals do not reject the direction.`,
-        ),
-        evidenceIds,
-      },
-      {
-        memberId: "news_analyst",
-        direction,
-        confidence: 0.67,
-        rationale: text(
-          input.locale,
-          `${input.symbol} 新闻面没有出现反向冲击，当前证据更像波动放大而不是趋势失效。`,
-          `${input.symbol} news flow has not delivered a contrary shock; the evidence looks like volatility expansion rather than thesis failure.`,
-        ),
-        evidenceIds,
-      },
-      {
-        memberId: "chart_analyst",
-        direction,
-        confidence: 0.73,
-        rationale: text(
-          input.locale,
-          `${input.symbol} 价格仍贴近关键区间，入场只接受限价和失效位约束。`,
-          `${input.symbol} price remains near the key zone, so entry stays constrained by limit levels and invalidation.`,
-        ),
-        evidenceIds,
-      },
-      {
-        memberId: "onchain_analyst",
-        direction: "neutral",
-        confidence: 0.58,
-        rationale: text(
-          input.locale,
-          `${input.symbol} 链上没有给出强确认，但也未看到足以否定交易卡的异常流出。`,
-          `${input.symbol} on-chain data is not a strong confirmation, but it does not show abnormal flow that rejects the trade card.`,
-        ),
-        evidenceIds,
-      },
-      {
-        memberId: "research_lead",
-        direction,
-        confidence: 0.69,
-        rationale: text(
-          input.locale,
-          `研究组结论：${input.symbol} 展望保持谨慎偏多，理由来自 CoinW 已上线交易对的深度和短线波动结构。`,
-          `Research outlook: ${input.symbol} remains cautiously constructive, based on CoinW-listed pair depth and intraday volatility structure.`,
-        ),
-        evidenceIds,
-      },
-      {
-        memberId: "risk_lead",
-        direction: "neutral",
-        confidence: 0.61,
-        rationale: text(
-          input.locale,
-          `风险组结论：${input.symbol} 只允许低仓位执行，止损 ${input.stopLoss} 是本次展望失效点。`,
-          `Risk outlook: ${input.symbol} should only run at reduced size; ${input.stopLoss} is the invalidation point.`,
-        ),
-        evidenceIds,
-      },
+      rationale(
+        "fundamental_analyst",
+        `${input.symbol} 的 CoinW 盘面成交和深度支持短线继续观察，基本面没有否定当前方向。`,
+        `${input.symbol} CoinW turnover and depth keep the short-term setup watchable; fundamentals do not reject the direction.`,
+      ),
+      rationale(
+        "news_analyst",
+        `${input.symbol} 新闻面没有出现反向冲击，当前证据更像波动放大而不是趋势失效。`,
+        `${input.symbol} news flow has not delivered a contrary shock; the evidence looks like volatility expansion rather than thesis failure.`,
+      ),
+      rationale(
+        "chart_analyst",
+        `${input.symbol} 价格仍贴近关键区间，入场只接受限价和失效位约束。`,
+        `${input.symbol} price remains near the key zone, so entry stays constrained by limit levels and invalidation.`,
+      ),
+      rationale(
+        "onchain_analyst",
+        `${input.symbol} 链上没有给出强确认，但也未看到足以否定交易卡的异常流出。`,
+        `${input.symbol} on-chain data is not a strong confirmation, but it does not show abnormal flow that rejects the trade card.`,
+      ),
+      rationale(
+        "bullish_researcher",
+        `${input.symbol} 多头 thesis 成立条件是继续守住入场区间并放量突破。`,
+        `${input.symbol} bullish thesis requires holding the entry zone and breaking higher with volume.`,
+      ),
+      rationale(
+        "bearish_researcher",
+        `${input.symbol} 空头 thesis 关注失效位跌破后的流动性踩踏风险。`,
+        `${input.symbol} bearish thesis watches liquidity air pockets if invalidation breaks.`,
+      ),
+      rationale(
+        "trader",
+        `${input.symbol} 交易方案只接受 ${input.entryRange.low}-${input.entryRange.high} 区间内执行。`,
+        `${input.symbol} setup only accepts execution inside ${input.entryRange.low}-${input.entryRange.high}.`,
+      ),
+      rationale(
+        "aggressive_reviewer",
+        `${input.symbol} 进攻仓位只有在突破确认后才合理。`,
+        `${input.symbol} offensive sizing only makes sense after breakout confirmation.`,
+      ),
+      rationale(
+        "neutral_reviewer",
+        `${input.symbol} 组合视角建议保留低仓位，等待更多确认。`,
+        `${input.symbol} portfolio view keeps size reduced while waiting for more confirmation.`,
+      ),
+      rationale(
+        "conservative_reviewer",
+        `${input.symbol} 防御条件是止损 ${input.stopLoss} 必须严格执行。`,
+        `${input.symbol} defense condition requires strict stop execution at ${input.stopLoss}.`,
+      ),
+      rationale(
+        "research_lead",
+        `研究组结论：${input.symbol} 展望保持谨慎偏多，理由来自 CoinW 已上线交易对的深度和短线波动结构。`,
+        `Research outlook: ${input.symbol} remains cautiously constructive, based on CoinW-listed pair depth and intraday volatility structure.`,
+      ),
+      rationale(
+        "risk_lead",
+        `风险组结论：${input.symbol} 只允许低仓位执行，止损 ${input.stopLoss} 是本次展望失效点。`,
+        `Risk outlook: ${input.symbol} should only run at reduced size; ${input.stopLoss} is the invalidation point.`,
+      ),
+      rationale(
+        "pm",
+        `最终裁决：${input.symbol} 交易卡可进入观察，执行必须服从止损和仓位限制。`,
+        `Final decision: ${input.symbol} trade card can be watched, with stop and sizing limits enforced.`,
+      ),
+      rationale(
+        "memory_loop",
+        `${input.symbol} 本次决策需要复盘入场区间、止损触发和消息面是否同步。`,
+        `${input.symbol} review loop should track entry zone, stop behavior, and whether news stayed aligned.`,
+      ),
     ],
     sourceThreadId: recordId,
     tradeDecision,

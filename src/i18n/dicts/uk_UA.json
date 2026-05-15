@@ -169,7 +169,7 @@
   "team": {
     "trackRecord": {
       "title": "Стіна результатів команди",
-      "subtitle": "Публічна історія рішень команди з 7 людей із джерелами live / paper / backtest.",
+      "subtitle": "Публічна історія рішень команди Watch із 14 учасників із джерелами live / paper / backtest.",
       "totalDecisions": "Рішення",
       "overallWinRate": "Win rate",
       "teamNetReturn7d": "7д net",
@@ -238,9 +238,58 @@
       "ariaLabel": "PM, Продакт-менеджер",
       "oneLineCapability": "Turns team output into a decision card"
     },
+    "bullish_researcher": {
+      "displayName": "Bullish Research Director",
+      "roleTitle": "Bullish Research Director",
+      "shortBio": "Tests the upside thesis, evidence quality, and invalidation conditions.",
+      "ariaLabel": "Bullish Research Director, Bullish Research Director",
+      "oneLineCapability": "Tests upside thesis and invalidation"
+    },
+    "bearish_researcher": {
+      "displayName": "Bearish Research Director",
+      "roleTitle": "Bearish Research Director",
+      "shortBio": "Tests the downside thesis, reversal risk, and no-trade case.",
+      "ariaLabel": "Bearish Research Director, Bearish Research Director",
+      "oneLineCapability": "Tests downside thesis and reversal risk"
+    },
+    "trader": {
+      "displayName": "Trading Strategy Director",
+      "roleTitle": "Trading Strategy Director",
+      "shortBio": "Turns disagreement into an executable setup with entry, stop, and wait conditions.",
+      "ariaLabel": "Trading Strategy Director, Trading Strategy Director",
+      "oneLineCapability": "Turns disagreement into a setup"
+    },
+    "aggressive_reviewer": {
+      "displayName": "Return Offense Director",
+      "roleTitle": "Return Offense Director",
+      "shortBio": "Evaluates whether the opportunity deserves a more offensive allocation.",
+      "ariaLabel": "Return Offense Director, Return Offense Director",
+      "oneLineCapability": "Tests whether offense is justified"
+    },
+    "neutral_reviewer": {
+      "displayName": "Portfolio Balance Director",
+      "roleTitle": "Portfolio Balance Director",
+      "shortBio": "Balances opportunity, sizing, waiting conditions, and portfolio impact.",
+      "ariaLabel": "Portfolio Balance Director, Portfolio Balance Director",
+      "oneLineCapability": "Balances opportunity, sizing, and risk"
+    },
+    "conservative_reviewer": {
+      "displayName": "Risk Defense Director",
+      "roleTitle": "Risk Defense Director",
+      "shortBio": "Names the downside conditions that should block or reduce exposure.",
+      "ariaLabel": "Risk Defense Director, Risk Defense Director",
+      "oneLineCapability": "Names trade-blocking risk conditions"
+    },
+    "memory_loop": {
+      "displayName": "Strategy Review Director",
+      "roleTitle": "Strategy Review Director",
+      "shortBio": "Connects this decision to prior lessons and records what to verify next.",
+      "ariaLabel": "Strategy Review Director, Strategy Review Director",
+      "oneLineCapability": "Feeds lessons into the next cycle"
+    },
     "workflowPanel": {
       "title": "AI team workflow",
-      "description": "Seven roles move from analysis to synthesis, risk, and PM decision so signals become readable action.",
+      "description": "14 ролей разом проходять збір даних, дебати, план, ризик, рішення й огляд, перетворюючи ринкові сигнали на зрозумілі рішення.",
       "mobileStageLabel": "Flow"
     },
     "workflowNode": {
@@ -253,7 +302,7 @@
   },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
-    "pageSubtitle": "AI-команда з 7 учасників стежить за ринком у реальному часі: аналітики, ліди, ризик-контроль і PM разом формують щоденну стратегію.",
+    "pageSubtitle": "AI-команда з 14 учасників стежить за ринком у реальному часі: дослідження, дебати, план, ризик, рішення й огляд формують щоденну стратегію.",
     "pageHeroTagline": "",
     "sidebarStatus": {
       "thinking": "",
@@ -412,45 +461,45 @@
           "stat": "signals · 22 / 24h"
         },
         "bullish": {
-          "name": "Bullish Strategist",
+          "name": "Bullish Research Director",
           "role": "Bullish",
-          "desc": "Build and defend the bull case",
-          "readoutRole": "Bullish Strategist",
+          "desc": "upside thesis / bullish evidence / invalidation",
+          "readoutRole": "Bullish Research Director",
           "stat": "argued · 9 cases"
         },
         "bearish": {
-          "name": "Bearish Strategist",
+          "name": "Bearish Research Director",
           "role": "Bearish",
-          "desc": "Build and defend the bear case",
-          "readoutRole": "Bearish Strategist",
+          "desc": "downside thesis / reversal risk / no-trade case",
+          "readoutRole": "Bearish Research Director",
           "stat": "argued · 9 cases"
         },
         "trader": {
-          "name": "Trade Strategy Director",
+          "name": "Trading Strategy Director",
           "role": "Trader",
-          "desc": "Briefs + debate → executable plan",
-          "readoutRole": "Trade Strategy Director",
+          "desc": "brief + debate → executable setup",
+          "readoutRole": "Trading Strategy Director",
           "stat": "proposed · 6"
         },
         "aggressive": {
-          "name": "Return Offense Officer",
+          "name": "Return Offense Director",
           "role": "Aggressive",
-          "desc": "Higher exposure / maximize upside",
-          "readoutRole": "Return Offense Officer",
+          "desc": "higher sizing / opportunity cost / offensive tempo",
+          "readoutRole": "Return Offense Director",
           "stat": "reviews · 6"
         },
         "neutral": {
-          "name": "Portfolio Balance Officer",
+          "name": "Portfolio Balance Director",
           "role": "Neutral",
-          "desc": "Balanced exposure / risk parity",
-          "readoutRole": "Portfolio Balance Officer",
+          "desc": "balanced sizing / risk parity / wait conditions",
+          "readoutRole": "Portfolio Balance Director",
           "stat": "reviews · 6"
         },
         "conservative": {
-          "name": "Risk Defense Officer",
+          "name": "Risk Defense Director",
           "role": "Conservative",
-          "desc": "Lower exposure / protect downside",
-          "readoutRole": "Risk Defense Officer",
+          "desc": "lower sizing / stop discipline / downside protection",
+          "readoutRole": "Risk Defense Director",
           "stat": "reviews · 6"
         },
         "portfolioManager": {

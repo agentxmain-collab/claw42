@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { runPmDecisionPipeline } from "@/lib/team/pmDecisionPipeline";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
+import type { TradeCardPromptContext } from "@/lib/team/tradeDecisionPromptBuilder";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { SignalRecord } from "@/modules/agent-watch/types";
@@ -89,8 +90,8 @@ describe("runPmDecisionPipeline", () => {
     expect(generateAnalystOutput).not.toHaveBeenCalled();
   });
 
-  it("returns null and writes nothing when any LLM step fails", async () => {
-    const recordStrategyDecisionRecord = vi.fn();
+  it("uses a neutral fallback when an analyst role fails", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
     const appendWatchHistoryEntry = vi.fn();
     const updateDecisionRecord = vi.fn();
     const result = await runPmDecisionPipeline(
@@ -106,16 +107,24 @@ describe("runPmDecisionPipeline", () => {
           if (memberId === "chart_analyst") throw new Error("llm failed");
           return analystOutput(memberId);
         }),
+        generateLeadOutput: vi.fn(async (memberId) => ({
+          rationale: `${memberId} rationale`,
+          confidence: 0.7,
+        })),
+        generateTradeDecision: vi.fn(async () => decision()),
         recordStrategyDecisionRecord,
         appendWatchHistoryEntry,
         updateDecisionRecord,
       },
     );
 
-    expect(result).toBeNull();
-    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
-    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
-    expect(updateDecisionRecord).not.toHaveBeenCalled();
+    expect(
+      result?.record.analystInputs.find((input) => input.memberId === "chart_analyst"),
+    ).toMatchObject({
+      direction: "neutral",
+      confidence: 0.25,
+    });
+    expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
   });
 
   it("returns null and writes nothing when evidence persistence fails", async () => {
@@ -158,6 +167,16 @@ describe("runPmDecisionPipeline", () => {
     const updateDecisionRecord = vi.fn(async (record: StrategyDecisionRecord) => {
       void record;
     });
+    const generateAnalystOutput = vi.fn(async (memberId) => analystOutput(memberId));
+    const generateLeadOutput = vi.fn(async (memberId) => ({
+      rationale: `${memberId} rationale`,
+      confidence: 0.7,
+    }));
+    let tradeAnalystInputs: TradeCardPromptContext["analystInputs"] | null = null;
+    const generateTradeDecision = vi.fn(async (ctx: TradeCardPromptContext) => {
+      tradeAnalystInputs = ctx.analystInputs;
+      return decision();
+    });
     const result = await runPmDecisionPipeline(
       {
         triggerSource: "cron",
@@ -167,12 +186,9 @@ describe("runPmDecisionPipeline", () => {
       },
       {
         loadPromptDoc: async () => "prompt",
-        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
-        generateLeadOutput: vi.fn(async (memberId) => ({
-          rationale: `${memberId} rationale`,
-          confidence: 0.7,
-        })),
-        generateTradeDecision: vi.fn(async () => decision()),
+        generateAnalystOutput,
+        generateLeadOutput,
+        generateTradeDecision,
         recordStrategyDecisionRecord,
         appendWatchHistoryEntry,
         updateDecisionRecord,
@@ -182,6 +198,18 @@ describe("runPmDecisionPipeline", () => {
     expect(result?.record.id).toBe("pm:BTC:1778407200000");
     expect(result?.record.locale).toBe("zh_CN");
     expect(result?.publicTimelineEntry.locale).toBe("zh_CN");
+    expect(generateAnalystOutput).toHaveBeenCalledTimes(11);
+    expect(generateLeadOutput).toHaveBeenCalledTimes(2);
+    expect(generateTradeDecision).toHaveBeenCalledTimes(1);
+    expect(generateTradeDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        analystInputs: expect.arrayContaining([
+          expect.objectContaining({ memberId: "memory_loop" }),
+          expect.objectContaining({ memberId: "risk_lead" }),
+        ]),
+      }),
+    );
+    expect(tradeAnalystInputs).toHaveLength(13);
     expect(result?.publicTimelineEntry.payload.kind).toBe("pm_decision");
     if (result?.publicTimelineEntry.payload.kind !== "pm_decision") {
       throw new Error("expected pm decision payload");
@@ -211,12 +239,42 @@ describe("runPmDecisionPipeline", () => {
     ]);
     expect(writtenRecord.stageTrace?.[0]).toMatchObject({
       status: "done",
-      memberIds: ["fundamental_analyst", "news_analyst", "chart_analyst", "onchain_analyst"],
-      note: "4 analyst outputs",
+      memberIds: [
+        "fundamental_analyst",
+        "news_analyst",
+        "chart_analyst",
+        "onchain_analyst",
+        "bullish_researcher",
+        "bearish_researcher",
+        "trader",
+        "aggressive_reviewer",
+        "neutral_reviewer",
+        "conservative_reviewer",
+        "memory_loop",
+      ],
+      note: "11 analyst outputs",
       startedAt: expect.any(String),
       completedAt: expect.any(String),
       durationMs: expect.any(Number),
     });
+    expect(writtenRecord.contributorIds).toHaveLength(14);
+    expect(writtenRecord.analystInputs).toHaveLength(14);
+    expect(writtenRecord.analystInputs.map((input) => input.memberId)).toEqual([
+      "fundamental_analyst",
+      "news_analyst",
+      "chart_analyst",
+      "onchain_analyst",
+      "bullish_researcher",
+      "bearish_researcher",
+      "trader",
+      "aggressive_reviewer",
+      "neutral_reviewer",
+      "conservative_reviewer",
+      "memory_loop",
+      "research_lead",
+      "risk_lead",
+      "pm",
+    ]);
     expect(writtenRecord.stageTrace?.[0]?.durationMs).toBeGreaterThanOrEqual(0);
     expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("note");
     expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("startedAt");

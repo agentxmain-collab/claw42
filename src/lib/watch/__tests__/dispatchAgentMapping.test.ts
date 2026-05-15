@@ -11,6 +11,13 @@ describe("dispatchAgentMapping", () => {
     expect(mapTeamMemberToDispatchAgent("chart_analyst")).toBe("technical_analyst");
     expect(mapTeamMemberToDispatchAgent("onchain_analyst")).toBe("onchain_analyst");
     expect(mapTeamMemberToDispatchAgent("pm")).toBe("portfolio_manager");
+    expect(mapTeamMemberToDispatchAgent("bullish_researcher")).toBe("bullish_researcher");
+    expect(mapTeamMemberToDispatchAgent("bearish_researcher")).toBe("bearish_researcher");
+    expect(mapTeamMemberToDispatchAgent("trader")).toBe("trader");
+    expect(mapTeamMemberToDispatchAgent("aggressive_reviewer")).toBe("aggressive_reviewer");
+    expect(mapTeamMemberToDispatchAgent("neutral_reviewer")).toBe("neutral_reviewer");
+    expect(mapTeamMemberToDispatchAgent("conservative_reviewer")).toBe("conservative_reviewer");
+    expect(mapTeamMemberToDispatchAgent("memory_loop")).toBe("memory_loop");
   });
 
   it("maps directional lead roles to the closest v9 synthetic roles", () => {
@@ -30,11 +37,11 @@ describe("dispatchAgentMapping", () => {
       "On-chain Data Lead",
     );
     expect(getDispatchAgentDisplayName("trader", "zh_CN")).toBe("交易策略总监");
-    expect(getDispatchAgentDisplayName("aggressive_reviewer", "zh_CN")).toBe("收益进攻官");
+    expect(getDispatchAgentDisplayName("aggressive_reviewer", "zh_CN")).toBe("收益进攻总监");
     expect(getDispatchAgentDisplayName("portfolio_manager", "zh_CN", "pm")).toBe("首席投资官");
   });
 
-  it("keeps the synthetic role list free of removed v9 agents", () => {
-    expect(DISPATCH_AGENT_NOT_IN_CURRENT).not.toContain("sentiment_analyst");
+  it("keeps every v9 dispatch role mapped to a real team member", () => {
+    expect(DISPATCH_AGENT_NOT_IN_CURRENT).toEqual([]);
   });
 });

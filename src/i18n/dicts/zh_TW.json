@@ -169,7 +169,7 @@
   "team": {
     "trackRecord": {
       "title": "團隊戰績牆",
-      "subtitle": "7 人 Watch 團隊的公開決策記錄，區分 live / paper / backtest 來源。",
+      "subtitle": "14 人 Watch 團隊的公開決策記錄，區分 live / paper / backtest 來源。",
       "totalDecisions": "累計決策",
       "overallWinRate": "整體勝率",
       "teamNetReturn7d": "7日淨值",
@@ -238,9 +238,58 @@
       "ariaLabel": "PM, 產品經理",
       "oneLineCapability": "把團隊結論收斂成交易卡"
     },
+    "bullish_researcher": {
+      "displayName": "多頭研究總監",
+      "roleTitle": "多頭研究總監",
+      "shortBio": "負責驗證上行 thesis 的證據品質與失效條件。",
+      "ariaLabel": "多頭研究總監, 多頭研究總監",
+      "oneLineCapability": "驗證上行 thesis 與失效條件"
+    },
+    "bearish_researcher": {
+      "displayName": "空頭研究總監",
+      "roleTitle": "空頭研究總監",
+      "shortBio": "負責驗證下行 thesis、反轉風險與不交易理由。",
+      "ariaLabel": "空頭研究總監, 空頭研究總監",
+      "oneLineCapability": "驗證下行 thesis 與反轉風險"
+    },
+    "trader": {
+      "displayName": "交易策略總監",
+      "roleTitle": "交易策略總監",
+      "shortBio": "把分歧轉成可執行方案，明確入場、止損與等待條件。",
+      "ariaLabel": "交易策略總監, 交易策略總監",
+      "oneLineCapability": "把分歧轉成可執行方案"
+    },
+    "aggressive_reviewer": {
+      "displayName": "收益進攻總監",
+      "roleTitle": "收益進攻總監",
+      "shortBio": "評估機會是否值得更進攻的倉位與執行節奏。",
+      "ariaLabel": "收益進攻總監, 收益進攻總監",
+      "oneLineCapability": "判斷是否值得進攻倉位"
+    },
+    "neutral_reviewer": {
+      "displayName": "組合平衡總監",
+      "roleTitle": "組合平衡總監",
+      "shortBio": "在機會與風險之間校準倉位、等待條件與組合影響。",
+      "ariaLabel": "組合平衡總監, 組合平衡總監",
+      "oneLineCapability": "平衡機會、倉位與風險"
+    },
+    "conservative_reviewer": {
+      "displayName": "風險防禦總監",
+      "roleTitle": "風險防禦總監",
+      "shortBio": "負責找出會阻斷或降低倉位的關鍵下行條件。",
+      "ariaLabel": "風險防禦總監, 風險防禦總監",
+      "oneLineCapability": "找出阻斷交易的風險條件"
+    },
+    "memory_loop": {
+      "displayName": "策略複盤總監",
+      "roleTitle": "策略複盤總監",
+      "shortBio": "把當前決策與歷史教訓連接，記錄下一輪要驗證的點。",
+      "ariaLabel": "策略複盤總監, 策略複盤總監",
+      "oneLineCapability": "把歷史教訓回灌下一輪"
+    },
     "workflowPanel": {
       "title": "AI 團隊調度台",
-      "description": "7 個角色按分析、綜合、風控、PM 的順序協作，把市場訊號變成可讀決策。",
+      "description": "14 個角色按資訊、辯論、方案、風控、裁決、複盤協作，把市場訊號變成可讀決策。",
       "mobileStageLabel": "流程"
     },
     "workflowNode": {
@@ -253,7 +302,7 @@
   },
   "agentWatch": {
     "pageTitle": "Live · Crypto Market",
-    "pageSubtitle": "7 人 AI 團隊即時盯盤，分析師 / 綜合 / 風控 / PM 協作產出每日策略。",
+    "pageSubtitle": "14 人 AI 團隊即時盯盤，研究、辯論、方案、風控、裁決、複盤協作產出每日策略。",
     "pageHeroTagline": "",
     "sidebarStatus": {
       "thinking": "",
@@ -412,45 +461,45 @@
           "stat": "signals · 22 / 24h"
         },
         "bullish": {
-          "name": "多头策略师",
+          "name": "多頭研究總監",
           "role": "Bullish",
-          "desc": "立论看多 / 守住牛市观点",
-          "readoutRole": "多头策略师",
+          "desc": "上行 thesis / 多頭證據 / 失效條件",
+          "readoutRole": "多頭研究總監",
           "stat": "argued · 9 cases"
         },
         "bearish": {
-          "name": "空头策略师",
+          "name": "空頭研究總監",
           "role": "Bearish",
-          "desc": "立论看空 / 守住熊市观点",
-          "readoutRole": "空头策略师",
+          "desc": "下行 thesis / 反轉風險 / 不交易理由",
+          "readoutRole": "空頭研究總監",
           "stat": "argued · 9 cases"
         },
         "trader": {
-          "name": "交易策略总监",
+          "name": "交易策略總監",
           "role": "Trader",
-          "desc": "综合简报 + 辩论 → 可执行方案",
-          "readoutRole": "交易策略总监",
+          "desc": "綜合簡報 + 辯論 → 可執行方案",
+          "readoutRole": "交易策略總監",
           "stat": "proposed · 6"
         },
         "aggressive": {
-          "name": "收益进攻官",
+          "name": "收益進攻總監",
           "role": "Aggressive",
-          "desc": "高仓位 / 追求最大收益",
-          "readoutRole": "收益进攻官",
+          "desc": "高倉位 / 機會成本 / 進攻節奏",
+          "readoutRole": "收益進攻總監",
           "stat": "reviews · 6"
         },
         "neutral": {
-          "name": "组合平衡官",
+          "name": "組合平衡總監",
           "role": "Neutral",
-          "desc": "平衡仓位 / 风险均衡",
-          "readoutRole": "组合平衡官",
+          "desc": "倉位平衡 / 風險均衡 / 等待條件",
+          "readoutRole": "組合平衡總監",
           "stat": "reviews · 6"
         },
         "conservative": {
-          "name": "风险防御官",
+          "name": "風險防禦總監",
           "role": "Conservative",
-          "desc": "低仓位 / 守住下行风险",
-          "readoutRole": "风险防御官",
+          "desc": "低倉位 / 止損紀律 / 下行保護",
+          "readoutRole": "風險防禦總監",
           "stat": "reviews · 6"
         },
         "portfolioManager": {
