@@ -733,6 +733,15 @@
         "hit_sl": "止损触发",
         "expired": "到期未触发",
         "manual_close": "人工关闭"
+      },
+      "followTrade": {
+        "disabled_label": "演示模式",
+        "disabled_tooltip": "演示模式：当前不会真实下单",
+        "safety_copy": "不真实下单 · 后续接入授权和风险确认",
+        "mock_label": "模拟跟单",
+        "mock_success": "模拟跟单已成交",
+        "mock_fail": "模拟跟单失败",
+        "real_label_future": "跟单"
       }
     }
   },

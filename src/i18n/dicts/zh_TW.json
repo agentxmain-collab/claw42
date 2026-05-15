@@ -733,6 +733,15 @@
         "hit_sl": "止損觸發",
         "expired": "到期未觸發",
         "manual_close": "人工關閉"
+      },
+      "followTrade": {
+        "disabled_label": "演示模式",
+        "disabled_tooltip": "演示模式：目前不會真實下單",
+        "safety_copy": "不真實下單 · 後續接入授權和風險確認",
+        "mock_label": "模擬跟單",
+        "mock_success": "模擬跟單已成交",
+        "mock_fail": "模擬跟單失敗",
+        "real_label_future": "跟單"
       }
     }
   },

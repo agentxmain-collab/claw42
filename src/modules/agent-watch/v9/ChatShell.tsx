@@ -1,4 +1,5 @@
 import React from "react";
+import type { DispatchV10FollowTradeDict } from "@/i18n/types";
 import { Topic } from "./Topic";
 import type { DispatchTopic, DispatchTopicAction } from "./types";
 
@@ -14,9 +15,11 @@ function ChatShellStat({ label, value }: { label: string; value: number }) {
 export const ChatShell = React.memo(function ChatShell({
   topics,
   onPlaceholder,
+  followTradeDict,
 }: {
   topics: DispatchTopic[];
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
+  followTradeDict?: DispatchV10FollowTradeDict;
 }) {
   const doneCount = topics.filter((topic) => topic.status === "done").length;
   const activeCount = topics.filter((topic) => topic.status === "active").length;
@@ -53,7 +56,12 @@ export const ChatShell = React.memo(function ChatShell({
         ) : (
           topics.map((topic, index) => (
             <div key={topic.id}>
-              <Topic topic={topic} latest={index === 0} onPlaceholder={onPlaceholder} />
+              <Topic
+                topic={topic}
+                latest={index === 0}
+                onPlaceholder={onPlaceholder}
+                followTradeDict={followTradeDict}
+              />
               {index < topics.length - 1 ? (
                 <div className="topic-separator" aria-hidden="true">
                   <span className="topic-separator-dot" />

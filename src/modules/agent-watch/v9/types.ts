@@ -1,5 +1,6 @@
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import type { DispatchV10FollowTradeDict } from "@/i18n/types";
 import type { MarketTickerPayload } from "../types";
 
 export type DispatchView = "flow" | "mkt";
@@ -134,4 +135,5 @@ export interface DispatchConsoleV9Props {
     actionLabel: string,
     action: DispatchTopicAction,
   ) => void | Promise<void>;
+  followTradeDict?: DispatchV10FollowTradeDict;
 }

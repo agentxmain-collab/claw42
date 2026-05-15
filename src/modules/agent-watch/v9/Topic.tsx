@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import type { DispatchV10FollowTradeDict } from "@/i18n/types";
 import { TopicBody } from "./TopicBody";
 import { TopicHead } from "./TopicHead";
 import { TopicStrategy } from "./TopicStrategy";
@@ -8,10 +9,12 @@ export function Topic({
   topic,
   onPlaceholder,
   latest = false,
+  followTradeDict,
 }: {
   topic: DispatchTopic;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
   latest?: boolean;
+  followTradeDict?: DispatchV10FollowTradeDict;
 }) {
   const [collapsed, setCollapsed] = useState(topic.defaultCollapsed);
   const bodyId = `dispatch-topic-${topic.id}`;
@@ -34,7 +37,12 @@ export function Topic({
         onToggle={() => setCollapsed((current) => !current)}
       />
       <TopicBody topic={topic} bodyId={bodyId} />
-      <TopicStrategy topic={topic} latest={latest} onPlaceholder={onPlaceholder} />
+      <TopicStrategy
+        topic={topic}
+        latest={latest}
+        onPlaceholder={onPlaceholder}
+        followTradeDict={followTradeDict}
+      />
     </article>
   );
 }

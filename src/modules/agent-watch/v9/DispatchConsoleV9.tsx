@@ -60,6 +60,7 @@ export function DispatchConsoleV9({
   initialView = "flow",
   onViewChange,
   onTopicAction,
+  followTradeDict,
 }: DispatchConsoleV9Props) {
   const [activeView, setActiveView] = useState<DispatchView>(initialView);
   const [placeholder, setPlaceholder] = useState<{
@@ -109,7 +110,11 @@ export function DispatchConsoleV9({
         aria-labelledby="dispatch-tab-mkt"
         hidden={activeView !== "mkt"}
       >
-        <MarketAnalysisView topics={topics} onPlaceholder={handleTopicAction} />
+        <MarketAnalysisView
+          topics={topics}
+          onPlaceholder={handleTopicAction}
+          followTradeDict={followTradeDict}
+        />
       </div>
       {placeholder ? (
         <div className="follow-placeholder-backdrop" role="presentation">

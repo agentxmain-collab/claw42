@@ -189,10 +189,11 @@ function TopicStrategyV10({
 }) {
   const { strategy } = topic;
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
-  const ctaMeta =
+  const followStatus =
     topic.status === "pending"
       ? `${strategy.follow.watchCount} ${dict.market.watchReminder}`
-      : `${strategy.follow.watchCount} ${dict.market.watchCount} · `;
+      : `${strategy.follow.watchCount} ${dict.market.watchCount} · ${strategy.follow.followCount} ${dict.market.followed}`;
+  const followNoteId = `${topic.id}-follow-trade-disabled-note`;
 
   return (
     <div className={["topic-strategy", latest && "latest"].filter(Boolean).join(" ")}>
@@ -231,10 +232,12 @@ function TopicStrategyV10({
           <button
             className="cta-btn"
             type="button"
-            disabled={strategy.follow.primaryDisabled}
-            onClick={() => onPlaceholder(topic, strategy.follow.primaryLabel, "primary")}
+            disabled
+            title={dict.followTrade.disabled_tooltip}
+            aria-describedby={followNoteId}
+            onClick={() => onPlaceholder(topic, dict.followTrade.disabled_label, "primary")}
           >
-            {strategy.follow.primaryLabel}
+            {dict.followTrade.disabled_label}
           </button>
           <button
             className="cta-btn secondary"
@@ -244,14 +247,8 @@ function TopicStrategyV10({
             {strategy.follow.secondaryLabel}
           </button>
         </div>
-        <div className="cta-meta">
-          {ctaMeta}
-          {topic.status === "pending" ? null : (
-            <b>
-              {strategy.follow.expiryNote ??
-                `${strategy.follow.followCount} ${dict.market.followed}`}
-            </b>
-          )}
+        <div className="cta-meta" id={followNoteId}>
+          {dict.followTrade.safety_copy} · {followStatus}
         </div>
       </div>
     </div>

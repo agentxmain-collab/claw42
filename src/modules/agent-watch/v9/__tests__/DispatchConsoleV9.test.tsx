@@ -50,6 +50,14 @@ describe("DispatchConsoleV9", () => {
     expect(html).not.toContain("PENDING");
   });
 
+  test("keeps follow trading disabled with explicit safety copy", () => {
+    const html = renderToStaticMarkup(<DispatchConsoleV9 initialView="mkt" />);
+
+    expect(html).toContain("演示模式");
+    expect(html).toContain("不真实下单 · 后续接入授权和风险确认");
+    expect(html).toContain('title="演示模式：当前不会真实下单"');
+  });
+
   test("uses senior functional titles instead of persona names in the public console", () => {
     const html = renderToStaticMarkup(<DispatchConsoleV9 initialView="flow" />);
 

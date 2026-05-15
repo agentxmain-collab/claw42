@@ -1,5 +1,16 @@
 import React from "react";
+import type { DispatchV10FollowTradeDict } from "@/i18n/types";
 import type { DispatchTopic, DispatchTopicAction } from "./types";
+
+const DEFAULT_FOLLOW_TRADE_DICT: DispatchV10FollowTradeDict = {
+  disabled_label: "演示模式",
+  disabled_tooltip: "演示模式：当前不会真实下单",
+  safety_copy: "不真实下单 · 后续接入授权和风险确认",
+  mock_label: "模拟跟单",
+  mock_success: "模拟跟单已成交",
+  mock_fail: "模拟跟单失败",
+  real_label_future: "跟单",
+};
 
 function StrategyValue({
   label,
@@ -22,17 +33,20 @@ export function TopicStrategy({
   topic,
   latest = false,
   onPlaceholder,
+  followTradeDict = DEFAULT_FOLLOW_TRADE_DICT,
 }: {
   topic: DispatchTopic;
   latest?: boolean;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
+  followTradeDict?: DispatchV10FollowTradeDict;
 }) {
   const { strategy } = topic;
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
-  const ctaMeta =
+  const followStatus =
     topic.status === "pending"
       ? `${strategy.follow.watchCount} 人订阅提醒`
-      : `${strategy.follow.watchCount} 人在看 · `;
+      : `${strategy.follow.watchCount} 人在看 · ${strategy.follow.followCount} 已跟单`;
+  const followNoteId = `${topic.id}-follow-trade-disabled-note`;
 
   return (
     <div className={["topic-strategy", latest ? "latest" : ""].filter(Boolean).join(" ")}>
@@ -61,10 +75,12 @@ export function TopicStrategy({
           <button
             className="cta-btn"
             type="button"
-            disabled={strategy.follow.primaryDisabled}
-            onClick={() => onPlaceholder(topic, strategy.follow.primaryLabel, "primary")}
+            disabled
+            title={followTradeDict.disabled_tooltip}
+            aria-describedby={followNoteId}
+            onClick={() => onPlaceholder(topic, followTradeDict.disabled_label, "primary")}
           >
-            {strategy.follow.primaryLabel}
+            {followTradeDict.disabled_label}
           </button>
           <button
             className="cta-btn secondary"
@@ -74,11 +90,8 @@ export function TopicStrategy({
             {strategy.follow.secondaryLabel}
           </button>
         </div>
-        <div className="cta-meta">
-          {ctaMeta}
-          {topic.status === "pending" ? null : (
-            <b>{strategy.follow.expiryNote ?? `${strategy.follow.followCount} 已跟单`}</b>
-          )}
+        <div className="cta-meta" id={followNoteId}>
+          {followTradeDict.safety_copy} · {followStatus}
         </div>
       </div>
     </div>
