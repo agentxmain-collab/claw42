@@ -23,6 +23,8 @@ const PUBLIC_TIMELINE_MIN_ENTRIES = 30;
 const PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES = 60;
 const PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES = 720;
 const DEFAULT_TIMELINE_POLL_MS = 90_000;
+const TIMELINE_STREAM_RETRY_MS = 30_000;
+const TIMELINE_HIDDEN_POLL_MS = 5 * 60_000;
 const FOLLOW_STATS_VISIBLE_POLL_MS = 60_000;
 const FOLLOW_STATS_MARKET_POLL_MS = 30_000;
 const FOLLOW_STATS_HIDDEN_POLL_MS = 5 * 60_000;
@@ -120,8 +122,43 @@ export function AgentWatchBoard({
 
   useEffect(() => {
     let cancelled = false;
-    let timer: number | null = null;
+    let pollTimer: number | null = null;
+    let reconnectTimer: number | null = null;
     let controller: AbortController | null = null;
+    let eventSource: EventSource | null = null;
+
+    function clearTimers() {
+      if (pollTimer) {
+        window.clearTimeout(pollTimer);
+        pollTimer = null;
+      }
+      if (reconnectTimer) {
+        window.clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    }
+
+    function closeEventSource() {
+      eventSource?.close();
+      eventSource = null;
+    }
+
+    function currentTimelinePollMs() {
+      return document.visibilityState === "hidden"
+        ? TIMELINE_HIDDEN_POLL_MS
+        : nextTimelinePollMsRef.current;
+    }
+
+    async function appendTimelineFallback(primary: PublicTimelinePayload, signal: AbortSignal) {
+      if (primary.events.length >= PUBLIC_TIMELINE_MIN_ENTRIES) return;
+      const fallback = await fetchTimelineWindow({
+        windowMinutes: PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES,
+        before: fallbackBeforeForPublicTimeline(primary),
+        limit: 100,
+        signal,
+      });
+      if (!cancelled) applyTimelinePayload(fallback, "append");
+    }
 
     async function loadTimeline() {
       controller?.abort();
@@ -136,16 +173,7 @@ export function AgentWatchBoard({
         if (cancelled) return;
         nextTimelinePollMsRef.current = primary.nextPollMs ?? DEFAULT_TIMELINE_POLL_MS;
         applyTimelinePayload(primary, "replace");
-
-        if (primary.events.length < PUBLIC_TIMELINE_MIN_ENTRIES) {
-          const fallback = await fetchTimelineWindow({
-            windowMinutes: PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES,
-            before: fallbackBeforeForPublicTimeline(primary),
-            limit: 100,
-            signal: controller.signal,
-          });
-          if (!cancelled) applyTimelinePayload(fallback, "append");
-        }
+        await appendTimelineFallback(primary, controller.signal);
       } catch (error: unknown) {
         if (
           (error as { name?: string }).name !== "AbortError" &&
@@ -155,19 +183,91 @@ export function AgentWatchBoard({
         }
       } finally {
         if (!cancelled) {
-          timer = window.setTimeout(loadTimeline, nextTimelinePollMsRef.current);
+          pollTimer = window.setTimeout(() => void loadTimeline(), currentTimelinePollMs());
         }
       }
     }
 
-    void loadTimeline();
+    async function applyStreamPayload(payload: PublicTimelinePayload) {
+      nextTimelinePollMsRef.current = payload.nextPollMs ?? DEFAULT_TIMELINE_POLL_MS;
+      applyTimelinePayload(payload, "replace");
+      controller?.abort();
+      controller = new AbortController();
+      await appendTimelineFallback(payload, controller.signal);
+    }
+
+    function startPolling(delay = 0) {
+      if (pollTimer) window.clearTimeout(pollTimer);
+      pollTimer = window.setTimeout(() => void loadTimeline(), delay);
+    }
+
+    function startStream() {
+      if (document.visibilityState === "hidden" || typeof window.EventSource === "undefined") {
+        startPolling(0);
+        return;
+      }
+
+      if (pollTimer) {
+        window.clearTimeout(pollTimer);
+        pollTimer = null;
+      }
+      closeEventSource();
+      const params = new URLSearchParams({
+        windowMinutes: String(PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES),
+        limit: "100",
+        locale: agentWatchLocale,
+      });
+      eventSource = new EventSource(apiPath(`/api/watch/stream?${params}`));
+      eventSource.addEventListener("timeline", (message) => {
+        try {
+          void applyStreamPayload(JSON.parse(message.data) as PublicTimelinePayload).catch(
+            (error: unknown) => {
+              if (
+                (error as { name?: string }).name !== "AbortError" &&
+                process.env.NODE_ENV !== "production"
+              ) {
+                console.warn("[claw42] public timeline stream apply failed", error);
+              }
+            },
+          );
+        } catch (error: unknown) {
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("[claw42] public timeline stream payload failed", error);
+          }
+        }
+      });
+      eventSource.onerror = () => {
+        closeEventSource();
+        startPolling(0);
+        if (reconnectTimer) window.clearTimeout(reconnectTimer);
+        reconnectTimer = window.setTimeout(() => {
+          if (!cancelled) startStream();
+        }, TIMELINE_STREAM_RETRY_MS);
+      };
+    }
+
+    function restartTimelineTransport() {
+      controller?.abort();
+      clearTimers();
+      closeEventSource();
+      if (document.visibilityState === "hidden") {
+        startPolling(currentTimelinePollMs());
+      } else {
+        startStream();
+      }
+    }
+
+    startStream();
+    document.addEventListener("visibilitychange", restartTimelineTransport);
 
     return () => {
       cancelled = true;
       controller?.abort();
-      if (timer) window.clearTimeout(timer);
+      clearTimers();
+      closeEventSource();
+      document.removeEventListener("visibilitychange", restartTimelineTransport);
     };
-  }, [applyTimelinePayload, fetchTimelineWindow]);
+  }, [agentWatchLocale, applyTimelinePayload, fetchTimelineWindow]);
 
   const recordIds = useMemo(
     () =>
