@@ -743,6 +743,36 @@
         "mock_success": "Тестовое следование исполнено",
         "mock_fail": "Тестовое следование не удалось",
         "real_label_future": "Следовать"
+      },
+      "direction": {
+        "long": "ЛОНГ",
+        "short": "ШОРТ",
+        "neutral": "НЕЙТРАЛЬНО",
+        "wait": "ЖДАТЬ",
+        "missing": "НЕТ ДАННЫХ"
+      },
+      "roleViewpoint": {
+        "fundamental": "Фундаментальный / tokenomics взгляд",
+        "onchain": "Onchain / потоки средств",
+        "news": "Новости / сентимент",
+        "technical": "Технический / TA взгляд",
+        "bullish": "Бычий тезис",
+        "bearish": "Медвежий тезис",
+        "trader": "Исполнение / вход",
+        "aggressive": "Агрессивная проверка",
+        "neutral": "Нейтральная калибровка",
+        "conservative": "Защитная проверка",
+        "portfolioManager": "Портфельное решение",
+        "memoryLoop": "Память и разбор"
+      },
+      "dataGap": {
+        "ok": "Данные доступны",
+        "partial": "Часть данных отсутствует",
+        "missing_chart": "Нет подключенных данных графика",
+        "missing_news": "Нет подключенных новостей",
+        "missing_onchain": "Нет onchain-данных",
+        "missing_fundamental": "Нет фундаментальных данных",
+        "missing_market": "Нет рыночного контекста"
       }
     },
     "admin": {

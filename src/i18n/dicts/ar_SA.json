@@ -743,6 +743,36 @@
         "mock_success": "تم تنفيذ المتابعة التجريبية",
         "mock_fail": "فشلت المتابعة التجريبية",
         "real_label_future": "متابعة"
+      },
+      "direction": {
+        "long": "شراء",
+        "short": "بيع",
+        "neutral": "محايد",
+        "wait": "انتظار",
+        "missing": "نقص بيانات"
+      },
+      "roleViewpoint": {
+        "fundamental": "منظور الأساسيات / التوكنومكس",
+        "onchain": "منظور السلسلة / التدفقات",
+        "news": "منظور الأخبار / المعنويات",
+        "technical": "منظور فني / TA",
+        "bullish": "منظور أطروحة صاعدة",
+        "bearish": "منظور أطروحة هابطة",
+        "trader": "منظور التنفيذ / الدخول",
+        "aggressive": "مراجعة هجومية",
+        "neutral": "معايرة محايدة",
+        "conservative": "مراجعة دفاعية",
+        "portfolioManager": "قرار المحفظة",
+        "memoryLoop": "ذاكرة المراجعة"
+      },
+      "dataGap": {
+        "ok": "البيانات متاحة",
+        "partial": "نقص جزئي في البيانات",
+        "missing_chart": "لا توجد بيانات رسوم متصلة",
+        "missing_news": "لا توجد بيانات أخبار متصلة",
+        "missing_onchain": "لا توجد بيانات على السلسلة",
+        "missing_fundamental": "لا توجد بيانات أساسية متصلة",
+        "missing_market": "لا يوجد سياق سوق"
       }
     },
     "admin": {

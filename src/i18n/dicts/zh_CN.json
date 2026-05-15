@@ -743,6 +743,36 @@
         "mock_success": "模拟跟单已成交",
         "mock_fail": "模拟跟单失败",
         "real_label_future": "跟单"
+      },
+      "direction": {
+        "long": "做多",
+        "short": "做空",
+        "neutral": "中性",
+        "wait": "观望",
+        "missing": "数据不足"
+      },
+      "roleViewpoint": {
+        "fundamental": "基本面 / Tokenomics 视角",
+        "onchain": "链上 / 资金流视角",
+        "news": "新闻 / Sentiment 视角",
+        "technical": "技术 / TA 视角",
+        "bullish": "多头论证视角",
+        "bearish": "空头论证视角",
+        "trader": "执行 / 入场视角",
+        "aggressive": "进攻审查视角",
+        "neutral": "中立校准视角",
+        "conservative": "防守审查视角",
+        "portfolioManager": "组合决策视角",
+        "memoryLoop": "复盘记忆视角"
+      },
+      "dataGap": {
+        "ok": "数据可用",
+        "partial": "部分数据缺失",
+        "missing_chart": "暂无 K 线数据接入",
+        "missing_news": "暂无新闻数据接入",
+        "missing_onchain": "暂无链上数据接入",
+        "missing_fundamental": "暂无基本面数据接入",
+        "missing_market": "暂无市场背景数据"
       }
     },
     "admin": {

@@ -743,6 +743,36 @@
         "mock_success": "Тестове копіювання виконано",
         "mock_fail": "Тестове копіювання не вдалося",
         "real_label_future": "Копіювати"
+      },
+      "direction": {
+        "long": "ЛОНГ",
+        "short": "ШОРТ",
+        "neutral": "НЕЙТРАЛЬНО",
+        "wait": "ЧЕКАТИ",
+        "missing": "БРАК ДАНИХ"
+      },
+      "roleViewpoint": {
+        "fundamental": "Фундаментальний / tokenomics погляд",
+        "onchain": "Onchain / потоки коштів",
+        "news": "Новини / сентимент",
+        "technical": "Технічний / TA погляд",
+        "bullish": "Бичача теза",
+        "bearish": "Ведмежа теза",
+        "trader": "Виконання / вхід",
+        "aggressive": "Агресивна перевірка",
+        "neutral": "Нейтральне калібрування",
+        "conservative": "Захисна перевірка",
+        "portfolioManager": "Портфельне рішення",
+        "memoryLoop": "Память і розбір"
+      },
+      "dataGap": {
+        "ok": "Дані доступні",
+        "partial": "Частина даних відсутня",
+        "missing_chart": "Немає підключених графіків",
+        "missing_news": "Немає підключених новин",
+        "missing_onchain": "Немає onchain-даних",
+        "missing_fundamental": "Немає фундаментальних даних",
+        "missing_market": "Немає ринкового контексту"
       }
     },
     "admin": {

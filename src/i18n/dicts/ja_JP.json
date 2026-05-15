@@ -743,6 +743,36 @@
         "mock_success": "模擬フォロー約定",
         "mock_fail": "模擬フォロー失敗",
         "real_label_future": "フォロー"
+      },
+      "direction": {
+        "long": "ロング",
+        "short": "ショート",
+        "neutral": "中立",
+        "wait": "待機",
+        "missing": "データ不足"
+      },
+      "roleViewpoint": {
+        "fundamental": "ファンダメンタル / トークノミクス視点",
+        "onchain": "オンチェーン / 資金フロー視点",
+        "news": "ニュース / センチメント視点",
+        "technical": "テクニカル / TA 視点",
+        "bullish": "強気シナリオ視点",
+        "bearish": "弱気シナリオ視点",
+        "trader": "執行 / エントリー視点",
+        "aggressive": "攻めのレビュー視点",
+        "neutral": "中立調整視点",
+        "conservative": "守りのレビュー視点",
+        "portfolioManager": "ポートフォリオ判断視点",
+        "memoryLoop": "振り返り記憶視点"
+      },
+      "dataGap": {
+        "ok": "データ利用可",
+        "partial": "一部データ不足",
+        "missing_chart": "チャートデータ未接続",
+        "missing_news": "ニュースデータ未接続",
+        "missing_onchain": "オンチェーンデータ未接続",
+        "missing_fundamental": "ファンダメンタルデータ未接続",
+        "missing_market": "市場背景データなし"
       }
     },
     "admin": {

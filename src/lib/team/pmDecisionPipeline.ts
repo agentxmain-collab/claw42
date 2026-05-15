@@ -1,15 +1,25 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { generateText } from "@/lib/llm/generateText";
+import { mapTeamProviderToProviderId } from "@/lib/llm/providers";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { recordStrategyDecisionRecord } from "@/lib/strategyHistory";
 import { writeDecisionStagePartial } from "@/lib/team/decisionStageWriter";
 import { upsertDecisionRecord } from "@/lib/team/decisionRecordStore";
+import {
+  buildEvidenceContextPack,
+  dataStatusForMember,
+  evidenceIdsForMember,
+  formatRoleEvidenceContext,
+  type EvidenceContextPack,
+} from "@/lib/team/evidenceDispatcher";
 import type {
   StrategyDecisionRecord,
   AnalystInputRecord,
   AnalystInputRoundRecord,
+  AnalystDataStatus,
+  AnalystDirection,
   DecisionStageTraceId,
   DecisionStageTraceStatus,
   DecisionStageTraceEntry,
@@ -48,6 +58,8 @@ import type { ChatThread } from "@/lib/types";
 
 export type PmDecisionTriggerSource = "cron" | "user_visit_trigger";
 
+const TEAM_LLM_TIMEOUT_MS = 25_000;
+
 export interface PmDecisionPipelineInput {
   triggerSource: PmDecisionTriggerSource;
   recentMarketSignals: SignalRecord[];
@@ -66,9 +78,12 @@ export interface PmDecisionPipelineOutput {
 
 interface AnalystOutput {
   memberId: TeamMemberId;
-  direction: "long" | "short" | "neutral";
+  direction: AnalystDirection;
   confidence: number;
   rationale: string;
+  oneLineSummary?: string;
+  detailedRationale?: string;
+  dataStatus?: AnalystDataStatus;
   citations: string[];
 }
 
@@ -87,6 +102,7 @@ interface PipelineDeps {
   writeDecisionStagePartial?: typeof writeDecisionStagePartial;
   appendWatchHistoryEntry?: typeof appendWatchHistoryEntry;
   loadPromptDoc?: (memberId: TeamMemberId) => Promise<string>;
+  buildEvidenceContextPack?: typeof buildEvidenceContextPack;
 }
 
 interface StageAuditMark {
@@ -155,7 +171,8 @@ async function defaultLoadPromptDoc(memberId: TeamMemberId): Promise<string> {
 
 function normalizeDirection(value: unknown): AnalystOutput["direction"] {
   if (value === "long" || value === "short") return value;
-  return "neutral";
+  if (value === "neutral" || value === "wait") return value;
+  return "wait";
 }
 
 function normalizeConfidence(value: unknown): number {
@@ -169,6 +186,28 @@ function normalizeCitations(value: unknown, allowedIds: Set<string>): string[] {
     .map((item) => String(item))
     .filter((id) => allowedIds.has(id))
     .slice(0, 4);
+}
+
+function normalizeDataStatus(value: unknown, fallback: AnalystDataStatus): AnalystDataStatus {
+  return value === "ok" || value === "partial" || value === "missing" ? value : fallback;
+}
+
+function tradeInputDirection(direction: AnalystDirection): "long" | "short" | "neutral" {
+  return direction === "long" || direction === "short" ? direction : "neutral";
+}
+
+function cleanText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function truncateText(value: string, maxLength: number) {
+  const trimmed = value.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  return `${trimmed.slice(0, Math.max(0, maxLength - 1)).trim()}…`;
+}
+
+function oneLineSummaryFromRationale(rationale: string) {
+  return truncateText(rationale.replace(/\s+/g, " "), 80);
 }
 
 function parseObject(text: string): Record<string, unknown> {
@@ -191,6 +230,7 @@ async function defaultGenerateAnalystOutput(
   prompt: string,
   allowedEvidenceIds: Set<string>,
   locale: Locale,
+  fallbackDataStatus: AnalystDataStatus,
 ): Promise<AnalystOutput> {
   let lastError: unknown = null;
   for (const attempt of ["first", "retry"] as const) {
@@ -201,18 +241,29 @@ async function defaultGenerateAnalystOutput(
         temperature: 0.35,
         maxTokens: 500,
         enableGuardrails: false,
+        providerOverride: mapTeamProviderToProviderId(
+          TEAM_MEMBER_REGISTRY[memberId].defaultProvider,
+        ),
+        timeoutMs: TEAM_LLM_TIMEOUT_MS,
       },
     );
     try {
       const parsed = parseObject(text);
-      const rationale = String(parsed.rationale ?? "").trim();
+      const detailedRationale = cleanText(parsed.detailedRationale ?? parsed.rationale);
+      const rationale = detailedRationale;
       if (!rationale) throw new Error(`${memberId} missing rationale`);
       ensureLocaleText(locale, [rationale], `${memberId} analyst`);
+      const oneLineSummary =
+        cleanText(parsed.oneLineSummary) || oneLineSummaryFromRationale(rationale);
+      const dataStatus = normalizeDataStatus(parsed.dataStatus, fallbackDataStatus);
       return {
         memberId,
         direction: normalizeDirection(parsed.direction),
         confidence: normalizeConfidence(parsed.confidence),
         rationale,
+        oneLineSummary,
+        detailedRationale,
+        dataStatus,
         citations: normalizeCitations(parsed.citations, allowedEvidenceIds),
       };
     } catch (error) {
@@ -253,9 +304,12 @@ function fallbackAnalystOutput(
       : `${memberId} unavailable; continuing with a neutral fallback.`;
   return {
     memberId,
-    direction: "neutral",
+    direction: "wait",
     confidence: 0.25,
     rationale,
+    oneLineSummary: oneLineSummaryFromRationale(rationale),
+    detailedRationale: rationale,
+    dataStatus: "missing",
     citations: [],
   };
 }
@@ -296,6 +350,10 @@ async function defaultGenerateLeadOutput(
         temperature: 0.25,
         maxTokens: 520,
         enableGuardrails: false,
+        providerOverride: mapTeamProviderToProviderId(
+          TEAM_MEMBER_REGISTRY[memberId].defaultProvider,
+        ),
+        timeoutMs: TEAM_LLM_TIMEOUT_MS,
       },
     );
     try {
@@ -340,6 +398,7 @@ async function buildMemberPrompt(
   memberId: TeamMemberId,
   input: PmDecisionPipelineInput,
   deps: PipelineDeps,
+  evidencePack: EvidenceContextPack,
 ) {
   const promptDoc = await (deps.loadPromptDoc ?? defaultLoadPromptDoc)(memberId);
   return `${promptDoc}
@@ -347,20 +406,24 @@ async function buildMemberPrompt(
 You are participating in the Claw42 PM decision pipeline.
 Return JSON only:
 {
-  "direction": "long" | "short" | "neutral",
+  "direction": "long" | "short" | "neutral" | "wait",
   "confidence": 0.0_to_1.0,
-  "rationale": "short concrete rationale with numbers when available",
+  "oneLineSummary": "one sentence, <=80 Chinese chars or <=120 English chars",
+  "detailedRationale": "concrete role-specific rationale with numbers when available, <=500 chars",
+  "dataStatus": "ok" | "partial" | "missing",
+  "rationale": "same meaning as detailedRationale for legacy compatibility",
   "citations": ["evidenceId"]
 }
+
+Rules:
+- Stay inside your role mandate. Do not evaluate domains that are not listed in your role evidence context.
+- If your required evidence is missing, set "direction": "wait", "confidence": 0, and "dataStatus": "missing". Do not invent a trade stance.
+- If evidence is partial, lower confidence and state the gap in oneLineSummary.
 
 ## Locale
 ${buildLocaleInstruction(normalizeWatchLocale(input.locale))}
 
-## Market signals
-${marketContext(input) || "- none"}
-
-## News evidence
-${newsContext(input) || "- none"}`;
+${formatRoleEvidenceContext(memberId, evidencePack)}`;
 }
 
 async function buildLeadPrompt(
@@ -466,6 +529,9 @@ function analystRoundsForMember(
       direction: output.direction,
       confidence: output.confidence,
       rationale: output.rationale,
+      oneLineSummary: output.oneLineSummary,
+      detailedRationale: output.detailedRationale,
+      dataStatus: output.dataStatus,
       evidenceIds: output.citations,
       observedAt: output.observedAt,
     }));
@@ -477,12 +543,18 @@ function singleRoundRecord({
   rationale,
   evidenceIds,
   observedAt,
+  oneLineSummary,
+  detailedRationale,
+  dataStatus = "ok",
 }: {
   direction: AnalystInputRoundRecord["direction"];
   confidence: number;
   rationale: string;
   evidenceIds: string[];
   observedAt: string;
+  oneLineSummary?: string;
+  detailedRationale?: string;
+  dataStatus?: AnalystDataStatus;
 }): AnalystInputRoundRecord[] {
   return [
     {
@@ -490,6 +562,9 @@ function singleRoundRecord({
       direction,
       confidence,
       rationale,
+      oneLineSummary: oneLineSummary ?? oneLineSummaryFromRationale(rationale),
+      detailedRationale: detailedRationale ?? rationale,
+      dataStatus,
       evidenceIds,
       observedAt,
     },
@@ -524,6 +599,9 @@ function makeRecord({
       direction: output.direction,
       confidence: output.confidence,
       rationale: output.rationale,
+      oneLineSummary: output.oneLineSummary,
+      detailedRationale: output.detailedRationale,
+      dataStatus: output.dataStatus,
       evidenceIds: output.citations,
       rounds: analystRoundsForMember(output.memberId, analystRoundOutputs),
     })),
@@ -565,6 +643,13 @@ function makeRecord({
       rationale: tradeDecision
         ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
         : "PM returned no decision.",
+      oneLineSummary: tradeDecision
+        ? oneLineSummaryFromRationale(tradeDecision.riskNote)
+        : "PM returned no decision.",
+      detailedRationale: tradeDecision
+        ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
+        : "PM returned no decision.",
+      dataStatus: "ok",
       evidenceIds: tradeDecision?.evidenceIds ?? [],
       rounds: singleRoundRecord({
         direction:
@@ -575,6 +660,13 @@ function makeRecord({
         rationale: tradeDecision
           ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
           : "PM returned no decision.",
+        oneLineSummary: tradeDecision
+          ? oneLineSummaryFromRationale(tradeDecision.riskNote)
+          : "PM returned no decision.",
+        detailedRationale: tradeDecision
+          ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
+          : "PM returned no decision.",
+        dataStatus: "ok",
         evidenceIds: tradeDecision?.evidenceIds ?? [],
         observedAt,
       }),
@@ -630,6 +722,9 @@ function makePartialRecord({
     direction: output.direction,
     confidence: output.confidence,
     rationale: output.rationale,
+    oneLineSummary: output.oneLineSummary,
+    detailedRationale: output.detailedRationale,
+    dataStatus: output.dataStatus,
     evidenceIds: output.citations,
     rounds: analystRoundsForMember(output.memberId, analystRoundOutputs),
   }));
@@ -971,12 +1066,26 @@ export async function runPmDecisionPipeline(
   const now = input.now ?? Date.now();
   const locale = normalizeWatchLocale(input.locale);
   const localizedInput = { ...input, locale };
-  const allowedEvidenceIds = new Set(input.recentNewsEvidence.map((evidence) => evidence.id));
+  const symbol = symbolFromInput(localizedInput);
+  const evidencePack = await (deps.buildEvidenceContextPack ?? buildEvidenceContextPack)({
+    symbol,
+    recentMarketSignals: localizedInput.recentMarketSignals,
+    recentNewsEvidence: localizedInput.recentNewsEvidence,
+  });
+  const allowedEvidenceIds = new Set(
+    PIPELINE_INPUT_MEMBER_IDS.flatMap((memberId) => evidenceIdsForMember(memberId, evidencePack)),
+  );
   const evidenceWriter = deps.saveNewsEvidence ?? saveNewsEvidence;
   const generateAnalyst =
     deps.generateAnalystOutput ??
     ((memberId: TeamMemberId, prompt: string) =>
-      defaultGenerateAnalystOutput(memberId, prompt, allowedEvidenceIds, locale));
+      defaultGenerateAnalystOutput(
+        memberId,
+        prompt,
+        allowedEvidenceIds,
+        locale,
+        dataStatusForMember(memberId, evidencePack),
+      ));
   const generateLead =
     deps.generateLeadOutput ??
     ((memberId: TeamMemberId, prompt: string) =>
@@ -1016,7 +1125,7 @@ export async function runPmDecisionPipeline(
     const analystPrompts = await Promise.all(
       PIPELINE_INPUT_MEMBER_IDS.map(async (memberId) => ({
         memberId,
-        prompt: await buildMemberPrompt(memberId, localizedInput, deps),
+        prompt: await buildMemberPrompt(memberId, localizedInput, deps, evidencePack),
       })),
     );
     const analystRoundOutputs = await runMultiRoundAnalystDebate({
@@ -1085,7 +1194,7 @@ export async function runPmDecisionPipeline(
     const tradeInputs = [
       ...latestAnalystOutputs.map((output) => ({
         memberId: output.memberId,
-        direction: output.direction,
+        direction: tradeInputDirection(output.direction),
         confidence: output.confidence,
         rationale: output.rationale,
       })),

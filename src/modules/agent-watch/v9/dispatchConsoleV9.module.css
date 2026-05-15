@@ -832,6 +832,16 @@
   letter-spacing: 0;
   margin: 0 0 8px 0;
 }
+.root :global(.topic-explanation) {
+  max-width: 820px;
+  margin: -2px 0 12px;
+  color: var(--fg-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.root :global(.topic-explanation.collapsed) {
+  display: none;
+}
 .root :global(.topic-original) {
   font-size: 12px;
   color: var(--purple-2);
@@ -994,6 +1004,96 @@
   font-size: 13px;
   color: var(--fg-2);
   line-height: 1.55;
+}
+.root :global(.msg-l1) {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.root :global(.msg-l1-top) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.root :global(.direction-badge) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--bg);
+  background: var(--fg-3);
+}
+.root :global(.direction-badge.long) {
+  background: var(--lime);
+}
+.root :global(.direction-badge.short) {
+  background: #ff8b80;
+}
+.root :global(.direction-badge.neutral),
+.root :global(.direction-badge.wait) {
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.12);
+}
+.root :global(.confidence-meter) {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 112px;
+  color: var(--fg-2);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+.root :global(.confidence-track) {
+  width: 64px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+}
+.root :global(.confidence-track span) {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--purple-2), var(--lime));
+}
+.root :global(.role-viewpoint) {
+  color: var(--fg-3);
+  font-size: 11px;
+}
+.root :global(.msg-summary) {
+  color: var(--fg);
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+.root :global(.data-status) {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--fg-3);
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 11px;
+}
+.root :global(.data-status.missing) {
+  border-color: rgba(255, 139, 128, 0.28);
+  color: #ffb3ac;
+  background: rgba(255, 139, 128, 0.08);
+}
+.root :global(.data-status.partial) {
+  border-color: rgba(255, 211, 105, 0.24);
+  color: #ffd369;
+  background: rgba(255, 211, 105, 0.07);
+}
+.root :global(.msg-divider) {
+  height: 1px;
+  margin: 2px 0 9px;
+  background: linear-gradient(90deg, rgba(209, 255, 85, 0.22), transparent);
 }
 .root :global(.msg-bubble b) {
   color: var(--fg);

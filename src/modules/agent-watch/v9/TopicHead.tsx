@@ -56,6 +56,11 @@ export function TopicHead({
       <h2 id={`${bodyId}-title`} className="topic-title">
         {topic.title}
       </h2>
+      {topic.explanation ? (
+        <p className={["topic-explanation", collapsed && "collapsed"].filter(Boolean).join(" ")}>
+          {topic.explanation}
+        </p>
+      ) : null}
       {showOriginalLink ? (
         <a
           className="topic-original"

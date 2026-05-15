@@ -8,6 +8,10 @@ export type RecordSource = "live" | "paper" | "legacy" | "backtest";
 
 export type DecisionOutcome = "hit_tp" | "hit_sl" | "expired" | "manual_close" | null;
 
+export type AnalystDirection = Extract<DebateDirection, "long" | "short"> | "neutral" | "wait";
+
+export type AnalystDataStatus = "ok" | "partial" | "missing";
+
 export type DecisionResolutionReason =
   | "take_profit_reached"
   | "stop_loss_reached"
@@ -20,11 +24,17 @@ export interface AnalystInputRoundRecord {
   /** One-based round number inside the PM decision debate. */
   round: number;
   /** Directional stance from this analyst during this round. */
-  direction: Extract<DebateDirection, "long" | "short"> | "neutral";
+  direction: AnalystDirection;
   /** Normalized 0-1 confidence from the analyst output during this round. */
   confidence: number;
   /** Short rationale preserved for later audit and track-record explanation. */
   rationale: string;
+  /** L1 summary rendered above the detailed rationale. Optional for legacy v2 records. */
+  oneLineSummary?: string;
+  /** Structured L2 rationale rendered below the L1 summary. Optional for legacy v2 records. */
+  detailedRationale?: string;
+  /** Evidence availability status for this analyst round. Optional for legacy v2 records. */
+  dataStatus?: AnalystDataStatus;
   /** Structured evidence ids cited during this round. */
   evidenceIds: string[];
   /** ISO timestamp when this round output was observed. */
@@ -35,11 +45,17 @@ export interface AnalystInputRecord {
   /** Team member who contributed this input. */
   memberId: TeamMemberId;
   /** Directional stance from this analyst at decision time. */
-  direction: Extract<DebateDirection, "long" | "short"> | "neutral";
+  direction: AnalystDirection;
   /** Normalized 0-1 confidence from the analyst output. */
   confidence: number;
   /** Short rationale preserved for later audit and track-record explanation. */
   rationale: string;
+  /** L1 summary rendered above the detailed rationale. Optional for legacy v2 records. */
+  oneLineSummary?: string;
+  /** Structured L2 rationale rendered below the L1 summary. Optional for legacy v2 records. */
+  detailedRationale?: string;
+  /** Evidence availability status for this analyst. Optional for legacy v2 records. */
+  dataStatus?: AnalystDataStatus;
   /** Structured evidence ids; populated by the news citation layer in spec-4. */
   evidenceIds: string[];
   /** Optional multi-round trace. Missing means legacy schema v1 single-round input. */

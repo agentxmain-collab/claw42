@@ -214,7 +214,8 @@ describe("mapPublicTimelineEventsToTopics", () => {
       id: "record-1",
       symbol: "BTC",
       status: "done",
-      title: "BTC 实时行情分析 · ETF outflows rise and support is under pressure",
+      title: "BTC 实时行情分析",
+      explanation: "ETF outflows rise and support is under pressure",
       originalUrl: "https://example.com/btc",
       sourceLabel: "CoinDesk",
       intensity: 5,
@@ -480,7 +481,8 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("active");
-    expect(topic.title).toBe("BTC 实时行情分析 · 分析进行中");
+    expect(topic.title).toBe("BTC 实时行情分析");
+    expect(topic.explanation).toBe("分析进行中");
     expect(topic.progress).toBe("当前进行到阶段 3");
     expect(topic.strategy).toMatchObject({
       action: "pending",
@@ -564,6 +566,9 @@ describe("mapPublicTimelineEventsToTopics", () => {
                 direction: "short",
                 confidence: 0.6,
                 rationale: "Round one chart view.",
+                oneLineSummary: "Chart pressure is building.",
+                detailedRationale: "Round one detailed chart view.",
+                dataStatus: "ok",
                 evidenceIds: ["ev_1"],
               },
               {
@@ -596,8 +601,16 @@ describe("mapPublicTimelineEventsToTopics", () => {
       "Round 2 · multi-round debate",
     ]);
     expect(topic.messages.map((message) => message.content)).toEqual(
-      expect.arrayContaining(["Round one chart view.", "Round two refined chart view."]),
+      expect.arrayContaining(["Round one detailed chart view.", "Round two refined chart view."]),
     );
+    expect(topic.messages[0]).toMatchObject({
+      direction: "short",
+      directionLabel: "SHORT",
+      confidence: 0.6,
+      oneLineSummary: "Chart pressure is building.",
+      dataStatusLabel: "Data available",
+      roleViewpoint: "Technical / TA view",
+    });
   });
 
   it("keeps empty incomplete PM decisions pending instead of active", () => {
@@ -619,7 +632,8 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("pending");
-    expect(topic.title).toBe("BTC 实时行情分析 · 暂无决策更新");
+    expect(topic.title).toBe("BTC 实时行情分析");
+    expect(topic.explanation).toBe("暂无决策更新");
     expect(topic.progress).toBe("暂无决策更新");
     expect(topic.strategy).toMatchObject({
       action: "pending",
@@ -653,7 +667,8 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("pending");
-    expect(topic.title).toBe("BTC 实时行情分析 · 暂无决策更新");
+    expect(topic.title).toBe("BTC 实时行情分析");
+    expect(topic.explanation).toBe("暂无决策更新");
     expect(topic.progress).toBe("暂无决策更新");
     expect(topic.strategy).toMatchObject({
       action: "pending",
@@ -683,7 +698,8 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("active");
-    expect(topic.title).toBe("BTC 实时行情分析 · 分析进行中");
+    expect(topic.title).toBe("BTC 实时行情分析");
+    expect(topic.explanation).toBe("分析进行中");
     expect(topic.progress).toBe("当前进行到阶段 3");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
@@ -837,7 +853,8 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.originalUrl).toBeUndefined();
-    expect(topic.title).toBe("BTC 实时行情分析 · 真实交易决策已完成");
+    expect(topic.title).toBe("BTC 实时行情分析");
+    expect(topic.explanation).toBe("真实交易决策已完成");
     expect(topic.trigger.text).toBe("BTC 真实交易决策");
   });
 

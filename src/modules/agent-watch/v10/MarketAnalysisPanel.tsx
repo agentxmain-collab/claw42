@@ -84,7 +84,6 @@ function TopicRankingV10({ topic }: { topic: DispatchTopic }) {
   return (
     <div className="topic-ranking" data-topic-ranking-score={ranking.score}>
       <span className="topic-ranking-label">{ranking.rankLabel}</span>
-      <span className="topic-ranking-text">{ranking.explanation}</span>
     </div>
   );
 }
@@ -138,6 +137,11 @@ function TopicHeadV10({
       <h2 id={`${bodyId}-title`} className="topic-title">
         {topic.title}
       </h2>
+      {topic.explanation ? (
+        <p className={["topic-explanation", collapsed && "collapsed"].filter(Boolean).join(" ")}>
+          {topic.explanation}
+        </p>
+      ) : null}
       {hasOriginalUrl(topic) ? (
         <a
           className="topic-original"

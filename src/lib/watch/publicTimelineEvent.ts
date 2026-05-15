@@ -1,5 +1,7 @@
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type {
+  AnalystDataStatus,
+  AnalystDirection,
   DecisionOutcome,
   DecisionResolutionReason,
   DecisionStageTraceId,
@@ -30,9 +32,12 @@ export interface PublicDecisionStageTraceEntry {
 export interface PublicDecisionRoundEntry {
   round: number;
   memberId: TeamMemberId;
-  direction?: "long" | "short" | "neutral";
+  direction?: AnalystDirection;
   confidence?: number;
   rationale: string;
+  oneLineSummary?: string;
+  detailedRationale?: string;
+  dataStatus?: AnalystDataStatus;
   evidenceIds?: string[];
   observedAt?: string;
 }

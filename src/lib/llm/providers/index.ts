@@ -7,6 +7,7 @@ import { minimaxProvider } from "@/lib/llm/providers/minimax";
 import { openaiProvider } from "@/lib/llm/providers/openai";
 import { stubProvider } from "@/lib/llm/providers/stub";
 import { recordProviderCall } from "@/lib/team/providerTelemetry";
+import type { TeamProviderId } from "@/lib/team/teamRegistry";
 import type { LLMInput, LLMOutput, LLMProvider, ProviderId } from "@/lib/llm/providers/types";
 
 export { BudgetExceededError };
@@ -31,6 +32,20 @@ function pushUnique(chain: ProviderId[], providerId: ProviderId) {
 
 export function getProvider(providerId: ProviderId): LLMProvider {
   return PROVIDERS[providerId];
+}
+
+export function mapTeamProviderToProviderId(providerId: TeamProviderId): ProviderId {
+  switch (providerId) {
+    case "deepseek":
+      return "deepseek-chat";
+    case "minimax":
+      return "minimax";
+    case "claude-haiku":
+    case "claude-opus":
+      return "claude-haiku";
+    default:
+      return "deepseek-chat";
+  }
 }
 
 export function getProviderChain(providerOverride?: ProviderId): ProviderId[] {

@@ -743,6 +743,36 @@
         "mock_success": "Seguimiento simulado ejecutado",
         "mock_fail": "Falló el seguimiento simulado",
         "real_label_future": "Seguir"
+      },
+      "direction": {
+        "long": "LARGO",
+        "short": "CORTO",
+        "neutral": "NEUTRAL",
+        "wait": "ESPERAR",
+        "missing": "FALTAN DATOS"
+      },
+      "roleViewpoint": {
+        "fundamental": "Vista fundamental / tokenomics",
+        "onchain": "Vista onchain / flujos",
+        "news": "Vista noticias / sentimiento",
+        "technical": "Vista técnica / TA",
+        "bullish": "Tesis alcista",
+        "bearish": "Tesis bajista",
+        "trader": "Ejecución / entrada",
+        "aggressive": "Revisión ofensiva",
+        "neutral": "Calibración neutral",
+        "conservative": "Revisión defensiva",
+        "portfolioManager": "Decisión de cartera",
+        "memoryLoop": "Memoria de revisión"
+      },
+      "dataGap": {
+        "ok": "Datos disponibles",
+        "partial": "Faltan algunos datos",
+        "missing_chart": "Sin datos de gráfico conectados",
+        "missing_news": "Sin datos de noticias conectados",
+        "missing_onchain": "Sin datos onchain conectados",
+        "missing_fundamental": "Sin datos fundamentales conectados",
+        "missing_market": "Sin contexto de mercado"
       }
     },
     "admin": {

@@ -23,6 +23,17 @@ function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
     () => formatSafeContent(message.content),
     [message.content],
   );
+  const formattedSummary = React.useMemo(
+    () => formatSafeContent(message.oneLineSummary ?? ""),
+    [message.oneLineSummary],
+  );
+  const hasDecisionLayer = Boolean(
+    message.direction || message.confidence !== undefined || message.oneLineSummary,
+  );
+  const confidencePct =
+    typeof message.confidence === "number"
+      ? Math.round(Math.max(0, Math.min(1, message.confidence)) * 100)
+      : null;
 
   return (
     <div className="msg">
@@ -55,6 +66,37 @@ function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
                 {message.quote.text}
               </div>
             ) : null}
+            {hasDecisionLayer ? (
+              <div className="msg-l1">
+                <div className="msg-l1-top">
+                  {message.direction ? (
+                    <span className={`direction-badge ${message.direction}`}>
+                      {message.directionLabel ?? message.direction.toUpperCase()}
+                    </span>
+                  ) : null}
+                  {confidencePct !== null ? (
+                    <span className="confidence-meter" aria-label={`Confidence ${confidencePct}%`}>
+                      <span className="confidence-track" aria-hidden="true">
+                        <span style={{ width: `${confidencePct}%` }} />
+                      </span>
+                      <b>{confidencePct}%</b>
+                    </span>
+                  ) : null}
+                  {message.roleViewpoint ? (
+                    <span className="role-viewpoint">{message.roleViewpoint}</span>
+                  ) : null}
+                </div>
+                {message.oneLineSummary ? (
+                  <div className="msg-summary">{formattedSummary}</div>
+                ) : null}
+                {message.dataStatusLabel && message.dataStatus !== "ok" ? (
+                  <div className={`data-status ${message.dataStatus ?? "partial"}`}>
+                    {message.dataStatusLabel}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {hasDecisionLayer ? <div className="msg-divider" aria-hidden="true" /> : null}
             <span>{formattedContent}</span>
           </div>
         )}
