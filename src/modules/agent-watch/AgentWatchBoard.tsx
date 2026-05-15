@@ -9,7 +9,9 @@ import {
   type FollowStatsSnapshot,
 } from "@/lib/watch/v9TopicAdapter";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { DecisionHistoryPayload } from "@/lib/watch/decisionHistory";
 import { DispatchConsoleV9 } from "./v9/DispatchConsoleV9";
+import { HistoryWall, type HistoryWallItem } from "./v9/HistoryWall";
 import type {
   DispatchConsoleV9Props,
   DispatchTopic,
@@ -30,6 +32,7 @@ const FOLLOW_STATS_MARKET_POLL_MS = 30_000;
 const FOLLOW_STATS_HIDDEN_POLL_MS = 5 * 60_000;
 const FOLLOW_STATS_BROADCAST = "claw42-follow-stats";
 const FOLLOW_STATS_STORAGE_EVENT = "claw42-follow-stats-updated";
+const DECISION_HISTORY_LIMIT = 20;
 
 interface PublicTimelinePayload {
   events: PublicTimelineEvent[];
@@ -69,12 +72,20 @@ export function AgentWatchBoard({
   const roundDict = t.agentWatch.dispatchV10.round;
   const stageStatusDict = t.agentWatch.dispatchV10.stageStatus;
   const topicRankingDict = t.agentWatch.dispatchV10.topicRanking;
+  const historyDict = t.agentWatch.dispatchV10.history;
   const [timelineEvents, setTimelineEvents] = useState<PublicTimelineEvent[]>([]);
   const [timelineEvidenceMap, setTimelineEvidenceMap] = useState<Record<string, NewsEvidence>>({});
   const [followStatsByRecordId, setFollowStatsByRecordId] = useState<
     Record<string, FollowStatsSnapshot>
   >({});
   const [activeDispatchView, setActiveDispatchView] = useState<DispatchView>(initialView);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historySymbol, setHistorySymbol] = useState<string | null>(null);
+  const [historyItems, setHistoryItems] = useState<HistoryWallItem[]>([]);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [historyNextBefore, setHistoryNextBefore] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const nextTimelinePollMsRef = useRef(DEFAULT_TIMELINE_POLL_MS);
 
   const applyTimelinePayload = useCallback(
@@ -393,6 +404,90 @@ export function AgentWatchBoard({
       timelineEvidenceMap,
     ],
   );
+  const historySymbols = useMemo(
+    () => Array.from(new Set(topics.map((topic) => topic.symbol).filter(Boolean))),
+    [topics],
+  );
+
+  useEffect(() => {
+    if (!historyOpen) return;
+    setHistorySymbol((current) =>
+      current && historySymbols.includes(current) ? current : (historySymbols[0] ?? null),
+    );
+  }, [historyOpen, historySymbols]);
+
+  const fetchDecisionHistory = useCallback(
+    async ({
+      symbol,
+      before,
+      mode,
+      signal,
+    }: {
+      symbol: string;
+      before?: string | null;
+      mode: "replace" | "append";
+      signal?: AbortSignal;
+    }) => {
+      const params = new URLSearchParams({
+        symbol,
+        locale: agentWatchLocale,
+        limit: String(DECISION_HISTORY_LIMIT),
+      });
+      if (before) params.set("before", before);
+
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const response = await fetch(apiPath(`/api/watch/decision-history?${params}`), {
+          cache: "no-store",
+          signal,
+        });
+        if (!response.ok) throw new Error(`decision history ${response.status}`);
+        const payload = (await response.json()) as DecisionHistoryPayload;
+        setHistoryItems((current) =>
+          mode === "replace" ? payload.items : [...current, ...payload.items],
+        );
+        setHistoryHasMore(payload.hasMore);
+        setHistoryNextBefore(payload.nextBefore);
+      } catch (error: unknown) {
+        if ((error as { name?: string }).name === "AbortError") return;
+        setHistoryError(historyDict.error);
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[claw42] decision history fetch failed", error);
+        }
+      } finally {
+        if (!signal?.aborted) setHistoryLoading(false);
+      }
+    },
+    [agentWatchLocale, historyDict.error],
+  );
+
+  useEffect(() => {
+    if (!historyOpen || !historySymbol) return;
+    const controller = new AbortController();
+    void fetchDecisionHistory({
+      symbol: historySymbol,
+      mode: "replace",
+      signal: controller.signal,
+    });
+    return () => controller.abort();
+  }, [fetchDecisionHistory, historyOpen, historySymbol]);
+
+  const handleSelectHistorySymbol = useCallback((symbol: string) => {
+    setHistorySymbol(symbol);
+    setHistoryItems([]);
+    setHistoryHasMore(false);
+    setHistoryNextBefore(null);
+  }, []);
+
+  const handleMoreHistory = useCallback(() => {
+    if (!historySymbol || !historyHasMore || historyLoading) return;
+    void fetchDecisionHistory({
+      symbol: historySymbol,
+      before: historyNextBefore,
+      mode: "append",
+    });
+  }, [fetchDecisionHistory, historyHasMore, historyLoading, historyNextBefore, historySymbol]);
 
   const broadcastFollowUpdate = useCallback((recordId: string) => {
     const payload = { recordId, ts: Date.now() };
@@ -455,12 +550,29 @@ export function AgentWatchBoard({
   );
 
   return (
-    <Console
-      topics={topics}
-      initialView={initialView}
-      onViewChange={setActiveDispatchView}
-      onTopicAction={handleTopicAction}
-      marketSnapshot={null}
-    />
+    <>
+      <Console
+        topics={topics}
+        initialView={initialView}
+        onViewChange={setActiveDispatchView}
+        onTopicAction={handleTopicAction}
+        marketSnapshot={null}
+      />
+      <HistoryWall
+        open={historyOpen}
+        symbols={historySymbols}
+        selectedSymbol={historySymbol}
+        locale={agentWatchLocale}
+        dict={historyDict}
+        items={historyItems}
+        hasMore={historyHasMore}
+        loading={historyLoading}
+        error={historyError}
+        onOpen={() => setHistoryOpen(true)}
+        onClose={() => setHistoryOpen(false)}
+        onMore={handleMoreHistory}
+        onSelectSymbol={handleSelectHistorySymbol}
+      />
+    </>
   );
 }

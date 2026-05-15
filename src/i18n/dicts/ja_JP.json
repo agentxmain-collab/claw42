@@ -711,6 +711,28 @@
       "topicRanking": {
         "explanation_template": "{symbol} は {news_count} 件のニュース + {confidence}% の信頼度で第 {rank} 位",
         "rank_label": "順位 #{rank}"
+      },
+      "history": {
+        "wall_title": "意思決定履歴",
+        "outcome_label": "結果",
+        "expand": "意思決定履歴を見る",
+        "collapse": "閉じる",
+        "more": "さらに読み込む",
+        "empty": "意思決定履歴はまだありません",
+        "loading": "読み込み中",
+        "error": "意思決定履歴の読み込みに失敗しました",
+        "symbols_label": "意思決定履歴の銘柄",
+        "heatmap_label": "意思決定強度ヒートマップ",
+        "intensity": "強度",
+        "confidence": "信頼度",
+        "entry": "エントリー",
+        "stop_loss": "SL",
+        "take_profit": "TP",
+        "pending": "レビュー待ち",
+        "hit_tp": "利確到達",
+        "hit_sl": "損切り到達",
+        "expired": "期限切れ",
+        "manual_close": "手動クローズ"
       }
     }
   },

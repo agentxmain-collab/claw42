@@ -711,6 +711,28 @@
       "topicRanking": {
         "explanation_template": "{symbol} занимает #{rank}: {news_count} новостей + {confidence}% уверенности",
         "rank_label": "Ранг #{rank}"
+      },
+      "history": {
+        "wall_title": "История решений",
+        "outcome_label": "Результат",
+        "expand": "Смотреть историю решений",
+        "collapse": "Свернуть",
+        "more": "Загрузить еще",
+        "empty": "Истории решений пока нет",
+        "loading": "Загрузка",
+        "error": "Не удалось загрузить историю решений",
+        "symbols_label": "Символы истории решений",
+        "heatmap_label": "Тепловая карта интенсивности решений",
+        "intensity": "Интенсивность",
+        "confidence": "Уверенность",
+        "entry": "Вход",
+        "stop_loss": "SL",
+        "take_profit": "TP",
+        "pending": "Ожидает разбора",
+        "hit_tp": "Тейк-профит достигнут",
+        "hit_sl": "Стоп-лосс сработал",
+        "expired": "Истекло",
+        "manual_close": "Закрыто вручную"
       }
     }
   },

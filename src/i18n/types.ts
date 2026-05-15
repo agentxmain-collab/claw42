@@ -134,6 +134,29 @@ export type DispatchV10TopicRankingDict = {
   rank_label: string;
 };
 
+export type DispatchV10HistoryDict = {
+  wall_title: string;
+  outcome_label: string;
+  expand: string;
+  collapse: string;
+  more: string;
+  empty: string;
+  loading: string;
+  error: string;
+  symbols_label: string;
+  heatmap_label: string;
+  intensity: string;
+  confidence: string;
+  entry: string;
+  stop_loss: string;
+  take_profit: string;
+  pending: string;
+  hit_tp: string;
+  hit_sl: string;
+  expired: string;
+  manual_close: string;
+};
+
 export type DispatchV10Dict = {
   ariaLabel: string;
   hero: {
@@ -156,6 +179,7 @@ export type DispatchV10Dict = {
   round: DispatchV10RoundDict;
   stageStatus: DispatchV10StageStatusDict;
   topicRanking: DispatchV10TopicRankingDict;
+  history: DispatchV10HistoryDict;
   flow: {
     ariaLabel: string;
     stages: DispatchV10StageDict[];

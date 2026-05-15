@@ -711,6 +711,28 @@
       "topicRanking": {
         "explanation_template": "[{symbol} ranks #{rank} from {news_count} news items + {confidence}% confidence]",
         "rank_label": "[Rank #{rank}]"
+      },
+      "history": {
+        "wall_title": "[!! Ðëçîšîöñ Ħîšţöŕý !!]",
+        "outcome_label": "[!! Öüţçömë !!]",
+        "expand": "[!! Vîëŵ Ðëçîšîöñ Ħîšţöŕý !!]",
+        "collapse": "[!! Çöľľåpšë !!]",
+        "more": "[!! Ľöåđ Möŕë !!]",
+        "empty": "[!! Ñö đëçîšîöñ ħîšţöŕý ýëţ !!]",
+        "loading": "[!! Ľöåđîñĝ !!]",
+        "error": "[!! Ðëçîšîöñ ħîšţöŕý ƒåîľëđ ţö ľöåđ !!]",
+        "symbols_label": "[!! Ðëçîšîöñ ħîšţöŕý šýmɓöľš !!]",
+        "heatmap_label": "[!! Ðëçîšîöñ îñţëñšîţý ħëåţ måp !!]",
+        "intensity": "[!! Îñţëñšîţý !!]",
+        "confidence": "[!! Çöñƒîđëñçë !!]",
+        "entry": "[!! Ëñţŕý !!]",
+        "stop_loss": "[!! ŠĽ !!]",
+        "take_profit": "[!! ŢP !!]",
+        "pending": "[!! Pëñđîñĝ ŕëvîëŵ !!]",
+        "hit_tp": "[!! Ţåķë pŕöƒîţ ħîţ !!]",
+        "hit_sl": "[!! Šţöp ľöšš ħîţ !!]",
+        "expired": "[!! Ëxpîŕëđ !!]",
+        "manual_close": "[!! Måñüåľľý çľöšëđ !!]"
       }
     }
   },

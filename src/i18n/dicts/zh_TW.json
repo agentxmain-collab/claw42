@@ -711,6 +711,28 @@
       "topicRanking": {
         "explanation_template": "{symbol} 因 {news_count} 條新聞 + {confidence}% 置信度排第 {rank}",
         "rank_label": "排序 #{rank}"
+      },
+      "history": {
+        "wall_title": "決策歷史",
+        "outcome_label": "結果",
+        "expand": "查看決策歷史",
+        "collapse": "收起",
+        "more": "載入更多",
+        "empty": "暫無決策歷史",
+        "loading": "載入中",
+        "error": "決策歷史載入失敗",
+        "symbols_label": "決策歷史幣種",
+        "heatmap_label": "決策強度熱力圖",
+        "intensity": "強度",
+        "confidence": "信心",
+        "entry": "進場",
+        "stop_loss": "止損",
+        "take_profit": "止盈",
+        "pending": "待覆盤",
+        "hit_tp": "止盈達成",
+        "hit_sl": "止損觸發",
+        "expired": "到期未觸發",
+        "manual_close": "人工關閉"
       }
     }
   },
