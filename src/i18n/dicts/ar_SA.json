@@ -749,7 +749,7 @@
         "short": "بيع",
         "neutral": "محايد",
         "wait": "انتظار",
-        "missing": "نقص بيانات"
+        "missing": "SIGNAL PENDING"
       },
       "roleViewpoint": {
         "fundamental": "منظور الأساسيات / التوكنومكس",
@@ -768,11 +768,11 @@
       "dataGap": {
         "ok": "البيانات متاحة",
         "partial": "نقص جزئي في البيانات",
-        "missing_chart": "لا توجد بيانات رسوم متصلة",
-        "missing_news": "لا توجد بيانات أخبار متصلة",
-        "missing_onchain": "لا توجد بيانات على السلسلة",
-        "missing_fundamental": "لا توجد بيانات أساسية متصلة",
-        "missing_market": "لا يوجد سياق سوق"
+        "missing_chart": "Chart signal pending",
+        "missing_news": "News signal pending",
+        "missing_onchain": "Onchain signal pending",
+        "missing_fundamental": "Fundamental signal pending",
+        "missing_market": "Market context pending"
       }
     },
     "admin": {
@@ -784,7 +784,7 @@
     "closeAriaLabel": "Close market card",
     "goToWatchCta": "Go to Agent Live",
     "loadingPrice": "Loading market data",
-    "agentCommentMissing": "Agent commentary available in Chinese only"
+    "agentCommentMissing": "Agent commentary pending"
   },
   "rating": {
     "StrongBuy": "شراء قوي",

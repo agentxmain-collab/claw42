@@ -135,11 +135,11 @@ describe("generateTradeDecision", () => {
     callWithChainMock.mockReset();
   });
 
-  it("falls back from requested Opus tier to exposed haiku provider", () => {
+  it("uses claude-haiku directly for high severity trade decisions", () => {
     expect(resolvePMProviderSelection("high")).toEqual({
-      requestedProvider: "claude-opus",
+      requestedProvider: "claude-haiku",
       providerOverride: "claude-haiku",
-      fallbackReason: "claude-opus tier is not exposed by the current provider registry",
+      fallbackReason: null,
     });
   });
 

@@ -33,4 +33,10 @@ describe("TEAM_MEMBER_REGISTRY", () => {
       expect(member.avatarPath).toBe(`/images/team/${id}.svg`);
     }
   });
+
+  test("defaults all watch team roles to DeepSeek after public-experience cleanup", () => {
+    for (const id of TEAM_MEMBER_IDS) {
+      expect(getTeamMember(id).defaultProvider).toBe("deepseek");
+    }
+  });
 });

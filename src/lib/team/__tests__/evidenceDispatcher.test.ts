@@ -57,6 +57,7 @@ describe("evidenceDispatcher", () => {
       "You are the technical analyst",
     );
     expect(formatRoleEvidenceContext("chart_analyst", pack)).not.toContain("ETF inflows rise");
+    expect(formatRoleEvidenceContext("chart_analyst", pack)).not.toContain("## Data status");
   });
 
   it("marks composite reviewers partial when some domains are missing", async () => {
@@ -68,5 +69,19 @@ describe("evidenceDispatcher", () => {
 
     expect(dataStatusForMember("neutral_reviewer", pack)).toBe("partial");
     expect(dataStatusForMember("news_analyst", pack)).toBe("missing");
+  });
+
+  it("does not instruct roles to expose backend availability in public output", async () => {
+    const pack = await buildEvidenceContextPack({
+      symbol: "FIRO",
+      recentMarketSignals: [signal("FIRO")],
+      recentNewsEvidence: [],
+    });
+
+    const context = formatRoleEvidenceContext("news_analyst", pack);
+
+    expect(context).toContain("Public output discipline");
+    expect(context).not.toContain("Data status");
+    expect(context).not.toContain("naming missing data explicitly");
   });
 });

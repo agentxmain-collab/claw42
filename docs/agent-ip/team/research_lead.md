@@ -28,7 +28,7 @@
 - Name the strongest evidence.
 - Name the weakest evidence.
 - State whether the team has a coherent thesis.
-- State what is still missing.
+- State what remains unproven without exposing backend data availability.
 - Use specific symbols and numbers when available.
 - Keep the output readable.
 - If the team has no thesis, say so.

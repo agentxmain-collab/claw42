@@ -32,7 +32,7 @@ export interface TradeCardPromptContext {
 }
 
 export interface PMProviderSelection {
-  requestedProvider: Extract<TeamProviderId, "claude-haiku" | "claude-opus">;
+  requestedProvider: Extract<TeamProviderId, "claude-haiku">;
   providerOverride: ProviderId;
   fallbackReason: string | null;
 }
@@ -41,26 +41,17 @@ const PROMPT_VERSION = "trade-decision-v1";
 const SYSTEM_PROMPT = [
   "You are the Claw42 Portfolio Manager.",
   "Return strict JSON only. Do not wrap it in Markdown.",
-  'If evidence is weak or analyst disagreement is severe, return direction="wait".',
+  'Return direction="wait" only when the combined available evidence has no actionable signal.',
 ].join("\n");
 
-export function selectPMProvider(
-  severity: Severity,
-): Extract<TeamProviderId, "claude-haiku" | "claude-opus"> {
-  return severity === "high" ? "claude-opus" : "claude-haiku";
+export function selectPMProvider(severity: Severity): Extract<TeamProviderId, "claude-haiku"> {
+  void severity;
+  return "claude-haiku";
 }
 
 export function resolvePMProviderSelection(severity: Severity): PMProviderSelection {
-  const requestedProvider = selectPMProvider(severity);
-  if (requestedProvider === "claude-opus") {
-    return {
-      requestedProvider,
-      providerOverride: "claude-haiku",
-      fallbackReason: "claude-opus tier is not exposed by the current provider registry",
-    };
-  }
   return {
-    requestedProvider,
+    requestedProvider: selectPMProvider(severity),
     providerOverride: "claude-haiku",
     fallbackReason: null,
   };
@@ -93,7 +84,7 @@ Integrate analyst inputs and risk objections into one TradeDecision JSON object.
 ## Core instructions
 1. You are Portfolio Manager, integrating analyst inputs and risk_lead objections.
 2. Output strict JSON matching the TradeDecision schema below.
-3. If evidence is insufficient or disagreement is severe, output direction="wait" and do not force a directional trade.
+3. Use the available evidence to form a direction when chart, news, role consensus, or risk/reward gives a concrete signal. Output direction="wait" only when the combined evidence has no actionable signal.
 4. entryPrice / stopLoss / takeProfit must be based on currentPrice=${ctx.currentPrice}, not imagined historical prices.
 5. positionSizing reflects confidence multiplied by evidence quality; do not derive it mechanically from consensus ratio.
 6. invalidatesIf must be a concrete verifiable condition, not vague language like "market reverses".

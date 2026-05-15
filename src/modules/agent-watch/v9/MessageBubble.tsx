@@ -89,11 +89,6 @@ function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
                 {message.oneLineSummary ? (
                   <div className="msg-summary">{formattedSummary}</div>
                 ) : null}
-                {message.dataStatusLabel && message.dataStatus !== "ok" ? (
-                  <div className={`data-status ${message.dataStatus ?? "partial"}`}>
-                    {message.dataStatusLabel}
-                  </div>
-                ) : null}
               </div>
             ) : null}
             {hasDecisionLayer ? <div className="msg-divider" aria-hidden="true" /> : null}

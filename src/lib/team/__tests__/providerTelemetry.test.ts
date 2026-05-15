@@ -28,7 +28,7 @@ describe("provider telemetry", () => {
 
     expect(__providerTelemetryTestUtils.memoryCalls[0]).toMatchObject({
       roleId: "onchain_analyst",
-      defaultProvider: "minimax",
+      defaultProvider: "deepseek",
       finalProvider: "minimax",
       fallbackCount: 1,
       success: true,

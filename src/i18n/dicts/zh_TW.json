@@ -749,7 +749,7 @@
         "short": "做空",
         "neutral": "中性",
         "wait": "觀望",
-        "missing": "資料不足"
+        "missing": "信號待補充"
       },
       "roleViewpoint": {
         "fundamental": "基本面 / Tokenomics 視角",
@@ -767,12 +767,12 @@
       },
       "dataGap": {
         "ok": "資料可用",
-        "partial": "部分資料缺失",
-        "missing_chart": "暫無 K 線資料接入",
-        "missing_news": "暫無新聞資料接入",
-        "missing_onchain": "暫無鏈上資料接入",
-        "missing_fundamental": "暫無基本面資料接入",
-        "missing_market": "暫無市場背景資料"
+        "partial": "信號繼續確認中",
+        "missing_chart": "K 線信號待補充",
+        "missing_news": "新聞信號待補充",
+        "missing_onchain": "鏈上信號待補充",
+        "missing_fundamental": "基本面信號待補充",
+        "missing_market": "市場背景待補充"
       }
     },
     "admin": {
@@ -784,7 +784,7 @@
     "closeAriaLabel": "Close market card",
     "goToWatchCta": "Go to Agent Live",
     "loadingPrice": "Loading market data",
-    "agentCommentMissing": "Agent commentary available in Chinese only"
+    "agentCommentMissing": "Agent 點評待下一輪補充"
   },
   "rating": {
     "StrongBuy": "強烈買入",

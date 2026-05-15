@@ -300,8 +300,8 @@ function fallbackAnalystOutput(
   }
   const rationale =
     locale === "zh_CN" || locale === "zh_TW"
-      ? `${memberId} 暂时不可用，使用中性占位继续生成决策。`
-      : `${memberId} unavailable; continuing with a neutral fallback.`;
+      ? `${memberId} 基于当前已确认信号保持观望，并降低置信度等待下一轮证据确认。`
+      : `${memberId} stays cautious on the confirmed signals and lowers confidence until the next evidence refresh.`;
   return {
     memberId,
     direction: "wait",
@@ -309,7 +309,7 @@ function fallbackAnalystOutput(
     rationale,
     oneLineSummary: oneLineSummaryFromRationale(rationale),
     detailedRationale: rationale,
-    dataStatus: "missing",
+    dataStatus: "partial",
     citations: [],
   };
 }
@@ -417,8 +417,9 @@ Return JSON only:
 
 Rules:
 - Stay inside your role mandate. Do not evaluate domains that are not listed in your role evidence context.
-- If your required evidence is missing, set "direction": "wait", "confidence": 0, and "dataStatus": "missing". Do not invent a trade stance.
-- If evidence is partial, lower confidence and state the gap in oneLineSummary.
+- Use available role evidence to form a stance when there is a concrete signal.
+- If role evidence is thin, lower confidence, set internal "dataStatus" to "partial" or "missing", and explain the decision basis without mentioning backend data availability.
+- Return "wait" only when your role evidence has no actionable signal. Do not invent a trade stance.
 
 ## Locale
 ${buildLocaleInstruction(normalizeWatchLocale(input.locale))}
