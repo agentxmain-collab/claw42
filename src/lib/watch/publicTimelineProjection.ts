@@ -1,4 +1,5 @@
 import type {
+  PublicDecisionRoundEntry,
   PublicDecisionStageTraceEntry,
   PublicTimelineEvent,
   PublicTimelineImportance,
@@ -163,7 +164,7 @@ function pmDecisionPayload(
   const recordId = meta.recordId ?? entry.thread.strategy?.id ?? null;
   if (!recordId) return null;
   const indexedRecord = decisionRecord?.id === recordId ? decisionRecord : null;
-  const derived = derivePmDecisionProcess(indexedRecord);
+  const derived = publicDecisionProcessFromRecord(indexedRecord);
   const tradeDecision = normalizePublicTradeDecision(
     indexedRecord?.tradeDecision ?? meta.tradeDecision ?? null,
   );
@@ -178,6 +179,7 @@ function pmDecisionPayload(
     tradeDecision,
     rationaleByMember: derived.rationaleByMember,
     citationsByMember: derived.citationsByMember,
+    rounds: derived.rounds,
     stageTrace: publicStageTraceFromRecord(indexedRecord),
     resolution: resolutionFromRecord(indexedRecord),
   };
@@ -194,12 +196,51 @@ function resolutionFromRecord(record: StrategyDecisionRecord | null) {
   };
 }
 
-function derivePmDecisionProcess(record: StrategyDecisionRecord | null): {
+function publicRoundsForInput(
+  input: StrategyDecisionRecord["analystInputs"][number],
+): PublicDecisionRoundEntry[] {
+  const memberId = String(input.memberId);
+  if (!isTeamMemberId(memberId)) return [];
+
+  const sourceRounds = Array.isArray(input.rounds) ? input.rounds : [];
+  if (sourceRounds.length > 0) {
+    return sourceRounds
+      .filter((round) => typeof round.rationale === "string" && round.rationale.trim().length > 0)
+      .map((round) => ({
+        round: Number.isFinite(round.round) && round.round > 0 ? Math.round(round.round) : 1,
+        memberId,
+        direction: round.direction,
+        confidence: round.confidence,
+        rationale: round.rationale.trim(),
+        ...(round.evidenceIds.length > 0 ? { evidenceIds: round.evidenceIds.filter(Boolean) } : {}),
+        ...(round.observedAt ? { observedAt: round.observedAt } : {}),
+      }));
+  }
+
+  const rationale = typeof input.rationale === "string" ? input.rationale.trim() : "";
+  if (!rationale) return [];
+  return [
+    {
+      round: 1,
+      memberId,
+      direction: input.direction,
+      confidence: input.confidence,
+      rationale,
+      ...(Array.isArray(input.evidenceIds) && input.evidenceIds.length > 0
+        ? { evidenceIds: input.evidenceIds.filter(Boolean) }
+        : {}),
+    },
+  ];
+}
+
+export function publicDecisionProcessFromRecord(record: StrategyDecisionRecord | null): {
   rationaleByMember: Partial<Record<TeamMemberId, string>>;
   citationsByMember: Partial<Record<TeamMemberId, string[]>>;
+  rounds?: PublicDecisionRoundEntry[];
 } {
   const rationaleByMember: Partial<Record<TeamMemberId, string>> = {};
   const citationsByMember: Partial<Record<TeamMemberId, string[]>> = {};
+  const rounds: PublicDecisionRoundEntry[] = [];
   if (!record) return { rationaleByMember, citationsByMember };
 
   const analystInputs = Array.isArray(record.analystInputs) ? record.analystInputs : [];
@@ -215,13 +256,28 @@ function derivePmDecisionProcess(record: StrategyDecisionRecord | null): {
       continue;
     }
 
-    const rationale = typeof input.rationale === "string" ? input.rationale.trim() : "";
+    const inputRounds = publicRoundsForInput(input);
+    rounds.push(...inputRounds);
+    const latestRound = inputRounds.reduce<PublicDecisionRoundEntry | undefined>(
+      (latest, current) => (!latest || current.round >= latest.round ? current : latest),
+      undefined,
+    );
+    const rationale =
+      latestRound?.rationale ?? (typeof input.rationale === "string" ? input.rationale.trim() : "");
     if (rationale) rationaleByMember[memberId] = rationale;
-    const evidenceIds = Array.isArray(input.evidenceIds) ? input.evidenceIds.filter(Boolean) : [];
+    const evidenceIds = latestRound?.evidenceIds?.length
+      ? latestRound.evidenceIds
+      : Array.isArray(input.evidenceIds)
+        ? input.evidenceIds.filter(Boolean)
+        : [];
     if (evidenceIds.length > 0) citationsByMember[memberId] = evidenceIds;
   }
 
-  return { rationaleByMember, citationsByMember };
+  return {
+    rationaleByMember,
+    citationsByMember,
+    ...(rounds.length > 0 ? { rounds } : {}),
+  };
 }
 
 function evidenceIdsForPayload(metaEvidenceIds: string[], payload: PublicTimelineEvent["payload"]) {
@@ -235,6 +291,7 @@ function evidenceIdsForPayload(metaEvidenceIds: string[], payload: PublicTimelin
   return uniqueEvidenceIds([
     ...metaEvidenceIds,
     ...Object.values(payload.citationsByMember ?? {}).flatMap((ids) => ids ?? []),
+    ...(payload.rounds ?? []).flatMap((round) => round.evidenceIds ?? []),
     ...(payload.tradeDecision?.evidenceIds ?? []),
   ]);
 }

@@ -694,6 +694,12 @@
         "title": "跟单功能开发中",
         "body": "已记录「{action}」占位操作。当前版本不执行交易，后续会接入授权和风险确认流程。",
         "close": "返回调度台"
+      },
+      "round": {
+        "label": "第 {round} 轮",
+        "separator": "第 {round} 轮 · {mode}",
+        "single": "单轮决策",
+        "multi": "多轮辩论"
       }
     }
   },

@@ -296,6 +296,100 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.citationsByMember?.fundamental_analyst).toEqual(["ev_1"]);
     expect(event.payload.citationsByMember?.research_lead).toEqual(["ev_2"]);
     expect(event.payload.citationsByMember?.risk_lead).toBeUndefined();
+    expect(event.payload.rounds?.map((round) => `${round.memberId}:${round.round}`)).toEqual([
+      "fundamental_analyst:1",
+      "research_lead:1",
+      "risk_lead:1",
+    ]);
+  });
+
+  it("projects schema v2 multi-round records while keeping latest rationale maps", () => {
+    const v2Record: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-v2",
+      schemaVersion: 2,
+      analystInputs: [
+        {
+          memberId: "fundamental_analyst",
+          direction: "long",
+          confidence: 0.78,
+          rationale: "Round two final fundamental view.",
+          evidenceIds: ["ev_2"],
+          rounds: [
+            {
+              round: 1,
+              direction: "neutral",
+              confidence: 0.52,
+              rationale: "Round one fundamental view.",
+              evidenceIds: ["ev_1"],
+              observedAt: new Date(now - 30_000).toISOString(),
+            },
+            {
+              round: 2,
+              direction: "long",
+              confidence: 0.78,
+              rationale: "Round two final fundamental view.",
+              evidenceIds: ["ev_2"],
+              observedAt: new Date(now).toISOString(),
+            },
+          ],
+        },
+      ],
+    };
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-v2",
+      ts: now,
+      thread: {
+        id: "thread-v2",
+        seed: {
+          id: "seed-v2",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["BTC"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: [],
+        locale: "zh_CN",
+        recordId: "record-v2",
+        tradeDecision,
+      },
+    };
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map([[v2Record.id, v2Record]]),
+    });
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.rationaleByMember.fundamental_analyst).toBe(
+      "Round two final fundamental view.",
+    );
+    expect(event.payload.citationsByMember?.fundamental_analyst).toEqual(["ev_2"]);
+    expect(event.payload.rounds).toEqual([
+      expect.objectContaining({
+        round: 1,
+        memberId: "fundamental_analyst",
+        rationale: "Round one fundamental view.",
+      }),
+      expect.objectContaining({
+        round: 2,
+        memberId: "fundamental_analyst",
+        rationale: "Round two final fundamental view.",
+      }),
+    ]);
+    expect(event.evidenceIds).toEqual(["ev_2", "ev_1"]);
   });
 
   it("projects all fourteen real team member rationales", () => {

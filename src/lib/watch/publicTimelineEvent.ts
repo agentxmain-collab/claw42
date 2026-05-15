@@ -27,6 +27,16 @@ export interface PublicDecisionStageTraceEntry {
   memberIds?: TeamMemberId[];
 }
 
+export interface PublicDecisionRoundEntry {
+  round: number;
+  memberId: TeamMemberId;
+  direction?: "long" | "short" | "neutral";
+  confidence?: number;
+  rationale: string;
+  evidenceIds?: string[];
+  observedAt?: string;
+}
+
 export type PublicTimelinePayload =
   | {
       kind: "market_signal";
@@ -45,6 +55,7 @@ export type PublicTimelinePayload =
       tradeDecision?: TradeDecision | null;
       rationaleByMember: Partial<Record<TeamMemberId, string>>;
       citationsByMember?: Partial<Record<TeamMemberId, string[]>>;
+      rounds?: PublicDecisionRoundEntry[];
       stageTrace?: PublicDecisionStageTraceEntry[];
       resolution?: {
         outcome: Exclude<DecisionOutcome, null>;

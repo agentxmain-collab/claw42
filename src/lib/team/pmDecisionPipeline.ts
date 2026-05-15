@@ -8,10 +8,18 @@ import { upsertDecisionRecord } from "@/lib/team/decisionRecordStore";
 import type {
   StrategyDecisionRecord,
   AnalystInputRecord,
+  AnalystInputRoundRecord,
   DecisionStageTraceId,
   DecisionStageTraceStatus,
   DecisionStageTraceEntry,
+  DispatchStageRoundRecord,
 } from "@/lib/team/strategyDecisionRecord";
+import {
+  latestAnalystRoundByMember,
+  PM_DECISION_ANALYST_ROUNDS,
+  runMultiRoundAnalystDebate,
+  type MultiRoundAnalystOutput,
+} from "@/lib/team/multiRoundPipeline";
 import {
   generateTradeDecision,
   type Severity,
@@ -22,7 +30,10 @@ import type {
   PublicTimelineEvent,
   PublicTimelineImportance,
 } from "@/lib/watch/publicTimelineEvent";
-import { publicStageTraceFromRecord } from "@/lib/watch/publicTimelineProjection";
+import {
+  publicDecisionProcessFromRecord,
+  publicStageTraceFromRecord,
+} from "@/lib/watch/publicTimelineProjection";
 import { appendWatchHistoryEntry } from "@/lib/watchHistoryStore";
 import type { Locale } from "@/i18n/types";
 import {
@@ -104,7 +115,7 @@ const UPGRADED_MEMBER_IDS: TeamMemberId[] = [
 
 const PIPELINE_INPUT_MEMBER_IDS: TeamMemberId[] = [...CORE_ANALYST_IDS, ...UPGRADED_MEMBER_IDS];
 
-const PROMPT_VERSION = "pm-decision-pipeline-v1";
+const PROMPT_VERSION = "pm-decision-pipeline-v2";
 
 function importanceRank(value: PublicTimelineImportance) {
   return { low: 0, medium: 1, high: 2, critical: 3 }[value];
@@ -440,10 +451,53 @@ function stageAuditFields(audit: StageAuditMap, stageId: DecisionStageTraceId) {
   };
 }
 
+function analystRoundsForMember(
+  memberId: TeamMemberId,
+  outputs: readonly MultiRoundAnalystOutput[],
+): AnalystInputRoundRecord[] {
+  return outputs
+    .filter((output) => output.memberId === memberId)
+    .sort((a, b) => a.round - b.round)
+    .map((output) => ({
+      round: output.round,
+      direction: output.direction,
+      confidence: output.confidence,
+      rationale: output.rationale,
+      evidenceIds: output.citations,
+      observedAt: output.observedAt,
+    }));
+}
+
+function singleRoundRecord({
+  direction,
+  confidence,
+  rationale,
+  evidenceIds,
+  observedAt,
+}: {
+  direction: AnalystInputRoundRecord["direction"];
+  confidence: number;
+  rationale: string;
+  evidenceIds: string[];
+  observedAt: string;
+}): AnalystInputRoundRecord[] {
+  return [
+    {
+      round: PM_DECISION_ANALYST_ROUNDS,
+      direction,
+      confidence,
+      rationale,
+      evidenceIds,
+      observedAt,
+    },
+  ];
+}
+
 function makeRecord({
   input,
   now,
   analystOutputs,
+  analystRoundOutputs,
   researchLead,
   riskLead,
   tradeDecision,
@@ -452,6 +506,7 @@ function makeRecord({
   input: PmDecisionPipelineInput;
   now: number;
   analystOutputs: AnalystOutput[];
+  analystRoundOutputs: MultiRoundAnalystOutput[];
   researchLead: LeadOutput;
   riskLead: LeadOutput;
   tradeDecision: TradeDecision | null;
@@ -467,6 +522,7 @@ function makeRecord({
       confidence: output.confidence,
       rationale: output.rationale,
       evidenceIds: output.citations,
+      rounds: analystRoundsForMember(output.memberId, analystRoundOutputs),
     })),
     {
       memberId: "research_lead",
@@ -474,6 +530,13 @@ function makeRecord({
       confidence: researchLead.confidence,
       rationale: researchLead.rationale,
       evidenceIds: input.recentNewsEvidence.map((evidence) => evidence.id),
+      rounds: singleRoundRecord({
+        direction: "neutral",
+        confidence: researchLead.confidence,
+        rationale: researchLead.rationale,
+        evidenceIds: input.recentNewsEvidence.map((evidence) => evidence.id),
+        observedAt,
+      }),
     },
     {
       memberId: "risk_lead",
@@ -481,6 +544,13 @@ function makeRecord({
       confidence: riskLead.confidence,
       rationale: riskLead.rationale,
       evidenceIds: input.recentNewsEvidence.map((evidence) => evidence.id),
+      rounds: singleRoundRecord({
+        direction: "neutral",
+        confidence: riskLead.confidence,
+        rationale: riskLead.rationale,
+        evidenceIds: input.recentNewsEvidence.map((evidence) => evidence.id),
+        observedAt,
+      }),
     },
     {
       memberId: "pm",
@@ -493,19 +563,31 @@ function makeRecord({
         ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
         : "PM returned no decision.",
       evidenceIds: tradeDecision?.evidenceIds ?? [],
+      rounds: singleRoundRecord({
+        direction:
+          tradeDecision?.direction === "long" || tradeDecision?.direction === "short"
+            ? tradeDecision.direction
+            : "neutral",
+        confidence: tradeDecision?.confidence ?? 0.5,
+        rationale: tradeDecision
+          ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
+          : "PM returned no decision.",
+        evidenceIds: tradeDecision?.evidenceIds ?? [],
+        observedAt,
+      }),
     },
   ];
 
   return {
     id: `pm:${symbol}:${now}`,
-    schemaVersion: 1,
+    schemaVersion: 2,
     recordSource: "live",
     symbol,
     locale,
     decisionOwnerId: "pm",
     contributorIds: TEAM_MEMBER_IDS,
     analystInputs,
-    stageTrace: makeStageTrace(observedAt, tradeDecision, stageAudit),
+    stageTrace: makeStageTrace(observedAt, tradeDecision, stageAudit, analystRoundOutputs),
     sourceThreadId: null,
     tradeDecision,
     createdAt: new Date(now).toISOString(),
@@ -522,7 +604,24 @@ function makeStageTrace(
   observedAt: string,
   tradeDecision: TradeDecision | null,
   stageAudit: StageAuditMap,
+  analystRoundOutputs: readonly MultiRoundAnalystOutput[],
 ): DecisionStageTraceEntry[] {
+  const analystRounds: DispatchStageRoundRecord[] = Array.from(
+    { length: PM_DECISION_ANALYST_ROUNDS },
+    (_, index) => {
+      const round = index + 1;
+      const roundOutputs = analystRoundOutputs.filter((output) => output.round === round);
+      return {
+        round,
+        label: round === 1 ? "Independent analyst pass" : "Refinement pass",
+        status: "done" as const,
+        observedAt: roundOutputs.at(-1)?.observedAt ?? observedAt,
+        memberIds: roundOutputs.map((output) => output.memberId),
+        note: `${roundOutputs.length} analyst outputs`,
+      };
+    },
+  );
+
   return [
     {
       stageId: "analyst_inputs",
@@ -530,6 +629,7 @@ function makeStageTrace(
       status: "done",
       observedAt,
       memberIds: PIPELINE_INPUT_MEMBER_IDS,
+      rounds: analystRounds,
       ...stageAuditFields(stageAudit, "analyst_inputs"),
     },
     {
@@ -605,6 +705,7 @@ function makePublicTimelineEntry(
   record: StrategyDecisionRecord,
   evidenceIds: string[],
 ): PublicTimelineEvent {
+  const derived = publicDecisionProcessFromRecord(record);
   return {
     id: `public:${record.id}`,
     ts: Date.parse(record.createdAt),
@@ -618,12 +719,9 @@ function makePublicTimelineEntry(
       recordId: record.id,
       symbol: record.symbol,
       tradeDecision: record.tradeDecision,
-      rationaleByMember: Object.fromEntries(
-        record.analystInputs.map((input) => [input.memberId, input.rationale]),
-      ),
-      citationsByMember: Object.fromEntries(
-        record.analystInputs.map((input) => [input.memberId, input.evidenceIds]),
-      ),
+      rationaleByMember: derived.rationaleByMember,
+      citationsByMember: derived.citationsByMember,
+      rounds: derived.rounds,
       stageTrace: publicStageTraceFromRecord(record),
     },
   };
@@ -705,30 +803,35 @@ export async function runPmDecisionPipeline(
         prompt: await buildMemberPrompt(memberId, localizedInput, deps),
       })),
     );
-    const analystOutputs = await Promise.all(
-      analystPrompts.map(({ memberId, prompt }) =>
+    const analystRoundOutputs = await runMultiRoundAnalystDebate({
+      candidates: analystPrompts,
+      generateRound: (memberId, prompt) =>
         generateAnalystWithFallback({ memberId, prompt, generateAnalyst, locale }),
-      ),
+    });
+    const latestAnalystOutputs = latestAnalystRoundByMember(analystRoundOutputs);
+    completeStage(
+      stageAudit,
+      "analyst_inputs",
+      `${analystRoundOutputs.length} analyst round outputs`,
     );
-    completeStage(stageAudit, "analyst_inputs", `${analystOutputs.length} analyst outputs`);
 
     startStage(stageAudit, "research_lead");
     const researchLead = await generateLead(
       "research_lead",
-      await buildLeadPrompt("research_lead", localizedInput, analystOutputs, undefined, deps),
+      await buildLeadPrompt("research_lead", localizedInput, latestAnalystOutputs, undefined, deps),
     );
     completeStage(stageAudit, "research_lead", "research synthesis generated");
     startStage(stageAudit, "risk_lead");
     const riskLead = await generateLead(
       "risk_lead",
-      await buildLeadPrompt("risk_lead", localizedInput, analystOutputs, researchLead, deps),
+      await buildLeadPrompt("risk_lead", localizedInput, latestAnalystOutputs, researchLead, deps),
     );
     completeStage(stageAudit, "risk_lead", "risk review generated");
 
     const currentPrice = currentPriceFromSignals(localizedInput.recentMarketSignals);
     startStage(stageAudit, "trade_decision");
     const tradeInputs = [
-      ...analystOutputs.map((output) => ({
+      ...latestAnalystOutputs.map((output) => ({
         memberId: output.memberId,
         direction: output.direction,
         confidence: output.confidence,
@@ -764,14 +867,15 @@ export async function runPmDecisionPipeline(
     const evidenceIds = Array.from(
       new Set([
         ...localizedInput.recentNewsEvidence.map((evidence) => evidence.id),
-        ...analystOutputs.flatMap((output) => output.citations),
+        ...analystRoundOutputs.flatMap((output) => output.citations),
         ...(tradeDecision.evidenceIds ?? []),
       ]),
     );
     const record = makeRecord({
       input: localizedInput,
       now,
-      analystOutputs,
+      analystOutputs: latestAnalystOutputs,
+      analystRoundOutputs,
       researchLead,
       riskLead,
       tradeDecision,

@@ -3,7 +3,7 @@ import arSA from "@/i18n/dicts/ar_SA.json";
 import enUS from "@/i18n/dicts/en_US.json";
 import jaJP from "@/i18n/dicts/ja_JP.json";
 import zhCN from "@/i18n/dicts/zh_CN.json";
-import type { Dict, DispatchV10OutcomeDict, Locale } from "@/i18n/types";
+import type { Dict, DispatchV10OutcomeDict, DispatchV10RoundDict, Locale } from "@/i18n/types";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import { mapPublicTimelineEventsToTopics, type V9AdapterContext } from "@/lib/watch/v9TopicAdapter";
@@ -53,17 +53,31 @@ const OUTCOME_DICTS: Record<"zh_CN" | "en_US" | "ja_JP" | "ar_SA", DispatchV10Ou
   ja_JP: (jaJP as Dict).agentWatch.dispatchV10.outcome,
   ar_SA: (arSA as Dict).agentWatch.dispatchV10.outcome,
 };
+const ROUND_DICTS: Record<"zh_CN" | "en_US" | "ja_JP" | "ar_SA", DispatchV10RoundDict> = {
+  zh_CN: (zhCN as Dict).agentWatch.dispatchV10.round,
+  en_US: (enUS as Dict).agentWatch.dispatchV10.round,
+  ja_JP: (jaJP as Dict).agentWatch.dispatchV10.round,
+  ar_SA: (arSA as Dict).agentWatch.dispatchV10.round,
+};
 
 function outcomeDictFor(locale: Locale) {
   return OUTCOME_DICTS[(locale as keyof typeof OUTCOME_DICTS) ?? "zh_CN"] ?? OUTCOME_DICTS.zh_CN;
 }
 
+function roundDictFor(locale: Locale) {
+  return ROUND_DICTS[(locale as keyof typeof ROUND_DICTS) ?? "zh_CN"] ?? ROUND_DICTS.zh_CN;
+}
+
 function mapTopics(
-  ctx: Omit<V9AdapterContext, "outcomeDict"> & { outcomeDict?: DispatchV10OutcomeDict },
+  ctx: Omit<V9AdapterContext, "outcomeDict" | "roundDict"> & {
+    outcomeDict?: DispatchV10OutcomeDict;
+    roundDict?: DispatchV10RoundDict;
+  },
 ) {
   return mapPublicTimelineEventsToTopics({
     ...ctx,
     outcomeDict: ctx.outcomeDict ?? outcomeDictFor(ctx.locale),
+    roundDict: ctx.roundDict ?? roundDictFor(ctx.locale),
   });
 }
 
@@ -371,6 +385,60 @@ describe("mapPublicTimelineEventsToTopics", () => {
       name: "尚未决策",
     });
     expect(topic.messages.some((message) => message.typing)).toBe(true);
+  });
+
+  it("groups multi-round decision messages by round label", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+
+    const [topic] = mapTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            rationaleByMember: {},
+            rounds: [
+              {
+                round: 1,
+                memberId: "chart_analyst",
+                direction: "short",
+                confidence: 0.6,
+                rationale: "Round one chart view.",
+                evidenceIds: ["ev_1"],
+              },
+              {
+                round: 2,
+                memberId: "chart_analyst",
+                direction: "short",
+                confidence: 0.7,
+                rationale: "Round two refined chart view.",
+                evidenceIds: ["ev_1"],
+              },
+              {
+                round: 2,
+                memberId: "research_lead",
+                direction: "short",
+                confidence: 0.72,
+                rationale: "Round two synthesis.",
+                evidenceIds: [],
+              },
+            ],
+          },
+        },
+      ],
+      locale: "en_US",
+      now,
+    });
+
+    expect(topic.status).toBe("done");
+    expect(topic.messages.map((message) => message.roundLabel).filter(Boolean)).toEqual([
+      "Round 1 · multi-round debate",
+      "Round 2 · multi-round debate",
+    ]);
+    expect(topic.messages.map((message) => message.content)).toEqual(
+      expect.arrayContaining(["Round one chart view.", "Round two refined chart view."]),
+    );
   });
 
   it("keeps empty incomplete PM decisions pending instead of active", () => {

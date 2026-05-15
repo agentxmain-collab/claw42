@@ -694,6 +694,12 @@
         "title": "Copy-trading is in development",
         "body": "Recorded the placeholder action \"{action}\". This version does not execute trades; authorization and risk confirmation will be connected later.",
         "close": "Back to console"
+      },
+      "round": {
+        "label": "Round {round}",
+        "separator": "Round {round} · {mode}",
+        "single": "single pass",
+        "multi": "multi-round debate"
       }
     }
   },
