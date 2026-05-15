@@ -1,4 +1,4 @@
-# spec-watch-B-master-pipeline-evolution (v1.3 · 2026-05-15)
+# spec-watch-B-master-pipeline-evolution (v1.4 · 2026-05-15)
 
 > **B 模块 master 路线图 spec** — 把 watch dispatch console 后端从"7 real TeamMember + 12 DispatchAgent (5 mapped + 7 synthetic) / 单 round / fixture-only / polling / no follow-trade"演进到"14 real TeamMember + 12 DispatchAgent 全 mapped real（含 memory_loop） / multi-round trace / streaming / SSE / follow-trade mock+real / writer 全闭环"。
 >
@@ -25,6 +25,8 @@
 > **架构定位**：B 模块（底层逻辑 + 技术实现）剩余 phase 整合 master。base main HEAD = `3173878566545c5303a2810235d4e3e41cd3452e`（v1.2 spec docs `b1d9043` + format fix `3173878`）。v1.3 docs commit 由 Codex T000 推进。
 >
 > **v1.3 修订原因**：v1.2 第 3 轮评估 3 类残留 P1：(1) 主方向改 7→14 但正文残留 12 / 7→12 / 5-6 个 / 旧 base sha 等旧口径 —— v1.3 全文 grep clean / (2) `MarketDataSource` 实际在 `src/modules/agent-watch/types.ts`（不在 `src/lib/team/`），v1.2 误指 strategyDecisionRecord.ts 或同等位置 / (3) T-B3-042 残留 "schema type 加在 teamRegistry" 旧路径 —— v1.3 改 strategyDecisionRecord.ts。
+>
+> **v1.4 修订原因**：Codex 串行实施跑到 B.5 撞 spec 边界冲突——B.5 数据 / 算法 / i18n / fixture 已完成，但当前公开页面渲染 topic 的是 v10 `MarketAnalysisPanel.tsx`（A1 owned）；spec § 0.4 + § 0.5 + SC-M-001 都禁 B.5 触 v10 = topic ranking explanation 不可显示 = B.5 用户感知层失败。v1.4 加 B.5 narrow v10 exception（同 B.8 模式），仅允许改 `MarketAnalysisPanel.tsx` topicRanking-related 渲染部分（不动 layout / class / hero / constellation），grep gate 验证。根本问题：A/B 拆分 v10/MarketAnalysisPanel.tsx 划 A1 owned 但 B 模块所有数据展示都经过它 —— 结构缺陷，后续单独修；现在 ad-hoc 加 narrow exception。
 
 ---
 
@@ -48,6 +50,7 @@ Codex 每 phase 实施前必须自己下判断 + 写到 codex-to-claude.md（§ 
 - "phase A merge 不等 CI 直接跑 phase B" → ❌ 每 phase merge 前 CI 必须绿；phase 间 gate 是硬纪律
 - "B.4 narrow exception = cron 文件全开放" → ❌ B.4 仅改 cron 调度逻辑，零行涉及 resolution writer 调用（grep gate 验证）
 - "B.8 narrow v10 exception = v10 module 全开放" → ❌ B.8 仅改 MarketAnalysisPanel.tsx 跟单按钮文案 + state，不动 layout / class / hero / constellation
+- "B.5 narrow v10 exception = v10 module 全开放" → ❌ B.5 仅改 MarketAnalysisPanel.tsx topicRanking-related 渲染（消费 score + explanation + 排序），不动 layout / class / hero / follow-related
 
 ### 0.4 Phase 间 gate（自动判定）
 
@@ -57,7 +60,7 @@ Codex 每 phase 实施前必须自己下判断 + 写到 codex-to-claude.md（§ 
 - ✓ spec 验收 § 11 PR 所有 SC PASS
 - ✓ Writer 冻结 grep gate：`git diff origin/main -- src/lib/team/decisionResolution.ts` = 0（**B.9 唯一例外**）
 - ✓ Cron narrow gate：`git diff origin/main -- src/app/api/cron/strategy-replay/route.ts` 涉及 `resolveOpenPmDecisions|resolveDecisionRecordFromPrice|decisionResolution` 行数 = 0（**B.4 narrow exception 允许改其他调度行 + B.9 解冻**）
-- ✓ A1 owned zero diff：`git diff origin/main -- src/modules/agent-watch/v10/** src/app/[locale]/agent/page.tsx` 应为 0（**B.8 narrow exception 仅允许 `MarketAnalysisPanel.tsx` 跟单按钮文案 / state 改动**）
+- ✓ A1 owned zero diff：`git diff origin/main -- src/modules/agent-watch/v10/** src/app/[locale]/agent/page.tsx` 应为 0（**B.5 narrow exception 允许 `MarketAnalysisPanel.tsx` topicRanking-related 渲染改动 / B.8 narrow exception 允许 `MarketAnalysisPanel.tsx` 跟单文案 / state 改动**）
 - ✓ Prod 双线 zero touch：无 `--prod` / 无 CoinW GitLab / 无 Jenkins
 - ✓ Vercel preview READY + visual 没明显 regression
 
@@ -72,10 +75,12 @@ Codex 每 phase 实施前必须自己下判断 + 写到 codex-to-claude.md（§ 
 - `src/app/[locale]/agent/page.tsx`
 - Hero / Constellation / FlowPanel / 视觉
 
-**A1 owned narrow exception（B.8 phase 唯一允许）**：
+**A1 owned narrow exception（B.5 + B.8 phase 各自允许）**：
 
-- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx`：仅 follow-related button 文案 / disabled state / mock execution click handler；不动 layout / class / hero / constellation 视觉
-- 所有 B.8 改动 grep `git diff -- src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` 必须仅涉及 follow-related 行
+- **B.5 phase**：`src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` 仅 topicRanking-related 渲染（消费 `topicRanking.{score, explanation}` 字段 + 显示 explanation 文本 + 按 score desc 排序）；不动 layout / class / hero / constellation 视觉
+- **B.8 phase**：`src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` 仅 follow-related button 文案 / disabled state / mock execution click handler；不动 layout / class / hero / constellation 视觉
+- 所有 B.5 / B.8 改动 grep 验证仅涉及对应 narrow 行（B.5 = topicRanking-related，B.8 = follow-related）
+- B.5 + B.8 narrow exception 不互通：B.5 不能动 follow-related 行，B.8 不能动 topicRanking-related 行
 
 **B owned（master 全 phase 可改）**：
 
@@ -506,6 +511,16 @@ Codex 每 phase 实施前必须自己下判断 + 写到 codex-to-claude.md（§ 
 
 **F 自决**：topicRanking 放 adapter 输出（不放 PublicTimelineEvent payload），减少 schema 变化
 
+**v10 narrow exception（v1.4 加）**：
+
+- 当前公开页面渲染 topic 的是 `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx`（A1 owned）
+- B.5 narrow exception 允许仅改 `MarketAnalysisPanel.tsx` 的 topicRanking-related 渲染段：
+  - 消费 `topicRanking.{score, explanation}` 字段
+  - 按 score desc 排序 topic
+  - 显示 explanation 文本
+- 不允许改 layout / class / hero / constellation / follow-related（B.8 owned）/ 其他 panel 视觉
+- grep gate：`git diff origin/main -- src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` 必须仅涉及 topicRanking-related 行（B.5 phase）
+
 ### 7.5 B.6 — Polling → SSE（**复用现有 stream endpoint**）
 
 **当前 state**：
@@ -738,6 +753,7 @@ AgentWatchBoard
 **B.5**：
 
 - `src/lib/watch/v9TopicAdapter.ts`（topicRanking 输出）
+- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx`（**A1 owned narrow exception** —— 仅 topicRanking-related 渲染：消费 score + explanation + 按 score desc 排序；不动 layout / class / hero / 其他 panel / follow-related 行）
 - `src/i18n/dicts/*.json`（10 locale + `dispatchV10.topicRanking.*` namespace）
 - `src/i18n/types.ts`
 
@@ -877,13 +893,16 @@ AgentWatchBoard
 - [ ] T-B5-010 [P] grep intensityCalculator 当前实现 + topic 排序逻辑（双脑 Q-B5.1）
 - [ ] T-B5-011 新建 `src/lib/watch/topicRanking.ts` 实现 score + explanation algorithm（adapter-only output，不进 payload）
 - [ ] T-B5-012 `mapPublicTimelineEventsToTopics` 输出 topicRanking 字段
-- [ ] T-B5-013 `v9TopicAdapter` topic ranking 排序 + explanation 渲染
+- [ ] T-B5-013 `v9TopicAdapter` topic ranking 排序 + explanation 渲染（adapter 层数据准备）
+- [ ] T-B5-013b `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` **narrow v10 exception** —— 仅消费 topicRanking + 按 score desc 排序 + 显示 explanation 文本；不动 layout / class / hero / follow-related
 - [ ] T-B5-014 i18n: `agentWatch.dispatchV10.topicRanking.{explanation_template, rank_label}` 10 locale
 - [ ] T-B5-020 测试：ranking score 计算 + tie-break + explanation 模板插值
 - [ ] T-B5-030 staging：4 topic fixture 不同 score + explanation 显示
 - [ ] T-B5-040 verify gate
-- [ ] T-B5-041 视觉 verify：topic 排序 + explanation 文案 layout
-- [ ] T-B5-042 grep gate：writer + cron + v10 0 diff
+- [ ] T-B5-041 视觉 verify：v10 MarketAnalysisPanel topic 排序 + explanation 文案 layout（仅 narrow exception 影响 + 其他元素不变）
+- [ ] T-B5-042 writer + cron 0 diff
+- [ ] T-B5-043 **narrow v10 exception gate**：`git diff origin/main -- src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` 必须仅涉及 topicRanking-related 行（grep 验证零 layout / class / hero / follow-related 改动）
+- [ ] T-B5-044 v10 其他 zero diff：`git diff origin/main -- src/modules/agent-watch/v10/** ':!src/modules/agent-watch/v10/MarketAnalysisPanel.tsx'` = 0
 - [ ] T-B5-050 PR + squash merge + phase gate → 进 B.6
 
 ### Phase B.6 — Polling → SSE（复用 stream endpoint）
@@ -1020,6 +1039,8 @@ AgentWatchBoard
 - ❌ 不能新建 `/api/watch/history` 别名 / 改现有 history（B.7 新建 `/api/watch/decision-history`）
 - ❌ 不能在 B.7 改 v9 既存组件（Topic / TopicStrategy 等）—— HistoryWall 独立组件
 - ❌ 不能在 B.8 narrow v10 exception 中改 layout / class / hero / 其他 panel（仅 follow-related 行）
+- ❌ 不能在 B.5 narrow v10 exception 中改 layout / class / hero / 其他 panel / follow-related 行（仅 topicRanking-related 行）
+- ❌ B.5 不能跳过 v10 narrow exception 改其他 v10 文件（仅 MarketAnalysisPanel.tsx）
 - ❌ 不能把 schema types（StrategyDecisionRecord / AnalystInputRecord / DecisionResolutionReason / DecisionOutcome）放在 `teamRegistry.ts` —— 这些都在 `strategyDecisionRecord.ts`
 - ❌ 不能把 `MarketDataSource` 放在 `src/lib/team/` 下任何文件 —— 实际在 `src/modules/agent-watch/types.ts`
 - ❌ 不能把 writer return union（DecisionResolutionResult）放在 `teamRegistry.ts` —— 在 `decisionResolution.ts`
@@ -1088,6 +1109,8 @@ claw42 Watch 板未来一段时间会按顺序完成 8 件事。每件事独立�
 | 觉得 B.8 mock 反正没真 API 顺便也接 real CoinW                                                                   | real CoinW 是 legal / security / auth 决策，独立 spec                                                                                                                                                                                                                                                                                                                    | B.8 仅 disabled + mock；real return 401 stub                                       |
 | 觉得 B.4 narrow cron exception 等于 cron 全开放                                                                  | narrow 是仅调度部分，零行 resolution writer 调用                                                                                                                                                                                                                                                                                                                         | grep gate 验证；超 → [SPEC-FEEDBACK]                                               |
 | 觉得 B.8 narrow v10 exception 等于 v10 全开放                                                                    | narrow 是仅 MarketAnalysisPanel.tsx 的 follow-related 行                                                                                                                                                                                                                                                                                                                 | grep gate 验证；超 → [SPEC-FEEDBACK]                                               |
+| 觉得 B.5 narrow v10 exception 等于 v10 全开放                                                                    | narrow 是仅 MarketAnalysisPanel.tsx 的 topicRanking-related 行（消费 score + explanation + 排序）                                                                                                                                                                                                                                                                        | grep gate 验证；超 → [SPEC-FEEDBACK]                                               |
+| 觉得 B.5 既然加了 narrow exception 顺便修一下 hero / layout 小问题                                               | narrow exception 是 ad-hoc 的 phase 边界放宽，不是"v10 整体可改"                                                                                                                                                                                                                                                                                                         | 严格仅 topicRanking-related 行；其他改 → 立项独立 spec                             |
 | 觉得 B.9 解冻 writer 顺便 refactor 现有逻辑                                                                      | refactor 引入风险 + 跨 scope；B.9 仅加 manual_close 路径 + reason union                                                                                                                                                                                                                                                                                                  | 仅 minimal patch 加 manual_close + manual_close_requested，不动其他 writer code    |
 | 觉得 B.3 schema v2 顺便上 v3                                                                                     | schema 跳版破 dual-shape 兼容；下游消费方按 v2 实施                                                                                                                                                                                                                                                                                                                      | 仅 v1 → v2，v3 留下轮独立 spec                                                     |
 | 觉得每 phase 都写完整 SPEC-FEEDBACK 报告太冗                                                                     | SPEC-FEEDBACK + 双脑判断是 phase gate 必填                                                                                                                                                                                                                                                                                                                               | 每 phase 必写，不省                                                                |
@@ -1128,11 +1151,13 @@ claw42 Watch 板未来一段时间会按顺序完成 8 件事。每件事独立�
 - Vercel KV / Upstash 实际 atomic command 能力（version field + CAS）
 - partial run timeout 处理（cron 60s 内未跑完）
 
-### Q-B5.1: intensity v2 算法 + explanation 模板
+### Q-B5.1: intensity v2 算法 + explanation 模板 + v10 narrow exception 边界
 
 - `cat src/lib/watch/intensityCalculator.ts` 看当前实现
+- `cat src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` 看当前 topic 渲染 / 排序逻辑（**narrow exception 实施位置**）
 - v2 算法 4 个权重 (0.4/0.3/0.2/0.1) 是否合理（看历史 data 分布）
 - explanation 模板按 rank / outcome 分情况
+- B.5 narrow v10 exception 改动范围：仅 topicRanking-related 渲染行（grep gate 验证）
 
 ### Q-B6.1: stream endpoint 现状 + Edge SSE 支持度 + broker 实现
 
@@ -1194,6 +1219,7 @@ spec 起草 + 每 phase 完成都触发追加 entry 到 `/Users/dannybrown/Claud
 - 2026-05-15（待 F 追加）: B-master spec v1.1 修订 + 5 类 P1 修正 + Dan 拍 7→12（v1.1 数学）+ F 自决 cron / history / v10 narrow exception
 - 2026-05-15（待 F 追加）: B-master spec v1.2 修订 + 3 条 P1 修正（B.2 数学冲突 Dan 重拍 7→14 真 + dispatch 12 全 mapped real / schema types 文件归属 strategyDecisionRecord.ts + writer return decisionResolution.ts / MarketDataSource 加 admin_manual union）
 - 2026-05-15（待 F 追加）: B-master spec v1.3 修订 + 3 类残留 P1（旧口径全文 grep clean / MarketDataSource 实际 in `src/modules/agent-watch/types.ts` / T-B3-042 残留旧路径修）
+- 2026-05-15（待 F 追加）: B-master spec v1.4 修订 + B.5 narrow v10 exception（Codex 串行跑到 B.5 撞 v10 owned 阻 ranking explanation 显示；F 自决 ad-hoc narrow exception 同 B.8 模式；根本结构缺陷后续单独修）
 - 每 phase merge 后（Codex 触发 F 追加）: B.{N} 完成 + commit sha + verify 输出
 - B.8 phase 跑到 mock gate check 时（Codex 触发 F 追加）：B.8 gate 状态 + Dan 解锁 / 未解锁判定
 - B.9 phase 解冻 writer 触发（Codex 触发 F 追加）：B.9 解冻范围声明 + manual_close 路径 commit sha
@@ -1232,6 +1258,6 @@ Codex 实施前 / 每 phase 开始时 / 任何拍板节点 / B.8 gate / B.9 解�
 
 ---
 
-_v1.3 起草：2026-05-15 01:30 CST F session_
-_起草前置：Codex v1.2 Round 3 3 类残留 P1 修正（旧口径残留 grep clean / MarketDataSource ownership 改 `src/modules/agent-watch/types.ts` / T-B3-042 残留旧路径修）_
-_下一动作：派 Codex 第 4 轮双脑评估（目标 ≤ 2 minor → 自动串行进入 B.2 → ... → B.9）_
+_v1.4 起草：2026-05-15 02:00 CST F session_
+_起草前置：Codex 串行实施跑到 B.5 撞 spec 边界冲突（v10 owned 阻 topic ranking explanation 显示）。F 自决 B.5 narrow v10 exception（同 B.8 模式，仅 MarketAnalysisPanel.tsx topicRanking-related 行）_
+_下一动作：派 Codex 继续 B.5 实施（加 MarketAnalysisPanel.tsx narrow 改动 + grep gate）然后串行进 B.6 → ... → B.9_
