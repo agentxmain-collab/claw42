@@ -10,6 +10,10 @@ import { tryAcquireLock } from "@/lib/storage/kv-lock";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { resolveDecisionRecordFromPrice } from "@/lib/team/decisionResolution";
 import {
+  summarizeProviderTelemetry,
+  warnIfSingleProviderConcentration,
+} from "@/lib/team/providerTelemetry";
+import {
   type PmDecisionTriggerAuditEvent,
   triggerPmDecisionPipelineBatch,
   triggerPmDecisionPipelineOnce,
@@ -124,6 +128,8 @@ export async function GET(request: NextRequest) {
           partialStageUpdates: pmPartialStageUpdates,
           onAudit: (event) => pmDecisionAudit.push(event),
         });
+  const providerTelemetry = summarizeProviderTelemetry({ since: now });
+  await warnIfSingleProviderConcentration(providerTelemetry);
 
   return NextResponse.json({
     ok: true,
@@ -135,6 +141,7 @@ export async function GET(request: NextRequest) {
     generatedPmDecisions: pmDecisionOutputs.length,
     pmPartialStageUpdates,
     pmDecisionAudit: trigger === "now" ? pmDecisionAudit : undefined,
+    providerTelemetry: trigger === "now" ? providerTelemetry : undefined,
     newsSourceHealth: trigger === "now" ? getNewsSourceHealthSnapshot() : undefined,
     resolvedPmDecisions,
     replayed: replayed.length,

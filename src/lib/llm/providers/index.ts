@@ -6,6 +6,7 @@ import { deepseekChatProvider } from "@/lib/llm/providers/deepseek-chat";
 import { minimaxProvider } from "@/lib/llm/providers/minimax";
 import { openaiProvider } from "@/lib/llm/providers/openai";
 import { stubProvider } from "@/lib/llm/providers/stub";
+import { recordProviderCall } from "@/lib/team/providerTelemetry";
 import type { LLMInput, LLMOutput, LLMProvider, ProviderId } from "@/lib/llm/providers/types";
 
 export { BudgetExceededError };
@@ -46,9 +47,24 @@ export function getProviderChain(providerOverride?: ProviderId): ProviderId[] {
 }
 
 export async function callWithChain(input: LLMInput): Promise<LLMOutput> {
+  const startedAt = Date.now();
+  const providerChain = getProviderChain(input.providerOverride);
   if (input.cacheKey) {
     const cached = await getFromCache(input.cacheKey);
     if (cached) {
+      await recordProviderCall({
+        taskTag: input.taskTag,
+        providerOverride: input.providerOverride,
+        providerChain,
+        attemptedProviders: [],
+        skippedProviders: [],
+        finalProvider: cached.provider,
+        fallbackCount: 0,
+        latencyMs: Date.now() - startedAt,
+        success: true,
+        cached: true,
+        cacheHitProvider: cached.cacheHitProvider ?? cached.provider,
+      });
       return {
         ...cached,
         cached: true,
@@ -62,17 +78,35 @@ export async function callWithChain(input: LLMInput): Promise<LLMOutput> {
   }
 
   let lastError: Error | null = null;
-  for (const providerId of getProviderChain(input.providerOverride)) {
+  const attemptedProviders: ProviderId[] = [];
+  const skippedProviders: ProviderId[] = [];
+  for (const providerId of providerChain) {
     const provider = getProvider(providerId);
     try {
-      if (!(await provider.isHealthy())) continue;
+      if (!(await provider.isHealthy())) {
+        skippedProviders.push(providerId);
+        continue;
+      }
 
+      attemptedProviders.push(providerId);
       const output = await provider.generate(input);
       const normalizedOutput = { ...output, cached: false };
       await trackUsage(provider, input, normalizedOutput);
       if (input.cacheKey) {
         await setCache(input.cacheKey, normalizedOutput, input.cacheTTLSeconds);
       }
+      await recordProviderCall({
+        taskTag: input.taskTag,
+        providerOverride: input.providerOverride,
+        providerChain,
+        attemptedProviders,
+        skippedProviders,
+        finalProvider: normalizedOutput.provider,
+        fallbackCount: Math.max(0, providerChain.indexOf(providerId)),
+        latencyMs: Date.now() - startedAt,
+        success: true,
+        cached: false,
+      });
       return normalizedOutput;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
@@ -83,6 +117,19 @@ export async function callWithChain(input: LLMInput): Promise<LLMOutput> {
     }
   }
 
+  await recordProviderCall({
+    taskTag: input.taskTag,
+    providerOverride: input.providerOverride,
+    providerChain,
+    attemptedProviders,
+    skippedProviders,
+    finalProvider: null,
+    fallbackCount: providerChain.length,
+    latencyMs: Date.now() - startedAt,
+    success: false,
+    cached: false,
+    error: lastError?.message ?? "All LLM providers in chain failed",
+  });
   throw lastError ?? new Error("All LLM providers in chain failed");
 }
 
