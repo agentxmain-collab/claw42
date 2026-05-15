@@ -1,4 +1,15 @@
-# spec-watch-B12-decision-quality-uplift (v1.0 · 2026-05-15)
+# spec-watch-B12-decision-quality-uplift (v1.1 · 2026-05-15)
+
+> **v1.1 修订原因**：v1.0 第 1 轮评估 4 条 P1 + 3 条 P2，根因 = F 多处凭推测写文件路径 / schema shape / provider router 位置 / prompt directory 位置。v1.1 全部按 Codex grep 实测真相重写：
+>
+> - **Schema**：实际 `round / observedAt`（不是 roundIndex/createdAt）+ `confidence` 已存在；保 schema version `2` 加 optional 新字段（不升 3，不引"2.1"字面）
+> - **Direction union**：加 `wait`（`long|short|neutral|wait`），**不加 null**；null 状态用 `confidence=0 + dataStatus="missing"` 组合表达
+> - **Provider routing fix**：实际改 `src/lib/llm/generateText.ts` 加 `providerOverride` option + TeamProviderId→ProviderId 映射（providerOverride 已在 `providers/index.ts` chain 层 + `callWithChain()` 支持，PM 已用，差 generateText 没 expose）
+> - **Prompt source**：用现有 `docs/agent-ip/team/*.md`（不重建 src/lib/team/prompts/）
+> - **Symbol mapping**：新建 `src/lib/team/symbolMapping.ts` 统一 mapping（symbol → coinw_pair / coingecko_id / chain+contract / defillama_slug）+ fallback 行为
+> - **UI write set**：明确 allowed 6 文件 + grep gates，否则违反 Constitution Rule 3
+> - **Path 修正**：actual market 在 `marketDataCache.ts` + `news/livePriceFetch.ts`；evidence 在 `news/newsEvidence.ts` + `news/newsEvidenceStore.ts`（不是 `src/lib/market/` / `src/lib/evidence/`）
+> - **SC-B12-4 metric**：改成"role evidence separation + non-duplicated summaries + no generic missing-data filler"
 
 > **B.12 — 决策质量大重构：Typed evidence + Role-specific prompt + Provider routing fix + UI 信息层级化**
 >
@@ -38,6 +49,30 @@
 ### 0.2 双脑诊断
 
 Codex 实施前必须自己下判断 + 写到 codex-to-claude.md（§ 18 列必填判断点）。
+
+### 0.4 UI Write Set 边界（v1.1 加，解决 Codex P1 #4）
+
+**B.12 唯一允许改的 UI 文件**（grep gate 验证）：
+
+| 文件                                                      | 允许改动                                                                                             | 不允许                                      |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `src/modules/agent-watch/v9/MessageBubble.tsx`            | 加 L1 / L2 分层渲染（DirectionBadge + ConfidenceBar + OneLineSummary + Divider + DetailedRationale） | 改 avatar / class / 视觉 layout 主体        |
+| `src/modules/agent-watch/v9/Topic.tsx`                    | 调用 TopicHead / TopicBody 顺序；short title vs explanation 分流                                     | 改 Topic 容器 layout                        |
+| `src/modules/agent-watch/v9/TopicHead.tsx`                | short title 渲染 + 展开按钮 layout 修                                                                | 改 chip / intensity bar                     |
+| `src/modules/agent-watch/v9/TopicBody.tsx`                | 折叠 explanation 区                                                                                  | 改 message 列表渲染                         |
+| `src/modules/agent-watch/v9/dispatchConsoleV9.module.css` | L1/L2 字号 / spacing / 颜色 / Topic 标题分层 CSS                                                     | 整体 hero / constellation / flow 主体 CSS   |
+| `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx`     | **B.12 narrow exception**：topicRanking 区域 explanation 重复渲染清理 + 展开按钮 layout              | layout 主体 / hero / 跟单按钮（B.8 narrow） |
+
+**Grep gate（每 phase 跑）**：
+
+```bash
+# 禁止改动（应 = 0 diff）
+git diff origin/main -- src/modules/agent-watch/v10/** ':!src/modules/agent-watch/v10/MarketAnalysisPanel.tsx'
+git diff origin/main -- src/modules/agent-watch/v9/TopicStrategy.tsx  # B.8 owned，不动
+git diff origin/main -- src/app/[locale]/agent/page.tsx
+```
+
+任一禁止改动 ≠ 0 → 立即停 + 报 F。
 
 ### 0.3 Anti-rationalization
 
@@ -186,19 +221,19 @@ Codex 实施前必须自己下判断 + 写到 codex-to-claude.md（§ 18 列必�
 
 ## 5. Measurable Success Criteria
 
-| ID        | 指标                              | 测量方法                                                                                                                                   | 阈值                                                                  |
-| --------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| SC-B12-1  | Typed evidence 按 role 分发       | grep `evidencePack.chart` / `evidencePack.news` / `evidencePack.onchain` / `evidencePack.fundamental` 字段在 prompt context 真按 role 路由 | 4 类 evidence 真按 role 隔离，0 cross-pollution                       |
-| SC-B12-2  | LLM JSON 输出有效率               | Telemetry 记录 JSON parse success                                                                                                          | ≥ 95%（5% 容忍 LLM hallucinate）                                      |
-| SC-B12-3  | Provider 分布真按角色             | B.10 telemetry：14 角色 × 24+ LLM call，至少 2 个 provider 真分布                                                                          | DeepSeek 占比 ≤ 80%（之前 100%）                                      |
-| SC-B12-4  | 决策同质化下降                    | 比较 BILL 类似 decision 跑 2 次：14 角色 direction + oneLineSummary 差异化                                                                 | direction 至少 3 类（long/short/wait 都有）/ summary 字面重复率 ≤ 60% |
-| SC-B12-5  | UI L1/L2 渲染                     | MessageBubble DOM 真分两层 + L1 大字号 + L2 当前字号 + 视觉分隔                                                                            | Playwright snapshot vs spec mock 一致                                 |
-| SC-B12-6  | Topic 标题分层 + explanation 去重 | DOM 真分 short title + 折叠 explanation；底部 chip 区域不重复                                                                              | 0 重复 + 展开按钮 layout 不撞                                         |
-| SC-B12-7  | 数据缺口诚实显示                  | 缺 onchain key 时 onchain analyst direction = null + UI 显示 "暂无 onchain 数据" badge                                                     | 0 个角色编 wait                                                       |
-| SC-B12-8  | i18n 完整                         | 10 locale × （L1 3 标签 + 视角标签 14 + 缺口标签 4）覆盖                                                                                   | 0 missing key                                                         |
-| SC-B12-9  | Verify gate                       | typecheck / lint / format / vitest / build / verify:a11y / verify:metrics / verify:chat-v3-final / verify:agent-ip / verify:news           | 全 PASS                                                               |
-| SC-B12-10 | 工程量收敛                        | ≤ 8 commit / ≤ 5 AI 天                                                                                                                     | 超 → 停 + 报 F                                                        |
-| SC-B12-11 | SPEC-FEEDBACK 收敛                | 第 1 轮 ≤ 2 minor                                                                                                                          | >2 / P1+ → 立即停                                                     |
+| ID        | 指标                                                    | 测量方法                                                                                                                                                                                                                                                                                                                                                                                                 | 阈值                                            |
+| --------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| SC-B12-1  | Typed evidence 按 role 分发                             | grep `evidencePack.chart` / `evidencePack.news` / `evidencePack.onchain` / `evidencePack.fundamental` 字段在 prompt context 真按 role 路由                                                                                                                                                                                                                                                               | 4 类 evidence 真按 role 隔离，0 cross-pollution |
+| SC-B12-2  | LLM JSON 输出有效率                                     | Telemetry 记录 JSON parse success                                                                                                                                                                                                                                                                                                                                                                        | ≥ 95%（5% 容忍 LLM hallucinate）                |
+| SC-B12-3  | Provider 分布真按角色                                   | B.10 telemetry：14 角色 × 24+ LLM call，至少 2 个 provider 真分布                                                                                                                                                                                                                                                                                                                                        | DeepSeek 占比 ≤ 80%（之前 100%）                |
+| SC-B12-4  | 决策质量提升（v1.1 修 metric，避免 incentivize 假分歧） | 跑 BILL 类似 decision，verify 三条：(1) role evidence separation —— 每角色 prompt context 真按 role 隔离（chart 仅含 chart evidence / news 仅含 news 等）；(2) non-duplicated oneLineSummary —— 14 角色 oneLineSummary 字面重复率 ≤ 40%（不是直接抄 evidence 同样的话）；(3) no generic missing-data filler —— 缺数据角色明示 dataStatus=missing + UI 显示"暂无 X 数据"，不允许 LLM 编"基本面缺失"含糊话 | 三条全 PASS                                     |
+| SC-B12-5  | UI L1/L2 渲染                                           | MessageBubble DOM 真分两层 + L1 大字号 + L2 当前字号 + 视觉分隔                                                                                                                                                                                                                                                                                                                                          | Playwright snapshot vs spec mock 一致           |
+| SC-B12-6  | Topic 标题分层 + explanation 去重                       | DOM 真分 short title + 折叠 explanation；底部 chip 区域不重复                                                                                                                                                                                                                                                                                                                                            | 0 重复 + 展开按钮 layout 不撞                   |
+| SC-B12-7  | 数据缺口诚实显示                                        | 缺 onchain key 时 onchain analyst direction = null + UI 显示 "暂无 onchain 数据" badge                                                                                                                                                                                                                                                                                                                   | 0 个角色编 wait                                 |
+| SC-B12-8  | i18n 完整                                               | 10 locale × （L1 3 标签 + 视角标签 14 + 缺口标签 4）覆盖                                                                                                                                                                                                                                                                                                                                                 | 0 missing key                                   |
+| SC-B12-9  | Verify gate                                             | typecheck / lint / format / vitest / build / verify:a11y / verify:metrics / verify:chat-v3-final / verify:agent-ip / verify:news                                                                                                                                                                                                                                                                         | 全 PASS                                         |
+| SC-B12-10 | 工程量收敛                                              | ≤ 8 commit / ≤ 5 AI 天                                                                                                                                                                                                                                                                                                                                                                                   | 超 → 停 + 报 F                                  |
+| SC-B12-11 | SPEC-FEEDBACK 收敛                                      | 第 1 轮 ≤ 2 minor                                                                                                                                                                                                                                                                                                                                                                                        | >2 / P1+ → 立即停                               |
 
 ---
 
@@ -352,20 +387,35 @@ System Prompt:
 
 类似对 news / onchain / fundamental analyst 强约束。
 
-### 7.3 Provider Routing Fix
+### 7.3 Provider Routing Fix（实际位置：`src/lib/llm/generateText.ts`）
 
-**当前 state**：
+**Codex grep 实测真相**（v1.1 修正）：
 
-- PM pipeline 不把 `teamRegistry.defaultProvider` 传 LLM wrapper
-- DeepSeek 健康时所有 call 都偏向 DeepSeek（fallback chain）
-- Telemetry 实测 100% DeepSeek
+- `src/lib/team/llmProviderRouter.ts` **不存在**
+- 实际 wrapper：`src/lib/llm/generateText.ts` + `src/lib/llm/providers/index.ts`
+- `providers/index.ts` 已有 `getProviderChain(providerOverride?)` + `callWithChain(input)` 支持 input.providerOverride
+- `src/lib/team/tradeDecisionPromptBuilder.ts` 已对 PM 调 `callWithChain()` 传 providerOverride
+- Analyst / lead calls 走 `generateText()`，**`generateText()` 没 expose providerOverride** = routing 漏点
 
 **B.12 目标**：
 
-- LLM wrapper 加 `providerOverride` 参数
-- PM pipeline 调 LLM wrapper 时传 `providerOverride = teamRegistry[roleId].defaultProvider`
-- Fallback chain 仅在 defaultProvider 真失败时才走 next provider（不是默认偏向 DeepSeek）
-- Telemetry 记录 attempted provider + final provider 看分布
+- `generateText()` 加 `providerOverride?: ProviderId` 到 `GenerateTextOptions`
+- providerOverride 透传两层调用（first call + guardrail retry）
+- 新建 `mapTeamProviderToProviderId()`：`deepseek → deepseek-chat` / `minimax → minimax` / `claude-* → claude-haiku` 等
+- `pmDecisionPipeline.ts` 调 `generateText()` 时传 `providerOverride = mapTeamProviderToProviderId(teamRegistry[roleId].defaultProvider)`
+- `src/lib/llm/__tests__/generateText.test.ts` 加 providerOverride test
+- PM pipeline test 加按 role 路由 assertion
+
+**Routing table（teamRegistry.defaultProvider）**：
+
+- chart_analyst → deepseek（速度 + 数据感知）
+- news_analyst → minimax（长文本 sentiment）
+- onchain_analyst → deepseek
+- fundamental_analyst → minimax（长 reasoning）
+- research_lead → deepseek
+- risk_lead → minimax
+- pm → deepseek
+- 6 个升级真团队角色（bullish_researcher / bearish_researcher / trader / 3 reviewer）+ memory_loop → 分布配（Codex 自决，目标占比 DeepSeek 60% / Minimax 40%）
 
 **Routing table（teamRegistry.defaultProvider 配置）**：
 
@@ -378,21 +428,59 @@ System Prompt:
 - pm → deepseek
 - bullish_researcher / bearish_researcher / trader / 3 reviewer / memory_loop → 分布配（具体 Codex 自决，目标占比 DeepSeek 60% / Minimax 40%）
 
-### 7.4 Onchain / Fundamental Adapter 接入
+### 7.4 Onchain / Fundamental Adapter 接入 + Symbol Mapping
 
-**当前 state**：
+**Codex grep 实测真相**（v1.1 修正）：
 
-- Onchain adapter / Fundamental adapter 不存在（或 stub）
-- 14 角色看不到 onchain / fundamental evidence → 默认 wait
+- Onchain / Fundamental adapter **不存在**
+- 但 CoinW kline 已在 `src/lib/marketDataCache.ts`（不是 `src/lib/market/`）—— B.12 复用不重建
+- `ETHERSCAN_API_KEY` + `DUNE_API_KEY` + `DEBANK_ACCESS_KEY` 已配 ✓
+- Etherscan / DefiLlama / Dune / DeBank **都需要 symbol → chain/contract/protocol 映射**，否则 BILL / FIRO 等非 ETH symbol 全 missing
 
-**B.12 目标**：
+**B.12 必须先建 Symbol Mapping**：
 
-- 新建 `src/lib/onchain/etherscanAdapter.ts`（接 Etherscan API）
-- 新建 `src/lib/onchain/defillamaAdapter.ts`（接 DefiLlama 公开 API）
-- 新建 `src/lib/fundamental/defillamaTokenomicsAdapter.ts`（接 DefiLlama protocol/token unlock）
-- 新建 `src/lib/market/coinwKlineAdapter.ts` 或 `binanceKlineAdapter.ts`（chart kline）
-- Evidence pipeline 调这些 adapter 填 EvidenceContextPack
-- dataStatus 字段反映各 adapter 实际状态（key 缺 → "missing"，rate limit → "stale"，正常 → "ok"）
+```ts
+// src/lib/team/symbolMapping.ts（新建）
+interface SymbolMapping {
+  symbol: string; // "BTC" / "ETH" / "BILL"
+  coinwPair: string; // "BTC_USDT"
+  coingeckoId: string; // "bitcoin"
+  chain?: "ethereum" | "bsc" | "solana" | null;
+  contract?: string; // ERC-20 / BEP-20 contract address
+  defillamaSlug?: string; // "uniswap" / "aave-v3" / null
+  fallback: {
+    onchainMissing: boolean; // 显式标识"无 onchain 数据接入"
+    fundamentalMissing: boolean;
+  };
+}
+
+const SYMBOL_MAPPINGS: Record<string, SymbolMapping> = {
+  BTC: {
+    coinwPair: "BTC_USDT",
+    coingeckoId: "bitcoin",
+    chain: null,
+    fallback: { onchainMissing: true, fundamentalMissing: true },
+  },
+  ETH: {
+    coinwPair: "ETH_USDT",
+    coingeckoId: "ethereum",
+    chain: "ethereum",
+    contract: undefined,
+    defillamaSlug: undefined,
+    fallback: { onchainMissing: false, fundamentalMissing: false },
+  },
+  // ... Codex 实施时按 staging fixture 实际 symbol 集填 + fallback
+};
+```
+
+**Adapter 设计**（用 mapping table）：
+
+- 新建 `src/lib/onchain/etherscanAdapter.ts`：input symbol → lookup mapping → 用 `chain+contract` 调 Etherscan API；如 mapping.fallback.onchainMissing = true → 直接 return missing 不调 API
+- 新建 `src/lib/onchain/defillamaAdapter.ts`：input symbol → lookup mapping → 用 `defillamaSlug` 调 DefiLlama 公开 API；如缺 slug → return missing
+- 新建 `src/lib/fundamental/defillamaTokenomicsAdapter.ts`：同上 DefiLlama tokenomics 端点
+- **不新建** `src/lib/market/coinwKlineAdapter.ts`——复用 `marketDataCache.ts` 现有 CoinW kline 逻辑（如需扩展加 helper 不另建文件）
+- `dataStatus` 反映：mapping 命中 + adapter 成功 → "ok" / mapping 命中但 adapter 失败 → "stale" / mapping 不命中 → "missing"
+- **DUNE_API_KEY / DEBANK_ACCESS_KEY** 暂不在 B.12 接入（spec § 13 明示），留 B.13 backlog
 
 **Etherscan API call**：
 
@@ -416,40 +504,53 @@ async function fetchProtocolTVL(protocolSlug: string) {
 }
 ```
 
-### 7.5 Schema 扩展（AnalystInputRoundRecord 加字段）
+### 7.5 Schema 扩展（AnalystInputRoundRecord 加 optional 字段，保 schemaVersion = 2）
 
-**当前 v2 shape**：
+**Codex grep 实测真相**（v1.1 修正）：
+
+- 实际字段名：`round`（不是 roundIndex）/ `observedAt`（不是 createdAt）
+- `confidence` **已存在**（不是新加）
+- `direction` 当前 union = `long | short | neutral`
+- `StrategyDecisionRecordSchemaVersion` = `1 | 2`（**没有 2.1**）
+- 下游 `PublicDecisionRoundEntry` / v9 types / safe formatter 仍 expect legacy shapes
+
+**v1.1 决策**（F 自决）：
+
+- **schemaVersion 保 `2`**，不升 3，不引"2.1"字面 —— 新字段全 optional 加进现有 v2 union
+- **direction union 加 `wait`** 进 union：`"long" | "short" | "neutral" | "wait"`，**不加 null** —— null 状态用 `confidence=0 + dataStatus="missing"` 组合表达，避免下游类型大改
+
+**B.12 实际 shape**：
 
 ```ts
+// src/lib/team/strategyDecisionRecord.ts 改动
 interface AnalystInputRoundRecord {
-  roundIndex: number;
-  direction: "long" | "short" | "neutral"; // 当前枚举
-  rationale: string; // 自由文本
-  evidenceIds: string[];
-  createdAt: string;
+  round: number; // ✓ existing
+  direction: "long" | "short" | "neutral" | "wait"; // ← v1.1 加 "wait"
+  confidence: number; // ✓ existing
+  rationale: string; // ✓ existing（保留）
+  oneLineSummary?: string; // ← v1.1 新 optional ≤ 80 字
+  detailedRationale?: string; // ← v1.1 新 optional ≤ 500 字（rationale 同义但格式化）
+  evidenceIds?: string[]; // ✓ existing
+  dataStatus?: "ok" | "partial" | "missing"; // ← v1.1 新 optional
+  observedAt: string; // ✓ existing
 }
 ```
 
-**B.12 v2.1 shape（向后兼容）**：
+**Dual-shape 兼容**（schemaVersion 仍 `2`）：
 
-```ts
-interface AnalystInputRoundRecord {
-  roundIndex: number;
-  direction: "long" | "short" | "wait" | null; // 加 wait + null
-  confidence: number; // 新字段 0-1
-  oneLineSummary: string; // 新字段 ≤ 80 字
-  detailedRationale: string; // 新字段 ≤ 500 字（替代 rationale，但 rationale 保留向后兼容）
-  rationale?: string; // legacy 保留
-  evidenceIds: string[];
-  dataStatus?: "ok" | "partial" | "missing"; // 新字段
-  createdAt: string;
-}
-```
+- 老 v2 record（无 oneLineSummary / detailedRationale / dataStatus）：projection 投到 v9 / adapter 时：
+  - `oneLineSummary` fallback = `rationale.slice(0, 80) + (rationale.length > 80 ? "…" : "")`
+  - `detailedRationale` fallback = `rationale`
+  - `dataStatus` fallback = `"ok"`（假设老 record 是有数据的）
+- 新 v2 record（含新字段）：projection 直接读
+- v1 record：先 v1→v2 projection（B.3 已立），再走 v2 dual-shape
 
-**Dual-shape 兼容**：
+**下游类型同步修改清单**：
 
-- v2 老 record（无 oneLineSummary） → adapter 投到 v2.1 时 `oneLineSummary = rationale.slice(0, 80) + "..."`
-- v2.1 新 record 直接读 oneLineSummary
+- `AnalystInputRecord`（聚合多 round）—— 加同 optional 字段
+- `PublicDecisionRoundEntry`（projection 输出）—— 加 optional 字段
+- `src/modules/agent-watch/v9/types.ts` `DispatchMessage`—— 加 L1 字段（direction badge / confidence / oneLineSummary）
+- v9 safe formatter —— 加 L1 字段 sanitization
 
 ### 7.6 UI 信息层级化（MessageBubble + Topic）
 
@@ -569,28 +670,42 @@ AgentWatchBoard / v10 MarketAnalysisPanel
 
 ## 9. 变更范围
 
-### 9.1 新建
+### 9.1 新建（v1.1 实际路径）
 
-- `src/lib/onchain/etherscanAdapter.ts`
-- `src/lib/onchain/defillamaAdapter.ts`
-- `src/lib/fundamental/defillamaTokenomicsAdapter.ts`
-- `src/lib/market/coinwKlineAdapter.ts`（或 binanceKlineAdapter.ts，Codex 自决）
-- `src/lib/team/evidenceDispatcher.ts`（role-specific dispatch logic）
-- `src/lib/team/prompts/*.ts`（如不存在，Codex 实测决定）—— 14 角色 system prompt + 强约束模板
+- `src/lib/team/symbolMapping.ts` —— **新增 v1.1**：symbol → coinw_pair / coingecko_id / chain+contract / defillama_slug mapping + fallback
+- `src/lib/onchain/etherscanAdapter.ts` —— 接 Etherscan API，按 mapping
+- `src/lib/onchain/defillamaAdapter.ts` —— DefiLlama 公开 API，按 mapping slug
+- `src/lib/fundamental/defillamaTokenomicsAdapter.ts` —— DefiLlama tokenomics 端点
+- `src/lib/team/evidenceDispatcher.ts` —— role-specific evidence pack 分发
 - Tests for above
 
-### 9.2 修改（关键文件）
+**不新建**（v1.1 修正 v1.0 错路径）：
 
-- `src/lib/team/strategyDecisionRecord.ts` —— AnalystInputRoundRecord 加 direction/confidence/oneLineSummary/detailedRationale/dataStatus 字段（v2.1 schema）
-- `src/lib/team/pmDecisionPipeline.ts` —— 集成 evidenceDispatcher + role-specific prompt + providerOverride
-- `src/lib/team/llmProviderRouter.ts`（或类似 wrapper，Codex grep 确认位置） —— 加 `providerOverride` 参数支持
-- `src/lib/watch/publicTimelineProjection.ts` —— 处理 v2.1 新字段 + dual-shape 兼容
-- `src/lib/watch/v9TopicAdapter.ts` —— 映射新字段到 DispatchMessage
+- ❌ `src/lib/market/coinwKlineAdapter.ts` —— 复用现有 `src/lib/marketDataCache.ts`
+- ❌ `src/lib/team/prompts/*.ts` —— 用现有 `docs/agent-ip/team/*.md` 作 prompt source（Codex 实施时 import / inline 模板）
+- ❌ `src/lib/team/llmProviderRouter.ts` —— 不存在，实际改 `src/lib/llm/generateText.ts`
+
+### 9.2 修改（关键文件，v1.1 实际路径）
+
+- `src/lib/team/strategyDecisionRecord.ts` —— `AnalystInputRoundRecord` 加 optional direction wait/oneLineSummary/detailedRationale/dataStatus（schemaVersion 保 2，**不升 3 不引 2.1**）
+- `src/lib/team/pmDecisionPipeline.ts` —— 集成 evidenceDispatcher + role-specific prompt + providerOverride 透传
+- **`src/lib/llm/generateText.ts`** —— `GenerateTextOptions` 加 `providerOverride?: ProviderId` + 透传 first call + guardrail retry
+- **`src/lib/llm/providers/index.ts`** —— 加 `mapTeamProviderToProviderId()` helper
+- `src/lib/team/teamRegistry.ts` —— 14 角色 `defaultProvider` 字段配置（routing table）
+- `src/lib/watch/publicTimelineProjection.ts` —— 处理新 optional 字段 + dual-shape fallback
+- `src/lib/watch/v9TopicAdapter.ts` —— 映射新字段到 DispatchMessage L1
+- `src/modules/agent-watch/v9/types.ts` —— `DispatchMessage` 加 L1 字段
 - `src/modules/agent-watch/v9/MessageBubble.tsx` —— L1/L2 分层渲染
-- `src/modules/agent-watch/v9/Topic.tsx` —— 标题分层 + explanation 去重
-- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` —— **narrow v10 exception（B.5 已立）**，topicRanking-related 展开按钮 layout 修
+- `src/modules/agent-watch/v9/Topic.tsx` —— 标题分层调度
+- `src/modules/agent-watch/v9/TopicHead.tsx` —— short title + 展开按钮 layout 修
+- `src/modules/agent-watch/v9/TopicBody.tsx` —— 折叠 explanation 区
+- `src/modules/agent-watch/v9/dispatchConsoleV9.module.css` —— L1/L2 + Topic 标题 CSS
+- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` —— **B.12 narrow exception**：topicRanking explanation 重复渲染清理 + 展开按钮 layout
+- `src/lib/news/newsEvidence.ts` / `src/lib/news/newsEvidenceStore.ts` —— evidenceDispatcher integration（如需）
+- `src/lib/marketDataCache.ts` —— chart evidence 提取 helper（如需）
 - `src/i18n/dicts/*.json` 10 locale —— 加 direction / roleViewpoint / dataGap namespaces
 - `src/i18n/types.ts` —— Dict 类型扩展
+- `src/lib/llm/__tests__/generateText.test.ts` —— providerOverride test
 
 ### 9.3 删除
 
