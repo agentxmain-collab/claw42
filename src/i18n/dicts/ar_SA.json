@@ -711,6 +711,28 @@
       "topicRanking": {
         "explanation_template": "{symbol} في المرتبة #{rank} بسبب {news_count} أخبار + ثقة {confidence}%",
         "rank_label": "الترتيب #{rank}"
+      },
+      "history": {
+        "wall_title": "سجل القرارات",
+        "outcome_label": "النتيجة",
+        "expand": "عرض سجل القرارات",
+        "collapse": "طي",
+        "more": "تحميل المزيد",
+        "empty": "لا يوجد سجل قرارات بعد",
+        "loading": "جار التحميل",
+        "error": "فشل تحميل سجل القرارات",
+        "symbols_label": "رموز سجل القرارات",
+        "heatmap_label": "خريطة حرارة شدة القرارات",
+        "intensity": "الشدة",
+        "confidence": "الثقة",
+        "entry": "الدخول",
+        "stop_loss": "وقف الخسارة",
+        "take_profit": "جني الربح",
+        "pending": "بانتظار المراجعة",
+        "hit_tp": "تحقق جني الربح",
+        "hit_sl": "تم تفعيل وقف الخسارة",
+        "expired": "منتهي",
+        "manual_close": "أُغلق يدويًا"
       }
     }
   },

@@ -711,6 +711,28 @@
       "topicRanking": {
         "explanation_template": "{symbol} має ранг #{rank}: {news_count} новин + {confidence}% впевненості",
         "rank_label": "Ранг #{rank}"
+      },
+      "history": {
+        "wall_title": "Історія рішень",
+        "outcome_label": "Результат",
+        "expand": "Переглянути історію рішень",
+        "collapse": "Згорнути",
+        "more": "Завантажити ще",
+        "empty": "Історії рішень ще немає",
+        "loading": "Завантаження",
+        "error": "Не вдалося завантажити історію рішень",
+        "symbols_label": "Символи історії рішень",
+        "heatmap_label": "Теплова карта інтенсивності рішень",
+        "intensity": "Інтенсивність",
+        "confidence": "Впевненість",
+        "entry": "Вхід",
+        "stop_loss": "SL",
+        "take_profit": "TP",
+        "pending": "Очікує розбору",
+        "hit_tp": "Тейк-профіт досягнуто",
+        "hit_sl": "Стоп-лос спрацював",
+        "expired": "Термін минув",
+        "manual_close": "Закрито вручну"
       }
     }
   },

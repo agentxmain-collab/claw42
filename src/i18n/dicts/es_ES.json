@@ -711,6 +711,28 @@
       "topicRanking": {
         "explanation_template": "{symbol} ocupa el #{rank} por {news_count} noticias + {confidence}% de confianza",
         "rank_label": "Rango #{rank}"
+      },
+      "history": {
+        "wall_title": "Historial de decisiones",
+        "outcome_label": "Resultado",
+        "expand": "Ver historial de decisiones",
+        "collapse": "Contraer",
+        "more": "Cargar más",
+        "empty": "Aún no hay historial de decisiones",
+        "loading": "Cargando",
+        "error": "No se pudo cargar el historial de decisiones",
+        "symbols_label": "Símbolos del historial de decisiones",
+        "heatmap_label": "Mapa de calor de intensidad de decisiones",
+        "intensity": "Intensidad",
+        "confidence": "Confianza",
+        "entry": "Entrada",
+        "stop_loss": "SL",
+        "take_profit": "TP",
+        "pending": "Pendiente de revisión",
+        "hit_tp": "Take profit alcanzado",
+        "hit_sl": "Stop loss activado",
+        "expired": "Expirado",
+        "manual_close": "Cerrado manualmente"
       }
     }
   },

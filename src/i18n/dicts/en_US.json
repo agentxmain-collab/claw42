@@ -711,6 +711,28 @@
       "topicRanking": {
         "explanation_template": "{symbol} ranks #{rank} from {news_count} news items + {confidence}% confidence",
         "rank_label": "Rank #{rank}"
+      },
+      "history": {
+        "wall_title": "Decision History",
+        "outcome_label": "Outcome",
+        "expand": "View Decision History",
+        "collapse": "Collapse",
+        "more": "Load More",
+        "empty": "No decision history yet",
+        "loading": "Loading",
+        "error": "Decision history failed to load",
+        "symbols_label": "Decision history symbols",
+        "heatmap_label": "Decision intensity heat map",
+        "intensity": "Intensity",
+        "confidence": "Confidence",
+        "entry": "Entry",
+        "stop_loss": "SL",
+        "take_profit": "TP",
+        "pending": "Pending review",
+        "hit_tp": "Take profit hit",
+        "hit_sl": "Stop loss hit",
+        "expired": "Expired",
+        "manual_close": "Manually closed"
       }
     }
   },
