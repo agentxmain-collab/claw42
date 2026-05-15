@@ -700,6 +700,13 @@
         "separator": "Ronda {round} · {mode}",
         "single": "pasada única",
         "multi": "debate multirronda"
+      },
+      "stageStatus": {
+        "pending": "Pendiente",
+        "in_progress": "En curso",
+        "in_progressNote": "Esta fase está escribiendo una actualización parcial",
+        "done": "Completado",
+        "memoryPending": "La revisión espera el resultado"
       }
     }
   },

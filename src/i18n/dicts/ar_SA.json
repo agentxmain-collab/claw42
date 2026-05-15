@@ -700,6 +700,13 @@
         "separator": "الجولة {round} · {mode}",
         "single": "جولة واحدة",
         "multi": "نقاش متعدد الجولات"
+      },
+      "stageStatus": {
+        "pending": "قيد الانتظار",
+        "in_progress": "قيد التنفيذ",
+        "in_progressNote": "تكتب هذه المرحلة تحديثا جزئيا",
+        "done": "مكتمل",
+        "memoryPending": "المراجعة تنتظر كتابة النتيجة"
       }
     }
   },

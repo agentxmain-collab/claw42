@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
     }
   });
   const pmDecisionAudit: PmDecisionTriggerAuditEvent[] = [];
+  const pmPartialStageUpdates = true;
   const pmDecisionOutputs =
     trigger === "now"
       ? [
@@ -110,6 +111,7 @@ export async function GET(request: NextRequest) {
             newsItems: normalizedItems,
             locale,
             now,
+            partialStageUpdates: pmPartialStageUpdates,
             onAudit: (event) => pmDecisionAudit.push(event),
           }),
         ].filter(Boolean)
@@ -119,6 +121,7 @@ export async function GET(request: NextRequest) {
           newsItems: normalizedItems,
           locale,
           now,
+          partialStageUpdates: pmPartialStageUpdates,
           onAudit: (event) => pmDecisionAudit.push(event),
         });
 
@@ -130,6 +133,7 @@ export async function GET(request: NextRequest) {
     locale,
     pmDecisionGenerated: pmDecisionOutputs.length > 0,
     generatedPmDecisions: pmDecisionOutputs.length,
+    pmPartialStageUpdates,
     pmDecisionAudit: trigger === "now" ? pmDecisionAudit : undefined,
     newsSourceHealth: trigger === "now" ? getNewsSourceHealthSnapshot() : undefined,
     resolvedPmDecisions,

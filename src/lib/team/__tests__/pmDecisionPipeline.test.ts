@@ -373,6 +373,59 @@ describe("runPmDecisionPipeline", () => {
     });
   });
 
+  it("writes partial stage checkpoints before the final PM decision", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+    const updateDecisionRecord = vi.fn(async (record: StrategyDecisionRecord) => {
+      void record;
+    });
+    let version = 0;
+    const writeDecisionStagePartial = vi.fn(async (record: StrategyDecisionRecord) => ({
+      ...record,
+      recordVersion: version++,
+    }));
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+        partialStageUpdates: true,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async (memberId) => ({
+          rationale: `${memberId} rationale`,
+          confidence: 0.7,
+        })),
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord,
+        writeDecisionStagePartial,
+      },
+    );
+
+    expect(result?.record.tradeDecision).toBeTruthy();
+    expect(writeDecisionStagePartial).toHaveBeenCalledTimes(3);
+    expect(
+      writeDecisionStagePartial.mock.calls.map(
+        (call) => call[0].stageTrace?.find((stage) => stage.status === "in_progress")?.stageId,
+      ),
+    ).toEqual(["research_lead", "risk_lead", "trade_decision"]);
+    expect(appendWatchHistoryEntry).toHaveBeenCalledTimes(1);
+    const partialEntry = appendWatchHistoryEntry.mock.calls[0]?.[0] as {
+      meta?: { tradeDecision?: TradeDecision | null };
+    };
+    expect(partialEntry.meta?.tradeDecision).toBeNull();
+    expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
+    expect(updateDecisionRecord).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps the PM output when the non-critical stage trace update fails", async () => {
     const recordStrategyDecisionRecord = vi.fn(async (record) => record);
     const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {

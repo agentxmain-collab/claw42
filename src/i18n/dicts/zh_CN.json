@@ -700,6 +700,13 @@
         "separator": "第 {round} 轮 · {mode}",
         "single": "单轮决策",
         "multi": "多轮辩论"
+      },
+      "stageStatus": {
+        "pending": "等待中",
+        "in_progress": "进行中",
+        "in_progressNote": "该阶段正在写入部分结果",
+        "done": "已完成",
+        "memoryPending": "复盘等待结果回写"
       }
     }
   },

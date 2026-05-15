@@ -65,6 +65,7 @@ export function AgentWatchBoard({
   const agentWatchLocale = resolveAgentWatchLocale(locale);
   const outcomeDict = t.agentWatch.dispatchV10.outcome;
   const roundDict = t.agentWatch.dispatchV10.round;
+  const stageStatusDict = t.agentWatch.dispatchV10.stageStatus;
   const [timelineEvents, setTimelineEvents] = useState<PublicTimelineEvent[]>([]);
   const [timelineEvidenceMap, setTimelineEvidenceMap] = useState<Record<string, NewsEvidence>>({});
   const [followStatsByRecordId, setFollowStatsByRecordId] = useState<
@@ -277,12 +278,14 @@ export function AgentWatchBoard({
         locale: agentWatchLocale,
         outcomeDict,
         roundDict,
+        stageStatusDict,
       }),
     [
       agentWatchLocale,
       followStatsByRecordId,
       outcomeDict,
       roundDict,
+      stageStatusDict,
       timelineEvents,
       timelineEvidenceMap,
     ],

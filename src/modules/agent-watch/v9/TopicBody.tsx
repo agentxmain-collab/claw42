@@ -7,7 +7,9 @@ function StageMarker({ stage }: { stage: DispatchStageMarker }) {
     <div className={`stage-marker ${stage.status}`}>
       <div className="line" />
       <span className="badge">
-        {stage.status === "active" ? <span className="dot" aria-hidden="true" /> : null}
+        {stage.status === "active" || stage.status === "in_progress" ? (
+          <span className="dot" aria-hidden="true" />
+        ) : null}
         {stage.label}
       </span>
       <div className="line" />

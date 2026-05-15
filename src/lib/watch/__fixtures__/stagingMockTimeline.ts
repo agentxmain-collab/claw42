@@ -28,7 +28,7 @@ const CONTRIBUTOR_IDS: TeamMemberId[] = [
 ];
 
 type DecisionFixtureInput = {
-  symbol: "BTC" | "ETH";
+  symbol: "BTC" | "ETH" | "SOL";
   idSuffix?: string;
   createdAt: number;
   locale: Locale;
@@ -69,7 +69,7 @@ function text(locale: Locale, zh: string, en: string) {
 
 function evidence(
   id: string,
-  symbol: "BTC" | "ETH",
+  symbol: "BTC" | "ETH" | "SOL",
   minutesAgo: number,
   now: number,
 ): NewsEvidence {
@@ -84,6 +84,154 @@ function evidence(
     symbol: [symbol],
     impactSeverity: "medium",
     summary: `${symbol}/USDT is available on CoinW with active market depth and intraday movement.`,
+  };
+}
+
+function makePartialDecisionRecord({
+  symbol,
+  createdAt,
+  locale,
+  evidence,
+}: {
+  symbol: "SOL";
+  createdAt: number;
+  locale: Locale;
+  evidence: NewsEvidence[];
+}): StrategyDecisionRecord {
+  const createdAtIso = new Date(createdAt).toISOString();
+  const evidenceIds = evidence.map((item) => item.id);
+  const analystInput = (
+    memberId: TeamMemberId,
+    direction: "long" | "short" | "neutral",
+    zh: string,
+    en: string,
+  ) => ({
+    memberId,
+    direction,
+    confidence: 0.61,
+    rationale: text(locale, zh, en),
+    evidenceIds,
+    rounds: [
+      {
+        round: 1,
+        direction,
+        confidence: 0.55,
+        rationale: text(locale, `${symbol} 第一轮：${zh}`, `${symbol} round one: ${en}`),
+        evidenceIds,
+        observedAt: createdAtIso,
+      },
+      {
+        round: 2,
+        direction,
+        confidence: 0.61,
+        rationale: text(locale, `${symbol} 第二轮修正：${zh}`, `${symbol} round two: ${en}`),
+        evidenceIds,
+        observedAt: createdAtIso,
+      },
+    ],
+  });
+
+  return {
+    id: "staging-sol-partial-pm-decision-v35",
+    schemaVersion: 2,
+    recordVersion: 2,
+    recordSource: "paper",
+    symbol,
+    locale,
+    decisionOwnerId: "pm",
+    contributorIds: CONTRIBUTOR_IDS,
+    analystInputs: [
+      analystInput(
+        "fundamental_analyst",
+        "long",
+        "SOL 成交深度恢复，基本面尚未否定短线反弹。",
+        "SOL depth recovered, and fundamentals have not rejected a short-term rebound.",
+      ),
+      analystInput(
+        "news_analyst",
+        "neutral",
+        "SOL 新闻面仍偏混合，需要等待更多确认。",
+        "SOL news remains mixed and needs more confirmation.",
+      ),
+      analystInput(
+        "chart_analyst",
+        "long",
+        "SOL 正在测试反弹区间，交易方案仍在生成。",
+        "SOL is testing the rebound zone while the trade plan is still being generated.",
+      ),
+      analystInput(
+        "onchain_analyst",
+        "neutral",
+        "SOL 链上流动没有异常扩散，暂不否定观察。",
+        "SOL on-chain flow has not shown abnormal spillover, so the watch remains valid.",
+      ),
+      analystInput(
+        "research_lead",
+        "neutral",
+        "研究组合并结论：SOL 可以继续观察，但需要交易总监给出执行边界。",
+        "Research synthesis: SOL can stay on watch, but execution boundaries are still needed.",
+      ),
+      analystInput(
+        "risk_lead",
+        "neutral",
+        "风险组已确认只允许低仓位，等待最终交易卡。",
+        "Risk review confirmed reduced sizing only and is waiting for the final trade card.",
+      ),
+    ],
+    stageTrace: [
+      {
+        stageId: "analyst_inputs",
+        label: "Analyst input generation",
+        status: "done",
+        observedAt: createdAtIso,
+        memberIds: ["fundamental_analyst", "news_analyst", "chart_analyst", "onchain_analyst"],
+      },
+      {
+        stageId: "research_lead",
+        label: "Research synthesis",
+        status: "done",
+        observedAt: createdAtIso,
+        memberIds: ["research_lead"],
+      },
+      {
+        stageId: "risk_lead",
+        label: "Risk review",
+        status: "done",
+        observedAt: createdAtIso,
+        memberIds: ["risk_lead"],
+      },
+      {
+        stageId: "trade_decision",
+        label: "PM trade decision",
+        status: "in_progress",
+        observedAt: createdAtIso,
+        memberIds: ["pm"],
+      },
+      {
+        stageId: "record_write",
+        label: "Decision record persistence",
+        status: "pending",
+        observedAt: createdAtIso,
+      },
+      {
+        stageId: "public_timeline",
+        label: "Public timeline projection",
+        status: "pending",
+        observedAt: createdAtIso,
+      },
+    ],
+    sourceThreadId: "staging-sol-partial-pm-decision-v35",
+    tradeDecision: null,
+    createdAt: createdAtIso,
+    evaluationWindowEndsAt: null,
+    resolvedAt: null,
+    resolvedOutcome: null,
+    resolvedPrice: null,
+    resolutionReason: null,
+    resolutionPriceSource: null,
+    promptVersion: "staging-fixture-v3.5",
+    modelProvider: "staging-fixture",
+    legacyFactionId: null,
   };
 }
 
@@ -344,7 +492,9 @@ function makeTimelineEntry(record: StrategyDecisionRecord): StreamEntry {
       visibility: "public",
       importance: "high",
       sourceTrigger: "pm_decision",
-      evidenceIds: record.tradeDecision?.evidenceIds ?? [],
+      evidenceIds:
+        record.tradeDecision?.evidenceIds ??
+        Array.from(new Set(record.analystInputs.flatMap((input) => input.evidenceIds))),
       locale: record.locale,
       recordId: record.id,
       tradeDecision: record.tradeDecision,
@@ -365,7 +515,17 @@ export function getStagingMockTimeline(
     evidence("staging-ev-eth-coinw-depth", "ETH", 27, now),
     evidence("staging-ev-eth-volatility", "ETH", 38, now),
   ];
+  const solEvidence = [
+    evidence("staging-ev-sol-coinw-depth", "SOL", 12, now),
+    evidence("staging-ev-sol-volatility", "SOL", 18, now),
+  ];
   const records = [
+    makePartialDecisionRecord({
+      symbol: "SOL",
+      createdAt: now - 45_000,
+      locale,
+      evidence: solEvidence,
+    }),
     makeDecisionRecord({
       symbol: "BTC",
       createdAt: now - 90_000,
@@ -485,7 +645,7 @@ export function getStagingMockTimeline(
     }),
   ];
   const entries = records.map(makeTimelineEntry);
-  const evidenceItems = [...btcEvidence, ...ethEvidence];
+  const evidenceItems = [...btcEvidence, ...ethEvidence, ...solEvidence];
 
   return {
     entries,

@@ -700,6 +700,13 @@
         "separator": "Раунд {round} · {mode}",
         "single": "один проход",
         "multi": "многораундовые дебаты"
+      },
+      "stageStatus": {
+        "pending": "Ожидание",
+        "in_progress": "В процессе",
+        "in_progressNote": "Этап записывает частичное обновление",
+        "done": "Готово",
+        "memoryPending": "Разбор ждет записи результата"
       }
     }
   },

@@ -121,6 +121,14 @@ export type DispatchV10RoundDict = {
   multi: string;
 };
 
+export type DispatchV10StageStatusDict = {
+  pending: string;
+  in_progress: string;
+  in_progressNote: string;
+  done: string;
+  memoryPending: string;
+};
+
 export type DispatchV10Dict = {
   ariaLabel: string;
   hero: {
@@ -141,6 +149,7 @@ export type DispatchV10Dict = {
   roles: Record<DispatchV10AgentRoleId, DispatchV10RoleDict>;
   outcome: DispatchV10OutcomeDict;
   round: DispatchV10RoundDict;
+  stageStatus: DispatchV10StageStatusDict;
   flow: {
     ariaLabel: string;
     stages: DispatchV10StageDict[];

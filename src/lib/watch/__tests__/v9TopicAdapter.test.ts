@@ -3,7 +3,13 @@ import arSA from "@/i18n/dicts/ar_SA.json";
 import enUS from "@/i18n/dicts/en_US.json";
 import jaJP from "@/i18n/dicts/ja_JP.json";
 import zhCN from "@/i18n/dicts/zh_CN.json";
-import type { Dict, DispatchV10OutcomeDict, DispatchV10RoundDict, Locale } from "@/i18n/types";
+import type {
+  Dict,
+  DispatchV10OutcomeDict,
+  DispatchV10RoundDict,
+  DispatchV10StageStatusDict,
+  Locale,
+} from "@/i18n/types";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import { mapPublicTimelineEventsToTopics, type V9AdapterContext } from "@/lib/watch/v9TopicAdapter";
@@ -59,6 +65,15 @@ const ROUND_DICTS: Record<"zh_CN" | "en_US" | "ja_JP" | "ar_SA", DispatchV10Roun
   ja_JP: (jaJP as Dict).agentWatch.dispatchV10.round,
   ar_SA: (arSA as Dict).agentWatch.dispatchV10.round,
 };
+const STAGE_STATUS_DICTS: Record<
+  "zh_CN" | "en_US" | "ja_JP" | "ar_SA",
+  DispatchV10StageStatusDict
+> = {
+  zh_CN: (zhCN as Dict).agentWatch.dispatchV10.stageStatus,
+  en_US: (enUS as Dict).agentWatch.dispatchV10.stageStatus,
+  ja_JP: (jaJP as Dict).agentWatch.dispatchV10.stageStatus,
+  ar_SA: (arSA as Dict).agentWatch.dispatchV10.stageStatus,
+};
 
 function outcomeDictFor(locale: Locale) {
   return OUTCOME_DICTS[(locale as keyof typeof OUTCOME_DICTS) ?? "zh_CN"] ?? OUTCOME_DICTS.zh_CN;
@@ -68,16 +83,25 @@ function roundDictFor(locale: Locale) {
   return ROUND_DICTS[(locale as keyof typeof ROUND_DICTS) ?? "zh_CN"] ?? ROUND_DICTS.zh_CN;
 }
 
+function stageStatusDictFor(locale: Locale) {
+  return (
+    STAGE_STATUS_DICTS[(locale as keyof typeof STAGE_STATUS_DICTS) ?? "zh_CN"] ??
+    STAGE_STATUS_DICTS.zh_CN
+  );
+}
+
 function mapTopics(
-  ctx: Omit<V9AdapterContext, "outcomeDict" | "roundDict"> & {
+  ctx: Omit<V9AdapterContext, "outcomeDict" | "roundDict" | "stageStatusDict"> & {
     outcomeDict?: DispatchV10OutcomeDict;
     roundDict?: DispatchV10RoundDict;
+    stageStatusDict?: DispatchV10StageStatusDict;
   },
 ) {
   return mapPublicTimelineEventsToTopics({
     ...ctx,
     outcomeDict: ctx.outcomeDict ?? outcomeDictFor(ctx.locale),
     roundDict: ctx.roundDict ?? roundDictFor(ctx.locale),
+    stageStatusDict: ctx.stageStatusDict ?? stageStatusDictFor(ctx.locale),
   });
 }
 
@@ -383,6 +407,62 @@ describe("mapPublicTimelineEventsToTopics", () => {
       action: "pending",
       actionLabel: "分析中",
       name: "尚未决策",
+    });
+    expect(topic.messages.some((message) => message.typing)).toBe(true);
+  });
+
+  it("renders partial stage trace as the current in-progress stage", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+    const [topic] = mapTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            tradeDecision: null,
+            stageTrace: [
+              {
+                stageId: "analyst_inputs",
+                status: "done",
+                observedAt: new Date(now - 120_000).toISOString(),
+              },
+              {
+                stageId: "research_lead",
+                status: "done",
+                observedAt: new Date(now - 90_000).toISOString(),
+              },
+              {
+                stageId: "risk_lead",
+                status: "done",
+                observedAt: new Date(now - 60_000).toISOString(),
+              },
+              {
+                stageId: "trade_decision",
+                status: "in_progress",
+                observedAt: new Date(now).toISOString(),
+              },
+            ],
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.status).toBe("active");
+    expect(topic.progress).toBe("当前进行到阶段 3");
+    expect(topic.stages.map((stage) => stage.status)).toEqual([
+      "done",
+      "done",
+      "in_progress",
+      "done",
+      "pending",
+      "pending",
+    ]);
+    expect(topic.stages[2]).toMatchObject({
+      label: "阶段 3 · 交易方案 · 进行中",
+      note: "该阶段正在写入部分结果",
     });
     expect(topic.messages.some((message) => message.typing)).toBe(true);
   });

@@ -1058,17 +1058,20 @@
   color: rgba(170, 220, 185, 0.76);
   border-color: rgba(20, 167, 57, 0.14);
 }
-.root :global(.stage-marker.active .line) {
+.root :global(.stage-marker.active .line),
+.root :global(.stage-marker.in_progress .line) {
   background: linear-gradient(90deg, transparent, rgba(209, 255, 85, 0.38), transparent);
 }
-.root :global(.stage-marker.active .badge) {
+.root :global(.stage-marker.active .badge),
+.root :global(.stage-marker.in_progress .badge) {
   background: rgba(209, 255, 85, 0.16);
   color: var(--lime);
   border-color: rgba(209, 255, 85, 0.42);
   box-shadow: 0 0 18px rgba(209, 255, 85, 0.12);
   animation: stageActiveBreath 2.4s ease-in-out infinite;
 }
-.root :global(.stage-marker.active .badge .dot) {
+.root :global(.stage-marker.active .badge .dot),
+.root :global(.stage-marker.in_progress .badge .dot) {
   width: 6px;
   height: 6px;
   border-radius: 50%;
