@@ -32,6 +32,7 @@ function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
       <div className="msg-body">
         <div className="msg-meta">
           <span className="msg-name">{message.agentName}</span>
+          {message.roundLabel ? <span className="msg-round">{message.roundLabel}</span> : null}
           {message.mentions.map((mention) => (
             <span className="msg-mention" key={mention}>
               {mention}

@@ -48,6 +48,7 @@ type DecisionFixtureInput = {
     observedPriceSource?: MarketDataSource | null;
     resolvedAfterMinutes?: number;
   };
+  schemaVersion?: 1 | 2;
 };
 
 export type StagingMockTimelineFixture = {
@@ -128,10 +129,8 @@ function makeDecisionRecord(input: DecisionFixtureInput): StrategyDecisionRecord
   const createdAtIso = new Date(input.createdAt).toISOString();
   const evaluationWindowEndsAt = new Date(input.createdAt + 4 * 60 * 60_000).toISOString();
   const tradeDecision = makeTradeDecision(input);
-  const direction = input.direction;
-  const rationale = (memberId: TeamMemberId, zh: string, en: string) => ({
-    memberId,
-    direction:
+  const rationale = (memberId: TeamMemberId, zh: string, en: string) => {
+    const direction =
       memberId === "bearish_researcher"
         ? ("short" as const)
         : memberId === "risk_lead" ||
@@ -139,15 +138,50 @@ function makeDecisionRecord(input: DecisionFixtureInput): StrategyDecisionRecord
             memberId === "conservative_reviewer" ||
             memberId === "memory_loop"
           ? ("neutral" as const)
-          : direction,
-    confidence: 0.64,
-    rationale: text(input.locale, zh, en),
-    evidenceIds,
-  });
+          : input.direction;
+    const finalRationale = text(input.locale, zh, en);
+    return {
+      memberId,
+      direction,
+      confidence: 0.64,
+      rationale: finalRationale,
+      evidenceIds,
+      ...(input.schemaVersion === 2
+        ? {
+            rounds: [
+              {
+                round: 1,
+                direction,
+                confidence: 0.56,
+                rationale: text(
+                  input.locale,
+                  `${input.symbol} 第一轮：${finalRationale}`,
+                  `${input.symbol} round one: ${finalRationale}`,
+                ),
+                evidenceIds,
+                observedAt: createdAtIso,
+              },
+              {
+                round: 2,
+                direction,
+                confidence: 0.64,
+                rationale: text(
+                  input.locale,
+                  `${input.symbol} 第二轮修正：${finalRationale}`,
+                  `${input.symbol} round two refinement: ${finalRationale}`,
+                ),
+                evidenceIds,
+                observedAt: createdAtIso,
+              },
+            ],
+          }
+        : {}),
+    };
+  };
 
   return {
     id: recordId,
-    schemaVersion: 1,
+    schemaVersion: input.schemaVersion ?? 1,
     recordSource: "paper",
     symbol: input.symbol,
     locale: input.locale,
@@ -225,6 +259,44 @@ function makeDecisionRecord(input: DecisionFixtureInput): StrategyDecisionRecord
         `${input.symbol} review loop should track entry zone, stop behavior, and whether news stayed aligned.`,
       ),
     ],
+    ...(input.schemaVersion === 2
+      ? {
+          stageTrace: [
+            {
+              stageId: "analyst_inputs",
+              label: "Analyst input generation",
+              status: "done",
+              observedAt: createdAtIso,
+              memberIds: CONTRIBUTOR_IDS.filter(
+                (memberId) =>
+                  memberId !== "research_lead" && memberId !== "risk_lead" && memberId !== "pm",
+              ),
+              rounds: [
+                {
+                  round: 1,
+                  label: "Independent analyst pass",
+                  status: "done",
+                  observedAt: createdAtIso,
+                  memberIds: CONTRIBUTOR_IDS.filter(
+                    (memberId) =>
+                      memberId !== "research_lead" && memberId !== "risk_lead" && memberId !== "pm",
+                  ),
+                },
+                {
+                  round: 2,
+                  label: "Refinement pass",
+                  status: "done",
+                  observedAt: createdAtIso,
+                  memberIds: CONTRIBUTOR_IDS.filter(
+                    (memberId) =>
+                      memberId !== "research_lead" && memberId !== "risk_lead" && memberId !== "pm",
+                  ),
+                },
+              ],
+            },
+          ],
+        }
+      : {}),
     sourceThreadId: recordId,
     tradeDecision,
     createdAt: createdAtIso,
@@ -307,6 +379,7 @@ export function getStagingMockTimeline(
       confidence: 0.74,
       severity: "high",
       evidence: btcEvidence,
+      schemaVersion: 2,
     }),
     makeDecisionRecord({
       symbol: "ETH",

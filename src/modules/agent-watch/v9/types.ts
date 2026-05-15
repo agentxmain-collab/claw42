@@ -60,6 +60,7 @@ export interface DispatchMessage {
   agentName: string;
   time: string;
   dataAge?: string;
+  roundLabel?: string;
   mentions: string[];
   quote?: {
     agentName: string;

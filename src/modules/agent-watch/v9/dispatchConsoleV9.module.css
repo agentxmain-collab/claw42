@@ -960,6 +960,16 @@
   color: #ff8b80;
   letter-spacing: 0.02em;
 }
+.root :global(.msg-round) {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border: 1px solid rgba(209, 255, 85, 0.2);
+  border-radius: 999px;
+  color: var(--lime);
+  background: rgba(209, 255, 85, 0.08);
+  letter-spacing: 0.02em;
+}
 .root :global(.msg-time) {
   font-size: 10px;
   color: var(--fg-3);

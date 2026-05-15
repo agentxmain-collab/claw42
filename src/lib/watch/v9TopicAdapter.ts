@@ -1,4 +1,4 @@
-import type { DispatchV10OutcomeDict, Locale } from "@/i18n/types";
+import type { DispatchV10OutcomeDict, DispatchV10RoundDict, Locale } from "@/i18n/types";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import {
   getDispatchAgentDisplayName,
@@ -32,6 +32,7 @@ export interface V9AdapterContext {
   followStatsByRecordId?: Readonly<Record<string, FollowStatsSnapshot | undefined>>;
   locale: Locale;
   outcomeDict: DispatchV10OutcomeDict;
+  roundDict: DispatchV10RoundDict;
   now?: number;
 }
 
@@ -78,6 +79,13 @@ function formatPrice(value: number) {
 
 function replaceVars(template: string, vars: Readonly<Record<string, string | number>>) {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(vars[key] ?? ""));
+}
+
+function formatRoundLabel(round: number, maxRound: number, roundDict: DispatchV10RoundDict) {
+  return replaceVars(roundDict.separator, {
+    round,
+    mode: maxRound > 1 ? roundDict.multi : roundDict.single,
+  });
 }
 
 function formatEntry(entryRange: TradeDecision["entryRange"], entryPrice: number | null) {
@@ -227,13 +235,51 @@ function makeRationaleMessages({
   topicId,
   locale,
   now,
+  roundDict,
 }: {
   event: PmDecisionTimelineEvent;
   topicId: string;
   locale: Locale;
   now: number;
+  roundDict: DispatchV10RoundDict;
 }) {
   const directionHint = renderableTradeDecision(event)?.direction;
+  const roundEntries = Array.isArray(event.payload.rounds) ? event.payload.rounds : [];
+  if (roundEntries.length > 0) {
+    const maxRound = Math.max(1, ...roundEntries.map((entry) => entry.round));
+    return Array.from(new Set(roundEntries.map((entry) => entry.round)))
+      .sort((a, b) => a - b)
+      .flatMap((round): DispatchMessage[] => {
+        let roundLabelUsed = false;
+        return TEAM_MESSAGE_ORDER.flatMap((memberId): DispatchMessage[] => {
+          const entry = roundEntries.find(
+            (candidate) => candidate.round === round && candidate.memberId === memberId,
+          );
+          const rationale = entry?.rationale.trim();
+          if (!rationale) return [];
+          const agentId = mapTeamMemberToDispatchAgent(memberId, directionHint);
+          const stage = stageForMember(memberId);
+          const roundLabel = roundLabelUsed
+            ? undefined
+            : formatRoundLabel(round, maxRound, roundDict);
+          roundLabelUsed = true;
+          return [
+            {
+              id: `${event.payload.recordId}-${memberId}-round-${round}`,
+              stageId: stageId(topicId, stage),
+              agentId,
+              agentName: getDispatchAgentDisplayName(agentId, locale, memberId),
+              time: formatTime(event.ts),
+              dataAge: formatDataAge(event.ts, now),
+              roundLabel,
+              mentions: [],
+              content: rationale,
+            },
+          ];
+        });
+      });
+  }
+
   const rationaleByMember = event.payload.rationaleByMember ?? {};
   return TEAM_MESSAGE_ORDER.flatMap((memberId): DispatchMessage[] => {
     const rationale = rationaleByMember[memberId]?.trim();
@@ -371,15 +417,32 @@ function makeMessages(
   now: number,
   hasRationale: boolean,
   outcomeDict: DispatchV10OutcomeDict,
+  roundDict: DispatchV10RoundDict,
 ) {
   const topicId = group.id;
   const event = group.latestDecision;
   return [
-    ...makeRationaleMessages({ event, topicId, locale, now }),
+    ...makeRationaleMessages({ event, topicId, locale, now, roundDict }),
     makeTraderMessage(topicId, event, locale, hasRationale),
     makePmMessage(topicId, event, locale),
     makeResolutionMessage(topicId, event, locale, now, outcomeDict),
   ].filter((message): message is DispatchMessage => Boolean(message));
+}
+
+function hasEventRationale(event: PmDecisionTimelineEvent) {
+  return (
+    Object.values(event.payload.rationaleByMember ?? {}).some((value) => value?.trim()) ||
+    (event.payload.rounds ?? []).some((round) => round.rationale.trim())
+  );
+}
+
+function hasMemoryLoopRationale(event: PmDecisionTimelineEvent) {
+  return Boolean(
+    event.payload.rationaleByMember?.memory_loop?.trim() ||
+    (event.payload.rounds ?? []).some(
+      (round) => round.memberId === "memory_loop" && round.rationale.trim(),
+    ),
+  );
 }
 
 function makeStrategy(
@@ -498,10 +561,8 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
     const tradeDecision = renderableTradeDecision(latest);
     const confidence = tradeDecision?.confidence;
     const hasTradeDecision = Boolean(tradeDecision);
-    const hasRationale = Object.values(latest.payload.rationaleByMember ?? {}).some((value) =>
-      value?.trim(),
-    );
-    const hasMemoryLoop = Boolean(latest.payload.rationaleByMember?.memory_loop?.trim());
+    const hasRationale = hasEventRationale(latest);
+    const hasMemoryLoop = hasMemoryLoopRationale(latest);
     const status = hasTradeDecision ? "done" : hasRationale ? "active" : "pending";
 
     return {
@@ -529,7 +590,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         hasMemoryLoop,
         ctx.outcomeDict,
       ),
-      messages: makeMessages(group, ctx.locale, now, hasRationale, ctx.outcomeDict),
+      messages: makeMessages(group, ctx.locale, now, hasRationale, ctx.outcomeDict, ctx.roundDict),
       strategy: makeStrategy(group, ctx.followStatsByRecordId?.[recordId], hasRationale),
       defaultCollapsed: index > 0,
     };

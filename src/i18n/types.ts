@@ -114,6 +114,13 @@ export type DispatchV10OutcomeDict = {
   };
 };
 
+export type DispatchV10RoundDict = {
+  label: string;
+  separator: string;
+  single: string;
+  multi: string;
+};
+
 export type DispatchV10Dict = {
   ariaLabel: string;
   hero: {
@@ -133,6 +140,7 @@ export type DispatchV10Dict = {
   };
   roles: Record<DispatchV10AgentRoleId, DispatchV10RoleDict>;
   outcome: DispatchV10OutcomeDict;
+  round: DispatchV10RoundDict;
   flow: {
     ariaLabel: string;
     stages: DispatchV10StageDict[];

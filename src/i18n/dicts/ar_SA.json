@@ -694,6 +694,12 @@
         "title": "Copy-trading is in development",
         "body": "Recorded the placeholder action \"{action}\". This version does not execute trades; authorization and risk confirmation will be connected later.",
         "close": "Back to console"
+      },
+      "round": {
+        "label": "الجولة {round}",
+        "separator": "الجولة {round} · {mode}",
+        "single": "جولة واحدة",
+        "multi": "نقاش متعدد الجولات"
       }
     }
   },

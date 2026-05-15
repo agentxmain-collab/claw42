@@ -13,6 +13,23 @@ export type DecisionResolutionReason =
   | "stop_loss_reached"
   | "evaluation_window_elapsed";
 
+export type StrategyDecisionRecordSchemaVersion = 1 | 2;
+
+export interface AnalystInputRoundRecord {
+  /** One-based round number inside the PM decision debate. */
+  round: number;
+  /** Directional stance from this analyst during this round. */
+  direction: Extract<DebateDirection, "long" | "short"> | "neutral";
+  /** Normalized 0-1 confidence from the analyst output during this round. */
+  confidence: number;
+  /** Short rationale preserved for later audit and track-record explanation. */
+  rationale: string;
+  /** Structured evidence ids cited during this round. */
+  evidenceIds: string[];
+  /** ISO timestamp when this round output was observed. */
+  observedAt: string;
+}
+
 export interface AnalystInputRecord {
   /** Team member who contributed this input. */
   memberId: TeamMemberId;
@@ -24,6 +41,8 @@ export interface AnalystInputRecord {
   rationale: string;
   /** Structured evidence ids; populated by the news citation layer in spec-4. */
   evidenceIds: string[];
+  /** Optional multi-round trace. Missing means legacy schema v1 single-round input. */
+  rounds?: AnalystInputRoundRecord[];
 }
 
 export type DecisionStageTraceId =
@@ -35,6 +54,21 @@ export type DecisionStageTraceId =
   | "public_timeline";
 
 export type DecisionStageTraceStatus = "done" | "pending" | "skipped" | "failed";
+
+export interface DispatchStageRoundRecord {
+  /** One-based round number inside this compressed internal stage. */
+  round: number;
+  /** Short stable label for debugging and future replay. */
+  label: string;
+  /** Current round status at record creation time. */
+  status: DecisionStageTraceStatus;
+  /** ISO timestamp when this round was observed by the pipeline. */
+  observedAt: string;
+  /** Team members involved in this round, when applicable. */
+  memberIds?: TeamMemberId[];
+  /** Optional short machine-readable detail. */
+  note?: string;
+}
 
 export interface DecisionStageTraceEntry {
   /** Internal compressed pipeline stage id. This is not the public V9 stage id. */
@@ -59,13 +93,15 @@ export interface DecisionStageTraceEntry {
   modelProvider?: string;
   /** Internal prompt version used by this stage, if known. Not part of public trace. */
   promptVersion?: string;
+  /** Optional multi-round trace for schema v2 records. */
+  rounds?: DispatchStageRoundRecord[];
 }
 
 export interface StrategyDecisionRecord {
   /** Stable record id. */
   id: string;
   /** Schema version for future migrations. */
-  schemaVersion: 1;
+  schemaVersion: StrategyDecisionRecordSchemaVersion;
   /** Origin of this record: real live output, paper output, old legacy replay, or backtest. */
   recordSource: RecordSource;
   /** Uppercase market symbol such as BTC or ETH. */

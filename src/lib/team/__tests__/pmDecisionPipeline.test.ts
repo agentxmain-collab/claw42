@@ -198,7 +198,7 @@ describe("runPmDecisionPipeline", () => {
     expect(result?.record.id).toBe("pm:BTC:1778407200000");
     expect(result?.record.locale).toBe("zh_CN");
     expect(result?.publicTimelineEntry.locale).toBe("zh_CN");
-    expect(generateAnalystOutput).toHaveBeenCalledTimes(11);
+    expect(generateAnalystOutput).toHaveBeenCalledTimes(22);
     expect(generateLeadOutput).toHaveBeenCalledTimes(2);
     expect(generateTradeDecision).toHaveBeenCalledTimes(1);
     expect(generateTradeDecision).toHaveBeenCalledWith(
@@ -229,6 +229,7 @@ describe("runPmDecisionPipeline", () => {
     ).toBe("done");
     expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
     const writtenRecord = recordStrategyDecisionRecord.mock.calls[0]?.[0] as StrategyDecisionRecord;
+    expect(writtenRecord.schemaVersion).toBe(2);
     expect(writtenRecord.stageTrace?.map((stage) => stage.stageId)).toEqual([
       "analyst_inputs",
       "research_lead",
@@ -252,10 +253,14 @@ describe("runPmDecisionPipeline", () => {
         "conservative_reviewer",
         "memory_loop",
       ],
-      note: "11 analyst outputs",
+      note: "22 analyst round outputs",
       startedAt: expect.any(String),
       completedAt: expect.any(String),
       durationMs: expect.any(Number),
+      rounds: [
+        expect.objectContaining({ round: 1, memberIds: expect.any(Array) }),
+        expect.objectContaining({ round: 2, memberIds: expect.any(Array) }),
+      ],
     });
     expect(writtenRecord.contributorIds).toHaveLength(14);
     expect(writtenRecord.analystInputs).toHaveLength(14);
@@ -275,6 +280,13 @@ describe("runPmDecisionPipeline", () => {
       "risk_lead",
       "pm",
     ]);
+    expect(
+      writtenRecord.analystInputs.find((input) => input.memberId === "memory_loop")?.rounds,
+    ).toHaveLength(2);
+    expect(writtenRecord.analystInputs.find((input) => input.memberId === "pm")?.rounds).toEqual([
+      expect.objectContaining({ round: 2, rationale: expect.stringContaining("ETF inflow") }),
+    ]);
+    expect(result.publicTimelineEntry.payload.rounds).toHaveLength(25);
     expect(writtenRecord.stageTrace?.[0]?.durationMs).toBeGreaterThanOrEqual(0);
     expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("note");
     expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("startedAt");
