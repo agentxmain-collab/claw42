@@ -110,6 +110,13 @@ export interface DispatchTopic {
   stages: DispatchStageMarker[];
   messages: DispatchMessage[];
   strategy: DispatchStrategy;
+  topicRanking?: {
+    score: number;
+    intensity: number;
+    rank: number;
+    rankLabel: string;
+    explanation: string;
+  };
   defaultCollapsed: boolean;
 }
 

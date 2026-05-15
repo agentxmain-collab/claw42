@@ -1378,6 +1378,31 @@
   font-weight: 800;
 }
 
+.root :global(.topic-ranking) {
+  margin: -10px 22px 22px;
+  padding: 10px 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(209, 255, 85, 0.12);
+  border-radius: 12px;
+  background: rgba(209, 255, 85, 0.035);
+  color: var(--fg-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.root :global(.topic-ranking-label) {
+  flex: 0 0 auto;
+  color: var(--lime);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.root :global(.topic-ranking-text) {
+  min-width: 0;
+}
+
 .root::after {
   content: "";
   position: absolute;

@@ -8,6 +8,7 @@ import type {
   DispatchV10OutcomeDict,
   DispatchV10RoundDict,
   DispatchV10StageStatusDict,
+  DispatchV10TopicRankingDict,
   Locale,
 } from "@/i18n/types";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
@@ -74,6 +75,15 @@ const STAGE_STATUS_DICTS: Record<
   ja_JP: (jaJP as Dict).agentWatch.dispatchV10.stageStatus,
   ar_SA: (arSA as Dict).agentWatch.dispatchV10.stageStatus,
 };
+const TOPIC_RANKING_DICTS: Record<
+  "zh_CN" | "en_US" | "ja_JP" | "ar_SA",
+  DispatchV10TopicRankingDict
+> = {
+  zh_CN: (zhCN as Dict).agentWatch.dispatchV10.topicRanking,
+  en_US: (enUS as Dict).agentWatch.dispatchV10.topicRanking,
+  ja_JP: (jaJP as Dict).agentWatch.dispatchV10.topicRanking,
+  ar_SA: (arSA as Dict).agentWatch.dispatchV10.topicRanking,
+};
 
 function outcomeDictFor(locale: Locale) {
   return OUTCOME_DICTS[(locale as keyof typeof OUTCOME_DICTS) ?? "zh_CN"] ?? OUTCOME_DICTS.zh_CN;
@@ -90,11 +100,22 @@ function stageStatusDictFor(locale: Locale) {
   );
 }
 
+function topicRankingDictFor(locale: Locale) {
+  return (
+    TOPIC_RANKING_DICTS[(locale as keyof typeof TOPIC_RANKING_DICTS) ?? "zh_CN"] ??
+    TOPIC_RANKING_DICTS.zh_CN
+  );
+}
+
 function mapTopics(
-  ctx: Omit<V9AdapterContext, "outcomeDict" | "roundDict" | "stageStatusDict"> & {
+  ctx: Omit<
+    V9AdapterContext,
+    "outcomeDict" | "roundDict" | "stageStatusDict" | "topicRankingDict"
+  > & {
     outcomeDict?: DispatchV10OutcomeDict;
     roundDict?: DispatchV10RoundDict;
     stageStatusDict?: DispatchV10StageStatusDict;
+    topicRankingDict?: DispatchV10TopicRankingDict;
   },
 ) {
   return mapPublicTimelineEventsToTopics({
@@ -102,6 +123,7 @@ function mapTopics(
     outcomeDict: ctx.outcomeDict ?? outcomeDictFor(ctx.locale),
     roundDict: ctx.roundDict ?? roundDictFor(ctx.locale),
     stageStatusDict: ctx.stageStatusDict ?? stageStatusDictFor(ctx.locale),
+    topicRankingDict: ctx.topicRankingDict ?? topicRankingDictFor(ctx.locale),
   });
 }
 
@@ -195,7 +217,14 @@ describe("mapPublicTimelineEventsToTopics", () => {
       title: "BTC 实时行情分析 · ETF outflows rise and support is under pressure",
       originalUrl: "https://example.com/btc",
       sourceLabel: "CoinDesk",
-      intensity: 3,
+      intensity: 5,
+      topicRanking: {
+        score: 87,
+        intensity: 5,
+        rank: 1,
+        rankLabel: "排序 #1",
+        explanation: "BTC 因 1 条新闻 + 78% 置信度排第 1",
+      },
       trigger: {
         ticker: "$BTC",
         text: "ETF outflows rise and support is under pressure",
@@ -323,6 +352,56 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topics.map((topic) => topic.id)).toEqual(["eth-record", "btc-record"]);
+  });
+
+  it("orders strategy topics by ranking score before generated time", () => {
+    const lowerScoreNewerDecision: TradeDecision = {
+      ...tradeDecision,
+      id: "trade-eth-lower",
+      symbol: "ETH",
+      generatedAt: new Date(now - 5 * 60 * 1000).toISOString(),
+      confidence: 0.41,
+    };
+    const higherScoreOlderDecision: TradeDecision = {
+      ...tradeDecision,
+      id: "trade-btc-higher",
+      symbol: "BTC",
+      generatedAt: new Date(now - 30 * 60 * 1000).toISOString(),
+      confidence: 0.93,
+    };
+    const btcEvent = pmDecisionWithRecordId("btc-record", {
+      id: "btc-event",
+      ts: now - 10 * 60 * 1000,
+      payload: {
+        kind: "pm_decision",
+        recordId: "btc-record",
+        symbol: "BTC",
+        tradeDecision: higherScoreOlderDecision,
+        rationaleByMember: { research_lead: "BTC higher score." },
+        citationsByMember: {},
+      },
+    });
+    const ethEvent = pmDecisionWithRecordId("eth-record", {
+      id: "eth-event",
+      ts: now,
+      payload: {
+        kind: "pm_decision",
+        recordId: "eth-record",
+        symbol: "ETH",
+        tradeDecision: lowerScoreNewerDecision,
+        rationaleByMember: { research_lead: "ETH newer but lower score." },
+        citationsByMember: {},
+      },
+    });
+
+    const topics = mapTopics({
+      events: [ethEvent, btcEvent],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topics.map((topic) => topic.id)).toEqual(["btc-record", "eth-record"]);
+    expect(topics.map((topic) => topic.topicRanking?.rankLabel)).toEqual(["排序 #1", "排序 #2"]);
   });
 
   it("maps three complete real-shaped decision flows into stable topic cards", () => {

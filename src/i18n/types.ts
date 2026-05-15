@@ -129,6 +129,11 @@ export type DispatchV10StageStatusDict = {
   memoryPending: string;
 };
 
+export type DispatchV10TopicRankingDict = {
+  explanation_template: string;
+  rank_label: string;
+};
+
 export type DispatchV10Dict = {
   ariaLabel: string;
   hero: {
@@ -150,6 +155,7 @@ export type DispatchV10Dict = {
   outcome: DispatchV10OutcomeDict;
   round: DispatchV10RoundDict;
   stageStatus: DispatchV10StageStatusDict;
+  topicRanking: DispatchV10TopicRankingDict;
   flow: {
     ariaLabel: string;
     stages: DispatchV10StageDict[];

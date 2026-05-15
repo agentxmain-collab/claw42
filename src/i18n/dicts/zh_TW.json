@@ -707,6 +707,10 @@
         "in_progressNote": "該階段正在寫入部分結果",
         "done": "已完成",
         "memoryPending": "復盤等待結果回寫"
+      },
+      "topicRanking": {
+        "explanation_template": "{symbol} 因 {news_count} 條新聞 + {confidence}% 置信度排第 {rank}",
+        "rank_label": "排序 #{rank}"
       }
     }
   },

@@ -707,6 +707,10 @@
         "in_progressNote": "Esta fase está escribiendo una actualización parcial",
         "done": "Completado",
         "memoryPending": "La revisión espera el resultado"
+      },
+      "topicRanking": {
+        "explanation_template": "{symbol} ocupa el #{rank} por {news_count} noticias + {confidence}% de confianza",
+        "rank_label": "Rango #{rank}"
       }
     }
   },

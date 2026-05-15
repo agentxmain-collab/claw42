@@ -707,6 +707,10 @@
         "in_progressNote": "この段階は部分更新を書き込み中です",
         "done": "完了",
         "memoryPending": "結果の書き戻し待ち"
+      },
+      "topicRanking": {
+        "explanation_template": "{symbol} は {news_count} 件のニュース + {confidence}% の信頼度で第 {rank} 位",
+        "rank_label": "順位 #{rank}"
       }
     }
   },
