@@ -733,6 +733,15 @@
         "hit_sl": "Stop loss déclenché",
         "expired": "Expiré",
         "manual_close": "Fermé manuellement"
+      },
+      "followTrade": {
+        "disabled_label": "Mode démo",
+        "disabled_tooltip": "Mode démo : aucun ordre réel ne sera placé",
+        "safety_copy": "Aucun ordre réel · autorisation et confirmation du risque viendront ensuite",
+        "mock_label": "Suivi simulé",
+        "mock_success": "Suivi simulé exécuté",
+        "mock_fail": "Échec du suivi simulé",
+        "real_label_future": "Suivre"
       }
     }
   },

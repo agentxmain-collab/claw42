@@ -733,6 +733,15 @@
         "hit_sl": "Stop loss activado",
         "expired": "Expirado",
         "manual_close": "Cerrado manualmente"
+      },
+      "followTrade": {
+        "disabled_label": "Modo demo",
+        "disabled_tooltip": "Modo demo: no se colocará ninguna orden real",
+        "safety_copy": "Sin orden real · autorización y confirmación de riesgo llegarán después",
+        "mock_label": "Seguimiento simulado",
+        "mock_success": "Seguimiento simulado ejecutado",
+        "mock_fail": "Falló el seguimiento simulado",
+        "real_label_future": "Seguir"
       }
     }
   },

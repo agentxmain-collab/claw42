@@ -733,6 +733,15 @@
         "hit_sl": "損切り到達",
         "expired": "期限切れ",
         "manual_close": "手動クローズ"
+      },
+      "followTrade": {
+        "disabled_label": "デモモード",
+        "disabled_tooltip": "デモモード：実注文は送信されません",
+        "safety_copy": "実注文なし · 認可とリスク確認は後続で接続",
+        "mock_label": "模擬フォロー",
+        "mock_success": "模擬フォロー約定",
+        "mock_fail": "模擬フォロー失敗",
+        "real_label_future": "フォロー"
       }
     }
   },

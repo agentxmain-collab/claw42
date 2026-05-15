@@ -73,6 +73,7 @@ export function AgentWatchBoard({
   const stageStatusDict = t.agentWatch.dispatchV10.stageStatus;
   const topicRankingDict = t.agentWatch.dispatchV10.topicRanking;
   const historyDict = t.agentWatch.dispatchV10.history;
+  const followTradeDict = t.agentWatch.dispatchV10.followTrade;
   const [timelineEvents, setTimelineEvents] = useState<PublicTimelineEvent[]>([]);
   const [timelineEvidenceMap, setTimelineEvidenceMap] = useState<Record<string, NewsEvidence>>({});
   const [followStatsByRecordId, setFollowStatsByRecordId] = useState<
@@ -557,6 +558,7 @@ export function AgentWatchBoard({
         onViewChange={setActiveDispatchView}
         onTopicAction={handleTopicAction}
         marketSnapshot={null}
+        followTradeDict={followTradeDict}
       />
       <HistoryWall
         open={historyOpen}

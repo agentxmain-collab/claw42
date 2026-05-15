@@ -157,6 +157,16 @@ export type DispatchV10HistoryDict = {
   manual_close: string;
 };
 
+export type DispatchV10FollowTradeDict = {
+  disabled_label: string;
+  disabled_tooltip: string;
+  safety_copy: string;
+  mock_label: string;
+  mock_success: string;
+  mock_fail: string;
+  real_label_future: string;
+};
+
 export type DispatchV10Dict = {
   ariaLabel: string;
   hero: {
@@ -180,6 +190,7 @@ export type DispatchV10Dict = {
   stageStatus: DispatchV10StageStatusDict;
   topicRanking: DispatchV10TopicRankingDict;
   history: DispatchV10HistoryDict;
+  followTrade: DispatchV10FollowTradeDict;
   flow: {
     ariaLabel: string;
     stages: DispatchV10StageDict[];
