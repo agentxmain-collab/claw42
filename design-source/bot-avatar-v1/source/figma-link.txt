@@ -1,0 +1,4 @@
+No Figma source link is available for bot-avatar-v1 at intake time.
+
+Canonical editable source:
+design-source/bot-avatar-v1/source/bot-base.svg

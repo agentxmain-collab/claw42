@@ -1,0 +1,42 @@
+{
+  "asset": "bot-avatar-v1",
+  "canonicalSource": "source/bot-base.svg",
+  "tokens": {
+    "bot": {
+      "shellPurpleLight": "#6d4be8",
+      "shellPurpleMid": "#4320a8",
+      "shellPurpleDark": "#2d1578",
+      "shellPurpleDeep": "#1a0b45",
+      "outlineLime": "#bfff32",
+      "sideModuleStrokeBlue": "#4a83d8",
+      "footDeepPurple": "#21115c"
+    },
+    "face": {
+      "screenTop": "#111421",
+      "screenMid": "#050812",
+      "screenBottom": "#02040a",
+      "screenScanline": "#5ee2ff",
+      "screenHighlightStroke": "#3d4a72"
+    },
+    "eyes": {
+      "eyeCore": "#97ecff",
+      "eyeMid": "#63d8ff",
+      "eyeEdge": "#1597d4",
+      "eyeGlow": "#6ee4ff",
+      "eyeOuterGlow": "#3aa7ff"
+    },
+    "background": {
+      "bgCenter": "#24124f",
+      "bgMid": "#12091f",
+      "bgEdge": "#080610",
+      "ambientPurple": "#5030c8",
+      "shadow": "#0a0714"
+    },
+    "effects": {
+      "outerLimeGlow": "#c6ff3d",
+      "outerPurpleGlow": "#6e4bff",
+      "screenGlow": "#3aa7ff",
+      "blackShadow": "#000000"
+    }
+  }
+}
