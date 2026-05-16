@@ -169,7 +169,6 @@
   "team": {
     "trackRecord": {
       "title": "團隊戰績牆",
-      "compactTitle": "團隊戰績速覽",
       "subtitle": "14 人 Watch 團隊的公開決策記錄，區分 live / paper / backtest 來源。",
       "totalDecisions": "累計決策",
       "overallWinRate": "整體勝率",
@@ -177,10 +176,8 @@
       "decisions": "決策",
       "wins": "勝出",
       "winRate": "勝率",
-      "lastFiveWinRate": "近5輪",
       "netReturn7d": "7日淨值",
       "sampleSizeSmall": "樣本量較小，僅作觀察",
-      "sampleCautionBadge": "首週樣本不足",
       "noRecords": "暫無公開團隊戰績，新的結構化決策生成後會自動累積。",
       "aiDisclaimer": "AI 生成的市場判斷僅供參考，不構成投資建議。決策風險自負。",
       "source": {

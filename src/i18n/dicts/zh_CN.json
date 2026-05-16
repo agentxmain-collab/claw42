@@ -169,7 +169,6 @@
   "team": {
     "trackRecord": {
       "title": "团队战绩墙",
-      "compactTitle": "团队战绩速览",
       "subtitle": "14 人 Watch 团队的公开决策记录，区分 live / paper / backtest 来源。",
       "totalDecisions": "累计决策",
       "overallWinRate": "整体胜率",
@@ -177,10 +176,8 @@
       "decisions": "决策",
       "wins": "胜出",
       "winRate": "胜率",
-      "lastFiveWinRate": "近5轮",
       "netReturn7d": "7日净值",
       "sampleSizeSmall": "样本量较小，仅作观察",
-      "sampleCautionBadge": "首周样本不足",
       "noRecords": "暂无公开团队战绩，新的结构化决策生成后会自动累积。",
       "aiDisclaimer": "AI 生成的市场判断仅供参考，不构成投资建议。决策风险自负。",
       "source": {

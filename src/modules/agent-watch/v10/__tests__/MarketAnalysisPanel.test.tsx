@@ -48,37 +48,4 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain("新分析进行中");
     expect(html).toContain("完成后自动刷新");
   });
-
-  test("renders compact team track record with sparse sample caution", () => {
-    const html = renderToStaticMarkup(
-      <MarketAnalysisPanel
-        dict={dict}
-        teamTrackRecord={{
-          generatedAt: "2026-05-15T12:00:00.000Z",
-          winrates: [
-            {
-              memberId: "pm",
-              totalDecisions: 1,
-              wins: 1,
-              winRate: 1,
-              lastFiveWinRate: 1,
-              netReturn7d: 3.2,
-              recordSourceMix: {
-                live: 1,
-                paper: 0,
-                legacy: 0,
-                backtest: 0,
-              },
-              sampleSizeWarning: true,
-            },
-          ],
-        }}
-        onPlaceholder={() => undefined}
-      />,
-    );
-
-    expect(html).toContain("团队战绩速览");
-    expect(html).toContain("首周样本不足");
-    expect(html).toContain("首席投资官");
-  });
 });
