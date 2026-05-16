@@ -1245,14 +1245,74 @@
   pointer-events: none;
 }
 
+.dispatchConsoleV10 :global(.topic.candidate-market-overview) {
+  border-color: rgb(255 255 255 / 13%);
+}
+
+.dispatchConsoleV10 :global(.topic.candidate-hotspot) {
+  border-color: rgb(139 92 246 / 22%);
+}
+
 .dispatchConsoleV10 :global(.topic:hover) {
   border-color: rgb(82 39 255 / 46%);
   box-shadow: 0 18px 54px rgb(0 0 0 / 24%);
   transform: translateY(-1px);
 }
 
+.dispatchConsoleV10 :global(.topic.candidate-market-overview:hover) {
+  border-color: rgb(188 195 209 / 30%);
+}
+
+.dispatchConsoleV10 :global(.topic.candidate-hotspot:hover) {
+  border-color: rgb(139 92 246 / 48%);
+}
+
 .dispatchConsoleV10 :global(.topic.done:hover) {
   border-color: rgb(20 167 57 / 42%);
+}
+
+.dispatchConsoleV10 :global(.topic.done.candidate-market-overview:hover) {
+  border-color: rgb(188 195 209 / 30%);
+}
+
+.dispatchConsoleV10 :global(.topic.done.candidate-hotspot:hover) {
+  border-color: rgb(139 92 246 / 48%);
+}
+
+.dispatchConsoleV10 :global(.candidate-type-badge) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 6%);
+  color: var(--fg-2);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dispatchConsoleV10 :global(.candidate-type-badge::before) {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.78;
+}
+
+.dispatchConsoleV10 :global(.candidate-type-badge.candidate-market-overview) {
+  border-color: rgb(188 195 209 / 24%);
+  background: rgb(188 195 209 / 7%);
+  color: rgb(210 216 226 / 78%);
+}
+
+.dispatchConsoleV10 :global(.candidate-type-badge.candidate-hotspot) {
+  border-color: rgb(139 92 246 / 34%);
+  background: rgb(139 92 246 / 11%);
+  color: rgb(190 168 255 / 86%);
 }
 
 .dispatchConsoleV10 :global(.topic-progress) {
@@ -1419,6 +1479,48 @@
     rgb(38 38 38 / 96%)
   );
   box-shadow: 0 14px 36px rgb(0 0 0 / 18%);
+}
+
+.dispatchConsoleV10 :global(.topic.candidate-market-overview .topic-strategy) {
+  border-color: rgb(188 195 209 / 15%);
+  border-left-color: rgb(188 195 209 / 56%);
+  background: linear-gradient(
+    135deg,
+    rgb(188 195 209 / 3.8%),
+    rgb(188 195 209 / 1.4%) 62%,
+    var(--card)
+  );
+}
+
+.dispatchConsoleV10 :global(.topic.candidate-market-overview .topic-strategy:hover) {
+  border-color: rgb(188 195 209 / 32%);
+  background: linear-gradient(
+    135deg,
+    rgb(188 195 209 / 9%),
+    rgb(188 195 209 / 4.5%) 58%,
+    rgb(38 38 38 / 96%)
+  );
+}
+
+.dispatchConsoleV10 :global(.topic.candidate-hotspot .topic-strategy) {
+  border-color: rgb(139 92 246 / 18%);
+  border-left-color: rgb(139 92 246 / 66%);
+  background: linear-gradient(
+    135deg,
+    rgb(139 92 246 / 5%),
+    rgb(139 92 246 / 1.6%) 62%,
+    var(--card)
+  );
+}
+
+.dispatchConsoleV10 :global(.topic.candidate-hotspot .topic-strategy:hover) {
+  border-color: rgb(139 92 246 / 38%);
+  background: linear-gradient(
+    135deg,
+    rgb(139 92 246 / 12%),
+    rgb(139 92 246 / 5.8%) 58%,
+    rgb(38 38 38 / 96%)
+  );
 }
 
 .dispatchConsoleV10 :global(.strategy-latest-badge) {

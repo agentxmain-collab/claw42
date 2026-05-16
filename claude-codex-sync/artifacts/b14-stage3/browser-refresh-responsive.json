@@ -1,0 +1,70 @@
+{
+  "stage": "B14 Stage 3",
+  "baseUrl": "http://127.0.0.1:3214/zh_CN/agent",
+  "generatedAt": "2026-05-16T17:52:56.364Z",
+  "refreshStable": true,
+  "refreshRuns": [
+    {
+      "run": 1,
+      "hash": "1df0e6b186276363",
+      "noHorizontalOverflow": true,
+      "emptyStateVisible": 1
+    },
+    {
+      "run": 2,
+      "hash": "1df0e6b186276363",
+      "noHorizontalOverflow": true,
+      "emptyStateVisible": 1
+    },
+    {
+      "run": 3,
+      "hash": "1df0e6b186276363",
+      "noHorizontalOverflow": true,
+      "emptyStateVisible": 1
+    },
+    {
+      "run": 4,
+      "hash": "1df0e6b186276363",
+      "noHorizontalOverflow": true,
+      "emptyStateVisible": 1
+    },
+    {
+      "run": 5,
+      "hash": "1df0e6b186276363",
+      "noHorizontalOverflow": true,
+      "emptyStateVisible": 1
+    }
+  ],
+  "responsive": [
+    {
+      "name": "desktop-1440",
+      "width": 1440,
+      "height": 1000,
+      "screenshotPath": "claude-codex-sync/artifacts/b14-stage3/desktop-1440.png",
+      "noHorizontalOverflow": true,
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "bodyTextLength": 474
+    },
+    {
+      "name": "desktop-1280",
+      "width": 1280,
+      "height": 800,
+      "screenshotPath": "claude-codex-sync/artifacts/b14-stage3/desktop-1280.png",
+      "noHorizontalOverflow": true,
+      "scrollWidth": 1280,
+      "innerWidth": 1280,
+      "bodyTextLength": 474
+    },
+    {
+      "name": "mobile-390",
+      "width": 390,
+      "height": 900,
+      "screenshotPath": "claude-codex-sync/artifacts/b14-stage3/mobile-390.png",
+      "noHorizontalOverflow": true,
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "bodyTextLength": 469
+    }
+  ]
+}

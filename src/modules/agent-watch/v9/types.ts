@@ -137,6 +137,7 @@ export interface DispatchTopic {
   candidateKey?: string;
   displayTitle?: string;
   symbol: string;
+  lastUpdatedAt?: number;
   execution?: DispatchTopicExecutionMode;
   status: DispatchTopicStatus;
   title: string;

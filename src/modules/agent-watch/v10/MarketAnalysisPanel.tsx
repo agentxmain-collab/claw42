@@ -2,6 +2,11 @@
 
 import React, { useMemo, useState } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
+import {
+  compareDecisionCandidateOrder,
+  normalizeCandidateType,
+  type CandidateType,
+} from "@/lib/watch/decisionCandidate";
 import { IntensityBar } from "../v9/IntensityBar";
 import { TopicBody } from "../v9/TopicBody";
 import type {
@@ -86,18 +91,35 @@ function TopicProgress({ topic, dict }: { topic: DispatchTopic; dict: DispatchV1
   );
 }
 
-function topicRankingScore(topic: DispatchTopic) {
-  return topic.topicRanking?.score ?? -1;
+const CANDIDATE_CLASS: Record<CandidateType, string> = {
+  symbol: "candidate-symbol",
+  market_overview: "candidate-market-overview",
+  hotspot: "candidate-hotspot",
+};
+
+function topicCandidateType(topic: DispatchTopic) {
+  return normalizeCandidateType(topic.candidateType);
+}
+
+function topicCandidateClass(topic: DispatchTopic) {
+  return CANDIDATE_CLASS[topicCandidateType(topic)];
+}
+
+function topicOrderKey(topic: DispatchTopic) {
+  return {
+    candidateType: topic.candidateType,
+    candidateKey: topic.candidateKey ?? topic.symbol,
+    recordId: topic.id,
+    symbol: topic.symbol,
+    score: topic.topicRanking?.score,
+    lastUpdatedAt: topic.lastUpdatedAt,
+  };
 }
 
 function orderTopicsByRanking(topics: DispatchTopic[]) {
-  return topics
-    .map((topic, index) => ({ topic, index }))
-    .sort(
-      (left, right) =>
-        topicRankingScore(right.topic) - topicRankingScore(left.topic) || left.index - right.index,
-    )
-    .map(({ topic }) => topic);
+  return [...topics].sort((left, right) =>
+    compareDecisionCandidateOrder(topicOrderKey(left), topicOrderKey(right)),
+  );
 }
 
 function TopicRankingV10({ topic }: { topic: DispatchTopic }) {
@@ -115,6 +137,17 @@ function hasOriginalUrl(topic: DispatchTopic) {
   return Boolean(topic.originalUrl && topic.originalUrl !== "#");
 }
 
+function TopicCandidateBadge({ topic, dict }: { topic: DispatchTopic; dict: DispatchV10Dict }) {
+  const candidateType = topicCandidateType(topic);
+  if (candidateType === "symbol") return null;
+
+  return (
+    <span className={`candidate-type-badge ${topicCandidateClass(topic)}`}>
+      {dict.market.candidateBadges[candidateType]}
+    </span>
+  );
+}
+
 function TopicHeadV10({
   topic,
   bodyId,
@@ -128,6 +161,7 @@ function TopicHeadV10({
   onToggle: () => void;
   dict: DispatchV10Dict;
 }) {
+  const toggleLabel = topic.displayTitle || topic.title || topic.symbol;
   const liveLabel =
     topic.status === "done"
       ? dict.market.statusDone
@@ -148,11 +182,12 @@ function TopicHeadV10({
         type="button"
         aria-expanded={!collapsed}
         aria-controls={bodyId}
-        aria-label={`${collapsed ? dict.market.expand : dict.market.collapse} ${topic.symbol}`}
+        aria-label={`${collapsed ? dict.market.expand : dict.market.collapse} ${toggleLabel}`}
         onClick={onToggle}
       />
       <div className="topic-eyebrow" aria-live={topic.status === "active" ? "polite" : "off"}>
         <span className="live-tag">{liveLabel}</span>
+        <TopicCandidateBadge topic={topic} dict={dict} />
         <span className="topic-source">
           · {topic.startedAt} · {topic.progress}
         </span>
@@ -215,7 +250,10 @@ function TopicStrategyV10({
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
   const { strategy } = topic;
-  const watchOnly = topic.execution?.watchOnly === true;
+  const candidateType = topicCandidateType(topic);
+  const canRenderFollowTrade = candidateType === "symbol" && topic.execution?.executable === true;
+  const nonFollowableCopy =
+    candidateType === "symbol" ? dict.market.watchOnlyCopy : dict.market.analysisOnlyCopy;
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
   const followStatus =
     topic.status === "pending"
@@ -257,8 +295,10 @@ function TopicStrategyV10({
       />
       <div className="strat-cta">
         <div className="cta-row">
-          {watchOnly ? <span className="watch-only-pill">{dict.market.watchOnlyLabel}</span> : null}
-          {!watchOnly ? (
+          {!canRenderFollowTrade ? (
+            <span className="watch-only-pill">{dict.market.watchOnlyLabel}</span>
+          ) : null}
+          {canRenderFollowTrade ? (
             <button
               className="cta-btn"
               type="button"
@@ -279,8 +319,8 @@ function TopicStrategyV10({
           </button>
         </div>
         <div className="cta-meta" id={followNoteId}>
-          {watchOnly
-            ? `${dict.market.watchOnlyCopy} · ${followStatus}`
+          {!canRenderFollowTrade
+            ? `${nonFollowableCopy} · ${followStatus}`
             : `${dict.followTrade.safety_copy} · ${followStatus}`}
         </div>
       </div>
@@ -301,7 +341,13 @@ function TopicCardV10({
 }) {
   const [collapsed, setCollapsed] = useState(topic.defaultCollapsed);
   const bodyId = `dispatch-v10-topic-${topic.id}`;
-  const topicClassName = ["topic", topic.status, latest && "latest", collapsed && "collapsed"]
+  const topicClassName = [
+    "topic",
+    topic.status,
+    topicCandidateClass(topic),
+    latest && "latest",
+    collapsed && "collapsed",
+  ]
     .filter(Boolean)
     .join(" ");
 

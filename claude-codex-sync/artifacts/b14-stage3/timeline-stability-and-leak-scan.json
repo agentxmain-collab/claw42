@@ -1,0 +1,129 @@
+{
+  "stage": "B14 Stage 3",
+  "deployment": "https://claw42-site-git-feature-b14-3229f2-agentxmain-collabs-projects.vercel.app",
+  "deploymentId": "dpl_6EXn19TKkngagg7Xwwgoj2vpfZD1",
+  "canonicalUrl": "https://claw42-site-fx32ebn8z-agentxmain-collabs-projects.vercel.app",
+  "generatedAt": "2026-05-16T17:58:53.715Z",
+  "samples": {
+    "zh_CN": {
+      "stable": true,
+      "runs": [
+        {
+          "run": 1,
+          "eventsLength": 3,
+          "orderHash": "5e8f2e377b6c8449",
+          "order": [
+            "market_overview:pm:MARKET:1778922000000:watch",
+            "symbol:pm:BILL:1778936451988:watch",
+            "symbol:pm:HYPE:1778926716595:exec"
+          ],
+          "textFieldCount": 62,
+          "leakCount": 0,
+          "leakSamples": []
+        },
+        {
+          "run": 2,
+          "eventsLength": 3,
+          "orderHash": "5e8f2e377b6c8449",
+          "order": [
+            "market_overview:pm:MARKET:1778922000000:watch",
+            "symbol:pm:BILL:1778936451988:watch",
+            "symbol:pm:HYPE:1778926716595:exec"
+          ],
+          "textFieldCount": 62,
+          "leakCount": 0,
+          "leakSamples": []
+        },
+        {
+          "run": 3,
+          "eventsLength": 3,
+          "orderHash": "5e8f2e377b6c8449",
+          "order": [
+            "market_overview:pm:MARKET:1778922000000:watch",
+            "symbol:pm:BILL:1778936451988:watch",
+            "symbol:pm:HYPE:1778926716595:exec"
+          ],
+          "textFieldCount": 62,
+          "leakCount": 0,
+          "leakSamples": []
+        },
+        {
+          "run": 4,
+          "eventsLength": 3,
+          "orderHash": "5e8f2e377b6c8449",
+          "order": [
+            "market_overview:pm:MARKET:1778922000000:watch",
+            "symbol:pm:BILL:1778936451988:watch",
+            "symbol:pm:HYPE:1778926716595:exec"
+          ],
+          "textFieldCount": 62,
+          "leakCount": 0,
+          "leakSamples": []
+        },
+        {
+          "run": 5,
+          "eventsLength": 3,
+          "orderHash": "5e8f2e377b6c8449",
+          "order": [
+            "market_overview:pm:MARKET:1778922000000:watch",
+            "symbol:pm:BILL:1778936451988:watch",
+            "symbol:pm:HYPE:1778926716595:exec"
+          ],
+          "textFieldCount": 62,
+          "leakCount": 0,
+          "leakSamples": []
+        }
+      ]
+    },
+    "en_US": {
+      "stable": true,
+      "runs": [
+        {
+          "run": 1,
+          "eventsLength": 1,
+          "orderHash": "a3fa0c999c0fa39e",
+          "order": ["hotspot:pm:HOTSPOT:1778925600000:watch"],
+          "textFieldCount": 89,
+          "leakCount": 0,
+          "leakSamples": []
+        },
+        {
+          "run": 2,
+          "eventsLength": 1,
+          "orderHash": "a3fa0c999c0fa39e",
+          "order": ["hotspot:pm:HOTSPOT:1778925600000:watch"],
+          "textFieldCount": 89,
+          "leakCount": 0,
+          "leakSamples": []
+        },
+        {
+          "run": 3,
+          "eventsLength": 1,
+          "orderHash": "a3fa0c999c0fa39e",
+          "order": ["hotspot:pm:HOTSPOT:1778925600000:watch"],
+          "textFieldCount": 89,
+          "leakCount": 0,
+          "leakSamples": []
+        },
+        {
+          "run": 4,
+          "eventsLength": 1,
+          "orderHash": "a3fa0c999c0fa39e",
+          "order": ["hotspot:pm:HOTSPOT:1778925600000:watch"],
+          "textFieldCount": 89,
+          "leakCount": 0,
+          "leakSamples": []
+        },
+        {
+          "run": 5,
+          "eventsLength": 1,
+          "orderHash": "a3fa0c999c0fa39e",
+          "order": ["hotspot:pm:HOTSPOT:1778925600000:watch"],
+          "textFieldCount": 89,
+          "leakCount": 0,
+          "leakSamples": []
+        }
+      ]
+    }
+  }
+}

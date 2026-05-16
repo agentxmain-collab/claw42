@@ -22,9 +22,19 @@ describe("follow trade disabled safety state", () => {
   });
 
   test("renders disabled safety copy in the v10 market panel", () => {
+    const executableSymbolTopics = dispatchV10DemoTopics.map((topic) => ({
+      ...topic,
+      candidateType: "symbol" as const,
+      candidateKey: topic.symbol,
+      execution: {
+        executable: true,
+        coinwPair: `${topic.symbol}USDT`,
+        watchOnly: false,
+      },
+    }));
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
-        topics={dispatchV10DemoTopics}
+        topics={executableSymbolTopics}
         dict={dispatchV10Dict}
         onPlaceholder={() => undefined}
       />,
@@ -39,6 +49,8 @@ describe("follow trade disabled safety state", () => {
   test("does not render follow-trade affordance for watch-only topics", () => {
     const watchOnlyTopic = {
       ...dispatchV10DemoTopics[0]!,
+      candidateType: "symbol",
+      candidateKey: "BILL",
       symbol: "BILL",
       execution: {
         executable: false,

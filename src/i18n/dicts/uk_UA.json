@@ -694,8 +694,13 @@
         "newAnalysisRunning": "Новий аналіз виконується",
         "autoRefreshOnComplete": "Автооновлення після завершення",
         "cachedStateLabel": "Кешовані дані",
+        "candidateBadges": {
+          "market_overview": "Ринок",
+          "hotspot": "Тема"
+        },
         "watchOnlyLabel": "Watch only / Не для копіювання",
-        "watchOnlyCopy": "Цей символ поки не можна виконати на CoinW; аналіз показано лише для спостереження."
+        "watchOnlyCopy": "Цей символ поки не можна виконати на CoinW; аналіз показано лише для спостереження.",
+        "analysisOnlyCopy": "Ця картка лише для спостереження й не показує дію копіювання."
       },
       "placeholder": {
         "title": "Copy-trading is in development",

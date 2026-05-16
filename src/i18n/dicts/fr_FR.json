@@ -694,8 +694,13 @@
         "newAnalysisRunning": "Nouvelle analyse en cours",
         "autoRefreshOnComplete": "Actualisation automatique à la fin",
         "cachedStateLabel": "Données en cache",
+        "candidateBadges": {
+          "market_overview": "Marché",
+          "hotspot": "Tendance"
+        },
         "watchOnlyLabel": "Watch only / Suivi impossible",
-        "watchOnlyCopy": "Ce symbole n'est pas encore exécutable sur CoinW ; l'analyse est affichée uniquement pour observation."
+        "watchOnlyCopy": "Ce symbole n'est pas encore exécutable sur CoinW ; l'analyse est affichée uniquement pour observation.",
+        "analysisOnlyCopy": "Cette carte est uniquement destinée à l'observation et n'affiche aucune action de suivi."
       },
       "placeholder": {
         "title": "Copy-trading is in development",
