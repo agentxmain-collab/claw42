@@ -1,0 +1,913 @@
+{
+  "events": [
+    {
+      "id": "pm-decision:pm:HOTSPOT:1779008520000",
+      "ts": 1779008520000,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": [
+        "ev_1qx2vuo",
+        "ev_fpf995",
+        "ev_197zm2k",
+        "ev_h9qzg3",
+        "ev_gjfepb",
+        "ev_1ix04l",
+        "ev_15o8cuq",
+        "ev_rx7an0"
+      ],
+      "locale": "en_US",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:HOTSPOT:1779008520000",
+        "symbol": "HOTSPOT",
+        "candidateType": "hotspot",
+        "candidateKey": "hotspot:manual:stage1:f3d77b7:1",
+        "displayTitle": "Market Narrative Watch",
+        "executable": false,
+        "analysisSummary": "Market Narrative Watch: The team is split between a short thesis anchored by $1B ETF outflows, THORChain exploit, and broad altcoin stress (BILL -27.8%, HYPE -7.13%) and a long thesis betting on CLARITY Act regulatory euphoria as a sentiment catalyst. BTC, ETH, and SOL are in range-bleed mode with no breakout or support test, and Fear & Greed at 31 confirms fear without capitulation volume. The strongest evidence is the synchronized demand-side shock (ETF outflows + exploit + altcoin stress) which has direct price…",
+        "tradeDecision": null,
+        "rationaleByMember": {
+          "fundamental_analyst": "BTC, ETH, SOL, and PENGU remain in range_change watch with no breakout or breakdown. Fear & Greed at 31 (fear) is historically a contrarian zone but lacks a fundamental catalyst here — no shift in macro liquidity, token supply, or protocol revenue is evident. The $1B ETF outflow and THORChain exploit are demand-side and sector headwinds, while the CLARITY Act euphoria spike is a regulatory tailwind. The net fundamental picture is balanced with no dominant edge. A move above 50 on Fear & Greed or a decisive range break would provide a clearer signal.",
+          "news_analyst": "Spot Bitcoin ETFs bled $1B in a week, reversing a six-week inflow streak — a clear demand-side headwind. THORChain confirmed a $10M exploit, adding DeFi sector unease. Fear & Greed at 31 signals bearish sentiment. On the positive side, the US CLARITY Act is generating euphoria per Santiment, and House leaders are pushing for CFTC nominations, suggesting regulatory clarity momentum. Sharplink CEO cited catalysts for Ethereum. Net: headline mix is contradictory, no dominant directional edge. Confidence low.",
+          "chart_analyst": "BTC 78241 (-1.19%), ETH 2179.71 (-1.93%), SOL 86.485 (-2.89%) all in range_change watch, no breakout or breakdown. BILL -27.8% and HYPE -7.13% show acute altcoin stress but are isolated. QNT +9.27% and NIGHT +4.24% lack volume context. Fear & Greed 31 confirms fear but no capitulation spike. Prior views converged on neutral/no-action; no new price structure or volume trigger to shift stance. Setup not actionable until BTC retests 76k or reclaims 80k with volume.",
+          "bullish_researcher": "The CLARITY Act is generating a 'major spike of euphoria' per Santiment, with House leaders pushing CFTC nominations—structural regulatory progress that could flip sentiment. ETH has specific surge catalysts cited by Sharplink CEO. Fear & Greed at 31 (extreme fear) historically marks washout zones before reversals. However, BTC -1.19%, ETH -1.93%, SOL -2.89%, and $1B ETF outflows show near-term liquidation pressure. The long thesis depends on regulatory momentum overcoming this. Invalidation: BTC below 76,000 or CLARITY Act stalling in committee.",
+          "bearish_researcher": "BTC -1.19%, ETH -1.93%, SOL -2.89% show broad risk-off. Spot Bitcoin ETFs bled $1B in a week, reversing a six-week inflow streak. Fear & Greed at 31 signals extreme fear, historically preceding further downside. THORChain's $10M exploit adds DeFi sector unease. BILL -27.8% and HYPE -7.13% indicate acute altcoin stress. QNT +9.27% and NIGHT +4.24% are isolated outliers without sector confirmation. The CLARITY Act euphoria is a counter-narrative but has not translated into price action. Invalidation: BTC reclaims $80K or Fear & Greed rises above 40.",
+          "trader": "BTC 78241 (-1.19%), ETH 2179.71 (-1.93%), SOL 86.485 (-2.89%) all in range_change watch with no breakout or support test. BILL -27.8% and HYPE -7.13% show acute altcoin stress; QNT +9.27% and NIGHT +4.24% are isolated without volume context. Fear & Greed 31 confirms fear but not capitulation. No entry trigger, invalidation level, or liquidity cluster available. Prior views converged on neutral/no-action with confidence 0.15-0.45; no new kline evidence shifts that.",
+          "aggressive_reviewer": "BTC -1.19%, ETH -1.93%, SOL -2.89% show broad, synchronized weakness. BILL -27.8% and HYPE -7.13% confirm acute altcoin stress. Spot Bitcoin ETFs bled $1B in a week, reversing six-week inflows — a demand-side shock. Fear & Greed at 31 (fear) historically precedes further downside before capitulation. THORChain $10M exploit adds DeFi contagion risk. QNT +9.27% and NIGHT +4.24% are isolated outliers without volume or narrative support. CLARITY Act euphoria is a counter-narrative but has not translated into price action — BTC failed to reclaim 80K. Short bias is justified by momentum confirmation and opportunity cost of waiting for a deeper breakdown. Invalidation: BTC reclaims 80K with volume or Fear & Greed rises above 40.",
+          "neutral_reviewer": "BTC, ETH, SOL all in range_change watch with coordinated 24h losses. BILL -27.8% and HYPE -7.13% signal acute altcoin stress, while QNT +9.27% and NIGHT +4.24% show isolated rotation. Fear & Greed at 31 (fear) confirms weak sentiment but not capitulation. On the positive side, CLARITY Act euphoria and ETH catalyst commentary provide a counter-narrative. $1B ETF outflows and THORChain exploit add systemic pressure. Net: downside momentum is real, but regulatory tailwinds prevent a clean short. No entry trigger until BTC reclaims 80K with volume or breaks below 76K.",
+          "conservative_reviewer": "BTC 78,241 (-1.19%), ETH 2,179.71 (-1.93%), SOL 86.485 (-2.89%) all in range bleed without a confirmed support retest. BILL -27.8% and HYPE -7.13% signal acute altcoin stress; QNT +9.27% and NIGHT +4.24% are isolated outliers with no volume context. Fear & Greed at 31 (fear) is consistent with risk-off but not a capitulation spike. Prior views converged on neutral/no-action (confidence 0.30-0.40) with one short (0.65) and one long (0.45). The short thesis has the strongest evidence weight (ETF outflows, exploit, broad selling), but the absence of a defined liquidity zone or stop-loss cluster makes a defensive short premature. Capital preservation dictates waiting for BTC to retest 76,000 or for a volume-backed reversal above 24h VWAP before committing.",
+          "memory_loop": "Historical samples: 1 (open, unresolved). No win/loss baseline to draw on. Prior views range from neutral (0.35-0.40) to short (0.65) to long (0.45), reflecting contradictory signals: CLARITY Act euphoria vs. $1B ETF outflows, Fear & Greed 31, THORChain exploit. Without resolved outcomes, no failure mode or invalidation pattern can be identified. Post-resolution, record outcome, time-to-resolution, and which narrative (regulatory vs. liquidation) dominated. This case seeds the memory baseline.",
+          "onchain_analyst": "BTC, ETH, SOL, and PENGU remain in range-change patterns with no whale accumulation or exchange outflow spike. Fear & Greed at 31 (fear) confirms risk-off sentiment but lacks a capitulation volume signature. No large wallet movements or stablecoin inflows detected to suggest directional conviction. The onchain footprint is flat, supporting a neutral stance until a clear flow anomaly emerges.",
+          "research_lead": "The team is split between a short thesis anchored by $1B ETF outflows, THORChain exploit, and broad altcoin stress (BILL -27.8%, HYPE -7.13%) and a long thesis betting on CLARITY Act regulatory euphoria as a sentiment catalyst. BTC, ETH, and SOL are in range-bleed mode with no breakout or support test, and Fear & Greed at 31 confirms fear without capitulation volume. The strongest evidence is the synchronized demand-side shock (ETF outflows + exploit + altcoin stress) which has direct price impact. The weakest evidence is the CLARITY Act euphoria, which has not translated into price action — BTC failed to reclaim $80K. No coherent thesis exists because the regulatory tailwind is a structural narrative that cannot be traded against the immediate liquidation pressure. The team is waiting for a catalyst: BTC reclaiming $80K with volume or breaking below $76K. Until then, the setup is not actionable.",
+          "risk_lead": "The primary failure mode is a false breakout on the regulatory euphoria narrative. The CLARITY Act spike has not translated into price action—BTC failed to reclaim $80K—while $1B in ETF outflows and a THORChain exploit confirm demand-side erosion. Fear & Greed at 31 without capitulation volume leaves room for another leg down. A short thesis is premature without a defined liquidity zone below 76K; a long thesis lacks price confirmation. The risk blocks action entirely until BTC either reclaims $80K with volume or breaks below 76K, providing a concrete invalidation level.",
+          "pm": "Market Narrative Watch: The team is split between a short thesis anchored by $1B ETF outflows, THORChain exploit, and broad altcoin stress (BILL -27.8%, HYPE -7.13%) and a long thesis betting on CLARITY Act regulatory euphoria as a sentiment catalyst. BTC, ETH, and SOL are in range-bleed mode with no breakout or support test, and Fear & Greed at 31 confirms fear without capitulation volume. The strongest evidence is the synchronized demand-side shock (ETF outflows + exploit + altcoin stress) which has direct price…"
+        },
+        "citationsByMember": {
+          "research_lead": [
+            "ev_1qx2vuo",
+            "ev_fpf995",
+            "ev_197zm2k",
+            "ev_h9qzg3",
+            "ev_gjfepb",
+            "ev_1ix04l",
+            "ev_15o8cuq",
+            "ev_rx7an0"
+          ],
+          "risk_lead": [
+            "ev_1qx2vuo",
+            "ev_fpf995",
+            "ev_197zm2k",
+            "ev_h9qzg3",
+            "ev_gjfepb",
+            "ev_1ix04l",
+            "ev_15o8cuq",
+            "ev_rx7an0"
+          ]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "memberId": "fundamental_analyst",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "BTC, ETH, SOL, and PENGU are all in range-bound patterns, indicating no clear breakout or breakdown momentum. Fear & Greed at 31 (fear territory) suggests market sentiment is risk-averse, which historically can precede reversals but lacks a fundamental trigger here. No material changes in macro liquidity, token supply schedules, or protocol revenues are evident in the provided data. The absence of a catalyst leaves the risk/reward profile ambiguous. A shift above 50 on Fear & Greed or a decisive break of the current range would provide a clearer signal.",
+            "oneLineSummary": "BTC, ETH, SOL, and PENGU show range-bound price action with Fear & Greed at 31, signaling cautious sentiment but no fundamental catalyst for directional conviction.",
+            "detailedRationale": "BTC, ETH, SOL, and PENGU are all in range-bound patterns, indicating no clear breakout or breakdown momentum. Fear & Greed at 31 (fear territory) suggests market sentiment is risk-averse, which historically can precede reversals but lacks a fundamental trigger here. No material changes in macro liquidity, token supply schedules, or protocol revenues are evident in the provided data. The absence of a catalyst leaves the risk/reward profile ambiguous. A shift above 50 on Fear & Greed or a decisive break of the current range would provide a clearer signal.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:11.714Z"
+          },
+          {
+            "round": 2,
+            "memberId": "fundamental_analyst",
+            "direction": "neutral",
+            "confidence": 0.3,
+            "rationale": "BTC, ETH, SOL, and PENGU remain in range_change watch with no breakout or breakdown. Fear & Greed at 31 (fear) is historically a contrarian zone but lacks a fundamental catalyst here — no shift in macro liquidity, token supply, or protocol revenue is evident. The $1B ETF outflow and THORChain exploit are demand-side and sector headwinds, while the CLARITY Act euphoria spike is a regulatory tailwind. The net fundamental picture is balanced with no dominant edge. A move above 50 on Fear & Greed or a decisive range break would provide a clearer signal.",
+            "oneLineSummary": "Range-bound majors, extreme fear at 31, and contradictory flows keep the fundamental setup ambiguous.",
+            "detailedRationale": "BTC, ETH, SOL, and PENGU remain in range_change watch with no breakout or breakdown. Fear & Greed at 31 (fear) is historically a contrarian zone but lacks a fundamental catalyst here — no shift in macro liquidity, token supply, or protocol revenue is evident. The $1B ETF outflow and THORChain exploit are demand-side and sector headwinds, while the CLARITY Act euphoria spike is a regulatory tailwind. The net fundamental picture is balanced with no dominant edge. A move above 50 on Fear & Greed or a decisive range break would provide a clearer signal.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:16.748Z"
+          },
+          {
+            "round": 1,
+            "memberId": "news_analyst",
+            "direction": "neutral",
+            "confidence": 0.4,
+            "rationale": "Spot Bitcoin ETFs saw $1B outflows in a week, breaking a six-week inflow streak — a clear demand-side headwind. THORChain confirmed a $10M exploit, adding DeFi sector unease. Fear & Greed at 31 signals bearish sentiment. On the positive side, the US CLARITY Act is generating euphoria per Santiment, and House leaders are pushing for CFTC nominations, suggesting regulatory clarity momentum. Sharplink CEO cited catalysts for Ethereum. Net: headline mix is contradictory, no dominant directional edge. Confidence low.",
+            "oneLineSummary": "Mixed signals: ETF outflows and THORChain exploit weigh, but CLARITY Act euphoria and Ethereum catalyst talk offer counterweight.",
+            "detailedRationale": "Spot Bitcoin ETFs saw $1B outflows in a week, breaking a six-week inflow streak — a clear demand-side headwind. THORChain confirmed a $10M exploit, adding DeFi sector unease. Fear & Greed at 31 signals bearish sentiment. On the positive side, the US CLARITY Act is generating euphoria per Santiment, and House leaders are pushing for CFTC nominations, suggesting regulatory clarity momentum. Sharplink CEO cited catalysts for Ethereum. Net: headline mix is contradictory, no dominant directional edge. Confidence low.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:07.489Z"
+          },
+          {
+            "round": 2,
+            "memberId": "news_analyst",
+            "direction": "neutral",
+            "confidence": 0.4,
+            "rationale": "Spot Bitcoin ETFs bled $1B in a week, reversing a six-week inflow streak — a clear demand-side headwind. THORChain confirmed a $10M exploit, adding DeFi sector unease. Fear & Greed at 31 signals bearish sentiment. On the positive side, the US CLARITY Act is generating euphoria per Santiment, and House leaders are pushing for CFTC nominations, suggesting regulatory clarity momentum. Sharplink CEO cited catalysts for Ethereum. Net: headline mix is contradictory, no dominant directional edge. Confidence low.",
+            "oneLineSummary": "CLARITY Act euphoria and ETF outflows create a contradictory headline mix; THORChain exploit adds DeFi sector unease.",
+            "detailedRationale": "Spot Bitcoin ETFs bled $1B in a week, reversing a six-week inflow streak — a clear demand-side headwind. THORChain confirmed a $10M exploit, adding DeFi sector unease. Fear & Greed at 31 signals bearish sentiment. On the positive side, the US CLARITY Act is generating euphoria per Santiment, and House leaders are pushing for CFTC nominations, suggesting regulatory clarity momentum. Sharplink CEO cited catalysts for Ethereum. Net: headline mix is contradictory, no dominant directional edge. Confidence low.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:15.601Z"
+          },
+          {
+            "round": 1,
+            "memberId": "chart_analyst",
+            "direction": "neutral",
+            "confidence": 0.3,
+            "rationale": "BTC 78241 -1.19%, ETH 2179.71 -1.93%, SOL 86.485 -2.89%. All three majors in a tight range bleed with no breakout or support test. Fear & Greed 31 signals extreme fear but price has not confirmed a reversal. BILL -27.8% is a sharp outlier but low-cap. No volume or structure trigger to act on. Waiting for a defined level retest or expansion.",
+            "oneLineSummary": "BTC, ETH, SOL all down 1-3% with Fear & Greed at 31; no clear technical setup, standing aside.",
+            "detailedRationale": "BTC 78241 -1.19%, ETH 2179.71 -1.93%, SOL 86.485 -2.89%. All three majors in a tight range bleed with no breakout or support test. Fear & Greed 31 signals extreme fear but price has not confirmed a reversal. BILL -27.8% is a sharp outlier but low-cap. No volume or structure trigger to act on. Waiting for a defined level retest or expansion.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:06.951Z"
+          },
+          {
+            "round": 2,
+            "memberId": "chart_analyst",
+            "direction": "neutral",
+            "confidence": 0.3,
+            "rationale": "BTC 78241 (-1.19%), ETH 2179.71 (-1.93%), SOL 86.485 (-2.89%) all in range_change watch, no breakout or breakdown. BILL -27.8% and HYPE -7.13% show acute altcoin stress but are isolated. QNT +9.27% and NIGHT +4.24% lack volume context. Fear & Greed 31 confirms fear but no capitulation spike. Prior views converged on neutral/no-action; no new price structure or volume trigger to shift stance. Setup not actionable until BTC retests 76k or reclaims 80k with volume.",
+            "oneLineSummary": "Majors range-bound with broad risk-off; no breakout or support test to act on.",
+            "detailedRationale": "BTC 78241 (-1.19%), ETH 2179.71 (-1.93%), SOL 86.485 (-2.89%) all in range_change watch, no breakout or breakdown. BILL -27.8% and HYPE -7.13% show acute altcoin stress but are isolated. QNT +9.27% and NIGHT +4.24% lack volume context. Fear & Greed 31 confirms fear but no capitulation spike. Prior views converged on neutral/no-action; no new price structure or volume trigger to shift stance. Setup not actionable until BTC retests 76k or reclaims 80k with volume.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:16.622Z"
+          },
+          {
+            "round": 1,
+            "memberId": "bullish_researcher",
+            "direction": "long",
+            "confidence": 0.45,
+            "rationale": "The CLARITY Act is the strongest upside catalyst—Santiment reports a 'major spike of euphoria' and House leaders are pushing for CFTC nominations, signaling structural regulatory progress. ETH also has a specific catalyst from Sharplink CEO citing three surge triggers. However, BTC ETFs lost $1B in a week, BTC is down 1.19%, and altcoins like BILL (-27.8%), HYPE (-7.1%), and SOL (-2.89%) show broad risk-off. Fear & Greed at 31 (fear) suggests sentiment is washed out, often a contrarian buy zone. The long thesis rests on regulatory momentum overcoming near-term liquidation pressure. I would abandon the long if BTC breaks below 76,000 or if CLARITY Act stalls in committee.",
+            "oneLineSummary": "Regulatory tailwind from CLARITY Act clashes with heavy ETF outflows and broad altcoin weakness, creating a fragile but real bullish narrative.",
+            "detailedRationale": "The CLARITY Act is the strongest upside catalyst—Santiment reports a 'major spike of euphoria' and House leaders are pushing for CFTC nominations, signaling structural regulatory progress. ETH also has a specific catalyst from Sharplink CEO citing three surge triggers. However, BTC ETFs lost $1B in a week, BTC is down 1.19%, and altcoins like BILL (-27.8%), HYPE (-7.1%), and SOL (-2.89%) show broad risk-off. Fear & Greed at 31 (fear) suggests sentiment is washed out, often a contrarian buy zone. The long thesis rests on regulatory momentum overcoming near-term liquidation pressure. I would abandon the long if BTC breaks below 76,000 or if CLARITY Act stalls in committee.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:09.184Z"
+          },
+          {
+            "round": 2,
+            "memberId": "bullish_researcher",
+            "direction": "long",
+            "confidence": 0.45,
+            "rationale": "The CLARITY Act is generating a 'major spike of euphoria' per Santiment, with House leaders pushing CFTC nominations—structural regulatory progress that could flip sentiment. ETH has specific surge catalysts cited by Sharplink CEO. Fear & Greed at 31 (extreme fear) historically marks washout zones before reversals. However, BTC -1.19%, ETH -1.93%, SOL -2.89%, and $1B ETF outflows show near-term liquidation pressure. The long thesis depends on regulatory momentum overcoming this. Invalidation: BTC below 76,000 or CLARITY Act stalling in committee.",
+            "oneLineSummary": "CLARITY Act euphoria and ETH catalysts offer a contrarian long setup against fear-driven selling.",
+            "detailedRationale": "The CLARITY Act is generating a 'major spike of euphoria' per Santiment, with House leaders pushing CFTC nominations—structural regulatory progress that could flip sentiment. ETH has specific surge catalysts cited by Sharplink CEO. Fear & Greed at 31 (extreme fear) historically marks washout zones before reversals. However, BTC -1.19%, ETH -1.93%, SOL -2.89%, and $1B ETF outflows show near-term liquidation pressure. The long thesis depends on regulatory momentum overcoming this. Invalidation: BTC below 76,000 or CLARITY Act stalling in committee.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:21.726Z"
+          },
+          {
+            "round": 1,
+            "memberId": "bearish_researcher",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "BTC -1.19%, ETH -1.93%, SOL -2.89%, and HYPE -7.13% show broad selling pressure. Spot Bitcoin ETFs bled $1B in a week, reversing a six-week inflow streak. Fear & Greed at 31 signals extreme fear, often preceding further downside. THORChain's $10M exploit adds negative sentiment. QNT +9.27% and NIGHT +4.24% are isolated outliers, not enough to shift the bearish macro. Invalidation: BTC reclaims $80K or Fear & Greed rises above 40.",
+            "oneLineSummary": "Broad crypto weakness, ETF outflows, and Fear & Greed at 31 support a cautious short bias on BTC and major altcoins.",
+            "detailedRationale": "BTC -1.19%, ETH -1.93%, SOL -2.89%, and HYPE -7.13% show broad selling pressure. Spot Bitcoin ETFs bled $1B in a week, reversing a six-week inflow streak. Fear & Greed at 31 signals extreme fear, often preceding further downside. THORChain's $10M exploit adds negative sentiment. QNT +9.27% and NIGHT +4.24% are isolated outliers, not enough to shift the bearish macro. Invalidation: BTC reclaims $80K or Fear & Greed rises above 40.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:12.566Z"
+          },
+          {
+            "round": 2,
+            "memberId": "bearish_researcher",
+            "direction": "short",
+            "confidence": 0.6,
+            "rationale": "BTC -1.19%, ETH -1.93%, SOL -2.89% show broad risk-off. Spot Bitcoin ETFs bled $1B in a week, reversing a six-week inflow streak. Fear & Greed at 31 signals extreme fear, historically preceding further downside. THORChain's $10M exploit adds DeFi sector unease. BILL -27.8% and HYPE -7.13% indicate acute altcoin stress. QNT +9.27% and NIGHT +4.24% are isolated outliers without sector confirmation. The CLARITY Act euphoria is a counter-narrative but has not translated into price action. Invalidation: BTC reclaims $80K or Fear & Greed rises above 40.",
+            "oneLineSummary": "Coordinated selling across majors, $1B ETF outflows, and extreme fear favor continued downside despite isolated regulatory euphoria.",
+            "detailedRationale": "BTC -1.19%, ETH -1.93%, SOL -2.89% show broad risk-off. Spot Bitcoin ETFs bled $1B in a week, reversing a six-week inflow streak. Fear & Greed at 31 signals extreme fear, historically preceding further downside. THORChain's $10M exploit adds DeFi sector unease. BILL -27.8% and HYPE -7.13% indicate acute altcoin stress. QNT +9.27% and NIGHT +4.24% are isolated outliers without sector confirmation. The CLARITY Act euphoria is a counter-narrative but has not translated into price action. Invalidation: BTC reclaims $80K or Fear & Greed rises above 40.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:15.932Z"
+          },
+          {
+            "round": 1,
+            "memberId": "trader",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "BTC at 78,241 with -1.19% 24h, ETH -1.93%, SOL -2.89% — all in range_change watch, no breakout or breakdown confirmation. BILL -27.8% and HYPE -7.13% are sharp but isolated; QNT +9.27% and NIGHT +4.24% lack volume context. Fear & Greed 31 signals extreme fear but not a capitulation spike. No kline structure, liquidity zone, or invalidation level available to anchor an entry. Setup not actionable.",
+            "oneLineSummary": "Broad risk-off with BTC -1.19% and Fear & Greed at 31; no clean entry trigger on any asset.",
+            "detailedRationale": "BTC at 78,241 with -1.19% 24h, ETH -1.93%, SOL -2.89% — all in range_change watch, no breakout or breakdown confirmation. BILL -27.8% and HYPE -7.13% are sharp but isolated; QNT +9.27% and NIGHT +4.24% lack volume context. Fear & Greed 31 signals extreme fear but not a capitulation spike. No kline structure, liquidity zone, or invalidation level available to anchor an entry. Setup not actionable.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:07.571Z"
+          },
+          {
+            "round": 2,
+            "memberId": "trader",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "BTC 78241 (-1.19%), ETH 2179.71 (-1.93%), SOL 86.485 (-2.89%) all in range_change watch with no breakout or support test. BILL -27.8% and HYPE -7.13% show acute altcoin stress; QNT +9.27% and NIGHT +4.24% are isolated without volume context. Fear & Greed 31 confirms fear but not capitulation. No entry trigger, invalidation level, or liquidity cluster available. Prior views converged on neutral/no-action with confidence 0.15-0.45; no new kline evidence shifts that.",
+            "oneLineSummary": "Broad risk-off with BTC -1.19%, ETH -1.93%, SOL -2.89% and Fear & Greed at 31; no actionable kline structure or liquidity zone to anchor a trade.",
+            "detailedRationale": "BTC 78241 (-1.19%), ETH 2179.71 (-1.93%), SOL 86.485 (-2.89%) all in range_change watch with no breakout or support test. BILL -27.8% and HYPE -7.13% show acute altcoin stress; QNT +9.27% and NIGHT +4.24% are isolated without volume context. Fear & Greed 31 confirms fear but not capitulation. No entry trigger, invalidation level, or liquidity cluster available. Prior views converged on neutral/no-action with confidence 0.15-0.45; no new kline evidence shifts that.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:16.316Z"
+          },
+          {
+            "round": 1,
+            "memberId": "aggressive_reviewer",
+            "direction": "wait",
+            "confidence": 0.35,
+            "rationale": "BTC -1.19%, ETH -1.93%, SOL -2.89% show coordinated weakness. Fear & Greed at 31 (Fear) confirms risk-off regime. QNT +9.27% and NIGHT +4.24% are isolated anomalies without volume or narrative support to justify aggressive entry. THORChain exploit ($10M) and $1B ETF outflow add systemic pressure. No momentum cluster to size into. Offense not justified until BTC reclaims 80K with volume.",
+            "oneLineSummary": "Broad market bleed and fear-greed at 31 kill offensive conviction despite isolated green outliers.",
+            "detailedRationale": "BTC -1.19%, ETH -1.93%, SOL -2.89% show coordinated weakness. Fear & Greed at 31 (Fear) confirms risk-off regime. QNT +9.27% and NIGHT +4.24% are isolated anomalies without volume or narrative support to justify aggressive entry. THORChain exploit ($10M) and $1B ETF outflow add systemic pressure. No momentum cluster to size into. Offense not justified until BTC reclaims 80K with volume.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:07.538Z"
+          },
+          {
+            "round": 2,
+            "memberId": "aggressive_reviewer",
+            "direction": "short",
+            "confidence": 0.55,
+            "rationale": "BTC -1.19%, ETH -1.93%, SOL -2.89% show broad, synchronized weakness. BILL -27.8% and HYPE -7.13% confirm acute altcoin stress. Spot Bitcoin ETFs bled $1B in a week, reversing six-week inflows — a demand-side shock. Fear & Greed at 31 (fear) historically precedes further downside before capitulation. THORChain $10M exploit adds DeFi contagion risk. QNT +9.27% and NIGHT +4.24% are isolated outliers without volume or narrative support. CLARITY Act euphoria is a counter-narrative but has not translated into price action — BTC failed to reclaim 80K. Short bias is justified by momentum confirmation and opportunity cost of waiting for a deeper breakdown. Invalidation: BTC reclaims 80K with volume or Fear & Greed rises above 40.",
+            "oneLineSummary": "Coordinated selling pressure across majors, $1B ETF bleed, and extreme fear at 31 favor short bias despite isolated regulatory euphoria.",
+            "detailedRationale": "BTC -1.19%, ETH -1.93%, SOL -2.89% show broad, synchronized weakness. BILL -27.8% and HYPE -7.13% confirm acute altcoin stress. Spot Bitcoin ETFs bled $1B in a week, reversing six-week inflows — a demand-side shock. Fear & Greed at 31 (fear) historically precedes further downside before capitulation. THORChain $10M exploit adds DeFi contagion risk. QNT +9.27% and NIGHT +4.24% are isolated outliers without volume or narrative support. CLARITY Act euphoria is a counter-narrative but has not translated into price action — BTC failed to reclaim 80K. Short bias is justified by momentum confirmation and opportunity cost of waiting for a deeper breakdown. Invalidation: BTC reclaims 80K with volume or Fear & Greed rises above 40.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:17.198Z"
+          },
+          {
+            "round": 1,
+            "memberId": "neutral_reviewer",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "BTC -1.19%, ETH -1.93%, SOL -2.89% reflect a broad risk-off tone. BILL -27.8% and HYPE -7.13% signal acute stress in smaller names, while QNT +9.27% and NIGHT +4.24% show selective capital rotation. Fear & Greed at 31 (fear) confirms sentiment is weak but not extreme enough to trigger a contrarian buy. The THORChain exploit and $1B ETF outflows add to negative headlines, yet the CLARITY Act euphoria spike provides a counter-narrative. The balance of evidence favors no action: downside momentum is real, but the setup lacks the conviction for a short given isolated strength and regulatory tailwinds.",
+            "oneLineSummary": "Broad crypto sell-off with isolated gainers; fear index at 31 suggests caution but not panic capitulation.",
+            "detailedRationale": "BTC -1.19%, ETH -1.93%, SOL -2.89% reflect a broad risk-off tone. BILL -27.8% and HYPE -7.13% signal acute stress in smaller names, while QNT +9.27% and NIGHT +4.24% show selective capital rotation. Fear & Greed at 31 (fear) confirms sentiment is weak but not extreme enough to trigger a contrarian buy. The THORChain exploit and $1B ETF outflows add to negative headlines, yet the CLARITY Act euphoria spike provides a counter-narrative. The balance of evidence favors no action: downside momentum is real, but the setup lacks the conviction for a short given isolated strength and regulatory tailwinds.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:07.865Z"
+          },
+          {
+            "round": 2,
+            "memberId": "neutral_reviewer",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "BTC, ETH, SOL all in range_change watch with coordinated 24h losses. BILL -27.8% and HYPE -7.13% signal acute altcoin stress, while QNT +9.27% and NIGHT +4.24% show isolated rotation. Fear & Greed at 31 (fear) confirms weak sentiment but not capitulation. On the positive side, CLARITY Act euphoria and ETH catalyst commentary provide a counter-narrative. $1B ETF outflows and THORChain exploit add systemic pressure. Net: downside momentum is real, but regulatory tailwinds prevent a clean short. No entry trigger until BTC reclaims 80K with volume or breaks below 76K.",
+            "oneLineSummary": "Broad risk-off with BTC -1.19%, ETH -1.93%, SOL -2.89%; Fear & Greed at 31; conflicting catalysts keep setup balanced but not actionable.",
+            "detailedRationale": "BTC, ETH, SOL all in range_change watch with coordinated 24h losses. BILL -27.8% and HYPE -7.13% signal acute altcoin stress, while QNT +9.27% and NIGHT +4.24% show isolated rotation. Fear & Greed at 31 (fear) confirms weak sentiment but not capitulation. On the positive side, CLARITY Act euphoria and ETH catalyst commentary provide a counter-narrative. $1B ETF outflows and THORChain exploit add systemic pressure. Net: downside momentum is real, but regulatory tailwinds prevent a clean short. No entry trigger until BTC reclaims 80K with volume or breaks below 76K.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:17.152Z"
+          },
+          {
+            "round": 1,
+            "memberId": "conservative_reviewer",
+            "direction": "wait",
+            "confidence": 0.35,
+            "rationale": "BTC 24h -1.19%, ETH -1.93%, SOL -2.89% reflect broad risk-off. Fear & Greed at 31 (extreme fear) historically precedes further downside before capitulation. BILL -27.8% and HYPE -7.13% indicate acute altcoin stress. QNT +9.27% and NIGHT +4.24% are isolated outliers without sector confirmation. No evidence of stop-loss clustering or liquidation cascade to define a floor. Capital preservation favors waiting for either a confirmed support test (e.g., BTC retest of 76k) or a volume-backed reversal above 24h VWAP.",
+            "oneLineSummary": "Broad crypto weakness with BTC -1.19% and Fear & Greed at 31 signals defensive posture; no clear reversal catalyst.",
+            "detailedRationale": "BTC 24h -1.19%, ETH -1.93%, SOL -2.89% reflect broad risk-off. Fear & Greed at 31 (extreme fear) historically precedes further downside before capitulation. BILL -27.8% and HYPE -7.13% indicate acute altcoin stress. QNT +9.27% and NIGHT +4.24% are isolated outliers without sector confirmation. No evidence of stop-loss clustering or liquidation cascade to define a floor. Capital preservation favors waiting for either a confirmed support test (e.g., BTC retest of 76k) or a volume-backed reversal above 24h VWAP.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:07.276Z"
+          },
+          {
+            "round": 2,
+            "memberId": "conservative_reviewer",
+            "direction": "wait",
+            "confidence": 0.3,
+            "rationale": "BTC 78,241 (-1.19%), ETH 2,179.71 (-1.93%), SOL 86.485 (-2.89%) all in range bleed without a confirmed support retest. BILL -27.8% and HYPE -7.13% signal acute altcoin stress; QNT +9.27% and NIGHT +4.24% are isolated outliers with no volume context. Fear & Greed at 31 (fear) is consistent with risk-off but not a capitulation spike. Prior views converged on neutral/no-action (confidence 0.30-0.40) with one short (0.65) and one long (0.45). The short thesis has the strongest evidence weight (ETF outflows, exploit, broad selling), but the absence of a defined liquidity zone or stop-loss cluster makes a defensive short premature. Capital preservation dictates waiting for BTC to retest 76,000 or for a volume-backed reversal above 24h VWAP before committing.",
+            "oneLineSummary": "Broad risk-off with BTC -1.19%, ETH -1.93%, SOL -2.89%; Fear & Greed 31; no structural support test to anchor a defensive entry.",
+            "detailedRationale": "BTC 78,241 (-1.19%), ETH 2,179.71 (-1.93%), SOL 86.485 (-2.89%) all in range bleed without a confirmed support retest. BILL -27.8% and HYPE -7.13% signal acute altcoin stress; QNT +9.27% and NIGHT +4.24% are isolated outliers with no volume context. Fear & Greed at 31 (fear) is consistent with risk-off but not a capitulation spike. Prior views converged on neutral/no-action (confidence 0.30-0.40) with one short (0.65) and one long (0.45). The short thesis has the strongest evidence weight (ETF outflows, exploit, broad selling), but the absence of a defined liquidity zone or stop-loss cluster makes a defensive short premature. Capital preservation dictates waiting for BTC to retest 76,000 or for a volume-backed reversal above 24h VWAP before committing.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:17.155Z"
+          },
+          {
+            "round": 1,
+            "memberId": "memory_loop",
+            "direction": "neutral",
+            "confidence": 0.15,
+            "rationale": "With only 1 historical sample (open, unresolved) and no win/loss baseline, this decision cannot draw on prior failure modes or invalidation memory. The neutral stance reflects the absence of a track record, not a market call. Post-resolution, this case should seed the memory baseline: record outcome, time-to-resolution, and narrative drift. No recurring miss pattern to flag yet.",
+            "oneLineSummary": "First memory seed for this hotspot type; no historical pattern to validate or challenge.",
+            "detailedRationale": "With only 1 historical sample (open, unresolved) and no win/loss baseline, this decision cannot draw on prior failure modes or invalidation memory. The neutral stance reflects the absence of a track record, not a market call. Post-resolution, this case should seed the memory baseline: record outcome, time-to-resolution, and narrative drift. No recurring miss pattern to flag yet.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:07.411Z"
+          },
+          {
+            "round": 2,
+            "memberId": "memory_loop",
+            "direction": "neutral",
+            "confidence": 0.15,
+            "rationale": "Historical samples: 1 (open, unresolved). No win/loss baseline to draw on. Prior views range from neutral (0.35-0.40) to short (0.65) to long (0.45), reflecting contradictory signals: CLARITY Act euphoria vs. $1B ETF outflows, Fear & Greed 31, THORChain exploit. Without resolved outcomes, no failure mode or invalidation pattern can be identified. Post-resolution, record outcome, time-to-resolution, and which narrative (regulatory vs. liquidation) dominated. This case seeds the memory baseline.",
+            "oneLineSummary": "No historical baseline exists; this decision seeds memory for future pattern recognition.",
+            "detailedRationale": "Historical samples: 1 (open, unresolved). No win/loss baseline to draw on. Prior views range from neutral (0.35-0.40) to short (0.65) to long (0.45), reflecting contradictory signals: CLARITY Act euphoria vs. $1B ETF outflows, Fear & Greed 31, THORChain exploit. Without resolved outcomes, no failure mode or invalidation pattern can be identified. Post-resolution, record outcome, time-to-resolution, and which narrative (regulatory vs. liquidation) dominated. This case seeds the memory baseline.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:16.869Z"
+          },
+          {
+            "round": 2,
+            "memberId": "onchain_analyst",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "BTC, ETH, SOL, and PENGU remain in range-change patterns with no whale accumulation or exchange outflow spike. Fear & Greed at 31 (fear) confirms risk-off sentiment but lacks a capitulation volume signature. No large wallet movements or stablecoin inflows detected to suggest directional conviction. The onchain footprint is flat, supporting a neutral stance until a clear flow anomaly emerges.",
+            "oneLineSummary": "All majors range-bound with Fear & Greed at 31; no onchain catalyst to break the stalemate.",
+            "detailedRationale": "BTC, ETH, SOL, and PENGU remain in range-change patterns with no whale accumulation or exchange outflow spike. Fear & Greed at 31 (fear) confirms risk-off sentiment but lacks a capitulation volume signature. No large wallet movements or stablecoin inflows detected to suggest directional conviction. The onchain footprint is flat, supporting a neutral stance until a clear flow anomaly emerges.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:20.312Z"
+          },
+          {
+            "round": 2,
+            "memberId": "research_lead",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "The team is split between a short thesis anchored by $1B ETF outflows, THORChain exploit, and broad altcoin stress (BILL -27.8%, HYPE -7.13%) and a long thesis betting on CLARITY Act regulatory euphoria as a sentiment catalyst. BTC, ETH, and SOL are in range-bleed mode with no breakout or support test, and Fear & Greed at 31 confirms fear without capitulation volume. The strongest evidence is the synchronized demand-side shock (ETF outflows + exploit + altcoin stress) which has direct price impact. The weakest evidence is the CLARITY Act euphoria, which has not translated into price action — BTC failed to reclaim $80K. No coherent thesis exists because the regulatory tailwind is a structural narrative that cannot be traded against the immediate liquidation pressure. The team is waiting for a catalyst: BTC reclaiming $80K with volume or breaking below $76K. Until then, the setup is not actionable.",
+            "oneLineSummary": "The team is split between a short thesis anchored by $1B ETF outflows, THORChai…",
+            "detailedRationale": "The team is split between a short thesis anchored by $1B ETF outflows, THORChain exploit, and broad altcoin stress (BILL -27.8%, HYPE -7.13%) and a long thesis betting on CLARITY Act regulatory euphoria as a sentiment catalyst. BTC, ETH, and SOL are in range-bleed mode with no breakout or support test, and Fear & Greed at 31 confirms fear without capitulation volume. The strongest evidence is the synchronized demand-side shock (ETF outflows + exploit + altcoin stress) which has direct price impact. The weakest evidence is the CLARITY Act euphoria, which has not translated into price action — BTC failed to reclaim $80K. No coherent thesis exists because the regulatory tailwind is a structural narrative that cannot be traded against the immediate liquidation pressure. The team is waiting for a catalyst: BTC reclaiming $80K with volume or breaking below $76K. Until then, the setup is not actionable.",
+            "dataStatus": "ok",
+            "evidenceIds": [
+              "ev_1qx2vuo",
+              "ev_fpf995",
+              "ev_197zm2k",
+              "ev_h9qzg3",
+              "ev_gjfepb",
+              "ev_1ix04l",
+              "ev_15o8cuq",
+              "ev_rx7an0"
+            ],
+            "observedAt": "2026-05-17T09:02:00.000Z"
+          },
+          {
+            "round": 2,
+            "memberId": "risk_lead",
+            "direction": "neutral",
+            "confidence": 0.85,
+            "rationale": "The primary failure mode is a false breakout on the regulatory euphoria narrative. The CLARITY Act spike has not translated into price action—BTC failed to reclaim $80K—while $1B in ETF outflows and a THORChain exploit confirm demand-side erosion. Fear & Greed at 31 without capitulation volume leaves room for another leg down. A short thesis is premature without a defined liquidity zone below 76K; a long thesis lacks price confirmation. The risk blocks action entirely until BTC either reclaims $80K with volume or breaks below 76K, providing a concrete invalidation level.",
+            "oneLineSummary": "The primary failure mode is a false breakout on the regulatory euphoria narrati…",
+            "detailedRationale": "The primary failure mode is a false breakout on the regulatory euphoria narrative. The CLARITY Act spike has not translated into price action—BTC failed to reclaim $80K—while $1B in ETF outflows and a THORChain exploit confirm demand-side erosion. Fear & Greed at 31 without capitulation volume leaves room for another leg down. A short thesis is premature without a defined liquidity zone below 76K; a long thesis lacks price confirmation. The risk blocks action entirely until BTC either reclaims $80K with volume or breaks below 76K, providing a concrete invalidation level.",
+            "dataStatus": "ok",
+            "evidenceIds": [
+              "ev_1qx2vuo",
+              "ev_fpf995",
+              "ev_197zm2k",
+              "ev_h9qzg3",
+              "ev_gjfepb",
+              "ev_1ix04l",
+              "ev_15o8cuq",
+              "ev_rx7an0"
+            ],
+            "observedAt": "2026-05-17T09:02:00.000Z"
+          },
+          {
+            "round": 2,
+            "memberId": "pm",
+            "direction": "neutral",
+            "confidence": 0.5,
+            "rationale": "Market Narrative Watch: The team is split between a short thesis anchored by $1B ETF outflows, THORChain exploit, and broad altcoin stress (BILL -27.8%, HYPE -7.13%) and a long thesis betting on CLARITY Act regulatory euphoria as a sentiment catalyst. BTC, ETH, and SOL are in range-bleed mode with no breakout or support test, and Fear & Greed at 31 confirms fear without capitulation volume. The strongest evidence is the synchronized demand-side shock (ETF outflows + exploit + altcoin stress) which has direct price…",
+            "oneLineSummary": "Market Narrative Watch: The team is split between a short thesis anchored by $1…",
+            "detailedRationale": "Market Narrative Watch: The team is split between a short thesis anchored by $1B ETF outflows, THORChain exploit, and broad altcoin stress (BILL -27.8%, HYPE -7.13%) and a long thesis betting on CLARITY Act regulatory euphoria as a sentiment catalyst. BTC, ETH, and SOL are in range-bleed mode with no breakout or support test, and Fear & Greed at 31 confirms fear without capitulation volume. The strongest evidence is the synchronized demand-side shock (ETF outflows + exploit + altcoin stress) which has direct price…",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-17T09:02:00.000Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-05-17T09:02:00.000Z",
+            "memberIds": [
+              "fundamental_analyst",
+              "news_analyst",
+              "chart_analyst",
+              "onchain_analyst",
+              "bullish_researcher",
+              "bearish_researcher",
+              "trader",
+              "aggressive_reviewer",
+              "neutral_reviewer",
+              "conservative_reviewer",
+              "memory_loop"
+            ]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-05-17T09:02:00.000Z",
+            "memberIds": ["research_lead"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-05-17T09:02:00.000Z",
+            "memberIds": ["risk_lead"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-05-17T09:02:00.000Z",
+            "memberIds": ["pm"]
+          },
+          { "stageId": "record_write", "status": "done", "observedAt": "2026-05-16T15:58:29.161Z" },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-05-16T15:58:29.161Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:HOTSPOT:1778925600000",
+      "ts": 1778925600000,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": [
+        "ev_1qx2vuo",
+        "ev_fpf995",
+        "ev_197zm2k",
+        "ev_h9qzg3",
+        "ev_gjfepb",
+        "ev_1ix04l",
+        "ev_15o8cuq",
+        "ev_rx7an0"
+      ],
+      "locale": "en_US",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:HOTSPOT:1778925600000",
+        "symbol": "HOTSPOT",
+        "candidateType": "hotspot",
+        "candidateKey": "hotspot:manual:stage1:en:1",
+        "displayTitle": "Market Narrative Watch",
+        "executable": false,
+        "analysisSummary": "Market Narrative Watch: The team is collectively neutral with a confidence range of 0.30–0.55, reflecting a market caught between two real forces: a $1B weekly ETF outflow and broad-based selling pressure (BTC -1.27%, ETH -1.78%, SOL -2.95%, BILL -29.34%) versus a genuine regulatory catalyst in the CLARITY Act that has generated euphoria but no price follow-through. The strongest evidence is the ETF outflow data — a concrete, measurable institutional de-risking signal that snapped a six-week inflow streak. The wea…",
+        "tradeDecision": null,
+        "rationaleByMember": {
+          "fundamental_analyst": "The three largest crypto assets remain locked in range-change watch, reflecting a market without directional conviction from macro or tokenomics drivers. Fear & Greed at 31 (fear territory) historically aligns with accumulation zones but has not triggered a reversal. No protocol revenue shifts, unlock schedule changes, or liquidity events are flagged. The $1B weekly ETF outflow cited in prior views is a demand-side headwind, but the CLARITY Act regulatory catalyst introduces a countervailing narrative. Without a concrete fundamental catalyst—rate decision, regulatory clarity, or supply shock—the market remains in a waiting pattern. A break below the lower range bound would invalidate the neutral view; a sustained move above the range top with rising volume would turn cautiously constructive.",
+          "news_analyst": "Spot Bitcoin ETFs bled $1B in a week, snapping a six-week inflow run — a clear institutional demand headwind. THORChain confirmed a $10M exploit, adding DeFi security concerns. Fear & Greed at 31 (fear) confirms weak sentiment. However, the US CLARITY Act is generating a 'major spike of euphoria' per Santiment, and House leaders are pushing for CFTC nominations — genuine regulatory catalysts that could flip sentiment. The ETH catalysts commentary from Sharplink CEO is unconfirmed noise. The balance tilts neutral: downside momentum is real but not extreme enough to short into a regulatory catalyst that could reverse quickly.",
+          "chart_analyst": "BTC 78215.95 (-1.27%), ETH 2181.41 (-1.78%), SOL 86.515 (-2.95%) all remain in range-change watch, no support break or volatility expansion. Fear & Greed 31 confirms weak sentiment but price has not accelerated. QNT +9.66% and NIGHT +3.82% are single-asset moves without sector confirmation. BILL -29.34% is an acute altcoin event, not systemic. No volume spike, no liquidity cluster, no invalidation level. Prior neutral views align: chart structure is directionless drift. Stand aside until a defined range boundary is tested with volume.",
+          "onchain_analyst": "No exchange inflow/outflow spikes, whale transfers, or stablecoin liquidity shifts observed across BTC, ETH, or SOL. The range-change watch on the three largest assets confirms low directional conviction from wallet behavior. PENGU range alert is isolated to one altcoin, not systemic. Fear & Greed at 31 (fear) historically precedes mean reversion, but without onchain accumulation or distribution patterns to anchor a directional read, this is a weak standalone signal. Onchain evidence is too thin to support a long or short bias.",
+          "bullish_researcher": "Fear & Greed at 31 (extreme fear) is a historically reliable contrarian accumulation signal — similar readings in 2023 preceded sharp recoveries. The CLARITY Act is generating genuine regulatory euphoria, with House leaders pushing CFTC nominations, which could catalyze a sentiment flip. QNT +9.66% and NIGHT +3.82% show isolated pockets of strength amid the selloff. However, BTC -1.27%, ETH -1.78%, SOL -2.95% reflect persistent selling pressure, and the $1B weekly ETF bleed is a serious liquidity drain. The long thesis rests on regulatory tailwinds overwhelming short-term liquidation risk. Invalidation: if BTC loses $76k support or ETF outflows accelerate beyond $1.5B/week.",
+          "bearish_researcher": "BTC -1.27%, ETH -1.78%, SOL -2.95%, PENGU -3.09%, ZEC -3.46%, BILL -29.34% — broad-based selling across majors and memes. Spot BTC ETFs bled $1B in a week, snapping a six-week inflow streak. Fear & Greed at 31 (fear). The CLARITY Act 'euphoria' spike is a classic contrarian top signal; legislative catalysts rarely sustain rallies. THORChain's $10M exploit adds DeFi contagion risk. Short bias is supported until BTC reclaims $80K with ETF inflows resuming. Invalidation: BTC reclaims $80K with two consecutive days of ETF net inflows.",
+          "trader": "BTC -1.27%, ETH -1.78%, SOL -2.95% are range-change watches, not breakdowns. No support break, no volume spike, no volatility expansion. BILL -29.34% is isolated altcoin stress, not systemic. Fear & Greed 31 shows sentiment weak but price hasn't accelerated lower. No kline confirmation, no liquidity pocket, no defined invalidation level. Stand aside until price stabilizes or a range boundary is tested with volume.",
+          "aggressive_reviewer": "BTC -1.27%, ETH -1.78%, SOL -2.95%, PENGU -3.09%, ZEC -3.46%, BILL -29.34% — broad-based distribution with no reversal structure. Spot BTC ETFs bled $1B in a week, snapping a six-week inflow streak. Fear & Greed at 31 (fear). The CLARITY Act euphoria spike is a genuine regulatory catalyst but has not yet translated into price action or capital inflows. QNT +9.66% and NIGHT +3.82% are isolated outliers in a sea of red. THORChain's $10M exploit adds DeFi contagion risk. Offense is not justified: downside momentum is real, ETF outflows confirm institutional de-risking, and no accumulation pattern or support test has been validated. A short bias would require BTC to lose $76k with volume; a long bias requires BTC to reclaim $80k with ETF inflows resuming. Until then, the risk/reward is symmetrical and unfavorable for aggressive posture.",
+          "neutral_reviewer": "BTC -1.27%, ETH -1.78%, SOL -2.95% in range-change watch, not breakdown. Fear & Greed at 31 (fear) but price hasn't accelerated. Spot ETF outflows $1B/week are a demand-side headwind, while CLARITY Act euphoria is a regulatory wildcard. QNT +9.66% and NIGHT +3.82% are isolated outliers. BILL -29.34% signals altcoin stress but is not systemic. The compromise: downside momentum is real but not extreme enough to short into a catalyst that could reverse sentiment quickly. No-action quality is high until a defined range boundary is tested with conviction.",
+          "conservative_reviewer": "BTC -1.27%, ETH -1.78%, SOL -2.95% all within range-change watch, not a confirmed breakdown. Fear & Greed at 31 (fear) signals weak sentiment but historically precedes mean reversion without a catalyst. BILL -29.34% is an isolated altcoin event, not systemic. QNT +9.66% and NIGHT +3.82% show selective pockets of strength but lack sector-wide follow-through. No volume spike, support break, or volatility expansion to trigger a directional bias. The $1B weekly ETF outflow is a demand-side headwind, but the CLARITY Act regulatory catalyst could counter it. Risk/reward is symmetric near range boundaries; a break below BTC $76k or above $80k with volume would shift the read.",
+          "memory_loop": "Memory context shows zero prior decisions for this symbol. Without historical samples, outcome distribution, or similar setups, no lesson or failure mode can be extracted. The current decision must be recorded as the first entry in the memory baseline. After resolution, the outcome should be tagged with prevailing narrative strength and market regime to enable pattern recognition in subsequent cycles.",
+          "research_lead": "The team is collectively neutral with a confidence range of 0.30–0.55, reflecting a market caught between two real forces: a $1B weekly ETF outflow and broad-based selling pressure (BTC -1.27%, ETH -1.78%, SOL -2.95%, BILL -29.34%) versus a genuine regulatory catalyst in the CLARITY Act that has generated euphoria but no price follow-through. The strongest evidence is the ETF outflow data — a concrete, measurable institutional de-risking signal that snapped a six-week inflow streak. The weakest evidence is the isolated altcoin moves (QNT +9.66%, NIGHT +3.82%) which lack sector confirmation and the THORChain exploit, which is a single-protocol event without systemic contagion evidence. The team has a coherent thesis: downside momentum is real but not extreme enough to short into a regulatory catalyst that could reverse sentiment quickly. What remains unproven is whether the CLARITY Act euphoria will translate into capital inflows or remain narrative-only; the market needs either BTC to lose $76k with volume to confirm a breakdown or reclaim $80k with two consecutive days of ETF inflows to turn constructive.",
+          "risk_lead": "The primary failure mode is a false breakout from the regulatory catalyst narrative. The CLARITY Act euphoria has not translated into price follow-through or ETF inflows, creating a gap between sentiment and capital commitment. The $1B weekly ETF outflow is a concrete institutional de-risking signal that contradicts the bullish narrative. If BTC fails to reclaim $80k with two consecutive days of ETF inflows, the regulatory catalyst will be exposed as narrative-only, and the market could accelerate downside toward $76k. The 0.30–0.55 confidence range across the team reflects this unresolved tension. The risk does not block action entirely but demands a defined invalidation level: BTC losing $76k with volume confirms the breakdown; reclaiming $80k with ETF inflows validates the catalyst. Until one of these conditions triggers, the risk/reward is symmetric and unfavorable for aggressive positioning.",
+          "pm": "Market Narrative Watch: The team is collectively neutral with a confidence range of 0.30–0.55, reflecting a market caught between two real forces: a $1B weekly ETF outflow and broad-based selling pressure (BTC -1.27%, ETH -1.78%, SOL -2.95%, BILL -29.34%) versus a genuine regulatory catalyst in the CLARITY Act that has generated euphoria but no price follow-through. The strongest evidence is the ETF outflow data — a concrete, measurable institutional de-risking signal that snapped a six-week inflow streak. The wea…"
+        },
+        "citationsByMember": {
+          "research_lead": [
+            "ev_1qx2vuo",
+            "ev_fpf995",
+            "ev_197zm2k",
+            "ev_h9qzg3",
+            "ev_gjfepb",
+            "ev_1ix04l",
+            "ev_15o8cuq",
+            "ev_rx7an0"
+          ],
+          "risk_lead": [
+            "ev_1qx2vuo",
+            "ev_fpf995",
+            "ev_197zm2k",
+            "ev_h9qzg3",
+            "ev_gjfepb",
+            "ev_1ix04l",
+            "ev_15o8cuq",
+            "ev_rx7an0"
+          ]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "memberId": "fundamental_analyst",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "The three largest crypto assets are locked in range-bound price action, indicating a lack of directional conviction from macro or tokenomics drivers. The Fear & Greed index at 31 (fear territory) historically aligns with accumulation zones but does not itself trigger a reversal. No protocol revenue shifts, unlock schedule changes, or liquidity events are flagged in the evidence. Without a fundamental catalyst—such as a rate decision, regulatory clarity, or supply shock—the market remains in a waiting pattern. A break below the lower range bound would invalidate the neutral view; a sustained move above the range top with rising volume would turn me cautiously constructive.",
+            "oneLineSummary": "BTC/ETH/SOL range-bound with Fear & Greed at 31; no fundamental catalyst to break the stalemate.",
+            "detailedRationale": "The three largest crypto assets are locked in range-bound price action, indicating a lack of directional conviction from macro or tokenomics drivers. The Fear & Greed index at 31 (fear territory) historically aligns with accumulation zones but does not itself trigger a reversal. No protocol revenue shifts, unlock schedule changes, or liquidity events are flagged in the evidence. Without a fundamental catalyst—such as a rate decision, regulatory clarity, or supply shock—the market remains in a waiting pattern. A break below the lower range bound would invalidate the neutral view; a sustained move above the range top with rising volume would turn me cautiously constructive.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:34:58.602Z"
+          },
+          {
+            "round": 2,
+            "memberId": "fundamental_analyst",
+            "direction": "neutral",
+            "confidence": 0.4,
+            "rationale": "The three largest crypto assets remain locked in range-change watch, reflecting a market without directional conviction from macro or tokenomics drivers. Fear & Greed at 31 (fear territory) historically aligns with accumulation zones but has not triggered a reversal. No protocol revenue shifts, unlock schedule changes, or liquidity events are flagged. The $1B weekly ETF outflow cited in prior views is a demand-side headwind, but the CLARITY Act regulatory catalyst introduces a countervailing narrative. Without a concrete fundamental catalyst—rate decision, regulatory clarity, or supply shock—the market remains in a waiting pattern. A break below the lower range bound would invalidate the neutral view; a sustained move above the range top with rising volume would turn cautiously constructive.",
+            "oneLineSummary": "Range-bound price action across BTC/ETH/SOL with Fear & Greed at 31 (fear) signals indecision; no fundamental catalyst has emerged to break the stalemate.",
+            "detailedRationale": "The three largest crypto assets remain locked in range-change watch, reflecting a market without directional conviction from macro or tokenomics drivers. Fear & Greed at 31 (fear territory) historically aligns with accumulation zones but has not triggered a reversal. No protocol revenue shifts, unlock schedule changes, or liquidity events are flagged. The $1B weekly ETF outflow cited in prior views is a demand-side headwind, but the CLARITY Act regulatory catalyst introduces a countervailing narrative. Without a concrete fundamental catalyst—rate decision, regulatory clarity, or supply shock—the market remains in a waiting pattern. A break below the lower range bound would invalidate the neutral view; a sustained move above the range top with rising volume would turn cautiously constructive.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:35:05.710Z"
+          },
+          {
+            "round": 1,
+            "memberId": "news_analyst",
+            "direction": "neutral",
+            "confidence": 0.55,
+            "rationale": "Spot Bitcoin ETFs saw $1B outflows in a week, breaking a six-week inflow streak — a clear demand-side headwind. THORChain confirmed a $10M exploit, adding to DeFi security concerns. Fear & Greed at 31 signals extreme fear. However, the US CLARITY Act is generating euphoria on Bitcoin social sentiment, and House leaders are pushing for CFTC nominations, which could clarify crypto regulation. The ETH catalysts commentary is unconfirmed noise. Mixed signals keep the read neutral near-term.",
+            "oneLineSummary": "Bitcoin ETF outflows and THORChain exploit weigh on sentiment, but CLARITY Act euphoria provides a counterbalance.",
+            "detailedRationale": "Spot Bitcoin ETFs saw $1B outflows in a week, breaking a six-week inflow streak — a clear demand-side headwind. THORChain confirmed a $10M exploit, adding to DeFi security concerns. Fear & Greed at 31 signals extreme fear. However, the US CLARITY Act is generating euphoria on Bitcoin social sentiment, and House leaders are pushing for CFTC nominations, which could clarify crypto regulation. The ETH catalysts commentary is unconfirmed noise. Mixed signals keep the read neutral near-term.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:34:58.483Z"
+          },
+          {
+            "round": 2,
+            "memberId": "news_analyst",
+            "direction": "neutral",
+            "confidence": 0.55,
+            "rationale": "Spot Bitcoin ETFs bled $1B in a week, snapping a six-week inflow run — a clear institutional demand headwind. THORChain confirmed a $10M exploit, adding DeFi security concerns. Fear & Greed at 31 (fear) confirms weak sentiment. However, the US CLARITY Act is generating a 'major spike of euphoria' per Santiment, and House leaders are pushing for CFTC nominations — genuine regulatory catalysts that could flip sentiment. The ETH catalysts commentary from Sharplink CEO is unconfirmed noise. The balance tilts neutral: downside momentum is real but not extreme enough to short into a regulatory catalyst that could reverse quickly.",
+            "oneLineSummary": "Mixed signals: $1B ETF outflows and THORChain exploit vs CLARITY Act euphoria keep the read neutral near-term.",
+            "detailedRationale": "Spot Bitcoin ETFs bled $1B in a week, snapping a six-week inflow run — a clear institutional demand headwind. THORChain confirmed a $10M exploit, adding DeFi security concerns. Fear & Greed at 31 (fear) confirms weak sentiment. However, the US CLARITY Act is generating a 'major spike of euphoria' per Santiment, and House leaders are pushing for CFTC nominations — genuine regulatory catalysts that could flip sentiment. The ETH catalysts commentary from Sharplink CEO is unconfirmed noise. The balance tilts neutral: downside momentum is real but not extreme enough to short into a regulatory catalyst that could reverse quickly.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:35:05.814Z"
+          },
+          {
+            "round": 1,
+            "memberId": "chart_analyst",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% all within range-change watch, not breakdown. No support break, no volume spike, no volatility expansion. Fear & Greed at 31 shows sentiment weak but price hasn't accelerated lower. QNT +9.66% and NIGHT +3.82% are isolated moves without sector confirmation. BILL -29.34% is a single-asset event, not market-wide. Chart structure is directionless drift. No actionable technical trigger.",
+            "oneLineSummary": "BTC, ETH, SOL all down 1-3% in range-bound drift; no breakout or breakdown structure confirmed.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% all within range-change watch, not breakdown. No support break, no volume spike, no volatility expansion. Fear & Greed at 31 shows sentiment weak but price hasn't accelerated lower. QNT +9.66% and NIGHT +3.82% are isolated moves without sector confirmation. BILL -29.34% is a single-asset event, not market-wide. Chart structure is directionless drift. No actionable technical trigger.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:34:57.798Z"
+          },
+          {
+            "round": 2,
+            "memberId": "chart_analyst",
+            "direction": "neutral",
+            "confidence": 0.3,
+            "rationale": "BTC 78215.95 (-1.27%), ETH 2181.41 (-1.78%), SOL 86.515 (-2.95%) all remain in range-change watch, no support break or volatility expansion. Fear & Greed 31 confirms weak sentiment but price has not accelerated. QNT +9.66% and NIGHT +3.82% are single-asset moves without sector confirmation. BILL -29.34% is an acute altcoin event, not systemic. No volume spike, no liquidity cluster, no invalidation level. Prior neutral views align: chart structure is directionless drift. Stand aside until a defined range boundary is tested with volume.",
+            "oneLineSummary": "BTC, ETH, SOL locked in range drift with no breakout or breakdown trigger; QNT and NIGHT isolated outliers.",
+            "detailedRationale": "BTC 78215.95 (-1.27%), ETH 2181.41 (-1.78%), SOL 86.515 (-2.95%) all remain in range-change watch, no support break or volatility expansion. Fear & Greed 31 confirms weak sentiment but price has not accelerated. QNT +9.66% and NIGHT +3.82% are single-asset moves without sector confirmation. BILL -29.34% is an acute altcoin event, not systemic. No volume spike, no liquidity cluster, no invalidation level. Prior neutral views align: chart structure is directionless drift. Stand aside until a defined range boundary is tested with volume.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:35:05.968Z"
+          },
+          {
+            "round": 1,
+            "memberId": "onchain_analyst",
+            "direction": "neutral",
+            "confidence": 0.3,
+            "rationale": "No exchange inflow/outflow spikes, whale transfers, or stablecoin liquidity shifts observed. BTC/ETH/SOL range-change watch implies low directional conviction from wallet behavior. PENGU range alert is isolated to one altcoin, not systemic. Fear & Greed at 31 (fear) historically precedes mean reversion, but without onchain accumulation or distribution patterns, this is a weak standalone signal. DataStatus partial: no concrete wallet flow to anchor a directional read.",
+            "oneLineSummary": "Onchain signals flat; BTC/ETH/SOL range-bound, PENGU alert isolated, Fear & Greed 31 shows fear but no wallet flow conviction.",
+            "detailedRationale": "No exchange inflow/outflow spikes, whale transfers, or stablecoin liquidity shifts observed. BTC/ETH/SOL range-change watch implies low directional conviction from wallet behavior. PENGU range alert is isolated to one altcoin, not systemic. Fear & Greed at 31 (fear) historically precedes mean reversion, but without onchain accumulation or distribution patterns, this is a weak standalone signal. DataStatus partial: no concrete wallet flow to anchor a directional read.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:34:57.945Z"
+          },
+          {
+            "round": 2,
+            "memberId": "onchain_analyst",
+            "direction": "neutral",
+            "confidence": 0.3,
+            "rationale": "No exchange inflow/outflow spikes, whale transfers, or stablecoin liquidity shifts observed across BTC, ETH, or SOL. The range-change watch on the three largest assets confirms low directional conviction from wallet behavior. PENGU range alert is isolated to one altcoin, not systemic. Fear & Greed at 31 (fear) historically precedes mean reversion, but without onchain accumulation or distribution patterns to anchor a directional read, this is a weak standalone signal. Onchain evidence is too thin to support a long or short bias.",
+            "oneLineSummary": "BTC/ETH/SOL range-bound with no onchain accumulation or distribution; Fear & Greed 31 is a weak standalone signal.",
+            "detailedRationale": "No exchange inflow/outflow spikes, whale transfers, or stablecoin liquidity shifts observed across BTC, ETH, or SOL. The range-change watch on the three largest assets confirms low directional conviction from wallet behavior. PENGU range alert is isolated to one altcoin, not systemic. Fear & Greed at 31 (fear) historically precedes mean reversion, but without onchain accumulation or distribution patterns to anchor a directional read, this is a weak standalone signal. Onchain evidence is too thin to support a long or short bias.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:35:09.327Z"
+          },
+          {
+            "round": 1,
+            "memberId": "bullish_researcher",
+            "direction": "long",
+            "confidence": 0.35,
+            "rationale": "The Fear & Greed index at 31 (extreme fear) is a classic contrarian long signal — similar readings in 2023 preceded sharp recoveries. However, BTC -1.27%, ETH -1.78%, and SOL -2.95% show persistent selling pressure. The $1B weekly ETF bleed is a serious liquidity drain. The CLARITY Act euphoria spike is a genuine regulatory catalyst that could flip sentiment. QNT +9.66% and NIGHT +3.82% show isolated pockets of strength. The long thesis rests on regulatory tailwinds overwhelming short-term liquidation risk. Invalidation: if BTC loses $76k support or ETF outflows accelerate beyond $1.5B/week.",
+            "oneLineSummary": "Fear & Greed at 31 signals extreme fear, historically a bullish contrarian setup, but ETF outflows and broad weakness cap conviction.",
+            "detailedRationale": "The Fear & Greed index at 31 (extreme fear) is a classic contrarian long signal — similar readings in 2023 preceded sharp recoveries. However, BTC -1.27%, ETH -1.78%, and SOL -2.95% show persistent selling pressure. The $1B weekly ETF bleed is a serious liquidity drain. The CLARITY Act euphoria spike is a genuine regulatory catalyst that could flip sentiment. QNT +9.66% and NIGHT +3.82% show isolated pockets of strength. The long thesis rests on regulatory tailwinds overwhelming short-term liquidation risk. Invalidation: if BTC loses $76k support or ETF outflows accelerate beyond $1.5B/week.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:34:59.272Z"
+          },
+          {
+            "round": 2,
+            "memberId": "bullish_researcher",
+            "direction": "long",
+            "confidence": 0.35,
+            "rationale": "Fear & Greed at 31 (extreme fear) is a historically reliable contrarian accumulation signal — similar readings in 2023 preceded sharp recoveries. The CLARITY Act is generating genuine regulatory euphoria, with House leaders pushing CFTC nominations, which could catalyze a sentiment flip. QNT +9.66% and NIGHT +3.82% show isolated pockets of strength amid the selloff. However, BTC -1.27%, ETH -1.78%, SOL -2.95% reflect persistent selling pressure, and the $1B weekly ETF bleed is a serious liquidity drain. The long thesis rests on regulatory tailwinds overwhelming short-term liquidation risk. Invalidation: if BTC loses $76k support or ETF outflows accelerate beyond $1.5B/week.",
+            "oneLineSummary": "Extreme fear at 31 and CLARITY Act euphoria create a high-risk contrarian long setup, but ETF bleeding and broad selling pressure cap conviction.",
+            "detailedRationale": "Fear & Greed at 31 (extreme fear) is a historically reliable contrarian accumulation signal — similar readings in 2023 preceded sharp recoveries. The CLARITY Act is generating genuine regulatory euphoria, with House leaders pushing CFTC nominations, which could catalyze a sentiment flip. QNT +9.66% and NIGHT +3.82% show isolated pockets of strength amid the selloff. However, BTC -1.27%, ETH -1.78%, SOL -2.95% reflect persistent selling pressure, and the $1B weekly ETF bleed is a serious liquidity drain. The long thesis rests on regulatory tailwinds overwhelming short-term liquidation risk. Invalidation: if BTC loses $76k support or ETF outflows accelerate beyond $1.5B/week.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:35:05.731Z"
+          },
+          {
+            "round": 1,
+            "memberId": "bearish_researcher",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95%, PENGU -3.09%, ZEC -3.46%, BILL -29.34% — coordinated selling across majors and memes. Spot BTC ETFs bled $1B in a week, snapping a six-week inflow streak. Fear & Greed at 31 (fear). The CLARITY Act 'euphoria' spike is a classic contrarian top signal; legislative catalysts rarely sustain rallies. THORChain's $10M exploit adds DeFi contagion risk. Short bias is supported until BTC reclaims $80K with ETF inflows resuming.",
+            "oneLineSummary": "Broad altcoin weakness and $1B ETF outflow confirm risk-off; CLARITY Act euphoria looks like a sell-the-news trap.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95%, PENGU -3.09%, ZEC -3.46%, BILL -29.34% — coordinated selling across majors and memes. Spot BTC ETFs bled $1B in a week, snapping a six-week inflow streak. Fear & Greed at 31 (fear). The CLARITY Act 'euphoria' spike is a classic contrarian top signal; legislative catalysts rarely sustain rallies. THORChain's $10M exploit adds DeFi contagion risk. Short bias is supported until BTC reclaims $80K with ETF inflows resuming.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:34:58.570Z"
+          },
+          {
+            "round": 2,
+            "memberId": "bearish_researcher",
+            "direction": "short",
+            "confidence": 0.55,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95%, PENGU -3.09%, ZEC -3.46%, BILL -29.34% — broad-based selling across majors and memes. Spot BTC ETFs bled $1B in a week, snapping a six-week inflow streak. Fear & Greed at 31 (fear). The CLARITY Act 'euphoria' spike is a classic contrarian top signal; legislative catalysts rarely sustain rallies. THORChain's $10M exploit adds DeFi contagion risk. Short bias is supported until BTC reclaims $80K with ETF inflows resuming. Invalidation: BTC reclaims $80K with two consecutive days of ETF net inflows.",
+            "oneLineSummary": "Coordinated selling, ETF outflows, and fear sentiment support a short bias, but regulatory noise caps conviction.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95%, PENGU -3.09%, ZEC -3.46%, BILL -29.34% — broad-based selling across majors and memes. Spot BTC ETFs bled $1B in a week, snapping a six-week inflow streak. Fear & Greed at 31 (fear). The CLARITY Act 'euphoria' spike is a classic contrarian top signal; legislative catalysts rarely sustain rallies. THORChain's $10M exploit adds DeFi contagion risk. Short bias is supported until BTC reclaims $80K with ETF inflows resuming. Invalidation: BTC reclaims $80K with two consecutive days of ETF net inflows.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:35:05.322Z"
+          },
+          {
+            "round": 1,
+            "memberId": "trader",
+            "direction": "wait",
+            "confidence": 0,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% — broad selloff with no reversal structure. Fear & Greed at 31 (fear) suggests sentiment-driven weakness, not a technical entry. No kline confirmation, no liquidity cluster, no invalidation level. Stand aside until price stabilizes or a defined range boundary is tested.",
+            "oneLineSummary": "No actionable entry signal; broad market decline with no kline confirmation or liquidity setup.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% — broad selloff with no reversal structure. Fear & Greed at 31 (fear) suggests sentiment-driven weakness, not a technical entry. No kline confirmation, no liquidity cluster, no invalidation level. Stand aside until price stabilizes or a defined range boundary is tested.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:34:57.433Z"
+          },
+          {
+            "round": 2,
+            "memberId": "trader",
+            "direction": "wait",
+            "confidence": 0,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% are range-change watches, not breakdowns. No support break, no volume spike, no volatility expansion. BILL -29.34% is isolated altcoin stress, not systemic. Fear & Greed 31 shows sentiment weak but price hasn't accelerated lower. No kline confirmation, no liquidity pocket, no defined invalidation level. Stand aside until price stabilizes or a range boundary is tested with volume.",
+            "oneLineSummary": "No actionable entry setup: price drift without kline confirmation, liquidity cluster, or invalidation level.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% are range-change watches, not breakdowns. No support break, no volume spike, no volatility expansion. BILL -29.34% is isolated altcoin stress, not systemic. Fear & Greed 31 shows sentiment weak but price hasn't accelerated lower. No kline confirmation, no liquidity pocket, no defined invalidation level. Stand aside until price stabilizes or a range boundary is tested with volume.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:35:05.482Z"
+          },
+          {
+            "round": 1,
+            "memberId": "aggressive_reviewer",
+            "direction": "wait",
+            "confidence": 0,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% in 24h. Fear & Greed at 31 (fear). Spot Bitcoin ETFs bled $1B in a week, snapping six-week inflow run. THORChain exploit adds trust damage. QNT +9.66% and NIGHT +3.82% are isolated outliers in a sea of red. No momentum confirmation or upside asymmetry to justify aggressive posture. Offense is not justified until fear-greed recovers above 40 and BTC reclaims 80k with volume.",
+            "oneLineSummary": "Broad market bleed and fear-greed at 31 kill any offensive case despite isolated green pockets.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% in 24h. Fear & Greed at 31 (fear). Spot Bitcoin ETFs bled $1B in a week, snapping six-week inflow run. THORChain exploit adds trust damage. QNT +9.66% and NIGHT +3.82% are isolated outliers in a sea of red. No momentum confirmation or upside asymmetry to justify aggressive posture. Offense is not justified until fear-greed recovers above 40 and BTC reclaims 80k with volume.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:34:57.624Z"
+          },
+          {
+            "round": 2,
+            "memberId": "aggressive_reviewer",
+            "direction": "neutral",
+            "confidence": 0.3,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95%, PENGU -3.09%, ZEC -3.46%, BILL -29.34% — broad-based distribution with no reversal structure. Spot BTC ETFs bled $1B in a week, snapping a six-week inflow streak. Fear & Greed at 31 (fear). The CLARITY Act euphoria spike is a genuine regulatory catalyst but has not yet translated into price action or capital inflows. QNT +9.66% and NIGHT +3.82% are isolated outliers in a sea of red. THORChain's $10M exploit adds DeFi contagion risk. Offense is not justified: downside momentum is real, ETF outflows confirm institutional de-risking, and no accumulation pattern or support test has been validated. A short bias would require BTC to lose $76k with volume; a long bias requires BTC to reclaim $80k with ETF inflows resuming. Until then, the risk/reward is symmetrical and unfavorable for aggressive posture.",
+            "oneLineSummary": "Coordinated selling across majors and memes, $1B ETF bleed, and Fear at 31 kill offensive conviction despite isolated CLARITY Act euphoria.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95%, PENGU -3.09%, ZEC -3.46%, BILL -29.34% — broad-based distribution with no reversal structure. Spot BTC ETFs bled $1B in a week, snapping a six-week inflow streak. Fear & Greed at 31 (fear). The CLARITY Act euphoria spike is a genuine regulatory catalyst but has not yet translated into price action or capital inflows. QNT +9.66% and NIGHT +3.82% are isolated outliers in a sea of red. THORChain's $10M exploit adds DeFi contagion risk. Offense is not justified: downside momentum is real, ETF outflows confirm institutional de-risking, and no accumulation pattern or support test has been validated. A short bias would require BTC to lose $76k with volume; a long bias requires BTC to reclaim $80k with ETF inflows resuming. Until then, the risk/reward is symmetrical and unfavorable for aggressive posture.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:35:06.714Z"
+          },
+          {
+            "round": 1,
+            "memberId": "neutral_reviewer",
+            "direction": "neutral",
+            "confidence": 0.65,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% reflect a risk-off session with Fear & Greed at 31. The $1B weekly ETF outflow confirms institutional de-risking. THORChain exploit adds to negative sentiment. However, the CLARITY Act euphoria spike and QNT +9.66% show selective bullish pockets. The balance tilts toward no action: downside momentum is real but not extreme enough to short into a regulatory catalyst that could reverse sentiment quickly.",
+            "oneLineSummary": "Broad market weakness and fear index at 31 argue against chasing longs, but isolated strength in QNT and regulatory tailwinds prevent a short bias.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% reflect a risk-off session with Fear & Greed at 31. The $1B weekly ETF outflow confirms institutional de-risking. THORChain exploit adds to negative sentiment. However, the CLARITY Act euphoria spike and QNT +9.66% show selective bullish pockets. The balance tilts toward no action: downside momentum is real but not extreme enough to short into a regulatory catalyst that could reverse sentiment quickly.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:34:58.159Z"
+          },
+          {
+            "round": 2,
+            "memberId": "neutral_reviewer",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% in range-change watch, not breakdown. Fear & Greed at 31 (fear) but price hasn't accelerated. Spot ETF outflows $1B/week are a demand-side headwind, while CLARITY Act euphoria is a regulatory wildcard. QNT +9.66% and NIGHT +3.82% are isolated outliers. BILL -29.34% signals altcoin stress but is not systemic. The compromise: downside momentum is real but not extreme enough to short into a catalyst that could reverse sentiment quickly. No-action quality is high until a defined range boundary is tested with conviction.",
+            "oneLineSummary": "Broad selloff meets regulatory euphoria; range-bound drift favors no action until BTC breaks $76k or reclaims $80k with volume.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% in range-change watch, not breakdown. Fear & Greed at 31 (fear) but price hasn't accelerated. Spot ETF outflows $1B/week are a demand-side headwind, while CLARITY Act euphoria is a regulatory wildcard. QNT +9.66% and NIGHT +3.82% are isolated outliers. BILL -29.34% signals altcoin stress but is not systemic. The compromise: downside momentum is real but not extreme enough to short into a catalyst that could reverse sentiment quickly. No-action quality is high until a defined range boundary is tested with conviction.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:35:12.026Z"
+          },
+          {
+            "round": 1,
+            "memberId": "conservative_reviewer",
+            "direction": "wait",
+            "confidence": 0,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% in 24h; BILL -29.34% signals acute altcoin stress. Fear & Greed 31 (extreme fear) suggests momentum-driven downside, not a capitulation bottom. No reversal confirmation or liquidity pocket identified. Risk of further gap moves outweighs any counter-trend entry.",
+            "oneLineSummary": "Broad selloff across majors with Fear & Greed at 31; no actionable long setup for a conservative stance.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% in 24h; BILL -29.34% signals acute altcoin stress. Fear & Greed 31 (extreme fear) suggests momentum-driven downside, not a capitulation bottom. No reversal confirmation or liquidity pocket identified. Risk of further gap moves outweighs any counter-trend entry.",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:35:02.016Z"
+          },
+          {
+            "round": 2,
+            "memberId": "conservative_reviewer",
+            "direction": "neutral",
+            "confidence": 0.4,
+            "rationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% all within range-change watch, not a confirmed breakdown. Fear & Greed at 31 (fear) signals weak sentiment but historically precedes mean reversion without a catalyst. BILL -29.34% is an isolated altcoin event, not systemic. QNT +9.66% and NIGHT +3.82% show selective pockets of strength but lack sector-wide follow-through. No volume spike, support break, or volatility expansion to trigger a directional bias. The $1B weekly ETF outflow is a demand-side headwind, but the CLARITY Act regulatory catalyst could counter it. Risk/reward is symmetric near range boundaries; a break below BTC $76k or above $80k with volume would shift the read.",
+            "oneLineSummary": "Broad selloff with Fear & Greed at 31, but no breakdown confirmation; range-bound drift persists.",
+            "detailedRationale": "BTC -1.27%, ETH -1.78%, SOL -2.95% all within range-change watch, not a confirmed breakdown. Fear & Greed at 31 (fear) signals weak sentiment but historically precedes mean reversion without a catalyst. BILL -29.34% is an isolated altcoin event, not systemic. QNT +9.66% and NIGHT +3.82% show selective pockets of strength but lack sector-wide follow-through. No volume spike, support break, or volatility expansion to trigger a directional bias. The $1B weekly ETF outflow is a demand-side headwind, but the CLARITY Act regulatory catalyst could counter it. Risk/reward is symmetric near range boundaries; a break below BTC $76k or above $80k with volume would shift the read.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:35:10.389Z"
+          },
+          {
+            "round": 1,
+            "memberId": "memory_loop",
+            "direction": "neutral",
+            "confidence": 0,
+            "rationale": "The memory context shows no prior decisions for this symbol. Without historical samples, outcome distribution, or similar setups, no lesson or failure mode can be extracted. The current decision must be recorded as the first entry in the memory baseline. After resolution, the outcome should be tagged with the prevailing narrative strength and market regime to enable pattern recognition in subsequent cycles.",
+            "oneLineSummary": "No historical baseline exists for this hotspot; this decision seeds the memory baseline for future review.",
+            "detailedRationale": "The memory context shows no prior decisions for this symbol. Without historical samples, outcome distribution, or similar setups, no lesson or failure mode can be extracted. The current decision must be recorded as the first entry in the memory baseline. After resolution, the outcome should be tagged with the prevailing narrative strength and market regime to enable pattern recognition in subsequent cycles.",
+            "dataStatus": "missing",
+            "observedAt": "2026-05-16T15:34:57.090Z"
+          },
+          {
+            "round": 2,
+            "memberId": "memory_loop",
+            "direction": "neutral",
+            "confidence": 0,
+            "rationale": "Memory context shows zero prior decisions for this symbol. Without historical samples, outcome distribution, or similar setups, no lesson or failure mode can be extracted. The current decision must be recorded as the first entry in the memory baseline. After resolution, the outcome should be tagged with prevailing narrative strength and market regime to enable pattern recognition in subsequent cycles.",
+            "oneLineSummary": "No historical baseline exists for this setup; this decision seeds the memory baseline for future pattern recognition.",
+            "detailedRationale": "Memory context shows zero prior decisions for this symbol. Without historical samples, outcome distribution, or similar setups, no lesson or failure mode can be extracted. The current decision must be recorded as the first entry in the memory baseline. After resolution, the outcome should be tagged with prevailing narrative strength and market regime to enable pattern recognition in subsequent cycles.",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:35:04.229Z"
+          },
+          {
+            "round": 2,
+            "memberId": "research_lead",
+            "direction": "neutral",
+            "confidence": 0.4,
+            "rationale": "The team is collectively neutral with a confidence range of 0.30–0.55, reflecting a market caught between two real forces: a $1B weekly ETF outflow and broad-based selling pressure (BTC -1.27%, ETH -1.78%, SOL -2.95%, BILL -29.34%) versus a genuine regulatory catalyst in the CLARITY Act that has generated euphoria but no price follow-through. The strongest evidence is the ETF outflow data — a concrete, measurable institutional de-risking signal that snapped a six-week inflow streak. The weakest evidence is the isolated altcoin moves (QNT +9.66%, NIGHT +3.82%) which lack sector confirmation and the THORChain exploit, which is a single-protocol event without systemic contagion evidence. The team has a coherent thesis: downside momentum is real but not extreme enough to short into a regulatory catalyst that could reverse sentiment quickly. What remains unproven is whether the CLARITY Act euphoria will translate into capital inflows or remain narrative-only; the market needs either BTC to lose $76k with volume to confirm a breakdown or reclaim $80k with two consecutive days of ETF inflows to turn constructive.",
+            "oneLineSummary": "The team is collectively neutral with a confidence range of 0.30–0.55, reflecti…",
+            "detailedRationale": "The team is collectively neutral with a confidence range of 0.30–0.55, reflecting a market caught between two real forces: a $1B weekly ETF outflow and broad-based selling pressure (BTC -1.27%, ETH -1.78%, SOL -2.95%, BILL -29.34%) versus a genuine regulatory catalyst in the CLARITY Act that has generated euphoria but no price follow-through. The strongest evidence is the ETF outflow data — a concrete, measurable institutional de-risking signal that snapped a six-week inflow streak. The weakest evidence is the isolated altcoin moves (QNT +9.66%, NIGHT +3.82%) which lack sector confirmation and the THORChain exploit, which is a single-protocol event without systemic contagion evidence. The team has a coherent thesis: downside momentum is real but not extreme enough to short into a regulatory catalyst that could reverse sentiment quickly. What remains unproven is whether the CLARITY Act euphoria will translate into capital inflows or remain narrative-only; the market needs either BTC to lose $76k with volume to confirm a breakdown or reclaim $80k with two consecutive days of ETF inflows to turn constructive.",
+            "dataStatus": "ok",
+            "evidenceIds": [
+              "ev_1qx2vuo",
+              "ev_fpf995",
+              "ev_197zm2k",
+              "ev_h9qzg3",
+              "ev_gjfepb",
+              "ev_1ix04l",
+              "ev_15o8cuq",
+              "ev_rx7an0"
+            ],
+            "observedAt": "2026-05-16T10:00:00.000Z"
+          },
+          {
+            "round": 2,
+            "memberId": "risk_lead",
+            "direction": "neutral",
+            "confidence": 0.55,
+            "rationale": "The primary failure mode is a false breakout from the regulatory catalyst narrative. The CLARITY Act euphoria has not translated into price follow-through or ETF inflows, creating a gap between sentiment and capital commitment. The $1B weekly ETF outflow is a concrete institutional de-risking signal that contradicts the bullish narrative. If BTC fails to reclaim $80k with two consecutive days of ETF inflows, the regulatory catalyst will be exposed as narrative-only, and the market could accelerate downside toward $76k. The 0.30–0.55 confidence range across the team reflects this unresolved tension. The risk does not block action entirely but demands a defined invalidation level: BTC losing $76k with volume confirms the breakdown; reclaiming $80k with ETF inflows validates the catalyst. Until one of these conditions triggers, the risk/reward is symmetric and unfavorable for aggressive positioning.",
+            "oneLineSummary": "The primary failure mode is a false breakout from the regulatory catalyst narra…",
+            "detailedRationale": "The primary failure mode is a false breakout from the regulatory catalyst narrative. The CLARITY Act euphoria has not translated into price follow-through or ETF inflows, creating a gap between sentiment and capital commitment. The $1B weekly ETF outflow is a concrete institutional de-risking signal that contradicts the bullish narrative. If BTC fails to reclaim $80k with two consecutive days of ETF inflows, the regulatory catalyst will be exposed as narrative-only, and the market could accelerate downside toward $76k. The 0.30–0.55 confidence range across the team reflects this unresolved tension. The risk does not block action entirely but demands a defined invalidation level: BTC losing $76k with volume confirms the breakdown; reclaiming $80k with ETF inflows validates the catalyst. Until one of these conditions triggers, the risk/reward is symmetric and unfavorable for aggressive positioning.",
+            "dataStatus": "ok",
+            "evidenceIds": [
+              "ev_1qx2vuo",
+              "ev_fpf995",
+              "ev_197zm2k",
+              "ev_h9qzg3",
+              "ev_gjfepb",
+              "ev_1ix04l",
+              "ev_15o8cuq",
+              "ev_rx7an0"
+            ],
+            "observedAt": "2026-05-16T10:00:00.000Z"
+          },
+          {
+            "round": 2,
+            "memberId": "pm",
+            "direction": "neutral",
+            "confidence": 0.5,
+            "rationale": "Market Narrative Watch: The team is collectively neutral with a confidence range of 0.30–0.55, reflecting a market caught between two real forces: a $1B weekly ETF outflow and broad-based selling pressure (BTC -1.27%, ETH -1.78%, SOL -2.95%, BILL -29.34%) versus a genuine regulatory catalyst in the CLARITY Act that has generated euphoria but no price follow-through. The strongest evidence is the ETF outflow data — a concrete, measurable institutional de-risking signal that snapped a six-week inflow streak. The wea…",
+            "oneLineSummary": "Market Narrative Watch: The team is collectively neutral with a confidence rang…",
+            "detailedRationale": "Market Narrative Watch: The team is collectively neutral with a confidence range of 0.30–0.55, reflecting a market caught between two real forces: a $1B weekly ETF outflow and broad-based selling pressure (BTC -1.27%, ETH -1.78%, SOL -2.95%, BILL -29.34%) versus a genuine regulatory catalyst in the CLARITY Act that has generated euphoria but no price follow-through. The strongest evidence is the ETF outflow data — a concrete, measurable institutional de-risking signal that snapped a six-week inflow streak. The wea…",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T10:00:00.000Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-05-16T10:00:00.000Z",
+            "memberIds": [
+              "fundamental_analyst",
+              "news_analyst",
+              "chart_analyst",
+              "onchain_analyst",
+              "bullish_researcher",
+              "bearish_researcher",
+              "trader",
+              "aggressive_reviewer",
+              "neutral_reviewer",
+              "conservative_reviewer",
+              "memory_loop"
+            ]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-05-16T10:00:00.000Z",
+            "memberIds": ["research_lead"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-05-16T10:00:00.000Z",
+            "memberIds": ["risk_lead"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-05-16T10:00:00.000Z",
+            "memberIds": ["pm"]
+          },
+          { "stageId": "record_write", "status": "done", "observedAt": "2026-05-16T15:35:20.856Z" },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-05-16T15:35:20.856Z"
+          }
+        ]
+      }
+    }
+  ],
+  "evidenceMap": {
+    "ev_1qx2vuo": {
+      "id": "ev_1qx2vuo",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "OpenAI partners with Malta to give all citizens free ChatGPT Plus access",
+      "url": "https://cointelegraph.com/news/openai-partners-with-malta-to-give-all-citizens-free-chatgpt-plus-access?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T14:12:55.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.911Z",
+      "symbol": [],
+      "impactSeverity": "low",
+      "summary": "OpenAI partners with Malta to give all citizens free ChatGPT Plus access"
+    },
+    "ev_fpf995": {
+      "id": "ev_fpf995",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "Here’s what happened in crypto today",
+      "url": "https://cointelegraph.com/news/what-happened-in-crypto-today?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T14:12:49.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.912Z",
+      "symbol": ["BTC"],
+      "impactSeverity": "low",
+      "summary": "Here’s what happened in crypto today"
+    },
+    "ev_197zm2k": {
+      "id": "ev_197zm2k",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "THORChain confirms $10M exploit, rolls out recovery portal for affected users",
+      "url": "https://cointelegraph.com/news/thorchain-confirms-10m-exploit-rolls-out-recovery-portal-for-affected-users?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T09:47:44.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.912Z",
+      "symbol": ["10M", "10"],
+      "impactSeverity": "medium",
+      "summary": "THORChain confirms $10M exploit, rolls out recovery portal for affected users"
+    },
+    "ev_h9qzg3": {
+      "id": "ev_h9qzg3",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "Sharplink CEO points out 3 catalysts for Ethereum's price to surge higher",
+      "url": "https://cointelegraph.com/news/sharplink-ceo-points-out-these-3-catalysts-for-ethereum-to-reach-new-highs?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T09:00:52.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.912Z",
+      "symbol": ["ETH"],
+      "impactSeverity": "medium",
+      "summary": "Sharplink CEO points out 3 catalysts for Ethereum's price to surge higher"
+    },
+    "ev_gjfepb": {
+      "id": "ev_gjfepb",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "Spot Bitcoin ETFs bleed $1B in a week, snapping six-week inflow run",
+      "url": "https://cointelegraph.com/news/spot-bitcoin-etfs-bleed-1b-in-a-week-snapping-six-week-inflow-run?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T08:19:20.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.912Z",
+      "symbol": ["BTC", "1B"],
+      "impactSeverity": "medium",
+      "summary": "Spot Bitcoin ETFs bleed $1B in a week, snapping six-week inflow run"
+    },
+    "ev_1ix04l": {
+      "id": "ev_1ix04l",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "US CLARITY Act brings ‘major spike of euphoria’ to Bitcoin: Santiment",
+      "url": "https://cointelegraph.com/news/us-clarity-act-brings-major-spike-of-euphoria-to-bitcoin-santiment?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T02:13:23.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.912Z",
+      "symbol": ["BTC"],
+      "impactSeverity": "medium",
+      "summary": "US CLARITY Act brings ‘major spike of euphoria’ to Bitcoin: Santiment"
+    },
+    "ev_15o8cuq": {
+      "id": "ev_15o8cuq",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "House committee leaders urge Trump to nominate CFTC members, citing CLARITY Act",
+      "url": "https://cointelegraph.com/news/house-committee-nominate-cftc-commissioners-clarity-act?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-15T23:10:35.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.912Z",
+      "symbol": ["BTC"],
+      "impactSeverity": "low",
+      "summary": "House committee leaders urge Trump to nominate CFTC members, citing CLARITY Act"
+    },
+    "ev_rx7an0": {
+      "id": "ev_rx7an0",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "Bitcoin Depot filing casts doubt on company’s future amid lawsuits",
+      "url": "https://cointelegraph.com/news/bitcoin-depot-future-legal-judgments-litigation?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-15T22:17:38.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.912Z",
+      "symbol": ["BTC"],
+      "impactSeverity": "medium",
+      "summary": "Bitcoin Depot filing casts doubt on company’s future amid lawsuits"
+    }
+  },
+  "oldestTs": 1778925600000,
+  "hasMore": false,
+  "windowMinutes": 720,
+  "locale": "en_US",
+  "servedAt": 1778947372880,
+  "nextPollMs": 90000
+}

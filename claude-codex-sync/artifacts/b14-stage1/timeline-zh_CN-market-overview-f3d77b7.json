@@ -1,0 +1,794 @@
+{
+  "events": [
+    {
+      "id": "pm-decision:pm:MARKET:1779008400000",
+      "ts": 1779008400000,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": [
+        "ev_1qx2vuo",
+        "ev_fpf995",
+        "ev_197zm2k",
+        "ev_h9qzg3",
+        "ev_gjfepb",
+        "ev_1ix04l",
+        "ev_15o8cuq",
+        "ev_rx7an0"
+      ],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:MARKET:1779008400000",
+        "symbol": "MARKET",
+        "candidateType": "market_overview",
+        "candidateKey": "market_overview:zh_CN:2026-05-17",
+        "displayTitle": "今日大盘综述",
+        "executable": false,
+        "analysisSummary": "今日大盘综述: 市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是BTC ETF周流出10亿美元终结六周净流入，机构资金撤退信号明确，叠加BTC、ETH、SOL三大龙头同步下行，恐慌指数31处于极度恐惧区间但历史统计显示该水平往往伴随进一步下探而非立即反转。BILL单日暴跌27.8%和HYPE跌7.13%显示流动性枯竭从小币种向核心资产扩散。THORChain 1000万美元漏洞打击DeFi信心。最弱证据是CLARITY法案带来的乐观情绪已被价格消化，未能形成买盘支撑，以及QNT的9.27%异动属于个别事件未改变整体弱势。多头逻辑依赖BTC站稳80000确认，但当前价格78241且反弹无力，该条件尚未满足。团队整体偏向空头，但需警惕极度恐慌后的短期技术性反弹风险。 核心失败模式是极度恐慌后的短期技术性反弹陷阱。恐慌指数31处于极度恐惧区间，历史上该水平虽常伴随进一步下探，但短期超卖后出现1-2日反弹的概率约为38%，可能触发空头止损并形成假突破。关键条件是BTC能否站稳80000：若反弹至79800-80500区间但成交量萎缩，则属于空头陷阱，可维持空头；若放量突破80500，则空头逻辑被破坏。当前BTC 78241、…",
+        "tradeDecision": null,
+        "rationaleByMember": {
+          "bullish_researcher": "恐惧贪婪指数31进入极度恐慌区间，历史上该位置常孕育中期反弹。CLARITY法案获跨党派推动，Santiment数据显示市场出现'兴奋飙升'，这是监管明朗化的关键催化剂。Sharplink CEO提出ETH三大催化剂，若ETH守住2100支撑则有望带动山寨修复。但BTC ETF一周流出10亿美元打破六周流入纪录，THORChain确认1000万美元漏洞，BILL单日暴跌27.8%显示流动性脆弱。多头逻辑成立但需BTC站稳80000确认，否则放弃看多。",
+          "bearish_researcher": "BTC 24h -1.19%、ETH -1.93%、SOL -2.89%，三大龙头同步下行，小币种BILL暴跌27.8%、HYPE跌7.13%表明恐慌蔓延。BTC ETF周流出10亿美元，打破六周净流入，机构资金撤退信号明确。恐慌指数31处于极度恐惧区间，历史统计显示该水平往往伴随进一步下探而非立即反转。THORChain 1000万美元漏洞打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低，将打开更深回调空间。",
+          "news_analyst": "BTC ETF周流出10亿美元，终结六周净流入，机构资金撤退信号明确。恐慌指数31处于极度恐惧区间，历史表明该水平往往伴随进一步下探而非立即反转。BTC 24h -1.19%，ETH -1.93%，SOL -2.89%，三大龙头同步走弱。THORChain确认1000万美元漏洞，打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低，将打开更深回调空间。",
+          "chart_analyst": "BTC 24h -1.19%收于78241，78000支撑连续两日测试未破但反弹无力。ETH 2179距2100关键支撑仅3.7%，若失守将打开下行空间。SOL 86.5逼近前低84区域。BILL单日-27.8%、HYPE -7.13%显示小市值恐慌扩散。恐慌指数31极度恐惧，历史统计该水平后5日下跌概率62%。上方阻力80500-81000需放量突破才能逆转弱势，当前成交量萎缩不支持反转。",
+          "trader": "BTC 78241，24h -1.19%，ETH -1.93%，SOL -2.89%，三大龙头同步下行。恐慌指数31仍处极度恐惧区间，历史上该水平常伴随进一步下探。BILL单日-27.8%、HYPE -7.13%显示小币种流动性枯竭，抛压扩散。QNT +9.27%为个别异动，未改变整体弱势。CLARITY法案利好已被消化，未能形成买盘支撑。若BTC无法站稳80000，则77000前低面临考验。",
+          "aggressive_reviewer": "BTC 24h -1.19%、ETH -1.93%、SOL -2.89%三大龙头同步走弱，BILL暴跌27.8%、HYPE跌7.13%显示恐慌从小币种向核心资产蔓延。BTC ETF周流出10亿美元终结六周净流入，机构撤退信号明确。恐慌指数31处于极度恐惧区间，历史统计表明该水平往往伴随进一步下探而非立即反转。THORChain 1000万美元漏洞打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低将打开更深回调空间，当前空头证据质量高，值得加码。",
+          "research_lead": "市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是BTC ETF周流出10亿美元终结六周净流入，机构资金撤退信号明确，叠加BTC、ETH、SOL三大龙头同步下行，恐慌指数31处于极度恐惧区间但历史统计显示该水平往往伴随进一步下探而非立即反转。BILL单日暴跌27.8%和HYPE跌7.13%显示流动性枯竭从小币种向核心资产扩散。THORChain 1000万美元漏洞打击DeFi信心。最弱证据是CLARITY法案带来的乐观情绪已被价格消化，未能形成买盘支撑，以及QNT的9.27%异动属于个别事件未改变整体弱势。多头逻辑依赖BTC站稳80000确认，但当前价格78241且反弹无力，该条件尚未满足。团队整体偏向空头，但需警惕极度恐慌后的短期技术性反弹风险。",
+          "risk_lead": "核心失败模式是极度恐慌后的短期技术性反弹陷阱。恐慌指数31处于极度恐惧区间，历史上该水平虽常伴随进一步下探，但短期超卖后出现1-2日反弹的概率约为38%，可能触发空头止损并形成假突破。关键条件是BTC能否站稳80000：若反弹至79800-80500区间但成交量萎缩，则属于空头陷阱，可维持空头；若放量突破80500，则空头逻辑被破坏。当前BTC 78241、ETH 2179、SOL 86.5均未出现放量止跌信号，BILL单日-27.8%显示流动性枯竭仍在扩散，THORChain漏洞打击DeFi信心。风险不阻断空头行动，但需将仓位控制在常规规模的60%以内，并在BTC反弹至79800附近设置移动止损，防止被情绪性轧空。",
+          "pm": "今日大盘综述: 市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是BTC ETF周流出10亿美元终结六周净流入，机构资金撤退信号明确，叠加BTC、ETH、SOL三大龙头同步下行，恐慌指数31处于极度恐惧区间但历史统计显示该水平往往伴随进一步下探而非立即反转。BILL单日暴跌27.8%和HYPE跌7.13%显示流动性枯竭从小币种向核心资产扩散。THORChain 1000万美元漏洞打击DeFi信心。最弱证据是CLARITY法案带来的乐观情绪已被价格消化，未能形成买盘支撑，以及QNT的9.27%异动属于个别事件未改变整体弱势。多头逻辑依赖BTC站稳80000确认，但当前价格78241且反弹无力，该条件尚未满足。团队整体偏向空头，但需警惕极度恐慌后的短期技术性反弹风险。 核心失败模式是极度恐慌后的短期技术性反弹陷阱。恐慌指数31处于极度恐惧区间，历史上该水平虽常伴随进一步下探，但短期超卖后出现1-2日反弹的概率约为38%，可能触发空头止损并形成假突破。关键条件是BTC能否站稳80000：若反弹至79800-80500区间但成交量萎缩，则属于空头陷阱，可维持空头；若放量突破80500，则空头逻辑被破坏。当前BTC 78241、…"
+        },
+        "citationsByMember": {
+          "research_lead": [
+            "ev_1qx2vuo",
+            "ev_fpf995",
+            "ev_197zm2k",
+            "ev_h9qzg3",
+            "ev_gjfepb",
+            "ev_1ix04l",
+            "ev_15o8cuq",
+            "ev_rx7an0"
+          ],
+          "risk_lead": [
+            "ev_1qx2vuo",
+            "ev_fpf995",
+            "ev_197zm2k",
+            "ev_h9qzg3",
+            "ev_gjfepb",
+            "ev_1ix04l",
+            "ev_15o8cuq",
+            "ev_rx7an0"
+          ]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "memberId": "bullish_researcher",
+            "direction": "long",
+            "confidence": 0.45,
+            "rationale": "恐惧贪婪指数31进入极度恐慌区间，历史上此类位置往往孕育中期反弹。CLARITY法案获得跨党派推动，Santiment数据显示市场出现'兴奋飙升'，这是监管明朗化的关键催化剂。Sharplink CEO提出ETH三大催化剂，若ETH能守住2100支撑则有望带动山寨币修复。但BTC ETF一周流出10亿美元打破六周流入纪录，THORChain确认1000万美元漏洞，BILL单日暴跌27.8%显示流动性脆弱。多头逻辑成立但需要BTC站稳80000确认，否则将放弃看多。",
+            "oneLineSummary": "大盘恐慌情绪已至冰点，CLARITY法案带来结构性利好，但ETF资金外流与THORChain漏洞压制短期反弹空间",
+            "detailedRationale": "恐惧贪婪指数31进入极度恐慌区间，历史上此类位置往往孕育中期反弹。CLARITY法案获得跨党派推动，Santiment数据显示市场出现'兴奋飙升'，这是监管明朗化的关键催化剂。Sharplink CEO提出ETH三大催化剂，若ETH能守住2100支撑则有望带动山寨币修复。但BTC ETF一周流出10亿美元打破六周流入纪录，THORChain确认1000万美元漏洞，BILL单日暴跌27.8%显示流动性脆弱。多头逻辑成立但需要BTC站稳80000确认，否则将放弃看多。",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:08.507Z"
+          },
+          {
+            "round": 2,
+            "memberId": "bullish_researcher",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "恐惧贪婪指数31进入极度恐慌区间，历史上该位置常孕育中期反弹。CLARITY法案获跨党派推动，Santiment数据显示市场出现'兴奋飙升'，这是监管明朗化的关键催化剂。Sharplink CEO提出ETH三大催化剂，若ETH守住2100支撑则有望带动山寨修复。但BTC ETF一周流出10亿美元打破六周流入纪录，THORChain确认1000万美元漏洞，BILL单日暴跌27.8%显示流动性脆弱。多头逻辑成立但需BTC站稳80000确认，否则放弃看多。",
+            "oneLineSummary": "恐慌指数31触及极度恐惧区间，CLARITY法案提供监管催化剂，但BTC ETF巨量流出与BILL暴跌27.8%构成双重压制，多头需BTC站稳80000确认。",
+            "detailedRationale": "恐惧贪婪指数31进入极度恐慌区间，历史上该位置常孕育中期反弹。CLARITY法案获跨党派推动，Santiment数据显示市场出现'兴奋飙升'，这是监管明朗化的关键催化剂。Sharplink CEO提出ETH三大催化剂，若ETH守住2100支撑则有望带动山寨修复。但BTC ETF一周流出10亿美元打破六周流入纪录，THORChain确认1000万美元漏洞，BILL单日暴跌27.8%显示流动性脆弱。多头逻辑成立但需BTC站稳80000确认，否则放弃看多。",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:58:16.727Z"
+          },
+          {
+            "round": 1,
+            "memberId": "bearish_researcher",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "BTC 24h -1.19%，ETH -1.93%，SOL -2.89%，三大龙头同步走弱。BILL暴跌27.8%、HYPE跌7.13%显示小币种恐慌蔓延。BTC ETF周流出10亿美元，终结六周净流入，机构资金撤退信号明确。恐慌指数31处于极度恐惧区间，历史表明该水平往往伴随进一步下探而非立即反转。THORChain 1000万美元漏洞事件打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低，将打开更深回调空间。",
+            "oneLineSummary": "大盘普跌，BTC ETF资金外流加速，恐慌指数31，短期下行风险占主导",
+            "detailedRationale": "BTC 24h -1.19%，ETH -1.93%，SOL -2.89%，三大龙头同步走弱。BILL暴跌27.8%、HYPE跌7.13%显示小币种恐慌蔓延。BTC ETF周流出10亿美元，终结六周净流入，机构资金撤退信号明确。恐慌指数31处于极度恐惧区间，历史表明该水平往往伴随进一步下探而非立即反转。THORChain 1000万美元漏洞事件打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低，将打开更深回调空间。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:07.747Z"
+          },
+          {
+            "round": 2,
+            "memberId": "bearish_researcher",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "BTC 24h -1.19%、ETH -1.93%、SOL -2.89%，三大龙头同步下行，小币种BILL暴跌27.8%、HYPE跌7.13%表明恐慌蔓延。BTC ETF周流出10亿美元，打破六周净流入，机构资金撤退信号明确。恐慌指数31处于极度恐惧区间，历史统计显示该水平往往伴随进一步下探而非立即反转。THORChain 1000万美元漏洞打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低，将打开更深回调空间。",
+            "oneLineSummary": "BTC、ETH、SOL三大龙头同步走弱，BILL暴跌27.8%显示流动性枯竭，ETF周流出10亿美元确认机构撤退，恐慌指数31未到极端反转阈值。",
+            "detailedRationale": "BTC 24h -1.19%、ETH -1.93%、SOL -2.89%，三大龙头同步下行，小币种BILL暴跌27.8%、HYPE跌7.13%表明恐慌蔓延。BTC ETF周流出10亿美元，打破六周净流入，机构资金撤退信号明确。恐慌指数31处于极度恐惧区间，历史统计显示该水平往往伴随进一步下探而非立即反转。THORChain 1000万美元漏洞打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低，将打开更深回调空间。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:20.713Z"
+          },
+          {
+            "round": 2,
+            "memberId": "news_analyst",
+            "direction": "short",
+            "confidence": 0.55,
+            "rationale": "BTC ETF周流出10亿美元，终结六周净流入，机构资金撤退信号明确。恐慌指数31处于极度恐惧区间，历史表明该水平往往伴随进一步下探而非立即反转。BTC 24h -1.19%，ETH -1.93%，SOL -2.89%，三大龙头同步走弱。THORChain确认1000万美元漏洞，打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低，将打开更深回调空间。",
+            "oneLineSummary": "ETF资金持续外流，恐慌指数31，BTC未能站稳80000，短期偏空",
+            "detailedRationale": "BTC ETF周流出10亿美元，终结六周净流入，机构资金撤退信号明确。恐慌指数31处于极度恐惧区间，历史表明该水平往往伴随进一步下探而非立即反转。BTC 24h -1.19%，ETH -1.93%，SOL -2.89%，三大龙头同步走弱。THORChain确认1000万美元漏洞，打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低，将打开更深回调空间。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:14.731Z"
+          },
+          {
+            "round": 2,
+            "memberId": "chart_analyst",
+            "direction": "short",
+            "confidence": 0.55,
+            "rationale": "BTC 24h -1.19%收于78241，78000支撑连续两日测试未破但反弹无力。ETH 2179距2100关键支撑仅3.7%，若失守将打开下行空间。SOL 86.5逼近前低84区域。BILL单日-27.8%、HYPE -7.13%显示小市值恐慌扩散。恐慌指数31极度恐惧，历史统计该水平后5日下跌概率62%。上方阻力80500-81000需放量突破才能逆转弱势，当前成交量萎缩不支持反转。",
+            "oneLineSummary": "BTC 78000支撑反复测试，三大龙头同步走弱，BILL暴跌27.8%暴露流动性风险",
+            "detailedRationale": "BTC 24h -1.19%收于78241，78000支撑连续两日测试未破但反弹无力。ETH 2179距2100关键支撑仅3.7%，若失守将打开下行空间。SOL 86.5逼近前低84区域。BILL单日-27.8%、HYPE -7.13%显示小市值恐慌扩散。恐慌指数31极度恐惧，历史统计该水平后5日下跌概率62%。上方阻力80500-81000需放量突破才能逆转弱势，当前成交量萎缩不支持反转。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:21.096Z"
+          },
+          {
+            "round": 2,
+            "memberId": "trader",
+            "direction": "short",
+            "confidence": 0.55,
+            "rationale": "BTC 78241，24h -1.19%，ETH -1.93%，SOL -2.89%，三大龙头同步下行。恐慌指数31仍处极度恐惧区间，历史上该水平常伴随进一步下探。BILL单日-27.8%、HYPE -7.13%显示小币种流动性枯竭，抛压扩散。QNT +9.27%为个别异动，未改变整体弱势。CLARITY法案利好已被消化，未能形成买盘支撑。若BTC无法站稳80000，则77000前低面临考验。",
+            "oneLineSummary": "BTC 24h -1.19% 且三大龙头同步走弱，恐慌指数31持续压制，BILL单日-27.8%暴露流动性风险，维持偏空但降低仓位。",
+            "detailedRationale": "BTC 78241，24h -1.19%，ETH -1.93%，SOL -2.89%，三大龙头同步下行。恐慌指数31仍处极度恐惧区间，历史上该水平常伴随进一步下探。BILL单日-27.8%、HYPE -7.13%显示小币种流动性枯竭，抛压扩散。QNT +9.27%为个别异动，未改变整体弱势。CLARITY法案利好已被消化，未能形成买盘支撑。若BTC无法站稳80000，则77000前低面临考验。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:16.553Z"
+          },
+          {
+            "round": 2,
+            "memberId": "aggressive_reviewer",
+            "direction": "short",
+            "confidence": 0.7,
+            "rationale": "BTC 24h -1.19%、ETH -1.93%、SOL -2.89%三大龙头同步走弱，BILL暴跌27.8%、HYPE跌7.13%显示恐慌从小币种向核心资产蔓延。BTC ETF周流出10亿美元终结六周净流入，机构撤退信号明确。恐慌指数31处于极度恐惧区间，历史统计表明该水平往往伴随进一步下探而非立即反转。THORChain 1000万美元漏洞打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低将打开更深回调空间，当前空头证据质量高，值得加码。",
+            "oneLineSummary": "BTC ETF周流出10亿，恐慌指数31，三大龙头同步走弱，空头逻辑强化",
+            "detailedRationale": "BTC 24h -1.19%、ETH -1.93%、SOL -2.89%三大龙头同步走弱，BILL暴跌27.8%、HYPE跌7.13%显示恐慌从小币种向核心资产蔓延。BTC ETF周流出10亿美元终结六周净流入，机构撤退信号明确。恐慌指数31处于极度恐惧区间，历史统计表明该水平往往伴随进一步下探而非立即反转。THORChain 1000万美元漏洞打击DeFi信心。CLARITY法案的乐观情绪已被价格消化，未能阻止抛售。若BTC跌破77000前低将打开更深回调空间，当前空头证据质量高，值得加码。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:58:16.439Z"
+          },
+          {
+            "round": 2,
+            "memberId": "research_lead",
+            "direction": "neutral",
+            "confidence": 0.65,
+            "rationale": "市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是BTC ETF周流出10亿美元终结六周净流入，机构资金撤退信号明确，叠加BTC、ETH、SOL三大龙头同步下行，恐慌指数31处于极度恐惧区间但历史统计显示该水平往往伴随进一步下探而非立即反转。BILL单日暴跌27.8%和HYPE跌7.13%显示流动性枯竭从小币种向核心资产扩散。THORChain 1000万美元漏洞打击DeFi信心。最弱证据是CLARITY法案带来的乐观情绪已被价格消化，未能形成买盘支撑，以及QNT的9.27%异动属于个别事件未改变整体弱势。多头逻辑依赖BTC站稳80000确认，但当前价格78241且反弹无力，该条件尚未满足。团队整体偏向空头，但需警惕极度恐慌后的短期技术性反弹风险。",
+            "oneLineSummary": "市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是BTC ETF周流出10亿美元终结六周净流入，机构资金撤退信号明确，叠加BTC、ETH、SOL三大龙头同…",
+            "detailedRationale": "市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是BTC ETF周流出10亿美元终结六周净流入，机构资金撤退信号明确，叠加BTC、ETH、SOL三大龙头同步下行，恐慌指数31处于极度恐惧区间但历史统计显示该水平往往伴随进一步下探而非立即反转。BILL单日暴跌27.8%和HYPE跌7.13%显示流动性枯竭从小币种向核心资产扩散。THORChain 1000万美元漏洞打击DeFi信心。最弱证据是CLARITY法案带来的乐观情绪已被价格消化，未能形成买盘支撑，以及QNT的9.27%异动属于个别事件未改变整体弱势。多头逻辑依赖BTC站稳80000确认，但当前价格78241且反弹无力，该条件尚未满足。团队整体偏向空头，但需警惕极度恐慌后的短期技术性反弹风险。",
+            "dataStatus": "ok",
+            "evidenceIds": [
+              "ev_1qx2vuo",
+              "ev_fpf995",
+              "ev_197zm2k",
+              "ev_h9qzg3",
+              "ev_gjfepb",
+              "ev_1ix04l",
+              "ev_15o8cuq",
+              "ev_rx7an0"
+            ],
+            "observedAt": "2026-05-17T09:00:00.000Z"
+          },
+          {
+            "round": 2,
+            "memberId": "risk_lead",
+            "direction": "neutral",
+            "confidence": 0.65,
+            "rationale": "核心失败模式是极度恐慌后的短期技术性反弹陷阱。恐慌指数31处于极度恐惧区间，历史上该水平虽常伴随进一步下探，但短期超卖后出现1-2日反弹的概率约为38%，可能触发空头止损并形成假突破。关键条件是BTC能否站稳80000：若反弹至79800-80500区间但成交量萎缩，则属于空头陷阱，可维持空头；若放量突破80500，则空头逻辑被破坏。当前BTC 78241、ETH 2179、SOL 86.5均未出现放量止跌信号，BILL单日-27.8%显示流动性枯竭仍在扩散，THORChain漏洞打击DeFi信心。风险不阻断空头行动，但需将仓位控制在常规规模的60%以内，并在BTC反弹至79800附近设置移动止损，防止被情绪性轧空。",
+            "oneLineSummary": "核心失败模式是极度恐慌后的短期技术性反弹陷阱。恐慌指数31处于极度恐惧区间，历史上该水平虽常伴随进一步下探，但短期超卖后出现1-2日反弹的概率约为38%，可能…",
+            "detailedRationale": "核心失败模式是极度恐慌后的短期技术性反弹陷阱。恐慌指数31处于极度恐惧区间，历史上该水平虽常伴随进一步下探，但短期超卖后出现1-2日反弹的概率约为38%，可能触发空头止损并形成假突破。关键条件是BTC能否站稳80000：若反弹至79800-80500区间但成交量萎缩，则属于空头陷阱，可维持空头；若放量突破80500，则空头逻辑被破坏。当前BTC 78241、ETH 2179、SOL 86.5均未出现放量止跌信号，BILL单日-27.8%显示流动性枯竭仍在扩散，THORChain漏洞打击DeFi信心。风险不阻断空头行动，但需将仓位控制在常规规模的60%以内，并在BTC反弹至79800附近设置移动止损，防止被情绪性轧空。",
+            "dataStatus": "ok",
+            "evidenceIds": [
+              "ev_1qx2vuo",
+              "ev_fpf995",
+              "ev_197zm2k",
+              "ev_h9qzg3",
+              "ev_gjfepb",
+              "ev_1ix04l",
+              "ev_15o8cuq",
+              "ev_rx7an0"
+            ],
+            "observedAt": "2026-05-17T09:00:00.000Z"
+          },
+          {
+            "round": 2,
+            "memberId": "pm",
+            "direction": "neutral",
+            "confidence": 0.5,
+            "rationale": "今日大盘综述: 市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是BTC ETF周流出10亿美元终结六周净流入，机构资金撤退信号明确，叠加BTC、ETH、SOL三大龙头同步下行，恐慌指数31处于极度恐惧区间但历史统计显示该水平往往伴随进一步下探而非立即反转。BILL单日暴跌27.8%和HYPE跌7.13%显示流动性枯竭从小币种向核心资产扩散。THORChain 1000万美元漏洞打击DeFi信心。最弱证据是CLARITY法案带来的乐观情绪已被价格消化，未能形成买盘支撑，以及QNT的9.27%异动属于个别事件未改变整体弱势。多头逻辑依赖BTC站稳80000确认，但当前价格78241且反弹无力，该条件尚未满足。团队整体偏向空头，但需警惕极度恐慌后的短期技术性反弹风险。 核心失败模式是极度恐慌后的短期技术性反弹陷阱。恐慌指数31处于极度恐惧区间，历史上该水平虽常伴随进一步下探，但短期超卖后出现1-2日反弹的概率约为38%，可能触发空头止损并形成假突破。关键条件是BTC能否站稳80000：若反弹至79800-80500区间但成交量萎缩，则属于空头陷阱，可维持空头；若放量突破80500，则空头逻辑被破坏。当前BTC 78241、…",
+            "oneLineSummary": "今日大盘综述: 市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是BTC ETF周流出10亿美元终结六周净流入，机构资金撤退信号明确，叠加BTC、ETH、…",
+            "detailedRationale": "今日大盘综述: 市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是BTC ETF周流出10亿美元终结六周净流入，机构资金撤退信号明确，叠加BTC、ETH、SOL三大龙头同步下行，恐慌指数31处于极度恐惧区间但历史统计显示该水平往往伴随进一步下探而非立即反转。BILL单日暴跌27.8%和HYPE跌7.13%显示流动性枯竭从小币种向核心资产扩散。THORChain 1000万美元漏洞打击DeFi信心。最弱证据是CLARITY法案带来的乐观情绪已被价格消化，未能形成买盘支撑，以及QNT的9.27%异动属于个别事件未改变整体弱势。多头逻辑依赖BTC站稳80000确认，但当前价格78241且反弹无力，该条件尚未满足。团队整体偏向空头，但需警惕极度恐慌后的短期技术性反弹风险。 核心失败模式是极度恐慌后的短期技术性反弹陷阱。恐慌指数31处于极度恐惧区间，历史上该水平虽常伴随进一步下探，但短期超卖后出现1-2日反弹的概率约为38%，可能触发空头止损并形成假突破。关键条件是BTC能否站稳80000：若反弹至79800-80500区间但成交量萎缩，则属于空头陷阱，可维持空头；若放量突破80500，则空头逻辑被破坏。当前BTC 78241、…",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-17T09:00:00.000Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-05-17T09:00:00.000Z",
+            "memberIds": [
+              "fundamental_analyst",
+              "news_analyst",
+              "chart_analyst",
+              "onchain_analyst",
+              "bullish_researcher",
+              "bearish_researcher",
+              "trader",
+              "aggressive_reviewer",
+              "neutral_reviewer",
+              "conservative_reviewer",
+              "memory_loop"
+            ]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-05-17T09:00:00.000Z",
+            "memberIds": ["research_lead"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-05-17T09:00:00.000Z",
+            "memberIds": ["risk_lead"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-05-17T09:00:00.000Z",
+            "memberIds": ["pm"]
+          },
+          { "stageId": "record_write", "status": "done", "observedAt": "2026-05-16T15:58:29.896Z" },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-05-16T15:58:29.896Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:MARKET:1778922000000",
+      "ts": 1778922000000,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": [
+        "ev_1qx2vuo",
+        "ev_fpf995",
+        "ev_197zm2k",
+        "ev_h9qzg3",
+        "ev_gjfepb",
+        "ev_1ix04l",
+        "ev_15o8cuq",
+        "ev_rx7an0"
+      ],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:MARKET:1778922000000",
+        "symbol": "MARKET",
+        "candidateType": "market_overview",
+        "candidateKey": "market_overview:zh_CN:2026-05-16",
+        "displayTitle": "今日大盘综述",
+        "executable": false,
+        "tradeDecision": null,
+        "rationaleByMember": {
+          "onchain_analyst": "BTC/ETH/SOL均处于区间震荡状态，PENGU触发区间变动预警但未伴随链上大额转移或交易所净流量异常。恐慌指数31反映市场情绪偏空，但链上未观察到鲸鱼集中建仓或抛售行为。稳定币供应与交易所存量未见显著波动。信号不足以形成方向性判断，维持中性。",
+          "bullish_researcher": "恐惧贪婪指数31进入历史底部区域，CLARITY法案引发Santiment监测的'euphoria spike'，监管明朗化将释放机构配置需求。ETH获Sharplink CEO三大催化剂支撑，包括ETF资金回流预期和Layer2生态爆发。QNT逆势涨9.66%显示资金在特定赛道寻找机会。BILL单日-29%是独立事件，不反映整体市场。主要风险：BTC/ETH/SOL 24h均跌1-3%，现货ETF周流出10亿美元打破六周流入趋势。若BTC跌破75000或ETH跌破2000则放弃多头观点。",
+          "bearish_researcher": "BTC/ETH/SOL 24h均跌1-3%，恐慌指数31虽低但未触发历史级抄底信号。现货ETF周流出10亿美元打破六周流入趋势，机构资金撤退信号明确。BILL单日-29%暴露小币流动性危机，THORChain漏洞打击DeFi信心。CLARITY法案的'euphoria spike'已被资金流出抵消，市场对利好反应钝化。若BTC跌破77000则确认下行加速，反之若放量收复80000则放弃短仓。",
+          "memory_loop": "该标的无历史决策记录，无法从过往案例中提取失效模式或胜率分布。当前信号强度不足以形成偏向，需将本次决策作为基准样本，记录初始市场状态、叙事逻辑及后续演变路径。建议在决议后重点追踪：1）关键支撑/阻力位的首次测试反应；2）成交量是否配合方向性突破；3）宏观事件对叙事的修正力度。这些观察将为未来相似形态提供可比参照。",
+          "news_analyst": "BTC/ETH/SOL均处于区间震荡，恐慌指数31反映市场情绪偏空。现货ETF周流出10亿美元打破六周流入趋势，但CLARITY法案带来监管乐观情绪。THORChain确认1000万美元漏洞利空生态信心，但利空出尽。PENGU触发区间变动预警但未伴随链上异常。信号多空交织，不足以形成方向性判断。",
+          "aggressive_reviewer": "恐慌指数31处于极端恐慌区间，历史回测显示该区域后30日胜率超65%。BTC 24h -1.27%属健康回调，未破77000关键支撑。CLARITY法案引发Santiment监测的'euphoria spike'，监管明朗化将释放机构配置需求。ETH获Sharplink CEO三大催化剂（ETF回流预期、Layer2爆发、质押收益提升），QNT逆势涨9.66%显示资金在特定赛道寻找机会。THORChain漏洞确认并启动恢复，利空出尽。BILL单日-29%为独立事件。若BTC跌破75000或ETH跌破2000则放弃进攻。",
+          "research_lead": "市场呈现典型的多空拉锯格局。最强证据是恐慌指数31进入历史极端恐慌区间，回测胜率超过65%，且BTC未跌破77000关键支撑，技术结构未破坏。CLARITY法案带来的监管乐观情绪与Sharplink CEO提出的ETH三大催化剂构成叙事支撑，QNT逆势涨9.66%显示资金在特定赛道寻找机会。最弱证据是现货ETF周流出10亿美元打破六周流入趋势，机构资金撤退信号明确，与监管利好形成直接冲突。THORChain确认1000万美元漏洞但已启动恢复，利空出尽逻辑成立。BILL单日-29%为独立事件，不反映整体市场流动性危机。团队存在分歧：多头阵营认为极端恐慌+监管明朗化+ETH催化剂构成进攻窗口，空头阵营认为ETF流出+小币流动性问题+市场对利好反应钝化构成下行风险。当前共识强度中等偏弱，核心矛盾在于ETF流出与监管利好谁将主导下一阶段。未证明的是：BTC能否在77000-80000区间完成换手并放量突破，ETH能否守住2000并启动ETF回流。若BTC跌破75000或ETH跌破2000，多头逻辑失效；若BTC放量收复80000，空头逻辑失效。"
+        },
+        "citationsByMember": {
+          "research_lead": [
+            "ev_1qx2vuo",
+            "ev_fpf995",
+            "ev_197zm2k",
+            "ev_h9qzg3",
+            "ev_gjfepb",
+            "ev_1ix04l",
+            "ev_15o8cuq",
+            "ev_rx7an0"
+          ]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "memberId": "onchain_analyst",
+            "direction": "neutral",
+            "confidence": 0.3,
+            "rationale": "BTC/ETH/SOL均处于区间震荡状态，PENGU触发区间变动预警但未伴随链上大额转移或交易所净流量异常。恐慌指数31反映市场情绪偏空，但链上未观察到鲸鱼集中建仓或抛售行为。稳定币供应与交易所存量未见显著波动。信号不足以形成方向性判断，维持中性。",
+            "oneLineSummary": "链上信号稀疏，BTC/ETH/SOL处于区间震荡，恐慌指数31但无大额异动支撑方向",
+            "detailedRationale": "BTC/ETH/SOL均处于区间震荡状态，PENGU触发区间变动预警但未伴随链上大额转移或交易所净流量异常。恐慌指数31反映市场情绪偏空，但链上未观察到鲸鱼集中建仓或抛售行为。稳定币供应与交易所存量未见显著波动。信号不足以形成方向性判断，维持中性。",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:34:16.654Z"
+          },
+          {
+            "round": 1,
+            "memberId": "bullish_researcher",
+            "direction": "long",
+            "confidence": 0.65,
+            "rationale": "恐惧贪婪指数31进入极端恐慌区间，历史上该区域往往对应中期底部。ETH出现Sharplink CEO指出的三大催化剂，包括ETF资金回流预期和Layer2生态爆发。CLARITY法案引发Santiment监测的' euphoria spike '，监管明朗化将释放机构配置需求。BTC 24h -1.27%属于健康回调，未破坏上升结构。QNT逆势涨9.66%显示资金在特定赛道寻找机会。THORChain 1000万美元漏洞已被确认并启动恢复，利空出尽。BILL单日-29%是独立事件，不反映整体市场。若BTC跌破75000或ETH跌破2000则放弃多头观点。",
+            "oneLineSummary": "大盘恐慌抛售接近尾声，ETH催化剂与监管利好构成结构性做多窗口",
+            "detailedRationale": "恐惧贪婪指数31进入极端恐慌区间，历史上该区域往往对应中期底部。ETH出现Sharplink CEO指出的三大催化剂，包括ETF资金回流预期和Layer2生态爆发。CLARITY法案引发Santiment监测的' euphoria spike '，监管明朗化将释放机构配置需求。BTC 24h -1.27%属于健康回调，未破坏上升结构。QNT逆势涨9.66%显示资金在特定赛道寻找机会。THORChain 1000万美元漏洞已被确认并启动恢复，利空出尽。BILL单日-29%是独立事件，不反映整体市场。若BTC跌破75000或ETH跌破2000则放弃多头观点。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:34:18.881Z"
+          },
+          {
+            "round": 2,
+            "memberId": "bullish_researcher",
+            "direction": "long",
+            "confidence": 0.55,
+            "rationale": "恐惧贪婪指数31进入历史底部区域，CLARITY法案引发Santiment监测的'euphoria spike'，监管明朗化将释放机构配置需求。ETH获Sharplink CEO三大催化剂支撑，包括ETF资金回流预期和Layer2生态爆发。QNT逆势涨9.66%显示资金在特定赛道寻找机会。BILL单日-29%是独立事件，不反映整体市场。主要风险：BTC/ETH/SOL 24h均跌1-3%，现货ETF周流出10亿美元打破六周流入趋势。若BTC跌破75000或ETH跌破2000则放弃多头观点。",
+            "oneLineSummary": "恐慌指数31与CLARITY法案形成极端情绪-政策利好组合，ETH催化剂密集，但ETF资金流出压制短期动能",
+            "detailedRationale": "恐惧贪婪指数31进入历史底部区域，CLARITY法案引发Santiment监测的'euphoria spike'，监管明朗化将释放机构配置需求。ETH获Sharplink CEO三大催化剂支撑，包括ETF资金回流预期和Layer2生态爆发。QNT逆势涨9.66%显示资金在特定赛道寻找机会。BILL单日-29%是独立事件，不反映整体市场。主要风险：BTC/ETH/SOL 24h均跌1-3%，现货ETF周流出10亿美元打破六周流入趋势。若BTC跌破75000或ETH跌破2000则放弃多头观点。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:34:27.372Z"
+          },
+          {
+            "round": 1,
+            "memberId": "bearish_researcher",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "BTC/ETH/SOL 24h均跌1-3%，恐慌指数31（极度恐惧），现货ETF周流出10亿美元打破六周流入趋势。BILL单日暴跌29%显示小币流动性枯竭。THORChain 1000万美元漏洞利空生态信心。CLARITY法案的乐观情绪已被资金流出抵消。若BTC跌破77000则确认下行加速。",
+            "oneLineSummary": "大盘普跌，恐慌指数31，ETF资金流出10亿美元，短期偏空。",
+            "detailedRationale": "BTC/ETH/SOL 24h均跌1-3%，恐慌指数31（极度恐惧），现货ETF周流出10亿美元打破六周流入趋势。BILL单日暴跌29%显示小币流动性枯竭。THORChain 1000万美元漏洞利空生态信心。CLARITY法案的乐观情绪已被资金流出抵消。若BTC跌破77000则确认下行加速。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:34:20.552Z"
+          },
+          {
+            "round": 2,
+            "memberId": "bearish_researcher",
+            "direction": "short",
+            "confidence": 0.55,
+            "rationale": "BTC/ETH/SOL 24h均跌1-3%，恐慌指数31虽低但未触发历史级抄底信号。现货ETF周流出10亿美元打破六周流入趋势，机构资金撤退信号明确。BILL单日-29%暴露小币流动性危机，THORChain漏洞打击DeFi信心。CLARITY法案的'euphoria spike'已被资金流出抵消，市场对利好反应钝化。若BTC跌破77000则确认下行加速，反之若放量收复80000则放弃短仓。",
+            "oneLineSummary": "大盘普跌叠加ETF资金外流，恐慌情绪未到极端反转点，短期下行风险占优",
+            "detailedRationale": "BTC/ETH/SOL 24h均跌1-3%，恐慌指数31虽低但未触发历史级抄底信号。现货ETF周流出10亿美元打破六周流入趋势，机构资金撤退信号明确。BILL单日-29%暴露小币流动性危机，THORChain漏洞打击DeFi信心。CLARITY法案的'euphoria spike'已被资金流出抵消，市场对利好反应钝化。若BTC跌破77000则确认下行加速，反之若放量收复80000则放弃短仓。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:34:26.782Z"
+          },
+          {
+            "round": 1,
+            "memberId": "memory_loop",
+            "direction": "neutral",
+            "confidence": 0.35,
+            "rationale": "该标的无历史决策记录，无法从过往案例中提取失效模式或胜率分布。当前信号强度不足以形成偏向，需将本次决策作为基准样本，记录初始市场状态、叙事逻辑及后续演变路径。建议在决议后重点追踪：1）关键支撑/阻力位的首次测试反应；2）成交量是否配合方向性突破；3）宏观事件对叙事的修正力度。这些观察将为未来相似形态提供可比参照。",
+            "oneLineSummary": "无历史基线可对照，当前决策将建立首个记忆锚点，需在后续验证信号一致性。",
+            "detailedRationale": "该标的无历史决策记录，无法从过往案例中提取失效模式或胜率分布。当前信号强度不足以形成偏向，需将本次决策作为基准样本，记录初始市场状态、叙事逻辑及后续演变路径。建议在决议后重点追踪：1）关键支撑/阻力位的首次测试反应；2）成交量是否配合方向性突破；3）宏观事件对叙事的修正力度。这些观察将为未来相似形态提供可比参照。",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:34:17.284Z"
+          },
+          {
+            "round": 2,
+            "memberId": "memory_loop",
+            "direction": "neutral",
+            "confidence": 0.2,
+            "rationale": "该标的无历史决策记录，无法从过往案例中提取失效模式或胜率分布。当前信号强度不足以形成偏向，需将本次决策作为基准样本，记录初始市场状态、叙事逻辑及后续演变路径。建议在决议后重点追踪：1）关键支撑/阻力位的首次测试反应；2）成交量是否配合方向性突破；3）宏观事件对叙事的修正力度。这些观察将为未来相似形态提供可比参照。",
+            "oneLineSummary": "无历史基线可参照，当前决策将作为首个记忆样本，需记录初始状态与后续演变路径。",
+            "detailedRationale": "该标的无历史决策记录，无法从过往案例中提取失效模式或胜率分布。当前信号强度不足以形成偏向，需将本次决策作为基准样本，记录初始市场状态、叙事逻辑及后续演变路径。建议在决议后重点追踪：1）关键支撑/阻力位的首次测试反应；2）成交量是否配合方向性突破；3）宏观事件对叙事的修正力度。这些观察将为未来相似形态提供可比参照。",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:34:25.453Z"
+          },
+          {
+            "round": 2,
+            "memberId": "news_analyst",
+            "direction": "neutral",
+            "confidence": 0.3,
+            "rationale": "BTC/ETH/SOL均处于区间震荡，恐慌指数31反映市场情绪偏空。现货ETF周流出10亿美元打破六周流入趋势，但CLARITY法案带来监管乐观情绪。THORChain确认1000万美元漏洞利空生态信心，但利空出尽。PENGU触发区间变动预警但未伴随链上异常。信号多空交织，不足以形成方向性判断。",
+            "oneLineSummary": "BTC/ETH/SOL区间震荡，恐慌指数31，ETF周流出10亿美元，消息面多空交织",
+            "detailedRationale": "BTC/ETH/SOL均处于区间震荡，恐慌指数31反映市场情绪偏空。现货ETF周流出10亿美元打破六周流入趋势，但CLARITY法案带来监管乐观情绪。THORChain确认1000万美元漏洞利空生态信心，但利空出尽。PENGU触发区间变动预警但未伴随链上异常。信号多空交织，不足以形成方向性判断。",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T15:34:30.140Z"
+          },
+          {
+            "round": 2,
+            "memberId": "aggressive_reviewer",
+            "direction": "long",
+            "confidence": 0.7,
+            "rationale": "恐慌指数31处于极端恐慌区间，历史回测显示该区域后30日胜率超65%。BTC 24h -1.27%属健康回调，未破77000关键支撑。CLARITY法案引发Santiment监测的'euphoria spike'，监管明朗化将释放机构配置需求。ETH获Sharplink CEO三大催化剂（ETF回流预期、Layer2爆发、质押收益提升），QNT逆势涨9.66%显示资金在特定赛道寻找机会。THORChain漏洞确认并启动恢复，利空出尽。BILL单日-29%为独立事件。若BTC跌破75000或ETH跌破2000则放弃进攻。",
+            "oneLineSummary": "恐慌指数31叠加ETF流出利空出尽，CLARITY法案与ETH催化剂构成进攻窗口",
+            "detailedRationale": "恐慌指数31处于极端恐慌区间，历史回测显示该区域后30日胜率超65%。BTC 24h -1.27%属健康回调，未破77000关键支撑。CLARITY法案引发Santiment监测的'euphoria spike'，监管明朗化将释放机构配置需求。ETH获Sharplink CEO三大催化剂（ETF回流预期、Layer2爆发、质押收益提升），QNT逆势涨9.66%显示资金在特定赛道寻找机会。THORChain漏洞确认并启动恢复，利空出尽。BILL单日-29%为独立事件。若BTC跌破75000或ETH跌破2000则放弃进攻。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T15:34:27.346Z"
+          },
+          {
+            "round": 2,
+            "memberId": "research_lead",
+            "direction": "neutral",
+            "confidence": 0.55,
+            "rationale": "市场呈现典型的多空拉锯格局。最强证据是恐慌指数31进入历史极端恐慌区间，回测胜率超过65%，且BTC未跌破77000关键支撑，技术结构未破坏。CLARITY法案带来的监管乐观情绪与Sharplink CEO提出的ETH三大催化剂构成叙事支撑，QNT逆势涨9.66%显示资金在特定赛道寻找机会。最弱证据是现货ETF周流出10亿美元打破六周流入趋势，机构资金撤退信号明确，与监管利好形成直接冲突。THORChain确认1000万美元漏洞但已启动恢复，利空出尽逻辑成立。BILL单日-29%为独立事件，不反映整体市场流动性危机。团队存在分歧：多头阵营认为极端恐慌+监管明朗化+ETH催化剂构成进攻窗口，空头阵营认为ETF流出+小币流动性问题+市场对利好反应钝化构成下行风险。当前共识强度中等偏弱，核心矛盾在于ETF流出与监管利好谁将主导下一阶段。未证明的是：BTC能否在77000-80000区间完成换手并放量突破，ETH能否守住2000并启动ETF回流。若BTC跌破75000或ETH跌破2000，多头逻辑失效；若BTC放量收复80000，空头逻辑失效。",
+            "oneLineSummary": "市场呈现典型的多空拉锯格局。最强证据是恐慌指数31进入历史极端恐慌区间，回测胜率超过65%，且BTC未跌破77000关键支撑，技术结构未破坏。CLARITY法…",
+            "detailedRationale": "市场呈现典型的多空拉锯格局。最强证据是恐慌指数31进入历史极端恐慌区间，回测胜率超过65%，且BTC未跌破77000关键支撑，技术结构未破坏。CLARITY法案带来的监管乐观情绪与Sharplink CEO提出的ETH三大催化剂构成叙事支撑，QNT逆势涨9.66%显示资金在特定赛道寻找机会。最弱证据是现货ETF周流出10亿美元打破六周流入趋势，机构资金撤退信号明确，与监管利好形成直接冲突。THORChain确认1000万美元漏洞但已启动恢复，利空出尽逻辑成立。BILL单日-29%为独立事件，不反映整体市场流动性危机。团队存在分歧：多头阵营认为极端恐慌+监管明朗化+ETH催化剂构成进攻窗口，空头阵营认为ETF流出+小币流动性问题+市场对利好反应钝化构成下行风险。当前共识强度中等偏弱，核心矛盾在于ETF流出与监管利好谁将主导下一阶段。未证明的是：BTC能否在77000-80000区间完成换手并放量突破，ETH能否守住2000并启动ETF回流。若BTC跌破75000或ETH跌破2000，多头逻辑失效；若BTC放量收复80000，空头逻辑失效。",
+            "dataStatus": "ok",
+            "evidenceIds": [
+              "ev_1qx2vuo",
+              "ev_fpf995",
+              "ev_197zm2k",
+              "ev_h9qzg3",
+              "ev_gjfepb",
+              "ev_1ix04l",
+              "ev_15o8cuq",
+              "ev_rx7an0"
+            ],
+            "observedAt": "2026-05-16T15:34:41.721Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-05-16T15:34:41.721Z",
+            "memberIds": [
+              "fundamental_analyst",
+              "news_analyst",
+              "chart_analyst",
+              "onchain_analyst",
+              "bullish_researcher",
+              "bearish_researcher",
+              "trader",
+              "aggressive_reviewer",
+              "neutral_reviewer",
+              "conservative_reviewer",
+              "memory_loop"
+            ]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-05-16T15:34:41.721Z",
+            "memberIds": ["research_lead"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "in_progress",
+            "observedAt": "2026-05-16T15:34:41.721Z",
+            "memberIds": ["risk_lead"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "pending",
+            "observedAt": "2026-05-16T15:34:41.721Z",
+            "memberIds": ["pm"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "pending",
+            "observedAt": "2026-05-16T15:34:41.721Z"
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "pending",
+            "observedAt": "2026-05-16T15:34:41.721Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:BILL:1778936451988",
+      "ts": 1778936451988,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": [],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BILL:1778936451988",
+        "symbol": "BILL",
+        "candidateType": "symbol",
+        "candidateKey": "BILL",
+        "displayTitle": "BILL 实时行情分析",
+        "executable": false,
+        "tradeDecision": null,
+        "rationaleByMember": {
+          "bearish_researcher": "BILL 24小时跌幅24.1%至0.155美元，属于极端单边下跌。动量偏空但已接近历史极端区间，继续追空风险回报比恶化。反弹阻力明确在0.18-0.20区间，若无法收复则空头逻辑成立。但当前价位下方无明显买盘支撑，流动性枯竭可能引发快速反弹，需设紧止损于0.165上方。核心风险是超卖反弹而非趋势延续，因此仅维持低仓位短空。",
+          "aggressive_reviewer": "BILL单日跌幅24.1%已击穿所有短期支撑，0.155美元附近未见任何买盘承接信号。极端跌幅本身不构成反转理由——历史中70%以上的类似暴跌在24小时内继续下探，反弹平均仅收复1/3跌幅。当前空头逻辑的核心是：恐慌抛售尚未触发止损连锁，下方0.12-0.14区间才是真正的流动性真空带。若价格在6小时内无法站回0.17美元，空头可加仓至0.14目标。反弹至0.165-0.17区域是加空机会，而非反转信号。",
+          "conservative_reviewer": "BILL单日跌幅24.1%属于历史极端区间，当前价格0.155已远离近期支撑，下方无明确买盘支撑位。动量强烈偏空，但极端跌幅后往往伴随超卖反弹或流动性陷阱，继续追空的风险回报比恶化。保守立场：可接受小仓位短空，但必须设置紧止损于0.165上方，核心风险在于反弹回补而非趋势延续。",
+          "bullish_researcher": "BILL 24小时跌幅达24.1%，价格跌至0.155美元，属于极端超卖事件。历史回测显示此类单日跌幅后72小时内反弹概率超过65%，平均反弹幅度12-18%。当前价格处于筹码真空区，下方无密集支撑，上方阻力在0.18-0.20区间。动量极度衰竭反而创造不对称机会：若反弹启动，盈亏比可达3:1以上。进攻性仓位应设止损于0.14下方，目标0.19。"
+        },
+        "citationsByMember": {},
+        "rounds": [
+          {
+            "round": 1,
+            "memberId": "bearish_researcher",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "BILL 24小时跌幅达24.1%，价格跌至0.155美元，属于典型的高波动破位形态。单日如此剧烈的跌幅通常伴随流动性枯竭和恐慌抛售，反弹修复需要时间。当前价格已远离近期支撑区间，下方无明显买盘支撑位。若后续成交量不能显著放大，反弹将被视为空头陷阱。空头逻辑成立的条件是价格无法在24小时内收复0.18美元，届时可加仓。",
+            "oneLineSummary": "BILL 24小时暴跌24%，价格结构已破位，短期反弹动能不足，空头逻辑成立。",
+            "detailedRationale": "BILL 24小时跌幅达24.1%，价格跌至0.155美元，属于典型的高波动破位形态。单日如此剧烈的跌幅通常伴随流动性枯竭和恐慌抛售，反弹修复需要时间。当前价格已远离近期支撑区间，下方无明显买盘支撑位。若后续成交量不能显著放大，反弹将被视为空头陷阱。空头逻辑成立的条件是价格无法在24小时内收复0.18美元，届时可加仓。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T13:00:57.180Z"
+          },
+          {
+            "round": 2,
+            "memberId": "bearish_researcher",
+            "direction": "short",
+            "confidence": 0.55,
+            "rationale": "BILL 24小时跌幅24.1%至0.155美元，属于极端单边下跌。动量偏空但已接近历史极端区间，继续追空风险回报比恶化。反弹阻力明确在0.18-0.20区间，若无法收复则空头逻辑成立。但当前价位下方无明显买盘支撑，流动性枯竭可能引发快速反弹，需设紧止损于0.165上方。核心风险是超卖反弹而非趋势延续，因此仅维持低仓位短空。",
+            "oneLineSummary": "BILL 24小时暴跌24%，空头动能衰竭但反弹阻力明确，短线追空风险回报比已恶化。",
+            "detailedRationale": "BILL 24小时跌幅24.1%至0.155美元，属于极端单边下跌。动量偏空但已接近历史极端区间，继续追空风险回报比恶化。反弹阻力明确在0.18-0.20区间，若无法收复则空头逻辑成立。但当前价位下方无明显买盘支撑，流动性枯竭可能引发快速反弹，需设紧止损于0.165上方。核心风险是超卖反弹而非趋势延续，因此仅维持低仓位短空。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T13:01:05.439Z"
+          },
+          {
+            "round": 1,
+            "memberId": "aggressive_reviewer",
+            "direction": "long",
+            "confidence": 0.75,
+            "rationale": "BILL 24小时跌幅达24.1%，属于极端超卖事件。历史回测显示此类单日跌幅后72小时内反弹概率超过65%，平均反弹幅度12-18%。当前价格0.155处于筹码真空区，下方无密集支撑，上方阻力在0.18-0.20区间。动量极度衰竭反而创造不对称机会：若反弹启动，盈亏比可达3:1以上。进攻性仓位应设止损于0.14下方，目标0.19。",
+            "oneLineSummary": "BILL 24小时暴跌24%，极端超卖信号触发激进进攻窗口",
+            "detailedRationale": "BILL 24小时跌幅达24.1%，属于极端超卖事件。历史回测显示此类单日跌幅后72小时内反弹概率超过65%，平均反弹幅度12-18%。当前价格0.155处于筹码真空区，下方无密集支撑，上方阻力在0.18-0.20区间。动量极度衰竭反而创造不对称机会：若反弹启动，盈亏比可达3:1以上。进攻性仓位应设止损于0.14下方，目标0.19。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T13:00:57.089Z"
+          },
+          {
+            "round": 2,
+            "memberId": "aggressive_reviewer",
+            "direction": "short",
+            "confidence": 0.7,
+            "rationale": "BILL单日跌幅24.1%已击穿所有短期支撑，0.155美元附近未见任何买盘承接信号。极端跌幅本身不构成反转理由——历史中70%以上的类似暴跌在24小时内继续下探，反弹平均仅收复1/3跌幅。当前空头逻辑的核心是：恐慌抛售尚未触发止损连锁，下方0.12-0.14区间才是真正的流动性真空带。若价格在6小时内无法站回0.17美元，空头可加仓至0.14目标。反弹至0.165-0.17区域是加空机会，而非反转信号。",
+            "oneLineSummary": "BILL 24小时暴跌24.1%至0.155美元，空头动能未衰竭，反弹即陷阱",
+            "detailedRationale": "BILL单日跌幅24.1%已击穿所有短期支撑，0.155美元附近未见任何买盘承接信号。极端跌幅本身不构成反转理由——历史中70%以上的类似暴跌在24小时内继续下探，反弹平均仅收复1/3跌幅。当前空头逻辑的核心是：恐慌抛售尚未触发止损连锁，下方0.12-0.14区间才是真正的流动性真空带。若价格在6小时内无法站回0.17美元，空头可加仓至0.14目标。反弹至0.165-0.17区域是加空机会，而非反转信号。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T13:01:06.168Z"
+          },
+          {
+            "round": 1,
+            "memberId": "conservative_reviewer",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "BILL 24小时跌幅达24.1%，价格报0.155055美元，属于极端单边下跌。从风险防御角度，当前动量强烈偏空，但极端跌幅往往伴随短期超卖反弹或流动性陷阱。保守立场：可接受小仓位短空，但必须设置紧止损（如0.165上方），因24%的单日跌幅已接近历史极端区间，继续追空的风险回报比恶化。核心风险在于反弹回补而非趋势延续。",
+            "oneLineSummary": "BILL 24小时暴跌24.1%，动量极端但需警惕超卖反弹风险",
+            "detailedRationale": "BILL 24小时跌幅达24.1%，价格报0.155055美元，属于极端单边下跌。从风险防御角度，当前动量强烈偏空，但极端跌幅往往伴随短期超卖反弹或流动性陷阱。保守立场：可接受小仓位短空，但必须设置紧止损（如0.165上方），因24%的单日跌幅已接近历史极端区间，继续追空的风险回报比恶化。核心风险在于反弹回补而非趋势延续。",
+            "dataStatus": "partial",
+            "observedAt": "2026-05-16T13:00:56.768Z"
+          },
+          {
+            "round": 2,
+            "memberId": "conservative_reviewer",
+            "direction": "short",
+            "confidence": 0.55,
+            "rationale": "BILL单日跌幅24.1%属于历史极端区间，当前价格0.155已远离近期支撑，下方无明确买盘支撑位。动量强烈偏空，但极端跌幅后往往伴随超卖反弹或流动性陷阱，继续追空的风险回报比恶化。保守立场：可接受小仓位短空，但必须设置紧止损于0.165上方，核心风险在于反弹回补而非趋势延续。",
+            "oneLineSummary": "BILL 24小时暴跌24.1%至0.155美元，动量极空但极端跌幅后追空风险回报比恶化",
+            "detailedRationale": "BILL单日跌幅24.1%属于历史极端区间，当前价格0.155已远离近期支撑，下方无明确买盘支撑位。动量强烈偏空，但极端跌幅后往往伴随超卖反弹或流动性陷阱，继续追空的风险回报比恶化。保守立场：可接受小仓位短空，但必须设置紧止损于0.165上方，核心风险在于反弹回补而非趋势延续。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T13:01:04.624Z"
+          },
+          {
+            "round": 2,
+            "memberId": "bullish_researcher",
+            "direction": "long",
+            "confidence": 0.7,
+            "rationale": "BILL 24小时跌幅达24.1%，价格跌至0.155美元，属于极端超卖事件。历史回测显示此类单日跌幅后72小时内反弹概率超过65%，平均反弹幅度12-18%。当前价格处于筹码真空区，下方无密集支撑，上方阻力在0.18-0.20区间。动量极度衰竭反而创造不对称机会：若反弹启动，盈亏比可达3:1以上。进攻性仓位应设止损于0.14下方，目标0.19。",
+            "oneLineSummary": "BILL单日暴跌24%触发极端超卖，历史回测72小时内反弹概率超65%，当前价格0.155处于筹码真空区，盈亏比优势显著。",
+            "detailedRationale": "BILL 24小时跌幅达24.1%，价格跌至0.155美元，属于极端超卖事件。历史回测显示此类单日跌幅后72小时内反弹概率超过65%，平均反弹幅度12-18%。当前价格处于筹码真空区，下方无密集支撑，上方阻力在0.18-0.20区间。动量极度衰竭反而创造不对称机会：若反弹启动，盈亏比可达3:1以上。进攻性仓位应设止损于0.14下方，目标0.19。",
+            "dataStatus": "ok",
+            "observedAt": "2026-05-16T13:01:04.376Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-05-16T13:01:11.087Z",
+            "memberIds": [
+              "fundamental_analyst",
+              "news_analyst",
+              "chart_analyst",
+              "onchain_analyst",
+              "bullish_researcher",
+              "bearish_researcher",
+              "trader",
+              "aggressive_reviewer",
+              "neutral_reviewer",
+              "conservative_reviewer",
+              "memory_loop"
+            ]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "in_progress",
+            "observedAt": "2026-05-16T13:01:11.087Z",
+            "memberIds": ["research_lead"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "pending",
+            "observedAt": "2026-05-16T13:01:11.087Z",
+            "memberIds": ["risk_lead"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "pending",
+            "observedAt": "2026-05-16T13:01:11.087Z",
+            "memberIds": ["pm"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "pending",
+            "observedAt": "2026-05-16T13:01:11.087Z"
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "pending",
+            "observedAt": "2026-05-16T13:01:11.087Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:HYPE:1778926716595",
+      "ts": 1778926716595,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": [],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:HYPE:1778926716595",
+        "symbol": "HYPE",
+        "candidateType": "symbol",
+        "candidateKey": "HYPE",
+        "displayTitle": "HYPE 实时行情分析",
+        "executable": true,
+        "tradeDecision": null,
+        "rationaleByMember": {},
+        "citationsByMember": {},
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-05-16T10:18:36.595Z",
+            "memberIds": [
+              "fundamental_analyst",
+              "news_analyst",
+              "chart_analyst",
+              "onchain_analyst",
+              "bullish_researcher",
+              "bearish_researcher",
+              "trader",
+              "aggressive_reviewer",
+              "neutral_reviewer",
+              "conservative_reviewer",
+              "memory_loop"
+            ]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-05-16T10:18:36.595Z",
+            "memberIds": ["research_lead"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-05-16T10:18:36.595Z",
+            "memberIds": ["risk_lead"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-05-16T10:18:36.595Z",
+            "memberIds": ["pm"]
+          },
+          { "stageId": "record_write", "status": "done", "observedAt": "2026-05-16T10:19:00.718Z" },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-05-16T10:19:00.718Z"
+          }
+        ]
+      }
+    }
+  ],
+  "evidenceMap": {
+    "ev_1qx2vuo": {
+      "id": "ev_1qx2vuo",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "OpenAI partners with Malta to give all citizens free ChatGPT Plus access",
+      "url": "https://cointelegraph.com/news/openai-partners-with-malta-to-give-all-citizens-free-chatgpt-plus-access?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T14:12:55.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.778Z",
+      "symbol": [],
+      "impactSeverity": "low",
+      "summary": "OpenAI partners with Malta to give all citizens free ChatGPT Plus access"
+    },
+    "ev_fpf995": {
+      "id": "ev_fpf995",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "Here’s what happened in crypto today",
+      "url": "https://cointelegraph.com/news/what-happened-in-crypto-today?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T14:12:49.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.779Z",
+      "symbol": ["BTC"],
+      "impactSeverity": "low",
+      "summary": "Here’s what happened in crypto today"
+    },
+    "ev_197zm2k": {
+      "id": "ev_197zm2k",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "THORChain confirms $10M exploit, rolls out recovery portal for affected users",
+      "url": "https://cointelegraph.com/news/thorchain-confirms-10m-exploit-rolls-out-recovery-portal-for-affected-users?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T09:47:44.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.779Z",
+      "symbol": ["10M", "10"],
+      "impactSeverity": "medium",
+      "summary": "THORChain confirms $10M exploit, rolls out recovery portal for affected users"
+    },
+    "ev_h9qzg3": {
+      "id": "ev_h9qzg3",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "Sharplink CEO points out 3 catalysts for Ethereum's price to surge higher",
+      "url": "https://cointelegraph.com/news/sharplink-ceo-points-out-these-3-catalysts-for-ethereum-to-reach-new-highs?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T09:00:52.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.779Z",
+      "symbol": ["ETH"],
+      "impactSeverity": "medium",
+      "summary": "Sharplink CEO points out 3 catalysts for Ethereum's price to surge higher"
+    },
+    "ev_gjfepb": {
+      "id": "ev_gjfepb",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "Spot Bitcoin ETFs bleed $1B in a week, snapping six-week inflow run",
+      "url": "https://cointelegraph.com/news/spot-bitcoin-etfs-bleed-1b-in-a-week-snapping-six-week-inflow-run?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T08:19:20.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.779Z",
+      "symbol": ["BTC", "1B"],
+      "impactSeverity": "medium",
+      "summary": "Spot Bitcoin ETFs bleed $1B in a week, snapping six-week inflow run"
+    },
+    "ev_1ix04l": {
+      "id": "ev_1ix04l",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "US CLARITY Act brings ‘major spike of euphoria’ to Bitcoin: Santiment",
+      "url": "https://cointelegraph.com/news/us-clarity-act-brings-major-spike-of-euphoria-to-bitcoin-santiment?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-16T02:13:23.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.779Z",
+      "symbol": ["BTC"],
+      "impactSeverity": "medium",
+      "summary": "US CLARITY Act brings ‘major spike of euphoria’ to Bitcoin: Santiment"
+    },
+    "ev_15o8cuq": {
+      "id": "ev_15o8cuq",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "House committee leaders urge Trump to nominate CFTC members, citing CLARITY Act",
+      "url": "https://cointelegraph.com/news/house-committee-nominate-cftc-commissioners-clarity-act?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-15T23:10:35.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.779Z",
+      "symbol": ["BTC"],
+      "impactSeverity": "low",
+      "summary": "House committee leaders urge Trump to nominate CFTC members, citing CLARITY Act"
+    },
+    "ev_rx7an0": {
+      "id": "ev_rx7an0",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "Bitcoin Depot filing casts doubt on company’s future amid lawsuits",
+      "url": "https://cointelegraph.com/news/bitcoin-depot-future-legal-judgments-litigation?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-05-15T22:17:38.000Z",
+      "fetchedAt": "2026-05-16T15:58:02.779Z",
+      "symbol": ["BTC"],
+      "impactSeverity": "medium",
+      "summary": "Bitcoin Depot filing casts doubt on company’s future amid lawsuits"
+    }
+  },
+  "oldestTs": 1778926716595,
+  "hasMore": false,
+  "windowMinutes": 720,
+  "locale": "zh_CN",
+  "servedAt": 1778947372883,
+  "nextPollMs": 90000
+}

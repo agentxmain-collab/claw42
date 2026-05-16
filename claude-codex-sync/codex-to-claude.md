@@ -890,3 +890,191 @@ PM: 连续急跌后价格未有效跌破40整数位，反弹风险累积。若40
 待 PR 后继续：Vercel preview，不带 `--prod`。
 
 [DOC-HINT: B.14 public schema cleanup should decide whether public JSON may expose TeamMemberId as structural keys; hotfix-5 only guarantees user-visible text fields are clean.]
+
+---
+
+# B.14 Stage 1 Resident Analysis 报告
+
+时间：2026-05-16 23:59 CST  
+Branch：`feature/b14-stage1-resident-analysis`  
+PR：`https://github.com/agentxmain-collab/claw42/pull/111`  
+Base：`origin/main@146ccc3`（B.14 Stage 0 squash 后 main）  
+Head commits：
+
+- `d414afba` `feat(watch): add B14 resident candidate pipeline`
+- `f3d77b7` `fix(watch): localize resident candidate public labels`
+
+## T201-T207 完成清单
+
+- T201：PM pipeline 加 `candidateType` branch；`market_overview` / pure `hotspot` 走 analysis-only，不生成交易卡。
+- T202：实现 `market_overview` daily cadence identity：`market_overview:${locale}:${UTC8 YYYY-MM-DD}`。
+- T203：实现 `hotspot` intraday candidate identity：`hotspot:${locale}:${UTC8 hour-window}:...`，并支持 refresh 手动候选。
+- T204：refresh / freshness / lock 都按 candidate identity 运作，非 symbol 不再借 BTC/SOL 等假 symbol。
+- T205：14 角色可接 resident evidence；非 symbol candidate 跳过 token-specific onchain/fundamental fetch，使用 broad market/news/fear-greed context。
+- T206：trade-disabled branch 严禁 entry/stop/tp；无 current price 的 symbol candidate 不再用 `1` 伪造价格。
+- T207：真实 preview 触发 3 条新 PM run，raw artifact 已进 repo。
+
+## 关键变更位置
+
+- `src/lib/watch/residentCandidate.ts:12`：10 locale resident / hotspot title 表。
+- `src/lib/watch/residentCandidate.ts:81`：`marketOverviewCandidate()` 生成 daily candidateKey + `executable:false`。
+- `src/lib/watch/residentCandidate.ts:103`：`hotspotDecisionCandidate()` 生成 intraday candidateKey + executable metadata。
+- `src/lib/team/evidenceDispatcher.ts:35`：`EvidenceContextPack` 带 `candidate`。
+- `src/lib/team/evidenceDispatcher.ts:152`：resident chart items 从 broad market signals 构造。
+- `src/lib/team/evidenceDispatcher.ts:217`：resident news items 使用 broad news evidence。
+- `src/lib/team/evidenceDispatcher.ts:460`：non-symbol candidate 只暴露实际存在的 evidence domain，不让缺口变成 public 文案。
+- `src/lib/team/pmDecisionPipeline.ts:218`：analysis summary 不再拼内部英文 label。
+- `src/lib/team/pmDecisionPipeline.ts:1367`：无 current price 不生成 trade card。
+- `src/lib/team/pmDecisionPipeline.ts:1389`：trade-disabled candidate 写 `analysisSummary`。
+- `src/app/api/watch/refresh/route.ts:118`：refresh 支持 `candidateType=market_overview|hotspot`。
+- `src/app/api/watch/refresh/route.ts:239`：in-flight / cooldown / PM lock 按 candidate identity。
+
+## Verify gate
+
+本地已通过：
+
+- `npx vitest run src/lib/team/__tests__/pmDecisionPipeline.test.ts src/lib/team/__tests__/pmDecisionTrigger.topicSelector.test.ts src/app/api/watch/refresh/route.test.ts src/lib/watch/__tests__/publicTimelineProjection.test.ts src/lib/watch/__tests__/publicTimelineOrdering.test.ts src/lib/watch/__tests__/topicAggregator.test.ts`：6 files / 65 tests pass
+- `npm run verify`
+  - `format:check`
+  - `typecheck`
+  - `lint`
+  - `verify:agent-ip`
+  - `verify:news`
+  - `test:news`：6 files / 25 tests pass
+  - `test:watch-pipeline`：46 files / 255 tests pass
+  - `verify:chat-v3-final`：50/50 pass
+- `npm run build`
+- `npm run verify:metrics`：2 files / 5 tests pass
+- `npm run verify:a11y`：checked routes 0 axe violations
+- `git diff --check`
+
+GitHub PR checks（commit `f3d77b7`）：
+
+- `verify` PASS
+- `deploy preview` PASS
+- `Vercel` PASS
+- `Vercel Preview Comments` PASS
+
+## Preview 实测
+
+正确 preview URL：
+
+- `https://claw42-site-mjbdrq9kx-agentxmain-collabs-projects.vercel.app`
+- Vercel deployment：`dpl_9X1yx1pARwn8vqw8u1DUoxKepqZ8`
+- Target：`preview`
+
+触发结果：
+
+```json
+[
+  {
+    "locale": "zh_CN",
+    "request": "/api/watch/refresh?candidateType=market_overview&locale=zh_CN&testNow=1779008400000",
+    "response": {
+      "status": "stale",
+      "symbol": "MARKET",
+      "candidateType": "market_overview",
+      "candidateKey": "market_overview:zh_CN:2026-05-17",
+      "displayTitle": "今日大盘综述",
+      "refreshStarted": true
+    }
+  },
+  {
+    "locale": "ja_JP",
+    "request": "/api/watch/refresh?candidateType=market_overview&locale=ja_JP&testNow=1779008460000",
+    "response": {
+      "status": "stale",
+      "symbol": "MARKET",
+      "candidateType": "market_overview",
+      "candidateKey": "market_overview:ja_JP:2026-05-17",
+      "displayTitle": "マーケット概況",
+      "refreshStarted": true
+    }
+  },
+  {
+    "locale": "en_US",
+    "request": "/api/watch/refresh?candidateType=hotspot&locale=en_US&candidateKey=hotspot:manual:stage1:f3d77b7:1&displayTitle=Market%20Narrative%20Watch&testNow=1779008520000",
+    "response": {
+      "status": "stale",
+      "symbol": "HOTSPOT",
+      "candidateType": "hotspot",
+      "candidateKey": "hotspot:manual:stage1:f3d77b7:1",
+      "displayTitle": "Market Narrative Watch",
+      "refreshStarted": true
+    }
+  }
+]
+```
+
+Timeline verify 摘要：
+
+```json
+[
+  {
+    "locale": "zh_CN",
+    "recordId": "pm:MARKET:1779008400000",
+    "candidateType": "market_overview",
+    "candidateKey": "market_overview:zh_CN:2026-05-17",
+    "displayTitle": "今日大盘综述",
+    "executable": false,
+    "tradeDecision": false,
+    "stageTrace": "analyst_inputs:done,research_lead:done,risk_lead:done,trade_decision:done,record_write:done,public_timeline:done",
+    "textLeak": false
+  },
+  {
+    "locale": "ja_JP",
+    "recordId": "pm:MARKET:1779008460000",
+    "candidateType": "market_overview",
+    "candidateKey": "market_overview:ja_JP:2026-05-17",
+    "displayTitle": "マーケット概況",
+    "executable": false,
+    "tradeDecision": false,
+    "stageTrace": "analyst_inputs:done,research_lead:done,risk_lead:done,trade_decision:done,record_write:done,public_timeline:done",
+    "textLeak": false
+  },
+  {
+    "locale": "en_US",
+    "recordId": "pm:HOTSPOT:1779008520000",
+    "candidateType": "hotspot",
+    "candidateKey": "hotspot:manual:stage1:f3d77b7:1",
+    "displayTitle": "Market Narrative Watch",
+    "executable": false,
+    "tradeDecision": false,
+    "stageTrace": "analyst_inputs:done,research_lead:done,risk_lead:done,trade_decision:done,record_write:done,public_timeline:done",
+    "textLeak": false
+  }
+]
+```
+
+Raw artifacts：
+
+- `claude-codex-sync/artifacts/b14-stage1/timeline-zh_CN-market-overview-f3d77b7.json`
+- `claude-codex-sync/artifacts/b14-stage1/timeline-ja_JP-market-overview-f3d77b7.json`
+- `claude-codex-sync/artifacts/b14-stage1/timeline-en_US-hotspot-f3d77b7.json`
+- `claude-codex-sync/artifacts/b14-stage1/verification-summary-f3d77b7.json`
+
+Leak scan 口径：扫描用户可见文本字段（`analysisSummary` / `rationaleByMember` values / `summaryByMember` values / `rounds` rationale fields / `tradeDecision` public text / `stageTrace.note`），3 条新 target record 均为 `textLeak=false`。
+
+## First-hand finding
+
+第一次在 clean worktree 跑 `npx vercel --scope agentxmain-collabs-projects --yes` 时，因为该 worktree 没有 `.vercel/project.json`，Vercel CLI 自动 link/创建了错误的新项目 `claw42-b14-stage1-resident-analysis`，并在该错误项目内生成了一次 deployment。该 deployment 没有触碰 `claw42.ai`，但这是 Deployment Identity Gate 的真实风险点。
+
+已修正本 worktree 的 `.vercel/project.json` 指向正确项目：
+
+- `projectName=claw42-site`
+- `projectId=prj_UjubflJkr8XJFUm36cUmoLCl3NrH`
+- `orgId=team_URED5oO6s2OI5bakH3FJUQpC`
+
+后续所有实测均使用正确 preview `claw42-site-mjbdrq9kx-...`。建议之后任何新 worktree 先复制/校验 `.vercel/project.json`，再允许远程 preview。
+
+## 下一 Stage 依赖
+
+Stage 2 Priority Candidate Selector 可以继续，依赖已满足：
+
+- Stage 0 candidate contract 已在 main。
+- Stage 1 已支持 resident candidate identity / refresh / timeline projection / analysis-only record。
+- `market_overview` 和 pure `hotspot` 已能进入 public timeline 且不显示 trade card。
+
+无需要 F/Dan 决策的 blocker。
+
+[DOC-HINT: Before any future `npx vercel` from a fresh worktree, copy or verify `.vercel/project.json` against deployment-identity-registry.md to avoid accidental project creation.]

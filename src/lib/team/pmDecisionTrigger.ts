@@ -11,6 +11,8 @@ import { tryAcquireLock } from "@/lib/storage/kv-lock";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
 import type { Locale } from "@/i18n/types";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
+import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
+import { normalizePipelineSymbol, symbolDecisionCandidate } from "@/lib/watch/residentCandidate";
 import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { CoinPoolPayload, CoinTickerEntry, SignalRecord } from "@/modules/agent-watch/types";
@@ -21,7 +23,7 @@ const RECENT_TOPIC_WINDOW_MINUTES = 180;
 const MARKET_NEWS_ANCHOR_SYMBOL = "BTC";
 
 function normalizeSymbol(symbol: string) {
-  return symbol.trim().replace(/^\$+/, "").toUpperCase();
+  return normalizePipelineSymbol(symbol) ?? symbol.trim().replace(/^\$+/, "").toUpperCase();
 }
 
 export type PmDecisionTriggerAuditEvent =
@@ -110,6 +112,22 @@ function evidenceMatchesCandidateSymbol(evidence: { symbol: string[] }, candidat
   return evidence.symbol.some((symbol) => normalizeSymbol(symbol) === normalizedCandidate);
 }
 
+function evidenceMatchesCandidate(evidence: { symbol: string[] }, candidate: DecisionCandidate) {
+  if (candidate.candidateType !== "symbol") return true;
+  return candidate.symbol ? evidenceMatchesCandidateSymbol(evidence, candidate.symbol) : false;
+}
+
+function marketSignalsForCandidate(
+  pool: CoinPoolPayload | undefined,
+  now: number,
+  candidate: DecisionCandidate,
+) {
+  if (candidate.candidateType === "market_overview") {
+    return marketSignalsFromPool(pool, now).slice(0, 8);
+  }
+  return marketSignalsFromPool(pool, now, candidate.symbol);
+}
+
 export async function evidenceFromNewsItems(items: NewsItem[]) {
   const evidences = items.map((item) => newsItemToEvidence(item));
   await Promise.all(
@@ -164,6 +182,7 @@ export async function triggerPmDecisionPipelineOnce({
   newsItems = [],
   locale = LEGACY_WATCH_LOCALE,
   symbol,
+  candidate,
   now = Date.now(),
   partialStageUpdates = true,
   onAudit,
@@ -173,6 +192,7 @@ export async function triggerPmDecisionPipelineOnce({
   newsItems?: NewsItem[];
   locale?: Locale;
   symbol?: string;
+  candidate?: DecisionCandidate;
   now?: number;
   partialStageUpdates?: boolean;
   onAudit?: PmDecisionTriggerAuditSink;
@@ -181,6 +201,50 @@ export async function triggerPmDecisionPipelineOnce({
   const recentNewsEvidence = await evidenceFromNewsItems(newsItems);
   const recentTimelineEvents = await recentPublicTimelineEvents(normalizedLocale);
   const recentDecisionMemory = await recentDecisionRecords(normalizedLocale);
+  if (candidate) {
+    const recentMarketSignals = marketSignalsForCandidate(pool, now, candidate);
+    const scopedNewsEvidence = recentNewsEvidence.filter((evidence) =>
+      evidenceMatchesCandidate(evidence, candidate),
+    );
+    const lock = await tryAcquireLock(
+      `watch:pm-decision:${normalizedLocale}:${candidate.candidateKey}`,
+      {
+        ttlMs: PM_DECISION_SYMBOL_LOCK_MS,
+        waitMs: 0,
+      },
+    );
+    if (!lock) {
+      onAudit?.({
+        type: "candidate_skipped",
+        triggerSource,
+        locale: normalizedLocale,
+        symbol: candidate.symbol ?? candidate.candidateKey,
+        reason: "locked",
+      });
+      return null;
+    }
+
+    const result = await runPmDecisionPipeline({
+      triggerSource,
+      candidate,
+      recentMarketSignals,
+      recentNewsEvidence: scopedNewsEvidence,
+      importanceThreshold: "medium",
+      locale: normalizedLocale,
+      now,
+      partialStageUpdates,
+    });
+    if (result) {
+      onAudit?.({
+        type: "candidate_generated",
+        triggerSource,
+        locale: normalizedLocale,
+        symbol: candidate.symbol ?? candidate.candidateKey,
+        recordId: result.record.id ?? null,
+      });
+    }
+    return result;
+  }
   const candidateTopics = selectPmDecisionTopics({
     pool,
     marketSignals: marketSignalsFromPool(pool, now),
@@ -202,6 +266,12 @@ export async function triggerPmDecisionPipelineOnce({
 
   for (const topic of candidateTopics) {
     const candidate = topic.symbol;
+    const decisionCandidate = symbolDecisionCandidate({
+      symbol: candidate,
+      score: topic.score,
+      reasons: topic.reasons,
+    });
+    if (!decisionCandidate) continue;
     const recentMarketSignals = marketSignalsFromPool(pool, now, candidate);
     const scopedNewsEvidence = recentNewsEvidence.filter((evidence) =>
       evidenceMatchesCandidateSymbol(evidence, candidate),
@@ -256,6 +326,7 @@ export async function triggerPmDecisionPipelineOnce({
     const selectionEvidence = buildTopicSelectionEvidence(topic, now);
     const result = await runPmDecisionPipeline({
       triggerSource,
+      candidate: decisionCandidate,
       recentMarketSignals,
       recentNewsEvidence: [selectionEvidence, ...scopedNewsEvidence],
       importanceThreshold: "high",

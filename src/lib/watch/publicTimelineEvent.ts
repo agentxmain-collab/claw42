@@ -64,6 +64,8 @@ export type PublicTimelinePayload =
       displayTitle?: string;
       /** Whether this record can be used for follow-trade actions. Missing means legacy payload. */
       executable?: boolean;
+      /** Analysis-only resident candidates can publish a summary without a trade card. */
+      analysisSummary?: string;
       tradeDecision?: TradeDecision | null;
       rationaleByMember: Partial<Record<TeamMemberId, string>>;
       citationsByMember?: Partial<Record<TeamMemberId, string[]>>;

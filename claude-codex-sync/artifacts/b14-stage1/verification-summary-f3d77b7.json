@@ -1,0 +1,66 @@
+{
+  "generatedAt": "2026-05-16T16:06:19.360Z",
+  "preview": "https://claw42-site-mjbdrq9kx-agentxmain-collabs-projects.vercel.app",
+  "summaries": [
+    {
+      "locale": "zh_CN",
+      "events": 4,
+      "pmCount": 4,
+      "targetCount": 1,
+      "textLeakCount": 0,
+      "rows": [
+        {
+          "recordId": "pm:MARKET:1779008400000",
+          "candidateType": "market_overview",
+          "candidateKey": "market_overview:zh_CN:2026-05-17",
+          "displayTitle": "今日大盘综述",
+          "executable": false,
+          "tradeDecision": false,
+          "analysisSummary": "今日大盘综述: 市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是BTC ETF周流出10亿美元终结六周净流入，机构资金撤退信号明确，叠加BTC、ETH、SOL三大龙头同步下行，恐慌指数31处于极度恐惧区间但历史统计显示该水平往往伴随进一步下探而非立即反转。BILL单日暴跌27.8%和HYPE跌7.13%显示流动性枯竭从小币种向核心资产扩散。THORChain 1000万美元漏洞打击DeFi信心。最弱证据是CLARITY法案带来的乐观情绪已被价格消化，未能形成买盘支撑，以及QNT的9.27%异动属于个别事件未改变整体弱势。多头逻辑依赖BTC站稳80000确认，但当前价格78241且反弹无力，该条件尚未满足。团队整体偏向空头，但需警惕极度恐慌后的短期技术性反弹风险。 核心失败模式是极度恐慌后的短期技术性反弹陷阱。恐慌指数31处于极度恐惧区间，历史上该水平虽常伴随进一步下探，但短期超卖后出现1-2日反弹的概率约为38%，可能触发空头止损并形成假突破。关键条件是BTC能否站稳80000：若反弹至79800-80500区间但成交量萎缩，则属于空头陷阱，可维持空头；若放量突破80500，则空头逻辑被破坏。当前BTC 78241、…",
+          "stageTrace": "analyst_inputs:done,research_lead:done,risk_lead:done,trade_decision:done,record_write:done,public_timeline:done",
+          "textLeak": false
+        }
+      ]
+    },
+    {
+      "locale": "ja_JP",
+      "events": 2,
+      "pmCount": 2,
+      "targetCount": 1,
+      "textLeakCount": 0,
+      "rows": [
+        {
+          "recordId": "pm:MARKET:1779008460000",
+          "candidateType": "market_overview",
+          "candidateKey": "market_overview:ja_JP:2026-05-17",
+          "displayTitle": "マーケット概況",
+          "executable": false,
+          "tradeDecision": false,
+          "analysisSummary": "マーケット概況: 主要3銘柄（BTC -1.19%、ETH -1.93%、SOL -2.89%）が揃って下落し、BILL -27.8%、HYPE -7.13%の異常値下落がリスクオフの広がりを示唆する一方、QNT +9.27%の単独急騰が存在し全面安ではない。現物ETF週間10億ドル流出とTHORChainハックが需給を圧迫するが、CLARITY法への楽観論が下支え。BTCは78Kサポートを維持しており、明確なレンジブレイク（75K台割れまたは80K超回復）が確認されるまでは方向性を取る確証が不足。チーム内で中立が多数派（9/11）だが、2件のショートバイアスがリスクオフ加速を警告しており、完全なコンセンサスには至っていない。最強のエビデンスはETF週間10億ドル流出とBILL/HYPEの異常値下落によるリスクオフシグナル。最弱のエビデンスはQNTの単独急騰で、出来高不足により持続性に疑問。未証明なのは、78Kサポートが需要に支えられたものか、単に売り圧力の一時的休止に過ぎないかの区別。 主要3銘柄（BTC -1.19%、ETH -1.93%、SOL -2.89%）が揃って下落し、BILL -27.8%、HYPE -7.1…",
+          "stageTrace": "analyst_inputs:done,research_lead:done,risk_lead:done,trade_decision:done,record_write:done,public_timeline:done",
+          "textLeak": false
+        }
+      ]
+    },
+    {
+      "locale": "en_US",
+      "events": 2,
+      "pmCount": 2,
+      "targetCount": 1,
+      "textLeakCount": 0,
+      "rows": [
+        {
+          "recordId": "pm:HOTSPOT:1779008520000",
+          "candidateType": "hotspot",
+          "candidateKey": "hotspot:manual:stage1:f3d77b7:1",
+          "displayTitle": "Market Narrative Watch",
+          "executable": false,
+          "tradeDecision": false,
+          "analysisSummary": "Market Narrative Watch: The team is split between a short thesis anchored by $1B ETF outflows, THORChain exploit, and broad altcoin stress (BILL -27.8%, HYPE -7.13%) and a long thesis betting on CLARITY Act regulatory euphoria as a sentiment catalyst. BTC, ETH, and SOL are in range-bleed mode with no breakout or support test, and Fear & Greed at 31 confirms fear without capitulation volume. The strongest evidence is the synchronized demand-side shock (ETF outflows + exploit + altcoin stress) which has direct price…",
+          "stageTrace": "analyst_inputs:done,research_lead:done,risk_lead:done,trade_decision:done,record_write:done,public_timeline:done",
+          "textLeak": false
+        }
+      ]
+    }
+  ]
+}

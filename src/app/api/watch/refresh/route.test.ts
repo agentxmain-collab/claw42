@@ -75,6 +75,16 @@ function request(symbol = "BTC") {
   });
 }
 
+function residentRequest() {
+  return new Request(
+    `https://claw42.ai/api/watch/refresh?candidateType=market_overview&locale=zh_CN&testNow=${now}`,
+    {
+      method: "POST",
+      headers: { "x-forwarded-for": "203.0.113.10" },
+    },
+  );
+}
+
 function record(createdAt: string): StrategyDecisionRecord {
   return {
     id: "record-btc",
@@ -242,5 +252,39 @@ describe("/api/watch/refresh", () => {
     expect(payload.status).toBe("no_signal");
     expect(tryAcquireLockMock).not.toHaveBeenCalled();
     expect(waitUntilMock).not.toHaveBeenCalled();
+  });
+
+  it("supports market overview refresh with candidate cadence identity", async () => {
+    const response = await POST(residentRequest());
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      status: "stale",
+      refreshStarted: true,
+      symbol: "MARKET",
+      candidateType: "market_overview",
+      candidateKey: "market_overview:zh_CN:2026-05-15",
+      displayTitle: "今日大盘综述",
+    });
+    expect(callOrder.slice(0, 5)).toEqual([
+      "rate",
+      "check:watch:refresh:in-flight:zh_CN:market_overview:zh_CN:2026-05-15",
+      "freshness:records",
+      "check:watch:refresh:cooldown:zh_CN",
+      "check:watch:pm-decision:zh_CN:market_overview:zh_CN:2026-05-15",
+    ]);
+    expect(waitUntilMock).toHaveBeenCalledOnce();
+    await waitUntilMock.mock.calls[0][0];
+    expect(triggerPmDecisionPipelineOnceMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        triggerSource: "user_visit_trigger",
+        locale: "zh_CN",
+        candidate: expect.objectContaining({
+          candidateType: "market_overview",
+          executable: false,
+        }),
+      }),
+    );
   });
 });

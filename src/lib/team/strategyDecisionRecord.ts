@@ -131,6 +131,7 @@ export interface StrategyDecisionRecord {
    * legacy symbol candidate and must remain publicly renderable.
    */
   candidate?: DecisionCandidate;
+  analysisSummary?: string;
   /** Locale used for all natural-language decision text. */
   locale: Locale;
   /** PM owner for new records; legacy data remains explicitly bucketed as legacy. */
