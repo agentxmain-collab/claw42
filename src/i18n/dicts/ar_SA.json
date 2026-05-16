@@ -694,7 +694,7 @@
         "newAnalysisRunning": "تحليل جديد قيد التشغيل",
         "autoRefreshOnComplete": "تحديث تلقائي عند الاكتمال",
         "cachedStateLabel": "بيانات مخزنة مؤقتًا",
-        "watchOnlyLabel": "للمراقبة فقط",
+        "watchOnlyLabel": "Watch only / غير قابل للنسخ",
         "watchOnlyCopy": "هذا الرمز غير قابل للتنفيذ على CoinW بعد؛ يظهر التحليل للمراقبة فقط."
       },
       "placeholder": {

@@ -73,7 +73,7 @@ export function TopicStrategy({
       <StrategyValue label="止盈" value={strategy.takeProfit} tone={muted ?? "lime"} />
       <div className="strat-cta">
         <div className="cta-row">
-          {watchOnly ? <span className="watch-only-pill">仅观察</span> : null}
+          {watchOnly ? <span className="watch-only-pill">watch-only / 不可跟单</span> : null}
           {!watchOnly ? (
             <button
               className="cta-btn"

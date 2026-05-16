@@ -298,6 +298,38 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
   });
 
+  it("uses PM payload executable=false as the follow-trade safety gate", () => {
+    const event = pmDecision({
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-bill",
+        symbol: "BILL",
+        executable: false,
+        tradeDecision: {
+          ...tradeDecision,
+          id: "trade-bill",
+          symbol: "BILL",
+          direction: "long",
+        },
+        rationaleByMember: { research_lead: "BILL is observable but not executable." },
+        citationsByMember: {},
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.execution).toMatchObject({
+      executable: false,
+      watchOnly: true,
+      watchOnlyReason: "not_listed_on_coinw",
+    });
+    expect(topic.strategy.follow.primaryDisabled).toBe(true);
+  });
+
   it("ignores non pm_decision events", () => {
     expect(
       mapTopics({

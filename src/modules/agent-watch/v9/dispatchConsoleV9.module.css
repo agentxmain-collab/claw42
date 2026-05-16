@@ -1445,12 +1445,26 @@
   align-items: center;
   min-height: 39px;
   padding: 0 16px;
-  border: 1px solid rgba(209, 255, 85, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
-  background: rgba(209, 255, 85, 0.08);
-  color: var(--lime);
+  background: rgba(255, 255, 255, 0.075);
+  color: var(--fg-2);
   font-size: 12px;
   font-weight: 800;
+}
+.root :global(.watch-only-pill::before) {
+  content: "!";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  margin-right: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--fg);
+  font-size: 10px;
+  line-height: 1;
 }
 .root :global(.cta-btn) {
   padding: 11px 22px;

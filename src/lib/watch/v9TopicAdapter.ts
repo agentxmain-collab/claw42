@@ -635,6 +635,7 @@ function makeStrategy(
   group: DispatchTopicGroup,
   stats: FollowStatsSnapshot | undefined,
   hasRationale: boolean,
+  executable: boolean,
 ): DispatchStrategy {
   const decision = renderableTradeDecision(group.latestDecision);
   const ticker = `$${group.symbol}`;
@@ -690,7 +691,7 @@ function makeStrategy(
         : decision.direction === "wait"
           ? "提醒我"
           : "跟单",
-      primaryDisabled: Boolean(stats?.userFollowed) || decision.direction === "wait",
+      primaryDisabled: !executable || Boolean(stats?.userFollowed) || decision.direction === "wait",
       secondaryLabel: "查看详情",
       watchCount: stats?.watchCount ?? 0,
       followCount: stats?.followCount ?? 0,
@@ -780,14 +781,18 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
     const hasMemoryLoop = hasMemoryLoopRationale(latest);
     const status = hasTradeDecision ? "done" : hasRationale ? "active" : "pending";
     const symbolMapping = resolveSymbolMapping(group.symbol);
+    const executable =
+      typeof latest.payload.executable === "boolean"
+        ? latest.payload.executable
+        : symbolMapping.execution.executable;
 
     return {
       id: recordId,
       symbol: group.symbol,
       execution: {
-        executable: symbolMapping.execution.executable,
-        coinwPair: symbolMapping.execution.coinwPair,
-        watchOnly: !symbolMapping.execution.executable,
+        executable,
+        coinwPair: executable ? symbolMapping.execution.coinwPair : null,
+        watchOnly: !executable,
         watchOnlyReason: symbolMapping.execution.watchOnlyReason,
       },
       status,
@@ -818,7 +823,12 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         latest,
       ),
       messages: makeMessages(group, ctx.locale, now, hasRationale, ctx.outcomeDict, ctx.roundDict),
-      strategy: makeStrategy(group, ctx.followStatsByRecordId?.[recordId], hasRationale),
+      strategy: makeStrategy(
+        group,
+        ctx.followStatsByRecordId?.[recordId],
+        hasRationale,
+        executable,
+      ),
       defaultCollapsed: index > 0,
     };
   });

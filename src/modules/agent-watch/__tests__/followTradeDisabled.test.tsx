@@ -56,7 +56,7 @@ describe("follow trade disabled safety state", () => {
       />,
     );
 
-    expect(html).toContain("仅观察");
+    expect(html).toContain("watch-only / 不可跟单");
     expect(html).toContain("该币种暂不支持 CoinW 跟单");
     expect(html).not.toContain("演示模式：当前不会真实下单");
     expect(html).not.toContain('disabled=""');

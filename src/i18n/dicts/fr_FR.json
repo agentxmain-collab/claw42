@@ -694,7 +694,7 @@
         "newAnalysisRunning": "Nouvelle analyse en cours",
         "autoRefreshOnComplete": "Actualisation automatique à la fin",
         "cachedStateLabel": "Données en cache",
-        "watchOnlyLabel": "Observation seule",
+        "watchOnlyLabel": "Watch only / Suivi impossible",
         "watchOnlyCopy": "Ce symbole n'est pas encore exécutable sur CoinW ; l'analyse est affichée uniquement pour observation."
       },
       "placeholder": {

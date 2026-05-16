@@ -694,7 +694,7 @@
         "newAnalysisRunning": "Новый анализ выполняется",
         "autoRefreshOnComplete": "Автообновление после завершения",
         "cachedStateLabel": "Кэшированные данные",
-        "watchOnlyLabel": "Только наблюдение",
+        "watchOnlyLabel": "Watch only / Нельзя копировать",
         "watchOnlyCopy": "Этот символ пока нельзя исполнять на CoinW; анализ показан только для наблюдения."
       },
       "placeholder": {

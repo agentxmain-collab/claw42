@@ -53,4 +53,29 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain("新分析进行中");
     expect(html).toContain("完成后自动刷新");
   });
+
+  test("renders an explicit non-followable badge for watch-only topics", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...dispatchV10DemoTopics[0]!,
+            symbol: "BILL",
+            execution: {
+              executable: false,
+              coinwPair: null,
+              watchOnly: true,
+              watchOnlyReason: "not_listed_on_coinw",
+            },
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("watch-only / 不可跟单");
+    expect(html).toContain("该币种暂不支持 CoinW 跟单");
+    expect(html).not.toContain("演示模式：当前不会真实下单");
+  });
 });

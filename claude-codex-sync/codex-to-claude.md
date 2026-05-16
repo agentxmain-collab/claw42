@@ -255,3 +255,147 @@ Secondary contributing chain:
 本 PR 同时按 spec 撤回 TeamTrackRecordPanel UI：删除组件、移除 v10 market mount、移除前端 fetch 和 props、删除 panel-only i18n keys。`/api/watch/team-track-record`、`memoryLoopEvidence.ts`、`computeTeamWinrates.ts` 保留。
 
 [DOC-HINT: B.13 follow-up fix spec should target empty-timeline refresh source and demo-topic gating before changing prompts.]
+
+# B.13 hotfix-3 调研 + 实测报告
+
+时间：2026-05-16
+分支：`feature/b13-hotfix3-timeline-projection-watch-only`
+base：`69554abad83f148f864e48dea5598f2e498c1622`（hotfix-2 merged main）
+
+## 1. Task A first-hand 调研结论
+
+代码路径：
+
+- `/api/watch/timeline` 入口：`src/app/api/watch/timeline/route.ts:52` 调 `buildWatchTimelinePayload()`
+- payload builder：`src/lib/watch/publicTimelinePayload.ts:58-91` 读 `getWatchHistory()`，再用 `filterPublicTimelineEvents()` 投影；同时把 `readAllDecisionRecords()` 建成 `decisionRecordsById`
+- projection：`src/lib/watch/publicTimelineProjection.ts:165-193` 的 `pmDecisionPayload()` 只要求 entry 是 `chat_thread`、meta 有 `recordId`，没有 watch-only / executable filter
+
+KV 实测（preview env，未输出 secret value）：
+
+- `USE_PERSISTENT_KV=true`，`STAGING_USE_FIXTURE=<unset>`，`VERCEL_ENV=preview`
+- `readAllDecisionRecords(1000, "zh_CN")` 返回 10 条旧记录；BILL 有 2 条
+- 最新 BILL：`pm:BILL:1778902920550`
+  - `createdAt=2026-05-16T03:42:00.550Z`
+  - `schemaVersion=2`
+  - `recordSource=live`
+  - `tradeDecision.direction=wait`
+  - `analystInputs=14`
+  - round count = 25
+  - `stageTrace` 六段全 `done`
+  - record 自身没有 `executable` / `execution` 字段
+  - `resolveSymbolMapping("BILL").execution.executable=false`
+- `claw42:watch:history:v2:zh_CN` 有 4 条 entry，其中 1 条 public/high pm entry：
+  - `pm-decision:pm:BILL:1778902920550`
+  - `meta.sourceTrigger=pm_decision`
+  - `meta.recordId=pm:BILL:1778902920550`
+  - `meta.visibility=public`
+  - `meta.importance=high`
+
+判断：
+
+- F 的推测「candidate selector 允许 watch-only，但 timeline projection 过滤 watch-only」没有被实测支持。当前 projection 没有 executable/watch-only filter，本地用同一份 preview KV 跑 `buildWatchTimelinePayload()` 能投出 BILL event。
+- 真缺口是 public payload 没带 `executable`，UI 只能靠 `symbolMapping` 兜底识别 watch-only；这不满足 Dan 对「watch-only / 不可跟单」的显式展示和 strict safety gate 要求。
+- 远端 hotfix-2 preview 用 `vercel curl` 实测也已返回 event，不再是 `events=[]`：
+  - before Task A fix: events=1，`BILL` event 存在，但 `payload.executable=<missing>`
+  - HYPE 触发后：events=2，`HYPE` + `BILL` 都存在，但旧部署仍 `payload.executable=<missing>`
+
+## 2. Task A fix 实施方向
+
+已实施：
+
+- `src/lib/watch/publicTimelineEvent.ts`：给 `pm_decision` public payload 增加 legacy-safe `executable?: boolean`
+- `src/lib/watch/publicTimelineProjection.ts`：projection 输出 `executable`，优先读未来 record explicit field，否则 fallback 到 `symbolMapping.ts`
+- `src/lib/watch/v9TopicAdapter.ts`：topic execution 优先消费 `payload.executable`，旧 payload 再 fallback 到 `symbolMapping`
+- `src/lib/watch/v9TopicAdapter.ts`：watch-only topic 的 `strategy.follow.primaryDisabled=true`
+- `src/modules/agent-watch/AgentWatchBoard.tsx`：primary follow action 再加一道 `topic.execution?.executable === true` gate
+- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` 既有 badge mount 保留；badge 文案改为明确 `watch-only / 不可跟单`
+- `src/modules/agent-watch/v9/dispatchConsoleV9.module.css`：badge 从 lime 改成灰色 + `!` icon，和可跟单 CTA 视觉区分
+- 10 locale 更新 `watchOnlyLabel`，含 `en_XA`
+
+本地复测（同 preview KV）：
+
+- `buildWatchTimelinePayload()` events=2
+- `pm:HYPE:1778908242659` → `executable=true`
+- `pm:BILL:1778902920550` → `executable=false`
+
+工作量判断：
+
+- 保守 fix 已完成，约 0.5 AI 天范围。
+- 不需要改 candidate ranking，不需要改 PM pipeline，不需要改 evidence/memory backend。
+
+## 3. Task B preview-trigger 链路实测
+
+代码链路：
+
+- visible-session trigger：`src/modules/agent-watch/AgentWatchBoard.tsx:419-453`
+  - `topics[0]?.symbol` 存在才触发
+  - session key：`freshness-trigger-${locale}-${symbol}`
+  - POST `/api/watch/refresh?symbol=...&locale=...`
+- refresh route：`src/app/api/watch/refresh/route.ts:151-258`
+  - rate limit → in-flight → freshness → cooldown → per-symbol PM lock → `loadTriggerContext()`
+  - `route.ts:238-256` 使用 `waitUntil(triggerPmDecisionPipelineOnce(...))`，不是 plain `void`
+
+远端 preview 实测：
+
+- `GET /api/watch/refresh?symbol=BILL&locale=zh_CN`
+  - `status=stale`
+  - `lastDecisionAt=2026-05-16T03:42:00.550Z`
+  - `refreshSource=records`
+- `POST /api/watch/refresh?symbol=BILL&locale=zh_CN`
+  - `status=locked`
+  - 原因：KV 里 `watch:pm-decision:zh_CN:BILL` locked=true
+  - 没进入 waitUntil
+- `POST /api/watch/refresh?symbol=HYPE&locale=zh_CN`
+  - 返回 `refreshStarted=true`
+  - 75 秒后 KV 新增 `pm:HYPE:1778908242659`
+  - watch history 新增对应 public/high pm entry
+  - timeline projection events 从 1 变 2
+
+判断：
+
+- preview env 的 `/api/watch/refresh` + `waitUntil(triggerPmDecisionPipelineOnce(...))` 实际能跑完并写 KV。
+- 当前可见问题不是 waitUntil 不工作，而是锁/冷却语义会让用户看到 `locked`，以及空 timeline 时 `topics[0]` 不存在会导致 visible-session trigger 根本不触发。这一点属于后续 spec，应另起，不在 hotfix-3 修。
+- Vercel preview cron 不跑仍成立，所以 preview 只有 user-trigger 或手动 trigger 能产生新 record。
+
+## 4. F 没问到的 angle
+
+1. `/api/watch/refresh` 的 freshness 读 timeline 时没有传 `decisionRecordsById`，因此 timeline fallback 会把 pm event symbol 投成 `UNKNOWN`；当前 freshness 还能靠 records path 正确识别 BILL/HYPE，但 timeline-only 场景有隐患。
+2. `checkLock()` 对 KV lock 不返回 expiresAt，UI 拿到 `locked` 时 `nextAllowedAt=null`，用户无法知道多久后能刷新。
+3. `AgentWatchBoard` 只从已有 topic 派生 refresh symbol；如果真的零 record，hotfix-2 empty state 下不会触发新分析。这个是比 watch-only projection 更大的下一步入口问题。
+4. `sourceChain.ts` 本地 tsx import 会触发 RSS adapter `source.id` undefined 报错，但远端 route 能跑。需要后续单独查本地脚本/runtime import 差异，不应混入本 hotfix。
+
+## 5. 验证
+
+已跑并通过：
+
+- `npm run format:check`
+- `npm run typecheck`
+- `npm run lint`
+- `npx vitest run src/lib/watch/__tests__/publicTimelineProjection.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts src/modules/agent-watch/__tests__/followTradeDisabled.test.tsx src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`
+  - 4 files passed
+  - 51 tests passed
+- `npm run test:watch-pipeline`
+  - 46 files passed
+  - 243 tests passed
+- `npm run test:news`
+  - 6 files passed
+  - 25 tests passed
+- `npm run test:kv-lock`
+  - 13 tests passed
+- `npm run test:kv-rate-limiter`
+  - 7 tests passed
+- `npm run test:kv-quota`
+  - 8 tests passed
+- `npm run verify:agent-ip`
+- `npm run verify:news`
+- `npm run verify:chat-v3-final`
+  - 50/50 synthetic threads PASS
+- `npm run verify:metrics`
+  - 2 files / 5 tests passed
+- `npm run verify:llm-providers`
+- `npm run verify:llm-generate-text`
+- `npm run build`
+- `npm run verify:a11y`
+  - checked routes 0 axe violations
+
+[DOC-HINT: B.13 follow-up should fix empty-timeline refresh symbol derivation and lock nextAllowedAt before changing candidate ranking.]

@@ -694,7 +694,7 @@
         "newAnalysisRunning": "新分析進行中",
         "autoRefreshOnComplete": "完成後自動刷新",
         "cachedStateLabel": "快取資料",
-        "watchOnlyLabel": "僅觀察",
+        "watchOnlyLabel": "watch-only / 不可跟單",
         "watchOnlyCopy": "該幣種暫不支援 CoinW 跟單，僅展示觀察分析。"
       },
       "placeholder": {

@@ -57,6 +57,8 @@ export type PublicTimelinePayload =
       kind: "pm_decision";
       recordId: string;
       symbol: string;
+      /** Whether this record can be used for follow-trade actions. Missing means legacy payload. */
+      executable?: boolean;
       tradeDecision?: TradeDecision | null;
       rationaleByMember: Partial<Record<TeamMemberId, string>>;
       citationsByMember?: Partial<Record<TeamMemberId, string[]>>;

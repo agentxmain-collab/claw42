@@ -7,6 +7,7 @@ import type {
 import { PUBLIC_IMPORTANCE_ORDER } from "@/lib/watch/publicTimelineEvent";
 import type { Locale } from "@/i18n/types";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
+import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import { isTeamMemberId, type TeamMemberId } from "@/lib/team/teamRegistry";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
@@ -114,6 +115,12 @@ function normalizePublicTradeDecision(
   };
 }
 
+function executableForRecord(record: StrategyDecisionRecord | null, symbol: string) {
+  const rawExecutable = (record as { executable?: unknown } | null)?.executable;
+  if (typeof rawExecutable === "boolean") return rawExecutable;
+  return resolveSymbolMapping(symbol).execution.executable;
+}
+
 function uniqueEvidenceIds(ids: unknown[]) {
   return Array.from(
     new Set(
@@ -176,6 +183,7 @@ function pmDecisionPayload(
     kind: "pm_decision",
     recordId,
     symbol,
+    executable: executableForRecord(indexedRecord, symbol),
     tradeDecision,
     rationaleByMember: derived.rationaleByMember,
     citationsByMember: derived.citationsByMember,
