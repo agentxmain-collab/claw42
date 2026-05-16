@@ -232,11 +232,7 @@ function buildAnalysisSummary({
     .slice(0, 2)
     .map((output) => output.oneLineSummary || oneLineSummaryFromRationale(output.rationale));
   return truncateText(
-    [
-      `${candidate.displayTitle}: ${researchLead.rationale}`,
-      `Risk view: ${riskLead.rationale}`,
-      strongest.length ? `Role signals: ${strongest.join(" / ")}` : null,
-    ]
+    [`${candidate.displayTitle}: ${researchLead.rationale}`, riskLead.rationale, ...strongest]
       .filter(Boolean)
       .join(" "),
     520,

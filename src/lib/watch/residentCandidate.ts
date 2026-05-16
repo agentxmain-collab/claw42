@@ -9,6 +9,32 @@ const HOTSPOT_WINDOW_HOURS = 8;
 export const MARKET_OVERVIEW_STORAGE_SYMBOL = "MARKET";
 export const HOTSPOT_STORAGE_SYMBOL = "HOTSPOT";
 
+const MARKET_OVERVIEW_TITLES: Record<Locale, string> = {
+  en_US: "Market overview",
+  ja_JP: "マーケット概況",
+  zh_TW: "今日大盤綜述",
+  zh_CN: "今日大盘综述",
+  ru_RU: "Обзор рынка",
+  uk_UA: "Огляд ринку",
+  fr_FR: "Vue d'ensemble du marché",
+  es_ES: "Panorama del mercado",
+  ar_SA: "نظرة عامة على السوق",
+  en_XA: "Market overview",
+};
+
+const HOTSPOT_TITLES: Record<Locale, string> = {
+  en_US: "Narrative watch",
+  ja_JP: "注目テーマ",
+  zh_TW: "熱點敘事追蹤",
+  zh_CN: "热点叙事追踪",
+  ru_RU: "Мониторинг нарратива",
+  uk_UA: "Моніторинг наративу",
+  fr_FR: "Suivi des thèmes",
+  es_ES: "Seguimiento narrativo",
+  ar_SA: "متابعة السرديات",
+  en_XA: "Narrative watch",
+};
+
 export function utc8DayKey(ts: number) {
   return new Date(ts + UTC8_OFFSET_MS).toISOString().slice(0, 10);
 }
@@ -66,7 +92,7 @@ export function marketOverviewCandidate({
   return {
     candidateType: "market_overview",
     candidateKey: `market_overview:${locale}:${utc8DayKey(now)}`,
-    displayTitle: locale === "zh_CN" ? "今日大盘综述" : "Market overview",
+    displayTitle: MARKET_OVERVIEW_TITLES[locale] ?? MARKET_OVERVIEW_TITLES.en_US,
     executable: false,
     cadence: "daily",
     score,
@@ -104,7 +130,10 @@ export function hotspotDecisionCandidate({
     candidateKey: resolvedKey,
     ...(normalizedSymbol ? { symbol: normalizedSymbol } : {}),
     displayTitle:
-      displayTitle?.trim() || (normalizedSymbol ? `${normalizedSymbol} 热点叙事` : "热点叙事追踪"),
+      displayTitle?.trim() ||
+      (normalizedSymbol
+        ? `${normalizedSymbol} ${HOTSPOT_TITLES[locale] ?? HOTSPOT_TITLES.en_US}`
+        : (HOTSPOT_TITLES[locale] ?? HOTSPOT_TITLES.en_US)),
     executable:
       typeof executable === "boolean"
         ? executable
