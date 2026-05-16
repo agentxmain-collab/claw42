@@ -1183,3 +1183,92 @@ PR checks：
 - `Vercel Preview Comments`：PASS
 
 [DOC-HINT: Stage 2 intentionally preserves `reason.kind === "news" | "market"` trigger semantics while extending selector scoring dimensions.]
+
+# B.14 Stage 3 Multi-Type Card UI Report
+
+Date: 2026-05-17
+
+## Scope
+
+Stage 3 PR: https://github.com/agentxmain-collab/claw42/pull/113
+
+Base: `896bfd4c2a38995c43e3087a6b3eea41236c5773` (B.14 Stage 2 squash)
+
+Code commit: `8228809 feat(watch): render B14 multi-type decision cards`
+
+## T401-T405 Completion
+
+- T401: v10 decision-flow cards now branch by `candidateType` through `symbol` / `market_overview` / `hotspot` class names and rendering.
+- T402: market overview / hotspot badges added with subtle type accents:
+  - `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx`
+  - `src/modules/agent-watch/v10/DispatchConsoleV10.module.css`
+  - 10 locale i18n keys under `agentWatch.dispatchV10.market.candidateBadges`
+- T403: follow-trade primary affordance now renders only when `candidateType === "symbol" && execution.executable === true`; market overview / hotspot render watch-only copy and never render the primary follow button.
+- T404: v10 topic ordering now uses Stage 0 `compareDecisionCandidateOrder` with type priority -> score desc -> lastUpdatedAt desc -> candidate key / record id.
+  - `src/modules/agent-watch/v9/types.ts` adds optional `lastUpdatedAt`
+  - `src/lib/watch/v9TopicAdapter.ts` passes through existing `group.latestAt`
+- T405: raw artifact includes 5 preview fetch hashes, 5 local browser refresh hashes, responsive screenshots, a11y result, and leak scan.
+
+## Tests / Gates
+
+- `npx vitest run src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: 7/7 PASS
+- `npx vitest run src/lib/watch/__tests__/publicTimelineOrdering.test.ts src/lib/watch/__tests__/topicAggregator.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts`: 44/44 PASS
+- `npx vitest run src/modules/agent-watch/__tests__/followTradeDisabled.test.tsx src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: 10/10 PASS
+- `npm run test:watch-pipeline`: 264/264 PASS
+- `npm run test:news`: 25/25 PASS
+- `npm run format:check`: PASS
+- `npm run typecheck`: PASS
+- `npm run lint`: PASS
+- `npm run verify:agent-ip`: PASS
+- `npm run verify:news`: PASS (local env warnings for API keys remain existing behavior)
+- `npm run verify:chat-v3-final`: 50/50 PASS
+- `npm run verify:metrics`: 5/5 PASS
+- `npm run verify:a11y`: 0 axe violations
+- `npm run build`: PASS after a clean standalone run. First attempt was invalid because I ran build concurrently with a11y/dev server and `.next` had concurrent writes; after `rm -rf .next`, build passed.
+
+## Preview
+
+- Preview URL: https://claw42-site-git-feature-b14-3229f2-agentxmain-collabs-projects.vercel.app
+- Deployment ID: `dpl_7ioGP1HsG6pnMFoNAYws5VzPRV51`
+- Inspect target: `preview`
+- Inspect status: READY
+
+普通 `curl` 仍受 Vercel protection 返回 401；`vercel curl` 通过。
+
+## Raw Artifacts
+
+- `claude-codex-sync/artifacts/b14-stage3/timeline-stability-and-leak-scan.json`
+- `claude-codex-sync/artifacts/b14-stage3/browser-refresh-responsive.json`
+- `claude-codex-sync/artifacts/b14-stage3/desktop-1440.png`
+- `claude-codex-sync/artifacts/b14-stage3/desktop-1280.png`
+- `claude-codex-sync/artifacts/b14-stage3/mobile-390.png`
+
+Preview timeline 5-fetch stability:
+
+- `zh_CN`: 5/5 stable, order hash `5e8f2e377b6c8449`, events = 3
+  - `market_overview:pm:MARKET:1778922000000:watch`
+  - `symbol:pm:BILL:1778936451988:watch`
+  - `symbol:pm:HYPE:1778926716595:exec`
+- `en_US`: 5/5 stable, order hash `a3fa0c999c0fa39e`, events = 1
+  - `hotspot:pm:HOTSPOT:1778925600000:watch`
+
+Leak scan:
+
+- `zh_CN`: user-visible text fields = 62, `leakCount=0`
+- `en_US`: user-visible text fields = 89, `leakCount=0`
+
+Browser refresh / responsive:
+
+- Local build URL: `http://127.0.0.1:3214/zh_CN/agent`
+- 5/5 browser refresh stable, hash `1df0e6b186276363`
+- 1440x1000 / 1280x800 / 390x900: no horizontal overflow
+
+Note: remote browser access is protected by Vercel authentication, so browser refresh/responsive verification used the same local production build; preview API stability used protected `vercel curl`.
+
+## First-hand Finding
+
+- Stage 0 comparator already sorted public timeline events, but v10 `MarketAnalysisPanel` re-sorted topics by ranking score and original render index. Stage 3 fixes that presentation-layer drift by reusing the canonical comparator.
+- The old v10 demo-topic test assumed missing `execution` still renders the disabled follow button. The Stage 3 safety gate intentionally requires explicit `execution.executable === true`; the test now creates an explicit executable symbol topic for that path.
+- No changes were made to PM pipeline, evidence dispatcher, candidate selector, refresh, hydration, or timeline projection.
+
+[DOC-HINT: Stage 3 uses `DispatchTopic.lastUpdatedAt` as a presentation adapter pass-through so v10 can reuse the Stage 0 canonical comparator without touching backend projection.]
