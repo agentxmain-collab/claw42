@@ -5,6 +5,7 @@ import {
   buildTopicSelectionEvidence,
   selectPmDecisionTopics,
   type TopicScoreBreakdown,
+  USER_VISIT_SYMBOL_CANDIDATE_CAP,
 } from "@/lib/team/topicSelector";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { tryAcquireLock } from "@/lib/storage/kv-lock";
@@ -59,6 +60,15 @@ export type PmDecisionTriggerAuditEvent =
       locale: Locale;
       reason: "no_candidates";
       candidateCount: number;
+    }
+  | {
+      type: "candidate_cost_cap_applied";
+      triggerSource: "user_visit_trigger";
+      locale: Locale;
+      candidateCount: number;
+      cappedTo: number;
+      maxResidentCandidates: 1;
+      maxSymbolCandidates: typeof USER_VISIT_SYMBOL_CANDIDATE_CAP;
     };
 
 type PmDecisionTriggerAuditSink = (event: PmDecisionTriggerAuditEvent) => void;
@@ -245,7 +255,7 @@ export async function triggerPmDecisionPipelineOnce({
     }
     return result;
   }
-  const candidateTopics = selectPmDecisionTopics({
+  const selectedCandidateTopics = selectPmDecisionTopics({
     pool,
     marketSignals: marketSignalsFromPool(pool, now),
     newsEvidence: recentNewsEvidence,
@@ -254,6 +264,27 @@ export async function triggerPmDecisionPipelineOnce({
     symbol,
     now,
   });
+  const candidateTopics =
+    !symbol &&
+    triggerSource === "user_visit_trigger" &&
+    selectedCandidateTopics.length > USER_VISIT_SYMBOL_CANDIDATE_CAP
+      ? selectedCandidateTopics.slice(0, USER_VISIT_SYMBOL_CANDIDATE_CAP)
+      : selectedCandidateTopics;
+  if (
+    !symbol &&
+    triggerSource === "user_visit_trigger" &&
+    selectedCandidateTopics.length > candidateTopics.length
+  ) {
+    onAudit?.({
+      type: "candidate_cost_cap_applied",
+      triggerSource,
+      locale: normalizedLocale,
+      candidateCount: selectedCandidateTopics.length,
+      cappedTo: candidateTopics.length,
+      maxResidentCandidates: 1,
+      maxSymbolCandidates: USER_VISIT_SYMBOL_CANDIDATE_CAP,
+    });
+  }
   if (candidateTopics.length === 0) {
     onAudit?.({
       type: "selection_skipped",

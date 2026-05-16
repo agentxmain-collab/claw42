@@ -41,6 +41,16 @@ const COINW_PERIODS = {
 const COINW_TARGET_CANDLES = 220;
 const COINW_TIMEOUT_MS = 5000;
 
+interface CoinGeckoMarketItem {
+  id?: string;
+  symbol?: string;
+  name?: string;
+  current_price?: number;
+  price_change_percentage_24h?: number;
+  market_cap?: number | null;
+  total_volume?: number | null;
+}
+
 export async function getCached<T>(
   key: string,
   ttlMs: number,
@@ -142,16 +152,22 @@ function normalizePoolEntry({
   name,
   price,
   change24h,
+  marketCapUsd,
+  totalVolumeUsd24h,
   category,
 }: {
   symbol: string;
   name?: string;
   price: unknown;
   change24h: unknown;
+  marketCapUsd?: unknown;
+  totalVolumeUsd24h?: unknown;
   category: CoinTickerEntry["category"];
 }): CoinTickerEntry | null {
   const normalizedPrice = Number(price);
   const normalizedChange = Number(change24h);
+  const normalizedMarketCap = Number(marketCapUsd);
+  const normalizedVolume = Number(totalVolumeUsd24h);
   const normalizedSymbol = symbol.trim().toUpperCase();
 
   if (!normalizedSymbol || !Number.isFinite(normalizedPrice)) return null;
@@ -161,8 +177,27 @@ function normalizePoolEntry({
     name,
     price: normalizedPrice,
     change24h: Number.isFinite(normalizedChange) ? normalizedChange : 0,
+    marketCapUsd: Number.isFinite(normalizedMarketCap) ? normalizedMarketCap : null,
+    totalVolumeUsd24h: Number.isFinite(normalizedVolume) ? normalizedVolume : null,
     category,
   };
+}
+
+function normalizeCoinGeckoMarketMap(payload: unknown) {
+  if (!Array.isArray(payload)) return new Map<string, CoinGeckoMarketItem>();
+  return new Map(
+    payload
+      .filter((item): item is CoinGeckoMarketItem => Boolean(item?.symbol))
+      .map((item) => [item.symbol?.toUpperCase() ?? "", item] as const),
+  );
+}
+
+async function fetchCoinGeckoMarketsBySymbols(symbols: string[]) {
+  const uniqueSymbols = Array.from(new Set(symbols.map((item) => item.trim().toUpperCase())));
+  if (uniqueSymbols.length === 0) return new Map<string, CoinGeckoMarketItem>();
+  const payload = await fetchWithTimeout(COINGECKO_MARKETS_URL);
+  const marketMap = normalizeCoinGeckoMarketMap(payload);
+  return new Map(uniqueSymbols.map((symbol) => [symbol, marketMap.get(symbol)] as const));
 }
 
 async function fetchTrendingPool(): Promise<CoinTickerEntry[]> {
@@ -179,33 +214,33 @@ async function fetchTrendingPool(): Promise<CoinTickerEntry[]> {
 
   if (topCoins.length === 0) return [];
 
-  const ids = topCoins.map((item) => item.id).join(",");
-  const pricePayload = (await fetchWithTimeout(
-    `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(
-      ids,
-    )}&vs_currencies=usd&include_24hr_change=true`,
-  )) as Record<string, { usd?: number; usd_24h_change?: number }>;
+  const marketPayload = (await fetchWithTimeout(
+    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(
+      topCoins.map((item) => item.id).join(","),
+    )}&order=market_cap_desc&per_page=${topCoins.length}&page=1&price_change_percentage=24h`,
+  )) as CoinGeckoMarketItem[];
+  const marketsById = new Map(
+    marketPayload.filter((item) => item.id).map((item) => [item.id as string, item] as const),
+  );
 
   return topCoins
-    .map((item) =>
-      normalizePoolEntry({
+    .map((item) => {
+      const market = marketsById.get(item.id);
+      return normalizePoolEntry({
         symbol: item.symbol,
         name: item.name,
-        price: pricePayload[item.id]?.usd,
-        change24h: pricePayload[item.id]?.usd_24h_change,
+        price: market?.current_price,
+        change24h: market?.price_change_percentage_24h,
+        marketCapUsd: market?.market_cap,
+        totalVolumeUsd24h: market?.total_volume,
         category: "trending",
-      }),
-    )
+      });
+    })
     .filter((item): item is CoinTickerEntry => Boolean(item));
 }
 
 async function fetchOpportunityPool(): Promise<CoinTickerEntry[]> {
-  const payload = (await fetchWithTimeout(COINGECKO_MARKETS_URL)) as Array<{
-    symbol?: string;
-    name?: string;
-    current_price?: number;
-    price_change_percentage_24h?: number;
-  }>;
+  const payload = (await fetchWithTimeout(COINGECKO_MARKETS_URL)) as CoinGeckoMarketItem[];
   if (!Array.isArray(payload)) return [];
 
   const filtered = payload.filter((item) => {
@@ -226,6 +261,8 @@ async function fetchOpportunityPool(): Promise<CoinTickerEntry[]> {
         name: item.name,
         price: item.current_price,
         change24h: item.price_change_percentage_24h,
+        marketCapUsd: item.market_cap,
+        totalVolumeUsd24h: item.total_volume,
         category: "opportunity",
       }),
     )
@@ -476,11 +513,24 @@ export async function getMarketAnalysisContext(): Promise<MarketTickerPayload> {
   }
 }
 
-function majorsFromTickers(tickers: TickerMap): CoinTickerEntry[] {
+async function majorsFromTickers(tickers: TickerMap): Promise<CoinTickerEntry[]> {
+  let markets = new Map<string, CoinGeckoMarketItem | undefined>();
+  try {
+    markets = await getCached("coingecko:majors-market-meta:v1", OPPORTUNITY_TTL_MS, () =>
+      fetchCoinGeckoMarketsBySymbols(MAJORS_SYMBOLS),
+    );
+  } catch (error) {
+    console.warn(
+      "[claw42] majors market metadata fallback",
+      error instanceof Error ? error.message : error,
+    );
+  }
   return MAJORS_SYMBOLS.map((symbol) => ({
     symbol,
     price: tickers[symbol].price,
     change24h: tickers[symbol].change24h,
+    marketCapUsd: markets.get(symbol)?.market_cap ?? null,
+    totalVolumeUsd24h: markets.get(symbol)?.total_volume ?? null,
     category: "majors",
   }));
 }
@@ -513,7 +563,7 @@ export async function getCoinPool(): Promise<CoinPoolPayload> {
   return {
     ts: Date.now(),
     tickers: analysisContext.tickers,
-    majors: majorsFromTickers(analysisContext.tickers),
+    majors: await majorsFromTickers(analysisContext.tickers),
     trending: trendingResult.status === "fulfilled" ? trendingResult.value : [],
     opportunity: opportunityResult.status === "fulfilled" ? opportunityResult.value : [],
     signals: analysisContext.coinw,

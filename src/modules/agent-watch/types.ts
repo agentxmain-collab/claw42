@@ -64,6 +64,8 @@ export interface CoinTickerEntry {
   name?: string;
   price: number;
   change24h: number;
+  marketCapUsd?: number | null;
+  totalVolumeUsd24h?: number | null;
   category: CoinCategory;
 }
 

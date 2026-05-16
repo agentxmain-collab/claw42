@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { buildTopicSelectionEvidence, selectPmDecisionTopics } from "@/lib/team/topicSelector";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  buildTopicSelectionEvidence,
+  clearTopicSelectionCacheForTests,
+  selectPmDecisionTopics,
+} from "@/lib/team/topicSelector";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
@@ -99,6 +103,10 @@ function decisionRecord(overrides: Partial<StrategyDecisionRecord> = {}): Strate
 }
 
 describe("selectPmDecisionTopics", () => {
+  beforeEach(() => {
+    clearTopicSelectionCacheForTests();
+  });
+
   it("ranks candidates by news severity and market alert strength", () => {
     const topics = selectPmDecisionTopics({
       pool: pool(),
@@ -108,17 +116,20 @@ describe("selectPmDecisionTopics", () => {
     });
 
     expect(topics.map((topic) => topic.symbol)).toEqual(["ETH", "SOL", "BTC"]);
-    expect(topics[0].scoreBreakdown).toEqual({
+    expect(topics[0].scoreBreakdown).toMatchObject({
+      marketCap: 15,
+      volume: 12.5,
       news: 60,
+      executable: 18,
       market: 40,
-      momentum: 32.400000000000006,
+      momentum: 10.8,
       pool: 1,
       memory: 0,
-      total: 133.4,
     });
+    expect(topics[0].scoreBreakdown.total).toBeCloseTo(157.3);
     expect(topics[0].reasons).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ kind: "news", label: "high impact news" }),
+        expect.objectContaining({ kind: "news", label: "7d news heat" }),
         expect.objectContaining({ kind: "market", label: "alert signal" }),
       ]),
     );
@@ -191,9 +202,9 @@ describe("selectPmDecisionTopics", () => {
       symbol: "ETH",
       scoreBreakdown: expect.objectContaining({
         memory: -10,
-        total: 123.4,
       }),
     });
+    expect(topics[0].scoreBreakdown.total).toBeCloseTo(147.3);
 
     const selection = buildTopicSelectionEvidence(topics[0], now);
     expect(selection.summary).toContain("复盘记忆");
@@ -233,16 +244,19 @@ describe("selectPmDecisionTopics", () => {
 
     expect(topics[0]).toMatchObject({
       symbol: "SUI",
-      scoreBreakdown: {
+      scoreBreakdown: expect.objectContaining({
+        marketCap: 15,
+        volume: 12.5,
         news: 60,
+        executable: 2,
         market: 0,
         momentum: 0,
         pool: 0,
         memory: 0,
-        total: 60,
-      },
+      }),
       newsEvidenceIds: ["ev_sui"],
     });
+    expect(topics[0].scoreBreakdown.total).toBeCloseTo(89.5);
   });
 
   it("keeps opportunity-pool symbols in the candidate set after majors and trending fill six slots", () => {
@@ -269,7 +283,7 @@ describe("selectPmDecisionTopics", () => {
     expect(topics[0]).toMatchObject({
       symbol: "BLEND",
       scoreBreakdown: expect.objectContaining({
-        momentum: 108,
+        momentum: 20,
         pool: 2,
       }),
     });
@@ -347,11 +361,124 @@ describe("selectPmDecisionTopics", () => {
     expect(topics.find((topic) => topic.symbol === "SOL")?.scoreBreakdown.news).toBe(0);
   });
 
-  it("keeps BTC as the final fallback when no pool, signal, or news symbol exists", () => {
+  it("uses the fixed static universe as the final fallback when no pool, signal, or news symbol exists", () => {
     const topics = selectPmDecisionTopics({ now });
 
-    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC"]);
-    expect(topics[0].scoreBreakdown.total).toBe(0);
+    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH", "SOL", "HYPE"]);
+    expect(topics.map((topic) => topic.scoreBreakdown.total)).toEqual([45.5, 45.5, 45.5, 45.5]);
+  });
+
+  it("scores market cap independently from the other dimensions", () => {
+    const metadataPool: CoinPoolPayload = {
+      ...pool(),
+      majors: [
+        {
+          symbol: "BTC",
+          price: 101000,
+          change24h: 0.1,
+          marketCapUsd: 2_000_000_000_000,
+          totalVolumeUsd24h: 10_000_000_000,
+          category: "majors",
+        },
+        {
+          symbol: "ETH",
+          price: 4200,
+          change24h: 0.1,
+          marketCapUsd: 400_000_000_000,
+          totalVolumeUsd24h: 10_000_000_000,
+          category: "majors",
+        },
+      ],
+      trending: [],
+    };
+
+    const topics = selectPmDecisionTopics({ pool: metadataPool, now });
+
+    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH"]);
+    expect(topics[0].scoreBreakdown.marketCap).toBeGreaterThan(topics[1].scoreBreakdown.marketCap);
+  });
+
+  it("scores 24h volume independently from market cap", () => {
+    const metadataPool: CoinPoolPayload = {
+      ...pool(),
+      majors: [
+        {
+          symbol: "BTC",
+          price: 101000,
+          change24h: 0.1,
+          marketCapUsd: 1_000_000_000_000,
+          totalVolumeUsd24h: 2_000_000_000,
+          category: "majors",
+        },
+        {
+          symbol: "ETH",
+          price: 4200,
+          change24h: 0.1,
+          marketCapUsd: 1_000_000_000_000,
+          totalVolumeUsd24h: 15_000_000_000,
+          category: "majors",
+        },
+      ],
+      trending: [],
+    };
+
+    const topics = selectPmDecisionTopics({ pool: metadataPool, now });
+
+    expect(topics.map((topic) => topic.symbol)).toEqual(["ETH", "BTC"]);
+    expect(topics[0].scoreBreakdown.volume).toBeGreaterThan(topics[1].scoreBreakdown.volume);
+  });
+
+  it("scores 7d CryptoCompare-style news heat by article count, source diversity, and high impact count", () => {
+    const topics = selectPmDecisionTopics({
+      newsEvidence: [
+        evidence({ id: "ev_sui_1", symbol: ["SUI"], source: "CryptoCompare", sourceDomain: "a" }),
+        evidence({
+          id: "ev_sui_2",
+          symbol: ["SUI"],
+          source: "CryptoCompare",
+          sourceDomain: "b",
+          impactSeverity: "medium",
+        }),
+        evidence({
+          id: "ev_sui_3",
+          symbol: ["SUI"],
+          source: "CryptoCompare",
+          sourceDomain: "c",
+          impactSeverity: "medium",
+        }),
+        evidence({
+          id: "ev_sui_old",
+          symbol: ["SUI"],
+          source: "CryptoCompare",
+          sourceDomain: "d",
+          impactSeverity: "high",
+          publishedAt: new Date(now - 8 * 24 * 60 * 60_000).toISOString(),
+        }),
+      ],
+      now,
+    });
+
+    expect(topics[0].symbol).toBe("SUI");
+    expect(topics[0].scoreBreakdown.news).toBeGreaterThan(60);
+    expect(topics[0].newsEvidenceIds).toEqual(["ev_sui_1", "ev_sui_2", "ev_sui_3", "ev_sui_old"]);
+    expect(buildTopicSelectionEvidence(topics[0], now).summary).toContain("7d 3篇 / 3源 / 1高影响");
+  });
+
+  it("keeps metadata-missing dimensions neutral and finite", () => {
+    const topics = selectPmDecisionTopics({ pool: pool(), now });
+
+    expect(topics[0].scoreBreakdown.marketCap).toBe(15);
+    expect(topics[0].scoreBreakdown.volume).toBe(12.5);
+    expect(Number.isFinite(topics[0].scoreBreakdown.total)).toBe(true);
+  });
+
+  it("caches automatic selection for five minutes without affecting explicit symbols", () => {
+    const first = selectPmDecisionTopics({ pool: pool(), now });
+    const second = selectPmDecisionTopics({ pool: pool(), now: now + 60_000 });
+    const explicit = selectPmDecisionTopics({ pool: pool(), symbol: "ETH", now: now + 60_000 });
+
+    expect(second).toBe(first);
+    expect(explicit.map((topic) => topic.symbol)).toEqual(["ETH"]);
   });
 
   it("builds public selection evidence with a readable score breakdown", () => {
@@ -367,15 +494,13 @@ describe("selectPmDecisionTopics", () => {
     expect(selection.id).toBe("topic_selection:ETH:1778702400000");
     expect(selection.url).toBe("#");
     expect(selection.symbol).toEqual(["ETH"]);
-    expect(selection.summary).toBe(
-      "本轮优先分析 ETH：新闻冲击、市场信号是主因；24h波动、候选池提供辅助。依据：新闻冲击：ETH ETF flows accelerate；市场信号：ETH 24h -5.4%；24h波动：24h -5.40%；候选池：主流高流动性池。",
-    );
+    expect(selection.summary).toContain("本轮优先分析 ETH");
     expect(selection.summary).toContain("ETH");
-    expect(selection.summary).toContain("新闻冲击");
+    expect(selection.summary).toContain("新闻热度");
     expect(selection.summary).toContain("市场信号");
     expect(selection.summary).toContain("24h -5.40%");
-    expect(selection.summary).toContain("新闻冲击、市场信号是主因");
-    expect(selection.summary).toContain("24h波动、候选池提供辅助");
+    expect(selection.summary).toContain("新闻热度、市场信号是主因");
+    expect(selection.summary).toContain("可执行性、市值权重提供辅助");
     expect(selection.summary).not.toContain("high impact news");
   });
 });
