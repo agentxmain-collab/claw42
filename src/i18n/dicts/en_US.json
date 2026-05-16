@@ -667,7 +667,7 @@
         "closed": "Closed",
         "debating": "Debating",
         "started": "Started",
-        "empty": "No decision updates yet",
+        "empty": "Workbench starting up. No recent decisions.",
         "statusDone": "Closed",
         "statusPending": "Starting",
         "statusActive": "LIVE Debate",

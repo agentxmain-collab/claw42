@@ -667,7 +667,7 @@
         "closed": "Closed",
         "debating": "Debating",
         "started": "Started",
-        "empty": "No decision updates yet",
+        "empty": "El panel se está iniciando. No hay decisiones recientes.",
         "statusDone": "Closed",
         "statusPending": "Starting",
         "statusActive": "LIVE Debate",
