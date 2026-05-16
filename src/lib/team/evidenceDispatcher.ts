@@ -3,11 +3,17 @@ import { fetchDefiLlamaFundamentalEvidence } from "@/lib/fundamental/defillamaTo
 import { getMarketAnalysisContext } from "@/lib/marketDataCache";
 import { fetchDefiLlamaProtocolEvidence } from "@/lib/onchain/defillamaAdapter";
 import { fetchEtherscanEvidence } from "@/lib/onchain/etherscanAdapter";
+import {
+  fetchMemoryContext,
+  formatMemoryContextForPrompt,
+  type MemoryContext,
+} from "@/lib/team/memoryLoopEvidence";
 import type { AnalystDataStatus } from "@/lib/team/strategyDecisionRecord";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { SignalRecord } from "@/modules/agent-watch/types";
+import type { Locale } from "@/i18n/types";
 
-export type EvidenceDomain = "chart" | "news" | "onchain" | "fundamental" | "market";
+export type EvidenceDomain = "chart" | "news" | "onchain" | "fundamental" | "market" | "memory";
 
 export interface TypedEvidenceItem {
   id: string;
@@ -30,6 +36,7 @@ export interface EvidenceContextPack {
   onchain: EvidenceContextSection;
   fundamental: EvidenceContextSection;
   market: EvidenceContextSection;
+  memory: EvidenceContextSection;
   dataStatus: Record<EvidenceDomain, AnalystDataStatus>;
 }
 
@@ -37,6 +44,7 @@ export interface BuildEvidenceContextInput {
   symbol: string;
   recentMarketSignals: SignalRecord[];
   recentNewsEvidence: NewsEvidence[];
+  locale?: Locale;
 }
 
 const MEMBER_DOMAINS: Record<TeamMemberId, EvidenceDomain[]> = {
@@ -46,14 +54,14 @@ const MEMBER_DOMAINS: Record<TeamMemberId, EvidenceDomain[]> = {
   onchain_analyst: ["onchain", "market"],
   research_lead: ["chart", "news", "onchain", "fundamental", "market"],
   risk_lead: ["chart", "news", "onchain", "fundamental", "market"],
-  pm: ["chart", "news", "onchain", "fundamental", "market"],
+  pm: ["chart", "news", "onchain", "fundamental", "market", "memory"],
   bullish_researcher: ["chart", "news", "onchain", "fundamental", "market"],
   bearish_researcher: ["chart", "news", "onchain", "fundamental", "market"],
   trader: ["chart", "market"],
   aggressive_reviewer: ["chart", "news", "market"],
   neutral_reviewer: ["chart", "news", "onchain", "fundamental", "market"],
   conservative_reviewer: ["chart", "onchain", "fundamental", "market"],
-  memory_loop: ["chart", "news", "onchain", "fundamental", "market"],
+  memory_loop: ["memory"],
 };
 
 const MEMBER_REQUIRED_DOMAIN: Partial<Record<TeamMemberId, EvidenceDomain>> = {
@@ -91,7 +99,7 @@ const MEMBER_MANDATES: Record<TeamMemberId, string> = {
   conservative_reviewer:
     "You are the conservative reviewer. Require strong evidence before endorsing risk; thin signal coverage should lower confidence.",
   memory_loop:
-    "You are the memory loop. Compare this setup with prior decision patterns and state what should be remembered for post-trade review.",
+    "You are the memory loop. Use only historical decision memory. Compare the current setup with prior cases, call out sparse samples, and state what should be remembered for post-trade review.",
 };
 
 function section(
@@ -212,6 +220,7 @@ export async function buildEvidenceContextPack({
   symbol,
   recentMarketSignals,
   recentNewsEvidence,
+  locale,
 }: BuildEvidenceContextInput): Promise<EvidenceContextPack> {
   const normalizedSymbol = symbol.trim().replace(/^\$+/, "").toUpperCase() || "BTC";
   const chart = [
@@ -219,10 +228,11 @@ export async function buildEvidenceContextPack({
     ...(await liveChartItems(normalizedSymbol)),
   ];
   const news = newsItems(normalizedSymbol, recentNewsEvidence);
-  const [etherscan, defillama, fundamental] = await Promise.all([
+  const [etherscan, defillama, fundamental, memoryContext] = await Promise.all([
     fetchEtherscanEvidence(normalizedSymbol),
     fetchDefiLlamaProtocolEvidence(normalizedSymbol),
     fetchDefiLlamaFundamentalEvidence(normalizedSymbol),
+    fetchMemoryContextWithTimeout(normalizedSymbol, locale),
   ]);
   const onchain = [
     snapshotItem(
@@ -262,6 +272,7 @@ export async function buildEvidenceContextPack({
           .join(" / ") || publicFallbackSummary("market"),
     },
   ];
+  const memory = memoryItems(normalizedSymbol, memoryContext);
 
   return {
     symbol: normalizedSymbol,
@@ -295,14 +306,62 @@ export async function buildEvidenceContextPack({
       market,
       summarize(market, publicFallbackSummary("market")),
     ),
+    memory: section(
+      "memory",
+      statusFromItems(memory),
+      memory,
+      summarize(memory, publicFallbackSummary("memory")),
+    ),
     dataStatus: {
       chart: statusFromItems(chart),
       news: statusFromItems(news),
       onchain: statusFromItems(onchain),
       fundamental: statusFromItems(fundamentalItems),
       market: statusFromItems(market),
+      memory: statusFromItems(memory),
     },
   };
+}
+
+async function fetchMemoryContextWithTimeout(symbol: string, locale?: Locale) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<MemoryContext>((resolve) => {
+    timeoutId = setTimeout(
+      () =>
+        resolve({
+          historicalCount: null,
+          winLossDistribution: {
+            wins: 0,
+            losses: 0,
+            openTrades: 0,
+          },
+          similarSetups: [],
+          lastReviewNotes: null,
+          sampleSizeCaution: true,
+          error: "kv_unavailable",
+        }),
+      5_000,
+    );
+  });
+  try {
+    return await Promise.race([fetchMemoryContext(symbol, locale), timeout]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+function memoryItems(symbol: string, context: MemoryContext): TypedEvidenceItem[] {
+  const status: AnalystDataStatus =
+    context.error === "kv_unavailable" ? "missing" : context.sampleSizeCaution ? "partial" : "ok";
+  return [
+    {
+      id: `memory:${symbol}:history`,
+      domain: "memory",
+      status,
+      source: "decision-history",
+      summary: formatMemoryContextForPrompt(context),
+    },
+  ];
 }
 
 function combinedStatus(statuses: AnalystDataStatus[]): AnalystDataStatus {

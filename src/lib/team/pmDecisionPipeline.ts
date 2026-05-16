@@ -1072,6 +1072,7 @@ export async function runPmDecisionPipeline(
     symbol,
     recentMarketSignals: localizedInput.recentMarketSignals,
     recentNewsEvidence: localizedInput.recentNewsEvidence,
+    locale,
   });
   const allowedEvidenceIds = new Set(
     PIPELINE_INPUT_MEMBER_IDS.flatMap((memberId) => evidenceIdsForMember(memberId, evidencePack)),

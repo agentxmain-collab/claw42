@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import type { DispatchV10Dict } from "@/i18n/types";
+import zhCN from "@/i18n/dicts/zh_CN.json";
+import type { Dict, DispatchV10Dict, Locale, TeamTrackRecordDict } from "@/i18n/types";
+import { TeamTrackRecordPanel } from "@/modules/agent-watch/components/TeamTrackRecordPanel";
 import { IntensityBar } from "../v9/IntensityBar";
 import { TopicBody } from "../v9/TopicBody";
 import type {
   DispatchFreshnessState,
+  DispatchTeamTrackRecord,
   DispatchTopic,
   DispatchTopicAction,
   DispatchStageStatus,
@@ -13,6 +16,8 @@ import type {
 import v9Styles from "../v9/dispatchConsoleV9.module.css";
 import { dispatchV10DemoTopics } from "./demoTopics";
 import { v9AgentToV10Role } from "./staticContent";
+
+const defaultTeamTrackRecordLabels = (zhCN as Dict).team.trackRecord;
 
 function ChatShellStat({ label, value }: { label: string; value: number }) {
   return (
@@ -327,11 +332,17 @@ export function MarketAnalysisPanel({
   dict,
   onPlaceholder,
   freshness,
+  teamTrackRecord,
+  teamTrackRecordLabels = defaultTeamTrackRecordLabels,
+  locale = "zh_CN",
 }: {
   topics?: DispatchTopic[];
   dict: DispatchV10Dict;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
   freshness?: DispatchFreshnessState;
+  teamTrackRecord?: DispatchTeamTrackRecord;
+  teamTrackRecordLabels?: TeamTrackRecordDict;
+  locale?: Locale;
 }) {
   const resolvedTopics = useMemo(() => {
     const normalizedTopics = (topics && topics.length > 0 ? topics : dispatchV10DemoTopics).map(
@@ -368,6 +379,12 @@ export function MarketAnalysisPanel({
             <ChatShellStat label={dict.market.started} value={pendingCount} />
           </div>
         </div>
+
+        <TeamTrackRecordPanel
+          labels={teamTrackRecordLabels}
+          locale={locale}
+          winrates={teamTrackRecord?.winrates}
+        />
 
         <div className="chat-shell-body">
           {resolvedTopics.length === 0 ? (

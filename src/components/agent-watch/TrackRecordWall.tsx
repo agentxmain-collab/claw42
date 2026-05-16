@@ -144,6 +144,7 @@ function emptyWinrate(memberId: TeamMemberId): TeamMemberWinrate {
     totalDecisions: 0,
     wins: 0,
     winRate: 0,
+    lastFiveWinRate: 0,
     netReturn7d: 0,
     recordSourceMix: {
       live: 0,

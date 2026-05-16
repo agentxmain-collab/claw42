@@ -169,6 +169,7 @@
   "team": {
     "trackRecord": {
       "title": "Team Track Record",
+      "compactTitle": "Team track record",
       "subtitle": "Public decision history for the 14-member Watch team, separated by live / paper / backtest sources.",
       "totalDecisions": "Decisions",
       "overallWinRate": "Win rate",
@@ -176,8 +177,10 @@
       "decisions": "Decisions",
       "wins": "Wins",
       "winRate": "Win rate",
+      "lastFiveWinRate": "Last 5",
       "netReturn7d": "7d net",
       "sampleSizeSmall": "Small sample size; observe only",
+      "sampleCautionBadge": "Small sample",
       "noRecords": "No public team track record yet. New structured decisions will accumulate here.",
       "aiDisclaimer": "AI-generated market views are informational only and do not constitute investment advice. Decisions at your own risk.",
       "source": {

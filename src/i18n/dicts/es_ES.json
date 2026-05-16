@@ -169,6 +169,7 @@
   "team": {
     "trackRecord": {
       "title": "Muro de resultados del equipo",
+      "compactTitle": "Resumen del equipo",
       "subtitle": "Historial público de decisiones del equipo Watch de 14 personas, separado por live / paper / backtest.",
       "totalDecisions": "Decisiones",
       "overallWinRate": "Win rate",
@@ -176,8 +177,10 @@
       "decisions": "Decisiones",
       "wins": "Victorias",
       "winRate": "Win rate",
+      "lastFiveWinRate": "Últ. 5",
       "netReturn7d": "Neto 7d",
       "sampleSizeSmall": "Muestra pequeña; solo observación",
+      "sampleCautionBadge": "Muestra pequeña",
       "noRecords": "Aún no hay historial público del equipo. Las nuevas decisiones estructuradas se acumularán aquí.",
       "aiDisclaimer": "Las opiniones de mercado generadas por AI son solo informativas y no constituyen asesoramiento de inversión. Decide bajo tu propio riesgo.",
       "source": {

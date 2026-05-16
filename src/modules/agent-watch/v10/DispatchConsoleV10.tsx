@@ -15,8 +15,9 @@ export function DispatchConsoleV10({
   onViewChange,
   onTopicAction,
   freshness,
+  teamTrackRecord,
 }: DispatchConsoleV10Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const dict = t.agentWatch.dispatchV10;
   const [activeView, setActiveView] = useState<DispatchView>(initialView);
   const [placeholder, setPlaceholder] = useState<{
@@ -75,6 +76,9 @@ export function DispatchConsoleV10({
           topics={topics}
           dict={dict}
           freshness={freshness}
+          teamTrackRecord={teamTrackRecord}
+          teamTrackRecordLabels={t.team.trackRecord}
+          locale={locale}
           onPlaceholder={handleTopicAction}
         />
       </section>
