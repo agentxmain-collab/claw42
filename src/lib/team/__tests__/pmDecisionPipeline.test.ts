@@ -7,6 +7,7 @@ import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { SignalRecord } from "@/modules/agent-watch/types";
 import type { EvidenceContextPack } from "@/lib/team/evidenceDispatcher";
+import { marketOverviewCandidate } from "@/lib/watch/residentCandidate";
 
 const now = Date.UTC(2026, 4, 10, 10, 0, 0);
 
@@ -556,5 +557,90 @@ describe("runPmDecisionPipeline", () => {
     expect(result?.record.id).toBe("pm:BTC:1778407200000");
     expect(appendWatchHistoryEntry).toHaveBeenCalledTimes(1);
     expect(updateDecisionRecord).toHaveBeenCalledTimes(1);
+  });
+
+  it("writes market overview as analysis-only without generating a trade card", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+    const updateDecisionRecord = vi.fn(async (record: StrategyDecisionRecord) => {
+      void record;
+    });
+    const generateTradeDecision = vi.fn(async () => decision());
+    const candidate = marketOverviewCandidate({ locale: "zh_CN", now });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "user_visit_trigger",
+        candidate,
+        recentMarketSignals: [signal(), signal({ symbol: "ETH", payload: { change24h: 3.2 } })],
+        recentNewsEvidence: [evidence({ symbol: [] })],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack("MARKET"),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Market breadth and liquidity remain constructive",
+          confidence: 0.68,
+        })),
+        generateTradeDecision,
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord,
+      },
+    );
+
+    expect(result?.record.candidate).toMatchObject({
+      candidateType: "market_overview",
+      executable: false,
+    });
+    expect(result?.record.symbol).toBe("MARKET");
+    expect(result?.record.tradeDecision).toBeNull();
+    expect(result?.record.analysisSummary).toContain("今日大盘综述");
+    expect(result?.publicTimelineEntry.payload).toMatchObject({
+      kind: "pm_decision",
+      symbol: "MARKET",
+      candidateType: "market_overview",
+      candidateKey: candidate.candidateKey,
+      displayTitle: candidate.displayTitle,
+      executable: false,
+      tradeDecision: null,
+    });
+    expect(generateTradeDecision).not.toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).toHaveBeenCalledWith(expect.any(Object), 0);
+  });
+
+  it("does not fabricate a trade card when a symbol candidate has no current price", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const generateTradeDecision = vi.fn(async () => decision());
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal({ payload: { description: "BTC momentum without price" } })],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Evidence stack remains constructive",
+          confidence: 0.7,
+        })),
+        generateTradeDecision,
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry: vi.fn(),
+        updateDecisionRecord: vi.fn(),
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(generateTradeDecision).not.toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
   });
 });

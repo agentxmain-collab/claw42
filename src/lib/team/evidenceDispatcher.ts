@@ -1,4 +1,5 @@
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
+import { fetchFearGreed } from "@/lib/api/fearGreed";
 import { fetchDefiLlamaFundamentalEvidence } from "@/lib/fundamental/defillamaTokenomicsAdapter";
 import { getMarketAnalysisContext } from "@/lib/marketDataCache";
 import { fetchDefiLlamaProtocolEvidence } from "@/lib/onchain/defillamaAdapter";
@@ -12,6 +13,8 @@ import type { AnalystDataStatus } from "@/lib/team/strategyDecisionRecord";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { SignalRecord } from "@/modules/agent-watch/types";
 import type { Locale } from "@/i18n/types";
+import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
+import { normalizePipelineSymbol } from "@/lib/watch/residentCandidate";
 
 export type EvidenceDomain = "chart" | "news" | "onchain" | "fundamental" | "market" | "memory";
 
@@ -31,6 +34,7 @@ export interface EvidenceContextSection {
 
 export interface EvidenceContextPack {
   symbol: string;
+  candidate?: DecisionCandidate;
   chart: EvidenceContextSection;
   news: EvidenceContextSection;
   onchain: EvidenceContextSection;
@@ -42,6 +46,7 @@ export interface EvidenceContextPack {
 
 export interface BuildEvidenceContextInput {
   symbol: string;
+  candidate?: DecisionCandidate;
   recentMarketSignals: SignalRecord[];
   recentNewsEvidence: NewsEvidence[];
   locale?: Locale;
@@ -144,6 +149,24 @@ function chartItems(symbol: string, signals: SignalRecord[]): TypedEvidenceItem[
     }));
 }
 
+function residentChartItems(signals: SignalRecord[]): TypedEvidenceItem[] {
+  return signals.slice(0, 8).map((signal, index) => ({
+    id: `chart:resident:signal:${index}`,
+    domain: "chart" as const,
+    status: "ok" as const,
+    source: "market-signal",
+    summary: [
+      signal.symbol,
+      `${signal.type} ${signal.severity}`,
+      signal.payload.priceLevel !== undefined ? `price=${signal.payload.priceLevel}` : null,
+      signal.payload.change24h !== undefined ? `change24h=${signal.payload.change24h}` : null,
+      signal.payload.description,
+    ]
+      .filter(Boolean)
+      .join(" / "),
+  }));
+}
+
 async function liveChartItems(symbol: string): Promise<TypedEvidenceItem[]> {
   if (process.env.NODE_ENV === "test") return [];
   try {
@@ -191,6 +214,19 @@ function newsItems(symbol: string, evidence: NewsEvidence[]): TypedEvidenceItem[
     }));
 }
 
+function residentNewsItems(evidence: NewsEvidence[]): TypedEvidenceItem[] {
+  return evidence
+    .filter((item) => !isTopicSelectionEvidence(item))
+    .slice(0, 8)
+    .map((item) => ({
+      id: item.id,
+      domain: "news" as const,
+      status: "ok" as const,
+      source: item.source,
+      summary: `${item.title} — ${item.summary}`,
+    }));
+}
+
 function isTopicSelectionEvidence(item: NewsEvidence) {
   return (
     item.id.startsWith("topic_selection:") ||
@@ -220,49 +256,82 @@ function summarize(items: TypedEvidenceItem[], fallback: string) {
   return items.map((item) => `[${item.source}/${item.status}] ${item.summary}`).join("\n");
 }
 
+async function fearGreedItems(): Promise<TypedEvidenceItem[]> {
+  if (process.env.NODE_ENV === "test") return [];
+  const data = await fetchFearGreed();
+  if (!data) return [];
+  return [
+    {
+      id: `market:fear-greed:${data.value}`,
+      domain: "market",
+      status: "ok",
+      source: "alternative.me:fear-greed",
+      summary: `Fear & Greed ${data.value} / ${data.classificationZh || data.classification}`,
+    },
+  ];
+}
+
 export async function buildEvidenceContextPack({
   symbol,
+  candidate,
   recentMarketSignals,
   recentNewsEvidence,
   locale,
 }: BuildEvidenceContextInput): Promise<EvidenceContextPack> {
-  const normalizedSymbol = symbol.trim().replace(/^\$+/, "").toUpperCase() || "BTC";
-  const chart = [
-    ...chartItems(normalizedSymbol, recentMarketSignals),
-    ...(await liveChartItems(normalizedSymbol)),
-  ];
-  const news = newsItems(normalizedSymbol, recentNewsEvidence);
-  const [etherscan, defillama, fundamental, memoryContext] = await Promise.all([
-    fetchEtherscanEvidence(normalizedSymbol),
-    fetchDefiLlamaProtocolEvidence(normalizedSymbol),
-    fetchDefiLlamaFundamentalEvidence(normalizedSymbol),
+  const normalizedSymbol =
+    normalizePipelineSymbol(candidate?.symbol) ?? normalizePipelineSymbol(symbol) ?? symbol;
+  const residentCandidate = candidate && candidate.candidateType !== "symbol";
+  const chart = residentCandidate
+    ? residentChartItems(recentMarketSignals)
+    : [
+        ...chartItems(normalizedSymbol, recentMarketSignals),
+        ...(await liveChartItems(normalizedSymbol)),
+      ];
+  const news = residentCandidate
+    ? residentNewsItems(recentNewsEvidence)
+    : newsItems(normalizedSymbol, recentNewsEvidence);
+  const [etherscan, defillama, fundamental, memoryContext, fearGreed] = await Promise.all([
+    residentCandidate ? Promise.resolve(null) : fetchEtherscanEvidence(normalizedSymbol),
+    residentCandidate ? Promise.resolve(null) : fetchDefiLlamaProtocolEvidence(normalizedSymbol),
+    residentCandidate ? Promise.resolve(null) : fetchDefiLlamaFundamentalEvidence(normalizedSymbol),
     fetchMemoryContextWithTimeout(normalizedSymbol, locale),
+    fearGreedItems(),
   ]);
   const onchain = [
-    snapshotItem(
-      "onchain",
-      normalizedSymbol,
-      etherscan.source,
-      etherscan.status,
-      etherscan.summary,
-    ),
-    snapshotItem(
-      "onchain",
-      normalizedSymbol,
-      defillama.source,
-      defillama.status,
-      defillama.summary,
-    ),
+    ...(etherscan
+      ? [
+          snapshotItem(
+            "onchain",
+            normalizedSymbol,
+            etherscan.source,
+            etherscan.status,
+            etherscan.summary,
+          ),
+        ]
+      : []),
+    ...(defillama
+      ? [
+          snapshotItem(
+            "onchain",
+            normalizedSymbol,
+            defillama.source,
+            defillama.status,
+            defillama.summary,
+          ),
+        ]
+      : []),
   ];
-  const fundamentalItems = [
-    snapshotItem(
-      "fundamental",
-      normalizedSymbol,
-      fundamental.source,
-      fundamental.status,
-      fundamental.summary,
-    ),
-  ];
+  const fundamentalItems = fundamental
+    ? [
+        snapshotItem(
+          "fundamental",
+          normalizedSymbol,
+          fundamental.source,
+          fundamental.status,
+          fundamental.summary,
+        ),
+      ]
+    : [];
   const market = [
     {
       id: `market:${normalizedSymbol}:summary`,
@@ -275,11 +344,13 @@ export async function buildEvidenceContextPack({
           .map((signal) => `${signal.symbol} ${signal.type} ${signal.severity}`)
           .join(" / ") || publicFallbackSummary("market"),
     },
+    ...fearGreed,
   ];
   const memory = memoryItems(normalizedSymbol, memoryContext);
 
   return {
     symbol: normalizedSymbol,
+    ...(candidate ? { candidate } : {}),
     chart: section(
       "chart",
       statusFromItems(chart),
@@ -387,12 +458,18 @@ export function evidenceIdsForMember(memberId: TeamMemberId, pack: EvidenceConte
 }
 
 function visibleDomainsForMember(memberId: TeamMemberId, pack: EvidenceContextPack) {
+  if (pack.candidate && pack.candidate.candidateType !== "symbol") {
+    return MEMBER_DOMAINS[memberId].filter((domain) => pack[domain].status !== "missing");
+  }
   const requiredDomain = MEMBER_REQUIRED_DOMAIN[memberId];
   if (requiredDomain && pack[requiredDomain].status === "missing") return [];
   return MEMBER_DOMAINS[memberId].filter((domain) => pack[domain].status !== "missing");
 }
 
 export function shouldAbstainMember(memberId: TeamMemberId, pack: EvidenceContextPack): boolean {
+  if (pack.candidate && pack.candidate.candidateType !== "symbol") {
+    return visibleDomainsForMember(memberId, pack).length === 0;
+  }
   const requiredDomain = MEMBER_REQUIRED_DOMAIN[memberId];
   if (requiredDomain && pack[requiredDomain].status === "missing") return true;
   return visibleDomainsForMember(memberId, pack).length === 0;

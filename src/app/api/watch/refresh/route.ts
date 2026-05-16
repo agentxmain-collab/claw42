@@ -9,12 +9,20 @@ import { checkRateLimit } from "@/lib/storage/kv-rate-limiter";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { marketSignalsFromPool, triggerPmDecisionPipelineOnce } from "@/lib/team/pmDecisionTrigger";
 import { selectPmDecisionTopics } from "@/lib/team/topicSelector";
+import type { CandidateType, DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import { normalizeWatchLocale } from "@/lib/watch/locale";
 import {
   deriveDecisionFreshness,
   normalizeRefreshSymbol,
   type DecisionFreshnessSource,
 } from "@/lib/watch/decisionFreshness";
+import {
+  HOTSPOT_STORAGE_SYMBOL,
+  MARKET_OVERVIEW_STORAGE_SYMBOL,
+  hotspotDecisionCandidate,
+  marketOverviewCandidate,
+  symbolDecisionCandidate,
+} from "@/lib/watch/residentCandidate";
 import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
 import type { WatchRefreshStatus } from "@/lib/watch/refreshStatus";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
@@ -27,6 +35,9 @@ export const runtime = "nodejs";
 interface WatchRefreshPayload {
   status: WatchRefreshStatus;
   symbol: string;
+  candidateType?: CandidateType;
+  candidateKey?: string;
+  displayTitle?: string;
   lastDecisionAt: string | null;
   nextAllowedAt: string | null;
   refreshStarted: boolean;
@@ -46,6 +57,15 @@ function requestUrl(request: Request) {
   return new URL(request.url);
 }
 
+function requestNow(url: URL) {
+  const raw = url.searchParams.get("testNow") ?? url.searchParams.get("now");
+  if (!raw) return Date.now();
+  const parsed = Number(raw);
+  if (Number.isFinite(parsed)) return parsed;
+  const parsedDate = Date.parse(raw);
+  return Number.isFinite(parsedDate) ? parsedDate : Date.now();
+}
+
 function ipKey(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const realIp = request.headers.get("x-real-ip")?.trim();
@@ -58,20 +78,23 @@ function isoOrNull(value: number | null | undefined) {
 
 function basePayload({
   status,
-  symbol,
+  candidate,
   freshness,
   nextAllowedAt = null,
   refreshStarted = false,
 }: {
   status: WatchRefreshStatus;
-  symbol: string;
+  candidate: DecisionCandidate;
   freshness: Awaited<ReturnType<typeof loadFreshness>>;
   nextAllowedAt?: string | null;
   refreshStarted?: boolean;
 }): WatchRefreshPayload {
   return {
     status,
-    symbol,
+    symbol: candidate.symbol ?? storageSymbolForRefresh(candidate),
+    candidateType: candidate.candidateType,
+    candidateKey: candidate.candidateKey,
+    displayTitle: candidate.displayTitle,
     lastDecisionAt: freshness.lastDecisionAt,
     nextAllowedAt,
     refreshStarted,
@@ -79,7 +102,39 @@ function basePayload({
   };
 }
 
-async function loadFreshness(symbol: string, locale: Locale, now: number) {
+function storageSymbolForRefresh(candidate: DecisionCandidate) {
+  if (candidate.symbol) return candidate.symbol;
+  return candidate.candidateType === "market_overview"
+    ? MARKET_OVERVIEW_STORAGE_SYMBOL
+    : HOTSPOT_STORAGE_SYMBOL;
+}
+
+function refreshIdentityKey(candidate: DecisionCandidate) {
+  return candidate.candidateType === "symbol" && candidate.symbol
+    ? candidate.symbol
+    : candidate.candidateKey;
+}
+
+function candidateFromRequest(url: URL, locale: Locale, now: number): DecisionCandidate | null {
+  const candidateType = url.searchParams.get("candidateType");
+  if (candidateType === "market_overview") {
+    return marketOverviewCandidate({ locale, now });
+  }
+  if (candidateType === "hotspot") {
+    return hotspotDecisionCandidate({
+      locale,
+      now,
+      candidateKey: url.searchParams.get("candidateKey"),
+      displayTitle: url.searchParams.get("displayTitle"),
+      symbol: url.searchParams.get("symbol"),
+      executable: url.searchParams.get("executable") === "true",
+    });
+  }
+  const symbol = normalizeRefreshSymbol(url.searchParams.get("symbol"));
+  return symbol ? symbolDecisionCandidate({ symbol }) : null;
+}
+
+async function loadFreshness(candidate: DecisionCandidate, locale: Locale, now: number) {
   const [records, timelineEvents] = await Promise.all([
     readAllDecisionRecords(200, locale).catch(() => []),
     getWatchHistory({ windowMinutes: HISTORY_WINDOW_MINUTES, limit: 100, locale })
@@ -93,10 +148,17 @@ async function loadFreshness(symbol: string, locale: Locale, now: number) {
       .catch(() => []),
   ]);
 
-  return deriveDecisionFreshness({ symbol, records, timelineEvents, now });
+  return deriveDecisionFreshness({
+    symbol: storageSymbolForRefresh(candidate),
+    candidateType: candidate.candidateType,
+    candidateKey: candidate.candidateKey,
+    records,
+    timelineEvents,
+    now,
+  });
 }
 
-async function loadTriggerContext(locale: Locale, symbol: string, now: number) {
+async function loadTriggerContext(locale: Locale, candidate: DecisionCandidate, now: number) {
   const [{ items, servedBy }, pool] = await Promise.all([
     fetchNewsWithChain({ limit: 8 }).catch(() => ({
       items: [] as NewsItem[],
@@ -108,17 +170,24 @@ async function loadTriggerContext(locale: Locale, symbol: string, now: number) {
   const normalizedItems = await Promise.all(
     items.map((item) => normalizeNewsItem(item, servedBy).catch(() => item)),
   );
+  if (candidate.candidateType !== "symbol") {
+    return {
+      pool,
+      newsItems: normalizedItems,
+      hasTrigger: true,
+    };
+  }
   const newsEvidence = normalizedItems.map((item) => newsItemToEvidence(item));
   const marketSignals = marketSignalsFromPool(pool, now);
-  const candidate = selectPmDecisionTopics({
+  const selectedTopic = selectPmDecisionTopics({
     pool,
     marketSignals,
     newsEvidence,
-    symbol,
+    symbol: candidate.symbol,
     now,
   })[0];
   const hasTrigger =
-    candidate?.reasons.some(
+    selectedTopic?.reasons.some(
       (reason) =>
         (reason.kind === "market" && reason.score >= 40) ||
         (reason.kind === "news" && reason.score >= 60),
@@ -132,16 +201,14 @@ async function loadTriggerContext(locale: Locale, symbol: string, now: number) {
 }
 
 async function handleStatus(request: Request) {
-  const now = Date.now();
   const url = requestUrl(request);
-  const symbol = normalizeRefreshSymbol(url.searchParams.get("symbol"));
-  if (!symbol) {
-    return NextResponse.json({ error: "invalid_symbol" }, { status: 400 });
-  }
+  const now = requestNow(url);
   const locale = normalizeWatchLocale(url.searchParams.get("locale"));
-  const freshness = await loadFreshness(symbol, locale, now);
+  const candidate = candidateFromRequest(url, locale, now);
+  if (!candidate) return NextResponse.json({ error: "invalid_candidate" }, { status: 400 });
+  const freshness = await loadFreshness(candidate, locale, now);
   const status: WatchRefreshStatus = freshness.isFresh ? "cached" : "stale";
-  return json(basePayload({ status, symbol, freshness }));
+  return json(basePayload({ status, candidate, freshness }));
 }
 
 export async function GET(request: Request) {
@@ -149,20 +216,19 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const now = Date.now();
   const url = requestUrl(request);
-  const symbol = normalizeRefreshSymbol(url.searchParams.get("symbol"));
-  if (!symbol) {
-    return NextResponse.json({ error: "invalid_symbol" }, { status: 400 });
-  }
+  const now = requestNow(url);
   const locale = normalizeWatchLocale(url.searchParams.get("locale"));
+  const candidate = candidateFromRequest(url, locale, now);
+  if (!candidate) return NextResponse.json({ error: "invalid_candidate" }, { status: 400 });
+  const identityKey = refreshIdentityKey(candidate);
   const rateLimit = await checkRateLimit(`watch-refresh:ip:${ipKey(request)}`, REFRESH_RATE_LIMIT);
   if (!rateLimit.allowed) {
-    const freshness = await loadFreshness(symbol, locale, now);
+    const freshness = await loadFreshness(candidate, locale, now);
     return json(
       basePayload({
         status: "locked",
-        symbol,
+        candidate,
         freshness,
         nextAllowedAt: isoOrNull(rateLimit.resetAt),
       }),
@@ -170,23 +236,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const inFlightKey = `watch:refresh:in-flight:${locale}:${symbol}`;
+  const inFlightKey = `watch:refresh:in-flight:${locale}:${identityKey}`;
   const inFlight = await checkLock(inFlightKey);
   if (inFlight.locked) {
-    const freshness = await loadFreshness(symbol, locale, now);
+    const freshness = await loadFreshness(candidate, locale, now);
     return json(
       basePayload({
         status: "refreshing",
-        symbol,
+        candidate,
         freshness,
         nextAllowedAt: isoOrNull(inFlight.expiresAt),
       }),
     );
   }
 
-  const freshness = await loadFreshness(symbol, locale, now);
+  const freshness = await loadFreshness(candidate, locale, now);
   if (freshness.isFresh) {
-    return json(basePayload({ status: "cached", symbol, freshness }));
+    return json(basePayload({ status: "cached", candidate, freshness }));
   }
 
   const cooldownKey = `watch:refresh:cooldown:${locale}`;
@@ -195,29 +261,29 @@ export async function POST(request: Request) {
     return json(
       basePayload({
         status: "locked",
-        symbol,
+        candidate,
         freshness,
         nextAllowedAt: isoOrNull(cooldown.expiresAt),
       }),
     );
   }
 
-  const pmDecisionLockKey = `watch:pm-decision:${locale}:${symbol}`;
+  const pmDecisionLockKey = `watch:pm-decision:${locale}:${identityKey}`;
   const pmDecisionLock = await checkLock(pmDecisionLockKey);
   if (pmDecisionLock.locked) {
     return json(
       basePayload({
         status: "locked",
-        symbol,
+        candidate,
         freshness,
         nextAllowedAt: isoOrNull(pmDecisionLock.expiresAt),
       }),
     );
   }
 
-  const context = await loadTriggerContext(locale, symbol, now);
+  const context = await loadTriggerContext(locale, candidate, now);
   if (!context.hasTrigger) {
-    return json(basePayload({ status: "no_signal", symbol, freshness }));
+    return json(basePayload({ status: "no_signal", candidate, freshness }));
   }
 
   const cooldownHandle = await tryAcquireLock(cooldownKey, {
@@ -225,14 +291,14 @@ export async function POST(request: Request) {
     waitMs: 0,
   });
   if (!cooldownHandle) {
-    return json(basePayload({ status: "locked", symbol, freshness }));
+    return json(basePayload({ status: "locked", candidate, freshness }));
   }
   const inFlightHandle = await tryAcquireLock(inFlightKey, {
     ttlMs: IN_FLIGHT_LOCK_MS,
     waitMs: 0,
   });
   if (!inFlightHandle) {
-    return json(basePayload({ status: "refreshing", symbol, freshness }));
+    return json(basePayload({ status: "refreshing", candidate, freshness }));
   }
 
   waitUntil(
@@ -241,13 +307,13 @@ export async function POST(request: Request) {
       pool: context.pool,
       newsItems: context.newsItems,
       locale,
-      symbol,
+      ...(candidate.candidateType === "symbol" ? { symbol: candidate.symbol } : { candidate }),
       now,
       partialStageUpdates: true,
     })
       .catch((error) => {
         console.error("[claw42] watch refresh trigger failed", {
-          symbol,
+          candidateKey: candidate.candidateKey,
           locale,
           error: error instanceof Error ? error.message : String(error),
         });
@@ -255,5 +321,5 @@ export async function POST(request: Request) {
       .finally(() => releaseLock(inFlightHandle)),
   );
 
-  return json(basePayload({ status: "stale", symbol, freshness, refreshStarted: true }));
+  return json(basePayload({ status: "stale", candidate, freshness, refreshStarted: true }));
 }

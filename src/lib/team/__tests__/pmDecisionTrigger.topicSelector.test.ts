@@ -7,6 +7,7 @@ import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PmDecisionPipelineInput } from "@/lib/team/pmDecisionPipeline";
 import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 import type { NewsItem } from "@/lib/types";
+import { marketOverviewCandidate } from "@/lib/watch/residentCandidate";
 
 const runPmDecisionPipelineMock = vi.hoisted(() => vi.fn());
 const saveNewsEvidenceMock = vi.hoisted(() => vi.fn());
@@ -484,5 +485,31 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
         candidateCount: 0,
       }),
     ]);
+  });
+
+  it("runs a resident market overview candidate with candidate lock and no symbol scoping", async () => {
+    const candidate = marketOverviewCandidate({ locale: "zh_CN", now });
+
+    await triggerPmDecisionPipelineOnce({
+      triggerSource: "user_visit_trigger",
+      pool: pool(),
+      newsItems: [newsItem({ currencies: [] })],
+      locale: "zh_CN",
+      candidate,
+      now,
+    });
+
+    expect(tryAcquireLockMock).toHaveBeenCalledWith(
+      `watch:pm-decision:zh_CN:${candidate.candidateKey}`,
+      {
+        ttlMs: 170 * 60_000,
+        waitMs: 0,
+      },
+    );
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
+    expect(input.candidate).toEqual(candidate);
+    expect(input.recentMarketSignals.map((signal) => signal.symbol)).toEqual(["BTC", "ETH", "SOL"]);
+    expect(input.recentNewsEvidence).toHaveLength(1);
   });
 });

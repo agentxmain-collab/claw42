@@ -42,10 +42,17 @@ import type {
   PublicTimelineEvent,
   PublicTimelineImportance,
 } from "@/lib/watch/publicTimelineEvent";
+import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import {
   publicDecisionProcessFromRecord,
   publicStageTraceFromRecord,
 } from "@/lib/watch/publicTimelineProjection";
+import {
+  isTradeDisabledCandidate,
+  normalizePipelineSymbol,
+  storageSymbolForCandidate,
+  symbolDecisionCandidate,
+} from "@/lib/watch/residentCandidate";
 import { appendWatchHistoryEntry } from "@/lib/watchHistoryStore";
 import {
   cleanPublicDecisionText,
@@ -67,6 +74,7 @@ const TEAM_LLM_TIMEOUT_MS = 25_000;
 
 export interface PmDecisionPipelineInput {
   triggerSource: PmDecisionTriggerSource;
+  candidate?: DecisionCandidate;
   recentMarketSignals: SignalRecord[];
   recentNewsEvidence: NewsEvidence[];
   importanceThreshold?: PublicTimelineImportance;
@@ -205,6 +213,34 @@ function tradeInputDirection(direction: AnalystDirection): "long" | "short" | "n
 function publicDirectionForContext(direction: AnalystDirection) {
   if (direction === "wait") return "no-action";
   return direction;
+}
+
+function buildAnalysisSummary({
+  candidate,
+  analystOutputs,
+  researchLead,
+  riskLead,
+}: {
+  candidate: DecisionCandidate;
+  analystOutputs: AnalystOutput[];
+  researchLead: LeadOutput;
+  riskLead: LeadOutput;
+}) {
+  const strongest = [...analystOutputs]
+    .filter((output) => output.rationale)
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, 2)
+    .map((output) => output.oneLineSummary || oneLineSummaryFromRationale(output.rationale));
+  return truncateText(
+    [
+      `${candidate.displayTitle}: ${researchLead.rationale}`,
+      `Risk view: ${riskLead.rationale}`,
+      strongest.length ? `Role signals: ${strongest.join(" / ")}` : null,
+    ]
+      .filter(Boolean)
+      .join(" "),
+    520,
+  );
 }
 
 function cleanText(value: unknown) {
@@ -432,16 +468,43 @@ function newsContext(input: PmDecisionPipelineInput) {
     .join("\n");
 }
 
+function candidateContext(candidate: DecisionCandidate) {
+  return [
+    `candidateType=${candidate.candidateType}`,
+    `candidateKey=${candidate.candidateKey}`,
+    candidate.symbol ? `symbol=${candidate.symbol}` : null,
+    `displayTitle=${candidate.displayTitle}`,
+    `executable=${candidate.executable ? "true" : "false"}`,
+    `cadence=${candidate.cadence}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function tradeDisabledPromptRules(candidate: DecisionCandidate) {
+  if (!isTradeDisabledCandidate(candidate)) return "";
+  return `
+## Analysis-only candidate
+This candidate is not a follow-trade setup. Do not write entry, stop loss, take profit, position sizing, or order execution instructions.
+Focus on market regime, narrative strength, risk boundaries, and what would change the read.
+Use direction as market bias only: long/short/neutral/wait.`;
+}
+
 async function buildMemberPrompt(
   memberId: TeamMemberId,
   input: PmDecisionPipelineInput,
   deps: PipelineDeps,
   evidencePack: EvidenceContextPack,
+  candidate: DecisionCandidate,
 ) {
   const promptDoc = await (deps.loadPromptDoc ?? defaultLoadPromptDoc)(memberId);
   return `${promptDoc}
 
 You are participating in the Claw42 PM decision pipeline.
+## Candidate
+${candidateContext(candidate)}
+${tradeDisabledPromptRules(candidate)}
+
 Return JSON only:
 {
   "direction": "long" | "short" | "neutral" | "wait",
@@ -470,6 +533,7 @@ ${formatRoleEvidenceContext(memberId, evidencePack)}`;
 async function buildLeadPrompt(
   memberId: TeamMemberId,
   input: PmDecisionPipelineInput,
+  candidate: DecisionCandidate,
   analystOutputs: AnalystOutput[],
   previousLead?: LeadOutput,
   deps?: PipelineDeps,
@@ -485,6 +549,10 @@ Return JSON only:
 
 ## Locale
 ${buildLocaleInstruction(normalizeWatchLocale(input.locale))}
+
+## Candidate
+${candidateContext(candidate)}
+${tradeDisabledPromptRules(candidate)}
 
 ## Analyst outputs
 ${analystOutputs
@@ -506,17 +574,24 @@ ${marketContext(input) || "- none"}
 ${newsContext(input) || "- none"}`;
 }
 
-function currentPriceFromSignals(signals: SignalRecord[]) {
+function currentPriceFromSignals(signals: SignalRecord[]): number | null {
   const price = signals.find((signal) => typeof signal.payload.priceLevel === "number")?.payload
     .priceLevel;
-  return price && price > 0 ? price : 1;
+  return price && price > 0 ? price : null;
 }
 
-function symbolFromInput(input: PmDecisionPipelineInput) {
-  return (input.recentMarketSignals[0]?.symbol ?? input.recentNewsEvidence[0]?.symbol[0] ?? "BTC")
-    .trim()
-    .replace(/^\$+/, "")
-    .toUpperCase();
+function candidateFromInput(input: PmDecisionPipelineInput): DecisionCandidate | null {
+  if (input.candidate) return input.candidate;
+  const symbol =
+    normalizePipelineSymbol(input.recentMarketSignals[0]?.symbol) ??
+    normalizePipelineSymbol(
+      input.recentNewsEvidence.find((evidence) => evidence.symbol[0])?.symbol[0],
+    );
+  return symbol ? symbolDecisionCandidate({ symbol }) : null;
+}
+
+function symbolFromCandidate(candidate: DecisionCandidate) {
+  return storageSymbolForCandidate(candidate);
 }
 
 function toSeverity(input: PmDecisionPipelineInput): Severity {
@@ -616,26 +691,33 @@ function singleRoundRecord({
 
 function makeRecord({
   input,
+  candidate,
   now,
   analystOutputs,
   analystRoundOutputs,
   researchLead,
   riskLead,
   tradeDecision,
+  analysisSummary,
   stageAudit,
 }: {
   input: PmDecisionPipelineInput;
+  candidate: DecisionCandidate;
   now: number;
   analystOutputs: AnalystOutput[];
   analystRoundOutputs: MultiRoundAnalystOutput[];
   researchLead: LeadOutput;
   riskLead: LeadOutput;
   tradeDecision: TradeDecision | null;
+  analysisSummary?: string;
   stageAudit: StageAuditMap;
 }): StrategyDecisionRecord {
-  const symbol = symbolFromInput(input);
+  const symbol = symbolFromCandidate(candidate);
   const locale = normalizeWatchLocale(input.locale);
   const observedAt = new Date(now).toISOString();
+  const pmRationale = tradeDecision
+    ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
+    : (analysisSummary ?? "Analysis-only summary generated.");
   const analystInputs: AnalystInputRecord[] = [
     ...analystOutputs.map((output) => ({
       memberId: output.memberId,
@@ -683,15 +765,11 @@ function makeRecord({
           ? tradeDecision.direction
           : "neutral",
       confidence: tradeDecision?.confidence ?? 0.5,
-      rationale: tradeDecision
-        ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
-        : "PM returned no decision.",
+      rationale: pmRationale,
       oneLineSummary: tradeDecision
         ? oneLineSummaryFromRationale(tradeDecision.riskNote)
-        : "PM returned no decision.",
-      detailedRationale: tradeDecision
-        ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
-        : "PM returned no decision.",
+        : oneLineSummaryFromRationale(pmRationale),
+      detailedRationale: pmRationale,
       dataStatus: "ok",
       evidenceIds: tradeDecision?.evidenceIds ?? [],
       rounds: singleRoundRecord({
@@ -700,15 +778,11 @@ function makeRecord({
             ? tradeDecision.direction
             : "neutral",
         confidence: tradeDecision?.confidence ?? 0.5,
-        rationale: tradeDecision
-          ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
-          : "PM returned no decision.",
+        rationale: pmRationale,
         oneLineSummary: tradeDecision
           ? oneLineSummaryFromRationale(tradeDecision.riskNote)
-          : "PM returned no decision.",
-        detailedRationale: tradeDecision
-          ? `${tradeDecision.riskNote} ${tradeDecision.invalidatesIf}`.trim()
-          : "PM returned no decision.",
+          : oneLineSummaryFromRationale(pmRationale),
+        detailedRationale: pmRationale,
         dataStatus: "ok",
         evidenceIds: tradeDecision?.evidenceIds ?? [],
         observedAt,
@@ -721,6 +795,8 @@ function makeRecord({
     schemaVersion: 2,
     recordSource: "live",
     symbol,
+    candidate,
+    ...(analysisSummary ? { analysisSummary } : {}),
     locale,
     decisionOwnerId: "pm",
     contributorIds: TEAM_MEMBER_IDS,
@@ -740,6 +816,7 @@ function makeRecord({
 
 function makePartialRecord({
   input,
+  candidate,
   now,
   analystOutputs,
   analystRoundOutputs,
@@ -749,6 +826,7 @@ function makePartialRecord({
   stageAudit,
 }: {
   input: PmDecisionPipelineInput;
+  candidate: DecisionCandidate;
   now: number;
   analystOutputs: AnalystOutput[];
   analystRoundOutputs: MultiRoundAnalystOutput[];
@@ -757,7 +835,7 @@ function makePartialRecord({
   activeStage: "research_lead" | "risk_lead" | "trade_decision";
   stageAudit: StageAuditMap;
 }): StrategyDecisionRecord {
-  const symbol = symbolFromInput(input);
+  const symbol = symbolFromCandidate(candidate);
   const locale = normalizeWatchLocale(input.locale);
   const observedAt = new Date().toISOString();
   const analystInputs: AnalystInputRecord[] = analystOutputs.map((output) => ({
@@ -811,6 +889,7 @@ function makePartialRecord({
     schemaVersion: 2,
     recordSource: "live",
     symbol,
+    candidate,
     locale,
     decisionOwnerId: "pm",
     contributorIds: TEAM_MEMBER_IDS,
@@ -1039,6 +1118,11 @@ function makePublicTimelineEntry(
       kind: "pm_decision",
       recordId: record.id,
       symbol: record.symbol,
+      candidateType: record.candidate?.candidateType,
+      candidateKey: record.candidate?.candidateKey,
+      displayTitle: record.candidate?.displayTitle,
+      executable: record.candidate?.executable,
+      analysisSummary: record.analysisSummary,
       tradeDecision: record.tradeDecision,
       rationaleByMember: derived.rationaleByMember,
       citationsByMember: derived.citationsByMember,
@@ -1070,9 +1154,9 @@ function timelineEntryAsChatThread(
     seed: {
       id: record.id,
       type: "market",
-      title: `${record.symbol} PM decision`,
+      title: `${record.candidate?.displayTitle ?? record.symbol} PM decision`,
       description: "Claw42 PM decision pipeline",
-      symbols: [record.symbol],
+      symbols: record.candidate?.symbol ? [record.candidate.symbol] : [],
       sentiment: "neutral",
       createdAt: now,
     },
@@ -1104,14 +1188,17 @@ export async function runPmDecisionPipeline(
   input: PmDecisionPipelineInput,
   deps: PipelineDeps = {},
 ): Promise<PmDecisionPipelineOutput | null> {
-  if (!shouldRunPipeline(input)) return null;
-
   const now = input.now ?? Date.now();
   const locale = normalizeWatchLocale(input.locale);
   const localizedInput = { ...input, locale };
-  const symbol = symbolFromInput(localizedInput);
+  const candidate = candidateFromInput(localizedInput);
+  if (!candidate) return null;
+  const tradeDisabled = isTradeDisabledCandidate(candidate);
+  if (!tradeDisabled && !shouldRunPipeline(localizedInput)) return null;
+  const symbol = symbolFromCandidate(candidate);
   const evidencePack = await (deps.buildEvidenceContextPack ?? buildEvidenceContextPack)({
     symbol,
+    candidate,
     recentMarketSignals: localizedInput.recentMarketSignals,
     recentNewsEvidence: localizedInput.recentNewsEvidence,
     locale,
@@ -1173,7 +1260,7 @@ export async function runPmDecisionPipeline(
     const analystPrompts = await Promise.all(
       activeInputMemberIds.map(async (memberId) => ({
         memberId,
-        prompt: await buildMemberPrompt(memberId, localizedInput, deps, evidencePack),
+        prompt: await buildMemberPrompt(memberId, localizedInput, deps, evidencePack, candidate),
       })),
     );
     const analystRoundOutputs = await runMultiRoundAnalystDebate({
@@ -1196,6 +1283,7 @@ export async function runPmDecisionPipeline(
     await publishPartialStage(
       makePartialRecord({
         input: localizedInput,
+        candidate,
         now,
         analystOutputs: latestAnalystOutputs,
         analystRoundOutputs: publicAnalystRoundOutputs,
@@ -1206,7 +1294,14 @@ export async function runPmDecisionPipeline(
     );
     const researchLead = await generateLead(
       "research_lead",
-      await buildLeadPrompt("research_lead", localizedInput, latestAnalystOutputs, undefined, deps),
+      await buildLeadPrompt(
+        "research_lead",
+        localizedInput,
+        candidate,
+        latestAnalystOutputs,
+        undefined,
+        deps,
+      ),
     );
     if (containsPublicContentLeak(researchLead.rationale)) return null;
     completeStage(stageAudit, "research_lead", "research synthesis generated");
@@ -1214,6 +1309,7 @@ export async function runPmDecisionPipeline(
     await publishPartialStage(
       makePartialRecord({
         input: localizedInput,
+        candidate,
         now,
         analystOutputs: latestAnalystOutputs,
         analystRoundOutputs: publicAnalystRoundOutputs,
@@ -1225,16 +1321,23 @@ export async function runPmDecisionPipeline(
     );
     const riskLead = await generateLead(
       "risk_lead",
-      await buildLeadPrompt("risk_lead", localizedInput, latestAnalystOutputs, researchLead, deps),
+      await buildLeadPrompt(
+        "risk_lead",
+        localizedInput,
+        candidate,
+        latestAnalystOutputs,
+        researchLead,
+        deps,
+      ),
     );
     if (containsPublicContentLeak(riskLead.rationale)) return null;
     completeStage(stageAudit, "risk_lead", "risk review generated");
 
-    const currentPrice = currentPriceFromSignals(localizedInput.recentMarketSignals);
     startStage(stageAudit, "trade_decision");
     await publishPartialStage(
       makePartialRecord({
         input: localizedInput,
+        candidate,
         now,
         analystOutputs: latestAnalystOutputs,
         analystRoundOutputs: publicAnalystRoundOutputs,
@@ -1265,38 +1368,59 @@ export async function runPmDecisionPipeline(
         rationale: riskLead.rationale,
       },
     ];
-    const tradeDecision = await tradeGenerator({
-      symbol: symbolFromInput(localizedInput),
-      currentPrice,
-      analystInputs: tradeInputs,
-      riskNotes: [riskLead.rationale],
-      newsContext: localizedInput.recentNewsEvidence.map(
-        (evidence) => `${evidence.id}: ${evidence.summary}`,
-      ),
-      severity: toSeverity(localizedInput),
-      locale,
-    });
-    if (!tradeDecision) return null;
-    if (containsPublicContentLeak(`${tradeDecision.riskNote}\n${tradeDecision.invalidatesIf}`)) {
+    const currentPrice = currentPriceFromSignals(localizedInput.recentMarketSignals);
+    const tradeDecision =
+      tradeDisabled || !currentPrice
+        ? null
+        : await tradeGenerator({
+            symbol,
+            currentPrice,
+            analystInputs: tradeInputs,
+            riskNotes: [riskLead.rationale],
+            newsContext: localizedInput.recentNewsEvidence.map(
+              (evidence) => `${evidence.id}: ${evidence.summary}`,
+            ),
+            severity: toSeverity(localizedInput),
+            locale,
+          });
+    if (!tradeDisabled && !tradeDecision) return null;
+    if (
+      tradeDecision &&
+      containsPublicContentLeak(`${tradeDecision.riskNote}\n${tradeDecision.invalidatesIf}`)
+    ) {
       return null;
     }
-    completeStage(stageAudit, "trade_decision", `${tradeDecision.direction} trade card generated`);
+    const analysisSummary = tradeDisabled
+      ? buildAnalysisSummary({
+          candidate,
+          analystOutputs: latestAnalystOutputs,
+          researchLead,
+          riskLead,
+        })
+      : undefined;
+    completeStage(
+      stageAudit,
+      "trade_decision",
+      tradeDecision ? `${tradeDecision.direction} trade card generated` : "analysis-only summary",
+    );
 
     const evidenceIds = Array.from(
       new Set([
         ...localizedInput.recentNewsEvidence.map((evidence) => evidence.id),
         ...publicAnalystRoundOutputs.flatMap((output) => output.citations),
-        ...(tradeDecision.evidenceIds ?? []),
+        ...(tradeDecision?.evidenceIds ?? []),
       ]),
     );
     const record = makeRecord({
       input: localizedInput,
+      candidate,
       now,
       analystOutputs: latestAnalystOutputs,
       analystRoundOutputs: publicAnalystRoundOutputs,
       researchLead,
       riskLead,
       tradeDecision,
+      analysisSummary,
       stageAudit,
     });
     startStage(stageAudit, "record_write");
@@ -1308,8 +1432,11 @@ export async function runPmDecisionPipeline(
       recordWriteObservedAt,
       stageAudit,
     );
-    const writtenRecord = await recordWriter(recordForStorage, currentPrice);
-    if (!writtenRecord.tradeDecision) return null;
+    const writtenRecord = await recordWriter(
+      recordForStorage,
+      tradeDisabled ? 0 : (currentPrice ?? 0),
+    );
+    if (!tradeDisabled && !writtenRecord.tradeDecision) return null;
     completeStage(stageAudit, "record_write", "decision record persisted");
 
     startStage(stageAudit, "public_timeline");
