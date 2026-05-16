@@ -453,3 +453,52 @@ PR #102 squash merge 后，我在 main preview `dpl_HFvR9yHYV7ReHdgHb9htrKha9exL
 - targeted vitest：4 files / 53 tests passed
 
 [DOC-HINT: if future preview still shows no topics, next fix should target empty-state refresh trigger symbol sourcing, not re-enable demo fallback.]
+
+---
+
+# B.13 hotfix-3 targeted hydration 补丁
+
+时间：2026-05-16
+
+PR #103 merge 后再测 main preview，发现 `symbolFromRecordId()` 已把 BILL 从 `UNKNOWN` 修回 `BILL`，但 `rounds=0`，说明 timeline 函数里 history event 已恢复 symbol，但仍没有拿到完整 record hydration。
+
+同一个 deployment 上：
+
+- `GET /api/watch/refresh?symbol=HYPE&locale=zh_CN`
+  - `refreshSource=records`
+  - `lastDecisionAt=2026-05-16T05:10:42.659Z`
+- `GET /api/watch/timeline?...`
+  - 返回 BILL event
+  - `symbol=BILL`
+  - `executable=false`
+  - `rounds=0`
+
+判断：
+
+- refresh route 的按 symbol record 读取是可用的。
+- timeline route 只靠 `readAllDecisionRecords()` 做全量索引，在远端函数里仍可能拿不到完整 hydration。
+- 最小修法是在 timeline projection 发现 PM event 缺 rounds / tradeDecision 时，按 event symbol 做 targeted `readDecisionRecords(symbol, 20, locale)`，再 backfill。
+
+已实施：
+
+- `src/lib/watch/publicTimelinePayload.ts`
+  - 增加 `symbolsNeedingRecordHydration()`
+  - 增加 targeted `readDecisionRecords(symbol, 20, locale)` fallback
+  - targeted records 与全量 index merge 后再生成 record backfill events
+  - 不改 pipeline / refresh / evidence / candidate ranking
+
+本地 preview KV 复测：
+
+- `buildWatchTimelinePayload()` events=2
+- HYPE = `symbol=HYPE` / `executable=true` / `rounds=25`
+- BILL = `symbol=BILL` / `executable=false` / `rounds=25`
+
+已补跑并通过：
+
+- `npm run format:check`
+- `npm run typecheck`
+- `npm run lint`
+- targeted vitest：4 files / 53 tests passed
+- `npm run build`
+
+[DOC-HINT: if remote timeline still fails hydration after targeted read, next diagnostic should compare Vercel function env for timeline vs refresh routes.]
