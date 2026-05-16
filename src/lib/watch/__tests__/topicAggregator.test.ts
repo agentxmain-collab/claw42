@@ -58,14 +58,27 @@ describe("groupPublicTimelineEventsByTopic", () => {
     expect(new Set(groups.map((group) => group.locale))).toEqual(new Set(["zh_CN", "en_US"]));
   });
 
-  it("starts a new group outside the 30 minute window", () => {
+  it("keeps only the latest same-symbol public topic outside the 30 minute window", () => {
     const groups = groupPublicTimelineEventsByTopic([
       pmDecision("old", { ts: now - TOPIC_AGGREGATION_WINDOW_MS - 1 }),
       pmDecision("new", { ts: now }),
     ]);
 
-    expect(groups).toHaveLength(2);
-    expect(groups.map((group) => group.latestDecision.payload.recordId)).toEqual(["new", "old"]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].latestDecision.payload.recordId).toBe("new");
+    expect(groups[0].decisionsInWindow.map((event) => event.payload.recordId)).toEqual(["new"]);
+  });
+
+  it("uses record id as a stable tie-breaker for equal timestamps", () => {
+    const groups = groupPublicTimelineEventsByTopic([
+      pmDecision("pm:ETH:beta", { symbol: "ETH", ts: now }),
+      pmDecision("pm:BTC:alpha", { symbol: "BTC", ts: now }),
+    ]);
+
+    expect(groups.map((group) => group.latestDecision.payload.recordId)).toEqual([
+      "pm:BTC:alpha",
+      "pm:ETH:beta",
+    ]);
   });
 
   it("skips events without a usable symbol", () => {

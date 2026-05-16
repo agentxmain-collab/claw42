@@ -1,5 +1,9 @@
 import type { Locale } from "@/i18n/types";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import {
+  comparePublicTimelineEvents,
+  publicTimelineEventStableId,
+} from "@/lib/watch/publicTimelineOrdering";
 
 export const TOPIC_AGGREGATION_WINDOW_MS = 30 * 60 * 1000;
 
@@ -48,8 +52,20 @@ function groupAcceptsEvent(
   );
 }
 
+function topicKey(locale: Locale, symbol: string) {
+  return `${locale}:${symbol}`;
+}
+
+function compareGroups(a: DispatchTopicGroup, b: DispatchTopicGroup) {
+  const timeDelta = b.latestAt - a.latestAt;
+  if (timeDelta !== 0) return timeDelta;
+  return publicTimelineEventStableId(a.latestDecision).localeCompare(
+    publicTimelineEventStableId(b.latestDecision),
+  );
+}
+
 function finalizeGroup(group: DispatchTopicGroup): DispatchTopicGroup {
-  const decisionsInWindow = [...group.decisionsInWindow].sort((a, b) => b.ts - a.ts);
+  const decisionsInWindow = [...group.decisionsInWindow].sort(comparePublicTimelineEvents);
   const latestDecision = decisionsInWindow[0];
   return {
     ...group,
@@ -66,7 +82,8 @@ export function groupPublicTimelineEventsByTopic(
   events: readonly PublicTimelineEvent[],
 ): DispatchTopicGroup[] {
   const groups: DispatchTopicGroup[] = [];
-  const decisions = events.filter(isPmDecisionEvent).sort((a, b) => b.ts - a.ts);
+  const decisions = events.filter(isPmDecisionEvent).sort(comparePublicTimelineEvents);
+  const seenTopics = new Set<string>();
 
   for (const event of decisions) {
     const symbol = normalizedSymbol(event);
@@ -88,6 +105,10 @@ export function groupPublicTimelineEventsByTopic(
       continue;
     }
 
+    const key = topicKey(event.locale, symbol);
+    if (seenTopics.has(key)) continue;
+    seenTopics.add(key);
+
     groups.push({
       id: buildGroupId(event.locale, symbol, event),
       symbol,
@@ -100,5 +121,5 @@ export function groupPublicTimelineEventsByTopic(
     });
   }
 
-  return groups.map(finalizeGroup).sort((a, b) => b.latestAt - a.latestAt);
+  return groups.map(finalizeGroup).sort(compareGroups);
 }

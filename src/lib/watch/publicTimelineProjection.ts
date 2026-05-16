@@ -10,6 +10,7 @@ import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import { isTeamMemberId, type TeamMemberId } from "@/lib/team/teamRegistry";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
+import { comparePublicTimelineEvents } from "@/lib/watch/publicTimelineOrdering";
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
 
 export interface PublicTimelineProjectionOptions {
@@ -441,5 +442,5 @@ export function filterPublicTimelineEvents(
   return entries
     .map((entry) => projectStreamEntryToPublic(entry, options))
     .filter((event): event is PublicTimelineEvent => Boolean(event))
-    .sort((a, b) => b.ts - a.ts);
+    .sort(comparePublicTimelineEvents);
 }

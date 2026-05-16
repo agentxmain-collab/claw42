@@ -359,6 +359,58 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topics[0].id).toBe("latest-record");
   });
 
+  it("dedupes stale same-symbol records before rendering topic cards", () => {
+    const topics = mapTopics({
+      events: [
+        pmDecisionWithRecordId("old-bill-record", {
+          id: "old-bill-event",
+          ts: now - 6 * 60 * 60 * 1000,
+          payload: {
+            kind: "pm_decision",
+            recordId: "old-bill-record",
+            symbol: "BILL",
+            executable: false,
+            tradeDecision: {
+              ...tradeDecision,
+              id: "trade-bill-old",
+              symbol: "BILL",
+              generatedAt: new Date(now - 6 * 60 * 60 * 1000).toISOString(),
+            },
+            rationaleByMember: { research_lead: "Old BILL view." },
+            citationsByMember: {},
+          },
+        }),
+        pmDecisionWithRecordId("latest-bill-record", {
+          id: "latest-bill-event",
+          ts: now,
+          payload: {
+            kind: "pm_decision",
+            recordId: "latest-bill-record",
+            symbol: "BILL",
+            executable: false,
+            tradeDecision: {
+              ...tradeDecision,
+              id: "trade-bill-latest",
+              symbol: "BILL",
+              generatedAt: new Date(now).toISOString(),
+            },
+            rationaleByMember: { research_lead: "Latest BILL view." },
+            citationsByMember: {},
+          },
+        }),
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topics).toHaveLength(1);
+    expect(topics[0]).toMatchObject({
+      id: "latest-bill-record",
+      symbol: "BILL",
+      execution: { executable: false, watchOnly: true },
+    });
+  });
+
   it("orders strategy topics by trade decision generation time", () => {
     const olderGeneratedDecision: TradeDecision = {
       ...tradeDecision,

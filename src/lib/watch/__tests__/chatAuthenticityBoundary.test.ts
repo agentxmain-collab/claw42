@@ -10,6 +10,7 @@ import type { StreamEntry } from "@/modules/agent-watch/types";
 
 const getWatchHistoryMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
+const readDecisionRecordsMock = vi.hoisted(() => vi.fn());
 const getNewsEvidenceMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/rateLimit", () => ({
@@ -22,6 +23,7 @@ vi.mock("@/lib/watchHistoryStore", () => ({
 
 vi.mock("@/lib/team/decisionRecordStore", () => ({
   readAllDecisionRecords: readAllDecisionRecordsMock,
+  readDecisionRecords: readDecisionRecordsMock,
 }));
 
 vi.mock("@/lib/news/newsEvidenceStore", () => ({
@@ -329,8 +331,10 @@ describe("watch timeline debug guard", () => {
   beforeEach(() => {
     getWatchHistoryMock.mockReset();
     readAllDecisionRecordsMock.mockReset();
+    readDecisionRecordsMock.mockReset();
     getNewsEvidenceMock.mockReset();
     readAllDecisionRecordsMock.mockResolvedValue([]);
+    readDecisionRecordsMock.mockResolvedValue([]);
     getNewsEvidenceMock.mockResolvedValue(null);
     getWatchHistoryMock.mockResolvedValue({
       entries: [rawDebugEntry],
@@ -426,7 +430,9 @@ describe("watch history public boundary", () => {
   beforeEach(() => {
     getWatchHistoryMock.mockReset();
     readAllDecisionRecordsMock.mockReset();
+    readDecisionRecordsMock.mockReset();
     readAllDecisionRecordsMock.mockResolvedValue([]);
+    readDecisionRecordsMock.mockResolvedValue([]);
     getWatchHistoryMock.mockResolvedValue({
       entries: [rawDebugEntry, rawPublicEntry],
       oldestTs: rawDebugEntry.ts,

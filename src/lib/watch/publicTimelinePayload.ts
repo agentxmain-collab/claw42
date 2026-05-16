@@ -12,6 +12,10 @@ import {
 } from "@/lib/watch/__fixtures__/stagingMockTimeline";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import {
+  comparePublicTimelineEvents,
+  mergePublicTimelineEvents,
+} from "@/lib/watch/publicTimelineOrdering";
+import {
   buildDecisionRecordIndex,
   filterPublicTimelineEvents,
   projectDecisionRecordToPublicEvent,
@@ -96,9 +100,10 @@ function mergeDecisionRecordBackfillEvents(
     }
   }
 
-  return [...passthrough, ...Array.from(byRecordId.values())]
-    .sort((a, b) => b.ts - a.ts)
-    .slice(0, limit);
+  return mergePublicTimelineEvents([...passthrough, ...Array.from(byRecordId.values())]).slice(
+    0,
+    limit,
+  );
 }
 
 function symbolsNeedingRecordHydration(events: PublicTimelineEvent[]) {
@@ -188,7 +193,11 @@ export async function buildWatchTimelinePayload({
         event.ts >= cutoff &&
         (since === undefined || event.ts > since),
     );
-  const events = mergeDecisionRecordBackfillEvents(projectedEvents, recordEvents, limit);
+  const events = mergeDecisionRecordBackfillEvents(
+    projectedEvents.sort(comparePublicTimelineEvents),
+    recordEvents.sort(comparePublicTimelineEvents),
+    limit,
+  );
   const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
     0,
     MAX_EVIDENCE_MAP_ITEMS,

@@ -535,3 +535,110 @@ PR #104 merge 后继续测 PR preview：
 - BILL = `symbol=BILL` / `executable=false` / `rounds=25`
 
 [DOC-HINT: once a proper decision-record index scan is reliable in Vercel timeline functions, known-symbol targeted hydration can be narrowed back down.]
+
+---
+
+# B.13 hotfix-4 调研 + 实测报告
+
+时间：2026-05-16
+
+## Task A / B first-hand 根因
+
+Dan 看到的“两条 BILL”不是同一个 `recordId` 重复，也不是 React `key=index`。我在 hotfix-3 preview `https://claw42-site-6d5dnjv1v-agentxmain-collabs-projects.vercel.app` 连续拉 `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=720&limit=100`，API 本身返回 3 条：
+
+1. `BILL:pm:BILL:1778923198583:1778923198583`
+2. `HYPE:pm:HYPE:1778908242659:1778908242659`
+3. `BILL:pm:BILL:1778902920550:1778902920550`
+
+5 次结果完全一致，说明“顺序跳动”不是这条 API 的直接表现；真实重复层在 public workbench timeline / topic projection：720min 窗口把同一 symbol 的多次历史 PM record 都带给工作台，而工作台应该每个 symbol 只显示最新一条，历史记录应该走 decision-history。
+
+代码实测：
+
+- `src/lib/watch/publicTimelinePayload.ts:80-107` 原本只按 `recordId` 合并 backfill，无法去掉同 symbol 多轮历史 record。
+- `src/lib/watch/topicAggregator.ts:81-124` 原本同 symbol 超过 30min 会拆成多个 topic card。
+- `src/modules/agent-watch/AgentWatchBoard.tsx:100-105` primary 60min + fallback 720min append 后也可能把同 symbol 旧 record 带回 state。
+- 排序层多处只有 `b.ts - a.ts`，缺 record/event id tie-breaker。
+
+## Fix 实施位置
+
+- 新增 `src/lib/watch/publicTimelineOrdering.ts:3-45`
+  - `comparePublicTimelineEvents()` = `ts desc` + `recordId/event id` 字典序 tie-breaker。
+  - `mergePublicTimelineEvents()` = PM decision 按 `locale+symbol` 只保留排序后的第一条；非 PM event 按 `event.id` 去重。
+- `src/lib/watch/publicTimelinePayload.ts:103-106,196-200`
+  - timeline payload backfill 统一走 `mergePublicTimelineEvents()`，API 层先稳定去重。
+- `src/lib/watch/topicAggregator.ts:81-124`
+  - topic 聚合层防御性保证同 locale+symbol 只产出一个 public card；30min 内仍保留 `decisionsInWindow`。
+- `src/modules/agent-watch/AgentWatchBoard.tsx:65-66,100-105`
+  - client replace/append 也用同一 stable merge，避免 primary+fallback/SSE 合并后复现旧 symbol。
+- `src/lib/watch/v9TopicAdapter.ts:753-764`
+  - ranking 分数和时间完全相同才用 stable event id tie-breaker，避免 topic order 依赖 Array/Map 迭代。
+
+没有改 PM pipeline / evidenceDispatcher / memoryLoopEvidence / candidate ranking；watch-only follow gate 没动。
+
+## Task C 多次实测
+
+### 修复前 API（hotfix-3 preview，全 KV 状态）
+
+`zh_CN` 5 次均为：
+
+```json
+{
+  "count": 3,
+  "seq": [
+    "BILL:pm:BILL:1778923198583:1778923198583",
+    "HYPE:pm:HYPE:1778908242659:1778908242659",
+    "BILL:pm:BILL:1778902920550:1778902920550"
+  ],
+  "hash": "QklMTDpwbTpCSUxMOjE3Nzg5MjMxOTg1ODM6MTc3ODkyMzE5ODU4M3xIWVBFOnBtOkhZUEU6MTc3ODkwODI0MjY1OToxNzc4OTA4MjQyNjU5fEJJTEw6cG06QklMTDoxNzc4OTAyOTIwNTUwOjE3Nzg5MDI5MjA1NTA="
+}
+```
+
+`en_US` 5 次均为 `count=0 / seq=[] / hash=""`。
+
+### 修复后 API（prebuilt preview）
+
+Preview URL: `https://claw42-site-9nmo848gu-agentxmain-collabs-projects.vercel.app`
+
+`zh_CN` 5 次均为：
+
+```json
+{
+  "count": 2,
+  "seq": ["HYPE:pm:HYPE:1778908242659:1778908242659", "BILL:pm:BILL:1778902920550:1778902920550"],
+  "hash": "SFlQRTpwbTpIWVBFOjE3Nzg5MDgyNDI2NTk6MTc3ODkwODI0MjY1OXxCSUxMOnBtOkJJTEw6MTc3ODkwMjkyMDU1MDoxNzc4OTAyOTIwNTUw"
+}
+```
+
+`en_US` 5 次均为 `count=0 / seq=[] / hash=""`。
+
+注意：prebuilt/feature preview 的 data env 与 hotfix-3 main preview 不完全一致，`decision-history?symbol=BILL` 只读到更早 record；但代码级 regression 已覆盖“两个 BILL 同时出现时保留最新 BILL”的真实 full-KV shape。合并 main 后建议再用 main preview 复测一次 full-KV 数据。
+
+### UI 多次刷新
+
+使用 protection-bypass share link 后 Playwright 连续刷新 5 次：
+
+- `zh_CN/agent`: 5/5 都是 `HYPE=1, BILL=1`，页面 text hash 全一致 `5a6e5pe25YiG5p6QCueugOS9k+S4reaWhwpDTEFX`。
+- `en_US/agent`: 5/5 都是 `HYPE=0, BILL=0, empty=1`，页面 text hash 全一致 `QWdlbnQgTGl2ZQpFbmdsaXNoCkNMQVcgNDIgwrcg`。
+- 截图：
+  - `/tmp/claw42-hotfix4-ui/zh_CN-1.png`
+  - `/tmp/claw42-hotfix4-ui/zh_CN-5.png`
+  - `/tmp/claw42-hotfix4-ui/en_US-1.png`
+  - `/tmp/claw42-hotfix4-ui/en_US-5.png`
+
+## 验证
+
+已通过：
+
+- `npx vitest run src/lib/watch/__tests__/publicTimelineOrdering.test.ts src/lib/watch/__tests__/topicAggregator.test.ts src/lib/watch/__tests__/publicTimelineProjection.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts`
+- `npm run verify`
+- `npm run build`
+- `npx vercel build --yes --scope agentxmain-collabs-projects`
+- `npx vercel deploy --prebuilt --yes --scope agentxmain-collabs-projects`
+
+补充：第一次普通 `npx vercel` 生成的 `https://claw42-site-ju564r5jx-agentxmain-collabs-projects.vercel.app` 卡在 `UNKNOWN / Deployment is building`，已停止本地 CLI 等待；未用于验收。
+
+## F 没问到的 angle
+
+Vercel preview 的数据一致性现在有一层隐患：旧 main preview 能读到 `pm:BILL:1778923198583`，feature/prebuilt preview 没读到同一条。这不是本次 duplicate/order bug 的根因，但会影响 Dan 用不同 preview URL 做肉眼验收时的观感。建议 hotfix-4 merge 后，用 main HEAD preview 再跑同一套 5 次 API + UI 刷新，确认它在 full preview KV 上保留最新 BILL 而不是旧 BILL。
+
+[DOC-HINT: future B.13 stage gates should record the exact preview URL lineage and data env, because branch preview / prebuilt preview / main preview may not expose identical KV state.]
