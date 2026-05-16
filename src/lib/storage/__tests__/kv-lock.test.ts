@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
   LockBusyError,
   __kvLockTestUtils,
+  checkLock,
   releaseLock,
   tryAcquireLock,
   withLock,
@@ -65,6 +66,21 @@ describe("kv-lock", () => {
 
     expect(first).not.toBeNull();
     expect(second).toBeNull();
+  });
+
+  test("checkLock reports KV-backed lock presence", async () => {
+    await tryAcquireLock("status-key");
+
+    await expect(checkLock("status-key")).resolves.toMatchObject({
+      key: "status-key",
+      locked: true,
+      expiresAt: null,
+    });
+    await expect(checkLock("missing-key")).resolves.toMatchObject({
+      key: "missing-key",
+      locked: false,
+      expiresAt: null,
+    });
   });
 
   test("TTL expiration lets a later caller acquire the same key", async () => {
@@ -155,6 +171,26 @@ describe("kv-lock", () => {
 
     expect(first).not.toBeNull();
     expect(second).not.toBeNull();
+  });
+
+  test("checkLock reports in-memory lock expiry", async () => {
+    delete process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_TOKEN;
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    vi.useFakeTimers();
+
+    await tryAcquireLock("memory-status", { ttlMs: 100 });
+    await expect(checkLock("memory-status")).resolves.toMatchObject({
+      key: "memory-status",
+      locked: true,
+      expiresAt: expect.any(Number),
+    });
+    await vi.advanceTimersByTimeAsync(101);
+    await expect(checkLock("memory-status")).resolves.toMatchObject({
+      key: "memory-status",
+      locked: false,
+      expiresAt: null,
+    });
   });
 });
 

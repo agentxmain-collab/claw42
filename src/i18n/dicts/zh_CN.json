@@ -689,7 +689,13 @@
         "takeProfit": "止盈",
         "watchReminder": "人订阅提醒",
         "watchCount": "人在看",
-        "followed": "已跟单"
+        "followed": "已跟单",
+        "analyzedAgo": "分析于 {minutes} 分钟前",
+        "newAnalysisRunning": "新分析进行中",
+        "autoRefreshOnComplete": "完成后自动刷新",
+        "cachedStateLabel": "缓存数据",
+        "watchOnlyLabel": "仅观察",
+        "watchOnlyCopy": "该币种暂不支持 CoinW 跟单，仅展示观察分析。"
       },
       "placeholder": {
         "title": "跟单功能开发中",

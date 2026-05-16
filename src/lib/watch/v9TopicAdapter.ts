@@ -32,6 +32,7 @@ import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { DecisionStageTraceId } from "@/lib/team/strategyDecisionRecord";
+import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import type {
   DispatchMessage,
   DispatchStageMarker,
@@ -778,10 +779,17 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
     const hasRationale = hasEventRationale(latest);
     const hasMemoryLoop = hasMemoryLoopRationale(latest);
     const status = hasTradeDecision ? "done" : hasRationale ? "active" : "pending";
+    const symbolMapping = resolveSymbolMapping(group.symbol);
 
     return {
       id: recordId,
       symbol: group.symbol,
+      execution: {
+        executable: symbolMapping.execution.executable,
+        coinwPair: symbolMapping.execution.coinwPair,
+        watchOnly: !symbolMapping.execution.executable,
+        watchOnlyReason: symbolMapping.execution.watchOnlyReason,
+      },
       status,
       title: makeTitle(group, hasTradeDecision, hasRationale),
       explanation: makeExplanation(group, hasTradeDecision, hasRationale, evidence),

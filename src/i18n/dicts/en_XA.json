@@ -689,7 +689,13 @@
         "takeProfit": "Target",
         "watchReminder": "watch alerts",
         "watchCount": "watching",
-        "followed": "followed"
+        "followed": "followed",
+        "analyzedAgo": "[!! Analyzed {minutes} min ago !!]",
+        "newAnalysisRunning": "[!! New analysis running !!]",
+        "autoRefreshOnComplete": "[!! Auto-refresh on completion !!]",
+        "cachedStateLabel": "[!! Cached data !!]",
+        "watchOnlyLabel": "[!! Watch-only !!]",
+        "watchOnlyCopy": "[!! This symbol is not executable on CoinW yet; analysis is shown for observation only. !!]"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

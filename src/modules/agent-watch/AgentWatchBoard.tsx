@@ -13,6 +13,7 @@ import type { DecisionHistoryPayload } from "@/lib/watch/decisionHistory";
 import { DispatchConsoleV9 } from "./v9/DispatchConsoleV9";
 import { HistoryWall, type HistoryWallItem } from "./v9/HistoryWall";
 import type {
+  DispatchFreshnessState,
   DispatchConsoleV9Props,
   DispatchTopic,
   DispatchTopicAction,
@@ -46,6 +47,15 @@ interface PublicTimelinePayload {
 
 interface FollowStatsPayload {
   stats: Record<string, FollowStatsSnapshot>;
+}
+
+interface WatchRefreshPayload {
+  status: Exclude<DispatchFreshnessState["status"], "idle" | "error">;
+  symbol: string;
+  lastDecisionAt: string | null;
+  nextAllowedAt: string | null;
+  refreshStarted: boolean;
+  refreshSource: DispatchFreshnessState["refreshSource"];
 }
 
 function mergeTimelineEvents(current: PublicTimelineEvent[], next: PublicTimelineEvent[]) {
@@ -87,6 +97,7 @@ export function AgentWatchBoard({
   const [historyNextBefore, setHistoryNextBefore] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [freshness, setFreshness] = useState<DispatchFreshnessState>({ status: "idle" });
   const nextTimelinePollMsRef = useRef(DEFAULT_TIMELINE_POLL_MS);
 
   const applyTimelinePayload = useCallback(
@@ -405,6 +416,74 @@ export function AgentWatchBoard({
       timelineEvidenceMap,
     ],
   );
+  const latestRefreshSymbol = topics[0]?.symbol ?? null;
+
+  useEffect(() => {
+    if (!latestRefreshSymbol) return;
+    let cancelled = false;
+    let controller: AbortController | null = null;
+    const sessionKey = `freshness-trigger-${agentWatchLocale}-${latestRefreshSymbol}`;
+
+    async function triggerRefresh() {
+      if (document.visibilityState !== "visible") return;
+      try {
+        if (window.sessionStorage.getItem(sessionKey)) return;
+        window.sessionStorage.setItem(sessionKey, String(Date.now()));
+      } catch {
+        // Session storage can be blocked; still allow a single visible effect run.
+      }
+
+      controller?.abort();
+      controller = new AbortController();
+      const params = new URLSearchParams({
+        symbol: latestRefreshSymbol ?? "",
+        locale: agentWatchLocale,
+      });
+
+      try {
+        const response = await fetch(apiPath(`/api/watch/refresh?${params}`), {
+          method: "POST",
+          cache: "no-store",
+          credentials: "same-origin",
+          signal: controller.signal,
+        });
+        if (!response.ok && response.status !== 429) {
+          throw new Error(`watch refresh ${response.status}`);
+        }
+        const payload = (await response.json()) as WatchRefreshPayload;
+        if (!cancelled) {
+          setFreshness({
+            status: payload.status,
+            symbol: payload.symbol,
+            lastDecisionAt: payload.lastDecisionAt,
+            nextAllowedAt: payload.nextAllowedAt,
+            refreshStarted: payload.refreshStarted,
+            refreshSource: payload.refreshSource,
+          });
+        }
+      } catch (error: unknown) {
+        if ((error as { name?: string }).name === "AbortError") return;
+        if (!cancelled) setFreshness({ status: "error", symbol: latestRefreshSymbol });
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[claw42] watch freshness trigger failed", error);
+        }
+      }
+    }
+
+    function handleVisibilityChange() {
+      void triggerRefresh();
+    }
+
+    void triggerRefresh();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      controller?.abort();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [agentWatchLocale, latestRefreshSymbol]);
+
   const historySymbols = useMemo(
     () => Array.from(new Set(topics.map((topic) => topic.symbol).filter(Boolean))),
     [topics],
@@ -559,6 +638,7 @@ export function AgentWatchBoard({
         onTopicAction={handleTopicAction}
         marketSnapshot={null}
         followTradeDict={followTradeDict}
+        freshness={freshness}
       />
       <HistoryWall
         open={historyOpen}

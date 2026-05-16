@@ -689,7 +689,13 @@
         "takeProfit": "Target",
         "watchReminder": "watch alerts",
         "watchCount": "watching",
-        "followed": "followed"
+        "followed": "followed",
+        "analyzedAgo": "{minutes} 分前に分析",
+        "newAnalysisRunning": "新しい分析を実行中",
+        "autoRefreshOnComplete": "完了後に自動更新",
+        "cachedStateLabel": "キャッシュデータ",
+        "watchOnlyLabel": "観察のみ",
+        "watchOnlyCopy": "この銘柄はまだ CoinW で実行できません。観察用の分析のみ表示します。"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

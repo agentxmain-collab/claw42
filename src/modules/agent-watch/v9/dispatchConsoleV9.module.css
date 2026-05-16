@@ -583,6 +583,12 @@
   font-family: ui-monospace, monospace;
   letter-spacing: 0.04em;
 }
+.root :global(.cs-freshness) {
+  font-size: 11px;
+  color: rgba(209, 255, 85, 0.78);
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
 .root :global(.cs-head-right) {
   display: flex;
   align-items: center;
@@ -1432,6 +1438,19 @@
 .root :global(.cta-row) {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+.root :global(.watch-only-pill) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 39px;
+  padding: 0 16px;
+  border: 1px solid rgba(209, 255, 85, 0.32);
+  border-radius: 10px;
+  background: rgba(209, 255, 85, 0.08);
+  color: var(--lime);
+  font-size: 12px;
+  font-weight: 800;
 }
 .root :global(.cta-btn) {
   padding: 11px 22px;

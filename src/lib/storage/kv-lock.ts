@@ -11,6 +11,12 @@ export interface LockHandle {
   acquiredAt: number;
 }
 
+export interface LockSnapshot {
+  key: string;
+  locked: boolean;
+  expiresAt: number | null;
+}
+
 type KvClient = {
   set(key: string, value: string, options: { nx: true; px: number }): Promise<unknown>;
   get(key: string): Promise<unknown>;
@@ -96,6 +102,23 @@ export async function releaseLock(handle: LockHandle): Promise<boolean> {
   return releaseWithTokenCheckedFallback(key, handle.token);
 }
 
+export async function checkLock(key: string): Promise<LockSnapshot> {
+  const fullKey = storageKey(key);
+  if (!hasKvConfig()) return checkMemoryLock(key, fullKey);
+
+  try {
+    const existing = await (kv as KvClient).get(fullKey);
+    return {
+      key,
+      locked: existing !== null && existing !== undefined,
+      expiresAt: null,
+    };
+  } catch {
+    warnFallbackOnce();
+    return checkMemoryLock(key, fullKey);
+  }
+}
+
 export async function withLock<T>(
   key: string,
   fn: () => Promise<T>,
@@ -138,6 +161,16 @@ function releaseMemoryLock(key: string, token: string) {
   if (!existing || existing.token !== token) return false;
   memoryLocks.delete(key);
   return true;
+}
+
+function checkMemoryLock(key: string, fullKey: string): LockSnapshot {
+  cleanupExpiredMemoryLock(fullKey);
+  const existing = memoryLocks.get(fullKey);
+  return {
+    key,
+    locked: Boolean(existing),
+    expiresAt: existing?.expiresAt ?? null,
+  };
 }
 
 async function releaseWithTokenCheckedFallback(key: string, token: string) {

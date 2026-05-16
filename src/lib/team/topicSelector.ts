@@ -1,4 +1,5 @@
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
+import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import type { DecisionOutcome, StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { CoinPoolPayload, CoinTickerEntry, SignalRecord } from "@/modules/agent-watch/types";
@@ -18,6 +19,12 @@ export interface TopicSelectionReason {
 
 export interface PmDecisionTopicCandidate {
   symbol: string;
+  execution: {
+    executable: boolean;
+    coinwPair: string | null;
+    watchOnly: boolean;
+    watchOnlyReason?: "not_listed_on_coinw" | "mapping_unknown";
+  };
   score: number;
   scoreBreakdown: TopicScoreBreakdown;
   reasons: TopicSelectionReason[];
@@ -257,6 +264,7 @@ export function selectPmDecisionTopics({
   return symbols
     .map((candidateSymbol, index) => {
       const normalizedSymbol = normalizeSymbol(candidateSymbol);
+      const symbolMapping = resolveSymbolMapping(normalizedSymbol);
       const ticker = entries.find((item) => normalizeSymbol(item.symbol) === normalizedSymbol);
       const scopedSignals = marketSignals.filter(
         (signal) => normalizeSymbol(signal.symbol) === normalizedSymbol,
@@ -276,6 +284,12 @@ export function selectPmDecisionTopics({
 
       return {
         symbol: normalizedSymbol,
+        execution: {
+          executable: symbolMapping.execution.executable,
+          coinwPair: symbolMapping.execution.coinwPair,
+          watchOnly: !symbolMapping.execution.executable,
+          watchOnlyReason: symbolMapping.execution.watchOnlyReason,
+        },
         score,
         scoreBreakdown: breakdown,
         reasons,

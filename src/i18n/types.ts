@@ -252,6 +252,12 @@ export type DispatchV10Dict = {
     watchReminder: string;
     watchCount: string;
     followed: string;
+    analyzedAgo: string;
+    newAnalysisRunning: string;
+    autoRefreshOnComplete: string;
+    cachedStateLabel: string;
+    watchOnlyLabel: string;
+    watchOnlyCopy: string;
   };
   placeholder: {
     title: string;

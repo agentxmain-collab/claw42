@@ -14,6 +14,7 @@ export function DispatchConsoleV10({
   initialView = "flow",
   onViewChange,
   onTopicAction,
+  freshness,
 }: DispatchConsoleV10Props) {
   const { t } = useI18n();
   const dict = t.agentWatch.dispatchV10;
@@ -70,7 +71,12 @@ export function DispatchConsoleV10({
         aria-labelledby="dispatch-v10-tab-mkt"
         hidden={activeView !== "mkt"}
       >
-        <MarketAnalysisPanel topics={topics} dict={dict} onPlaceholder={handleTopicAction} />
+        <MarketAnalysisPanel
+          topics={topics}
+          dict={dict}
+          freshness={freshness}
+          onPlaceholder={handleTopicAction}
+        />
       </section>
 
       {placeholder ? (

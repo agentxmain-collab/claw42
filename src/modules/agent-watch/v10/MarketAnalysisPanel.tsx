@@ -4,7 +4,12 @@ import React, { useMemo, useState } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
 import { IntensityBar } from "../v9/IntensityBar";
 import { TopicBody } from "../v9/TopicBody";
-import type { DispatchTopic, DispatchTopicAction, DispatchStageStatus } from "../v9/types";
+import type {
+  DispatchFreshnessState,
+  DispatchTopic,
+  DispatchTopicAction,
+  DispatchStageStatus,
+} from "../v9/types";
 import v9Styles from "../v9/dispatchConsoleV9.module.css";
 import { dispatchV10DemoTopics } from "./demoTopics";
 import { v9AgentToV10Role } from "./staticContent";
@@ -16,6 +21,25 @@ function ChatShellStat({ label, value }: { label: string; value: number }) {
       <b>{value}</b>
     </div>
   );
+}
+
+function formatFreshnessText(freshness: DispatchFreshnessState | undefined, dict: DispatchV10Dict) {
+  if (!freshness || freshness.status === "idle") return null;
+  if (freshness.status === "refreshing" || freshness.refreshStarted) {
+    return `${dict.market.newAnalysisRunning} · ${dict.market.autoRefreshOnComplete}`;
+  }
+  if (freshness.lastDecisionAt) {
+    const minutes = Math.max(
+      0,
+      Math.round((Date.now() - Date.parse(freshness.lastDecisionAt)) / 60_000),
+    );
+    return `${dict.market.cachedStateLabel} · ${dict.market.analyzedAgo.replace(
+      "{minutes}",
+      String(minutes),
+    )}`;
+  }
+  if (freshness.status === "no_signal") return dict.market.cachedStateLabel;
+  return null;
 }
 
 function normalizeTopicNames(topic: DispatchTopic, roles: DispatchV10Dict["roles"]): DispatchTopic {
@@ -192,6 +216,7 @@ function TopicStrategyV10({
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
   const { strategy } = topic;
+  const watchOnly = topic.execution?.watchOnly === true;
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
   const followStatus =
     topic.status === "pending"
@@ -233,16 +258,19 @@ function TopicStrategyV10({
       />
       <div className="strat-cta">
         <div className="cta-row">
-          <button
-            className="cta-btn"
-            type="button"
-            disabled
-            title={dict.followTrade.disabled_tooltip}
-            aria-describedby={followNoteId}
-            onClick={() => onPlaceholder(topic, dict.followTrade.disabled_label, "primary")}
-          >
-            {dict.followTrade.disabled_label}
-          </button>
+          {watchOnly ? <span className="watch-only-pill">{dict.market.watchOnlyLabel}</span> : null}
+          {!watchOnly ? (
+            <button
+              className="cta-btn"
+              type="button"
+              disabled
+              title={dict.followTrade.disabled_tooltip}
+              aria-describedby={followNoteId}
+              onClick={() => onPlaceholder(topic, dict.followTrade.disabled_label, "primary")}
+            >
+              {dict.followTrade.disabled_label}
+            </button>
+          ) : null}
           <button
             className="cta-btn secondary"
             type="button"
@@ -252,7 +280,9 @@ function TopicStrategyV10({
           </button>
         </div>
         <div className="cta-meta" id={followNoteId}>
-          {dict.followTrade.safety_copy} · {followStatus}
+          {watchOnly
+            ? `${dict.market.watchOnlyCopy} · ${followStatus}`
+            : `${dict.followTrade.safety_copy} · ${followStatus}`}
         </div>
       </div>
     </div>
@@ -296,10 +326,12 @@ export function MarketAnalysisPanel({
   topics,
   dict,
   onPlaceholder,
+  freshness,
 }: {
   topics?: DispatchTopic[];
   dict: DispatchV10Dict;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
+  freshness?: DispatchFreshnessState;
 }) {
   const resolvedTopics = useMemo(() => {
     const normalizedTopics = (topics && topics.length > 0 ? topics : dispatchV10DemoTopics).map(
@@ -310,6 +342,7 @@ export function MarketAnalysisPanel({
   const doneCount = resolvedTopics.filter((topic) => topic.status === "done").length;
   const activeCount = resolvedTopics.filter((topic) => topic.status === "active").length;
   const pendingCount = resolvedTopics.filter((topic) => topic.status === "pending").length;
+  const freshnessText = formatFreshnessText(freshness, dict);
 
   return (
     <div className={`${v9Styles.root} v10-market-root`}>
@@ -322,6 +355,7 @@ export function MarketAnalysisPanel({
             <div className="cs-icon-info">
               <div className="cs-title">{dict.market.title}</div>
               <div className="cs-sub">{dict.market.subtitle}</div>
+              {freshnessText ? <div className="cs-freshness">{freshnessText}</div> : null}
             </div>
           </div>
           <div className="cs-head-right" aria-label={dict.market.statsAriaLabel}>

@@ -1,10 +1,39 @@
 # Spec: Watch B.13 — Multi-Agent Soul Uplift Umbrella
 
-> **版本**：v1.1（2026-05-15 起草 v1.0 → v1.1 Codex Round 1 反馈整合）
+> **版本**：v1.2（2026-05-15 Stage 3 PAUSE 后 Dan 拍板 C 方案 — `@vercel/functions` waitUntil）
 > **作者**：F (Claude session)
-> **状态**：v1.1 Draft, 待 Dan APPROVED 后派 Codex 持续 4 stage
+> **状态**：v1.2 APPROVED, Stage 3 可继续实施 → Stage 4 持续
 > **协议**：claude-codex-protocol v2.5 (19 段) + AI-driven paradigm v1.0
 > **承重**：本 spec 是 claw42 "多 Agent 协作 = 产品灵魂" 的总落地，B.13 ~ B.16 全 phase 单 spec batch（Codex 持续开发模式）
+> **进度**：Stage 1 ✅ merged (PR #96 / squash `de47ba82`) · Stage 2 ✅ merged (PR #97 / squash `809116c5`) · Stage 3 ⏸ → 🟢 resume with v1.2 · Stage 4 pending
+
+---
+
+## v1.2 修订原因（v1.1 → v1.2，2026-05-15 晚 ++）
+
+Codex Stage 1 + Stage 2 顺利 merge（PR #96 + #97）。Stage 3 PAUSE 命中预设条件：
+
+**PAUSE first-hand finding（Codex 实测）**：
+
+- Next `14.2.33` 的 `next/server` 没有 `after()` API
+- `@vercel/functions`（waitUntil）未安装
+- `@upstash/qstash` 未安装
+- 现有 cron `/api/cron/strategy-replay` 是 3h 一次同步 replay，不是 user-refresh handoff worker
+
+**Dan 拍板 C 方案（2026-05-15 chat AskUserQuestion）**：批准新增 `@vercel/functions` 官方依赖，用 `waitUntil` 包裹 PM pipeline background trigger。理由：
+
+- `@vercel/functions` 是 Vercel 官方包，与项目已用的 `@vercel/kv` 同源同体系，不是第三方风险
+- `waitUntil` 是 Vercel serverless 官方 background task 机制，正为这类场景设计
+- 工作量最小，符合 spec v1.1 原设计意图——refresh accept 立即返回 stale，PM 后台跑
+- 不污染产品体验——A 方案需要 UI 文案"refreshing now" → "refresh queued"语义降级
+
+**v1.1 → v1.2 变更清单**：
+
+1. § 4 Assumption #7 改写——明确 `@vercel/functions` 已 Dan APPROVED 为新依赖
+2. § 8.1 T303 改写——background trigger 必须 `waitUntil(triggerPmDecisionPipelineOnce(...))` 包裹
+3. § 13 cannot-do #11 文本调整——从"禁止 plain fire-and-forget"改为"必须用 `@vercel/functions` waitUntil 包裹，不允许 plain `void trigger()`"
+4. § 17 Anti-Rationalization 加新条：不能在 Stage 3 重启时偷懒走 `void trigger()`，必须显式 import waitUntil
+5. 顶部进度段标注 Stage 1+2 ✅ merged / Stage 3 resume
 
 ---
 
@@ -213,7 +242,7 @@ Dan 拍板（2026-05-15 chat）：多 Agent 分析协作是整个产品的灵魂
 4. **KV (Upstash) latency 可控**：refresh endpoint 写 lock 应 <200ms，否则用户体验差
 5. **persistentPersonality 注入 token 成本**：每个 role prompt 加 80-150 tokens，14 角色 × per-run = ~1500 extra tokens，可接受
 6. **b74023a stale-while-revalidate 是架构灵感不是机械复用**：不会 import b74023a 旧代码，按 pattern 写新代码（Codex Round 1 已警告不要直接 reconnect `/api/agents/analysis`）
-7. **Next 14 `after()` API 在 Vercel 当前 runtime 可用**（v1.1 新增）：Codex Stage 3 实施前必须验证。如不可用，降级用 queue / cron handoff（必须显式选择，不可继续 fire-and-forget）
+7. **Background trigger 用 `@vercel/functions` `waitUntil`**（v1.2 Dan APPROVED）：Codex Stage 3 PAUSE 实测 Next `14.2.33` 没有 `after()` API，@vercel/functions 未安装，@upstash/qstash 未安装。Dan 2026-05-15 拍板批准新增 `@vercel/functions` 官方包作为新依赖（与 `@vercel/kv` 同源），用 `waitUntil(triggerPmDecisionPipelineOnce(...))` 包裹 background task。不允许 plain `void trigger()` fire-and-forget
 
 ---
 
@@ -378,7 +407,7 @@ Dan 拍板（2026-05-15 chat）：多 Agent 分析协作是整个产品的灵魂
   - **POST canonical trigger**，GET status-only
   - 输入 query: `symbol`, `locale`
   - 输出：`{status, lastDecisionAt, nextAllowedAt, refreshStarted, refreshSource}` (5 status enum)
-  - **Serverless-safe scheduling**：用 Next 14 `after()` API（如可用）或 queue handoff，**禁止** plain `void triggerPmDecisionPipelineOnce()`
+  - **Serverless-safe scheduling**（v1.2 final）：必须 `import { waitUntil } from '@vercel/functions'` 并用 `waitUntil(triggerPmDecisionPipelineOnce(...))` 包裹 background task。**禁止** plain `void triggerPmDecisionPipelineOnce()`，**禁止** 同步阻塞跑完整 PM pipeline。`@vercel/functions` 加入 package.json dependencies（Dan APPROVED）。
   - **Lock ordering 5 步**：
     1. rate limit check（6 req/min/IP，复用 `kv-rate-limiter.ts`）
     2. in-flight lock check (5min KV) → 已锁 return `{status: refreshing}`
@@ -498,7 +527,7 @@ Dan 拍板（2026-05-15 chat）：多 Agent 分析协作是整个产品的灵魂
 8. **不能修改 § 7.2 14 角色 persistentPersonality 真表**——Codex 仅执行，不编
 9. **不能 process-memory-only lock**（Vercel serverless 不共享内存）
 10. **不能改 i18n 默认策略**（10 locale 含 en_XA 同步，不能只翻部分）
-11. **不能 plain fire-and-forget background task** — Vercel 函数 response 后会 kill，必须 `after()` / queue / cron handoff
+11. **不能 plain fire-and-forget background task**（v1.2 final）—— Vercel 函数 response 后会 kill。必须 `import { waitUntil } from '@vercel/functions'` 并用 `waitUntil(triggerPmDecisionPipelineOnce(...))` 包裹。禁止 plain `void trigger()`，禁止同步阻塞跑完整 PM pipeline 当作"非 fire-and-forget"
 12. **不能让 backend fallback rationale 流入 public payload**（如 `暂时不可用，使用中性占位继续生成决策`）
 13. **不能把 `${symbol}_USDT` fallback 字符串拼接当 CoinW executable**——必须真 metadata `{executable: true}` 标记
 14. **不能把 legacy records 算作 team track-record win**——`computeTeamWinrates` 已 exclude legacy，原因充分
@@ -556,23 +585,25 @@ claw42 工作台决策能力本周升级。
 
 ## § 17 Anti-Rationalization 总表（v1.1 扩展）
 
-| 逃逸路径                                                                       | 为什么不行                                                           | 正确做法                                                                 |
-| ------------------------------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| F 估错 stage 边界，Codex 自作主张拆                                            | 4 stage 已定，拆边界=破回滚粒度                                      | Codex Round 1 提议合并/拆分，F 决策；Round 2 同                          |
-| Codex 跳过 Round 1/2 直接实现                                                  | 协议要求 evaluation pass 才动手                                      | F 收 Codex Round 1 report 后 v1.1（已完成），如需 Round 2 类同           |
-| 觉得 4 stage 太多，先做 1+2                                                    | Dan 明确"大批量 = Codex 持续开发"                                    | 4 stage 必须全跑，单 PR 单 stage                                         |
-| persistentPersonality 注入 token 怕超限就 skip                                 | 容易 prompt 退化到原版                                               | truncate 不 skip，保 voice 核心                                          |
-| memory loop evidence pack 偷懒读现有 evidence                                  | 现有 evidence 是 raw data，memory 是 derived insight                 | 必须新建 memoryLoopEvidence.ts                                           |
-| 把 dataStatus 字段彻底从 schema 删                                             | backward compat 破坏                                                 | schema 留字段，UI 不读                                                   |
-| `/api/watch/refresh` 把 timeline 数据一起返回                                  | 违反 read/write 分离原则                                             | refresh 只返 freshness 状态                                              |
-| symbolMapping 加 BILL/IRYS 但不 mark watch-only                                | safety critical，会让 follow-trade 跟入 unknown long-tail            | executable: false metadata 严格 mark                                     |
-| 14 角色 voice 复制粘贴同样描述                                                 | 角色色彩抹平 = 又回到产品体验同质化原因                              | § 7.2 14 行各不同，Codex 严格按表                                        |
-| **v1.1 新增**：identity 在 v10 visual layer 12 角色压缩丢失                    | research_lead / risk_lead 等 personality 会被 merge 丢               | dispatch payload 保 14 source TeamMemberId，visual layer 仅 display fold |
-| **v1.1 新增**：fallback rationale 通过 generation pipeline 流入 public payload | UI 隐藏 ≠ history wall 干净，下次 memory loop 喂的就是 contamination | T102 修 evidenceDispatcher / 角色 prompt fallback wording 改专业措辞     |
-| **v1.1 新增**：plain `void trigger()` fire-and-forget                          | Vercel 函数 response 后 kill，trigger 不可靠                         | `after()` / queue / cron handoff，spec 必须明示                          |
-| **v1.1 新增**：先做 refresh 再做 identity                                      | refresh 写新 records 没 identity，memory loop 喂扁平 baseline        | v1.1 stage 顺序：identity 升 Stage 2 早于 refresh                        |
-| **v1.1 新增**：legacy records 算作 win 拉高紧凑 summary win-rate               | `computeTeamWinrates` 已 exclude legacy 原因充分                     | 严格 exclude legacy；如需含 legacy 必须独立 labeling                     |
-| **v1.1 新增**：sparse history（HYPE 1 record）不 sample-caution badge          | 1 sample 100% win 视觉欺骗                                           | sampleSizeCaution 字段 + UI 显式 "首周样本不足"                          |
+| 逃逸路径                                                                                     | 为什么不行                                                                                                                 | 正确做法                                                                                                           |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| F 估错 stage 边界，Codex 自作主张拆                                                          | 4 stage 已定，拆边界=破回滚粒度                                                                                            | Codex Round 1 提议合并/拆分，F 决策；Round 2 同                                                                    |
+| Codex 跳过 Round 1/2 直接实现                                                                | 协议要求 evaluation pass 才动手                                                                                            | F 收 Codex Round 1 report 后 v1.1（已完成），如需 Round 2 类同                                                     |
+| 觉得 4 stage 太多，先做 1+2                                                                  | Dan 明确"大批量 = Codex 持续开发"                                                                                          | 4 stage 必须全跑，单 PR 单 stage                                                                                   |
+| persistentPersonality 注入 token 怕超限就 skip                                               | 容易 prompt 退化到原版                                                                                                     | truncate 不 skip，保 voice 核心                                                                                    |
+| memory loop evidence pack 偷懒读现有 evidence                                                | 现有 evidence 是 raw data，memory 是 derived insight                                                                       | 必须新建 memoryLoopEvidence.ts                                                                                     |
+| 把 dataStatus 字段彻底从 schema 删                                                           | backward compat 破坏                                                                                                       | schema 留字段，UI 不读                                                                                             |
+| `/api/watch/refresh` 把 timeline 数据一起返回                                                | 违反 read/write 分离原则                                                                                                   | refresh 只返 freshness 状态                                                                                        |
+| symbolMapping 加 BILL/IRYS 但不 mark watch-only                                              | safety critical，会让 follow-trade 跟入 unknown long-tail                                                                  | executable: false metadata 严格 mark                                                                               |
+| 14 角色 voice 复制粘贴同样描述                                                               | 角色色彩抹平 = 又回到产品体验同质化原因                                                                                    | § 7.2 14 行各不同，Codex 严格按表                                                                                  |
+| **v1.1 新增**：identity 在 v10 visual layer 12 角色压缩丢失                                  | research_lead / risk_lead 等 personality 会被 merge 丢                                                                     | dispatch payload 保 14 source TeamMemberId，visual layer 仅 display fold                                           |
+| **v1.1 新增**：fallback rationale 通过 generation pipeline 流入 public payload               | UI 隐藏 ≠ history wall 干净，下次 memory loop 喂的就是 contamination                                                       | T102 修 evidenceDispatcher / 角色 prompt fallback wording 改专业措辞                                               |
+| **v1.1 新增**：plain `void trigger()` fire-and-forget                                        | Vercel 函数 response 后 kill，trigger 不可靠                                                                               | `after()` / queue / cron handoff，spec 必须明示                                                                    |
+| **v1.1 新增**：先做 refresh 再做 identity                                                    | refresh 写新 records 没 identity，memory loop 喂扁平 baseline                                                              | v1.1 stage 顺序：identity 升 Stage 2 早于 refresh                                                                  |
+| **v1.1 新增**：legacy records 算作 win 拉高紧凑 summary win-rate                             | `computeTeamWinrates` 已 exclude legacy 原因充分                                                                           | 严格 exclude legacy；如需含 legacy 必须独立 labeling                                                               |
+| **v1.1 新增**：sparse history（HYPE 1 record）不 sample-caution badge                        | 1 sample 100% win 视觉欺骗                                                                                                 | sampleSizeCaution 字段 + UI 显式 "首周样本不足"                                                                    |
+| **v1.2 新增**：Stage 3 重启时偷懒走 `void trigger()` 自欺欺人地说"和 fire-and-forget 不一样" | Codex Stage 3 PAUSE 已 first-hand 验证 Vercel 不保证 background 续跑，plain `void` 是 spec § 13 #11 明确禁止行为           | 必须显式 `import { waitUntil } from '@vercel/functions'` + `waitUntil(...)` 包裹，spec v1.2 已 Dan APPROVED 该依赖 |
+| **v1.2 新增**：把 14-role PM pipeline 同步塞进 refresh request 当作"非 fire-and-forget"      | 改 API contract 从 "accepted" → "block until full LLM run completes"，违反 spec "不阻塞"设计 + Vercel 30s timeout 边缘风险 | refresh 永远 nonblocking，PM 走 waitUntil background                                                               |
 
 ---
 
@@ -665,5 +696,6 @@ Codex Round 2（如有）可建议合并 / 拆分。
 
 ---
 
-_版本：v1.1 (2026-05-15 Codex Round 1 反馈整合，F 双脑判断接受全部建议)_
-_下一步：派 Codex Round 2 评估（可选）→ Dan APPROVED → Codex 持续开发 4 stage_
+_版本：v1.2 (2026-05-15 晚 ++ Stage 3 PAUSE 后 Dan 拍板 C 方案 @vercel/functions waitUntil)_
+_Stage 1 ✅ merged (PR #96 / `de47ba82`) · Stage 2 ✅ merged (PR #97 / `809116c5`) · Stage 3 🟢 resume · Stage 4 pending_
+_下一步：Codex Stage 3 + Stage 4 持续开发_

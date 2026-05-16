@@ -276,6 +276,50 @@ describe("selectPmDecisionTopics", () => {
     expect(topics.map((topic) => topic.symbol)).toContain("BLEND");
   });
 
+  it("marks explicit executable and watch-only symbols from symbol metadata", () => {
+    const topics = selectPmDecisionTopics({
+      pool: {
+        ...pool(),
+        trending: [
+          { symbol: "HYPE", price: 36, change24h: 4.2, category: "trending" },
+          { symbol: "BILL", price: 0.01, change24h: 18, category: "trending" },
+        ],
+      },
+      now,
+    });
+
+    expect(topics.find((topic) => topic.symbol === "HYPE")?.execution).toMatchObject({
+      executable: true,
+      coinwPair: "HYPE_USDT",
+      watchOnly: false,
+    });
+    expect(topics.find((topic) => topic.symbol === "BILL")?.execution).toMatchObject({
+      executable: false,
+      coinwPair: null,
+      watchOnly: true,
+      watchOnlyReason: "not_listed_on_coinw",
+    });
+  });
+
+  it("does not treat unknown fallback pair strings as executable", () => {
+    const [topic] = selectPmDecisionTopics({
+      newsEvidence: [
+        evidence({ symbol: ["UNKNOWNCOIN"], id: "ev_unknown", summary: "Unknown coin rallies" }),
+      ],
+      now,
+    });
+
+    expect(topic).toMatchObject({
+      symbol: "UNKNOWNCOIN",
+      execution: {
+        executable: false,
+        coinwPair: null,
+        watchOnly: true,
+        watchOnlyReason: "mapping_unknown",
+      },
+    });
+  });
+
   it("anchors symbol-less market news to BTC instead of every pool candidate", () => {
     const topics = selectPmDecisionTopics({
       pool: pool(),
