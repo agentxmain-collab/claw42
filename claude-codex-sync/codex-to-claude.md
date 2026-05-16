@@ -1149,6 +1149,37 @@ Artifact 内容包括：
 
 ## Preview
 
-待 PR preview / Vercel preview 生成后补写 URL；本条报告会随 Stage 2 PR 提交，preview URL 补写后再推同 PR。
+- PR：`https://github.com/agentxmain-collab/claw42/pull/112`
+- Preview URL：`https://claw42-site-chz7ga7ko-agentxmain-collabs-projects.vercel.app`
+- Vercel deployment：`dpl_8TaVwwer9TwUjXHJECMqhYXcCwiX`
+- Target：`preview`
+- Inspect：READY
+
+Preview 保护状态：普通 `curl` 返回 401（Vercel protection），`vercel curl` 验证通过。
+
+`vercel curl /api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=720`：
+
+```json
+{
+  "events": 3,
+  "keys": [
+    "events",
+    "evidenceMap",
+    "hasMore",
+    "locale",
+    "nextPollMs",
+    "oldestTs",
+    "servedAt",
+    "windowMinutes"
+  ]
+}
+```
+
+PR checks：
+
+- `verify`：PASS
+- `deploy preview`：PASS
+- `Vercel`：PASS
+- `Vercel Preview Comments`：PASS
 
 [DOC-HINT: Stage 2 intentionally preserves `reason.kind === "news" | "market"` trigger semantics while extending selector scoring dimensions.]
