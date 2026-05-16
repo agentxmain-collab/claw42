@@ -399,3 +399,57 @@ KV 实测（preview env，未输出 secret value）：
   - checked routes 0 axe violations
 
 [DOC-HINT: B.13 follow-up should fix empty-timeline refresh symbol derivation and lock nextAllowedAt before changing candidate ranking.]
+
+---
+
+# B.13 hotfix-3 post-merge projection fallback 修正
+
+时间：2026-05-16
+
+PR #102 squash merge 后，我在 main preview `dpl_HFvR9yHYV7ReHdgHb9htrKha9exL` 上补跑 `vercel curl`，发现一个原报告没有覆盖到的真实远端断裂：
+
+- `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=720&limit=100`
+  - returned events=1
+  - event id = `pm-decision:pm:BILL:1778902920550`
+  - `payload.executable=false` 已生效
+  - 但 `payload.symbol=UNKNOWN`
+  - `payload.rounds` 缺失
+
+本地同一份 preview KV + 当前代码能投出：
+
+- `pm:HYPE:1778908242659` → `symbol=HYPE` / `executable=true` / `rounds=25`
+- `pm:BILL:1778902920550` → `symbol=BILL` / `executable=false` / `rounds=25`
+
+判断：
+
+- Task A 第一轮 fix 只解决了 `executable` 字段和 follow gate，但没有完全兜住远端 history event 缺 record hydration 的情况。
+- 这仍是 timeline projection 断裂，不是 PM pipeline 问题。
+- 保守修法是让 public timeline 变成 `history + StrategyDecisionRecord` 双源：history event 正常走原路径；如果 history event 缺 record hydration，或 history 缺漏最新 record，则用真实 strategy record backfill public pm event。
+
+本 follow-up 修正：
+
+- `src/lib/watch/publicTimelineProjection.ts`
+  - 增加 `symbolFromRecordId()`，支持 `pm:BILL:...` 这类 record id fallback，避免投成 `UNKNOWN`
+  - 增加 `projectDecisionRecordToPublicEvent(record)`，可直接从真实 `StrategyDecisionRecord` 生成 public `pm_decision` event
+- `src/lib/watch/publicTimelinePayload.ts`
+  - 读取 `readAllDecisionRecords()` 后生成 record backfill events
+  - 与 history projection merge
+  - history event 缺 symbol / rounds / tradeDecision 时，用 record event 替换
+  - 按窗口、locale、before/since、limit 过滤，不引入 mock / fixture
+- `src/lib/watch/__tests__/publicTimelineProjection.test.ts`
+  - 增加 recordId symbol fallback 测试
+  - 增加 direct strategy record projection 测试
+
+本地复测（preview KV）：
+
+- `buildWatchTimelinePayload()` events=2
+- HYPE = executable true / rounds 25
+- BILL = executable false / rounds 25
+
+已补跑并通过：
+
+- `npm run typecheck`
+- `npm run lint`
+- targeted vitest：4 files / 53 tests passed
+
+[DOC-HINT: if future preview still shows no topics, next fix should target empty-state refresh trigger symbol sourcing, not re-enable demo fallback.]

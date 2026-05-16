@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildDecisionRecordIndex,
   filterPublicTimelineEvents,
+  projectDecisionRecordToPublicEvent,
   projectStreamEntryToPublic,
 } from "@/lib/watch/publicTimelineProjection";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
@@ -355,6 +356,58 @@ describe("publicTimelineProjection", () => {
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
     expect(event.payload.symbol).toBe("BILL");
     expect(event.payload.executable).toBe(false);
+  });
+
+  it("falls back to PM record id symbol when history lacks record hydration", () => {
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-bill",
+      ts: now,
+      thread: {
+        id: "thread-bill",
+        seed: {
+          id: "seed-bill",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: [],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: ["topic_selection:BILL:1"],
+        locale: "zh_CN",
+        recordId: "pm:BILL:1778902920550",
+      },
+    };
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map(),
+    });
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.symbol).toBe("BILL");
+    expect(event.payload.executable).toBe(false);
+  });
+
+  it("can project a PM decision directly from a strategy record", () => {
+    const event = projectDecisionRecordToPublicEvent(decisionRecord);
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.id).toBe(`pm-decision:${decisionRecord.id}`);
+    expect(event.payload.recordId).toBe(decisionRecord.id);
+    expect(event.payload.symbol).toBe("BTC");
+    expect(event.payload.executable).toBe(true);
+    expect(event.payload.rounds).toHaveLength(3);
   });
 
   it("projects schema v2 multi-round records while keeping latest rationale maps", () => {
