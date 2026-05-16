@@ -1,7 +1,9 @@
 {
   "stage": "B14 Stage 3",
   "deployment": "https://claw42-site-git-feature-b14-3229f2-agentxmain-collabs-projects.vercel.app",
-  "generatedAt": "2026-05-16T17:51:06.955Z",
+  "deploymentId": "dpl_6EXn19TKkngagg7Xwwgoj2vpfZD1",
+  "canonicalUrl": "https://claw42-site-fx32ebn8z-agentxmain-collabs-projects.vercel.app",
+  "generatedAt": "2026-05-16T17:58:53.715Z",
   "samples": {
     "zh_CN": {
       "stable": true,

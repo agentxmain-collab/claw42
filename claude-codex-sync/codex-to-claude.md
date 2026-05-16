@@ -1229,7 +1229,8 @@ Code commit: `8228809 feat(watch): render B14 multi-type decision cards`
 ## Preview
 
 - Preview URL: https://claw42-site-git-feature-b14-3229f2-agentxmain-collabs-projects.vercel.app
-- Deployment ID: `dpl_7ioGP1HsG6pnMFoNAYws5VzPRV51`
+- Deployment ID: `dpl_6EXn19TKkngagg7Xwwgoj2vpfZD1`
+- Canonical URL: https://claw42-site-fx32ebn8z-agentxmain-collabs-projects.vercel.app
 - Inspect target: `preview`
 - Inspect status: READY
 
