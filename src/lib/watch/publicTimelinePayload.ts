@@ -3,6 +3,7 @@ import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { readAllDecisionRecords, readDecisionRecords } from "@/lib/team/decisionRecordStore";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
+import { knownSymbolMappings } from "@/lib/team/symbolMapping";
 import type { StreamEntry } from "@/modules/agent-watch/types";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
 import {
@@ -112,6 +113,10 @@ function symbolsNeedingRecordHydration(events: PublicTimelineEvent[]) {
   );
 }
 
+function knownRecordHydrationSymbols() {
+  return Object.keys(knownSymbolMappings());
+}
+
 async function readTargetedDecisionRecords(
   symbols: string[],
   locale: Locale,
@@ -159,7 +164,15 @@ export async function buildWatchTimelinePayload({
   });
   const targetedRecords = stagingFixture
     ? []
-    : await readTargetedDecisionRecords(symbolsNeedingRecordHydration(projectedEvents), locale);
+    : await readTargetedDecisionRecords(
+        Array.from(
+          new Set([
+            ...symbolsNeedingRecordHydration(projectedEvents),
+            ...knownRecordHydrationSymbols(),
+          ]),
+        ),
+        locale,
+      );
   const decisionRecordsForBackfill = buildDecisionRecordIndex([
     ...Array.from(decisionRecordsById.values()),
     ...targetedRecords,

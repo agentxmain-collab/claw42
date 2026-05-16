@@ -502,3 +502,36 @@ PR #103 merge 后再测 main preview，发现 `symbolFromRecordId()` 已把 BILL
 - `npm run build`
 
 [DOC-HINT: if remote timeline still fails hydration after targeted read, next diagnostic should compare Vercel function env for timeline vs refresh routes.]
+
+---
+
+# B.13 hotfix-3 known-symbol hydration 补丁
+
+时间：2026-05-16
+
+PR #104 merge 后继续测 PR preview：
+
+- BILL 已恢复为 `symbol=BILL` / `executable=false` / `rounds=25`
+- HYPE 仍未进入 timeline
+- `GET /api/watch/refresh?symbol=HYPE&locale=zh_CN` 仍能看到 `refreshSource=records` 和 `lastDecisionAt=2026-05-16T05:10:42.659Z`
+
+判断：
+
+- targeted hydration 只补了 history 已出现的 symbol；如果某个真实 record 已写入 KV records 但 history entry 缺失，timeline 仍然看不到。
+- 当前 watch universe 已在 `symbolMapping.ts` 中维护，包含 HYPE / BILL / IRYS / BTC / ETH / SOL / USDT。
+- 在不改 candidate ranking、不动 pipeline、不加 mock 的前提下，timeline 可以按 known symbol universe 做 targeted `readDecisionRecords()`，把真实 records 补进 public timeline。
+
+已实施：
+
+- `src/lib/watch/publicTimelinePayload.ts`
+  - 引入 `knownSymbolMappings()`
+  - targeted hydration symbols = history 缺 hydration 的 symbols + known symbol universe
+  - 仍然只从真实 decision record store 读取，不引 fixture / demo fallback
+
+本地 preview KV 复测：
+
+- `buildWatchTimelinePayload()` events=2
+- HYPE = `symbol=HYPE` / `executable=true` / `rounds=25`
+- BILL = `symbol=BILL` / `executable=false` / `rounds=25`
+
+[DOC-HINT: once a proper decision-record index scan is reliable in Vercel timeline functions, known-symbol targeted hydration can be narrowed back down.]
