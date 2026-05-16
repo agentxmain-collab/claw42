@@ -1,7 +1,8 @@
 import type { Locale } from "@/i18n/types";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
-import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import { readAllDecisionRecords, readDecisionRecords } from "@/lib/team/decisionRecordStore";
+import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { StreamEntry } from "@/modules/agent-watch/types";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
 import {
@@ -99,6 +100,29 @@ function mergeDecisionRecordBackfillEvents(
     .slice(0, limit);
 }
 
+function symbolsNeedingRecordHydration(events: PublicTimelineEvent[]) {
+  return Array.from(
+    new Set(
+      events.flatMap((event) => {
+        if (event.payload.kind !== "pm_decision") return [];
+        if (!shouldReplaceWithRecordEvent(event, event)) return [];
+        return event.payload.symbol === "UNKNOWN" ? [] : [event.payload.symbol];
+      }),
+    ),
+  );
+}
+
+async function readTargetedDecisionRecords(
+  symbols: string[],
+  locale: Locale,
+): Promise<StrategyDecisionRecord[]> {
+  if (symbols.length === 0) return [];
+  const batches = await Promise.all(
+    symbols.map((symbol) => readDecisionRecords(symbol, 20, locale).catch(() => [])),
+  );
+  return batches.flat();
+}
+
 export async function buildWatchTimelinePayload({
   mode,
   locale,
@@ -133,8 +157,15 @@ export async function buildWatchTimelinePayload({
     importanceThreshold: "high",
     locale,
   });
+  const targetedRecords = stagingFixture
+    ? []
+    : await readTargetedDecisionRecords(symbolsNeedingRecordHydration(projectedEvents), locale);
+  const decisionRecordsForBackfill = buildDecisionRecordIndex([
+    ...Array.from(decisionRecordsById.values()),
+    ...targetedRecords,
+  ]);
   const cutoff = servedAt - Math.max(1, Math.min(windowMinutes, 720)) * 60_000;
-  const recordEvents = Array.from(decisionRecordsById.values())
+  const recordEvents = Array.from(decisionRecordsForBackfill.values())
     .map(projectDecisionRecordToPublicEvent)
     .filter((event): event is PublicTimelineEvent => Boolean(event))
     .filter(
