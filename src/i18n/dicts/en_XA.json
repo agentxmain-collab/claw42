@@ -169,6 +169,7 @@
   "team": {
     "trackRecord": {
       "title": "[Ţêåm Ţřåċƙ Řêċøřd]",
+      "compactTitle": "[Ţêâm ţřâĉķ řêĉôřđ]",
       "subtitle": "[Pûbłîċ dêċîšîøň ħîšţøřý før ţħê 14-pêřšøň Ŵåţċħ ţêåm.]",
       "totalDecisions": "[Dêċîšîøňš]",
       "overallWinRate": "[Ŵîň řåţê]",
@@ -176,8 +177,10 @@
       "decisions": "[Dêċîšîøňš]",
       "wins": "[Ŵîňš]",
       "winRate": "[Ŵîň řåţê]",
+      "lastFiveWinRate": "[Ļâšţ 5]",
       "netReturn7d": "[7d ňêţ]",
       "sampleSizeSmall": "[Šmåłł šåmpłê šîžê; øbšêřvê øňłý]",
+      "sampleCautionBadge": "[Šmåłł šåmpłê]",
       "noRecords": "[Ńø pûbłîċ ţêåm ţřåċƙ řêċøřd ýêţ.]",
       "aiDisclaimer": "[AI-ĝêňêřåţêd måřƙêţ vîêŵš åřê îňføřmåţîøňåł øňłý.]",
       "source": {

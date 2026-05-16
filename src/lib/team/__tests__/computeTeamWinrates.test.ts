@@ -50,6 +50,7 @@ describe("computeTeamWinrates", () => {
       totalDecisions: 2,
       wins: 1,
       winRate: 0.5,
+      lastFiveWinRate: 0.5,
     });
     expect(member(winrates, "pm")).toMatchObject({
       totalDecisions: 1,

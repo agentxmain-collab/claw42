@@ -3,6 +3,7 @@ import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { DispatchV10FollowTradeDict } from "@/i18n/types";
 import type { AnalystDataStatus, AnalystDirection } from "@/lib/team/strategyDecisionRecord";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
+import type { TeamMemberWinrate } from "@/lib/team/computeTeamWinrates";
 import type { MarketTickerPayload } from "../types";
 
 export type DispatchView = "flow" | "mkt";
@@ -130,6 +131,11 @@ export interface DispatchFreshnessState {
   refreshSource?: "records" | "timeline" | "none";
 }
 
+export interface DispatchTeamTrackRecord {
+  generatedAt: string;
+  winrates: TeamMemberWinrate[];
+}
+
 export interface DispatchTopic {
   id: string;
   symbol: string;
@@ -175,4 +181,5 @@ export interface DispatchConsoleV9Props {
   ) => void | Promise<void>;
   followTradeDict?: DispatchV10FollowTradeDict;
   freshness?: DispatchFreshnessState;
+  teamTrackRecord?: DispatchTeamTrackRecord;
 }

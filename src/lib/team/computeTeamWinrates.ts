@@ -7,6 +7,7 @@ export interface TeamMemberWinrate {
   totalDecisions: number;
   wins: number;
   winRate: number;
+  lastFiveWinRate: number;
   netReturn7d: number;
   recordSourceMix: Record<RecordSource, number>;
   sampleSizeWarning: boolean;
@@ -36,12 +37,17 @@ export async function computeTeamWinrates(
       record.resolvedOutcome ? RESOLVED_OUTCOMES.has(record.resolvedOutcome) : false,
     );
     const wins = memberRecords.filter((record) => record.resolvedOutcome === "hit_tp").length;
+    const lastFiveResolved = [...resolvedRecords].sort(sortNewestFirst).slice(0, 5);
+    const lastFiveWins = lastFiveResolved.filter(
+      (record) => record.resolvedOutcome === "hit_tp",
+    ).length;
 
     return {
       memberId,
       totalDecisions: memberRecords.length,
       wins,
       winRate: resolvedRecords.length === 0 ? 0 : wins / resolvedRecords.length,
+      lastFiveWinRate: lastFiveResolved.length === 0 ? 0 : lastFiveWins / lastFiveResolved.length,
       netReturn7d: netReturn7d(memberRecords),
       recordSourceMix: recordSourceMix(memberRecords),
       sampleSizeWarning: memberRecords.length < 30,
@@ -77,6 +83,10 @@ function netReturn7d(records: StrategyDecisionRecord[]) {
   return records
     .filter((record) => Date.parse(record.createdAt) >= cutoff)
     .reduce((sum, record) => sum + estimatedReturnPct(record), 0);
+}
+
+function sortNewestFirst(left: StrategyDecisionRecord, right: StrategyDecisionRecord) {
+  return Date.parse(right.createdAt || "") - Date.parse(left.createdAt || "");
 }
 
 function estimatedReturnPct(record: StrategyDecisionRecord) {

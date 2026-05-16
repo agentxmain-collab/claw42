@@ -15,6 +15,7 @@ import { HistoryWall, type HistoryWallItem } from "./v9/HistoryWall";
 import type {
   DispatchFreshnessState,
   DispatchConsoleV9Props,
+  DispatchTeamTrackRecord,
   DispatchTopic,
   DispatchTopicAction,
   DispatchView,
@@ -98,6 +99,7 @@ export function AgentWatchBoard({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [freshness, setFreshness] = useState<DispatchFreshnessState>({ status: "idle" });
+  const [teamTrackRecord, setTeamTrackRecord] = useState<DispatchTeamTrackRecord | undefined>();
   const nextTimelinePollMsRef = useRef(DEFAULT_TIMELINE_POLL_MS);
 
   const applyTimelinePayload = useCallback(
@@ -569,6 +571,29 @@ export function AgentWatchBoard({
     });
   }, [fetchDecisionHistory, historyHasMore, historyLoading, historyNextBefore, historySymbol]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    async function fetchTeamTrackRecord() {
+      const params = new URLSearchParams({ locale: agentWatchLocale });
+      try {
+        const response = await fetch(apiPath(`/api/watch/team-track-record?${params}`), {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`team track record ${response.status}`);
+        setTeamTrackRecord((await response.json()) as DispatchTeamTrackRecord);
+      } catch (error: unknown) {
+        if ((error as { name?: string }).name === "AbortError") return;
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[claw42] team track record fetch failed", error);
+        }
+      }
+    }
+
+    void fetchTeamTrackRecord();
+    return () => controller.abort();
+  }, [agentWatchLocale]);
+
   const broadcastFollowUpdate = useCallback((recordId: string) => {
     const payload = { recordId, ts: Date.now() };
     if (typeof BroadcastChannel !== "undefined") {
@@ -639,6 +664,7 @@ export function AgentWatchBoard({
         marketSnapshot={null}
         followTradeDict={followTradeDict}
         freshness={freshness}
+        teamTrackRecord={teamTrackRecord}
       />
       <HistoryWall
         open={historyOpen}

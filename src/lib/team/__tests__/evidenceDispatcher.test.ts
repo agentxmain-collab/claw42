@@ -84,4 +84,20 @@ describe("evidenceDispatcher", () => {
     expect(context).not.toContain("Data status");
     expect(context).not.toContain("naming missing data explicitly");
   });
+
+  it("keeps memory_loop on historical memory instead of repeating current evidence", async () => {
+    const pack = await buildEvidenceContextPack({
+      symbol: "BTC",
+      recentMarketSignals: [signal("BTC")],
+      recentNewsEvidence: [evidence("BTC")],
+    });
+
+    const context = formatRoleEvidenceContext("memory_loop", pack);
+
+    expect(context).toContain("### memory evidence");
+    expect(context).toContain("No historical baseline");
+    expect(context).not.toContain("BTC momentum accelerated");
+    expect(context).not.toContain("ETF inflows rise");
+    expect(evidenceIdsForMember("memory_loop", pack)).toEqual(["memory:BTC:history"]);
+  });
 });

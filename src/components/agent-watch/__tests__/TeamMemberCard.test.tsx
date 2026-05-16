@@ -22,6 +22,7 @@ describe("TeamMemberCard", () => {
           totalDecisions: 3,
           wins: 2,
           winRate: 2 / 3,
+          lastFiveWinRate: 2 / 3,
           netReturn7d: 4.2,
           recordSourceMix: {
             live: 0,
@@ -49,6 +50,7 @@ const memberLabels = {
 const teamLabels: Dict["team"] = {
   trackRecord: {
     title: "Team Track Record",
+    compactTitle: "Team Track Record",
     subtitle: "Public history.",
     totalDecisions: "Decisions",
     overallWinRate: "Win rate",
@@ -56,8 +58,10 @@ const teamLabels: Dict["team"] = {
     decisions: "Decisions",
     wins: "Wins",
     winRate: "Win rate",
+    lastFiveWinRate: "Last 5",
     netReturn7d: "7d net",
     sampleSizeSmall: "Small sample",
+    sampleCautionBadge: "Small sample",
     noRecords: "No records",
     aiDisclaimer: "AI only.",
     source: {

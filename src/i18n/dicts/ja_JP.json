@@ -169,6 +169,7 @@
   "team": {
     "trackRecord": {
       "title": "チーム成績ウォール",
+      "compactTitle": "チーム戦績サマリー",
       "subtitle": "14人のWatchチームの公開判断履歴を live / paper / backtest 別に表示します。",
       "totalDecisions": "判断数",
       "overallWinRate": "勝率",
@@ -176,8 +177,10 @@
       "decisions": "判断",
       "wins": "勝ち",
       "winRate": "勝率",
+      "lastFiveWinRate": "直近5件",
       "netReturn7d": "7日損益",
       "sampleSizeSmall": "サンプルが少ないため参考表示です",
+      "sampleCautionBadge": "サンプル不足",
       "noRecords": "公開チーム成績はまだありません。新しい構造化判断が自動で蓄積されます。",
       "aiDisclaimer": "AIが生成した市場見解は情報提供のみであり、投資助言ではありません。判断は自己責任です。",
       "source": {

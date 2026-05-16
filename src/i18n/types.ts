@@ -30,6 +30,7 @@ export type TeamMemberDict = {
 
 export type TeamTrackRecordDict = {
   title: string;
+  compactTitle: string;
   subtitle: string;
   totalDecisions: string;
   overallWinRate: string;
@@ -37,8 +38,10 @@ export type TeamTrackRecordDict = {
   decisions: string;
   wins: string;
   winRate: string;
+  lastFiveWinRate: string;
   netReturn7d: string;
   sampleSizeSmall: string;
+  sampleCautionBadge: string;
   noRecords: string;
   aiDisclaimer: string;
   source: {
