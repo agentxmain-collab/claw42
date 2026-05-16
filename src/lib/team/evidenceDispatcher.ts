@@ -84,7 +84,7 @@ const MEMBER_MANDATES: Record<TeamMemberId, string> = {
   research_lead:
     "You are the research lead. Synthesize available role outputs and identify which domain carries the strongest signal.",
   risk_lead:
-    "You are the risk lead. Focus on downside, invalidation, stale evidence, and reasons to reduce or wait.",
+    "You are the risk lead. Focus on downside, invalidation, stale evidence, and reasons to reduce exposure or take no action.",
   pm: "You are the portfolio manager. Turn evidence and role inputs into an auditable decision using only confirmed signals.",
   bullish_researcher:
     "You are the bullish researcher. Build the strongest long thesis from available evidence and state how much conviction it deserves.",
@@ -95,7 +95,7 @@ const MEMBER_MANDATES: Record<TeamMemberId, string> = {
   aggressive_reviewer:
     "You are the aggressive reviewer. Test whether the setup justifies speed and risk using confirmed signals.",
   neutral_reviewer:
-    "You are the neutral reviewer. Weigh evidence on both sides and call out when the correct stance is wait.",
+    "You are the neutral reviewer. Weigh evidence on both sides and call out when the correct stance is no action.",
   conservative_reviewer:
     "You are the conservative reviewer. Require strong evidence before endorsing risk; thin signal coverage should lower confidence.",
   memory_loop:
@@ -112,7 +112,8 @@ function section(
 }
 
 function publicFallbackSummary(domain: EvidenceDomain) {
-  return `No independent ${domain} signal was available in the current evidence window.`;
+  void domain;
+  return "This section contributes neutral context only.";
 }
 
 function statusFromItems(items: TypedEvidenceItem[]): AnalystDataStatus {
@@ -168,23 +169,18 @@ async function liveChartItems(symbol: string): Promise<TypedEvidenceItem[]> {
       },
     ];
   } catch (error) {
-    return [
-      {
-        id: `chart:${symbol}:coinw-context-missing`,
-        domain: "chart",
-        status: "partial",
-        source: "coinw-kline",
-        summary: `CoinW kline context unavailable: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      },
-    ];
+    void error;
+    return [];
   }
 }
 
 function newsItems(symbol: string, evidence: NewsEvidence[]): TypedEvidenceItem[] {
   return evidence
-    .filter((item) => item.symbol.map((value) => value.toUpperCase()).includes(symbol))
+    .filter(
+      (item) =>
+        item.symbol.map((value) => value.toUpperCase()).includes(symbol) &&
+        !isTopicSelectionEvidence(item),
+    )
     .slice(0, 6)
     .map((item) => ({
       id: item.id,
@@ -193,6 +189,14 @@ function newsItems(symbol: string, evidence: NewsEvidence[]): TypedEvidenceItem[
       source: item.source,
       summary: `${item.title} — ${item.summary}`,
     }));
+}
+
+function isTopicSelectionEvidence(item: NewsEvidence) {
+  return (
+    item.id.startsWith("topic_selection:") ||
+    item.id.startsWith("topic-selection:") ||
+    /topic selector/i.test(item.source)
+  );
 }
 
 function snapshotItem(
@@ -377,11 +381,25 @@ export function dataStatusForMember(memberId: TeamMemberId, pack: EvidenceContex
 }
 
 export function evidenceIdsForMember(memberId: TeamMemberId, pack: EvidenceContextPack): string[] {
-  return MEMBER_DOMAINS[memberId].flatMap((domain) => pack[domain].items.map((item) => item.id));
+  return visibleDomainsForMember(memberId, pack).flatMap((domain) =>
+    pack[domain].items.map((item) => item.id),
+  );
+}
+
+function visibleDomainsForMember(memberId: TeamMemberId, pack: EvidenceContextPack) {
+  const requiredDomain = MEMBER_REQUIRED_DOMAIN[memberId];
+  if (requiredDomain && pack[requiredDomain].status === "missing") return [];
+  return MEMBER_DOMAINS[memberId].filter((domain) => pack[domain].status !== "missing");
+}
+
+export function shouldAbstainMember(memberId: TeamMemberId, pack: EvidenceContextPack): boolean {
+  const requiredDomain = MEMBER_REQUIRED_DOMAIN[memberId];
+  if (requiredDomain && pack[requiredDomain].status === "missing") return true;
+  return visibleDomainsForMember(memberId, pack).length === 0;
 }
 
 export function formatRoleEvidenceContext(memberId: TeamMemberId, pack: EvidenceContextPack) {
-  const domains = MEMBER_DOMAINS[memberId];
+  const domains = visibleDomainsForMember(memberId, pack);
   const sections = domains
     .map((domain) => {
       const section = pack[domain];
@@ -394,8 +412,9 @@ ${section.summary}`;
 ${MEMBER_MANDATES[memberId]}
 
 ## Public output discipline
-Use only the evidence below. If the signal set is thin, lower confidence and describe the basis for caution.
-Do not mention backend connectors, data ingestion status, unprovided datasets, service health, or fallback execution.
+Use only the evidence below. If the signal set is thin, lower confidence and describe the market basis for caution.
+Describe market evidence only. Never discuss backend operations, source coverage, future data arrival, process state, or internal participant identifiers.
+If the shown sections do not support a market-facing point, keep the public rationale empty.
 
-${sections}`;
+${sections || "No public role evidence should be used for this role."}`;
 }

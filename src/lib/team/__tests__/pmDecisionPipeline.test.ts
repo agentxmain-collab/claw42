@@ -6,6 +6,7 @@ import type { TradeCardPromptContext } from "@/lib/team/tradeDecisionPromptBuild
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { SignalRecord } from "@/modules/agent-watch/types";
+import type { EvidenceContextPack } from "@/lib/team/evidenceDispatcher";
 
 const now = Date.UTC(2026, 4, 10, 10, 0, 0);
 
@@ -70,9 +71,101 @@ const analystOutput = (memberId: TeamMemberId) => ({
   memberId,
   direction: "long" as const,
   confidence: 0.7,
-  rationale: `${memberId} sees BTC at 76000`,
+  rationale: "BTC holds 76000 with constructive momentum",
   citations: ["ev_1"],
 });
+
+function fullEvidenceContextPack(symbol = "BTC"): EvidenceContextPack {
+  return {
+    symbol,
+    chart: {
+      status: "ok",
+      items: [
+        {
+          id: "ev_1",
+          domain: "chart",
+          status: "ok",
+          source: "test",
+          summary: `${symbol} momentum confirmed near 76000`,
+        },
+      ],
+      summary: `${symbol} momentum confirmed near 76000`,
+    },
+    news: {
+      status: "ok",
+      items: [
+        {
+          id: "ev_1",
+          domain: "news",
+          status: "ok",
+          source: "test",
+          summary: `${symbol} ETF inflows rise`,
+        },
+      ],
+      summary: `${symbol} ETF inflows rise`,
+    },
+    onchain: {
+      status: "ok",
+      items: [
+        {
+          id: "ev_1",
+          domain: "onchain",
+          status: "ok",
+          source: "test",
+          summary: `${symbol} exchange outflows improved`,
+        },
+      ],
+      summary: `${symbol} exchange outflows improved`,
+    },
+    fundamental: {
+      status: "ok",
+      items: [
+        {
+          id: "ev_1",
+          domain: "fundamental",
+          status: "ok",
+          source: "test",
+          summary: `${symbol} liquidity access improved`,
+        },
+      ],
+      summary: `${symbol} liquidity access improved`,
+    },
+    market: {
+      status: "ok",
+      items: [
+        {
+          id: "ev_1",
+          domain: "market",
+          status: "ok",
+          source: "test",
+          summary: `${symbol} market signal confirmed`,
+        },
+      ],
+      summary: `${symbol} market signal confirmed`,
+    },
+    memory: {
+      status: "ok",
+      items: [
+        {
+          id: "ev_1",
+          domain: "memory",
+          status: "ok",
+          source: "test",
+          summary: `${symbol} prior cases support disciplined sizing`,
+        },
+      ],
+      summary: `${symbol} prior cases support disciplined sizing`,
+    },
+    dataStatus: {
+      chart: "ok",
+      news: "ok",
+      onchain: "ok",
+      fundamental: "ok",
+      market: "ok",
+      memory: "ok",
+    },
+  };
+}
 
 describe("runPmDecisionPipeline", () => {
   it("does not run below high importance", async () => {
@@ -90,7 +183,7 @@ describe("runPmDecisionPipeline", () => {
     expect(generateAnalystOutput).not.toHaveBeenCalled();
   });
 
-  it("uses a neutral fallback when an analyst role fails", async () => {
+  it("omits a role from public inputs when analyst generation fails", async () => {
     const recordStrategyDecisionRecord = vi.fn(async (record) => record);
     const appendWatchHistoryEntry = vi.fn();
     const updateDecisionRecord = vi.fn();
@@ -103,12 +196,13 @@ describe("runPmDecisionPipeline", () => {
       },
       {
         loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
         generateAnalystOutput: vi.fn(async (memberId) => {
           if (memberId === "chart_analyst") throw new Error("llm failed");
           return analystOutput(memberId);
         }),
-        generateLeadOutput: vi.fn(async (memberId) => ({
-          rationale: `${memberId} rationale`,
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Evidence stack remains constructive",
           confidence: 0.7,
         })),
         generateTradeDecision: vi.fn(async () => decision()),
@@ -118,18 +212,10 @@ describe("runPmDecisionPipeline", () => {
       },
     );
 
-    expect(
-      result?.record.analystInputs.find((input) => input.memberId === "chart_analyst"),
-    ).toMatchObject({
-      direction: "wait",
-      confidence: 0.25,
-      dataStatus: "partial",
-    });
     const fallbackInput = result?.record.analystInputs.find(
       (input) => input.memberId === "chart_analyst",
     );
-    expect(fallbackInput?.rationale).not.toContain("暂时不可用");
-    expect(fallbackInput?.rationale).not.toContain("unavailable");
+    expect(fallbackInput).toBeUndefined();
     expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
   });
 
@@ -151,6 +237,7 @@ describe("runPmDecisionPipeline", () => {
           throw new Error("evidence store unavailable");
         }),
         loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
         generateAnalystOutput,
         recordStrategyDecisionRecord,
         appendWatchHistoryEntry,
@@ -174,8 +261,8 @@ describe("runPmDecisionPipeline", () => {
       void record;
     });
     const generateAnalystOutput = vi.fn(async (memberId) => analystOutput(memberId));
-    const generateLeadOutput = vi.fn(async (memberId) => ({
-      rationale: `${memberId} rationale`,
+    const generateLeadOutput = vi.fn(async () => ({
+      rationale: "Evidence stack remains constructive",
       confidence: 0.7,
     }));
     let tradeAnalystInputs: TradeCardPromptContext["analystInputs"] | null = null;
@@ -192,6 +279,7 @@ describe("runPmDecisionPipeline", () => {
       },
       {
         loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
         generateAnalystOutput,
         generateLeadOutput,
         generateTradeDecision,
@@ -356,9 +444,10 @@ describe("runPmDecisionPipeline", () => {
       },
       {
         loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
         generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
-        generateLeadOutput: vi.fn(async (memberId) => ({
-          rationale: `${memberId} rationale`,
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Evidence stack remains constructive",
           confidence: 0.7,
         })),
         generateTradeDecision,
@@ -403,9 +492,10 @@ describe("runPmDecisionPipeline", () => {
       },
       {
         loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
         generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
-        generateLeadOutput: vi.fn(async (memberId) => ({
-          rationale: `${memberId} rationale`,
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Evidence stack remains constructive",
           confidence: 0.7,
         })),
         generateTradeDecision: vi.fn(async () => decision()),
@@ -450,9 +540,10 @@ describe("runPmDecisionPipeline", () => {
       },
       {
         loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
         generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
-        generateLeadOutput: vi.fn(async (memberId) => ({
-          rationale: `${memberId} rationale`,
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Evidence stack remains constructive",
           confidence: 0.7,
         })),
         generateTradeDecision: vi.fn(async () => decision()),

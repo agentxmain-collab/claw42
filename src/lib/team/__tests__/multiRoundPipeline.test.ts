@@ -25,7 +25,8 @@ describe("multiRoundPipeline", () => {
     });
 
     expect(prompt).toContain("Round 2");
-    expect(prompt).toContain("chart_analyst: long 0.6 support held");
+    expect(prompt).toContain("prior view 1: stance=long, confidence=0.60, rationale=support held");
+    expect(prompt).not.toContain("chart_analyst");
   });
 
   it("runs two rounds and exposes the latest analyst view per member", async () => {
