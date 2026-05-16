@@ -169,7 +169,6 @@
   "team": {
     "trackRecord": {
       "title": "Mur de performance équipe",
-      "compactTitle": "Bilan équipe",
       "subtitle": "Historique public des décisions de l’équipe Watch de 14 personnes, séparé par live / paper / backtest.",
       "totalDecisions": "Décisions",
       "overallWinRate": "Taux de gain",
@@ -177,10 +176,8 @@
       "decisions": "Décisions",
       "wins": "Gains",
       "winRate": "Taux de gain",
-      "lastFiveWinRate": "5 dern.",
       "netReturn7d": "Net 7j",
       "sampleSizeSmall": "Échantillon faible ; observation seulement",
-      "sampleCautionBadge": "Échantillon faible",
       "noRecords": "Aucun historique public pour l’instant. Les nouvelles décisions structurées s’accumuleront ici.",
       "aiDisclaimer": "Les vues de marché générées par l’AI sont uniquement informatives et ne constituent pas un conseil en investissement. Décisions à vos risques.",
       "source": {

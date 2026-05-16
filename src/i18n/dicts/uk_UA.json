@@ -169,7 +169,6 @@
   "team": {
     "trackRecord": {
       "title": "Стіна результатів команди",
-      "compactTitle": "Підсумок команди",
       "subtitle": "Публічна історія рішень команди Watch із 14 учасників із джерелами live / paper / backtest.",
       "totalDecisions": "Рішення",
       "overallWinRate": "Win rate",
@@ -177,10 +176,8 @@
       "decisions": "Рішення",
       "wins": "Перемоги",
       "winRate": "Win rate",
-      "lastFiveWinRate": "Останні 5",
       "netReturn7d": "7д net",
       "sampleSizeSmall": "Мала вибірка; лише для спостереження",
-      "sampleCautionBadge": "Мала вибірка",
       "noRecords": "Публічної історії команди ще немає. Нові структуровані рішення з’являться тут.",
       "aiDisclaimer": "AI-згенеровані ринкові погляди мають лише інформаційний характер і не є інвестиційною порадою. Рішення ви ухвалюєте на власний ризик.",
       "source": {

@@ -169,7 +169,6 @@
   "team": {
     "trackRecord": {
       "title": "جدار سجل الفريق",
-      "compactTitle": "ملخص أداء الفريق",
       "subtitle": "سجل قرارات عام لفريق Watch المكوّن من 14 عضوًا مع فصل live / paper / backtest.",
       "totalDecisions": "القرارات",
       "overallWinRate": "معدل الفوز",
@@ -177,10 +176,8 @@
       "decisions": "قرارات",
       "wins": "فوز",
       "winRate": "معدل الفوز",
-      "lastFiveWinRate": "آخر 5",
       "netReturn7d": "صافي 7 أيام",
       "sampleSizeSmall": "حجم عينة صغير؛ للمتابعة فقط",
-      "sampleCautionBadge": "عينة صغيرة",
       "noRecords": "لا يوجد سجل عام للفريق بعد. ستتراكم القرارات المنظمة الجديدة هنا.",
       "aiDisclaimer": "آراء السوق المولدة بالذكاء الاصطناعي معلوماتية فقط ولا تشكل نصيحة استثمارية. قراراتك على مسؤوليتك.",
       "source": {
