@@ -5,6 +5,10 @@ import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { apiPath } from "@/lib/basePath";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import {
+  comparePublicTimelineEvents,
+  mergePublicTimelineEvents,
+} from "@/lib/watch/publicTimelineOrdering";
+import {
   mapPublicTimelineEventsToTopics,
   type FollowStatsSnapshot,
 } from "@/lib/watch/v9TopicAdapter";
@@ -59,14 +63,7 @@ interface WatchRefreshPayload {
 }
 
 function mergeTimelineEvents(current: PublicTimelineEvent[], next: PublicTimelineEvent[]) {
-  const seen = new Set<string>();
-  return [...current, ...next]
-    .filter((event) => {
-      if (seen.has(event.id)) return false;
-      seen.add(event.id);
-      return true;
-    })
-    .sort((a, b) => b.ts - a.ts);
+  return mergePublicTimelineEvents([...current, ...next]);
 }
 
 export function AgentWatchBoard({
@@ -102,9 +99,9 @@ export function AgentWatchBoard({
 
   const applyTimelinePayload = useCallback(
     (payload: PublicTimelinePayload, mode: "replace" | "append") => {
-      const sorted = payload.events.slice().sort((a, b) => b.ts - a.ts);
+      const sorted = payload.events.slice().sort(comparePublicTimelineEvents);
       setTimelineEvents((current) =>
-        mode === "replace" ? sorted : mergeTimelineEvents(current, sorted),
+        mode === "replace" ? mergeTimelineEvents([], sorted) : mergeTimelineEvents(current, sorted),
       );
       if (payload.evidenceMap) {
         setTimelineEvidenceMap((current) =>

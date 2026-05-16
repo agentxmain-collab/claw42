@@ -32,6 +32,7 @@ import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { DecisionStageTraceId } from "@/lib/team/strategyDecisionRecord";
+import { publicTimelineEventStableId } from "@/lib/watch/publicTimelineOrdering";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import type {
   DispatchMessage,
@@ -749,6 +750,20 @@ function strategySortTime(group: DispatchTopicGroup) {
   return Number.isFinite(parsed) ? parsed : group.latestAt;
 }
 
+function compareRankedGroups(
+  a: { group: DispatchTopicGroup; ranking: ReturnType<typeof calculateTopicRankingScore> },
+  b: { group: DispatchTopicGroup; ranking: ReturnType<typeof calculateTopicRankingScore> },
+) {
+  return (
+    b.ranking.score - a.ranking.score ||
+    strategySortTime(b.group) - strategySortTime(a.group) ||
+    b.group.latestAt - a.group.latestAt ||
+    publicTimelineEventStableId(a.group.latestDecision).localeCompare(
+      publicTimelineEventStableId(b.group.latestDecision),
+    )
+  );
+}
+
 export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): DispatchTopic[] {
   const now = ctx.now ?? Date.now();
   const rankedGroups = groupPublicTimelineEventsByTopic(ctx.events)
@@ -763,12 +778,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         }),
       };
     })
-    .sort(
-      (a, b) =>
-        b.ranking.score - a.ranking.score ||
-        strategySortTime(b.group) - strategySortTime(a.group) ||
-        b.group.latestAt - a.group.latestAt,
-    );
+    .sort(compareRankedGroups);
 
   return rankedGroups.map(({ group, ranking }, index) => {
     const evidence = firstEvidence(group, ctx.evidenceMap);

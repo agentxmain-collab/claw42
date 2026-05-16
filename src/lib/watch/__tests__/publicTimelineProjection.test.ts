@@ -196,6 +196,15 @@ describe("publicTimelineProjection", () => {
     ).toEqual(["en"]);
   });
 
+  it("uses id as a stable order tie-breaker for equal timestamps", () => {
+    const beta = focusEntry({ id: "market-beta", ts: now });
+    const alpha = focusEntry({ id: "market-alpha", ts: now });
+
+    expect(
+      filterPublicTimelineEvents([beta, alpha], { mode: "public" }).map((event) => event.id),
+    ).toEqual(["market-alpha", "market-beta"]);
+  });
+
   it("does not project ambient chat-like entries", () => {
     const entry: StreamEntry = {
       kind: "watch_update",
