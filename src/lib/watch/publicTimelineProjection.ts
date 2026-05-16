@@ -101,6 +101,11 @@ function normalizePublicSymbol(symbol: string | undefined | null) {
   return /^[A-Z0-9]{2,12}$/.test(normalized) ? normalized : null;
 }
 
+function symbolFromRecordId(recordId: string | undefined | null) {
+  const match = recordId?.match(/^pm:([A-Z0-9]{2,12}):/);
+  return normalizePublicSymbol(match?.[1]);
+}
+
 function normalizePublicSymbols(symbols: string[]) {
   return Array.from(new Set(symbols.map(normalizePublicSymbol).filter(Boolean))) as string[];
 }
@@ -178,6 +183,7 @@ function pmDecisionPayload(
   const symbol =
     normalizePublicSymbol(indexedRecord?.symbol) ??
     normalizePublicSymbol(tradeDecision?.symbol) ??
+    symbolFromRecordId(recordId) ??
     "UNKNOWN";
   return {
     kind: "pm_decision",
@@ -190,6 +196,44 @@ function pmDecisionPayload(
     rounds: derived.rounds,
     stageTrace: publicStageTraceFromRecord(indexedRecord),
     resolution: resolutionFromRecord(indexedRecord),
+  };
+}
+
+export function projectDecisionRecordToPublicEvent(
+  record: StrategyDecisionRecord,
+): PublicTimelineEvent | null {
+  const ts = Date.parse(record.createdAt);
+  if (!Number.isFinite(ts)) return null;
+
+  const derived = publicDecisionProcessFromRecord(record);
+  const tradeDecision = normalizePublicTradeDecision(record.tradeDecision);
+  const symbol =
+    normalizePublicSymbol(record.symbol) ??
+    normalizePublicSymbol(tradeDecision?.symbol) ??
+    symbolFromRecordId(record.id) ??
+    "UNKNOWN";
+  const payload: PublicTimelineEvent["payload"] = {
+    kind: "pm_decision",
+    recordId: record.id,
+    symbol,
+    executable: executableForRecord(record, symbol),
+    tradeDecision,
+    rationaleByMember: derived.rationaleByMember,
+    citationsByMember: derived.citationsByMember,
+    rounds: derived.rounds,
+    stageTrace: publicStageTraceFromRecord(record),
+    resolution: resolutionFromRecord(record),
+  };
+
+  return {
+    id: `pm-decision:${record.id}`,
+    ts,
+    visibility: "public",
+    importance: "high",
+    sourceTrigger: "pm_decision",
+    evidenceIds: evidenceIdsForPayload(record.tradeDecision?.evidenceIds ?? [], payload),
+    locale: normalizeWatchLocale(record.locale),
+    payload,
   };
 }
 

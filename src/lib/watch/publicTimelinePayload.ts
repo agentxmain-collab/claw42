@@ -12,6 +12,7 @@ import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import {
   buildDecisionRecordIndex,
   filterPublicTimelineEvents,
+  projectDecisionRecordToPublicEvent,
 } from "@/lib/watch/publicTimelineProjection";
 
 const MAX_EVIDENCE_MAP_ITEMS = 120;
@@ -55,6 +56,49 @@ export function resolveWatchTimelineNextPollMs(servedAt: number) {
   return servedAt % (3 * 60_000) < 30_000 ? 30_000 : 90_000;
 }
 
+function shouldReplaceWithRecordEvent(
+  existing: PublicTimelineEvent,
+  recordEvent: PublicTimelineEvent,
+) {
+  if (existing.payload.kind !== "pm_decision" || recordEvent.payload.kind !== "pm_decision") {
+    return false;
+  }
+  return (
+    existing.payload.symbol === "UNKNOWN" ||
+    !existing.payload.rounds?.length ||
+    existing.payload.tradeDecision == null
+  );
+}
+
+function mergeDecisionRecordBackfillEvents(
+  events: PublicTimelineEvent[],
+  recordEvents: PublicTimelineEvent[],
+  limit: number,
+) {
+  const byRecordId = new Map<string, PublicTimelineEvent>();
+  const passthrough: PublicTimelineEvent[] = [];
+
+  for (const event of events) {
+    if (event.payload.kind === "pm_decision") {
+      byRecordId.set(event.payload.recordId, event);
+    } else {
+      passthrough.push(event);
+    }
+  }
+
+  for (const recordEvent of recordEvents) {
+    if (recordEvent.payload.kind !== "pm_decision") continue;
+    const existing = byRecordId.get(recordEvent.payload.recordId);
+    if (!existing || shouldReplaceWithRecordEvent(existing, recordEvent)) {
+      byRecordId.set(recordEvent.payload.recordId, recordEvent);
+    }
+  }
+
+  return [...passthrough, ...Array.from(byRecordId.values())]
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, limit);
+}
+
 export async function buildWatchTimelinePayload({
   mode,
   locale,
@@ -81,14 +125,26 @@ export async function buildWatchTimelinePayload({
     };
   }
 
-  const events = filterPublicTimelineEvents(result.entries, {
+  const decisionRecordsById =
+    stagingFixture?.decisionRecordsById ??
+    buildDecisionRecordIndex(await readAllDecisionRecords(500, locale));
+  const projectedEvents = filterPublicTimelineEvents(result.entries, {
     mode: "public",
     importanceThreshold: "high",
     locale,
-    decisionRecordsById:
-      stagingFixture?.decisionRecordsById ??
-      buildDecisionRecordIndex(await readAllDecisionRecords(500, locale)),
   });
+  const cutoff = servedAt - Math.max(1, Math.min(windowMinutes, 720)) * 60_000;
+  const recordEvents = Array.from(decisionRecordsById.values())
+    .map(projectDecisionRecordToPublicEvent)
+    .filter((event): event is PublicTimelineEvent => Boolean(event))
+    .filter(
+      (event) =>
+        event.locale === locale &&
+        event.ts < before &&
+        event.ts >= cutoff &&
+        (since === undefined || event.ts > since),
+    );
+  const events = mergeDecisionRecordBackfillEvents(projectedEvents, recordEvents, limit);
   const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
     0,
     MAX_EVIDENCE_MAP_ITEMS,
