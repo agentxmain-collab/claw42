@@ -803,6 +803,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       candidateKey: group.candidateKey,
       displayTitle: group.displayTitle,
       symbol: group.symbol,
+      lastUpdatedAt: group.latestAt,
       execution: {
         executable,
         coinwPair: executable ? symbolMapping.execution.coinwPair : null,

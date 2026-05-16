@@ -694,8 +694,13 @@
         "newAnalysisRunning": "新しい分析を実行中",
         "autoRefreshOnComplete": "完了後に自動更新",
         "cachedStateLabel": "キャッシュデータ",
+        "candidateBadges": {
+          "market_overview": "市場",
+          "hotspot": "注目"
+        },
         "watchOnlyLabel": "Watch only / フォロー不可",
-        "watchOnlyCopy": "この銘柄はまだ CoinW で実行できません。観察用の分析のみ表示します。"
+        "watchOnlyCopy": "この銘柄はまだ CoinW で実行できません。観察用の分析のみ表示します。",
+        "analysisOnlyCopy": "このカードは観察用の分析のみで、フォロー取引操作は表示しません。"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

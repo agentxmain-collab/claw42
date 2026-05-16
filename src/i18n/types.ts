@@ -256,8 +256,13 @@ export type DispatchV10Dict = {
     newAnalysisRunning: string;
     autoRefreshOnComplete: string;
     cachedStateLabel: string;
+    candidateBadges: {
+      market_overview: string;
+      hotspot: string;
+    };
     watchOnlyLabel: string;
     watchOnlyCopy: string;
+    analysisOnlyCopy: string;
   };
   placeholder: {
     title: string;

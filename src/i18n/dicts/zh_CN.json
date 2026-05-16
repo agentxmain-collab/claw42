@@ -694,8 +694,13 @@
         "newAnalysisRunning": "新分析进行中",
         "autoRefreshOnComplete": "完成后自动刷新",
         "cachedStateLabel": "缓存数据",
+        "candidateBadges": {
+          "market_overview": "大盘",
+          "hotspot": "热点"
+        },
         "watchOnlyLabel": "watch-only / 不可跟单",
-        "watchOnlyCopy": "该币种暂不支持 CoinW 跟单，仅展示观察分析。"
+        "watchOnlyCopy": "该币种暂不支持 CoinW 跟单，仅展示观察分析。",
+        "analysisOnlyCopy": "该卡片仅用于观察分析，不提供跟单操作。"
       },
       "placeholder": {
         "title": "跟单功能开发中",
