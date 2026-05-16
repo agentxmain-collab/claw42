@@ -9,6 +9,11 @@ import type { Locale } from "@/i18n/types";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import { isTeamMemberId, type TeamMemberId } from "@/lib/team/teamRegistry";
+import {
+  normalizeCandidateKey,
+  normalizeCandidateType,
+  type CandidateType,
+} from "@/lib/watch/decisionCandidate";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 import { comparePublicTimelineEvents } from "@/lib/watch/publicTimelineOrdering";
 import {
@@ -129,7 +134,41 @@ function normalizePublicTradeDecision(
 function executableForRecord(record: StrategyDecisionRecord | null, symbol: string) {
   const rawExecutable = (record as { executable?: unknown } | null)?.executable;
   if (typeof rawExecutable === "boolean") return rawExecutable;
+  if (typeof record?.candidate?.executable === "boolean") return record.candidate.executable;
   return resolveSymbolMapping(symbol).execution.executable;
+}
+
+function candidateMetaForRecord(record: StrategyDecisionRecord | null, symbol: string) {
+  const rawRecord = record as
+    | (StrategyDecisionRecord & {
+        candidateType?: unknown;
+        candidateKey?: unknown;
+        displayTitle?: unknown;
+      })
+    | null;
+  const candidateType = normalizeCandidateType(
+    record?.candidate?.candidateType ?? rawRecord?.candidateType,
+  );
+  const candidateKey =
+    normalizeCandidateKey(record?.candidate?.candidateKey ?? rawRecord?.candidateKey) ??
+    (candidateType === "symbol" ? symbol : undefined);
+  const displayTitle =
+    normalizeDisplayTitle(record?.candidate?.displayTitle ?? rawRecord?.displayTitle) ??
+    (candidateType === "symbol" ? `${symbol} 实时行情分析` : undefined);
+
+  return {
+    candidateType,
+    ...(candidateKey ? { candidateKey } : {}),
+    ...(displayTitle ? { displayTitle } : {}),
+  } satisfies {
+    candidateType: CandidateType;
+    candidateKey?: string;
+    displayTitle?: string;
+  };
+}
+
+function normalizeDisplayTitle(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
 function uniqueEvidenceIds(ids: unknown[]) {
@@ -195,6 +234,7 @@ function pmDecisionPayload(
     kind: "pm_decision",
     recordId,
     symbol,
+    ...candidateMetaForRecord(indexedRecord, symbol),
     executable: executableForRecord(indexedRecord, symbol),
     tradeDecision,
     rationaleByMember: derived.rationaleByMember,
@@ -222,6 +262,7 @@ export function projectDecisionRecordToPublicEvent(
     kind: "pm_decision",
     recordId: record.id,
     symbol,
+    ...candidateMetaForRecord(record, symbol),
     executable: executableForRecord(record, symbol),
     tradeDecision,
     rationaleByMember: derived.rationaleByMember,

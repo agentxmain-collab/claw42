@@ -1,4 +1,12 @@
 import type { Locale } from "@/i18n/types";
+import {
+  compareDecisionCandidateOrder,
+  decisionCandidateDedupeKey,
+  normalizeCandidateKey,
+  normalizeCandidateSymbol,
+  normalizeCandidateType,
+  type CandidateType,
+} from "@/lib/watch/decisionCandidate";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import {
   comparePublicTimelineEvents,
@@ -13,6 +21,9 @@ export type PmDecisionTimelineEvent = PublicTimelineEvent & {
 
 export interface DispatchTopicGroup {
   id: string;
+  candidateType: CandidateType;
+  candidateKey: string;
+  displayTitle?: string;
   symbol: string;
   locale: Locale;
   latestDecision: PmDecisionTimelineEvent;
@@ -27,13 +38,37 @@ function isPmDecisionEvent(event: PublicTimelineEvent): event is PmDecisionTimel
 }
 
 function normalizedSymbol(event: PmDecisionTimelineEvent) {
-  if (typeof event.payload.symbol !== "string") return null;
-  const symbol = event.payload.symbol.trim().replace(/^\$+/, "").toUpperCase();
-  return symbol && symbol !== "UNKNOWN" ? symbol : null;
+  return normalizeCandidateSymbol(event.payload.symbol);
 }
 
-function buildGroupId(locale: Locale, symbol: string, latest: PmDecisionTimelineEvent) {
-  return `${locale}:${symbol}:${latest.payload.recordId}`;
+function candidateIdentity(event: PmDecisionTimelineEvent) {
+  const candidateType = normalizeCandidateType(event.payload.candidateType);
+  const symbol = normalizedSymbol(event);
+  if (candidateType === "symbol" && !symbol) return null;
+  const candidateKey =
+    normalizeCandidateKey(event.payload.candidateKey) ??
+    (candidateType === "symbol" ? symbol : event.payload.recordId);
+  const groupingKey = decisionCandidateDedupeKey({
+    locale: event.locale,
+    candidateType,
+    candidateKey,
+    symbol,
+    recordId: event.payload.recordId,
+    ts: event.ts,
+  });
+  const renderSymbol = symbol ?? (candidateType === "symbol" ? null : candidateKey);
+  if (!candidateKey || !groupingKey || !renderSymbol) return null;
+  return {
+    candidateType,
+    candidateKey,
+    groupingKey,
+    symbol: renderSymbol,
+    displayTitle: event.payload.displayTitle,
+  };
+}
+
+function buildGroupId(locale: Locale, candidateKey: string, latest: PmDecisionTimelineEvent) {
+  return `${locale}:${candidateKey}:${latest.payload.recordId}`;
 }
 
 function uniqueEvidenceIds(events: PmDecisionTimelineEvent[]) {
@@ -43,24 +78,49 @@ function uniqueEvidenceIds(events: PmDecisionTimelineEvent[]) {
 function groupAcceptsEvent(
   group: DispatchTopicGroup,
   event: PmDecisionTimelineEvent,
-  symbol: string,
+  groupingKey: string,
 ) {
   return (
     group.locale === event.locale &&
-    group.symbol === symbol &&
+    topicKey(group.locale, group.candidateType, group.candidateKey, group.latestAt) ===
+      groupingKey &&
     group.latestAt - event.ts <= TOPIC_AGGREGATION_WINDOW_MS
   );
 }
 
-function topicKey(locale: Locale, symbol: string) {
-  return `${locale}:${symbol}`;
+function topicKey(locale: Locale, candidateType: CandidateType, candidateKey: string, ts: number) {
+  return (
+    decisionCandidateDedupeKey({
+      locale,
+      candidateType,
+      candidateKey,
+      symbol: candidateType === "symbol" ? candidateKey : null,
+      ts,
+    }) ?? `${locale}:${candidateType}:${candidateKey}`
+  );
 }
 
 function compareGroups(a: DispatchTopicGroup, b: DispatchTopicGroup) {
-  const timeDelta = b.latestAt - a.latestAt;
-  if (timeDelta !== 0) return timeDelta;
-  return publicTimelineEventStableId(a.latestDecision).localeCompare(
-    publicTimelineEventStableId(b.latestDecision),
+  return (
+    compareDecisionCandidateOrder(
+      {
+        candidateType: a.candidateType,
+        candidateKey: a.candidateKey,
+        recordId: a.latestDecision.payload.recordId,
+        symbol: a.symbol,
+        lastUpdatedAt: a.latestAt,
+      },
+      {
+        candidateType: b.candidateType,
+        candidateKey: b.candidateKey,
+        recordId: b.latestDecision.payload.recordId,
+        symbol: b.symbol,
+        lastUpdatedAt: b.latestAt,
+      },
+    ) ||
+    publicTimelineEventStableId(a.latestDecision).localeCompare(
+      publicTimelineEventStableId(b.latestDecision),
+    )
   );
 }
 
@@ -69,7 +129,7 @@ function finalizeGroup(group: DispatchTopicGroup): DispatchTopicGroup {
   const latestDecision = decisionsInWindow[0];
   return {
     ...group,
-    id: buildGroupId(group.locale, group.symbol, latestDecision),
+    id: buildGroupId(group.locale, group.candidateKey, latestDecision),
     latestDecision,
     decisionsInWindow,
     evidenceIds: uniqueEvidenceIds(decisionsInWindow),
@@ -86,10 +146,10 @@ export function groupPublicTimelineEventsByTopic(
   const seenTopics = new Set<string>();
 
   for (const event of decisions) {
-    const symbol = normalizedSymbol(event);
-    if (!symbol) {
+    const identity = candidateIdentity(event);
+    if (!identity) {
       if (process.env.NODE_ENV !== "test") {
-        console.warn("[claw42] skipped pm_decision without symbol", {
+        console.warn("[claw42] skipped pm_decision without candidate identity", {
           eventId: event.id,
           recordId: event.payload.recordId,
         });
@@ -97,7 +157,7 @@ export function groupPublicTimelineEventsByTopic(
       continue;
     }
 
-    const existing = groups.find((group) => groupAcceptsEvent(group, event, symbol));
+    const existing = groups.find((group) => groupAcceptsEvent(group, event, identity.groupingKey));
     if (existing) {
       existing.decisionsInWindow.push(event);
       existing.evidenceIds = uniqueEvidenceIds(existing.decisionsInWindow);
@@ -105,13 +165,16 @@ export function groupPublicTimelineEventsByTopic(
       continue;
     }
 
-    const key = topicKey(event.locale, symbol);
+    const key = topicKey(event.locale, identity.candidateType, identity.candidateKey, event.ts);
     if (seenTopics.has(key)) continue;
     seenTopics.add(key);
 
     groups.push({
-      id: buildGroupId(event.locale, symbol, event),
-      symbol,
+      id: buildGroupId(event.locale, identity.candidateKey, event),
+      candidateType: identity.candidateType,
+      candidateKey: identity.candidateKey,
+      ...(identity.displayTitle ? { displayTitle: identity.displayTitle } : {}),
+      symbol: identity.symbol,
       locale: event.locale,
       latestDecision: event,
       decisionsInWindow: [event],

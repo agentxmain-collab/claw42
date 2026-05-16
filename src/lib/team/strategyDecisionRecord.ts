@@ -2,6 +2,7 @@ import type { DebateDirection, FactionId } from "@/lib/types";
 import type { Locale } from "@/i18n/types";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
+import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import type { MarketDataSource } from "@/modules/agent-watch/types";
 
 export type RecordSource = "live" | "paper" | "legacy" | "backtest";
@@ -125,6 +126,11 @@ export interface StrategyDecisionRecord {
   recordSource: RecordSource;
   /** Uppercase market symbol such as BTC or ETH. */
   symbol: string;
+  /**
+   * Optional candidate contract for B.14 multi-type decisions. Missing means
+   * legacy symbol candidate and must remain publicly renderable.
+   */
+  candidate?: DecisionCandidate;
   /** Locale used for all natural-language decision text. */
   locale: Locale;
   /** PM owner for new records; legacy data remains explicitly bucketed as legacy. */
