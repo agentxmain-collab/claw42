@@ -485,8 +485,38 @@ describe("publicTimelineProjection", () => {
     expect(event.id).toBe(`pm-decision:${decisionRecord.id}`);
     expect(event.payload.recordId).toBe(decisionRecord.id);
     expect(event.payload.symbol).toBe("BTC");
+    expect(event.payload.candidateType).toBe("symbol");
+    expect(event.payload.candidateKey).toBe("BTC");
+    expect(event.payload.displayTitle).toBe("BTC 实时行情分析");
     expect(event.payload.executable).toBe(true);
     expect(event.payload.rounds).toHaveLength(3);
+  });
+
+  it("projects explicit non-symbol decision candidate metadata without dropping the record", () => {
+    const marketRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-market-overview",
+      symbol: "MARKET",
+      tradeDecision: null,
+      candidate: {
+        candidateType: "market_overview",
+        candidateKey: "market_overview:daily:zh_CN:2026-05-16",
+        displayTitle: "今日大盘综述",
+        executable: false,
+        cadence: "daily",
+        score: 100,
+        reasons: [],
+      },
+    };
+
+    const event = projectDecisionRecordToPublicEvent(marketRecord);
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.recordId).toBe("record-market-overview");
+    expect(event.payload.candidateType).toBe("market_overview");
+    expect(event.payload.candidateKey).toBe("market_overview:daily:zh_CN:2026-05-16");
+    expect(event.payload.displayTitle).toBe("今日大盘综述");
+    expect(event.payload.executable).toBe(false);
   });
 
   it("projects schema v2 multi-round records while keeping latest rationale maps", () => {

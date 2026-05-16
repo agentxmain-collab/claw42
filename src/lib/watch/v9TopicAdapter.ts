@@ -706,6 +706,7 @@ function makeTitle(
   hasRenderableTradeDecision: boolean,
   hasRationale: boolean,
 ) {
+  if (group.displayTitle) return group.displayTitle;
   if (!hasRenderableTradeDecision && !hasRationale) {
     return `${group.symbol} 实时行情分析`;
   }
@@ -798,6 +799,9 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
 
     return {
       id: recordId,
+      candidateType: group.candidateType,
+      candidateKey: group.candidateKey,
+      displayTitle: group.displayTitle,
       symbol: group.symbol,
       execution: {
         executable,

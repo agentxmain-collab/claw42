@@ -81,6 +81,33 @@ describe("groupPublicTimelineEventsByTopic", () => {
     ]);
   });
 
+  it("groups non-symbol candidate records by candidate key instead of dropping them", () => {
+    const groups = groupPublicTimelineEventsByTopic([
+      pmDecision("market-overview", {
+        symbol: "MARKET",
+        payload: {
+          kind: "pm_decision",
+          recordId: "market-overview",
+          symbol: "MARKET",
+          candidateType: "market_overview",
+          candidateKey: "market_overview:daily:zh_CN:2026-05-13",
+          displayTitle: "今日大盘综述",
+          executable: false,
+          tradeDecision: null,
+          rationaleByMember: {},
+        },
+      }),
+    ]);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({
+      candidateType: "market_overview",
+      candidateKey: "market_overview:daily:zh_CN:2026-05-13",
+      displayTitle: "今日大盘综述",
+      symbol: "MARKET",
+    });
+  });
+
   it("skips events without a usable symbol", () => {
     expect(
       groupPublicTimelineEventsByTopic([pmDecision("missing", { symbol: "UNKNOWN" })]),

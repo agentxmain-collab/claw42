@@ -1,3 +1,70 @@
+# B.14 Stage 0 Contract Gate 报告
+
+Codex time: 2026-05-16 22:35 CST
+Base: `origin/main` = `b0a051a4dd1e1aa7674dd497e83c6bd992ac0801`
+Branch: `feature/b14-stage0-contract`
+Scope: Stage 0 only. Stage 1 not started in this PR.
+
+## T100 DecisionCandidate + public payload contract
+
+- Added `src/lib/watch/decisionCandidate.ts` with `CandidateType`, `DecisionCandidate`, cadence, canonical score/reason contract, normalization helpers, dedupe key helper, and ordering comparator.
+- Added `StrategyDecisionRecord.candidate?: DecisionCandidate` as optional schema extension. Missing candidate data remains a legacy symbol candidate.
+- Extended public `pm_decision` payload with optional `candidateType`, `candidateKey`, `displayTitle`, and kept `executable` optional for legacy payloads.
+- Projection writes legacy fallback metadata:
+  - missing `candidateType` => `symbol`
+  - missing `candidateKey` => normalized symbol for symbol records
+  - missing `displayTitle` => `<SYMBOL> 实时行情分析`
+- Explicit non-symbol candidate projection test covers `market_overview` staying public with `executable=false`.
+
+## T101 Canonical ordering comparator
+
+Implemented canonical comparator order:
+
+1. `market_overview`
+2. `hotspot`
+3. `symbol`
+4. score desc
+5. `lastUpdatedAt` desc
+6. `candidateKey / recordId / symbol` lexicographic tie
+
+Unit tests cover:
+
+- 3 type ordering.
+- same type score priority.
+- same type + score uses `lastUpdatedAt`.
+- same timestamp uses lexicographic `candidateKey / recordId`.
+- final merge path sorts after Map collection, so insertion order is not the final ordering.
+
+## T102 History dedupe key by candidateType
+
+Implemented `publicTimelinePmCandidateKey()` and switched `mergePublicTimelineEvents()` to candidate keys:
+
+- symbol: `${locale}:${symbol}`
+- market_overview: `${locale}:market_overview:${YYYY-MM-DD}`
+- hotspot: `${locale}:hotspot:${candidateKey}`
+
+Legacy malformed symbol payloads still skip grouping instead of becoming fake symbol records. Non-symbol candidates group by candidate key and do not require a tradable symbol.
+
+## T103 Stage 0 gate
+
+Stage 0 is isolated in this PR. No PM pipeline, evidence dispatcher, refresh, candidate ranking, V10 layout, prod, or cron config changes.
+
+Verification passed:
+
+- `npx vitest run src/lib/watch/__tests__/publicTimelineOrdering.test.ts src/lib/watch/__tests__/topicAggregator.test.ts src/lib/watch/__tests__/publicTimelineProjection.test.ts`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run verify`
+- `npm run verify:a11y`
+- `npm run verify:metrics`
+- `npm run build`
+
+Note: first `npm run build` was accidentally run in parallel with `verify:a11y`, which starts a Next dev server and writes the same `.next` directory. That caused a transient Next `/_document` ENOENT. I removed the generated `.next` cache and reran build serially; the serial build passed. No source changes were made for that transient cache collision.
+
+`leakCount=0` is preserved by scope: this PR does not touch generation wording / public content guardrails, and `npm run verify` still includes the chat final + public watch pipeline checks.
+
+[DOC-HINT: B.14 Stage 1 should start from this merged contract and reuse DecisionCandidate/publicTimelinePmCandidateKey instead of reintroducing symbol-only keys.]
+
 # B.13 hotfix-2 Task B 双脑调研报告
 
 Codex time: 2026-05-16 12:05 CST  
