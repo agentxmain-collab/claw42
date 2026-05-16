@@ -4,6 +4,7 @@ import {
   dataStatusForMember,
   evidenceIdsForMember,
   formatRoleEvidenceContext,
+  shouldAbstainMember,
 } from "@/lib/team/evidenceDispatcher";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { SignalRecord } from "@/modules/agent-watch/types";
@@ -69,6 +70,27 @@ describe("evidenceDispatcher", () => {
 
     expect(dataStatusForMember("neutral_reviewer", pack)).toBe("partial");
     expect(dataStatusForMember("news_analyst", pack)).toBe("missing");
+    expect(shouldAbstainMember("news_analyst", pack)).toBe(true);
+    expect(shouldAbstainMember("chart_analyst", pack)).toBe(false);
+  });
+
+  it("does not treat topic selection evidence as news analyst evidence", async () => {
+    const pack = await buildEvidenceContextPack({
+      symbol: "BILL",
+      recentMarketSignals: [signal("BILL")],
+      recentNewsEvidence: [
+        {
+          ...evidence("BILL"),
+          id: "topic_selection:BILL:ranked",
+          source: "Topic Selector",
+          summary: "BILL selected by internal ranking",
+        },
+      ],
+    });
+
+    expect(pack.news.status).toBe("missing");
+    expect(evidenceIdsForMember("news_analyst", pack)).toEqual([]);
+    expect(shouldAbstainMember("news_analyst", pack)).toBe(true);
   });
 
   it("does not instruct roles to expose backend availability in public output", async () => {

@@ -19,6 +19,7 @@ export interface MultiRoundAnalystOutput {
   dataStatus?: AnalystDataStatus;
   citations: string[];
   observedAt: string;
+  abstained?: boolean;
 }
 
 export interface RunMultiRoundAnalystDebateInput {
@@ -42,11 +43,19 @@ export interface RunMultiRoundAnalystDebateInput {
 
 function formatRoundTranscript(outputs: readonly MultiRoundAnalystOutput[]) {
   return outputs
+    .filter((output) => !output.abstained && output.rationale.trim().length > 0)
     .map(
-      (output) =>
-        `- ${output.memberId}: ${output.direction} ${output.confidence} ${output.rationale}`,
+      (output, index) =>
+        `- prior view ${index + 1}: stance=${publicDirectionLabel(output.direction)}, confidence=${output.confidence.toFixed(
+          2,
+        )}, rationale=${output.rationale}`,
     )
     .join("\n");
+}
+
+function publicDirectionLabel(direction: AnalystDirection) {
+  if (direction === "wait") return "no-action";
+  return direction;
 }
 
 export function buildAnalystRoundPrompt({
@@ -69,6 +78,7 @@ Round 1: produce your independent view without trying to average other roles.`;
 
 ## Debate round
 Round ${round}: refine your view based on the previous round. Keep your own mandate, call out what changed, and do not invent evidence.
+Do not cite prior participant names or internal role ids. Refer only to "prior view" or "market view".
 
 ## Previous round outputs
 ${formatRoundTranscript(previousRoundOutputs) || "- none"}`;

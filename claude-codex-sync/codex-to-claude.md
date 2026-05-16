@@ -642,3 +642,184 @@ Preview URL: `https://claw42-site-9nmo848gu-agentxmain-collabs-projects.vercel.a
 Vercel preview 的数据一致性现在有一层隐患：旧 main preview 能读到 `pm:BILL:1778923198583`，feature/prebuilt preview 没读到同一条。这不是本次 duplicate/order bug 的根因，但会影响 Dan 用不同 preview URL 做肉眼验收时的观感。建议 hotfix-4 merge 后，用 main HEAD preview 再跑同一套 5 次 API + UI 刷新，确认它在 full preview KV 上保留最新 BILL 而不是旧 BILL。
 
 [DOC-HINT: future B.13 stage gates should record the exact preview URL lineage and data env, because branch preview / prebuilt preview / main preview may not expose identical KV state.]
+
+# B.13 hotfix-5 内容质量调研 + 实测报告
+
+时间：2026-05-16
+
+分支：`feature/b13-hotfix5-content-leak-cleanup`
+
+Spec：`docs/codex-specs/spec-watch-B13-hotfix5-content-leak-cleanup.md` v1.0
+
+## Task A first-hand 调研
+
+### 1. 修复前真 PM run 原始输出
+
+我在 preview env 下直接跑真实 `runPmDecisionPipeline()`，symbol=`BILL`，生成 record：
+
+- `pm:BILL:1778929749069`
+- raw artifact：`claude-codex-sync/artifacts/b13-hotfix5-before-run.json`
+
+修复前单条 raw JSON 命中：
+
+- `缺失`: 81
+- `没有`: 29
+- `无`: 311
+- `等待`: 106
+- `wait`: 73
+- `缺乏`: 75
+- `未配置`: 84
+- `不可用`: 20
+- `chart_analyst`: 22
+- `bullish_researcher`: 14
+- `bearish_researcher`: 14
+- `research_lead`: 7
+- `risk_lead`: 7
+
+典型 raw rationale：
+
+```text
+fundamental_analyst:
+协议映射未配置，营收、解锁、流动性等核心基本面数据均不可用。价格区间变动信号（24h -10.45%）属于市场行为，非基本面催化剂。无估值锚点或叙事支撑。需等待协议数据接入或可量化的基本面事件（如TVL变化、代币解锁计划）出现。
+
+onchain_analyst:
+本轮无新增链上证据。Etherscan和DefiLlama映射均未配置，BILL代币的钱包行为、交易所流量、鲸鱼活动、稳定币流动性全部不可见。唯一输入是价格区间变动警报，但链上分析师不能仅凭价格信号判断方向。其他角色（新闻、图表、空头研究员）基于同一价格信号给出short立场，但链上层面无任何数据支撑或反驳这些判断。证据集厚度为零，维持中性，等待链上基础设施就绪。
+
+research_lead:
+唯一硬信号是BILL 24小时-10.45%的区间变动警报，价格逼近40整数关口。但链上数据（Etherscan/DefiLlama）和基本面协议映射均未配置，新闻、图表、空头研究员等基于同一价格信号给出偏空判断，而多头、保守派、中立派均因证据不足而等待。证据集厚度为零，无法区分恐慌抛售、流动性枯竭或假突破。团队没有形成可执行的连贯论点，多空双方都依赖单一价格信号，缺乏交叉验证。
+
+PM detailedRationale:
+唯一硬信号是24小时跌幅10.45%至40.63，但链上数据（Etherscan/DefiLlama）和基本面协议映射均未配置，新闻、图表、空头研究员等基于同一价格信号给出偏空判断，而多头、保守派、中立派均因证据不足而等待。证据集厚度为零，无法区分恐慌抛售、流动性枯竭或假突破。团队没有形成可执行的连贯论点，多空双方都依赖单一价格信号，缺乏交叉验证。
+```
+
+### 2. prompt / evidence / PM 汇总 grep 结论
+
+根因不是单一 UI 文案，而是三层同时泄漏：
+
+1. `docs/agent-ip/team/*.md` 原 prompt 明确要求角色说出数据不可用/缺席状态。例如 onchain/fundamental/news/memory/risk prompt 都允许或鼓励“如果没有数据就说没有”。
+2. `src/lib/team/evidenceDispatcher.ts` 原来把缺 source / connector / mapping 的状态写进 evidence summary，甚至 CoinW kline fetch 失败会生成 `CoinW kline context unavailable...` 这种证据项。
+3. `src/lib/team/pmDecisionPipeline.ts` 和 `src/lib/team/multiRoundPipeline.ts` 的 lead / PM prompt 以 `memberId: rationale` 形式拼 transcript，导致 PM 很自然复述 `chart_analyst`、`bullish_researcher` 等内部 ID。
+4. `src/lib/watch/publicTimelineProjection.ts` 原来即使 round 清洗失败，仍可能 fallback 到 raw `input.rationale`，旧脏 KV record 可绕过清洗。
+
+## Task B 修复层
+
+### 1. Prompt 层
+
+14 个 `docs/agent-ip/team/*.md` 都增加 `Public Output Guardrails`：
+
+- 禁止 public payload 说数据缺口、后台状态、等待数据更新、内部 TeamMemberId。
+- 证据不足时角色 abstain：空 public rationale + confidence 0，而不是编一段“暂无/等待/缺失”的废话。
+- 清掉原 prompt 中“如果缺数据就说缺数据”的冲突句。
+
+### 2. Evidence dispatcher 层
+
+关键改动：
+
+- `src/lib/team/evidenceDispatcher.ts:67-72`：为 fundamental/news/chart/onchain/trader 建 required domain。
+- `src/lib/team/evidenceDispatcher.ts:171-173`：CoinW kline fetch 失败不再生成 `unavailable` evidence item。
+- `src/lib/team/evidenceDispatcher.ts:177-183`：topic selector synthetic evidence 不再喂给 news analyst。
+- `src/lib/team/evidenceDispatcher.ts:389-398`：required domain missing 时该角色直接 abstain，不再拿 broad market context 硬说。
+- `src/lib/team/evidenceDispatcher.ts:414-419`：role evidence context 只允许 market-facing 表述，不暴露 backend/source/process。
+
+### 3. Pipeline / PM 汇总层
+
+关键改动：
+
+- `src/lib/watch/publicContentGuardrails.ts` 新增 public 内容守门：禁词、TeamMemberId、post-hoc clean/scan。
+- `src/lib/team/pmDecisionPipeline.ts:234-241`：LLM 首次输出脏文案时，第二次 retry 只做 market-facing rewrite，不放宽过滤。
+- `src/lib/team/pmDecisionPipeline.ts:259-292`：analyst output 生成后过 public leak check，失败则 abstain。
+- `src/lib/team/pmDecisionPipeline.ts:1122-1125`：pipeline 只调用未 abstain 的角色。
+- `src/lib/team/pmDecisionPipeline.ts:1207-1230`：research/risk lead 也过 public leak check，失败则整轮不发布。
+- `src/lib/team/multiRoundPipeline.ts`：round transcript 改成 `prior view N`，不再 inline `output.memberId`。
+- `src/lib/team/tradeDecisionPromptBuilder.ts`：PM prompt 改成 `decision input N`，不再要求 public text 复述后台状态。
+
+### 4. Public projection 层
+
+关键改动：
+
+- `src/lib/watch/publicTimelineProjection.ts:118-122`：tradeDecision 的 `riskNote/invalidatesIf` 含后台词时不投影到 public。
+- `src/lib/watch/publicTimelineProjection.ts:260-314`：analyst input / rounds 进入 public 前逐字段 clean。
+- `src/lib/watch/publicTimelineProjection.ts:351-360`：如果 clean 后没有 rationale，不再 fallback raw rationale，避免旧脏 record 复活。
+
+## Task C 实测验证
+
+### 最终代码真 PM run
+
+最终代码下补跑两组真实 PM：
+
+- raw artifact：`claude-codex-sync/artifacts/b13-hotfix5-after-final-runs.json`
+- raw artifact：`claude-codex-sync/artifacts/b13-hotfix5-after-final-2-runs.json`
+
+成功发布 6 条真实 record，其中后 6 条 public text scan 结果：
+
+```json
+{
+  "successRecordCount": 6,
+  "textFieldCount": 263,
+  "leakCount": 0,
+  "leaks": []
+}
+```
+
+成功记录：
+
+```text
+pm:BILL:1778932392351 short inputs=9
+PM: 当前价格40.63接近40美元整数关口，若出现放量企稳可能触发空头回补与逢低买盘，形成短期反弹。追空风险收益比已下降，盈亏比接近1:1。 价格反弹站稳41.50美元上方
+
+pm:BILL:1778932385360 short inputs=9
+PM: 追空风险收益比恶化：24小时跌幅10.45%后距40美元整数关口仅1.5%，该位置存在历史技术性买盘博弈，若放量企稳可能快速反弹至41.50-42美元区域，触发止损。 价格站稳42美元上方或40美元附近出现放量企稳且反弹突破41.80美元。
+
+pm:BILL:1778932505360 short inputs=9
+PM: 追空风险收益比已恶化，40美元整数关口可能形成支撑，若放量企稳或快速反弹至41.50-42.00区域，空头动能将衰竭并可能引发空头挤压。 价格反弹并站稳41.50上方，或40美元附近出现放量企稳信号。
+
+pm:BILL:1778932565360 short inputs=9
+PM: 空头动能明确但价格已进入40美元支撑区间，存在假突破风险。若24小时内成交量回升至均值1.5倍以上且价格站稳41.50，则空头逻辑将被快速证伪，形成空头挤压。波动率扩张下双向波动放大，仓位已降至常规规模的50%-60%。 价格反弹并站稳42美元上方，或24小时内成交量回升至均值1.5倍以上且价格站稳41.50
+
+pm:BILL:1778932625360 short inputs=9
+PM: 主要失败模式为假突破风险：40美元整数关口是前期多头共识支撑位，若该位置出现放量企稳，则当前空头动能可能被技术性买盘消化，形成空头陷阱。 价格在40美元上方收出长下影线或阳线，且成交量未萎缩
+
+pm:BILL:1778932685360 short inputs=8
+PM: 连续急跌后价格未有效跌破40整数位，反弹风险累积。若40整数位守住且反弹突破41.5，则空头止损42.5触发概率上升。仓位已减半，止损收紧至42.0以控制风险。 价格放量阳线收复42.0关口，或跌破40.0后未继续下行而快速反弹至41.5以上。
+```
+
+### 扫描口径
+
+我扫描的是 public payload 的用户可见文本字段：
+
+- `rationaleByMember` values
+- `rounds[].rationale / oneLineSummary / detailedRationale`
+- `tradeDecision.riskNote / invalidatesIf`
+- `stageTrace[].note`
+
+没有扫描整个 JSON 字符串。原因：当前 public API schema 仍然合法包含结构字段 `rounds[].memberId`、`stageTrace[].memberIds`、`rationaleByMember` keys。若要求“整个 public JSON 里 TeamMemberId 字符串为 0”，那不是 hotfix 文案清理，而是一次 public schema migration，需要新 spec 拍板。
+
+当前验证结论：用户可见文本字段中，禁词/后台白话/TeamMemberId = 0。
+
+## F 没问到的 angle
+
+1. 这次问题不能只靠 UI hide，也不能只靠 prompt 禁止。旧 KV record 和新 LLM 输出都可能进入 public，所以必须同时做 generation guardrail + projection guardrail。
+2. “abstain 不发声”会降低某些轮次成功率；这不是坏事。现在不干净的 lead 会让整轮不发布，避免脏文案进 public。后续如果要提高产出率，应做 structured rewrite / constrained decoder，而不是放宽禁词。
+3. 当前 schema 仍公开 `memberId` 结构字段。Dan 看到的是文案泄漏；如果下一步要连结构字段也产品化，需要把 public contract 从 `TeamMemberId` keys 迁成 display-role ids 或匿名 stage-view ids。
+
+## 验证
+
+已通过：
+
+- `npx vitest run src/lib/team/__tests__/pmDecisionPipeline.test.ts src/lib/team/__tests__/evidenceDispatcher.test.ts src/lib/team/__tests__/multiRoundPipeline.test.ts src/lib/watch/__tests__/publicTimelineProjection.test.ts`
+- `npm run verify`
+  - `format:check`
+  - `typecheck`
+  - `lint`
+  - `verify:agent-ip`
+  - `verify:news`
+  - `test:news`
+  - `test:watch-pipeline`：46 files / 249 tests pass
+  - `verify:chat-v3-final`：50/50 pass
+- `npm run verify:a11y`：checked routes 0 axe violations
+- `npm run verify:metrics`：2 files / 5 tests pass
+- `npm run build`
+
+待 PR 后继续：Vercel preview，不带 `--prod`。
+
+[DOC-HINT: B.14 public schema cleanup should decide whether public JSON may expose TeamMemberId as structural keys; hotfix-5 only guarantees user-visible text fields are clean.]

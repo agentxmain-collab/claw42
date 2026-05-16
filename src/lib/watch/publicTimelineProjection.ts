@@ -11,6 +11,10 @@ import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import { isTeamMemberId, type TeamMemberId } from "@/lib/team/teamRegistry";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 import { comparePublicTimelineEvents } from "@/lib/watch/publicTimelineOrdering";
+import {
+  cleanPublicDecisionText,
+  containsPublicContentLeak,
+} from "@/lib/watch/publicContentGuardrails";
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
 
 export interface PublicTimelineProjectionOptions {
@@ -115,6 +119,7 @@ function normalizePublicTradeDecision(
   decision: StrategyDecisionRecord["tradeDecision"] | null | undefined,
 ): StrategyDecisionRecord["tradeDecision"] | null {
   if (!decision) return null;
+  if (containsPublicContentLeak(`${decision.riskNote}\n${decision.invalidatesIf}`)) return null;
   return {
     ...decision,
     symbol: normalizePublicSymbol(decision.symbol) ?? "UNKNOWN",
@@ -258,22 +263,37 @@ function publicRoundsForInput(
   const sourceRounds = Array.isArray(input.rounds) ? input.rounds : [];
   if (sourceRounds.length > 0) {
     return sourceRounds
-      .filter((round) => typeof round.rationale === "string" && round.rationale.trim().length > 0)
-      .map((round) => ({
-        round: Number.isFinite(round.round) && round.round > 0 ? Math.round(round.round) : 1,
-        memberId,
-        direction: round.direction,
-        confidence: round.confidence,
-        rationale: round.rationale.trim(),
-        oneLineSummary: summaryForRound(round.oneLineSummary, round.rationale),
-        detailedRationale: detailForRound(round.detailedRationale, round.rationale),
-        dataStatus: round.dataStatus ?? "ok",
-        ...(round.evidenceIds.length > 0 ? { evidenceIds: round.evidenceIds.filter(Boolean) } : {}),
-        ...(round.observedAt ? { observedAt: round.observedAt } : {}),
-      }));
+      .map<PublicDecisionRoundEntry | null>((round) => {
+        const rationale = cleanPublicDecisionText(round.rationale);
+        if (!rationale) return null;
+        const oneLineSummary = cleanPublicDecisionText(
+          summaryForRound(round.oneLineSummary, rationale),
+        );
+        const detailedRationale = cleanPublicDecisionText(
+          detailForRound(round.detailedRationale, rationale),
+        );
+        const evidenceIds = Array.isArray(round.evidenceIds)
+          ? round.evidenceIds.filter(Boolean)
+          : [];
+        return {
+          round: Number.isFinite(round.round) && round.round > 0 ? Math.round(round.round) : 1,
+          memberId,
+          direction: round.direction,
+          confidence: round.confidence,
+          rationale,
+          oneLineSummary: oneLineSummary ?? summaryForRound(undefined, rationale),
+          detailedRationale: detailedRationale ?? rationale,
+          dataStatus: round.dataStatus ?? "ok",
+          ...(evidenceIds.length > 0 ? { evidenceIds } : {}),
+          ...(round.observedAt ? { observedAt: round.observedAt } : {}),
+        };
+      })
+      .filter((round): round is PublicDecisionRoundEntry => Boolean(round));
   }
 
-  const rationale = typeof input.rationale === "string" ? input.rationale.trim() : "";
+  const rationale = cleanPublicDecisionText(
+    typeof input.rationale === "string" ? input.rationale.trim() : "",
+  );
   if (!rationale) return [];
   return [
     {
@@ -282,8 +302,11 @@ function publicRoundsForInput(
       direction: input.direction,
       confidence: input.confidence,
       rationale,
-      oneLineSummary: summaryForRound(input.oneLineSummary, rationale),
-      detailedRationale: detailForRound(input.detailedRationale, rationale),
+      oneLineSummary:
+        cleanPublicDecisionText(summaryForRound(input.oneLineSummary, rationale)) ??
+        summaryForRound(undefined, rationale),
+      detailedRationale:
+        cleanPublicDecisionText(detailForRound(input.detailedRationale, rationale)) ?? rationale,
       dataStatus: input.dataStatus ?? "ok",
       ...(Array.isArray(input.evidenceIds) && input.evidenceIds.length > 0
         ? { evidenceIds: input.evidenceIds.filter(Boolean) }
@@ -332,14 +355,9 @@ export function publicDecisionProcessFromRecord(record: StrategyDecisionRecord |
       (latest, current) => (!latest || current.round >= latest.round ? current : latest),
       undefined,
     );
-    const rationale =
-      latestRound?.rationale ?? (typeof input.rationale === "string" ? input.rationale.trim() : "");
+    const rationale = latestRound?.rationale ?? "";
     if (rationale) rationaleByMember[memberId] = rationale;
-    const evidenceIds = latestRound?.evidenceIds?.length
-      ? latestRound.evidenceIds
-      : Array.isArray(input.evidenceIds)
-        ? input.evidenceIds.filter(Boolean)
-        : [];
+    const evidenceIds = latestRound?.evidenceIds?.length ? latestRound.evidenceIds : [];
     if (evidenceIds.length > 0) citationsByMember[memberId] = evidenceIds;
   }
 

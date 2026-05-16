@@ -12,6 +12,7 @@ import {
   dataStatusForMember,
   evidenceIdsForMember,
   formatRoleEvidenceContext,
+  shouldAbstainMember,
   type EvidenceContextPack,
 } from "@/lib/team/evidenceDispatcher";
 import type {
@@ -46,6 +47,10 @@ import {
   publicStageTraceFromRecord,
 } from "@/lib/watch/publicTimelineProjection";
 import { appendWatchHistoryEntry } from "@/lib/watchHistoryStore";
+import {
+  cleanPublicDecisionText,
+  containsPublicContentLeak,
+} from "@/lib/watch/publicContentGuardrails";
 import type { Locale } from "@/i18n/types";
 import {
   allTextMatchesLocale,
@@ -85,6 +90,7 @@ interface AnalystOutput {
   detailedRationale?: string;
   dataStatus?: AnalystDataStatus;
   citations: string[];
+  abstained?: boolean;
 }
 
 interface LeadOutput {
@@ -196,6 +202,11 @@ function tradeInputDirection(direction: AnalystDirection): "long" | "short" | "n
   return direction === "long" || direction === "short" ? direction : "neutral";
 }
 
+function publicDirectionForContext(direction: AnalystDirection) {
+  if (direction === "wait") return "no-action";
+  return direction;
+}
+
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -208,6 +219,26 @@ function truncateText(value: string, maxLength: number) {
 
 function oneLineSummaryFromRationale(rationale: string) {
   return truncateText(rationale.replace(/\s+/g, " "), 80);
+}
+
+function outputLeaksPublicContent(output: {
+  rationale?: string;
+  oneLineSummary?: string;
+  detailedRationale?: string;
+}) {
+  return [output.rationale, output.oneLineSummary, output.detailedRationale].some((text) =>
+    containsPublicContentLeak(text),
+  );
+}
+
+function buildPublicRewriteRetryInstruction() {
+  return [
+    "The previous JSON used backstage wording that cannot appear in public output.",
+    "Rewrite the public text as a market-facing decision note.",
+    "Use only price action, risk/reward, consensus strength, and concrete invalidation levels.",
+    "Do not mention connectors, dataset availability, future source updates, operational state, or internal participant identifiers.",
+    "If there is no market-facing point to make, return an empty rationale and confidence 0.",
+  ].join("\n");
 }
 
 function parseObject(text: string): Record<string, unknown> {
@@ -235,7 +266,11 @@ async function defaultGenerateAnalystOutput(
   let lastError: unknown = null;
   for (const attempt of ["first", "retry"] as const) {
     const text = await generateText(
-      attempt === "first" ? prompt : `${prompt}\n\n${buildLocaleRetryInstruction(locale)}`,
+      attempt === "first"
+        ? prompt
+        : `${prompt}\n\n${buildLocaleRetryInstruction(
+            locale,
+          )}\n\n${buildPublicRewriteRetryInstruction()}`,
       {
         taskTag: `watch:pm-decision:${memberId}:${locale}:${attempt}`,
         temperature: 0.35,
@@ -256,6 +291,9 @@ async function defaultGenerateAnalystOutput(
       const oneLineSummary =
         cleanText(parsed.oneLineSummary) || oneLineSummaryFromRationale(rationale);
       const dataStatus = normalizeDataStatus(parsed.dataStatus, fallbackDataStatus);
+      if (outputLeaksPublicContent({ rationale, oneLineSummary, detailedRationale })) {
+        throw new Error(`${memberId} analyst output leaked backend/internal wording`);
+      }
       return {
         memberId,
         direction: normalizeDirection(parsed.direction),
@@ -286,31 +324,23 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): 
   });
 }
 
-function fallbackAnalystOutput(
-  memberId: TeamMemberId,
-  locale: Locale,
-  error: unknown,
-): AnalystOutput {
+function abstainAnalystOutput(memberId: TeamMemberId, error: unknown): AnalystOutput {
   if (process.env.NODE_ENV !== "test") {
-    console.warn("[claw42] PM analyst role fallback used", {
+    console.warn("[claw42] PM analyst role abstained", {
       memberId,
-      locale,
       error: error instanceof Error ? error.message : String(error),
     });
   }
-  const rationale =
-    locale === "zh_CN" || locale === "zh_TW"
-      ? `${memberId} 基于当前已确认信号保持观望，并降低置信度等待下一轮证据确认。`
-      : `${memberId} stays cautious on the confirmed signals and lowers confidence until the next evidence refresh.`;
   return {
     memberId,
     direction: "wait",
-    confidence: 0.25,
-    rationale,
-    oneLineSummary: oneLineSummaryFromRationale(rationale),
-    detailedRationale: rationale,
-    dataStatus: "partial",
+    confidence: 0,
+    rationale: "",
+    oneLineSummary: "",
+    detailedRationale: "",
+    dataStatus: "missing",
     citations: [],
+    abstained: true,
   };
 }
 
@@ -332,7 +362,8 @@ async function generateAnalystWithFallback({
       `PM analyst generation ${memberId}`,
     );
   } catch (error) {
-    return fallbackAnalystOutput(memberId, locale, error);
+    void locale;
+    return abstainAnalystOutput(memberId, error);
   }
 }
 
@@ -344,7 +375,11 @@ async function defaultGenerateLeadOutput(
   let lastError: unknown = null;
   for (const attempt of ["first", "retry"] as const) {
     const text = await generateText(
-      attempt === "first" ? prompt : `${prompt}\n\n${buildLocaleRetryInstruction(locale)}`,
+      attempt === "first"
+        ? prompt
+        : `${prompt}\n\n${buildLocaleRetryInstruction(
+            locale,
+          )}\n\n${buildPublicRewriteRetryInstruction()}`,
       {
         taskTag: `watch:pm-decision:${memberId}:${locale}:${attempt}`,
         temperature: 0.25,
@@ -361,6 +396,9 @@ async function defaultGenerateLeadOutput(
       const rationale = String(parsed.rationale ?? parsed.thesis ?? parsed.rebuttal ?? "").trim();
       if (!rationale) throw new Error(`${memberId} missing rationale`);
       ensureLocaleText(locale, [rationale], `${memberId} lead`);
+      if (containsPublicContentLeak(rationale)) {
+        throw new Error(`${memberId} lead output leaked backend/internal wording`);
+      }
       return {
         rationale,
         confidence: normalizeConfidence(parsed.confidence ?? parsed.consensusLevel),
@@ -420,6 +458,8 @@ Rules:
 - Use available role evidence to form a stance when there is a concrete signal.
 - If role evidence is thin, lower confidence, set internal "dataStatus" to "partial" or "missing", and explain the decision basis without mentioning backend data availability.
 - Return "wait" only when your role evidence has no actionable signal. Do not invent a trade stance.
+- Public fields oneLineSummary, detailedRationale, and rationale must describe market evidence only; never discuss backend operations, source coverage, future data arrival, process state, or internal participant identifiers.
+- If you cannot make a professional public point from the shown evidence, return an empty rationale and confidence 0.
 
 ## Locale
 ${buildLocaleInstruction(normalizeWatchLocale(input.locale))}
@@ -449,8 +489,10 @@ ${buildLocaleInstruction(normalizeWatchLocale(input.locale))}
 ## Analyst outputs
 ${analystOutputs
   .map(
-    (output) =>
-      `- ${output.memberId}: ${output.direction} ${output.confidence} ${output.rationale}`,
+    (output, index) =>
+      `- decision view ${index + 1}: stance=${publicDirectionForContext(output.direction)} confidence=${output.confidence.toFixed(
+        2,
+      )} ${output.rationale}`,
   )
   .join("\n")}
 
@@ -1077,6 +1119,10 @@ export async function runPmDecisionPipeline(
   const allowedEvidenceIds = new Set(
     PIPELINE_INPUT_MEMBER_IDS.flatMap((memberId) => evidenceIdsForMember(memberId, evidencePack)),
   );
+  const activeInputMemberIds = PIPELINE_INPUT_MEMBER_IDS.filter(
+    (memberId) => !shouldAbstainMember(memberId, evidencePack),
+  );
+  if (activeInputMemberIds.length === 0) return null;
   const evidenceWriter = deps.saveNewsEvidence ?? saveNewsEvidence;
   const generateAnalyst =
     deps.generateAnalystOutput ??
@@ -1125,7 +1171,7 @@ export async function runPmDecisionPipeline(
     );
     startStage(stageAudit, "analyst_inputs");
     const analystPrompts = await Promise.all(
-      PIPELINE_INPUT_MEMBER_IDS.map(async (memberId) => ({
+      activeInputMemberIds.map(async (memberId) => ({
         memberId,
         prompt: await buildMemberPrompt(memberId, localizedInput, deps, evidencePack),
       })),
@@ -1135,11 +1181,15 @@ export async function runPmDecisionPipeline(
       generateRound: (memberId, prompt) =>
         generateAnalystWithFallback({ memberId, prompt, generateAnalyst, locale }),
     });
-    const latestAnalystOutputs = latestAnalystRoundByMember(analystRoundOutputs);
+    const publicAnalystRoundOutputs = analystRoundOutputs.filter(
+      (output) => !output.abstained && cleanPublicDecisionText(output.rationale, locale),
+    );
+    const latestAnalystOutputs = latestAnalystRoundByMember(publicAnalystRoundOutputs);
+    if (latestAnalystOutputs.length === 0) return null;
     completeStage(
       stageAudit,
       "analyst_inputs",
-      `${analystRoundOutputs.length} analyst round outputs`,
+      `${publicAnalystRoundOutputs.length} analyst round outputs`,
     );
 
     startStage(stageAudit, "research_lead");
@@ -1148,16 +1198,17 @@ export async function runPmDecisionPipeline(
         input: localizedInput,
         now,
         analystOutputs: latestAnalystOutputs,
-        analystRoundOutputs,
+        analystRoundOutputs: publicAnalystRoundOutputs,
         activeStage: "research_lead",
         stageAudit,
       }),
-      evidenceIdsForPartial(localizedInput, analystRoundOutputs),
+      evidenceIdsForPartial(localizedInput, publicAnalystRoundOutputs),
     );
     const researchLead = await generateLead(
       "research_lead",
       await buildLeadPrompt("research_lead", localizedInput, latestAnalystOutputs, undefined, deps),
     );
+    if (containsPublicContentLeak(researchLead.rationale)) return null;
     completeStage(stageAudit, "research_lead", "research synthesis generated");
     startStage(stageAudit, "risk_lead");
     await publishPartialStage(
@@ -1165,17 +1216,18 @@ export async function runPmDecisionPipeline(
         input: localizedInput,
         now,
         analystOutputs: latestAnalystOutputs,
-        analystRoundOutputs,
+        analystRoundOutputs: publicAnalystRoundOutputs,
         researchLead,
         activeStage: "risk_lead",
         stageAudit,
       }),
-      evidenceIdsForPartial(localizedInput, analystRoundOutputs),
+      evidenceIdsForPartial(localizedInput, publicAnalystRoundOutputs),
     );
     const riskLead = await generateLead(
       "risk_lead",
       await buildLeadPrompt("risk_lead", localizedInput, latestAnalystOutputs, researchLead, deps),
     );
+    if (containsPublicContentLeak(riskLead.rationale)) return null;
     completeStage(stageAudit, "risk_lead", "risk review generated");
 
     const currentPrice = currentPriceFromSignals(localizedInput.recentMarketSignals);
@@ -1185,13 +1237,13 @@ export async function runPmDecisionPipeline(
         input: localizedInput,
         now,
         analystOutputs: latestAnalystOutputs,
-        analystRoundOutputs,
+        analystRoundOutputs: publicAnalystRoundOutputs,
         researchLead,
         riskLead,
         activeStage: "trade_decision",
         stageAudit,
       }),
-      evidenceIdsForPartial(localizedInput, analystRoundOutputs),
+      evidenceIdsForPartial(localizedInput, publicAnalystRoundOutputs),
     );
     const tradeInputs = [
       ...latestAnalystOutputs.map((output) => ({
@@ -1225,12 +1277,15 @@ export async function runPmDecisionPipeline(
       locale,
     });
     if (!tradeDecision) return null;
+    if (containsPublicContentLeak(`${tradeDecision.riskNote}\n${tradeDecision.invalidatesIf}`)) {
+      return null;
+    }
     completeStage(stageAudit, "trade_decision", `${tradeDecision.direction} trade card generated`);
 
     const evidenceIds = Array.from(
       new Set([
         ...localizedInput.recentNewsEvidence.map((evidence) => evidence.id),
-        ...analystRoundOutputs.flatMap((output) => output.citations),
+        ...publicAnalystRoundOutputs.flatMap((output) => output.citations),
         ...(tradeDecision.evidenceIds ?? []),
       ]),
     );
@@ -1238,7 +1293,7 @@ export async function runPmDecisionPipeline(
       input: localizedInput,
       now,
       analystOutputs: latestAnalystOutputs,
-      analystRoundOutputs,
+      analystRoundOutputs: publicAnalystRoundOutputs,
       researchLead,
       riskLead,
       tradeDecision,

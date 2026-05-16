@@ -314,6 +314,76 @@ describe("publicTimelineProjection", () => {
     ]);
   });
 
+  it("removes backstage wording from PM public projection without raw fallback", () => {
+    const leakyRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-leaky",
+      analystInputs: [
+        {
+          memberId: "onchain_analyst",
+          direction: "wait",
+          confidence: 0.2,
+          rationale: "链上数据缺失，等待后续更新后再参与。",
+          evidenceIds: ["ev_leaky"],
+        },
+        {
+          memberId: "chart_analyst",
+          direction: "short",
+          confidence: 0.65,
+          rationale: "BILL 跌破 42 后反抽失败，40 上方承压。",
+          evidenceIds: ["ev_clean"],
+        },
+      ],
+      tradeDecision: {
+        ...tradeDecision,
+        riskNote: "无成交量验证，等待链上数据更新。",
+      },
+    };
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-leaky",
+      ts: now,
+      thread: {
+        id: "thread-leaky",
+        seed: {
+          id: "seed-leaky",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["BILL"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: [],
+        locale: "zh_CN",
+        recordId: "record-leaky",
+        tradeDecision: leakyRecord.tradeDecision,
+      },
+    };
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map([[leakyRecord.id, leakyRecord]]),
+    });
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.tradeDecision).toBeNull();
+    expect(event.payload.rationaleByMember.onchain_analyst).toBeUndefined();
+    expect(event.payload.citationsByMember?.onchain_analyst).toBeUndefined();
+    expect(event.payload.rationaleByMember.chart_analyst).toContain("反抽失败");
+    expect(event.payload.citationsByMember?.chart_analyst).toEqual(["ev_clean"]);
+    expect(event.payload.rounds?.map((round) => round.memberId)).toEqual(["chart_analyst"]);
+  });
+
   it("keeps watch-only PM records public and marks them non-executable", () => {
     const billRecord: StrategyDecisionRecord = {
       ...decisionRecord,
@@ -529,11 +599,11 @@ describe("publicTimelineProjection", () => {
       ...decisionRecord,
       id: "record-14",
       contributorIds: members,
-      analystInputs: members.map((memberId) => ({
+      analystInputs: members.map((memberId, index) => ({
         memberId,
         direction: memberId === "bearish_researcher" ? "short" : "long",
         confidence: 0.65,
-        rationale: `${memberId} rationale`,
+        rationale: `Decision view ${index + 1} stays constructive near 76000.`,
         evidenceIds: memberId === "pm" ? ["ev_1"] : [],
       })),
     };

@@ -15,6 +15,7 @@ import {
   type TradeDecision,
   type TradeDirection,
 } from "@/lib/team/tradeDecision";
+import { containsPublicContentLeak } from "@/lib/watch/publicContentGuardrails";
 
 export interface TradeCardPromptContext {
   symbol: string;
@@ -41,7 +42,7 @@ const PROMPT_VERSION = "trade-decision-v1";
 const SYSTEM_PROMPT = [
   "You are the Claw42 Portfolio Manager.",
   "Return strict JSON only. Do not wrap it in Markdown.",
-  'Return direction="wait" only when the combined available evidence has no actionable signal.',
+  'Use direction="wait" only as a schema value when the combined market evidence has no actionable signal.',
 ].join("\n");
 
 export function selectPMProvider(severity: Severity): Extract<TeamProviderId, "claude-haiku"> {
@@ -60,8 +61,8 @@ export function resolvePMProviderSelection(severity: Severity): PMProviderSelect
 function formatAnalystInputs(ctx: TradeCardPromptContext): string {
   if (ctx.analystInputs.length === 0) return "- none";
   return ctx.analystInputs
-    .map((input) => {
-      return `- ${input.memberId}: direction=${input.direction}, confidence=${input.confidence.toFixed(
+    .map((input, index) => {
+      return `- decision input ${index + 1}: stance=${input.direction}, confidence=${input.confidence.toFixed(
         2,
       )}, rationale=${input.rationale}`;
     })
@@ -82,12 +83,14 @@ export function buildTradeDecisionPrompt(ctx: TradeCardPromptContext): string {
 Integrate analyst inputs and risk objections into one TradeDecision JSON object.
 
 ## Core instructions
-1. You are Portfolio Manager, integrating analyst inputs and risk_lead objections.
+1. You are Portfolio Manager, integrating analyst inputs and risk objections.
 2. Output strict JSON matching the TradeDecision schema below.
-3. Use the available evidence to form a direction when chart, news, role consensus, or risk/reward gives a concrete signal. Output direction="wait" only when the combined evidence has no actionable signal.
+3. Use the evidence to form a direction when chart, news, role consensus, or risk/reward gives a concrete signal. Use schema direction="wait" only when the combined market evidence has no actionable signal.
 4. entryPrice / stopLoss / takeProfit must be based on currentPrice=${ctx.currentPrice}, not imagined historical prices.
 5. positionSizing reflects confidence multiplied by evidence quality; do not derive it mechanically from consensus ratio.
 6. invalidatesIf must be a concrete verifiable condition, not vague language like "market reverses".
+7. riskNote and invalidatesIf are public user-facing text. Describe market conditions only; never discuss backend operations, source coverage, future data arrival, or internal participant identifiers.
+8. If the evidence is not enough for a trade, use schema direction="wait" but keep public text professional and condition-based.
 
 ## Market
 symbol: ${symbol}
@@ -181,6 +184,10 @@ function decisionMatchesLocale(decision: TradeDecision, locale: Locale) {
   return allTextMatchesLocale(locale, [decision.riskNote, decision.invalidatesIf]);
 }
 
+function decisionIsPublicClean(decision: TradeDecision) {
+  return !containsPublicContentLeak(`${decision.riskNote}\n${decision.invalidatesIf}`);
+}
+
 export async function generateTradeDecision(
   ctx: TradeCardPromptContext,
 ): Promise<TradeDecision | null> {
@@ -190,7 +197,11 @@ export async function generateTradeDecision(
   const firstOutput = await callPM(prompt, ctx, "first");
   let parsed = attachProvider(tryParseJson(firstOutput.text), firstOutput.provider);
   let validation = validateTradeDecision(parsed, ctx.currentPrice);
-  if (validation.valid && decisionMatchesLocale(validation.decision, locale)) {
+  if (
+    validation.valid &&
+    decisionMatchesLocale(validation.decision, locale) &&
+    decisionIsPublicClean(validation.decision)
+  ) {
     return validation.decision;
   }
 
@@ -198,15 +209,24 @@ export async function generateTradeDecision(
     prompt,
     "",
     "The previous JSON failed validation.",
-    `Errors: ${validation.valid ? `locale ${locale} mismatch` : validation.errors.join("; ")}`,
+    `Errors: ${
+      validation.valid
+        ? `locale ${locale} mismatch or public text leaked backend/internal wording`
+        : validation.errors.join("; ")
+    }`,
     buildLocaleRetryInstruction(locale),
+    "Rewrite public text as market-facing conditions only; avoid backend operations, source coverage, internal participant identifiers, or process-state language.",
     "Return a corrected TradeDecision JSON object only.",
   ].join("\n");
 
   const retryOutput = await callPM(retryPrompt, ctx, "retry");
   parsed = attachProvider(tryParseJson(retryOutput.text), retryOutput.provider);
   validation = validateTradeDecision(parsed, ctx.currentPrice);
-  if (validation.valid && decisionMatchesLocale(validation.decision, locale)) {
+  if (
+    validation.valid &&
+    decisionMatchesLocale(validation.decision, locale) &&
+    decisionIsPublicClean(validation.decision)
+  ) {
     return validation.decision;
   }
 
