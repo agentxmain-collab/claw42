@@ -290,6 +290,7 @@ describe("publicTimelineProjection", () => {
     expect(event?.evidenceIds).toEqual(["ev_1", "ev_2"]);
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
     expect(event.payload.symbol).toBe("BTC");
+    expect(event.payload.executable).toBe(true);
     expect(event.payload.rationaleByMember.fundamental_analyst).toContain("spot demand");
     expect(event.payload.rationaleByMember.research_lead).toContain("long thesis");
     expect(event.payload.rationaleByMember.risk_lead).toContain("Risk lead");
@@ -301,6 +302,59 @@ describe("publicTimelineProjection", () => {
       "research_lead:1",
       "risk_lead:1",
     ]);
+  });
+
+  it("keeps watch-only PM records public and marks them non-executable", () => {
+    const billRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-bill",
+      symbol: "BILL",
+      tradeDecision: {
+        ...tradeDecision,
+        id: "trade-bill",
+        symbol: "BILL",
+        direction: "wait",
+      },
+    };
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-bill",
+      ts: now,
+      thread: {
+        id: "thread-bill",
+        seed: {
+          id: "seed-bill",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["BILL"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: [],
+        locale: "zh_CN",
+        recordId: "record-bill",
+        tradeDecision: billRecord.tradeDecision,
+      },
+    };
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map([[billRecord.id, billRecord]]),
+    });
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.symbol).toBe("BILL");
+    expect(event.payload.executable).toBe(false);
   });
 
   it("projects schema v2 multi-round records while keeping latest rationale maps", () => {

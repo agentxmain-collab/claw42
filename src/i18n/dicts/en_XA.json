@@ -694,7 +694,7 @@
         "newAnalysisRunning": "[!! New analysis running !!]",
         "autoRefreshOnComplete": "[!! Auto-refresh on completion !!]",
         "cachedStateLabel": "[!! Cached data !!]",
-        "watchOnlyLabel": "[!! Watch-only !!]",
+        "watchOnlyLabel": "[!! Watch only / Not followable !!]",
         "watchOnlyCopy": "[!! This symbol is not executable on CoinW yet; analysis is shown for observation only. !!]"
       },
       "placeholder": {

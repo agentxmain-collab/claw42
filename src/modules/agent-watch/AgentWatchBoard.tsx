@@ -585,7 +585,13 @@ export function AgentWatchBoard({
 
   const handleTopicAction = useCallback(
     async (topic: DispatchTopic, _actionLabel: string, action: DispatchTopicAction) => {
-      if (action !== "primary" || topic.strategy.follow.primaryDisabled) return;
+      if (
+        action !== "primary" ||
+        topic.strategy.follow.primaryDisabled ||
+        topic.execution?.executable !== true
+      ) {
+        return;
+      }
       const recordId = topic.id;
       const previousStats = followStatsByRecordId[recordId];
 
