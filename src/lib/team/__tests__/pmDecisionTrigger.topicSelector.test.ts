@@ -127,7 +127,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
       evidence.id.startsWith("topic_selection:ETH:"),
     );
     expect(selectionEvidence?.summary).toContain("本轮优先分析 ETH");
-    expect(selectionEvidence?.summary).toContain("新闻冲击、市场信号是主因");
+    expect(selectionEvidence?.summary).toContain("新闻热度、市场信号是主因");
     expect(selectionEvidence?.summary).toContain("24h -5.40%");
     expect(auditEvents).toEqual([
       expect.objectContaining({
@@ -138,6 +138,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
         scoreBreakdown: expect.objectContaining({
           news: 60,
           market: 40,
+          executable: 18,
           pool: 1,
         }),
       }),
@@ -376,6 +377,47 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
         }),
       ]),
     );
+  });
+
+  it("caps user visit symbol candidates at three and emits telemetry", async () => {
+    const auditEvents: unknown[] = [];
+    runPmDecisionPipelineMock.mockResolvedValue(null);
+    const expandedPool = {
+      ...pool(),
+      majors: [
+        { symbol: "BTC", price: 101000, change24h: 4, category: "majors" },
+        { symbol: "ETH", price: 4200, change24h: 4, category: "majors" },
+        { symbol: "SOL", price: 220, change24h: 4, category: "majors" },
+      ],
+      trending: [
+        { symbol: "HYPE", price: 34, change24h: 4, category: "trending" },
+        { symbol: "XRP", price: 2.4, change24h: 4, category: "trending" },
+      ],
+      opportunity: [],
+    } satisfies CoinPoolPayload;
+
+    await triggerPmDecisionPipelineOnce({
+      triggerSource: "user_visit_trigger",
+      pool: expandedPool,
+      newsItems: [],
+      locale: "zh_CN",
+      now,
+      onAudit: (event) => auditEvents.push(event),
+    });
+
+    expect(auditEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "candidate_cost_cap_applied",
+          candidateCount: 5,
+          cappedTo: 3,
+          maxResidentCandidates: 1,
+          maxSymbolCandidates: 3,
+        }),
+      ]),
+    );
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(3);
+    expect(tryAcquireLockMock).toHaveBeenCalledTimes(3);
   });
 
   it("lets scheduled batch processing reach opportunity symbols beyond the first six pool entries", async () => {

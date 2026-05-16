@@ -1078,3 +1078,108 @@ Stage 2 Priority Candidate Selector 可以继续，依赖已满足：
 无需要 F/Dan 决策的 blocker。
 
 [DOC-HINT: Before any future `npx vercel` from a fresh worktree, copy or verify `.vercel/project.json` against deployment-identity-registry.md to avoid accidental project creation.]
+
+---
+
+# B.14 Stage 2 Priority Selector 报告
+
+时间：2026-05-17
+
+Base：`160e280b6f3ae13ddd114744114d65e84c1f7a6d`
+
+Branch：`feature/b14-stage2-priority-selector`
+
+## T301-T304 完成清单
+
+- T301a：`src/lib/marketDataCache.ts` 保留 CoinGecko `market_cap` / `total_volume`，写入 `CoinTickerEntry.marketCapUsd` / `totalVolumeUsd24h`；majors / trending / opportunity 三类池均可携带 metadata。
+- T301b：`src/lib/team/topicSelector.ts` 增加 7d news heat 评分：article count + source diversity + high-impact count；不引入 CryptoPanic / social 假数据。
+- T301c：仅保留 `social` hook 位，score 固定 0；等待 Dan procurement。
+- T302：selector 分数新增市值、24h volume、新闻热度、可执行性四维；watch-only 仍可进 pool，但 executable 权重更高。
+- T303：selector 自动模式加 5min cache；数据全空时 fallback 固定 universe `BTC > ETH > SOL > HYPE`。
+- T304：`triggerPmDecisionPipelineOnce` 用户访问触发增加 cost cap：最多 3 个 symbol candidate；resident 仍按 per-candidate route 1 个；新增 `candidate_cost_cap_applied` audit event。
+
+## 测试覆盖
+
+- `src/lib/team/__tests__/topicSelector.test.ts`
+  - 市值维度独立排序
+  - 24h volume 维度独立排序
+  - 7d CryptoCompare-style news heat：article count / source diversity / high-impact count
+  - executable / watch-only metadata
+  - data-source-missing neutral + finite score
+  - 5min cache
+  - static fallback universe
+- `src/lib/team/__tests__/pmDecisionTrigger.topicSelector.test.ts`
+  - visit trigger cost cap telemetry
+  - top-ranked topic selection 不破坏
+  - scheduled batch 仍能跑完整 pool
+
+## Verify gate
+
+- `npm run format:check`：PASS
+- `npm run typecheck`：PASS
+- `npm run lint`：PASS
+- `npx vitest run src/lib/team/__tests__/topicSelector.test.ts src/lib/team/__tests__/pmDecisionTrigger.topicSelector.test.ts`：30/30 PASS
+- `npm run test:watch-pipeline`：261/261 PASS
+- `npm run test:news`：25/25 PASS
+- `npm run verify:agent-ip`：PASS
+- `npm run verify:news`：PASS（env warnings 维持既有：CryptoCompare / CoinGecko / CryptoPanic key 未在 local shell 暴露）
+- `npm run verify:chat-v3-final`：50/50 PASS
+- `npm run verify:metrics`：5/5 PASS
+- `npm run verify:a11y`：0 violations
+- `npm run build`：PASS；首次 build 在 stale `.next` 下触发 Next `/_document` cache error，`rm -rf .next` 后 clean build PASS。
+
+## Raw artifact
+
+- `claude-codex-sync/artifacts/b14-stage2/selector-sample.json`
+
+Artifact 内容包括：
+
+- selector Top 排序样例
+- 4 维 scoreBreakdown
+- watch-only BILL 入池但不可执行
+- visit trigger cost cap 截断结果
+- static fallback universe
+- public content guardrail `leakCount=0`
+
+## First-hand finding
+
+- CoinGecko `coins/markets` live check 返回 `market_cap` / `total_volume` / `price_change_percentage_24h` 字段，T301a 端点可用。
+- CryptoCompare 没有 native social/vote，本阶段只使用进入 `NewsEvidence` 后的 article count / source diversity / high-impact count。
+- 现有 refresh path 仍使用 `reason.kind === "news" | "market"` 判定 trigger，所以 Stage 2 没有重命名触发 reason kind；新增维度进入 scoreBreakdown 和 public selection evidence，但不破坏旧触发逻辑。
+
+## Preview
+
+- PR：`https://github.com/agentxmain-collab/claw42/pull/112`
+- Preview URL：`https://claw42-site-chz7ga7ko-agentxmain-collabs-projects.vercel.app`
+- Vercel deployment：`dpl_8TaVwwer9TwUjXHJECMqhYXcCwiX`
+- Target：`preview`
+- Inspect：READY
+
+Preview 保护状态：普通 `curl` 返回 401（Vercel protection），`vercel curl` 验证通过。
+
+`vercel curl /api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=720`：
+
+```json
+{
+  "events": 3,
+  "keys": [
+    "events",
+    "evidenceMap",
+    "hasMore",
+    "locale",
+    "nextPollMs",
+    "oldestTs",
+    "servedAt",
+    "windowMinutes"
+  ]
+}
+```
+
+PR checks：
+
+- `verify`：PASS
+- `deploy preview`：PASS
+- `Vercel`：PASS
+- `Vercel Preview Comments`：PASS
+
+[DOC-HINT: Stage 2 intentionally preserves `reason.kind === "news" | "market"` trigger semantics while extending selector scoring dimensions.]

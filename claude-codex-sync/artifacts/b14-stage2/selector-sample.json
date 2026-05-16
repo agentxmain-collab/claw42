@@ -1,0 +1,95 @@
+{
+  "generatedAt": "2026-05-17T12:00:00.000Z",
+  "tasks": ["T301a", "T301b", "T302", "T303", "T304"],
+  "selectorTop": [
+    {
+      "symbol": "BTC",
+      "score": 138.8,
+      "executable": true,
+      "watchOnly": false,
+      "scoreBreakdown": {
+        "marketCap": 30,
+        "volume": 25,
+        "news": 60,
+        "executable": 18,
+        "market": 0,
+        "momentum": 4.8,
+        "pool": 1,
+        "memory": 0,
+        "social": 0,
+        "total": 138.8
+      },
+      "reasons": [
+        { "kind": "marketCap", "detail": "市值档位参与排序", "score": 30 },
+        { "kind": "volume", "detail": "24h成交量参与排序", "score": 25 },
+        { "kind": "news", "detail": "7d 1篇 / 1源 / 1高影响", "score": 60 },
+        { "kind": "executable", "detail": "CoinW可执行标的", "score": 18 },
+        { "kind": "momentum", "detail": "24h 2.40%", "score": 4.8 },
+        { "kind": "pool", "detail": "主流高流动性池", "score": 1 }
+      ]
+    },
+    {
+      "symbol": "BILL",
+      "score": 116.5,
+      "executable": false,
+      "watchOnly": true,
+      "scoreBreakdown": {
+        "marketCap": 15,
+        "volume": 12.5,
+        "news": 60,
+        "executable": 6,
+        "market": 0,
+        "momentum": 20,
+        "pool": 3,
+        "memory": 0,
+        "social": 0,
+        "total": 116.5
+      },
+      "reasons": [
+        { "kind": "marketCap", "detail": "基础市值权重", "score": 15 },
+        { "kind": "volume", "detail": "基础成交量权重", "score": 12.5 },
+        { "kind": "news", "detail": "7d 1篇 / 1源 / 1高影响", "score": 60 },
+        { "kind": "executable", "detail": "仅观察标的", "score": 6 },
+        { "kind": "momentum", "detail": "24h 22.00%", "score": 20 },
+        { "kind": "pool", "detail": "趋势加速池", "score": 3 }
+      ]
+    },
+    {
+      "symbol": "HYPE",
+      "score": 66.6,
+      "executable": true,
+      "watchOnly": false,
+      "scoreBreakdown": {
+        "marketCap": 0,
+        "volume": 0,
+        "news": 28,
+        "executable": 18,
+        "market": 0,
+        "momentum": 17.6,
+        "pool": 3,
+        "memory": 0,
+        "social": 0,
+        "total": 66.6
+      },
+      "reasons": [
+        { "kind": "marketCap", "detail": "市值档位参与排序", "score": 0 },
+        { "kind": "volume", "detail": "24h成交量参与排序", "score": 0 },
+        { "kind": "news", "detail": "7d 1篇 / 1源 / 0高影响", "score": 28 },
+        { "kind": "executable", "detail": "CoinW可执行标的", "score": 18 },
+        { "kind": "momentum", "detail": "24h 8.80%", "score": 17.6 },
+        { "kind": "pool", "detail": "趋势加速池", "score": 3 }
+      ]
+    }
+  ],
+  "costCap": {
+    "visitSymbolCandidateCap": 3,
+    "residentCandidateCap": 1,
+    "selectedCountBeforeCap": 5,
+    "visitSymbolsAfterCap": ["BTC", "BILL", "HYPE"]
+  },
+  "staticFallback": ["BTC", "ETH", "SOL", "HYPE"],
+  "publicContentGuardrail": {
+    "checkedSelectionSummaries": 4,
+    "leakCount": 0
+  }
+}
