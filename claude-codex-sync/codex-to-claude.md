@@ -1,3 +1,126 @@
+# B.13 hotfix-2 Task B 双脑调研报告
+
+Codex time: 2026-05-16 12:05 CST  
+Base: `origin/main` = `2bcdc3923ce199d51d7cff10fddf46ae5d472cac`  
+Branch: `feature/b13-hotfix2-kill-demo-fallback-diagnose`  
+Scope: Task A UI hotfix implemented; Task B diagnosis only, no pipeline / refresh / cron fix.
+
+## 0. 结论先行
+
+Dan 截图里的 BTC / ETH / SOL 不是当前真分析，是 V10 `MarketAnalysisPanel` 的 static demo fallback。Task A 已把这个 fallback 从 V10 挂载路径停掉：真实 `topics` 为空时只显示客观 empty state `工作台启动中，暂无最近决策`，并用灰色 no-data icon / `NO DATA` 标签明确区分“没有真数据”。
+
+Task B 发现比原 spec 更关键的一点：当前不是“LLM 完全没跑”。Preview KV 里已经有 `2026-05-16T03:42:00.550Z` 的 `pm:BILL:1778902920550` 真 PM record，14 个角色 provider telemetry 也显示 `deepseek-chat` 成功调用。但同一个 main preview 的 `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=720` 仍返回 `events=[]`，所以公开 UI 没拿到真分析。也就是说，P0 表象是 demo fallback；下一步根因应同时看 **preview cron 不会跑 + user refresh 触发/投影链路断裂**，不能只改 prompt。
+
+## 1. Task A 实施摘要
+
+- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx:335-337`：`resolvedTopics` 只使用传入的 `topics ?? []`，不再回落到 `dispatchV10DemoTopics`。
+- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx:370-377`：空数据渲染 `role=status` 的 no-data empty state。
+- `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:1435-1472`：empty state 采用灰色、低对比边框、圆形空状态 icon、`NO DATA` 标签，视觉上区别于真分析卡片。
+- 10 locale 更新 `agentWatch.dispatchV10.market.empty`，`zh_CN` 文案为 `工作台启动中，暂无最近决策`，`en_XA` 已覆盖。
+- Fixture 文件 `src/modules/agent-watch/v10/demoTopics.ts` 保留；测试里如需 demo，必须显式传入。
+
+## 2. Task B.1 PM no_signal / hardcoded fallback 判断
+
+First-hand code:
+
+- `src/lib/team/pmDecisionPipeline.ts:237-249` 仍先调用 `generateText(...)`，并带 `providerOverride`，不是 hardcoded output。
+- `src/lib/team/pmDecisionPipeline.ts:289-335` 的 fallback 只在 LLM 失败、超时或解析失败后使用。
+- 现在的 `no_signal` 主要在 PM pipeline 外层：`src/app/api/watch/refresh/route.ts:120-125` 用 candidate reason 分数判断；`src/app/api/watch/refresh/route.ts:218-220` 在 trigger context 不满足时直接返回 `status=no_signal`。
+- Cron/trigger 侧另有一层：`src/lib/team/pmDecisionTrigger.ts:209-224` 只有 market alert 或 high news evidence 才继续跑 PM pipeline。
+
+判断：
+
+- Stage 1 没有把真 LLM 主路径替换成 hardcoded 输出。
+- `no_signal` 不是 PM 决策内部“90% 观望”分支，而是 refresh / trigger 前置门槛。它会导致 PM pipeline 根本不启动。
+- 我手动 GET `/api/watch/refresh?symbol=BTC&locale=zh_CN` 得到 `status=stale, lastDecisionAt=null`；之前 POST BTC 得到 `status=no_signal`，原因是 BTC 当前 24h 约 `+2.14%`，只到 `watch` 级别，不够触发。
+
+## 3. Task B.2 Candidate pool / CoinW filter 判断
+
+First-hand data:
+
+- `src/lib/team/topicSelector.ts:285-292` 不会因为 `execution.watchOnly` 把 candidate 过滤掉，只会把执行能力标注在 candidate 上。
+- `src/lib/team/symbolMapping.ts` 当前 `BTC / ETH / SOL / HYPE` executable；`BILL / IRYS` watch-only。
+- 实测 preview env 的 market pool 抓取当前走 fallback：`source=fallback`, `isFallback=true`, `error=ticker_unavailable`。pool 里只有 majors：
+  - BTC `+2.14%`，severity `watch`
+  - ETH `-0.82%`，severity `info`
+  - SOL `+4.53%`，severity `alert`
+- 用当前 selector 本地重放：candidateCount=3，SOL `hasTrigger=true`，BTC/ETH `hasTrigger=false`，3 个都是 executable。
+
+判断：
+
+- “CoinW filter 过严导致找不到 candidate”不是当前主因；当前至少 SOL 可触发。
+- 更真实的问题是 market fetch 链路不稳，trending/opportunity 当前被 fallback 掉，导致候选池退化为 BTC/ETH/SOL majors。
+- 另一个产品风险：BILL 真 record 是 watch-only symbol，但 V10 如果未来显示 follow button 必须继续遵守 watch-only 禁止跟单。
+
+## 4. Task B.3 Vercel cron preview 判断
+
+First-hand data:
+
+- `vercel.json:2-6` cron 为 `/api/cron/strategy-replay`，schedule `0 */3 * * *`。
+- Vercel 官方 Cron Jobs 文档说明 Cron Jobs only run on production deployments；preview deployments 不会自动执行 cron。Source: https://vercel.com/docs/cron-jobs
+- `vercel logs --environment preview --query strategy-replay --since 12h` 无 strategy-replay 输出。
+- `vercel logs --environment production --query strategy-replay --since 12h` 有 production cron 请求，但当前 prod alias 已 rollback 到老 build，不能代表 main preview 的 B.13 代码会自动跑。
+
+判断：
+
+- 这是核心根因之一：A/B preview 版本不能依赖 Vercel cron 产生新 PM record。
+- main preview 上要有真分析，只能靠手动 trigger、用户访问 refresh、或受控 preview seed/diagnostic 触发；不能等 preview cron。
+
+## 5. 新发现：真 record 存在但公开 timeline 仍空
+
+First-hand data:
+
+- `readAllDecisionRecords(1000, "zh_CN")` 读到 10 条 record；Stage 1/2/3/4/hotfix1 之后各至少 1 条。
+- 最新 PM record：`pm:BILL:1778902920550`，`createdAt=2026-05-16T03:42:00.550Z`，`analystCount=14`，`tradeDecision.direction=wait`，`modelProvider=deepseek-chat`。
+- Provider telemetry KV：`pmCount=130`，Stage 1/2/3/4/hotfix1 后各 24 条 PM telemetry；最新 12 条均为 `watch:pm-decision:*:zh_CN:first`，`finalProvider=deepseek-chat`，`success=true`。
+- Watch history KV `claw42:watch:history:v2:zh_CN` 里有 `pm-decision:pm:BILL:1778902920550`，`meta.sourceTrigger=pm_decision`，`recordId=pm:BILL:1778902920550`。
+- 本地用当前代码 + preview env 对同一批 KV entries 运行 `filterPublicTimelineEvents(...)`，可以投影出 BILL `pm_decision` event。
+- 但 main preview deployment `dpl_WHvLvrSEesuNz7bW2cxB1Krt5Bdo` 上调用 `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=720&limit=100` 仍返回 `events=[]`，`oldestTs=1778898143494`。
+
+判断：
+
+- Dan 当前看不到真分析的原因不止是 demo fallback；公开 timeline route / runtime 侧也存在“有 KV record + 有 watch history entry，但 API 返回空 events”的断裂。
+- 这不在 hotfix-2 Task A 允许修复范围内，我没有改 backend / timeline / pipeline。
+- 下一张 fix spec 应把这个列为 P0：以同一条 `pm:BILL:1778902920550` 为 fixture，写 route-level regression，证明 timeline API 必须返回 1 个 `pm_decision` event。
+
+## 6. 根因因果链
+
+最可能链路：
+
+1. Preview cron 不会自动运行；production cron 现在又在 rollback 老 build 上，不能给 main preview 补新 B.13 PM record。
+2. 用户访问 refresh 在空 timeline 场景依赖 symbol / trigger threshold；BTC 这类非 alert 标的会 `no_signal`，而 preview 不会靠 cron 补偿。
+3. 手动触发后确实生成了 `pm:BILL:1778902920550`，14 角色 LLM 成功，但公开 timeline API 仍返回 `events=[]`，说明投影/route/runtime 还有断裂。
+4. V10 旧代码在 `topics=[]` 时回落到 `dispatchV10DemoTopics`，把数据断裂伪装成 BTC/ETH/SOL 当前决策，造成 Dan 截图里的假分析。
+
+## 7. Fix 方向建议
+
+保守，0.5-1 AI 天：
+
+- 保持本 PR 的 demo fallback kill。
+- 追加 route-level test：给 watch history + decision record 写入同一 `recordId`，`/api/watch/timeline` 必须返回 `pm_decision`。
+- 修 timeline route / payload 的 runtime 断裂，直到 preview API 能返回 BILL event。
+
+中等，1-2 AI 天：
+
+- 空 timeline 时，AgentWatchBoard 不再依赖 `topics[0]`，改从 candidate pool 或 server-side `/api/watch/refresh` 自选 candidate。
+- `/api/watch/refresh` 返回 `candidate`, `hasTriggerReason`, `cooldown/lock` 的 public-safe 状态，UI 显示“正在检查新机会 / 暂无触发信号”。
+- 手动 preview trigger 工具化，不走 prod cron。
+
+激进，3-5 AI 天：
+
+- 建立 preview-safe orchestrator：进入 `/agent` 后 server-side refresh audit、candidate selection、waitUntil PM run、timeline SSE、empty-state status 全链路可观测。
+- 将 market fetch fallback、news fetch fallback、provider telemetry、timeline projection 做一个 admin-only diagnostics endpoint，避免每次靠临时脚本查 KV。
+
+## 8. F 没问到的 angle
+
+1. **Task B 原 spec 只问“为什么没有 PM record”，但实测已经有 PM record；真正 P0 是“record 没进 public timeline / UI”。**
+2. **Preview cron 是设计上不会跑**，所以所有“对外预发”如果要真数据，必须定义 preview trigger 机制，不能沿用 production cron 假设。
+3. **Market pool 现在退化到 fallback majors**，即使修了 timeline，也可能长期只出现 BTC/ETH/SOL，和 Dan 要的真实 topic 丰富度不一致。
+4. **BILL 这条真记录仍大量暴露 missing/onchain/fundamental 文案**，Stage 1 的“后台状态不展示”没有在所有角色 public rounds 中完全达成；这应另列内容质量修复，不要混进 hotfix-2。
+5. **执行中发现一次 Vercel CLI 在无 `.vercel/project.json` 的 temp worktree 里自动创建了错误项目**，我已删除该临时项目并恢复正确 `.vercel/project.json`。后续所有 Vercel 命令必须先校验 project binding。
+
+[DOC-HINT: next B.13 fix spec should target public timeline projection/runtime mismatch and preview-safe refresh trigger before prompt/personality changes.]
+
 # B.13 hotfix Task B 双脑诊断报告
 
 Codex time: 2026-05-16 10:55 CST
