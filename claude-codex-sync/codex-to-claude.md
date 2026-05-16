@@ -823,3 +823,315 @@ PM: 连续急跌后价格未有效跌破40整数位，反弹风险累积。若40
 待 PR 后继续：Vercel preview，不带 `--prod`。
 
 [DOC-HINT: B.14 public schema cleanup should decide whether public JSON may expose TeamMemberId as structural keys; hotfix-5 only guarantees user-visible text fields are clean.]
+
+---
+
+# B.14 Round 1 评估
+
+时间：2026-05-16
+评估对象：`docs/codex-specs/spec-watch-B14-resident-analysis-and-priority-candidate.md` v1.0
+base：`b0a051a4dd1e1aa7674dd497e83c6bd992ac0801`
+结论：**不建议 v1.0 直接进入实现。需要 F 出 v1.1 后再派 Stage 1。**
+
+## Intake 判断
+
+来源按 Claude/F spec intake 处理，不按直接执行命令处理。本轮只评估，不实施。
+
+Constitution 对照：
+
+- Rule 1 部署身份：PASS。已核对 GitHub repo `agentxmain-collab/claw42`、Vercel project `claw42-site`、scope `agentxmain-collabs-projects`。
+- Rule 2 生产保护：PASS。本任务无 prod 动作。
+- Rule 3 视觉与品牌：PASS with caveat。Dan 授权的是“决策流同区多 type 卡”，不能扩成新 panel 或 V10 layout 重构。
+- Rule 4 数据与 schema：**VIOLATION in v1.0 spec**。v1.0 要加 `CandidateType`，但没有列完整 schema write set 与 legacy fallback。
+- Rule 5 AI / 行情诚实性：**VIOLATION in v1.0 spec**。非 symbol candidate 仍走 trade-decision schema 会制造假交易语义。
+- Rule 6 协作闭环：PASS。本报告写回 sync。
+- Rule 7 验证门槛：PARTIAL。v1.0 有 SC，但缺 preview cron 不跑时的机械验收替代路径。
+
+## First-Hand 事实
+
+### 1. PM pipeline 不能直接 generalize 到非 symbol candidate
+
+v1.0 §2.1 写“复用现有 PM pipeline，14 角色对常驻 candidate 走同样 dispatch”。代码事实不支持直接复用。
+
+- `src/lib/team/pmDecisionPipeline.ts:68-76` 的 `PmDecisionPipelineInput` 只有 `recentMarketSignals / recentNewsEvidence / locale / now`，没有 `candidateType` 或 `candidateKey`。
+- `src/lib/team/pmDecisionPipeline.ts:515-520` 用第一条 market signal 或 news symbol 推出 `symbol`，否则 fallback `"BTC"`。
+- `src/lib/team/pmDecisionPipeline.ts:509-513` 在没有价格信号时把 `currentPrice` fallback 成 `1`。
+- `src/lib/team/pmDecisionPipeline.ts:1233-1260` 进入 PM trade-decision 阶段时无条件组装 trade inputs。
+- `src/lib/team/tradeDecisionPromptBuilder.ts:20-33` 的 `TradeCardPromptContext` 必填 `symbol` + `currentPrice`。
+- `src/lib/team/tradeDecisionPromptBuilder.ts:77-143` 明确要求输出 `TradeDecision` JSON：entry / stopLoss / takeProfit / positionSizing。
+- `src/lib/team/pmDecisionPipeline.ts:617-738` 写出的 `StrategyDecisionRecord` 必含 `symbol`，`id` 也是 `pm:${symbol}:${now}`。
+- `src/lib/team/pmDecisionPipeline.ts:1025-1048` public payload 只写 `kind: "pm_decision"` + `symbol` + `tradeDecision`。
+
+判断：`market_overview` 如果硬塞现有 pipeline，会被强行变成 BTC 或 UNKNOWN 的 trade card；如果没有价格，会进入 `currentPrice=1` 的假条件。这不是 prompt wording 能解决的，需要先扩 candidate contract，并给常驻分析一个非交易 / trade-disabled 分支。
+
+### 2. 14 角色 prompt 已有身份层，但仍是交易/单标的语境
+
+- 14 个 `docs/agent-ip/team/*.md` 都有 hotfix-5 的 public wording guardrail。
+- `src/lib/team/evidenceDispatcher.ts:32-40` 的 `EvidenceContextPack` 仍以 `symbol` 为中心。
+- `src/lib/team/evidenceDispatcher.ts:223-240` 会按单个 normalized symbol 拉 chart/news/onchain/fundamental/memory。
+- `src/lib/team/evidenceDispatcher.ts:50-73` 的 role-domain/abstain 逻辑按 symbol evidence 判断。
+- `src/lib/team/evidenceDispatcher.ts:75-103` 的 mandate 可以支撑“角色视角”，但 trader / pm / chart 等角色仍偏交易。
+- `src/lib/team/teamRegistry.ts:3-17` 当前 14 个 `TeamMemberId` 完整存在，`src/lib/team/teamRegistry.ts:41-254` 全部 `defaultProvider: "deepseek"`，identity 层已稳定。
+
+判断：14 角色可以复用“角色身份”，不能复用“同一 trade prompt”。v1.1 应把 prompt 分支写成：
+
+- `symbol`：现有 trade-decision pipeline。
+- `market_overview`：macro/session brief，禁止 entry/stop/tp，输出 `tradeDecision: null` 或新增 `analysisSummary`。
+- `hotspot`：若绑定 executable symbol 才允许 trade branch；若只是叙事热点，则按 trade-disabled analysis branch。
+
+### 3. Candidate selector 现在只有 symbol，不支持 candidate type
+
+- `src/lib/team/topicSelector.ts:7` 的 `TopicReasonKind` 只有 `news | market | momentum | pool | memory`。
+- `src/lib/team/topicSelector.ts:20-33` 的 `PmDecisionTopicCandidate` 只有 `symbol / execution / score / reasons`，没有 `candidateType`。
+- `src/lib/team/topicSelector.ts:120-137` 的 candidate 来源是 pool symbol、news symbol、market signal symbol，fallback `BTC`。
+- `src/lib/team/topicSelector.ts:247-301` 最终按 `score` 排序；只用 `Number.EPSILON` 把原 index 塞进分数，缺严格 tie-breaker contract。
+- `src/lib/team/topicSelector.ts:330-355` selection evidence public summary 固定写“本轮优先分析 ${topic.symbol}”。
+
+判断：v1.0 “新增 CandidateType”不能只改 type。需要新增中心对象，例如：
+
+```ts
+type CandidateType = "symbol" | "market_overview" | "hotspot";
+
+interface DecisionCandidate {
+  candidateType: CandidateType;
+  candidateKey: string; // stable, e.g. market_overview:daily:zh_CN:2026-05-16
+  symbol?: string;
+  executable: boolean;
+  cadence: "daily" | "intraday" | "event";
+  score: number;
+  reasons: TopicSelectionReason[];
+}
+```
+
+### 4. Public timeline / topic adapter / V10 UI 都是 symbol-first
+
+- `src/lib/watch/publicTimelineEvent.ts:57-74` 的 `pm_decision` payload 有 `symbol`，没有 `candidateType`。
+- `src/lib/watch/publicTimelineProjection.ts:104-107` 只接受 `/^[A-Z0-9]{2,12}$/`，`market_overview` 这种 key 会被过滤。
+- `src/lib/watch/publicTimelineProjection.ts:176-205` / `208-244` projection 只推导 `symbol / executable / tradeDecision`。
+- `src/lib/watch/publicTimelineOrdering.ts:20-24` dedupe key 是 `${locale}:${symbol}`。
+- `src/lib/watch/topicAggregator.ts:14-23` 的 group 只有 `symbol`，无 candidate type。
+- `src/lib/watch/topicAggregator.ts:81-124` 如果 symbol 是 `UNKNOWN` 直接跳过；如果用 pseudo-symbol，又会按 symbol 聚合。
+- `src/modules/agent-watch/v9/types.ts:133-160` 的 `DispatchTopic` 没有 candidate type。
+- `src/lib/watch/v9TopicAdapter.ts:268-310` 的 stage copy 是交易阶段语义；`src/lib/watch/v9TopicAdapter.ts:482-545` 会按 trade decision 生成 trader / PM 消息。
+- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx:93-101` 现在按 `topicRanking.score desc || original index` 排序，和 v1.0 “常驻置顶 + timestamp desc”不一致。
+- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx:258-285` follow-trade hidden 只看 `watchOnly`，没有 `market_overview` strict gate。
+
+判断：Stage 3 UI 不是独立尾部小改，它依赖 Stage 1 的 public payload contract。v1.1 必须把 canonical ordering function 和 legacy fallback 写清楚，否则 hotfix-4 的 duplicate/order 问题会重演。
+
+### 5. 数据源真实可用性
+
+Vercel env（不输出 value）：
+
+- Preview + Production 已有：`CRYPTOCOMPARE_API_KEY`、`COINGECKO_DEMO_KEY`、`ETHERSCAN_API_KEY`、`DUNE_API_KEY`、`DEBANK_ACCESS_KEY`、`DEEPSEEK_API_KEY`、`MINIMAX_API_KEY`、KV vars。
+- Production 额外有：`CRON_SECRET`。
+- 未见：`CRYPTOPANIC_API_KEY`、Twitter/X/social API key、CoinMarketCap key、Glassnode key、Nansen key。
+
+代码事实：
+
+- `src/lib/news/sourceRegistry.ts:34-48` CryptoCompare 是 active primary；但 `fields.sentimentNative/currenciesNative/votesNative` 都是 false。
+- `src/lib/news/adapters/cryptocompare-adapter.ts:32-47` CryptoCompare article 只映射 title/url/source/currencies/sentiment-from-text/publishedAt。
+- `src/lib/news/sourceRegistry.ts:63-74` CryptoPanic 是 standby，能提供 currencies/votes native，但 env 缺 `CRYPTOPANIC_API_KEY`。
+- `src/lib/marketDataCache.ts:27-31` 已用 CoinGecko simple/trending/markets endpoint。
+- `src/lib/marketDataCache.ts:140-166` 当前 `CoinTickerEntry` 只保留 symbol/name/price/change24h/category，丢掉 market cap / total volume。
+- `src/lib/marketDataCache.ts:202-237` opportunity pool 从 CoinGecko markets top100 来，但只按 24h change 取候选。
+- `src/lib/marketDataCache.ts:33-35` CoinW kline 只覆盖 BTC/ETH/SOL，不能支撑 HYPE/BILL/IRYS，也不提供 market cap。
+- `src/app/api/hero/trending-coins/route.ts:21-33` 已有可复用的 CoinGecko markets fields：`market_cap / total_volume / price_change_percentage_24h`。
+- `src/app/api/hero/trending-coins/route.ts:108-127` 已有基于 volume + market cap 的过滤/score 经验。
+- `src/lib/api/fearGreed.ts:1-46` 已有 Fear & Greed adapter，但当前 PM evidence pack 未接入。
+- 未找到 BTC dominance / total crypto market cap / US equity correlation 的现成 adapter。
+
+判断：
+
+- News 热度：可用 CryptoCompare “7d count / source diversity / high impact count”近似，不能声称有 native social heat。
+- Market cap / 24h volume：不是 CoinW kline 提供；应复用 CoinGecko markets path 或抽出 shared market universe adapter。
+- 社交数据：当前不可用。除非 Dan 申请 CryptoPanic 或 X/social API，否则 v1.1 应把 social dimension 降 P1/backlog，不能列 P0 硬验收。
+- 大盘宏观：Fear & Greed 可用；BTC.D / total market cap / US equity correlation 当前没有 first-class source。
+
+### 6. Cron / cadence 在 preview 下不能按 v1.0 验收
+
+- `vercel.json:1-7` 只有 `/api/cron/strategy-replay`，schedule `0 */3 * * *`。
+- `src/app/api/cron/strategy-replay/route.ts:47-152` cron 会跑 news/debate/PM batch，`trigger=now` 则单次 PM。
+- `src/app/api/watch/refresh/route.ts:1` 已用 `waitUntil`。
+- `src/app/api/watch/refresh/route.ts:151-258` 是 visit-trigger path，但当前 GET/POST 都要求 `symbol`，没有 `candidateType`。
+- `src/app/api/watch/refresh/route.ts:159-218` lock ordering 是 rate limit → in-flight → freshness → cooldown → pmDecisionLock → hasTrigger。
+- `src/app/api/watch/refresh/route.ts:238-256` 用 `waitUntil(triggerPmDecisionPipelineOnce(...symbol...))`，仍是 symbol path。
+
+判断：B.14 resident cadence 不能靠“新增 cron”在 preview 验收；v1.0 已承认 preview cron 限制，但 §19 T102/T103 仍写 cron 实装 P0。v1.1 应改为：
+
+- cadence policy + lock key 先落在 code。
+- preview 验收用 manual trigger / refresh trigger / test clock。
+- prod cron schedule 如需新增或改动，列为 Dan 单独授权项，不放在 Codex 自行实施范围。
+
+## F 假设逐条裁决
+
+| 假设                                                             | 裁决             | 理由                                                                                                                          |
+| ---------------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| PM pipeline / 14 角色 prompt 可 generalize 到非 symbol candidate | **FAIL / P0**    | pipeline、record、projection、trade schema 全 symbol-first；会把非 symbol 变成 BTC/UNKNOWN trade card。                       |
+| prompt 模板按 candidate type 分支容易实装                        | **PARTIAL / P1** | 可实装，但不是只改 docs prompt；需要 `PmDecisionPipelineInput`、evidence pack、trade decision branch、public payload 一起改。 |
+| CryptoCompare 可支持 news heat                                   | **PARTIAL / P1** | 可用 article count/source count 近似；没有 native votes/social heat。                                                         |
+| market cap / 24h volume 可用                                     | **PARTIAL / P1** | 可从 CoinGecko markets 复用；当前 watch pool 丢字段，CoinW kline 不提供 market cap。                                          |
+| 社交数据可用                                                     | **FAIL / P1**    | 未见 social API key；CryptoPanic standby 但 key 未配置。                                                                      |
+| Stage 1/2/3 边界合理                                             | **PARTIAL / P1** | 需要在 Stage 1 前增加 contract/schema gate；否则 Stage 3 无法独立稳定。                                                       |
+
+## Stage 边界评估
+
+建议 v1.1 改为 4 个 stage，而不是 3 个：
+
+1. **Stage 0 Candidate Contract / Projection Contract**：新增 `CandidateType`、`DecisionCandidate`、public payload optional `candidateType/candidateKey/displayTitle`、legacy fallback、canonical order key。1 AI 天。
+2. **Stage 1 Resident Analysis**：market_overview/hotspot cadence policy、refresh/manual trigger、trade-disabled pipeline branch、raw artifact。3-5 AI 天。
+3. **Stage 2 Priority Candidate Selector**：CoinGecko market cap/volume + CryptoCompare news count + executable/watch-only weighting + cache/fallback。2-3 AI 天；如硬做 social API，变 4-5 AI 天且需要 Dan 申请 key。
+4. **Stage 3 Multi-Type Card UI**：badge/accent/sorting/follow strict gate/i18n/a11y/5-refresh hash。1.5-2.5 AI 天。
+
+全 spec 预计：**7.5-11.5 AI 天**。如果 v1.0 直接开干，返工风险高，实际更接近 9-14 AI 天。
+
+最高风险 stage：**Stage 1 / Resident Analysis**。原因不是 prompt 难，而是它同时跨 PM pipeline、trade schema、strategy record、public timeline projection、refresh trigger、KV cadence lock。任何一层继续用 symbol fallback 都会产出“假 BTC / 假 trade card”。
+
+## §13 Cannot-Do 漏项
+
+v1.0 的 12 条不够，建议 v1.1 增加：
+
+1. 不得把 `market_overview` / `hotspot` 当作假 symbol 写进 trade-decision path。
+2. 不得用 `currentPrice=1` 或 `symbol=BTC` 兜底生成常驻 trade card。
+3. 不得让 `market_overview` 进入 executable / follow-trade resolver。
+4. 不得依赖 preview cron 作为验收机制；preview 只能用 manual/refresh/test clock 验收 cadence policy。
+5. 不得在无 social key 时把 social score 当作 P0 数据源；缺源只能 neutralize，不输出“社交缺失”。
+6. 不得每次用户访问触发 resident + full symbol pool；必须有 per-candidate cadence/cooldown/cost cap。
+7. 不得修改 public payload shape 而没有 legacy record fallback。
+8. 不得在 resident card 中恢复 hotfix-5 禁词或后台状态。
+9. 不得恢复 demo fallback topic 来填充 resident card。
+10. 不得用 Map iteration / index / random 作为最终排序依据。
+
+## §19 16 个 P0 task 评估
+
+| Task                                | 评估              | 建议                                                                                    |
+| ----------------------------------- | ----------------- | --------------------------------------------------------------------------------------- |
+| T101 schema CandidateType           | P0 合理但不完整   | 扩成 `DecisionCandidate` + public payload + adapter type + legacy fallback。            |
+| T102 market_overview cron + cadence | P0 名称不合理     | 改为 cadence policy + manual/refresh/test-clock trigger；新增 prod cron 只能 Dan 授权。 |
+| T103 hotspot cron + cadence         | P0 名称不合理     | 同 T102。                                                                               |
+| T104 prompt type branch             | P0 合理但范围低估 | 不只是 prompt；还要 pipeline branch、trade-disabled output、evidence context。          |
+| T105 timeline projection multi type | P0 合理           | 必须覆盖 `projectDecisionRecordToPublicEvent` + `topicAggregator` + `v9TopicAdapter`。  |
+| T106 true PM run raw artifact       | P0 合理           | 但常驻 analysis branch 应先通过 unit + dry-run，避免 25 calls/candidate 浪费。          |
+| T201 selector 4 dims                | P0 需调整         | Social 降 P1；market cap/volume/news/executable 可 P0。                                 |
+| T202 data source                    | 拆分              | CoinGecko/CryptoCompare P0；social/CryptoPanic P1，需要 key。                           |
+| T203 cache 5min                     | P0 合理           | 加 key 设计：candidate score cache 与 cadence lock 分开。                               |
+| T204 tests                          | P0 合理           | 加 data-source-missing neutral score test。                                             |
+| T301 3 type render                  | P0 合理           | 依赖 Stage 0 payload。                                                                  |
+| T302 accent + badge                 | P0 合理           | 不改 layout。                                                                           |
+| T303 i18n 10 locale                 | P0 合理           | 含 `en_XA`。                                                                            |
+| T304 follow strict gate             | P0 合理           | 条件应是 candidateType 不是 symbol，或 executable 不为 true 时不渲染。                  |
+| T305 tie-breaker                    | P0 合理但需前置   | 放入 canonical ordering util，不能只在 V10 排序。                                       |
+| T306 stability/a11y/raw             | P0 合理           | 保留。                                                                                  |
+
+## Product / UX Angle
+
+F 没问到的关键 angle：
+
+1. **常驻卡不一定应该输出交易方案**。大盘/热点的用户价值是“今天该不该进入风险市场 / 哪条叙事值得盯”，不是硬给 entry/stop/tp。
+2. **大盘卡应影响 symbol selector 权重**。例如 market_overview 为 risk-off 时，symbol selector 应提高 executable 大币权重、降低 long-tail 机会池，而不是两个系统独立。
+3. **cost cap 要进 spec**。当前一个 candidate 可能触发 14 角色多轮 + PM；resident 2-3 卡 + symbol topN 如果在 visit trigger 上不控，会把 B.13 的 refresh 成本问题放大。
+4. **history dedupe key 要早定**。`market_overview` 是每日一个 record，`hotspot` 是 intraday 多个，不能和 symbol 的 `${locale}:${symbol}` 用同一 dedupe 语义。
+5. **market_overview 的证据源缺口不能显示给用户**。继承 hotfix-5 规则，缺 BTC.D / US equity 只能在内部 telemetry 中体现，public 文案必须只基于已有证据输出。
+
+## 建议 v1.1 修改 diff
+
+```diff
+diff --git a/docs/codex-specs/spec-watch-B14-resident-analysis-and-priority-candidate.md b/docs/codex-specs/spec-watch-B14-resident-analysis-and-priority-candidate.md
+@@
+- > **协议**：claude-codex-protocol v2.5 (19 段)
++ > **协议**：claude-codex-protocol v2.5 (Round 1 后补齐 §7-§12 engineering context)
+@@
+- - 复用现有 PM pipeline，14 角色对常驻 candidate 走同样 dispatch
++ - 复用 14 角色身份与多轮框架，但 PM pipeline 必须先加 candidate-type 分支：
++   - `symbol`：沿用现有 trade-decision branch
++   - `market_overview`：trade-disabled resident analysis branch，不生成 entry/stop/tp
++   - `hotspot`：若绑定 executable symbol 才走 trade branch；纯叙事热点走 trade-disabled branch
++ - 禁止把 resident candidate fallback 成 BTC / UNKNOWN / currentPrice=1 trade card
+@@
+- - 新增 schema：`CandidateType = 'symbol' | 'market_overview' | 'hotspot'`
++ - 新增 schema contract：
++   - `CandidateType = 'symbol' | 'market_overview' | 'hotspot'`
++   - `DecisionCandidate = { candidateType, candidateKey, symbol?, displayTitle, executable, cadence, score, reasons }`
++   - public payload 加 optional `candidateType / candidateKey / displayTitle / executable`
++   - legacy record fallback：缺 candidateType 的旧 record 视为 `symbol`
+@@
+- - 评分维度：
+-   - 市值权重
+-   - 24h volume 权重
+-   - 新闻热度权重
+-   - 用户关注度权重
++ - 评分维度：
++   - 市值权重：P0，复用 CoinGecko markets；当前 watch pool 需保留 `marketCapUsd`
++   - 24h volume 权重：P0，复用 CoinGecko markets；当前 watch pool 需保留 `totalVolumeUsd24h`
++   - 新闻热度权重：P0，CryptoCompare 7d count/source diversity/high-impact count 近似
++   - 用户/社交关注度：P1，除非 Dan 先提供 CryptoPanic 或 social API key
++   - executable 权重：P0，CoinW executable symbol 优先；watch-only 只能高分展示，严禁跟单
+@@
+- - 排序：常驻卡置顶（market_overview 第一 / hotspot 第二）+ 币种卡按 timestamp desc
++ - 排序必须使用 canonical comparator：
++   1. candidate type priority: market_overview → hotspot → symbol
++   2. score desc where available
++   3. lastUpdatedAt desc
++   4. candidateKey / recordId 字典序
++ - 禁止 index / Map iteration / random 进入最终排序。
+@@
+- - 常驻 candidate cron 不跑（Vercel preview 限制，hotfix-2 已知）：visit-trigger refresh 链路兜底
++ - Preview cron 不作为验收机制：cadence 用 manual trigger / refresh trigger / test clock 验证。
++ - 如需新增/修改 production cron schedule，必须 Dan 单独授权；Codex 不擅自改 `vercel.json`。
+@@
+- 1. 现有 PM pipeline / 14 角色 prompt 能 generalize 到非 symbol candidate（大盘 / 热点），需 prompt 模板调整
+- 2. CryptoCompare news source 含足够热度数据支持优先级评分
+- 3. CoinW kline / market cap / volume API 可用作优先级 input
++ 1. 现有 PM pipeline 不能直接 generalize 到非 symbol candidate；v1.1 必须先加 candidate contract + trade-disabled branch
++ 2. CryptoCompare 可支持 news-count/source-diversity 近似热度，但无 native social/vote 字段
++ 3. market cap / 24h volume 来源是 CoinGecko markets，不是 CoinW kline；CoinW kline 当前只覆盖 BTC/ETH/SOL
++ 4. social/user attention 当前无可用 key；列 P1/backlog 或 procurement
+@@
+- ## § 13 不能做（冻结清单）
++ ## § 13 不能做（冻结清单）
+@@
+ 12. 多 type 卡片 follow-trade 按钮 strict gate（market_overview 严禁渲染）
++13. 不得把 `market_overview` / pure `hotspot` 当作假 symbol 写入 trade-decision branch。
++14. 不得用 `symbol=BTC`、`symbol=UNKNOWN` 或 `currentPrice=1` 为常驻卡生成假 trade card。
++15. 不得依赖 preview cron 作为 B.14 cadence 验收。
++16. 不得在无 social API key 时把 social score 作为 P0 验收项。
++17. 不得每次用户访问触发 resident + full symbol pool；必须有 per-candidate cadence/cooldown/cost cap。
++18. 不得修改 public payload shape 而没有 legacy fallback。
++19. 不得恢复 demo fallback topic。
++20. 不得使用 index / Map iteration / random 作为最终排序依据。
+@@
+- - Stage 1：A 常驻 candidate type（含 schema + cadence + KV write + timeline projection 通过）
+- - Stage 2：B 优先级评分（含 4 维度评分 + cache + fallback）
+- - Stage 3：C 多 type 视觉 + i18n + 验收套件
++ - Stage 0：Candidate/Public Payload/Ordering contract（先行 gate，单 PR）
++ - Stage 1：Resident analysis branch + cadence policy + refresh/manual trigger（单 PR）
++ - Stage 2：Priority candidate selector（CoinGecko + CryptoCompare + executable weighting；social P1）（单 PR）
++ - Stage 3：Multi-type card UI + i18n + stability verification（单 PR）
+@@
+- | T101 | 1 常驻 | P0 | schema CandidateType 扩 3 值 |
++ | T100 | 0 Contract | P0 | DecisionCandidate + public payload + DispatchTopic + canonical comparator + legacy fallback |
++ | T101 | 1 常驻 | P0 | PM pipeline candidateType branch；resident trade-disabled output |
+@@
+- | T102 | 1 常驻 | P0 | market_overview cron + cadence 实装 |
+- | T103 | 1 常驻 | P0 | hotspot cron + cadence 实装 |
++ | T102 | 1 常驻 | P0 | market_overview cadence policy + manual/refresh/test-clock trigger |
++ | T103 | 1 常驻 | P0 | hotspot cadence policy + manual/refresh/test-clock trigger |
+@@
+- | T202 | 2 优先级 | P0 | 数据源接入（market cap / volume / news / 社交） |
++ | T202a | 2 优先级 | P0 | CoinGecko market cap / volume 字段保留 + scoring |
++ | T202b | 2 优先级 | P0 | CryptoCompare news-count/source-diversity scoring |
++ | T202c | 2 优先级 | P1 | CryptoPanic/social score，等待 env/key |
+```
+
+## 收敛建议
+
+Round 1 判定：**[SPEC-FEEDBACK] > 2 且含 P0，不进入 implement。**
+
+建议 F 出 v1.1 时先修 5 件事：
+
+1. 加 Stage 0 contract，明确 `DecisionCandidate` / public payload / DispatchTopic / ordering comparator。
+2. 把“复用 PM pipeline”改成“复用 14 角色身份 + 新增 candidate-type branch”。
+3. 把 social score 从 P0 降到 P1，除非 Dan 提供 CryptoPanic/social key。
+4. 把 cron 实装改成 cadence policy + preview-safe manual/refresh/test-clock 验收；prod cron 另等 Dan 授权。
+5. 给 cost cap / lock key / top-N 写硬规则。
+
+[DOC-HINT: none]
