@@ -667,7 +667,7 @@
         "closed": "Closed",
         "debating": "Debating",
         "started": "Started",
-        "empty": "No decision updates yet",
+        "empty": "Espace de travail en cours de démarrage. Aucune décision récente.",
         "statusDone": "Closed",
         "statusPending": "Starting",
         "statusActive": "LIVE Debate",

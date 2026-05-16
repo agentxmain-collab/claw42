@@ -667,7 +667,7 @@
         "closed": "Closed",
         "debating": "Debating",
         "started": "Started",
-        "empty": "No decision updates yet",
+        "empty": "ワークベンチを起動中です。最近の意思決定はありません。",
         "statusDone": "Closed",
         "statusPending": "Starting",
         "statusActive": "LIVE Debate",

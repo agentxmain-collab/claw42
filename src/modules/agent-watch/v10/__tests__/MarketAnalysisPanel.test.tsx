@@ -3,26 +3,31 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import zhCN from "@/i18n/dicts/zh_CN.json";
 import type { Dict } from "@/i18n/types";
+import { dispatchV10DemoTopics } from "../demoTopics";
 import { MarketAnalysisPanel } from "../MarketAnalysisPanel";
 
 const dict = (zhCN as Dict).agentWatch.dispatchV10;
 
 describe("MarketAnalysisPanel v10", () => {
-  test("renders three demo decision flows when real topics are empty", () => {
+  test("renders a no-data empty state when real topics are empty", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel topics={[]} dict={dict} onPlaceholder={() => undefined} />,
     );
 
-    expect(html).not.toContain("暂无决策更新");
-    expect(html).toContain("BTC 决策流");
-    expect(html).toContain("ETH 决策流");
-    expect(html).toContain("SOL 决策流");
-    expect(html).toContain("阶段 6 · 复盘沉淀");
+    expect(html).toContain("NO DATA");
+    expect(html).toContain("工作台启动中，暂无最近决策");
+    expect(html).not.toContain("BTC 决策流");
+    expect(html).not.toContain("ETH 决策流");
+    expect(html).not.toContain("SOL 决策流");
   });
 
-  test("renders latest strategy and normalized role titles for demo topics", () => {
+  test("renders latest strategy and normalized role titles for explicit topics", () => {
     const html = renderToStaticMarkup(
-      <MarketAnalysisPanel dict={dict} onPlaceholder={() => undefined} />,
+      <MarketAnalysisPanel
+        topics={dispatchV10DemoTopics}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
     );
 
     expect(html).toContain("最新策略");

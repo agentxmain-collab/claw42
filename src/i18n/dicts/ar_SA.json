@@ -667,7 +667,7 @@
         "closed": "Closed",
         "debating": "Debating",
         "started": "Started",
-        "empty": "No decision updates yet",
+        "empty": "يتم تشغيل لوحة العمل. لا توجد قرارات حديثة.",
         "statusDone": "Closed",
         "statusPending": "Starting",
         "statusActive": "LIVE Debate",

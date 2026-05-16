@@ -667,7 +667,7 @@
         "closed": "已閉環",
         "debating": "辯論中",
         "started": "起步",
-        "empty": "暫無決策更新",
+        "empty": "工作台啟動中，暫無最近決策",
         "statusDone": "已闭环",
         "statusPending": "起步中",
         "statusActive": "LIVE 辯論",

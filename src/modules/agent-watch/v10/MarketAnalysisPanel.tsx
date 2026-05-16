@@ -11,7 +11,6 @@ import type {
   DispatchStageStatus,
 } from "../v9/types";
 import v9Styles from "../v9/dispatchConsoleV9.module.css";
-import { dispatchV10DemoTopics } from "./demoTopics";
 import { v9AgentToV10Role } from "./staticContent";
 
 function ChatShellStat({ label, value }: { label: string; value: number }) {
@@ -334,9 +333,7 @@ export function MarketAnalysisPanel({
   freshness?: DispatchFreshnessState;
 }) {
   const resolvedTopics = useMemo(() => {
-    const normalizedTopics = (topics && topics.length > 0 ? topics : dispatchV10DemoTopics).map(
-      (topic) => normalizeTopicNames(topic, dict.roles),
-    );
+    const normalizedTopics = (topics ?? []).map((topic) => normalizeTopicNames(topic, dict.roles));
     return orderTopicsByRanking(normalizedTopics);
   }, [dict.roles, topics]);
   const doneCount = resolvedTopics.filter((topic) => topic.status === "done").length;
@@ -372,7 +369,11 @@ export function MarketAnalysisPanel({
         <div className="chat-shell-body">
           {resolvedTopics.length === 0 ? (
             <div className="topic-empty" role="status">
-              {dict.market.empty}
+              <span className="topic-empty-icon" aria-hidden="true">
+                ○
+              </span>
+              <span className="topic-empty-label">NO DATA</span>
+              <span className="topic-empty-text">{dict.market.empty}</span>
             </div>
           ) : (
             resolvedTopics.map((topic, index) => (

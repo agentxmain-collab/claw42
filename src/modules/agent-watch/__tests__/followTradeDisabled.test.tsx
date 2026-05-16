@@ -23,7 +23,11 @@ describe("follow trade disabled safety state", () => {
 
   test("renders disabled safety copy in the v10 market panel", () => {
     const html = renderToStaticMarkup(
-      <MarketAnalysisPanel dict={dispatchV10Dict} onPlaceholder={() => undefined} />,
+      <MarketAnalysisPanel
+        topics={dispatchV10DemoTopics}
+        dict={dispatchV10Dict}
+        onPlaceholder={() => undefined}
+      />,
     );
 
     expect(html).toContain("演示模式");
