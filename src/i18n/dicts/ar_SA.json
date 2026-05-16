@@ -689,7 +689,13 @@
         "takeProfit": "Target",
         "watchReminder": "watch alerts",
         "watchCount": "watching",
-        "followed": "followed"
+        "followed": "followed",
+        "analyzedAgo": "تم التحليل قبل {minutes} دقيقة",
+        "newAnalysisRunning": "تحليل جديد قيد التشغيل",
+        "autoRefreshOnComplete": "تحديث تلقائي عند الاكتمال",
+        "cachedStateLabel": "بيانات مخزنة مؤقتًا",
+        "watchOnlyLabel": "للمراقبة فقط",
+        "watchOnlyCopy": "هذا الرمز غير قابل للتنفيذ على CoinW بعد؛ يظهر التحليل للمراقبة فقط."
       },
       "placeholder": {
         "title": "Copy-trading is in development",

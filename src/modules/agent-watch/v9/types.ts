@@ -105,9 +105,35 @@ export interface DispatchStrategy {
   };
 }
 
+export interface DispatchTopicExecutionMode {
+  executable: boolean;
+  coinwPair: string | null;
+  watchOnly: boolean;
+  watchOnlyReason?: "not_listed_on_coinw" | "mapping_unknown";
+}
+
+export type DispatchFreshnessStatus =
+  | "idle"
+  | "cached"
+  | "stale"
+  | "refreshing"
+  | "locked"
+  | "no_signal"
+  | "error";
+
+export interface DispatchFreshnessState {
+  status: DispatchFreshnessStatus;
+  symbol?: string | null;
+  lastDecisionAt?: string | null;
+  nextAllowedAt?: string | null;
+  refreshStarted?: boolean;
+  refreshSource?: "records" | "timeline" | "none";
+}
+
 export interface DispatchTopic {
   id: string;
   symbol: string;
+  execution?: DispatchTopicExecutionMode;
   status: DispatchTopicStatus;
   title: string;
   explanation?: string;
@@ -148,4 +174,5 @@ export interface DispatchConsoleV9Props {
     action: DispatchTopicAction,
   ) => void | Promise<void>;
   followTradeDict?: DispatchV10FollowTradeDict;
+  freshness?: DispatchFreshnessState;
 }

@@ -41,6 +41,7 @@ export function TopicStrategy({
   followTradeDict?: DispatchV10FollowTradeDict;
 }) {
   const { strategy } = topic;
+  const watchOnly = topic.execution?.watchOnly === true;
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
   const followStatus =
     topic.status === "pending"
@@ -72,16 +73,19 @@ export function TopicStrategy({
       <StrategyValue label="止盈" value={strategy.takeProfit} tone={muted ?? "lime"} />
       <div className="strat-cta">
         <div className="cta-row">
-          <button
-            className="cta-btn"
-            type="button"
-            disabled
-            title={followTradeDict.disabled_tooltip}
-            aria-describedby={followNoteId}
-            onClick={() => onPlaceholder(topic, followTradeDict.disabled_label, "primary")}
-          >
-            {followTradeDict.disabled_label}
-          </button>
+          {watchOnly ? <span className="watch-only-pill">仅观察</span> : null}
+          {!watchOnly ? (
+            <button
+              className="cta-btn"
+              type="button"
+              disabled
+              title={followTradeDict.disabled_tooltip}
+              aria-describedby={followNoteId}
+              onClick={() => onPlaceholder(topic, followTradeDict.disabled_label, "primary")}
+            >
+              {followTradeDict.disabled_label}
+            </button>
+          ) : null}
           <button
             className="cta-btn secondary"
             type="button"
@@ -91,7 +95,9 @@ export function TopicStrategy({
           </button>
         </div>
         <div className="cta-meta" id={followNoteId}>
-          {followTradeDict.safety_copy} · {followStatus}
+          {watchOnly
+            ? `该币种暂不支持 CoinW 跟单，仅展示观察分析。 · ${followStatus}`
+            : `${followTradeDict.safety_copy} · ${followStatus}`}
         </div>
       </div>
     </div>

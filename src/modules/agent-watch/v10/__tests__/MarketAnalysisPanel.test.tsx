@@ -30,4 +30,22 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain("宏观情报分析师");
     expect(html).toContain("交易策略总监");
   });
+
+  test("renders visible-session freshness state", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        dict={dict}
+        freshness={{
+          status: "refreshing",
+          symbol: "BTC",
+          refreshStarted: true,
+          refreshSource: "records",
+        }}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("新分析进行中");
+    expect(html).toContain("完成后自动刷新");
+  });
 });
