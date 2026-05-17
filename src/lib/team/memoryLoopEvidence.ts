@@ -7,6 +7,8 @@ import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 
 export interface MemoryContext {
   historicalCount: number | null;
+  symbolHistoricalCount: number | null;
+  crossSymbolHistoricalCount: number;
   winLossDistribution: {
     wins: number;
     losses: number;
@@ -17,6 +19,7 @@ export interface MemoryContext {
     symbol: string;
     direction: string;
     outcome: string;
+    relation: "same_symbol" | "cross_symbol";
   }>;
   lastReviewNotes: string | null;
   sampleSizeCaution: boolean;
@@ -72,17 +75,30 @@ export async function fetchMemoryContext(
       .filter((record) => record.symbol === normalizedSymbol)
       .filter(isResolvedLearningRecord)
       .sort(sortNewestFirst);
+    const crossSymbolRecords = await fetchCrossSymbolLearningRecords(
+      normalizedSymbol,
+      normalizedLocale,
+      usableRecords.length,
+      deps,
+    );
+    const learningRecords = [...usableRecords, ...crossSymbolRecords];
 
-    if (usableRecords.length === 0) {
+    if (learningRecords.length === 0) {
       return emptyMemoryContext("no_history");
     }
 
     return {
-      historicalCount: usableRecords.length,
-      winLossDistribution: distributionForRecords(usableRecords),
-      similarSetups: usableRecords.slice(0, SIMILAR_SETUP_LIMIT).map(similarSetupFromRecord),
-      lastReviewNotes: latestMemoryLoopNote(usableRecords),
-      sampleSizeCaution: usableRecords.length < SAMPLE_SIZE_CAUTION_THRESHOLD,
+      historicalCount: learningRecords.length,
+      symbolHistoricalCount: usableRecords.length,
+      crossSymbolHistoricalCount: crossSymbolRecords.length,
+      winLossDistribution: distributionForRecords(learningRecords),
+      similarSetups: [
+        ...usableRecords.map((record) => similarSetupFromRecord(record, "same_symbol")),
+        ...crossSymbolRecords.map((record) => similarSetupFromRecord(record, "cross_symbol")),
+      ].slice(0, SIMILAR_SETUP_LIMIT),
+      lastReviewNotes:
+        latestMemoryLoopNote(usableRecords) ?? latestMemoryLoopNote(crossSymbolRecords),
+      sampleSizeCaution: learningRecords.length < SAMPLE_SIZE_CAUTION_THRESHOLD,
     };
   } catch {
     return emptyMemoryContext("kv_unavailable");
@@ -171,6 +187,8 @@ export function formatMemoryContextForPrompt(context: MemoryContext) {
 
   return [
     `Historical samples: ${context.historicalCount}`,
+    `Current-symbol samples: ${context.symbolHistoricalCount ?? 0}`,
+    `Cross-symbol samples: ${context.crossSymbolHistoricalCount}`,
     `Outcome distribution: wins=${distribution.wins}, losses=${distribution.losses}, open=${distribution.openTrades}`,
     context.sampleSizeCaution
       ? `Sample-size caution: fewer than ${SAMPLE_SIZE_CAUTION_THRESHOLD} historical samples. Treat win-rate cues as directional only.`
@@ -179,12 +197,17 @@ export function formatMemoryContextForPrompt(context: MemoryContext) {
       ? `Last review note: ${context.lastReviewNotes}`
       : "Last review note: none",
     `Similar recent setups:\n${setups || "- none"}`,
+    context.crossSymbolHistoricalCount > 0
+      ? "Cross-symbol resolved lessons: use these only as pattern memory, not as symbol-specific proof."
+      : "Cross-symbol resolved lessons: none",
   ].join("\n");
 }
 
 function emptyMemoryContext(error: MemoryContext["error"]): MemoryContext {
   return {
     historicalCount: error === "no_history" ? 0 : null,
+    symbolHistoricalCount: error === "no_history" ? 0 : null,
+    crossSymbolHistoricalCount: 0,
     winLossDistribution: {
       wins: 0,
       losses: 0,
@@ -195,6 +218,27 @@ function emptyMemoryContext(error: MemoryContext["error"]): MemoryContext {
     sampleSizeCaution: true,
     error,
   };
+}
+
+async function fetchCrossSymbolLearningRecords(
+  normalizedSymbol: string,
+  locale: Locale,
+  sameSymbolCount: number,
+  deps: MemoryLoopDeps,
+) {
+  if (sameSymbolCount >= SAMPLE_SIZE_CAUTION_THRESHOLD) return [];
+  const readAll =
+    deps.readAllDecisionRecords ??
+    (process.env.NODE_ENV === "test" ? null : readAllDecisionRecords);
+  if (!readAll) return [];
+
+  const records = await readAll(MEMORY_RECORD_LIMIT, locale);
+  return records
+    .filter((record) => record.recordSource !== "legacy")
+    .filter((record) => record.symbol !== normalizedSymbol)
+    .filter(isResolvedLearningRecord)
+    .sort(sortNewestFirst)
+    .slice(0, SIMILAR_SETUP_LIMIT);
 }
 
 function distributionForRecords(records: StrategyDecisionRecord[]) {
@@ -217,7 +261,10 @@ function isResolvedLearningRecord(record: StrategyDecisionRecord) {
   return Boolean(record.resolvedAt && record.resolvedOutcome);
 }
 
-function similarSetupFromRecord(record: StrategyDecisionRecord) {
+function similarSetupFromRecord(
+  record: StrategyDecisionRecord,
+  relation: "same_symbol" | "cross_symbol",
+) {
   return {
     timestamp: Date.parse(record.createdAt) || 0,
     symbol: record.symbol,
@@ -226,6 +273,7 @@ function similarSetupFromRecord(record: StrategyDecisionRecord) {
       record.analystInputs.find((input) => input.memberId === "pm")?.direction ??
       "wait",
     outcome: record.resolvedOutcome ?? "open",
+    relation,
   };
 }
 

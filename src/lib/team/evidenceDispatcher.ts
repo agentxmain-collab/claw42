@@ -405,6 +405,8 @@ async function fetchMemoryContextWithTimeout(symbol: string, locale?: Locale) {
       () =>
         resolve({
           historicalCount: null,
+          symbolHistoricalCount: null,
+          crossSymbolHistoricalCount: 0,
           winLossDistribution: {
             wins: 0,
             losses: 0,

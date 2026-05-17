@@ -1801,3 +1801,49 @@ First-hand 结果：
 当前只能进入“执行前安全准备”状态，不能进入真实 CoinW execution。下一阶段若要真接，必须先单独 spec 处理 OAuth 授权、CoinW adapter、订单回执、对账、sandbox、kill switch 和合规审批；本阶段只确保 public preview 不会误给用户真实跟单能力。
 
 [DOC-HINT: B20 adds a machine execution-safety gate; real CoinW execution remains blocked until OAuth, adapter, receipts, reconciliation, sandbox, kill switch, and compliance are implemented in a separate approved spec.]
+
+# B.21 Memory learning 跨标的闭环样本实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+Dan 要求先补剩余 1/2/4。B21 对应“真正的 Memory learning”：保留 B19 的安全边界（未闭环不发声），但让 memory loop 在当前 symbol 没有已闭环样本时，可以读取全局已闭环决策作为“跨标的形态记忆”。
+
+## First-hand 判断
+
+- B19 后 `fetchMemoryContext()` 只读当前 symbol 的 records；VVV 等新 symbol 没有 resolved history 时，memory_loop 会直接 no-history abstain。
+- `decisionRecordStore.readAllDecisionRecords()` 已存在，可以按 locale 读取全局 strategy records，不需要新建 history wall key 或猜 KV key。
+- 安全边界必须保留：legacy record / unresolved open record 不能进入 memory learning；跨标的样本只能作为弱 pattern memory，不能当成当前 symbol 的证明。
+
+## Changes
+
+- `src/lib/team/memoryLoopEvidence.ts`
+  - `MemoryContext` 增加 `symbolHistoricalCount` / `crossSymbolHistoricalCount` / setup `relation`。
+  - 当前 symbol 已闭环样本少于阈值时，从 `readAllDecisionRecords()` 补跨标的已闭环样本。
+  - Prompt 增加 current-symbol samples、cross-symbol samples、cross-symbol resolved lessons 警示。
+- `src/lib/team/evidenceDispatcher.ts`
+  - timeout fallback 补齐新增 memory context 字段。
+- `docs/agent-ip/team/memory_loop.md`
+  - 明确 current-symbol 是直接记忆，cross-symbol 是更弱的形态记忆，不能当同 symbol 证明。
+- Tests:
+  - `src/lib/team/__tests__/memoryLoopEvidence.test.ts`
+  - 新增跨 symbol resolved 样本可用、unresolved / legacy 不可用的覆盖。
+
+## Verify Status
+
+- Red test observed first:
+  - 当前 symbol 无 closed history 时，cross-symbol resolved record 没被使用，仍返回 `error=no_history`。
+- `npx vitest run src/lib/team/__tests__/memoryLoopEvidence.test.ts`: PASS, 6 tests
+- `npx vitest run src/lib/team/__tests__/memoryLoopEvidence.test.ts src/lib/team/__tests__/evidenceDispatcher.test.ts`: PASS, 11 tests
+- `npm run verify`: PASS, 291 watch/pipeline tests included
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+## Notes
+
+- 没动 PM pipeline / candidate ranking / refresh / hydration / V10 layout / prod。
+- 这一步让 memory_loop 能开始复用跨标的已闭环经验，但仍不会从未 resolved 的当前 case 中“自学”或输出后台状态。
+
+[DOC-HINT: B21 expands memory_loop from same-symbol-only history to resolved cross-symbol pattern memory while preserving the unresolved-record abstain boundary.]
