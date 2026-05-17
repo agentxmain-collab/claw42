@@ -5,6 +5,11 @@ import { mapTeamProviderToProviderId } from "@/lib/llm/providers";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { recordStrategyDecisionRecord } from "@/lib/strategyHistory";
+import {
+  upsertDecisionRun,
+  type DecisionRunRecord,
+  type DecisionRunStageStatus,
+} from "@/lib/team/decisionRunLedger";
 import { writeDecisionStagePartial } from "@/lib/team/decisionStageWriter";
 import { upsertDecisionRecord } from "@/lib/team/decisionRecordStore";
 import {
@@ -117,6 +122,7 @@ interface PipelineDeps {
   appendWatchHistoryEntry?: typeof appendWatchHistoryEntry;
   loadPromptDoc?: (memberId: TeamMemberId) => Promise<string>;
   buildEvidenceContextPack?: typeof buildEvidenceContextPack;
+  upsertDecisionRun?: typeof upsertDecisionRun;
 }
 
 interface StageAuditMark {
@@ -1128,6 +1134,104 @@ function makePublicTimelineEntry(
   };
 }
 
+function runIdFor(symbol: string, now: number) {
+  return `run:pm:${symbol}:${now}`;
+}
+
+function candidateRunSnapshot(candidate: DecisionCandidate): DecisionRunRecord["candidate"] {
+  return {
+    candidateType: candidate.candidateType,
+    candidateKey: candidate.candidateKey,
+    displayTitle: candidate.displayTitle,
+    executable: candidate.executable,
+    ...(candidate.symbol ? { symbol: candidate.symbol } : {}),
+  };
+}
+
+function stageStatusFromAudit(
+  stageAudit: StageAuditMap,
+  activeStage?: DecisionStageTraceId,
+  failedStage?: DecisionStageTraceId,
+): DecisionRunRecord["stageStatus"] {
+  const stageIds: DecisionStageTraceId[] = [
+    "analyst_inputs",
+    "research_lead",
+    "risk_lead",
+    "trade_decision",
+    "record_write",
+    "public_timeline",
+  ];
+  return Object.fromEntries(
+    stageIds.map((stageId) => {
+      let status: DecisionRunStageStatus = "pending";
+      if (stageAudit[stageId]?.completedAt) status = "done";
+      if (activeStage === stageId) status = "in_progress";
+      if (failedStage === stageId) status = "failed";
+      return [stageId, status];
+    }),
+  );
+}
+
+function buildDecisionRun({
+  id,
+  status,
+  triggerSource,
+  locale,
+  candidate,
+  symbol,
+  startedAt,
+  completedAt = null,
+  stageAudit,
+  activeStage,
+  failedStage,
+  analystRoundCount = 0,
+  activeMemberIds = [],
+  abstainedMemberIds = [],
+  decisionRecordId = null,
+  publicTimelineEventId = null,
+  error = null,
+  skipReason = null,
+}: {
+  id: string;
+  status: DecisionRunRecord["status"];
+  triggerSource: PmDecisionTriggerSource;
+  locale: Locale;
+  candidate: DecisionCandidate;
+  symbol: string;
+  startedAt: string;
+  completedAt?: string | null;
+  stageAudit: StageAuditMap;
+  activeStage?: DecisionStageTraceId;
+  failedStage?: DecisionStageTraceId;
+  analystRoundCount?: number;
+  activeMemberIds?: TeamMemberId[];
+  abstainedMemberIds?: TeamMemberId[];
+  decisionRecordId?: string | null;
+  publicTimelineEventId?: string | null;
+  error?: string | null;
+  skipReason?: string | null;
+}): DecisionRunRecord {
+  return {
+    id,
+    schemaVersion: 1,
+    status,
+    triggerSource,
+    locale,
+    candidate: candidateRunSnapshot(candidate),
+    symbol,
+    startedAt,
+    completedAt,
+    stageStatus: stageStatusFromAudit(stageAudit, activeStage, failedStage),
+    analystRoundCount,
+    activeMemberIds,
+    abstainedMemberIds,
+    decisionRecordId,
+    publicTimelineEventId,
+    error,
+    skipReason,
+  };
+}
+
 function evidenceIdsForPartial(
   input: PmDecisionPipelineInput,
   analystRoundOutputs: readonly MultiRoundAnalystOutput[],
@@ -1189,9 +1293,71 @@ export async function runPmDecisionPipeline(
   const localizedInput = { ...input, locale };
   const candidate = candidateFromInput(localizedInput);
   if (!candidate) return null;
-  const tradeDisabled = isTradeDisabledCandidate(candidate);
-  if (!tradeDisabled && !shouldRunPipeline(localizedInput)) return null;
-  const symbol = symbolFromCandidate(candidate);
+  const runCandidate = candidate;
+  const tradeDisabled = isTradeDisabledCandidate(runCandidate);
+  const symbol = symbolFromCandidate(runCandidate);
+  const stageAudit: StageAuditMap = {};
+  const runId = runIdFor(symbol, now);
+  const runStartedAt = new Date(now).toISOString();
+  const runWriter = deps.upsertDecisionRun ?? upsertDecisionRun;
+  let latestActiveMemberIds: TeamMemberId[] = [];
+  let latestAbstainedMemberIds: TeamMemberId[] = [];
+  let latestAnalystRoundCount = 0;
+  async function writeRun(run: DecisionRunRecord) {
+    try {
+      await runWriter(run);
+    } catch (error) {
+      console.warn("[claw42] PM decision run ledger write skipped", {
+        runId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  async function writeSkippedRun({
+    skipReason,
+    activeStage,
+    failedStage,
+  }: {
+    skipReason: string;
+    activeStage?: DecisionStageTraceId;
+    failedStage?: DecisionStageTraceId;
+  }) {
+    await writeRun(
+      buildDecisionRun({
+        id: runId,
+        status: "skipped",
+        triggerSource: localizedInput.triggerSource,
+        locale,
+        candidate: runCandidate,
+        symbol,
+        startedAt: runStartedAt,
+        completedAt: new Date(Date.now()).toISOString(),
+        stageAudit,
+        activeStage,
+        failedStage,
+        analystRoundCount: latestAnalystRoundCount,
+        activeMemberIds: latestActiveMemberIds,
+        abstainedMemberIds: latestAbstainedMemberIds,
+        skipReason,
+      }),
+    );
+  }
+  if (!tradeDisabled && !shouldRunPipeline(localizedInput)) {
+    await writeSkippedRun({ skipReason: "below_importance_threshold" });
+    return null;
+  }
+  await writeRun(
+    buildDecisionRun({
+      id: runId,
+      status: "running",
+      triggerSource: localizedInput.triggerSource,
+      locale,
+      candidate,
+      symbol,
+      startedAt: runStartedAt,
+      stageAudit,
+    }),
+  );
   const evidencePack = await (deps.buildEvidenceContextPack ?? buildEvidenceContextPack)({
     symbol,
     candidate,
@@ -1205,7 +1371,14 @@ export async function runPmDecisionPipeline(
   const activeInputMemberIds = PIPELINE_INPUT_MEMBER_IDS.filter(
     (memberId) => !shouldAbstainMember(memberId, evidencePack),
   );
-  if (activeInputMemberIds.length === 0) return null;
+  latestActiveMemberIds = activeInputMemberIds;
+  latestAbstainedMemberIds = PIPELINE_INPUT_MEMBER_IDS.filter((memberId) =>
+    shouldAbstainMember(memberId, evidencePack),
+  );
+  if (activeInputMemberIds.length === 0) {
+    await writeSkippedRun({ skipReason: "all_input_roles_abstained" });
+    return null;
+  }
   const evidenceWriter = deps.saveNewsEvidence ?? saveNewsEvidence;
   const generateAnalyst =
     deps.generateAnalystOutput ??
@@ -1226,7 +1399,6 @@ export async function runPmDecisionPipeline(
   const recordUpdater = deps.updateDecisionRecord ?? upsertDecisionRecord;
   const partialStageWriter = deps.writeDecisionStagePartial ?? writeDecisionStagePartial;
   const watchWriter = deps.appendWatchHistoryEntry ?? appendWatchHistoryEntry;
-  const stageAudit: StageAuditMap = {};
   let partialHistoryPublished = false;
 
   async function publishPartialStage(record: StrategyDecisionRecord, evidenceIds: string[]) {
@@ -1268,7 +1440,23 @@ export async function runPmDecisionPipeline(
       (output) => !output.abstained && cleanPublicDecisionText(output.rationale, locale),
     );
     const latestAnalystOutputs = latestAnalystRoundByMember(publicAnalystRoundOutputs);
-    if (latestAnalystOutputs.length === 0) return null;
+    latestActiveMemberIds = activeInputMemberIds;
+    latestAbstainedMemberIds = Array.from(
+      new Set([
+        ...PIPELINE_INPUT_MEMBER_IDS.filter((memberId) => !activeInputMemberIds.includes(memberId)),
+        ...activeInputMemberIds.filter((memberId) =>
+          analystRoundOutputs.some((output) => output.memberId === memberId && output.abstained),
+        ),
+      ]),
+    );
+    latestAnalystRoundCount = publicAnalystRoundOutputs.length;
+    if (latestAnalystOutputs.length === 0) {
+      await writeSkippedRun({
+        skipReason: "no_public_analyst_outputs",
+        activeStage: "analyst_inputs",
+      });
+      return null;
+    }
     completeStage(
       stageAudit,
       "analyst_inputs",
@@ -1299,7 +1487,13 @@ export async function runPmDecisionPipeline(
         deps,
       ),
     );
-    if (containsPublicContentLeak(researchLead.rationale)) return null;
+    if (containsPublicContentLeak(researchLead.rationale)) {
+      await writeSkippedRun({
+        skipReason: "research_lead_content_leak",
+        failedStage: "research_lead",
+      });
+      return null;
+    }
     completeStage(stageAudit, "research_lead", "research synthesis generated");
     startStage(stageAudit, "risk_lead");
     await publishPartialStage(
@@ -1326,7 +1520,13 @@ export async function runPmDecisionPipeline(
         deps,
       ),
     );
-    if (containsPublicContentLeak(riskLead.rationale)) return null;
+    if (containsPublicContentLeak(riskLead.rationale)) {
+      await writeSkippedRun({
+        skipReason: "risk_lead_content_leak",
+        failedStage: "risk_lead",
+      });
+      return null;
+    }
     completeStage(stageAudit, "risk_lead", "risk review generated");
 
     startStage(stageAudit, "trade_decision");
@@ -1379,11 +1579,21 @@ export async function runPmDecisionPipeline(
             severity: toSeverity(localizedInput),
             locale,
           });
-    if (!tradeDisabled && !tradeDecision) return null;
+    if (!tradeDisabled && !tradeDecision) {
+      await writeSkippedRun({
+        skipReason: "trade_decision_unavailable",
+        activeStage: "trade_decision",
+      });
+      return null;
+    }
     if (
       tradeDecision &&
       containsPublicContentLeak(`${tradeDecision.riskNote}\n${tradeDecision.invalidatesIf}`)
     ) {
+      await writeSkippedRun({
+        skipReason: "trade_decision_content_leak",
+        failedStage: "trade_decision",
+      });
       return null;
     }
     const analysisSummary = tradeDisabled
@@ -1432,7 +1642,13 @@ export async function runPmDecisionPipeline(
       recordForStorage,
       tradeDisabled ? 0 : (currentPrice ?? 0),
     );
-    if (!tradeDisabled && !writtenRecord.tradeDecision) return null;
+    if (!tradeDisabled && !writtenRecord.tradeDecision) {
+      await writeSkippedRun({
+        skipReason: "record_missing_trade_decision",
+        failedStage: "record_write",
+      });
+      return null;
+    }
     completeStage(stageAudit, "record_write", "decision record persisted");
 
     startStage(stageAudit, "public_timeline");
@@ -1462,6 +1678,24 @@ export async function runPmDecisionPipeline(
       });
     }
     const publicTimelineEntry = makePublicTimelineEntry(completedRecord, evidenceIds);
+    await writeRun(
+      buildDecisionRun({
+        id: runId,
+        status: "succeeded",
+        triggerSource: localizedInput.triggerSource,
+        locale,
+        candidate,
+        symbol,
+        startedAt: runStartedAt,
+        completedAt: new Date(Date.now()).toISOString(),
+        stageAudit,
+        analystRoundCount: latestAnalystRoundCount,
+        activeMemberIds: latestActiveMemberIds,
+        abstainedMemberIds: latestAbstainedMemberIds,
+        decisionRecordId: completedRecord.id,
+        publicTimelineEventId: publicTimelineEntry.id,
+      }),
+    );
     return {
       record: completedRecord,
       publicTimelineEntry,
@@ -1473,6 +1707,23 @@ export async function runPmDecisionPipeline(
       locale: normalizeWatchLocale(input.locale),
       error: error instanceof Error ? error.message : String(error),
     });
+    await writeRun(
+      buildDecisionRun({
+        id: runId,
+        status: "failed",
+        triggerSource: localizedInput.triggerSource,
+        locale,
+        candidate,
+        symbol,
+        startedAt: runStartedAt,
+        completedAt: new Date(Date.now()).toISOString(),
+        stageAudit,
+        analystRoundCount: latestAnalystRoundCount,
+        activeMemberIds: latestActiveMemberIds,
+        abstainedMemberIds: latestAbstainedMemberIds,
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
     return null;
   }
 }

@@ -1930,3 +1930,52 @@ B23 对应剩余项 4“Preview cron / 触发机制长期稳定性”。不改 V
 - 这是 preview 访问触发的稳定性补丁，不是 durable queue/worker；未来若要生产级调度，仍应单独做 cron/queue/telemetry spec。
 
 [DOC-HINT: B23 keeps preview refresh self-healing by retrying no_signal visible-session triggers instead of marking them session-complete.]
+
+# B.24 Run Ledger 基础层实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+B24 对应“更深模型质量 + 长期队列/cron 稳定性”的第一块地基：给 PM pipeline 增加私有 run ledger，先把每次真实决策流的运行状态、阶段状态、跳过原因、失败原因、角色参与情况记录下来。此阶段不改公开 UI、不改 prompt、不改 candidate ranking、不碰 prod。
+
+## First-hand 判断
+
+- 现有公开 timeline 只能看到最终 record，无法解释“为什么没有产生公开卡片”：可能是低强度跳过、全部角色 abstain、内容泄漏拦截、交易卡生成失败、record writer 丢 tradeDecision 或真实异常。
+- B23 修了 preview retry，但缺 run-level 审计后，B25 durable job / B26 model quality 都会缺可依赖的诊断输入。
+- 因此 B24 先做 private ledger，不进入 public payload，避免把后台状态暴露给用户。
+
+## Changes
+
+- `src/lib/team/decisionRunLedger.ts`
+  - 新增 private decision run ledger。
+  - 支持 KV 存储（`USE_PERSISTENT_KV=true` + KV env）和本地 `.cache/decision-runs` fallback。
+  - 记录 `running` / `succeeded` / `failed` / `skipped`、stage status、active/abstained roles、decision/public event id、error、skipReason。
+- `src/lib/team/pmDecisionPipeline.ts`
+  - PM pipeline 开始时写 `running`。
+  - 成功完成 public timeline 后写 `succeeded`。
+  - 异常 catch 写 `failed`。
+  - 所有提前返回的可诊断路径写 `skipped`：低强度、全部角色 abstain、无公开 analyst output、lead/trade content leak、trade decision unavailable、record missing trade decision。
+  - ledger 写入失败只降级 warning，不阻断 PM pipeline。
+- Tests:
+  - `src/lib/team/__tests__/decisionRunLedger.test.ts`
+  - `src/lib/team/__tests__/pmDecisionPipeline.test.ts`
+  - `package.json` 把 ledger test 加入 `test:watch-pipeline`。
+
+## Verify Status
+
+- Red test observed first:
+  - `records a private run ledger through success` 最初失败，确认 pipeline 未写 ledger。
+- `npx vitest run src/lib/team/__tests__/decisionRunLedger.test.ts src/lib/team/__tests__/pmDecisionPipeline.test.ts`: PASS, 12 tests
+- `npm run verify`: PASS, 49 files / 297 tests
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+## Notes
+
+- 不动 public timeline schema，不暴露 run ledger 给用户。
+- 不动 prod / Vercel production alias / CoinW GitLab。
+- B25 可以在这个 ledger 上继续做 durable job / cron worker；B26 可以基于 run ledger 写模型质量评分与回归指标。
+
+[DOC-HINT: B24 adds a private decision run ledger so skipped, failed, running, and succeeded PM runs have durable diagnostics before queue and quality work.]
