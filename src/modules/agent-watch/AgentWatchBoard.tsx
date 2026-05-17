@@ -722,6 +722,7 @@ export function AgentWatchBoard({
     async (topic: DispatchTopic, _actionLabel: string, action: DispatchTopicAction) => {
       if (
         action !== "primary" ||
+        (topic.candidateType ?? "symbol") !== "symbol" ||
         topic.strategy.follow.primaryDisabled ||
         topic.execution?.executable !== true
       ) {

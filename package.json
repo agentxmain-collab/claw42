@@ -28,7 +28,8 @@
     "verify:llm-generate-text": "tsx scripts/verify-llm-generate-text.ts",
     "verify:metrics": "tsx scripts/verify-metrics.mjs",
     "verify:a11y": "tsx scripts/verify-a11y.mjs",
-    "verify": "npm run format:check && npm run typecheck && npm run lint && npm run verify:agent-ip && npm run verify:news && npm run test:news && npm run test:watch-pipeline && npm run verify:chat-v3-final"
+    "verify:execution-safety": "node scripts/verify-execution-safety.mjs",
+    "verify": "npm run format:check && npm run typecheck && npm run lint && npm run verify:agent-ip && npm run verify:news && npm run test:news && npm run test:watch-pipeline && npm run verify:chat-v3-final && npm run verify:execution-safety"
   },
   "dependencies": {
     "@vercel/functions": "^3.6.0",
