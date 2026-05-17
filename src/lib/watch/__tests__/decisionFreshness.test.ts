@@ -74,4 +74,19 @@ describe("deriveDecisionFreshness", () => {
       lastDecisionAt: new Date(now - 20 * 60_000).toISOString(),
     });
   });
+
+  it("does not treat future-dated records as fresh or as the latest decision", () => {
+    const snapshot = deriveDecisionFreshness({
+      symbol: "MARKET",
+      records: [record(now + 6 * 60 * 60_000, "MARKET")],
+      timelineEvents: [event(now - 30 * 60_000, "MARKET")],
+      now,
+    });
+
+    expect(snapshot).toMatchObject({
+      refreshSource: "timeline",
+      isFresh: false,
+      lastDecisionAt: new Date(now - 30 * 60_000).toISOString(),
+    });
+  });
 });

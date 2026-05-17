@@ -165,6 +165,7 @@ export type DispatchV10HistoryDict = {
   outcome_label: string;
   expand: string;
   collapse: string;
+  close_aria: string;
   more: string;
   empty: string;
   loading: string;

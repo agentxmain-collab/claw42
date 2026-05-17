@@ -729,6 +729,7 @@
         "outcome_label": "Outcome",
         "expand": "View Decision History",
         "collapse": "Collapse",
+        "close_aria": "Close decision history",
         "more": "Load More",
         "empty": "No decision history yet",
         "loading": "Loading",

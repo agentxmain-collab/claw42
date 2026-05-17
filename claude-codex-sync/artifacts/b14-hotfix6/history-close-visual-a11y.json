@@ -1,0 +1,32 @@
+{
+  "url": "http://127.0.0.1:3037/zh_CN/agent",
+  "checks": [
+    {
+      "viewport": "zh_CN-1440",
+      "closeButtonVisible": true,
+      "closeButtonBox": {
+        "x": 1349.109375,
+        "y": 28.34375,
+        "width": 66.890625,
+        "height": 36
+      },
+      "clickCloseWorked": true,
+      "escapeCloseWorked": true,
+      "axeViolations": []
+    },
+    {
+      "viewport": "zh_CN-390",
+      "closeButtonVisible": true,
+      "closeButtonBox": {
+        "x": 299.109375,
+        "y": 28.34375,
+        "width": 66.890625,
+        "height": 36
+      },
+      "clickCloseWorked": true,
+      "escapeCloseWorked": true,
+      "axeViolations": []
+    }
+  ],
+  "passed": true
+}

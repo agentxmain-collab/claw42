@@ -7,6 +7,7 @@ import {
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 
 export const WATCH_DECISION_FRESHNESS_MS = 15 * 60_000;
+export const WATCH_DECISION_FUTURE_SKEW_MS = 2 * 60_000;
 
 export type DecisionFreshnessSource = "records" | "timeline" | "none";
 
@@ -90,7 +91,9 @@ export function deriveDecisionFreshness({
       ? [{ ts: event.ts, source: "timeline" as DecisionFreshnessSource }]
       : [];
   });
-  const latest = [...recordCandidates, ...timelineCandidates].sort((a, b) => b.ts - a.ts)[0];
+  const latest = [...recordCandidates, ...timelineCandidates]
+    .filter((candidate) => candidate.ts <= now + WATCH_DECISION_FUTURE_SKEW_MS)
+    .sort((a, b) => b.ts - a.ts)[0];
 
   if (!latest) {
     return {
