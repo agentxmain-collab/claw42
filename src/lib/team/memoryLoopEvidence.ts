@@ -70,6 +70,7 @@ export async function fetchMemoryContext(
     const usableRecords = records
       .filter((record) => record.recordSource !== "legacy")
       .filter((record) => record.symbol === normalizedSymbol)
+      .filter(isResolvedLearningRecord)
       .sort(sortNewestFirst);
 
     if (usableRecords.length === 0) {
@@ -153,8 +154,8 @@ export function formatMemoryContextForPrompt(context: MemoryContext) {
 
   if (context.error === "no_history" || context.historicalCount === 0) {
     return [
-      "No historical baseline exists for this symbol yet.",
-      "State that the current decision starts the memory baseline and avoid inventing prior cases.",
+      "Resolved decision memory has no usable sample for this symbol.",
+      "Return an empty public rationale; do not seed a public memory note from an unresolved case.",
     ].join("\n");
   }
 
@@ -210,6 +211,10 @@ function distributionForRecords(records: StrategyDecisionRecord[]) {
 
 function isResolvedNonWin(outcome: DecisionOutcome) {
   return outcome === "hit_sl" || outcome === "expired" || outcome === "manual_close";
+}
+
+function isResolvedLearningRecord(record: StrategyDecisionRecord) {
+  return Boolean(record.resolvedAt && record.resolvedOutcome);
 }
 
 function similarSetupFromRecord(record: StrategyDecisionRecord) {

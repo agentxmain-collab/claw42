@@ -333,6 +333,13 @@ describe("publicTimelineProjection", () => {
           rationale: "BILL 跌破 42 后反抽失败，40 上方承压。",
           evidenceIds: ["ev_clean"],
         },
+        {
+          memberId: "memory_loop",
+          direction: "neutral",
+          confidence: 0.2,
+          rationale: "历史决策库中无 VVV 的过往记录，样本量为零，仅作观察标记。",
+          evidenceIds: ["ev_memory"],
+        },
       ],
       tradeDecision: {
         ...tradeDecision,
@@ -378,7 +385,9 @@ describe("publicTimelineProjection", () => {
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
     expect(event.payload.tradeDecision).toBeNull();
     expect(event.payload.rationaleByMember.onchain_analyst).toBeUndefined();
+    expect(event.payload.rationaleByMember.memory_loop).toBeUndefined();
     expect(event.payload.citationsByMember?.onchain_analyst).toBeUndefined();
+    expect(event.payload.citationsByMember?.memory_loop).toBeUndefined();
     expect(event.payload.rationaleByMember.chart_analyst).toContain("反抽失败");
     expect(event.payload.citationsByMember?.chart_analyst).toEqual(["ev_clean"]);
     expect(event.payload.rounds?.map((round) => round.memberId)).toEqual(["chart_analyst"]);

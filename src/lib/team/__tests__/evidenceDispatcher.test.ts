@@ -116,10 +116,11 @@ describe("evidenceDispatcher", () => {
 
     const context = formatRoleEvidenceContext("memory_loop", pack);
 
-    expect(context).toContain("### memory evidence");
-    expect(context).toContain("No historical baseline");
+    expect(context).not.toContain("### memory evidence");
+    expect(context).toContain("No public role evidence should be used for this role.");
     expect(context).not.toContain("BTC momentum accelerated");
     expect(context).not.toContain("ETF inflows rise");
-    expect(evidenceIdsForMember("memory_loop", pack)).toEqual(["memory:BTC:history"]);
+    expect(evidenceIdsForMember("memory_loop", pack)).toEqual([]);
+    expect(shouldAbstainMember("memory_loop", pack)).toBe(true);
   });
 });

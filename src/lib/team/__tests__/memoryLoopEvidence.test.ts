@@ -19,7 +19,7 @@ describe("memoryLoopEvidence", () => {
       sampleSizeCaution: true,
       error: "no_history",
     });
-    expect(formatMemoryContextForPrompt(context)).toContain("No historical baseline");
+    expect(formatMemoryContextForPrompt(context)).toContain("Return an empty public rationale");
   });
 
   test("builds sparse memory context from non-legacy symbol records", async () => {
@@ -56,6 +56,25 @@ describe("memoryLoopEvidence", () => {
     expect(context.similarSetups).toHaveLength(2);
     expect(context.lastReviewNotes).toContain("Volume-confirmed");
     expect(context.sampleSizeCaution).toBe(true);
+  });
+
+  test("does not treat unresolved open records as learning memory", async () => {
+    const context = await fetchMemoryContext("HYPE", "zh_CN", {
+      readDecisionRecords: async () => [
+        makeRecord({
+          id: "hype-open",
+          symbol: "HYPE",
+          resolvedOutcome: null,
+          tradeDecision: makeTradeDecision({ direction: "long" }),
+        }),
+      ],
+    });
+
+    expect(context).toMatchObject({
+      historicalCount: 0,
+      error: "no_history",
+      similarSetups: [],
+    });
   });
 
   test("computes team track record through the existing winrate aggregator", async () => {
