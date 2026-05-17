@@ -1382,10 +1382,10 @@ Implementation commit: `cdddcb5ff2b58b015b50917f031f2ed3589dc3d3`
 
 Preview:
 
-- Ready deployment: `https://claw42-site-qn4scqqu6-agentxmain-collabs-projects.vercel.app`
+- Ready deployment: `https://claw42-site-mcqigt5dj-agentxmain-collabs-projects.vercel.app`
 - Branch alias: `https://claw42-site-git-feature-b14-60432e-agentxmain-collabs-projects.vercel.app`
-- Deployment id: `dpl_3iQ9wg5syxNRrscpp6cX33JoLsWR`
-- Temporary share URL: `https://claw42-site-qn4scqqu6-agentxmain-collabs-projects.vercel.app/?_vercel_share=6rM7iFtcCZLRc5PcY29KFtpQSYGjPjv7`
+- Deployment id: `dpl_F9jKdkCvEjNYuGPLaxuWwonzjFxA`
+- Temporary share URL: `https://claw42-site-mcqigt5dj-agentxmain-collabs-projects.vercel.app/?_vercel_share=1jkPRcIam1Smg1WUOWOHCfoIiqzcn4KC`
 - Note: two direct local CLI deploy attempts stuck in Vercel `UNKNOWN`; Git branch preview produced the ready build. Prod was not touched.
 
 ## Task A Empty State
@@ -1399,6 +1399,7 @@ v1.1 regression check:
 
 - The ready preview `zh_CN` timeline now returns a real public record, not empty state.
 - 10 consecutive protected preview API fetches were stable: `eventsLength=1`, key `hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪`, hash `e1ffdbaf9f779c5d`.
+- The first cold fetch immediately after the final report-only deploy briefly included one older legacy `MARKET` record once; a warmed 10-fetch run was stable. Raw artifact notes this explicitly.
 - `en_US` currently has no record in KV and remains stable empty; this is data availability, not the original zh_CN empty-state bug path.
 
 ## Task B History Close

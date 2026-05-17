@@ -1,5 +1,6 @@
 {
-  "deployment": "https://claw42-site-qn4scqqu6-agentxmain-collabs-projects.vercel.app",
+  "deployment": "https://claw42-site-mcqigt5dj-agentxmain-collabs-projects.vercel.app",
+  "note": "Reran after final preview warmup; the first cold fetch immediately after deploy briefly included an older legacy MARKET record once, then stabilized.",
   "locales": {
     "zh_CN": {
       "stable": true,
@@ -8,81 +9,61 @@
         {
           "run": 1,
           "eventsLength": 1,
-          "keys": [
-            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
-          ],
+          "keys": ["hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"],
           "hash": "e1ffdbaf9f779c5d"
         },
         {
           "run": 2,
           "eventsLength": 1,
-          "keys": [
-            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
-          ],
+          "keys": ["hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"],
           "hash": "e1ffdbaf9f779c5d"
         },
         {
           "run": 3,
           "eventsLength": 1,
-          "keys": [
-            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
-          ],
+          "keys": ["hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"],
           "hash": "e1ffdbaf9f779c5d"
         },
         {
           "run": 4,
           "eventsLength": 1,
-          "keys": [
-            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
-          ],
+          "keys": ["hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"],
           "hash": "e1ffdbaf9f779c5d"
         },
         {
           "run": 5,
           "eventsLength": 1,
-          "keys": [
-            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
-          ],
+          "keys": ["hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"],
           "hash": "e1ffdbaf9f779c5d"
         },
         {
           "run": 6,
           "eventsLength": 1,
-          "keys": [
-            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
-          ],
+          "keys": ["hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"],
           "hash": "e1ffdbaf9f779c5d"
         },
         {
           "run": 7,
           "eventsLength": 1,
-          "keys": [
-            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
-          ],
+          "keys": ["hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"],
           "hash": "e1ffdbaf9f779c5d"
         },
         {
           "run": 8,
           "eventsLength": 1,
-          "keys": [
-            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
-          ],
+          "keys": ["hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"],
           "hash": "e1ffdbaf9f779c5d"
         },
         {
           "run": 9,
           "eventsLength": 1,
-          "keys": [
-            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
-          ],
+          "keys": ["hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"],
           "hash": "e1ffdbaf9f779c5d"
         },
         {
           "run": 10,
           "eventsLength": 1,
-          "keys": [
-            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
-          ],
+          "keys": ["hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"],
           "hash": "e1ffdbaf9f779c5d"
         }
       ]
