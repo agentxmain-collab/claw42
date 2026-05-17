@@ -595,7 +595,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.messages.some((message) => message.typing)).toBe(true);
   });
 
-  it("renders partial stage trace as the current in-progress stage", () => {
+  it("renders partial stage trace as a monotonic current in-progress stage", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
     const [topic] = mapTopics({
@@ -640,7 +640,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       "done",
       "done",
       "in_progress",
-      "done",
+      "pending",
       "pending",
       "pending",
     ]);
@@ -648,6 +648,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       label: "阶段 3 · 交易方案 · 进行中",
       note: "该阶段正在写入部分结果",
     });
+    expect(topic.messages.some((message) => message.stageId === `${topic.id}-stage-4`)).toBe(false);
     expect(topic.messages.some((message) => message.typing)).toBe(true);
   });
 
