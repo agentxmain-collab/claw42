@@ -1526,8 +1526,8 @@ PR: https://github.com/agentxmain-collab/claw42/pull/118
 
 Branch preview:
 
-- Preview: https://claw42-site-9ky2pvvyu-agentxmain-collabs-projects.vercel.app
-- Share `/zh_CN/agent`: https://claw42-site-9ky2pvvyu-agentxmain-collabs-projects.vercel.app/zh_CN/agent?_vercel_share=p6vxqYOuOlUKt1nHWHsI1cjYqItKxNLd
+- Preview: https://claw42-site-git-feature-b15-b01ced-agentxmain-collabs-projects.vercel.app
+- Share `/zh_CN/agent`: https://claw42-site-git-feature-b15-b01ced-agentxmain-collabs-projects.vercel.app/zh_CN/agent?_vercel_share=rx6zvUzHN1ilXWthxWC9c8nu33awQAUB
 
 Live preview API check:
 
