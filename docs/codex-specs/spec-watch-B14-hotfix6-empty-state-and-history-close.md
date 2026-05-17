@@ -191,7 +191,9 @@ claw42 工作台 B.14 升级后两个紧急修复。本次做了啥：之前升�
 
 ---
 
-## § 19 Tasks 索引
+## § 19 Tasks 索引（v1.0 + v1.1 追加 Task C/D）
+
+### v1.0 原 Task A + B
 
 | Task  | Priority | Story                                                                                      |
 | ----- | -------- | ------------------------------------------------------------------------------------------ |
@@ -203,10 +205,64 @@ claw42 工作台 B.14 升级后两个紧急修复。本次做了啥：之前升�
 | T-A.6 | P0       | fix 真因 + 实测 ≥1 条 record 显示 + 5 次刷新稳定                                           |
 | T-B.1 | P0       | 定位决策历史 panel/drawer 实际组件                                                         |
 | T-B.2 | P0       | 加 close button + Esc 键 + aria-label 10 locale                                            |
-| T-B.3 | P0       | 3 type 卡 (symbol / market_overview / hotspot) 全 cover close button                       |
+| T-B.3 | P0       | 3 type 卡全 cover close button                                                             |
 | T-B.4 | P0       | grep + 截图 verify + a11y axe 0                                                            |
 
-P0 = 10。
+### v1.1 追加 Task C + D（Dan 2026-05-17 晚补充截图反馈）
+
+**Task C — 热点卡未显示但顶部状态栏说有 1 个**
+
+Dan 截图：顶部 "热点 1 / 已闭环 0 / 辩论中 1 / 起步 0"，但 UI 主体只 1 个 market_overview 卡。
+
+F 推测可能根因（Codex first-hand 验证）：
+
+- (a) Stage 3 multi-type 渲染 conditional 漏 hotspot 分支
+- (b) hotspot record 写了但 timeline projection 把它 filter（hotfix-3 hydration 漏洞延伸？）
+- (c) 顶部状态栏数字 hardcoded 不反映 events 真实数量（数据 OK / 显示 bug）
+- (d) Canonical comparator 让 hotspot 排到分页/可视区外
+- (e) 第 5 类可能根因（Codex first-hand 自主补充）
+
+| Task  | Priority | Story                                                                  |
+| ----- | -------- | ---------------------------------------------------------------------- |
+| T-C.1 | P0       | first-hand 查 timeline events 是否含 hotspot record（grep + KV state） |
+| T-C.2 | P0       | 查 V10 multi-type 渲染条件是否覆盖 hotspot 分支                        |
+| T-C.3 | P0       | 查顶部状态栏数字 source（events derived vs hardcoded）                 |
+| T-C.4 | P0       | fix 真因 + 实测 hotspot 卡可见 + 顶部状态栏与 events 一致              |
+
+**Task D — UI controlled state 自动 reset bug（hotfix-4 延伸）**
+
+Dan：
+
+- "不知道什么机制在刷新，收起的回自动打开"
+- "看第三条突然刷新后回到第一条"
+
+F 推测：hotfix-4 排序 key + 去重修了**数据层稳定**，但 UI 端 **controlled state（展开/折叠/滚动位置）没绑定到 stable record key** → SSE/refresh 推送时整 list re-render → React reconciler 把组件全 unmount/remount → state 丢
+
+F 推测可能根因（Codex first-hand 验证）：
+
+- (a) `events.map` 用 `index` 作为 React key（hotfix-4 修过排序但 UI key 没改？）
+- (b) SSE stream 收到新事件时整个 events array 引用变化 → 即使 key 稳定也触发 reconciler 重渲染部分子树
+- (c) Freshness 状态变化（cached → refreshing → stale）导致整个 board re-mount
+- (d) Scroll position 没用 `scroll-restoration` / `scrollIntoView` 保持
+- (e) 展开/折叠 state 存在父组件而非按 record id 隔离
+
+| Task  | Priority | Story                                                                  |
+| ----- | -------- | ---------------------------------------------------------------------- |
+| T-D.1 | P0       | first-hand 查 V10 events.map React key 当前是 record.id 还是 index     |
+| T-D.2 | P0       | 查展开/折叠 state 存储位置 + 是否按 record id 隔离                     |
+| T-D.3 | P0       | 查 SSE stream / refresh trigger 时 events array 引用变化模式           |
+| T-D.4 | P0       | 查 scroll position 保持机制（如有）                                    |
+| T-D.5 | P0       | fix 真因（key 改 record.id + state 隔离到子组件 + scroll restoration） |
+| T-D.6 | P0       | 实测：连续 SSE / refresh 多次后展开 state + 滚动位置稳定（10 次以上）  |
+| T-D.7 | P0       | 单元测试：reorder events 后 expand state 仍跟随原 record               |
+
+P0 = 10 + 11 = **21**。
+
+### Task 实施顺序
+
+Task A / C 同根因相关（都涉及 events / timeline 数据层），Codex 一并 first-hand 调研。
+Task B / D 同 UI 层，一并 fix。
+单 PR 全包。
 
 ---
 
