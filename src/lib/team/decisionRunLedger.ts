@@ -8,6 +8,7 @@ import type {
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import type { PmDecisionTriggerSource } from "@/lib/team/pmDecisionPipeline";
+import type { DecisionQualityReport } from "@/lib/team/decisionQuality";
 import type { Locale } from "@/i18n/types";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 
@@ -41,6 +42,7 @@ export interface DecisionRunRecord {
   abstainedMemberIds: TeamMemberId[];
   decisionRecordId: string | null;
   publicTimelineEventId: string | null;
+  quality?: DecisionQualityReport;
   error: string | null;
   skipReason: string | null;
 }
