@@ -290,7 +290,13 @@ function makeStages(
 ): DispatchStageMarker[] {
   const trace = event?.payload.stageTrace;
   if (!hasTradeDecision && trace?.length) {
-    return makePartialStages(topicId, trace, stageStatusDict, hasResolution || hasMemoryLoop);
+    return makePartialStages(
+      topicId,
+      trace,
+      stageStatusDict,
+      hasResolution || hasMemoryLoop,
+      hasTradeDecision,
+    );
   }
 
   if (!hasTradeDecision) {
@@ -329,8 +335,9 @@ function makePartialStages(
   trace: NonNullable<PmDecisionTimelineEvent["payload"]["stageTrace"]>,
   stageStatusDict: DispatchV10StageStatusDict,
   hasMemoryLoop: boolean,
+  hasTradeDecision: boolean,
 ): DispatchStageMarker[] {
-  const statuses = normalizePartialTraceStatuses(trace);
+  const statuses = normalizePartialTraceStatuses(trace, hasTradeDecision);
   const statusFor = (stageId: DecisionStageTraceId) => statuses[stageId] ?? "pending";
   const mappedStatus = (status: PartialTraceStatus) => {
     if (status === "done") return "done" as const;
@@ -391,9 +398,16 @@ function makePartialStages(
 
 function normalizePartialTraceStatuses(
   trace: NonNullable<PmDecisionTimelineEvent["payload"]["stageTrace"]>,
+  hasTradeDecision: boolean,
 ): Partial<Record<DecisionStageTraceId, PartialTraceStatus>> {
-  const rawStatus = (stageId: DecisionStageTraceId) =>
-    trace.find((entry) => entry.stageId === stageId)?.status ?? "pending";
+  const rawStatus = (stageId: DecisionStageTraceId) => {
+    const raw = trace.find((entry) => entry.stageId === stageId)?.status ?? "pending";
+    if (!hasTradeDecision) {
+      if (stageId === "trade_decision" && raw === "done") return "in_progress";
+      if (stageId === "risk_lead") return "pending";
+    }
+    return raw;
+  };
   const normalized: Partial<Record<DecisionStageTraceId, PartialTraceStatus>> = {};
   let blocked = false;
 
@@ -432,7 +446,7 @@ function visibleMessageStageLimit(event: PmDecisionTimelineEvent, hasTradeDecisi
   if (hasTradeDecision) return 6;
   const trace = event.payload.stageTrace;
   if (!trace?.length) return 3;
-  const statuses = normalizePartialTraceStatuses(trace);
+  const statuses = normalizePartialTraceStatuses(trace, hasTradeDecision);
   const active = PARTIAL_TRACE_STAGE_ORDER.find(
     ({ traceId }) => statuses[traceId] === "in_progress",
   );
@@ -448,11 +462,15 @@ function messageStageNumber(stageIdValue: string) {
   return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
 }
 
-function currentStageFromTrace(event: PmDecisionTimelineEvent) {
+function currentStageFromTrace(event: PmDecisionTimelineEvent, hasTradeDecision: boolean) {
   const trace = event.payload.stageTrace;
-  const active = trace?.find((stage) => stage.status === "in_progress");
+  if (!trace?.length) return null;
+  const statuses = normalizePartialTraceStatuses(trace, hasTradeDecision);
+  const active = PARTIAL_TRACE_STAGE_ORDER.find(
+    ({ traceId }) => statuses[traceId] === "in_progress",
+  );
   if (!active) return null;
-  switch (active.stageId) {
+  switch (active.traceId) {
     case "analyst_inputs":
       return 1;
     case "research_lead":
@@ -461,9 +479,6 @@ function currentStageFromTrace(event: PmDecisionTimelineEvent) {
       return 3;
     case "risk_lead":
       return 4;
-    case "record_write":
-    case "public_timeline":
-      return 5;
     default:
       return null;
   }
@@ -560,7 +575,7 @@ function makeTraderMessage(
 ): DispatchMessage | null {
   const decision = renderableTradeDecision(event);
   if (!decision && !hasRationale) return null;
-  const currentStage = currentStageFromTrace(event);
+  const currentStage = currentStageFromTrace(event, Boolean(decision));
   if (!decision && currentStage !== null && currentStage < 3) return null;
   if (!decision) {
     return {
@@ -814,7 +829,7 @@ function makeProgress(
   hasRationale: boolean,
 ) {
   if (!hasRenderableTradeDecision) {
-    const currentStage = currentStageFromTrace(group.latestDecision);
+    const currentStage = currentStageFromTrace(group.latestDecision, hasRenderableTradeDecision);
     if (currentStage) return `当前进行到阶段 ${currentStage}`;
     return hasRationale ? "当前进行到阶段 3" : "暂无决策更新";
   }

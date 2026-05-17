@@ -18,6 +18,16 @@ function StageMarker({ stage }: { stage: DispatchStageMarker }) {
 }
 
 export function TopicBody({ topic, bodyId }: { topic: DispatchTopic; bodyId: string }) {
+  const stageRows = topic.stages
+    .map((stage) => ({
+      stage,
+      messages: topic.messages.filter((message) => message.stageId === stage.id),
+    }))
+    .filter(
+      ({ stage, messages }) =>
+        topic.status !== "active" || stage.status !== "pending" || messages.length > 0,
+    );
+
   return (
     <div
       id={bodyId}
@@ -26,19 +36,15 @@ export function TopicBody({ topic, bodyId }: { topic: DispatchTopic; bodyId: str
       aria-labelledby={`${bodyId}-title`}
       aria-live={topic.status === "active" ? "polite" : "off"}
     >
-      {topic.stages.map((stage) => {
-        const stageMessages = topic.messages.filter((message) => message.stageId === stage.id);
-
-        return (
-          <React.Fragment key={stage.id}>
-            <StageMarker stage={stage} />
-            {stageMessages.map((message) => (
-              <MessageBubble message={message} key={message.id} />
-            ))}
-            {stage.note ? <div className="pending-stub">{stage.note}</div> : null}
-          </React.Fragment>
-        );
-      })}
+      {stageRows.map(({ stage, messages }) => (
+        <React.Fragment key={stage.id}>
+          <StageMarker stage={stage} />
+          {messages.map((message) => (
+            <MessageBubble message={message} key={message.id} />
+          ))}
+          {stage.note ? <div className="pending-stub">{stage.note}</div> : null}
+        </React.Fragment>
+      ))}
     </div>
   );
 }
