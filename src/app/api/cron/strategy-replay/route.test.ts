@@ -11,8 +11,8 @@ const listNewsDebatesMock = vi.hoisted(() => vi.fn());
 const getCoinPoolMock = vi.hoisted(() => vi.fn());
 const adjustDebtFromReplaysMock = vi.hoisted(() => vi.fn());
 const tryAcquireLockMock = vi.hoisted(() => vi.fn());
-const triggerPmDecisionPipelineOnceMock = vi.hoisted(() => vi.fn());
-const triggerPmDecisionPipelineBatchMock = vi.hoisted(() => vi.fn());
+const enqueuePmDecisionJobMock = vi.hoisted(() => vi.fn());
+const runPmDecisionJobMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
 const resolveDecisionRecordFromPriceMock = vi.hoisted(() => vi.fn());
 
@@ -46,9 +46,12 @@ vi.mock("@/lib/storage/kv-lock", () => ({
   tryAcquireLock: tryAcquireLockMock,
 }));
 
-vi.mock("@/lib/team/pmDecisionTrigger", () => ({
-  triggerPmDecisionPipelineOnce: triggerPmDecisionPipelineOnceMock,
-  triggerPmDecisionPipelineBatch: triggerPmDecisionPipelineBatchMock,
+vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
+  enqueuePmDecisionJob: enqueuePmDecisionJobMock,
+}));
+
+vi.mock("@/lib/team/pmDecisionJobRunner", () => ({
+  runPmDecisionJob: runPmDecisionJobMock,
 }));
 
 vi.mock("@/lib/team/decisionRecordStore", () => ({
@@ -103,8 +106,8 @@ describe("/api/cron/strategy-replay", () => {
     getCoinPoolMock.mockReset();
     adjustDebtFromReplaysMock.mockReset();
     tryAcquireLockMock.mockReset();
-    triggerPmDecisionPipelineOnceMock.mockReset();
-    triggerPmDecisionPipelineBatchMock.mockReset();
+    enqueuePmDecisionJobMock.mockReset();
+    runPmDecisionJobMock.mockReset();
     readAllDecisionRecordsMock.mockReset();
     resolveDecisionRecordFromPriceMock.mockReset();
 
@@ -123,8 +126,30 @@ describe("/api/cron/strategy-replay", () => {
       token: "lock",
       acquiredAt: now,
     });
-    triggerPmDecisionPipelineOnceMock.mockImplementation(async (input) => {
-      input.onAudit?.({
+    enqueuePmDecisionJobMock.mockImplementation(async (input) => ({
+      id: "pm-job:test",
+      schemaVersion: 1,
+      kind: input.kind,
+      status: "queued",
+      triggerSource: input.triggerSource,
+      locale: input.locale,
+      idempotencyKey: "test",
+      candidate: input.candidate ?? null,
+      symbol: input.symbol ?? null,
+      createdAt: new Date(now).toISOString(),
+      updatedAt: new Date(now).toISOString(),
+      startedAt: null,
+      completedAt: null,
+      attemptCount: 0,
+      maxAttempts: 3,
+      nextRunAt: new Date(now).toISOString(),
+      lastError: null,
+      outputCount: 0,
+      decisionRecordIds: [],
+      auditEventCount: 0,
+    }));
+    runPmDecisionJobMock.mockImplementation(async (job, context) => {
+      context.onAudit?.({
         type: "candidate_considered",
         triggerSource: "user_visit_trigger",
         locale: "zh_CN",
@@ -136,9 +161,15 @@ describe("/api/cron/strategy-replay", () => {
         newsEvidenceIds: ["ev_1"],
       });
       return {
-        record: { id: "pm:BTC:test" },
-        publicTimelineEntry: {},
-        tradeDecision: {},
+        job: { ...job, status: "succeeded" },
+        outputs: [
+          {
+            record: { id: "pm:BTC:test" },
+            publicTimelineEntry: {},
+            tradeDecision: {},
+          },
+        ],
+        auditEvents: [],
       };
     });
     readAllDecisionRecordsMock.mockResolvedValue([
@@ -169,8 +200,8 @@ describe("/api/cron/strategy-replay", () => {
     expect(payload).toEqual({ error: "unauthorized" });
     expect(fetchNewsWithChainMock).not.toHaveBeenCalled();
     expect(getCoinPoolMock).not.toHaveBeenCalled();
-    expect(triggerPmDecisionPipelineOnceMock).not.toHaveBeenCalled();
-    expect(triggerPmDecisionPipelineBatchMock).not.toHaveBeenCalled();
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalled();
+    expect(runPmDecisionJobMock).not.toHaveBeenCalled();
   });
 
   it("returns PM decision audit details for trigger=now verification", async () => {
@@ -210,13 +241,17 @@ describe("/api/cron/strategy-replay", () => {
   });
 
   it("keeps audit and source-health details out of the scheduled cron response", async () => {
-    triggerPmDecisionPipelineBatchMock.mockResolvedValue([
-      {
-        record: { id: "pm:BTC:cron" },
-        publicTimelineEntry: {},
-        tradeDecision: {},
-      },
-    ]);
+    runPmDecisionJobMock.mockResolvedValueOnce({
+      job: { id: "pm-job:test", status: "succeeded" },
+      outputs: [
+        {
+          record: { id: "pm:BTC:cron" },
+          publicTimelineEntry: {},
+          tradeDecision: {},
+        },
+      ],
+      auditEvents: [],
+    });
 
     const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
     const payload = await response.json();
@@ -227,8 +262,14 @@ describe("/api/cron/strategy-replay", () => {
     expect(payload.newsSourceHealth).toBeUndefined();
     expect(payload.trigger).toBeNull();
     expect(payload.triggerLockAcquiredAt).toBeNull();
-    expect(triggerPmDecisionPipelineOnceMock).not.toHaveBeenCalled();
-    expect(triggerPmDecisionPipelineBatchMock).toHaveBeenCalledTimes(1);
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "batch",
+        triggerSource: "cron",
+        locale: "zh_CN",
+      }),
+    );
+    expect(runPmDecisionJobMock).toHaveBeenCalledTimes(1);
   });
 
   it("continues resolving later PM decisions when one record write fails", async () => {

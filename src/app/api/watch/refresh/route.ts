@@ -7,9 +7,11 @@ import { fetchNewsWithChain } from "@/lib/news/sourceChain";
 import { checkLock, releaseLock, tryAcquireLock } from "@/lib/storage/kv-lock";
 import { checkRateLimit } from "@/lib/storage/kv-rate-limiter";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
-import { marketSignalsFromPool, triggerPmDecisionPipelineOnce } from "@/lib/team/pmDecisionTrigger";
+import { runPmDecisionJob } from "@/lib/team/pmDecisionJobRunner";
+import { marketSignalsFromPool } from "@/lib/team/pmDecisionTrigger";
 import { selectPmDecisionTopics } from "@/lib/team/topicSelector";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
+import { enqueuePmDecisionJob } from "@/lib/watch/pmDecisionJobLedger";
 import {
   normalizeCandidateType,
   type CandidateType,
@@ -396,17 +398,22 @@ export async function POST(request: Request) {
     return json(basePayload({ status: "refreshing", candidate, freshness }));
   }
 
+  const pmDecisionJob = await enqueuePmDecisionJob({
+    kind: "once",
+    triggerSource: "user_visit_trigger",
+    locale,
+    ...(isAutoSymbolRefreshCandidate(candidate)
+      ? {}
+      : candidate.candidateType === "symbol"
+        ? { symbol: candidate.symbol }
+        : { candidate }),
+    now,
+  });
+
   waitUntil(
-    triggerPmDecisionPipelineOnce({
-      triggerSource: "user_visit_trigger",
+    runPmDecisionJob(pmDecisionJob, {
       pool: context.pool,
       newsItems: context.newsItems,
-      locale,
-      ...(isAutoSymbolRefreshCandidate(candidate)
-        ? {}
-        : candidate.candidateType === "symbol"
-          ? { symbol: candidate.symbol }
-          : { candidate }),
       now,
       partialStageUpdates: true,
     })

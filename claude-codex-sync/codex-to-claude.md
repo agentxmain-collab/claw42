@@ -1979,3 +1979,58 @@ B24 对应“更深模型质量 + 长期队列/cron 稳定性”的第一块地�
 - B25 可以在这个 ledger 上继续做 durable job / cron worker；B26 可以基于 run ledger 写模型质量评分与回归指标。
 
 [DOC-HINT: B24 adds a private decision run ledger so skipped, failed, running, and succeeded PM runs have durable diagnostics before queue and quality work.]
+
+# B.25 Durable PM Job / Cron 稳定性实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+B25 对应“长期队列 / cron 级稳定性”的第一层：不引入新依赖、不改 Vercel cron 配置、不碰 prod，把 visit-trigger 与 scheduled cron 的 PM 执行段统一包进 durable job ledger + runner。目标是让每次 PM 调度都有可追踪的 queued/running/succeeded/failed job 状态，后续可以在这个基础上做真正 retry worker 或外部队列。
+
+## First-hand 判断
+
+- `/api/watch/refresh` 原先在拿到 in-flight lock 后直接 `waitUntil(triggerPmDecisionPipelineOnce(...))`。如果 background promise 失败，只能看到 console error，缺 durable job 状态。
+- `/api/cron/strategy-replay` 原先直接调用 `triggerPmDecisionPipelineOnce` / `triggerPmDecisionPipelineBatch`。cron 失败时没有可读 job lifecycle，也无法区分 source/debate/replay 成功但 PM 段失败的情况。
+- 当前不适合直接上 Vercel Queues：那是新 beta 依赖，需要 Dan 明确批准。B25 先用现有 KV/local fallback 做轻量 job ledger，不扩大平台依赖面。
+
+## Changes
+
+- `src/lib/watch/pmDecisionJobLedger.ts`
+  - 新增 private PM decision job ledger。
+  - 支持 `once` / `batch` job，状态 `queued` / `running` / `succeeded` / `failed`。
+  - 记录 triggerSource、locale、candidate/symbol、idempotencyKey、attemptCount、nextRunAt、lastError、outputCount、decisionRecordIds、auditEventCount。
+  - KV 可用时写 KV；否则写本地 `.cache/pm-jobs/jobs.jsonl`；再失败降级 memory。
+  - 5 分钟 idempotency bucket 防同窗口重复 enqueue。
+- `src/lib/team/pmDecisionJobRunner.ts`
+  - 新增 runner：mark running → 调用 once/batch PM trigger → mark succeeded / failed。
+  - 保留现有 `onAudit` 输出路径，cron `trigger=now` 仍能返回 audit details。
+- `src/app/api/watch/refresh/route.ts`
+  - `waitUntil()` 不再直接包 PM trigger，而是 enqueue job 后包 `runPmDecisionJob()`。
+  - 保持现有 refresh status / lock ordering / release in-flight lock 行为。
+- `src/app/api/cron/strategy-replay/route.ts`
+  - PM 段统一经 job ledger + runner。
+  - 响应增加 `pmDecisionJobId` / `pmDecisionJobStatus`，便于内部诊断。
+- Tests:
+  - 新增 `src/lib/watch/__tests__/pmDecisionJobLedger.test.ts`。
+  - 更新 refresh / cron route tests 覆盖 enqueue + runner。
+  - `package.json` 把 job ledger test 加入 `test:watch-pipeline`。
+
+## Verify Status
+
+- Red test observed first:
+  - `pmDecisionJobLedger.test.ts` 首跑失败，确认 ledger 模块尚不存在。
+- `npx vitest run src/lib/watch/__tests__/pmDecisionJobLedger.test.ts src/app/api/watch/refresh/route.test.ts src/app/api/cron/strategy-replay/route.test.ts`: PASS, 17 tests
+- `npm run test:watch-pipeline`: PASS, 50 files / 299 tests
+- `npm run verify`: PASS, 50 files / 299 tests included
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+## Notes
+
+- 没动 Vercel cron schedule、PM pipeline prompt、candidate ranking、public UI、prod。
+- B25 不是外部持久队列最终形态；它先把 job lifecycle、idempotency、failure metadata 固定住。B27 若要上 Vercel Queues，需要单独依赖批准。
+- 本阶段依旧保持 preview-only。
+
+[DOC-HINT: B25 wraps refresh and cron PM execution in a private durable job ledger without adding queue dependencies or changing public UI.]
