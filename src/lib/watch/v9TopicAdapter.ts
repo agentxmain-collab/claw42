@@ -832,9 +832,10 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
     const status = hasTradeDecision ? "done" : hasRationale ? "active" : "pending";
     const symbolMapping = resolveSymbolMapping(group.symbol);
     const executable =
-      typeof latest.payload.executable === "boolean"
+      group.candidateType === "symbol" &&
+      (typeof latest.payload.executable === "boolean"
         ? latest.payload.executable
-        : symbolMapping.execution.executable;
+        : symbolMapping.execution.executable);
 
     return {
       id: recordId,

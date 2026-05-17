@@ -330,6 +330,37 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.strategy.follow.primaryDisabled).toBe(true);
   });
 
+  it("does not allow non-symbol topics to become followable even when payload says executable", () => {
+    const event = pmDecision({
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-market",
+        symbol: "MARKET",
+        candidateType: "market_overview",
+        candidateKey: "market_overview:zh_CN:2026-05-17",
+        displayTitle: "今日大盘综述",
+        executable: true,
+        tradeDecision: null,
+        analysisSummary: "大盘进入观察窗口。",
+        rationaleByMember: { research_lead: "大盘进入观察窗口。" },
+        citationsByMember: {},
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.candidateType).toBe("market_overview");
+    expect(topic.execution).toMatchObject({
+      executable: false,
+      watchOnly: true,
+    });
+    expect(topic.strategy.follow.primaryDisabled).toBe(true);
+  });
+
   it("ignores non pm_decision events", () => {
     expect(
       mapTopics({

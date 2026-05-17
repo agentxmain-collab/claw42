@@ -41,7 +41,11 @@ export function TopicStrategy({
   followTradeDict?: DispatchV10FollowTradeDict;
 }) {
   const { strategy } = topic;
-  const watchOnly = topic.execution?.watchOnly === true;
+  const canRenderFollowTrade =
+    (topic.candidateType ?? "symbol") === "symbol" &&
+    topic.execution?.watchOnly !== true &&
+    topic.execution?.executable !== false;
+  const watchOnly = !canRenderFollowTrade;
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
   const followStatus =
     topic.status === "pending"
@@ -74,7 +78,7 @@ export function TopicStrategy({
       <div className="strat-cta">
         <div className="cta-row">
           {watchOnly ? <span className="watch-only-pill">watch-only / 不可跟单</span> : null}
-          {!watchOnly ? (
+          {canRenderFollowTrade ? (
             <button
               className="cta-btn"
               type="button"

@@ -1752,3 +1752,52 @@ B19 按“Memory loop 真学习”处理 B18 preview 暴露出的 memory_loop �
 - B19 让 memory_loop 只基于已闭环历史产生公开价值；没有 resolved memory 时不发声，避免“无历史 / 样本量为零 / 等待数据”再次进入公开卡片。
 
 [DOC-HINT: B19 treats memory_loop as resolved-history-only public learning; unresolved current records must not seed public memory rationale.]
+
+# B.20 CoinW 执行前安全检查实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+B20 不接真实 CoinW 下单；按执行前检查先收紧边界，确保当前工作台只保留“演示/统计”行为，不让 market_overview / hotspot / watch-only symbol 走到任何跟单执行入口。
+
+First-hand 结果：
+
+- 当前代码没有真实 CoinW order / trade API route；`/api/watch/follow-stats` 只记录匿名 watch/follow 统计。
+- V10 已要求 `candidateType === "symbol" && execution.executable === true` 才展示 primary follow 按钮，但按钮仍是 disabled 演示模式。
+- V9 `TopicStrategy` 原本只看 `watchOnly`，没有显式要求 `candidateType === "symbol"`；`AgentWatchBoard.handleTopicAction()` 原本也只看 `execution.executable`，没有显式拒绝 non-symbol topic。
+- 当前还缺真实执行的 hard prerequisites：CoinW OAuth / scope、server-only CoinW trading adapter、sandbox、order receipt store、clientOrderId reconciliation、kill switch、合规确认。
+
+## Changes
+
+- `src/modules/agent-watch/v9/TopicStrategy.tsx`
+  - primary follow 按钮改为只在 symbol candidate 且没有 watch-only / non-executable metadata 时渲染；legacy fixture 仍只显示 disabled 演示按钮。
+  - non-symbol topic 即使 payload 错标 `executable=true`，也只显示 watch-only / 不可跟单。
+- `src/modules/agent-watch/AgentWatchBoard.tsx`
+  - primary action handler 增加 non-symbol 拒绝条件，防止程序化调用绕过 UI。
+- `src/lib/watch/v9TopicAdapter.ts`
+  - adapter 层把 non-symbol topic 强制视为 non-executable，避免 market_overview / hotspot 继承错误 payload executable。
+- `scripts/verify-execution-safety.mjs`
+  - 新增执行安全机器检查：校验 v9/v10 follow gate、客户端只写 `/api/watch/follow-stats`、不存在 CoinW/order/trade execution API route、架构/需求文档仍在。
+- `package.json`
+  - 新增 `npm run verify:execution-safety` 并纳入 `npm run verify`。
+- Tests:
+  - `src/modules/agent-watch/__tests__/followTradeDisabled.test.tsx`
+  - `src/lib/watch/__tests__/v9TopicAdapter.test.ts`
+
+## Verify Status
+
+- Red test observed first:
+  - v9 strategy / adapter 没有强制 non-symbol follow gate。
+- `npx vitest run src/modules/agent-watch/__tests__/followTradeDisabled.test.tsx src/lib/watch/__tests__/v9TopicAdapter.test.ts`: PASS, 35 tests
+- `npm run verify:execution-safety`: PASS
+- `npm run verify`: PASS, now includes execution-safety gate
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+## Readiness Judgement
+
+当前只能进入“执行前安全准备”状态，不能进入真实 CoinW execution。下一阶段若要真接，必须先单独 spec 处理 OAuth 授权、CoinW adapter、订单回执、对账、sandbox、kill switch 和合规审批；本阶段只确保 public preview 不会误给用户真实跟单能力。
+
+[DOC-HINT: B20 adds a machine execution-safety gate; real CoinW execution remains blocked until OAuth, adapter, receipts, reconciliation, sandbox, kill switch, and compliance are implemented in a separate approved spec.]
