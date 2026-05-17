@@ -4,6 +4,7 @@ import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { TradeCardPromptContext } from "@/lib/team/tradeDecisionPromptBuilder";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
+import type { DecisionRunRecord } from "@/lib/team/decisionRunLedger";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { SignalRecord } from "@/modules/agent-watch/types";
 import type { EvidenceContextPack } from "@/lib/team/evidenceDispatcher";
@@ -427,6 +428,108 @@ describe("runPmDecisionPipeline", () => {
     };
     expect(writtenEntry.meta?.sourceTrigger).toBe("pm_decision");
     expect(writtenEntry.meta?.locale).toBe("zh_CN");
+  });
+
+  it("records a private run ledger through success", async () => {
+    const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
+      void run;
+    });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Evidence stack remains constructive",
+          confidence: 0.7,
+        })),
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord: vi.fn(async (record) => record),
+        appendWatchHistoryEntry: vi.fn(),
+        updateDecisionRecord: vi.fn(),
+        upsertDecisionRun,
+      },
+    );
+
+    expect(result?.record.id).toBe("pm:BTC:1778407200000");
+    expect(upsertDecisionRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "run:pm:BTC:1778407200000",
+        status: "running",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        candidate: expect.objectContaining({ candidateType: "symbol", symbol: "BTC" }),
+      }),
+    );
+    expect(upsertDecisionRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        id: "run:pm:BTC:1778407200000",
+        status: "succeeded",
+        decisionRecordId: "pm:BTC:1778407200000",
+        publicTimelineEventId: "public:pm:BTC:1778407200000",
+        analystRoundCount: 22,
+        abstainedMemberIds: [],
+        completedAt: expect.any(String),
+        stageStatus: expect.objectContaining({
+          analyst_inputs: "done",
+          research_lead: "done",
+          risk_lead: "done",
+          trade_decision: "done",
+          record_write: "done",
+          public_timeline: "done",
+        }),
+      }),
+    );
+  });
+
+  it("records a skipped run ledger when every analyst output abstains", async () => {
+    const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
+      void run;
+    });
+    const generateLeadOutput = vi.fn();
+    const generateTradeDecision = vi.fn();
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async () => {
+          throw new Error("provider unavailable");
+        }),
+        generateLeadOutput,
+        generateTradeDecision,
+        upsertDecisionRun,
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(generateLeadOutput).not.toHaveBeenCalled();
+    expect(generateTradeDecision).not.toHaveBeenCalled();
+    expect(upsertDecisionRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        id: "run:pm:BTC:1778407200000",
+        status: "skipped",
+        skipReason: "no_public_analyst_outputs",
+        analystRoundCount: 0,
+        completedAt: expect.any(String),
+        stageStatus: expect.objectContaining({
+          analyst_inputs: "in_progress",
+        }),
+      }),
+    );
   });
 
   it("normalizes input symbols before creating PM records", async () => {
