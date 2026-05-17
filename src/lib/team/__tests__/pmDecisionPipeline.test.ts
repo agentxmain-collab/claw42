@@ -474,6 +474,17 @@ describe("runPmDecisionPipeline", () => {
         status: "succeeded",
         decisionRecordId: "pm:BTC:1778407200000",
         publicTimelineEventId: "public:pm:BTC:1778407200000",
+        quality: expect.objectContaining({
+          schemaVersion: 1,
+          score: expect.any(Number),
+          warningCount: expect.any(Number),
+          leakCount: 0,
+          warnings: expect.any(Array),
+          trade: expect.objectContaining({
+            hasTradeCard: true,
+            actionable: true,
+          }),
+        }),
         analystRoundCount: 22,
         abstainedMemberIds: [],
         completedAt: expect.any(String),

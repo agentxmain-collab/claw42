@@ -10,6 +10,7 @@ import {
   type DecisionRunRecord,
   type DecisionRunStageStatus,
 } from "@/lib/team/decisionRunLedger";
+import { assessDecisionQuality, type DecisionQualityReport } from "@/lib/team/decisionQuality";
 import { writeDecisionStagePartial } from "@/lib/team/decisionStageWriter";
 import { upsertDecisionRecord } from "@/lib/team/decisionRecordStore";
 import {
@@ -1189,6 +1190,7 @@ function buildDecisionRun({
   abstainedMemberIds = [],
   decisionRecordId = null,
   publicTimelineEventId = null,
+  quality,
   error = null,
   skipReason = null,
 }: {
@@ -1208,6 +1210,7 @@ function buildDecisionRun({
   abstainedMemberIds?: TeamMemberId[];
   decisionRecordId?: string | null;
   publicTimelineEventId?: string | null;
+  quality?: DecisionQualityReport;
   error?: string | null;
   skipReason?: string | null;
 }): DecisionRunRecord {
@@ -1227,6 +1230,7 @@ function buildDecisionRun({
     abstainedMemberIds,
     decisionRecordId,
     publicTimelineEventId,
+    ...(quality ? { quality } : {}),
     error,
     skipReason,
   };
@@ -1678,6 +1682,7 @@ export async function runPmDecisionPipeline(
       });
     }
     const publicTimelineEntry = makePublicTimelineEntry(completedRecord, evidenceIds);
+    const quality = assessDecisionQuality(completedRecord);
     await writeRun(
       buildDecisionRun({
         id: runId,
@@ -1694,6 +1699,7 @@ export async function runPmDecisionPipeline(
         abstainedMemberIds: latestAbstainedMemberIds,
         decisionRecordId: completedRecord.id,
         publicTimelineEventId: publicTimelineEntry.id,
+        quality,
       }),
     );
     return {

@@ -2034,3 +2034,57 @@ B25 对应“长期队列 / cron 级稳定性”的第一层：不引入新依�
 - 本阶段依旧保持 preview-only。
 
 [DOC-HINT: B25 wraps refresh and cron PM execution in a private durable job ledger without adding queue dependencies or changing public UI.]
+
+# B.26 Model Quality Evaluator 实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+B26 对应“更深模型质量”的第一层：在 B24 private run ledger 基础上，给成功完成的 PM decision run 写入内部 `quality` report。此阶段只做内部评分与诊断，不改公开 timeline payload、不改 V10 UI、不改 prompt、不碰 candidate ranking、不碰 prod。
+
+## First-hand 判断
+
+- B24 已能解释 run lifecycle，但 `succeeded` 只代表 pipeline 完成，不代表模型输出质量足够好。
+- 公开 payload 经过 hotfix-5 guardrail 清理，但缺少一个持久化的内部质量信号来量化：后台白话泄漏、角色覆盖不足、重复 rationale、全 wait/neutral、symbol 可跟单但缺交易卡、证据过薄、交易卡低置信度。
+- B26 最稳妥的位置是 private run ledger：质量报告随 run 状态存储，供后续 B27/B28 的队列重试、模型回归和运营看板使用；不进入 public payload，避免把后台诊断暴露给用户。
+
+## Changes
+
+- `src/lib/team/decisionQuality.ts`
+  - 新增 `DecisionQualityReport` / `DecisionQualityWarning`。
+  - 新增 `assessDecisionQuality(record)`，输出 0-100 score、warning list、leakCount、duplicateRationaleCount、roleCoverage、directionDistribution、evidence citation count、trade actionability。
+  - 复用 `containsPublicContentLeak()`，不复制一份新的后台词禁用规则。
+- `src/lib/team/decisionRunLedger.ts`
+  - `DecisionRunRecord` 增加 optional private `quality?: DecisionQualityReport`。
+- `src/lib/team/pmDecisionPipeline.ts`
+  - 成功生成 `completedRecord` 和 public timeline entry 后计算 `assessDecisionQuality(completedRecord)`。
+  - 只把 `quality` 写入最终 `succeeded` run ledger，不写 public timeline payload。
+- Tests:
+  - 新增 `src/lib/team/__tests__/decisionQuality.test.ts` 覆盖高质量输出与低质量 warning。
+  - 更新 `src/lib/team/__tests__/pmDecisionPipeline.test.ts` 确认成功 run ledger 带 `quality`。
+  - `package.json` 把 decision quality test 加入 `test:watch-pipeline`。
+
+## Verify Status
+
+- Red test observed first:
+  - `decisionQuality.test.ts` 首跑失败，确认 `@/lib/team/decisionQuality` 尚不存在。
+- `npx vitest run src/lib/team/__tests__/decisionQuality.test.ts src/lib/team/__tests__/pmDecisionPipeline.test.ts`: PASS, 13 tests
+- `npm run test:watch-pipeline`: PASS, 51 files / 301 tests
+- `npm run verify`: PASS, 51 watch/pipeline files included; format/typecheck/lint/agent-ip/news/chat-v3/execution-safety all passed
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+## PR
+
+- Code commit: `0fa5f4c feat(watch): add PM decision quality scoring`
+- PR: https://github.com/agentxmain-collab/claw42/pull/129
+
+## Notes
+
+- 不改 public payload / UI / prompt / candidate ranking / PM skip policy。
+- 质量评分是内部诊断，不是交易信号，不参与前端排序或跟单 gating。
+- B27 若要把低质量 run 自动排队重试，仍需要单独 spec；如涉及 Vercel Queues 或新依赖，必须 Dan 明确批准。
+
+[DOC-HINT: B26 adds a private PM decision quality report to successful run ledger entries without exposing model diagnostics in public payloads.]
