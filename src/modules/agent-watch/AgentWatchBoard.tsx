@@ -43,6 +43,8 @@ const EMPTY_STATE_REFRESH_CANDIDATE = "market_overview";
 const EMPTY_STATE_REFRESH_SYMBOL = "MARKET";
 const HOTSPOT_REFRESH_CANDIDATE = "hotspot";
 const HOTSPOT_REFRESH_SYMBOL = "HOTSPOT";
+const AUTO_SYMBOL_REFRESH_CANDIDATE = "symbol";
+const AUTO_SYMBOL_REFRESH_SYMBOL = "SYMBOL";
 
 interface PublicTimelinePayload {
   events: PublicTimelineEvent[];
@@ -148,7 +150,13 @@ export function resolveVisibleSessionRefreshTarget({
   const latestRefreshSymbol =
     topics.find((topic) => normalizeCandidateType(topic.candidateType) === "symbol")?.symbol ??
     null;
-  if (!latestRefreshSymbol) return null;
+  if (!latestRefreshSymbol) {
+    return {
+      sessionKey: `freshness-trigger-${locale}-${AUTO_SYMBOL_REFRESH_CANDIDATE}-auto`,
+      symbol: AUTO_SYMBOL_REFRESH_SYMBOL,
+      params: { candidateType: AUTO_SYMBOL_REFRESH_CANDIDATE },
+    };
+  }
 
   return {
     sessionKey: `freshness-trigger-${locale}-symbol-${latestRefreshSymbol}`,

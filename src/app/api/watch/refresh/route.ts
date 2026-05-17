@@ -9,12 +9,20 @@ import { checkRateLimit } from "@/lib/storage/kv-rate-limiter";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { marketSignalsFromPool, triggerPmDecisionPipelineOnce } from "@/lib/team/pmDecisionTrigger";
 import { selectPmDecisionTopics } from "@/lib/team/topicSelector";
-import type { CandidateType, DecisionCandidate } from "@/lib/watch/decisionCandidate";
+import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
+import {
+  normalizeCandidateType,
+  type CandidateType,
+  type DecisionCandidate,
+} from "@/lib/watch/decisionCandidate";
 import { normalizeWatchLocale } from "@/lib/watch/locale";
 import {
   deriveDecisionFreshness,
   normalizeRefreshSymbol,
+  WATCH_DECISION_FRESHNESS_MS,
+  WATCH_DECISION_FUTURE_SKEW_MS,
   type DecisionFreshnessSource,
+  type DecisionFreshnessSnapshot,
 } from "@/lib/watch/decisionFreshness";
 import {
   HOTSPOT_STORAGE_SYMBOL,
@@ -24,6 +32,7 @@ import {
   symbolDecisionCandidate,
 } from "@/lib/watch/residentCandidate";
 import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
+import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { WatchRefreshStatus } from "@/lib/watch/refreshStatus";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
 import type { Locale } from "@/i18n/types";
@@ -48,6 +57,8 @@ const REFRESH_RATE_LIMIT = { max: 6, windowMs: 60_000 };
 const IN_FLIGHT_LOCK_MS = 5 * 60_000;
 const COOLDOWN_LOCK_MS = 5 * 60_000;
 const HISTORY_WINDOW_MINUTES = 720;
+const AUTO_SYMBOL_STORAGE_SYMBOL = "SYMBOL";
+const AUTO_SYMBOL_CANDIDATE_KEY = "symbol:auto";
 
 function json(payload: WatchRefreshPayload, init?: ResponseInit) {
   return NextResponse.json(payload, init);
@@ -104,6 +115,7 @@ function basePayload({
 
 function storageSymbolForRefresh(candidate: DecisionCandidate) {
   if (candidate.symbol) return candidate.symbol;
+  if (isAutoSymbolRefreshCandidate(candidate)) return AUTO_SYMBOL_STORAGE_SYMBOL;
   return candidate.candidateType === "market_overview"
     ? MARKET_OVERVIEW_STORAGE_SYMBOL
     : HOTSPOT_STORAGE_SYMBOL;
@@ -115,8 +127,37 @@ function refreshIdentityKey(candidate: DecisionCandidate) {
     : candidate.candidateKey;
 }
 
+function autoSymbolRefreshCandidate(): DecisionCandidate {
+  return {
+    candidateType: "symbol",
+    candidateKey: AUTO_SYMBOL_CANDIDATE_KEY,
+    displayTitle: "优先级币种分析",
+    executable: false,
+    cadence: "event",
+    score: 0,
+    reasons: [],
+  };
+}
+
+function isAutoSymbolRefreshCandidate(candidate: DecisionCandidate) {
+  return candidate.candidateType === "symbol" && !candidate.symbol;
+}
+
+function isRealSymbolValue(value: string | null | undefined) {
+  const normalized = normalizeRefreshSymbol(value);
+  return Boolean(
+    normalized &&
+    normalized !== MARKET_OVERVIEW_STORAGE_SYMBOL &&
+    normalized !== HOTSPOT_STORAGE_SYMBOL &&
+    normalized !== AUTO_SYMBOL_STORAGE_SYMBOL,
+  );
+}
+
 function candidateFromRequest(url: URL, locale: Locale, now: number): DecisionCandidate | null {
   const candidateType = url.searchParams.get("candidateType");
+  if (candidateType === "symbol" && !normalizeRefreshSymbol(url.searchParams.get("symbol"))) {
+    return autoSymbolRefreshCandidate();
+  }
   if (candidateType === "market_overview") {
     return marketOverviewCandidate({ locale, now });
   }
@@ -148,6 +189,10 @@ async function loadFreshness(candidate: DecisionCandidate, locale: Locale, now: 
       .catch(() => []),
   ]);
 
+  if (isAutoSymbolRefreshCandidate(candidate)) {
+    return deriveAnySymbolDecisionFreshness({ records, timelineEvents, now });
+  }
+
   return deriveDecisionFreshness({
     symbol: storageSymbolForRefresh(candidate),
     candidateType: candidate.candidateType,
@@ -156,6 +201,56 @@ async function loadFreshness(candidate: DecisionCandidate, locale: Locale, now: 
     timelineEvents,
     now,
   });
+}
+
+function deriveAnySymbolDecisionFreshness({
+  records,
+  timelineEvents,
+  now,
+}: {
+  records: readonly StrategyDecisionRecord[];
+  timelineEvents: readonly PublicTimelineEvent[];
+  now: number;
+}): DecisionFreshnessSnapshot {
+  const candidates = [
+    ...records.flatMap((record) => {
+      if (normalizeCandidateType(record.candidate?.candidateType) !== "symbol") return [];
+      if (!isRealSymbolValue(record.symbol ?? record.tradeDecision?.symbol)) return [];
+      const createdAt = Date.parse(record.createdAt);
+      return Number.isFinite(createdAt) ? [{ ts: createdAt, source: "records" as const }] : [];
+    }),
+    ...timelineEvents.flatMap((event) => {
+      if (
+        event.payload.kind !== "pm_decision" ||
+        normalizeCandidateType(event.payload.candidateType) !== "symbol" ||
+        !isRealSymbolValue(event.payload.symbol)
+      ) {
+        return [];
+      }
+      return Number.isFinite(event.ts) ? [{ ts: event.ts, source: "timeline" as const }] : [];
+    }),
+  ]
+    .filter((candidate) => candidate.ts <= now + WATCH_DECISION_FUTURE_SKEW_MS)
+    .sort((left, right) => right.ts - left.ts);
+  const latest = candidates[0];
+
+  if (!latest) {
+    return {
+      symbol: AUTO_SYMBOL_STORAGE_SYMBOL,
+      lastDecisionAt: null,
+      lastDecisionAtMs: null,
+      refreshSource: "none",
+      isFresh: false,
+    };
+  }
+
+  return {
+    symbol: AUTO_SYMBOL_STORAGE_SYMBOL,
+    lastDecisionAt: new Date(latest.ts).toISOString(),
+    lastDecisionAtMs: latest.ts,
+    refreshSource: latest.source,
+    isFresh: now - latest.ts < WATCH_DECISION_FRESHNESS_MS,
+  };
 }
 
 async function loadTriggerContext(locale: Locale, candidate: DecisionCandidate, now: number) {
@@ -307,7 +402,11 @@ export async function POST(request: Request) {
       pool: context.pool,
       newsItems: context.newsItems,
       locale,
-      ...(candidate.candidateType === "symbol" ? { symbol: candidate.symbol } : { candidate }),
+      ...(isAutoSymbolRefreshCandidate(candidate)
+        ? {}
+        : candidate.candidateType === "symbol"
+          ? { symbol: candidate.symbol }
+          : { candidate }),
       now,
       partialStageUpdates: true,
     })

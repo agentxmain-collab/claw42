@@ -85,6 +85,16 @@ function residentRequest() {
   );
 }
 
+function autoSymbolRequest() {
+  return new Request(
+    `https://claw42.ai/api/watch/refresh?candidateType=symbol&locale=zh_CN&testNow=${now}`,
+    {
+      method: "POST",
+      headers: { "x-forwarded-for": "203.0.113.10" },
+    },
+  );
+}
+
 function record(createdAt: string): StrategyDecisionRecord {
   return {
     id: "record-btc",
@@ -286,5 +296,64 @@ describe("/api/watch/refresh", () => {
         }),
       }),
     );
+  });
+
+  it("supports server-selected priority symbol refresh when no symbol card exists yet", async () => {
+    const response = await POST(autoSymbolRequest());
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      status: "stale",
+      refreshStarted: true,
+      symbol: "SYMBOL",
+      candidateType: "symbol",
+      candidateKey: "symbol:auto",
+    });
+    expect(callOrder.slice(0, 5)).toEqual([
+      "rate",
+      "check:watch:refresh:in-flight:zh_CN:symbol:auto",
+      "freshness:records",
+      "check:watch:refresh:cooldown:zh_CN",
+      "check:watch:pm-decision:zh_CN:symbol:auto",
+    ]);
+    expect(waitUntilMock).toHaveBeenCalledOnce();
+    await waitUntilMock.mock.calls[0][0];
+    const triggerArg = triggerPmDecisionPipelineOnceMock.mock.calls[0][0];
+    expect(triggerArg).toMatchObject({
+      triggerSource: "user_visit_trigger",
+      locale: "zh_CN",
+    });
+    expect(triggerArg.symbol).toBeUndefined();
+    expect(triggerArg.candidate).toBeUndefined();
+  });
+
+  it("does not let resident records satisfy auto symbol freshness", async () => {
+    readAllDecisionRecordsMock.mockImplementation(async () => {
+      callOrder.push("freshness:records");
+      return [
+        {
+          ...record(new Date(now - 5 * 60_000).toISOString()),
+          id: "record-market",
+          symbol: "MARKET",
+          candidate: {
+            candidateType: "market_overview",
+            candidateKey: "market_overview:zh_CN:2026-05-15",
+            displayTitle: "今日大盘综述",
+            executable: false,
+            cadence: "daily",
+            score: 100,
+            reasons: [],
+          },
+        },
+      ];
+    });
+
+    const response = await POST(autoSymbolRequest());
+    const payload = await response.json();
+
+    expect(payload.status).toBe("stale");
+    expect(payload.refreshStarted).toBe(true);
+    expect(waitUntilMock).toHaveBeenCalledOnce();
   });
 });

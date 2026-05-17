@@ -1609,3 +1609,46 @@ Local gates:
 - This patch intentionally does not resurrect demo data. If first load truly has no public records, the empty state remains.
 
 [DOC-HINT: B.16 stabilizes realtime list reconciliation by preserving the last non-empty display snapshot during transient empty replaces and by using candidate-level UI identity for v10 topic state.]
+
+# B.17 真分析链路可靠性实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+Dan 要求 B17-B20 顺序推进。Codex 先按 B17 查当前 main preview 的真分析链路，不直接假设“没有真分析”。
+
+First-hand 结果：
+
+- main HEAD `87f56ad78874befddc84c5e750bb874e0aba0265` 的 preview `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=720&limit=20` 已返回真实 `pm_decision` records。
+- 当前 visible records 包含 `market_overview` 与 `hotspot`，且 payload 有真实 `rationaleByMember` / `rounds` / `stageTrace`，不是 demo fallback。
+- 真断点在下一步 symbol 分析：`AgentWatchBoard.resolveVisibleSessionRefreshTarget()` 在已有大盘 + 热点、但没有 symbol card 时返回 `null`；同时 `/api/watch/refresh` 只接受指定 `symbol` 或 resident candidate，`candidateType=symbol` 无 symbol 会返回 400。因此工作台会停在大盘/热点，不会继续让后端自动选优先级币种。
+
+## Changes
+
+- `src/modules/agent-watch/AgentWatchBoard.tsx`
+  - 当大盘和热点都存在但没有 symbol card 时，visible-session refresh 改为请求 `candidateType=symbol`。
+  - 这个请求不硬编码 BTC；只要求服务端选择优先级币种。
+- `src/app/api/watch/refresh/route.ts`
+  - 新增 server-selected priority symbol refresh：`POST /api/watch/refresh?candidateType=symbol&locale=...`。
+  - 复用现有 `selectPmDecisionTopics()` / `triggerPmDecisionPipelineOnce()` 的 symbol 选择与 cost cap，不改候选排序。
+  - freshness 判断改为“是否已有任意真实 symbol 决策在 15 分钟内”，不会把 `MARKET` / `HOTSPOT` resident record 当成 symbol freshness。
+- Tests:
+  - `src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`
+  - `src/app/api/watch/refresh/route.test.ts`
+
+## Verify So Far
+
+- Red test observed first:
+  - visible-session target returned `null` for market+hotspot/no-symbol.
+  - refresh API returned `400` for `candidateType=symbol` with no explicit symbol.
+- Green after implementation:
+  - `npx vitest run src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`: PASS, 7 tests
+  - `npx vitest run src/app/api/watch/refresh/route.test.ts`: PASS, 8 tests
+  - `npx tsc --noEmit --pretty false`: PASS
+
+## First-Hand Judgement
+
+B17 不应该回滚到 demo，也不该在前端写死 BTC。当前正确修复是补上“用户访问后服务端自动选 symbol”的缺口，让 B14 的大盘/热点 resident cards 后面能继续自然长出优先级币种分析。该改动不触碰 PM pipeline、candidate ranking、timeline projection、V10 layout、prod 或 cron。
+
+[DOC-HINT: B17 closes the resident-to-symbol refresh gap by allowing candidateType=symbol without a client-chosen symbol; future work should keep client display identity separate from server topic selection.]
