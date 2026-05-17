@@ -16,6 +16,10 @@ const TEAM_MEMBER_ID_PATTERNS = TEAM_MEMBER_IDS.map(
   (memberId) => new RegExp(`\\b${memberId.replace(/_/g, "[_-]?")}\\b`, "i"),
 );
 
+const PUBLIC_ANALYSIS_SUMMARY_MAX_CHARS = 120;
+const REDUNDANT_ANALYSIS_TITLE_PATTERN =
+  /^(?:今日大盘综述|热点叙事追踪|[A-Z0-9]{2,12}\s*实时行情分析)\s*[:：]\s*/i;
+
 export function containsPublicContentLeak(value: string | undefined | null): boolean {
   if (!value) return false;
   return [...PUBLIC_CONTENT_FORBIDDEN_PATTERNS, ...TEAM_MEMBER_ID_PATTERNS].some((pattern) =>
@@ -35,6 +39,44 @@ export function cleanPublicDecisionText(
   const trimmed = value?.trim();
   if (!trimmed) return null;
   return containsPublicContentLeak(trimmed) ? null : trimmed;
+}
+
+export function cleanPublicAnalysisSummary(
+  value: string | undefined | null,
+  locale?: Locale,
+): string | null {
+  const cleaned = cleanPublicDecisionText(value, locale);
+  if (!cleaned) return null;
+  const withoutTitle = cleaned.replace(REDUNDANT_ANALYSIS_TITLE_PATTERN, "").trim() || cleaned;
+  return truncatePublicAnalysisSummary(withoutTitle);
+}
+
+function truncatePublicAnalysisSummary(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  const firstSentenceMatch = /[。！？.!?]/.exec(normalized);
+  const firstSentenceEnd =
+    firstSentenceMatch?.index === undefined
+      ? -1
+      : firstSentenceMatch.index + firstSentenceMatch[0].length;
+  if (firstSentenceEnd >= 18) return normalized.slice(0, firstSentenceEnd).trim();
+  if (normalized.length <= PUBLIC_ANALYSIS_SUMMARY_MAX_CHARS) return normalized;
+
+  const boundary = findSentenceBoundary(normalized, PUBLIC_ANALYSIS_SUMMARY_MAX_CHARS);
+  if (boundary >= 32) return normalized.slice(0, boundary).trim();
+
+  return `${normalized.slice(0, PUBLIC_ANALYSIS_SUMMARY_MAX_CHARS - 1).trim()}…`;
+}
+
+function findSentenceBoundary(value: string, maxLength: number) {
+  let boundary = -1;
+  const sentenceEndPattern = /[。！？.!?]/g;
+  let match: RegExpExecArray | null;
+  while ((match = sentenceEndPattern.exec(value))) {
+    const end = match.index + match[0].length;
+    if (end > maxLength) break;
+    boundary = end;
+  }
+  return boundary;
 }
 
 export function publicContentForbiddenTermsForReport() {

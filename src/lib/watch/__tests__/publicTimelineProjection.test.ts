@@ -519,6 +519,31 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.executable).toBe(false);
   });
 
+  it("publishes a concise public analysis summary instead of the raw PM wall text", () => {
+    const marketRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-market-summary",
+      symbol: "MARKET",
+      tradeDecision: null,
+      analysisSummary:
+        "今日大盘综述: 市场当前处于多空拉锯但空头证据更扎实的阶段。最强证据是 BTC ETF 周流出 10 亿美元，机构资金撤退信号明确。后续细节不应继续铺满公开卡片。",
+      candidate: {
+        candidateType: "market_overview",
+        candidateKey: "market_overview:daily:zh_CN:2026-05-17",
+        displayTitle: "今日大盘综述",
+        executable: false,
+        cadence: "daily",
+        score: 100,
+        reasons: [],
+      },
+    };
+
+    const event = projectDecisionRecordToPublicEvent(marketRecord);
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.analysisSummary).toBe("市场当前处于多空拉锯但空头证据更扎实的阶段。");
+  });
+
   it("projects schema v2 multi-round records while keeping latest rationale maps", () => {
     const v2Record: StrategyDecisionRecord = {
       ...decisionRecord,

@@ -17,6 +17,7 @@ import {
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 import { comparePublicTimelineEvents } from "@/lib/watch/publicTimelineOrdering";
 import {
+  cleanPublicAnalysisSummary,
   cleanPublicDecisionText,
   containsPublicContentLeak,
 } from "@/lib/watch/publicContentGuardrails";
@@ -235,13 +236,14 @@ function pmDecisionPayload(
     normalizePublicSymbol(tradeDecision?.symbol) ??
     symbolFromRecordId(recordId) ??
     "UNKNOWN";
+  const analysisSummary = cleanPublicAnalysisSummary(indexedRecord?.analysisSummary);
   return {
     kind: "pm_decision",
     recordId,
     symbol,
     ...candidateMetaForRecord(indexedRecord, symbol),
     executable: executableForRecord(indexedRecord, symbol),
-    ...(indexedRecord?.analysisSummary ? { analysisSummary: indexedRecord.analysisSummary } : {}),
+    ...(analysisSummary ? { analysisSummary } : {}),
     tradeDecision,
     rationaleByMember: derived.rationaleByMember,
     citationsByMember: derived.citationsByMember,
@@ -266,13 +268,14 @@ export function projectDecisionRecordToPublicEvent(
     normalizePublicSymbol(tradeDecision?.symbol) ??
     symbolFromRecordId(record.id) ??
     "UNKNOWN";
+  const analysisSummary = cleanPublicAnalysisSummary(record.analysisSummary, record.locale);
   const payload: PublicTimelineEvent["payload"] = {
     kind: "pm_decision",
     recordId: record.id,
     symbol,
     ...candidateMetaForRecord(record, symbol),
     executable: executableForRecord(record, symbol),
-    ...(record.analysisSummary ? { analysisSummary: record.analysisSummary } : {}),
+    ...(analysisSummary ? { analysisSummary } : {}),
     tradeDecision,
     rationaleByMember: derived.rationaleByMember,
     citationsByMember: derived.citationsByMember,

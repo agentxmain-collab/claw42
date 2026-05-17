@@ -1652,3 +1652,51 @@ First-hand 结果：
 B17 不应该回滚到 demo，也不该在前端写死 BTC。当前正确修复是补上“用户访问后服务端自动选 symbol”的缺口，让 B14 的大盘/热点 resident cards 后面能继续自然长出优先级币种分析。该改动不触碰 PM pipeline、candidate ranking、timeline projection、V10 layout、prod 或 cron。
 
 [DOC-HINT: B17 closes the resident-to-symbol refresh gap by allowing candidateType=symbol without a client-chosen symbol; future work should keep client display identity separate from server topic selection.]
+
+# B.18 决策公开摘要质量实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+Dan 要求 B17-B20 顺序推进。B18 按“决策质量增强”先查当前 main preview 的真实 public payload，而不是直接改 prompt。
+
+First-hand 结果：
+
+- B17 main preview `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=720&limit=20` 返回真实 `pm_decision`，不是 demo fallback。
+- 当前 `market_overview` payload 的 `analysisSummary` 是 PM 长墙文，重复拼接 research/risk 段，公开 payload 和后续 UI 入口都过长。
+- V9 adapter 对 analysis-only resident card 的 `explanation` 优先拿第一条 evidence summary；当前第一条 evidence 是 “OpenAI partners with Malta...”，会把无关新闻放到“今日大盘综述”卡片解释里。
+
+## Changes
+
+- `src/lib/watch/publicContentGuardrails.ts`
+  - 新增 `cleanPublicAnalysisSummary()`。
+  - 去掉重复标题前缀（如 `今日大盘综述:` / `热点叙事追踪:` / `{SYMBOL} 实时行情分析:`）。
+  - 对公开摘要做首句优先 + 120 字上限兜底，避免 PM wall text 进入公开卡片。
+- `src/lib/watch/publicTimelineProjection.ts`
+  - PM public payload 出口统一清洗 `analysisSummary`。
+  - 对 stream projection 与 direct record projection 同时生效。
+- `src/lib/watch/v9TopicAdapter.ts`
+  - analysis-only records 优先用 cleaned `analysisSummary` 作为 topic explanation / trigger text。
+  - 避免无关 evidence summary 抢占 resident card 的公开解释。
+- Tests:
+  - `src/lib/watch/__tests__/publicTimelineProjection.test.ts`
+  - `src/lib/watch/__tests__/v9TopicAdapter.test.ts`
+
+## Verify Status
+
+- Red test observed first:
+  - public projection 原样发布 PM wall text。
+  - v9 adapter 对 analysis-only record 使用 unrelated evidence summary。
+- `npx vitest run src/lib/watch/__tests__/publicTimelineProjection.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts`: PASS, 54 tests
+- `npm run verify`: PASS
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+- `npm run build`: PASS
+
+## Notes
+
+- 没动 PM pipeline / evidenceDispatcher / prompt / candidate ranking / refresh / hydration / V10 layout / prod。
+- 这是 public projection + adapter quality patch：先把真实分析公开出口变干净、短、相关，再继续 B19 memory loop。
+
+[DOC-HINT: B18 routes analysis-only cards through concise cleaned `analysisSummary`; future prompt work can improve source text, but public projection should continue enforcing a short user-facing summary boundary.]
