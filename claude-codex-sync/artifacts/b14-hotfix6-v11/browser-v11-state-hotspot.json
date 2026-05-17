@@ -1,0 +1,135 @@
+{
+  "url": "https://claw42-site-qn4scqqu6-agentxmain-collabs-projects.vercel.app/zh_CN/agent?_vercel_share=<redacted>",
+  "checks": [
+    {
+      "name": "hotspot visible",
+      "pass": true
+    },
+    {
+      "name": "hotspot stat equals visible hotspot cards",
+      "pass": true
+    },
+    {
+      "name": "third record remains expanded after 10 stream emits",
+      "pass": true
+    },
+    {
+      "name": "scroll remains anchored after 10 stream emits",
+      "pass": true
+    }
+  ],
+  "headerStats": "热点\n1\n已闭环\n1\n辩论中\n2\n起步\n0",
+  "titles": [
+    "今日大盘综述",
+    "热点叙事追踪",
+    "BTC 决策流"
+  ],
+  "expandedAfterClick": "true",
+  "expandedAfterTenEmits": "true",
+  "scrollBefore": 1089,
+  "scrollAfter": 1089,
+  "scrollDelta": 0,
+  "emissions": [
+    {
+      "i": 1,
+      "expanded": "true",
+      "scrollTop": 1089,
+      "titles": [
+        "今日大盘综述",
+        "热点叙事追踪",
+        "BTC 决策流"
+      ]
+    },
+    {
+      "i": 2,
+      "expanded": "true",
+      "scrollTop": 1089,
+      "titles": [
+        "今日大盘综述",
+        "热点叙事追踪",
+        "BTC 决策流"
+      ]
+    },
+    {
+      "i": 3,
+      "expanded": "true",
+      "scrollTop": 1089,
+      "titles": [
+        "今日大盘综述",
+        "热点叙事追踪",
+        "BTC 决策流"
+      ]
+    },
+    {
+      "i": 4,
+      "expanded": "true",
+      "scrollTop": 1089,
+      "titles": [
+        "今日大盘综述",
+        "热点叙事追踪",
+        "BTC 决策流"
+      ]
+    },
+    {
+      "i": 5,
+      "expanded": "true",
+      "scrollTop": 1089,
+      "titles": [
+        "今日大盘综述",
+        "热点叙事追踪",
+        "BTC 决策流"
+      ]
+    },
+    {
+      "i": 6,
+      "expanded": "true",
+      "scrollTop": 1089,
+      "titles": [
+        "今日大盘综述",
+        "热点叙事追踪",
+        "BTC 决策流"
+      ]
+    },
+    {
+      "i": 7,
+      "expanded": "true",
+      "scrollTop": 1089,
+      "titles": [
+        "今日大盘综述",
+        "热点叙事追踪",
+        "BTC 决策流"
+      ]
+    },
+    {
+      "i": 8,
+      "expanded": "true",
+      "scrollTop": 1089,
+      "titles": [
+        "今日大盘综述",
+        "热点叙事追踪",
+        "BTC 决策流"
+      ]
+    },
+    {
+      "i": 9,
+      "expanded": "true",
+      "scrollTop": 1089,
+      "titles": [
+        "今日大盘综述",
+        "热点叙事追踪",
+        "BTC 决策流"
+      ]
+    },
+    {
+      "i": 10,
+      "expanded": "true",
+      "scrollTop": 1089,
+      "titles": [
+        "今日大盘综述",
+        "热点叙事追踪",
+        "BTC 决策流"
+      ]
+    }
+  ],
+  "screenshot": "/private/tmp/claw42-b14-hotfix6-v11/claude-codex-sync/artifacts/b14-hotfix6-v11/browser-v11-state-hotspot-1440.png"
+}

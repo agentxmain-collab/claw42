@@ -1,0 +1,157 @@
+{
+  "deployment": "https://claw42-site-qn4scqqu6-agentxmain-collabs-projects.vercel.app",
+  "locales": {
+    "zh_CN": {
+      "stable": true,
+      "hash": "e1ffdbaf9f779c5d",
+      "runs": [
+        {
+          "run": 1,
+          "eventsLength": 1,
+          "keys": [
+            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
+          ],
+          "hash": "e1ffdbaf9f779c5d"
+        },
+        {
+          "run": 2,
+          "eventsLength": 1,
+          "keys": [
+            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
+          ],
+          "hash": "e1ffdbaf9f779c5d"
+        },
+        {
+          "run": 3,
+          "eventsLength": 1,
+          "keys": [
+            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
+          ],
+          "hash": "e1ffdbaf9f779c5d"
+        },
+        {
+          "run": 4,
+          "eventsLength": 1,
+          "keys": [
+            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
+          ],
+          "hash": "e1ffdbaf9f779c5d"
+        },
+        {
+          "run": 5,
+          "eventsLength": 1,
+          "keys": [
+            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
+          ],
+          "hash": "e1ffdbaf9f779c5d"
+        },
+        {
+          "run": 6,
+          "eventsLength": 1,
+          "keys": [
+            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
+          ],
+          "hash": "e1ffdbaf9f779c5d"
+        },
+        {
+          "run": 7,
+          "eventsLength": 1,
+          "keys": [
+            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
+          ],
+          "hash": "e1ffdbaf9f779c5d"
+        },
+        {
+          "run": 8,
+          "eventsLength": 1,
+          "keys": [
+            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
+          ],
+          "hash": "e1ffdbaf9f779c5d"
+        },
+        {
+          "run": 9,
+          "eventsLength": 1,
+          "keys": [
+            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
+          ],
+          "hash": "e1ffdbaf9f779c5d"
+        },
+        {
+          "run": 10,
+          "eventsLength": 1,
+          "keys": [
+            "hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪"
+          ],
+          "hash": "e1ffdbaf9f779c5d"
+        }
+      ]
+    },
+    "en_US": {
+      "stable": true,
+      "hash": "e3b0c44298fc1c14",
+      "runs": [
+        {
+          "run": 1,
+          "eventsLength": 0,
+          "keys": [],
+          "hash": "e3b0c44298fc1c14"
+        },
+        {
+          "run": 2,
+          "eventsLength": 0,
+          "keys": [],
+          "hash": "e3b0c44298fc1c14"
+        },
+        {
+          "run": 3,
+          "eventsLength": 0,
+          "keys": [],
+          "hash": "e3b0c44298fc1c14"
+        },
+        {
+          "run": 4,
+          "eventsLength": 0,
+          "keys": [],
+          "hash": "e3b0c44298fc1c14"
+        },
+        {
+          "run": 5,
+          "eventsLength": 0,
+          "keys": [],
+          "hash": "e3b0c44298fc1c14"
+        },
+        {
+          "run": 6,
+          "eventsLength": 0,
+          "keys": [],
+          "hash": "e3b0c44298fc1c14"
+        },
+        {
+          "run": 7,
+          "eventsLength": 0,
+          "keys": [],
+          "hash": "e3b0c44298fc1c14"
+        },
+        {
+          "run": 8,
+          "eventsLength": 0,
+          "keys": [],
+          "hash": "e3b0c44298fc1c14"
+        },
+        {
+          "run": 9,
+          "eventsLength": 0,
+          "keys": [],
+          "hash": "e3b0c44298fc1c14"
+        },
+        {
+          "run": 10,
+          "eventsLength": 0,
+          "keys": [],
+          "hash": "e3b0c44298fc1c14"
+        }
+      ]
+    }
+  }
+}

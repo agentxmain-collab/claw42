@@ -1371,3 +1371,127 @@ Browser verification:
 - `npm run verify:metrics` PASS, 5 tests
 
 [DOC-HINT: hotfix-6 keeps refresh resident-trigger-only for empty timelines; it does not change PM pipeline, candidate ranking, cron, or production deployment topology.]
+
+# B.14 hotfix-6 v1.1 调研 + 实施报告
+
+Date: 2026-05-17
+
+Branch: `feature/b14-hotfix6-v11-state-hotspot`
+Base: `origin/main` at `012feaed9661fe9c527e610bca31fee8ce4f47f4`
+Implementation commit: `cdddcb5ff2b58b015b50917f031f2ed3589dc3d3`
+
+Preview:
+
+- Ready deployment: `https://claw42-site-qn4scqqu6-agentxmain-collabs-projects.vercel.app`
+- Branch alias: `https://claw42-site-git-feature-b14-60432e-agentxmain-collabs-projects.vercel.app`
+- Deployment id: `dpl_3iQ9wg5syxNRrscpp6cX33JoLsWR`
+- Temporary share URL: `https://claw42-site-qn4scqqu6-agentxmain-collabs-projects.vercel.app/?_vercel_share=6rM7iFtcCZLRc5PcY29KFtpQSYGjPjv7`
+- Note: two direct local CLI deploy attempts stuck in Vercel `UNKNOWN`; Git branch preview produced the ready build. Prod was not touched.
+
+## Task A Empty State
+
+v1.0 root cause remains valid:
+
+- Empty timeline previously did not schedule a resident refresh because `AgentWatchBoard` only posted `/api/watch/refresh` when `topics[0]?.symbol` existed.
+- Future-dated records could be considered fresh while timeline projection filtered them away.
+
+v1.1 regression check:
+
+- The ready preview `zh_CN` timeline now returns a real public record, not empty state.
+- 10 consecutive protected preview API fetches were stable: `eventsLength=1`, key `hotspot:pm:HOTSPOT:1778992128320:热点叙事追踪`, hash `e1ffdbaf9f779c5d`.
+- `en_US` currently has no record in KV and remains stable empty; this is data availability, not the original zh_CN empty-state bug path.
+
+## Task B History Close
+
+v1.0 fix remains valid and was not changed in v1.1:
+
+- History drawer has explicit close button, Esc close, localized aria label, and portal layering.
+- v1.1 changes do not touch `HistoryWall`.
+
+## Task C Hotspot Count vs Visible Card
+
+F guesses checked first-hand:
+
+- (a) V10 hotspot render branch missing: **FAIL**. `MarketAnalysisPanel` already had `candidate-hotspot` class and hotspot badge handling.
+- (b) Timeline projection filtered hotspot: **FAIL for current preview**. Manual `/api/watch/refresh?candidateType=hotspot&locale=zh_CN` produced a public hotspot record that projected through `/api/watch/timeline`.
+- (c) Header number source wrong: **PASS**. Header label `热点` used `resolvedTopics.length`, so a single `market_overview` card rendered as "热点 1".
+- (d) Comparator hid hotspot: **FAIL**. Current API returned a single visible hotspot record; no pagination/ordering hiding was involved.
+- (e) Fifth root cause: **PASS**. Visible-session refresh targeted only one candidate path. With a resident card present it used pseudo-symbol `MARKET`/first topic behavior and did not explicitly backfill missing hotspot.
+
+Fix:
+
+- `src/modules/agent-watch/AgentWatchBoard.tsx:80-123,474-565`
+  - Added `resolveVisibleSessionRefreshTarget`.
+  - Fill order is now `market_overview` first, then missing `hotspot`, then real symbol topics.
+  - It no longer treats pseudo resident symbols as normal symbol refreshes.
+  - Locked/refreshing responses no longer permanently burn the session key; they schedule a bounded retry.
+- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx:471-508`
+  - Header `热点` count now derives from actual hotspot topics, not total cards.
+- Tests:
+  - `src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`
+  - `src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx:177-226`
+
+Preview verification:
+
+- Live protected API: `zh_CN` has `eventsLength=1`, `candidateType=hotspot`, `displayTitle=热点叙事追踪`.
+- Browser mocked-stream verification on the ready preview: header text `热点 1 / 已闭环 1 / 辩论中 2 / 起步 0`; visible card titles `今日大盘综述`, `热点叙事追踪`, `BTC 决策流`; hotspot check PASS.
+
+## Task D Controlled State Reset
+
+F guesses checked first-hand:
+
+- (a) `events.map` key was index: **FAIL**. V10 already used `key={topic.id}`.
+- (b) SSE/refresh replaces the event array and re-renders the list: **PASS as a stressor**, not sufficient root cause alone.
+- (c) Freshness state remounts the whole board: **FAIL**. It re-renders but does not intentionally remount the board.
+- (d) Scroll position had no restoration: **PASS**.
+- (e) Expanded/collapsed state was not explicitly keyed by record id: **PASS**. It lived inside each card and initialized from `topic.defaultCollapsed`, so remount/new record identity could reset user state.
+
+Fix:
+
+- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx:127-200,467-491,518-556`
+  - Added record-id keyed collapse state reconciliation.
+  - Added record-id keyed scroll anchor capture/restore on topic order changes.
+  - Card wrapper keeps `key={topic.id}` and now also exposes `data-topic-card-id={topic.id}` for scroll anchoring.
+- Tests:
+  - `src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx:317-362` verifies expanded state follows the same record after reorder.
+
+10-update UI verification:
+
+- Browser test used the real ready preview shell with a controlled EventSource payload containing 3 cards.
+- After expanding the third card (`BTC 决策流`) and scrolling to it, 10 stream emits with alternating input order kept:
+  - `aria-expanded=true` after all 10 emits
+  - `scrollTop=1089` before and after, delta `0`
+  - rendered title order stable: `今日大盘综述` → `热点叙事追踪` → `BTC 决策流`
+
+## Raw Artifacts
+
+- `claude-codex-sync/artifacts/b14-hotfix6-v11/api-v11-timeline-10-fetch-stability.json`
+- `claude-codex-sync/artifacts/b14-hotfix6-v11/api-v11-visible-leak-scan.json`
+- `claude-codex-sync/artifacts/b14-hotfix6-v11/browser-v11-state-hotspot.json`
+- `claude-codex-sync/artifacts/b14-hotfix6-v11/browser-v11-state-hotspot-1440.png`
+
+Visible text leak scan:
+
+- `zh_CN` preview user-visible text fields scanned: 54
+- `leakCount=0`
+
+## Verify Status
+
+- `.vercel/project.json` verified before deploy: `projectId=prj_UjubflJkr8XJFUm36cUmoLCl3NrH`, `orgId=team_URED5oO6s2OI5bakH3FJUQpC`, `projectName=claw42-site`
+- `npx vitest run src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`: PASS, 14 tests
+- `npm run format:check`: PASS
+- `npm run typecheck`: PASS
+- `npm run lint`: PASS
+- `npm run test:watch-pipeline`: PASS, 272 tests
+- `npm run verify`: PASS
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+- `npm run build`: PASS after clean standalone run. A previous parallel build with a11y/dev server was invalid because `.next` had concurrent writes.
+
+## First-hand Finding
+
+- Vercel protected preview is accessible via the temporary `_vercel_share` URL or `vercel curl`; ordinary curl still sees Vercel Authentication.
+- The direct local `npx vercel` deploy path produced two `UNKNOWN` deployments with no logs. Pushing the feature branch let GitHub-Vercel integration build normally and should be preferred for this project when local deploy hangs.
+- The current `zh_CN` live KV only has one hotspot record. The 3-card scroll/expand verification therefore used a controlled browser stream against the real preview shell rather than pretending live KV had three records.
+
+[DOC-HINT: hotfix-6 v1.1 changes only resident refresh target selection and v10 presentation state; it does not change PM pipeline, projection sorting/dedupe, candidate ranking, cron, or production deployment topology.]
