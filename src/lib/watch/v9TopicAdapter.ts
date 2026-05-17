@@ -759,6 +759,9 @@ function makeExplanation(
   if (!hasRenderableTradeDecision && !hasRationale) {
     return "暂无决策更新";
   }
+  if (!hasRenderableTradeDecision && group.latestDecision.payload.analysisSummary) {
+    return group.latestDecision.payload.analysisSummary;
+  }
   const suffix =
     evidence?.summary ||
     evidence?.title ||
@@ -862,7 +865,11 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       }),
       trigger: {
         ticker: `$${group.symbol}`,
-        text: evidence?.summary || evidence?.title || `${group.symbol} 真实交易决策`,
+        text:
+          (!hasTradeDecision && latest.payload.analysisSummary) ||
+          evidence?.summary ||
+          evidence?.title ||
+          `${group.symbol} 真实交易决策`,
       },
       stages: makeStages(
         group.id,

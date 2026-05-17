@@ -595,6 +595,39 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.messages.some((message) => message.typing)).toBe(true);
   });
 
+  it("uses public analysis summary before unrelated evidence copy for analysis-only records", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+    const [topic] = mapTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            candidateType: "market_overview",
+            candidateKey: "market_overview:zh_CN:2026-05-17",
+            displayTitle: "今日大盘综述",
+            executable: false,
+            analysisSummary: "市场当前处于多空拉锯但空头证据更扎实的阶段。",
+            tradeDecision: null,
+          },
+        },
+      ],
+      evidenceMap: {
+        ev_1: {
+          ...evidence,
+          summary: "OpenAI partners with Malta to give all citizens free ChatGPT Plus access",
+        },
+      },
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.title).toBe("今日大盘综述");
+    expect(topic.explanation).toBe("市场当前处于多空拉锯但空头证据更扎实的阶段。");
+    expect(topic.trigger.text).toBe("市场当前处于多空拉锯但空头证据更扎实的阶段。");
+  });
+
   it("renders partial stage trace as a monotonic current in-progress stage", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
