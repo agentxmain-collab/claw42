@@ -4,5 +4,17 @@
       "path": "/api/cron/strategy-replay",
       "schedule": "0 */3 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "src/app/api/queues/pm-decision-job/route.ts": {
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "pm-decision-jobs",
+          "retryAfterSeconds": 300,
+          "initialDelaySeconds": 0
+        }
+      ]
+    }
+  }
 }

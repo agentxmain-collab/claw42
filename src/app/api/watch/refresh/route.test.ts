@@ -16,6 +16,7 @@ const normalizeNewsItemMock = vi.hoisted(() => vi.fn());
 const getCoinPoolMock = vi.hoisted(() => vi.fn());
 const marketSignalsFromPoolMock = vi.hoisted(() => vi.fn());
 const enqueuePmDecisionJobMock = vi.hoisted(() => vi.fn());
+const publishPmDecisionJobToQueueMock = vi.hoisted(() => vi.fn());
 const runPmDecisionJobMock = vi.hoisted(() => vi.fn());
 const selectPmDecisionTopicsMock = vi.hoisted(() => vi.fn());
 const callOrder = vi.hoisted(() => [] as string[]);
@@ -68,6 +69,10 @@ vi.mock("@/lib/team/topicSelector", () => ({
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   enqueuePmDecisionJob: enqueuePmDecisionJobMock,
+}));
+
+vi.mock("@/lib/team/pmDecisionJobQueue", () => ({
+  publishPmDecisionJobToQueue: publishPmDecisionJobToQueueMock,
 }));
 
 vi.mock("@/lib/team/pmDecisionJobRunner", () => ({
@@ -188,6 +193,8 @@ describe("/api/watch/refresh", () => {
       decisionRecordIds: [],
       auditEventCount: 0,
     }));
+    publishPmDecisionJobToQueueMock.mockReset();
+    publishPmDecisionJobToQueueMock.mockResolvedValue({ mode: "disabled" });
     runPmDecisionJobMock.mockReset();
     runPmDecisionJobMock.mockResolvedValue({
       job: { id: "pm-job:test", status: "succeeded" },
@@ -252,6 +259,33 @@ describe("/api/watch/refresh", () => {
         partialStageUpdates: true,
       }),
     );
+    expect(releaseLockMock).toHaveBeenCalledWith(
+      expect.objectContaining({ key: "watch:refresh:in-flight:zh_CN:BTC" }),
+    );
+  });
+
+  it("publishes refresh jobs to Vercel Queue without directly running the PM pipeline", async () => {
+    publishPmDecisionJobToQueueMock.mockResolvedValueOnce({
+      mode: "queue",
+      messageId: "msg_watch_refresh",
+    });
+
+    const response = await POST(request());
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      status: "stale",
+      refreshStarted: true,
+      symbol: "BTC",
+    });
+    expect(waitUntilMock).toHaveBeenCalledOnce();
+    await waitUntilMock.mock.calls[0][0];
+    expect(publishPmDecisionJobToQueueMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "pm-job:test" }),
+      expect.objectContaining({ now }),
+    );
+    expect(runPmDecisionJobMock).not.toHaveBeenCalled();
     expect(releaseLockMock).toHaveBeenCalledWith(
       expect.objectContaining({ key: "watch:refresh:in-flight:zh_CN:BTC" }),
     );

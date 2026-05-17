@@ -2088,3 +2088,65 @@ B26 对应“更深模型质量”的第一层：在 B24 private run ledger 基�
 - B27 若要把低质量 run 自动排队重试，仍需要单独 spec；如涉及 Vercel Queues 或新依赖，必须 Dan 明确批准。
 
 [DOC-HINT: B26 adds a private PM decision quality report to successful run ledger entries without exposing model diagnostics in public payloads.]
+
+# B.27 Vercel Queue-backed PM Decision Retry 实施报告
+
+Date: 2026-05-18
+
+## Scope
+
+B27 把 B25 的 PM decision job ledger 接到 Vercel Queues：用户访问触发和定时 cron 产生的 PM job 先写 ledger，再在可用环境发布到 durable queue，由 queue consumer 执行。队列不可用或显式关闭时保留原 waitUntil / synchronous fallback，避免 preview、本地或 beta 服务异常导致实时分析触发链路断裂。
+
+## First-hand 判断
+
+- B25 已有 job idempotency / lifecycle / failure metadata，但执行仍绑定当前 request 或 cron function；长 14-role PM pipeline 仍可能被函数生命周期、网络抖动、cron 响应时间影响。
+- Vercel Queues 当前 SDK 版本实测为 `@vercel/queue@0.1.7`；API 为 `send(topic, payload, options)` + `handleCallback(handler, options)` + `vercel.json` `queue/v2beta` trigger。
+- Next App Router 不能直接导出 `handleCallback()` 返回值，因为它的参数类型包含 `{ request: Request }`，build 会拒绝；最终用 `POST(request: Request) { return queueHandler(request) }` 包装。
+- 队列 consumer 必须重新加载 pool/news context，而不是只拿 job record 直接 run；否则 batch job 在无 pool 时会退化成 BTC-only，candidate job 会缺 market/news evidence。
+
+## Changes
+
+- Dependency:
+  - 新增 `@vercel/queue@^0.1.7`。
+- `src/lib/team/pmDecisionJobQueue.ts`
+  - 新增 `PM_DECISION_QUEUE_TOPIC = pm-decision-jobs`。
+  - 新增 `publishPmDecisionJobToQueue(job)`：queue enabled 时发布消息，使用 job id 做 idempotency key，24h retention；queue disabled / publish failed 返回明确 mode。
+  - 新增 `processPmDecisionQueueMessage(message)`：读取 job ledger，跳过已 succeeded job，加载最新 pool/news context 后调用 `runPmDecisionJob()`。
+  - Queue enable rule：`PM_DECISION_QUEUE_ENABLED=true` 强制开启；`false` 强制关闭；未配置时仅 Vercel 环境自动开启。
+- `src/app/api/queues/pm-decision-job/route.ts`
+  - 新增 Vercel Queue push-mode consumer。
+  - visibility timeout = 30min；delivery >= 5 后 acknowledge，否则指数退避重试。
+- `vercel.json`
+  - 新增 `src/app/api/queues/pm-decision-job/route.ts` 的 `queue/v2beta` trigger，topic `pm-decision-jobs`。
+- `src/app/api/watch/refresh/route.ts`
+  - 用户访问 refresh：enqueue ledger 后，waitUntil 内先 publish queue；queue 成功则不直接跑 pipeline，queue 失败/禁用则 fallback 到原 `runPmDecisionJob()`。
+- `src/app/api/cron/strategy-replay/route.ts`
+  - scheduled cron：queue 成功则不阻塞跑 PM pipeline，响应返回 `pmDecisionQueueMode` / `pmDecisionQueueMessageId`。
+  - `trigger=now` 保持同步 run，便于人工验证 audit / provider telemetry。
+- Tests:
+  - 新增 `src/lib/team/__tests__/pmDecisionJobQueue.test.ts`。
+  - 更新 refresh / cron route tests 覆盖 queue mode 与 fallback mode。
+  - `package.json` 把 queue test 加入 `test:watch-pipeline`。
+
+## Verify Status
+
+- Red tests observed first:
+  - `pmDecisionJobQueue.test.ts` 首跑失败，确认模块未实现。
+  - refresh queue test 首跑显示 `publishPmDecisionJobToQueue` 0 calls，确认 route 仍直接跑 pipeline。
+  - cron queue test 首跑显示 `generatedPmDecisions=1 / status=succeeded`，确认 scheduled cron 仍同步阻塞跑 pipeline。
+- `npx vitest run src/lib/team/__tests__/pmDecisionJobQueue.test.ts src/app/api/watch/refresh/route.test.ts src/app/api/cron/strategy-replay/route.test.ts`: PASS, 22 tests
+- `npm run test:watch-pipeline`: PASS, 52 files / 308 tests
+- `npm run verify`: PASS, format/typecheck/lint/agent-ip/news/news tests/watch-pipeline/chat-v3/execution-safety all passed
+- `npm run build`: PASS
+  - Note: local build logs Vercel Queue SDK region warning because `VERCEL_REGION` is absent outside Vercel; build still exits 0.
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+## Notes
+
+- 不改 PM pipeline prompt、candidate ranking、public payload、V10 layout、follow-trade gating。
+- 不碰 prod / 不 `--prod` / 不动 `claw42.ai`。
+- Queue 是 at-least-once 语义；B27 依赖 B25 job idempotency + B27 message idempotency 来消化重复投递。
+- 后续如果要针对 B26 low-quality run 自动 retry，应在 B28 单独接质量阈值和重试策略，不应塞进 B27。
+
+[DOC-HINT: B27 adds Vercel Queue-backed PM decision job publishing and consumer retry while preserving waitUntil/synchronous fallbacks when queues are disabled or unavailable.]
