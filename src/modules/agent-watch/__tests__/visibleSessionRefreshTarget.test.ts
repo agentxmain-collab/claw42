@@ -4,7 +4,9 @@ import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import {
   mergeTimelinePayloadForDisplay,
   reconcileTimelineEventsForDisplay,
+  retryDelayForVisibleSessionRefresh,
   resolveVisibleSessionRefreshTarget,
+  shouldPersistVisibleSessionRefreshResult,
 } from "../AgentWatchBoard";
 
 function pmEvent(recordId: string, ts: number): PublicTimelineEvent {
@@ -163,5 +165,27 @@ describe("resolveVisibleSessionRefreshTarget", () => {
         mode: "replace",
       }),
     ).toEqual([]);
+  });
+
+  test("does not persist no-signal visible refresh results as session-complete", () => {
+    expect(shouldPersistVisibleSessionRefreshResult("no_signal")).toBe(false);
+    expect(retryDelayForVisibleSessionRefresh({ status: "no_signal", nextAllowedAt: null })).toBe(
+      5 * 60_000,
+    );
+    expect(shouldPersistVisibleSessionRefreshResult("stale")).toBe(true);
+    expect(shouldPersistVisibleSessionRefreshResult("cached")).toBe(true);
+  });
+
+  test("uses the server nextAllowedAt when retrying locked visible refreshes", () => {
+    const now = Date.UTC(2026, 4, 17, 12, 0, 0);
+    expect(
+      retryDelayForVisibleSessionRefresh(
+        {
+          status: "locked",
+          nextAllowedAt: new Date(now + 45_000).toISOString(),
+        },
+        now,
+      ),
+    ).toBe(46_000);
   });
 });
