@@ -553,6 +553,49 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.analysisSummary).toBe("市场当前处于多空拉锯但空头证据更扎实的阶段。");
   });
 
+  it("keeps PM public rationale concise instead of projecting the raw decision wall", () => {
+    const pmWall =
+      "今日交易方案: BTC 继续围绕 104000 附近拉锯，第一段解释已经足够。第二段重复解释多空双方细节、资金流、执行节奏和各种背景信息，会把公开工作台推成大段墙文。第三段继续重复同样观点，不应出现在卡片主文案里。";
+    const pmRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-pm-wall",
+      analystInputs: [
+        {
+          memberId: "pm",
+          direction: "long",
+          confidence: 0.72,
+          rationale: pmWall,
+          oneLineSummary: "BTC 拉锯仍偏多，只有跌回 104000 下方才降级。",
+          detailedRationale: pmWall,
+          evidenceIds: ["ev_pm"],
+          rounds: [
+            {
+              round: 1,
+              direction: "long",
+              confidence: 0.72,
+              rationale: pmWall,
+              oneLineSummary: "BTC 拉锯仍偏多，只有跌回 104000 下方才降级。",
+              detailedRationale: pmWall,
+              evidenceIds: ["ev_pm"],
+              observedAt: new Date(now).toISOString(),
+            },
+          ],
+        },
+      ],
+    };
+
+    const event = projectDecisionRecordToPublicEvent(pmRecord);
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.rationaleByMember.pm).toBe("BTC 拉锯仍偏多，只有跌回 104000 下方才降级。");
+    expect(event.payload.rounds?.[0]).toMatchObject({
+      memberId: "pm",
+      rationale: "BTC 拉锯仍偏多，只有跌回 104000 下方才降级。",
+      detailedRationale: "BTC 拉锯仍偏多，只有跌回 104000 下方才降级。",
+    });
+    expect(event.payload.rationaleByMember.pm).not.toContain("第二段重复解释");
+  });
+
   it("projects schema v2 multi-round records while keeping latest rationale maps", () => {
     const v2Record: StrategyDecisionRecord = {
       ...decisionRecord,

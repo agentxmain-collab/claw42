@@ -1847,3 +1847,44 @@ Dan 要求先补剩余 1/2/4。B21 对应“真正的 Memory learning”：保�
 - 这一步让 memory_loop 能开始复用跨标的已闭环经验，但仍不会从未 resolved 的当前 case 中“自学”或输出后台状态。
 
 [DOC-HINT: B21 expands memory_loop from same-symbol-only history to resolved cross-symbol pattern memory while preserving the unresolved-record abstain boundary.]
+
+# B.22 PM 公开推理质量收紧实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+B22 对应剩余项 2“决策质量继续提升”。本轮不改 PM pipeline / prompt / V10 layout，只在 public projection 层收紧 PM 公开推理出口：PM 可以保留完整内部 rationale，但工作台公开卡片优先展示短的一句话结论，避免大段 PM wall text 进入主体验。
+
+## First-hand 判断
+
+- B18 已经清理 `analysisSummary`，但 `publicDecisionProcessFromRecord()` 仍把 PM `rationale` / round `detailedRationale` 原样投影到 public payload。
+- V9/V10 消息流优先消费 `payload.rounds[].detailedRationale`；只清 `rationaleByMember.pm` 不够。
+- 这层改动最小且风险低：不碰 LLM 源头、不改角色输出，只把公开展示口径从 raw PM wall 改成 PM `oneLineSummary` / cleaned summary。
+
+## Changes
+
+- `src/lib/watch/publicTimelineProjection.ts`
+  - 新增 member-aware public rationale 清理路径。
+  - `memberId === "pm"` 时优先使用 `oneLineSummary`，fallback 到 cleaned analysis summary。
+  - PM 的 `round.rationale` / `round.oneLineSummary` / `round.detailedRationale` 都投影为同一个 concise public PM note，避免 UI 再显示 raw wall。
+- `src/lib/watch/__tests__/publicTimelineProjection.test.ts`
+  - 新增 PM wall text regression：确认 PM public rationale 和 round detailedRationale 不含大段重复解释。
+
+## Verify Status
+
+- Red test observed first:
+  - PM raw decision wall 直接进入 `payload.rationaleByMember.pm` 和 rounds。
+- `npx vitest run src/lib/watch/__tests__/publicTimelineProjection.test.ts`: PASS, 26 tests
+- `npx vitest run src/lib/watch/__tests__/publicTimelineProjection.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: PASS, 66 tests
+- `npm run verify`: PASS, 292 watch/pipeline tests included
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+## Notes
+
+- 没动 PM pipeline / prompt / candidate ranking / refresh / hydration / V10 layout / prod。
+- 这一步不是最终“决策智商”改造，只是把公开入口从长墙文收紧成短结论；后续如果要继续提升源头质量，应单独改 prompt + provider evaluation。
+
+[DOC-HINT: B22 keeps raw PM rationale internal and projects concise PM public notes through publicTimelineProjection.]

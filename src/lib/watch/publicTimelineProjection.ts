@@ -319,13 +319,17 @@ function publicRoundsForInput(
   if (sourceRounds.length > 0) {
     return sourceRounds
       .map<PublicDecisionRoundEntry | null>((round) => {
-        const rationale = cleanPublicDecisionText(round.rationale);
+        const rationale = publicRationaleForMember(memberId, {
+          rationale: round.rationale,
+          oneLineSummary: round.oneLineSummary,
+          detailedRationale: round.detailedRationale,
+        });
         if (!rationale) return null;
-        const oneLineSummary = cleanPublicDecisionText(
-          summaryForRound(round.oneLineSummary, rationale),
-        );
-        const detailedRationale = cleanPublicDecisionText(
-          detailForRound(round.detailedRationale, rationale),
+        const oneLineSummary = publicSummaryForMember(memberId, round.oneLineSummary, rationale);
+        const detailedRationale = publicDetailForMember(
+          memberId,
+          round.detailedRationale,
+          rationale,
         );
         const evidenceIds = Array.isArray(round.evidenceIds)
           ? round.evidenceIds.filter(Boolean)
@@ -346,9 +350,11 @@ function publicRoundsForInput(
       .filter((round): round is PublicDecisionRoundEntry => Boolean(round));
   }
 
-  const rationale = cleanPublicDecisionText(
-    typeof input.rationale === "string" ? input.rationale.trim() : "",
-  );
+  const rationale = publicRationaleForMember(memberId, {
+    rationale: input.rationale,
+    oneLineSummary: input.oneLineSummary,
+    detailedRationale: input.detailedRationale,
+  });
   if (!rationale) return [];
   return [
     {
@@ -357,17 +363,54 @@ function publicRoundsForInput(
       direction: input.direction,
       confidence: input.confidence,
       rationale,
-      oneLineSummary:
-        cleanPublicDecisionText(summaryForRound(input.oneLineSummary, rationale)) ??
-        summaryForRound(undefined, rationale),
-      detailedRationale:
-        cleanPublicDecisionText(detailForRound(input.detailedRationale, rationale)) ?? rationale,
+      oneLineSummary: publicSummaryForMember(memberId, input.oneLineSummary, rationale),
+      detailedRationale: publicDetailForMember(memberId, input.detailedRationale, rationale),
       dataStatus: input.dataStatus ?? "ok",
       ...(Array.isArray(input.evidenceIds) && input.evidenceIds.length > 0
         ? { evidenceIds: input.evidenceIds.filter(Boolean) }
         : {}),
     },
   ];
+}
+
+function publicRationaleForMember(
+  memberId: TeamMemberId,
+  input: {
+    rationale?: string;
+    oneLineSummary?: string;
+    detailedRationale?: string;
+  },
+) {
+  if (memberId === "pm") {
+    return (
+      cleanPublicAnalysisSummary(input.oneLineSummary) ??
+      cleanPublicAnalysisSummary(input.rationale) ??
+      cleanPublicAnalysisSummary(input.detailedRationale)
+    );
+  }
+
+  return cleanPublicDecisionText(typeof input.rationale === "string" ? input.rationale.trim() : "");
+}
+
+function publicSummaryForMember(
+  memberId: TeamMemberId,
+  summary: string | undefined,
+  rationale: string,
+) {
+  if (memberId === "pm") return rationale;
+  return (
+    cleanPublicDecisionText(summaryForRound(summary, rationale)) ??
+    summaryForRound(undefined, rationale)
+  );
+}
+
+function publicDetailForMember(
+  memberId: TeamMemberId,
+  detail: string | undefined,
+  rationale: string,
+) {
+  if (memberId === "pm") return rationale;
+  return cleanPublicDecisionText(detailForRound(detail, rationale)) ?? rationale;
 }
 
 function summaryForRound(summary: string | undefined, rationale: string) {
