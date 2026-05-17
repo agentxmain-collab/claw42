@@ -7,6 +7,7 @@ import { fetchNewsWithChain } from "@/lib/news/sourceChain";
 import { checkLock, releaseLock, tryAcquireLock } from "@/lib/storage/kv-lock";
 import { checkRateLimit } from "@/lib/storage/kv-rate-limiter";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import { publishPmDecisionJobToQueue } from "@/lib/team/pmDecisionJobQueue";
 import { runPmDecisionJob } from "@/lib/team/pmDecisionJobRunner";
 import { marketSignalsFromPool } from "@/lib/team/pmDecisionTrigger";
 import { selectPmDecisionTopics } from "@/lib/team/topicSelector";
@@ -411,12 +412,23 @@ export async function POST(request: Request) {
   });
 
   waitUntil(
-    runPmDecisionJob(pmDecisionJob, {
-      pool: context.pool,
-      newsItems: context.newsItems,
-      now,
-      partialStageUpdates: true,
-    })
+    (async () => {
+      const queueResult = await publishPmDecisionJobToQueue(pmDecisionJob, { now });
+      if (queueResult.mode === "queue") return;
+      if (queueResult.mode === "failed") {
+        console.error("[claw42] watch refresh queue publish failed; falling back to waitUntil", {
+          candidateKey: candidate.candidateKey,
+          locale,
+          error: queueResult.errorMessage,
+        });
+      }
+      await runPmDecisionJob(pmDecisionJob, {
+        pool: context.pool,
+        newsItems: context.newsItems,
+        now,
+        partialStageUpdates: true,
+      });
+    })()
       .catch((error) => {
         console.error("[claw42] watch refresh trigger failed", {
           candidateKey: candidate.candidateKey,

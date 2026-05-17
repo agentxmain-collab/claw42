@@ -13,6 +13,7 @@ import {
   summarizeProviderTelemetry,
   warnIfSingleProviderConcentration,
 } from "@/lib/team/providerTelemetry";
+import { publishPmDecisionJobToQueue } from "@/lib/team/pmDecisionJobQueue";
 import { runPmDecisionJob } from "@/lib/team/pmDecisionJobRunner";
 import type { PmDecisionTriggerAuditEvent } from "@/lib/team/pmDecisionTrigger";
 import { enqueuePmDecisionJob } from "@/lib/watch/pmDecisionJobLedger";
@@ -110,14 +111,21 @@ export async function GET(request: NextRequest) {
     locale,
     now,
   });
-  const pmDecisionJobResult = await runPmDecisionJob(pmDecisionJob, {
-    pool,
-    newsItems: normalizedItems,
-    now,
-    partialStageUpdates: pmPartialStageUpdates,
-    onAudit: (event) => pmDecisionAudit.push(event),
-  });
-  const pmDecisionOutputs = pmDecisionJobResult.outputs;
+  const pmDecisionQueueResult =
+    trigger === "now"
+      ? ({ mode: "disabled" } as const)
+      : await publishPmDecisionJobToQueue(pmDecisionJob, { now });
+  const pmDecisionJobResult =
+    pmDecisionQueueResult.mode === "queue"
+      ? null
+      : await runPmDecisionJob(pmDecisionJob, {
+          pool,
+          newsItems: normalizedItems,
+          now,
+          partialStageUpdates: pmPartialStageUpdates,
+          onAudit: (event) => pmDecisionAudit.push(event),
+        });
+  const pmDecisionOutputs = pmDecisionJobResult?.outputs ?? [];
   const providerTelemetry = summarizeProviderTelemetry({ since: now });
   await warnIfSingleProviderConcentration(providerTelemetry);
 
@@ -131,7 +139,10 @@ export async function GET(request: NextRequest) {
     generatedPmDecisions: pmDecisionOutputs.length,
     pmPartialStageUpdates,
     pmDecisionJobId: pmDecisionJob.id,
-    pmDecisionJobStatus: pmDecisionJobResult.job.status,
+    pmDecisionJobStatus: pmDecisionJobResult?.job.status ?? pmDecisionJob.status,
+    pmDecisionQueueMode: pmDecisionQueueResult.mode,
+    pmDecisionQueueMessageId:
+      pmDecisionQueueResult.mode === "queue" ? pmDecisionQueueResult.messageId : undefined,
     pmDecisionAudit: trigger === "now" ? pmDecisionAudit : undefined,
     providerTelemetry: trigger === "now" ? providerTelemetry : undefined,
     newsSourceHealth: trigger === "now" ? getNewsSourceHealthSnapshot() : undefined,

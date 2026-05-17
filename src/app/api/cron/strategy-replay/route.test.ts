@@ -12,6 +12,7 @@ const getCoinPoolMock = vi.hoisted(() => vi.fn());
 const adjustDebtFromReplaysMock = vi.hoisted(() => vi.fn());
 const tryAcquireLockMock = vi.hoisted(() => vi.fn());
 const enqueuePmDecisionJobMock = vi.hoisted(() => vi.fn());
+const publishPmDecisionJobToQueueMock = vi.hoisted(() => vi.fn());
 const runPmDecisionJobMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
 const resolveDecisionRecordFromPriceMock = vi.hoisted(() => vi.fn());
@@ -48,6 +49,10 @@ vi.mock("@/lib/storage/kv-lock", () => ({
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   enqueuePmDecisionJob: enqueuePmDecisionJobMock,
+}));
+
+vi.mock("@/lib/team/pmDecisionJobQueue", () => ({
+  publishPmDecisionJobToQueue: publishPmDecisionJobToQueueMock,
 }));
 
 vi.mock("@/lib/team/pmDecisionJobRunner", () => ({
@@ -107,6 +112,7 @@ describe("/api/cron/strategy-replay", () => {
     adjustDebtFromReplaysMock.mockReset();
     tryAcquireLockMock.mockReset();
     enqueuePmDecisionJobMock.mockReset();
+    publishPmDecisionJobToQueueMock.mockReset();
     runPmDecisionJobMock.mockReset();
     readAllDecisionRecordsMock.mockReset();
     resolveDecisionRecordFromPriceMock.mockReset();
@@ -148,6 +154,7 @@ describe("/api/cron/strategy-replay", () => {
       decisionRecordIds: [],
       auditEventCount: 0,
     }));
+    publishPmDecisionJobToQueueMock.mockResolvedValue({ mode: "disabled" });
     runPmDecisionJobMock.mockImplementation(async (job, context) => {
       context.onAudit?.({
         type: "candidate_considered",
@@ -270,6 +277,30 @@ describe("/api/cron/strategy-replay", () => {
       }),
     );
     expect(runPmDecisionJobMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("queues scheduled cron PM jobs instead of blocking on the PM pipeline when queue is available", async () => {
+    publishPmDecisionJobToQueueMock.mockResolvedValueOnce({
+      mode: "queue",
+      messageId: "msg_cron_pm",
+    });
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(payload).toMatchObject({
+      ok: true,
+      pmDecisionGenerated: false,
+      generatedPmDecisions: 0,
+      pmDecisionJobId: "pm-job:test",
+      pmDecisionJobStatus: "queued",
+      pmDecisionQueueMode: "queue",
+    });
+    expect(publishPmDecisionJobToQueueMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "pm-job:test", kind: "batch" }),
+      expect.objectContaining({ now }),
+    );
+    expect(runPmDecisionJobMock).not.toHaveBeenCalled();
   });
 
   it("continues resolving later PM decisions when one record write fails", async () => {
