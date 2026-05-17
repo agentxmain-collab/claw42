@@ -9,6 +9,7 @@ const dict = {
   outcome_label: "结果",
   expand: "查看决策历史",
   collapse: "收起",
+  close_aria: "关闭决策历史",
   more: "加载更多",
   empty: "暂无历史决策",
   loading: "加载中",
@@ -65,6 +66,8 @@ describe("HistoryWall", () => {
     expect(html).toContain("82");
     expect(html).toContain("加载更多");
     expect(html).toContain('aria-label="决策历史"');
+    expect(html).toContain('aria-label="关闭决策历史"');
+    expect(html).toContain("×");
   });
 
   it("renders intensity heat map bars without a chart dependency", () => {

@@ -1,0 +1,377 @@
+{
+  "generatedAt": "2026-05-17T03:29:59.514Z",
+  "previousPreview": "https://claw42-site-annzlszyb-agentxmain-collabs-projects.vercel.app",
+  "fixedPreview": "https://claw42-site-nbsuj60c4-agentxmain-collabs-projects.vercel.app",
+  "previousEvidence": {
+    "note": "Captured during first-hand investigation before the fix.",
+    "timeline720": {
+      "eventsLength": 0,
+      "servedAt": "2026-05-17T02:46:46.815Z",
+      "oldestTs": "2026-05-16T16:16:41.754Z"
+    },
+    "refreshGetMarketOverview": {
+      "status": "cached",
+      "lastDecisionAt": "2026-05-17T09:00:00.000Z",
+      "refreshStarted": false,
+      "refreshSource": "records"
+    },
+    "futureRecordVisibleWithFutureBefore": {
+      "id": "pm-decision:pm:MARKET:1779008400000",
+      "ts": "2026-05-17T09:00:00.000Z",
+      "candidateType": "market_overview",
+      "symbol": "MARKET",
+      "executable": false
+    }
+  },
+  "fixedEvidence": {
+    "refreshPostAfterRecord": {
+      "status": "stale",
+      "symbol": "MARKET",
+      "candidateType": "market_overview",
+      "candidateKey": "market_overview:zh_CN:2026-05-17",
+      "displayTitle": "今日大盘综述",
+      "lastDecisionAt": "2026-05-17T03:05:47.313Z",
+      "nextAllowedAt": null,
+      "refreshStarted": false,
+      "refreshSource": "records"
+    },
+    "timelinePolls": [
+      {
+        "poll": 1,
+        "servedAt": 1778988605980,
+        "eventsLength": 1,
+        "orderHash": "pm-decision:pm:MARKET:1778987147313",
+        "events": [
+          {
+            "id": "pm-decision:pm:MARKET:1778987147313",
+            "ts": 1778987147313,
+            "symbol": "MARKET",
+            "candidateType": "market_overview",
+            "candidateKey": "market_overview:zh_CN:2026-05-17",
+            "executable": false,
+            "stageTrace": [
+              {
+                "stageId": "analyst_inputs",
+                "status": "done",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": [
+                  "fundamental_analyst",
+                  "news_analyst",
+                  "chart_analyst",
+                  "onchain_analyst",
+                  "bullish_researcher",
+                  "bearish_researcher",
+                  "trader",
+                  "aggressive_reviewer",
+                  "neutral_reviewer",
+                  "conservative_reviewer",
+                  "memory_loop"
+                ]
+              },
+              {
+                "stageId": "research_lead",
+                "status": "done",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["research_lead"]
+              },
+              {
+                "stageId": "risk_lead",
+                "status": "in_progress",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["risk_lead"]
+              },
+              {
+                "stageId": "trade_decision",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["pm"]
+              },
+              {
+                "stageId": "record_write",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z"
+              },
+              {
+                "stageId": "public_timeline",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z"
+              }
+            ],
+            "tradeDecision": null,
+            "analysisSummary": null
+          }
+        ]
+      },
+      {
+        "poll": 2,
+        "servedAt": 1778988609171,
+        "eventsLength": 1,
+        "orderHash": "pm-decision:pm:MARKET:1778987147313",
+        "events": [
+          {
+            "id": "pm-decision:pm:MARKET:1778987147313",
+            "ts": 1778987147313,
+            "symbol": "MARKET",
+            "candidateType": "market_overview",
+            "candidateKey": "market_overview:zh_CN:2026-05-17",
+            "executable": false,
+            "stageTrace": [
+              {
+                "stageId": "analyst_inputs",
+                "status": "done",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": [
+                  "fundamental_analyst",
+                  "news_analyst",
+                  "chart_analyst",
+                  "onchain_analyst",
+                  "bullish_researcher",
+                  "bearish_researcher",
+                  "trader",
+                  "aggressive_reviewer",
+                  "neutral_reviewer",
+                  "conservative_reviewer",
+                  "memory_loop"
+                ]
+              },
+              {
+                "stageId": "research_lead",
+                "status": "done",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["research_lead"]
+              },
+              {
+                "stageId": "risk_lead",
+                "status": "in_progress",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["risk_lead"]
+              },
+              {
+                "stageId": "trade_decision",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["pm"]
+              },
+              {
+                "stageId": "record_write",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z"
+              },
+              {
+                "stageId": "public_timeline",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z"
+              }
+            ],
+            "tradeDecision": null,
+            "analysisSummary": null
+          }
+        ]
+      },
+      {
+        "poll": 3,
+        "servedAt": 1778988612334,
+        "eventsLength": 1,
+        "orderHash": "pm-decision:pm:MARKET:1778987147313",
+        "events": [
+          {
+            "id": "pm-decision:pm:MARKET:1778987147313",
+            "ts": 1778987147313,
+            "symbol": "MARKET",
+            "candidateType": "market_overview",
+            "candidateKey": "market_overview:zh_CN:2026-05-17",
+            "executable": false,
+            "stageTrace": [
+              {
+                "stageId": "analyst_inputs",
+                "status": "done",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": [
+                  "fundamental_analyst",
+                  "news_analyst",
+                  "chart_analyst",
+                  "onchain_analyst",
+                  "bullish_researcher",
+                  "bearish_researcher",
+                  "trader",
+                  "aggressive_reviewer",
+                  "neutral_reviewer",
+                  "conservative_reviewer",
+                  "memory_loop"
+                ]
+              },
+              {
+                "stageId": "research_lead",
+                "status": "done",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["research_lead"]
+              },
+              {
+                "stageId": "risk_lead",
+                "status": "in_progress",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["risk_lead"]
+              },
+              {
+                "stageId": "trade_decision",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["pm"]
+              },
+              {
+                "stageId": "record_write",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z"
+              },
+              {
+                "stageId": "public_timeline",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z"
+              }
+            ],
+            "tradeDecision": null,
+            "analysisSummary": null
+          }
+        ]
+      },
+      {
+        "poll": 4,
+        "servedAt": 1778988616529,
+        "eventsLength": 1,
+        "orderHash": "pm-decision:pm:MARKET:1778987147313",
+        "events": [
+          {
+            "id": "pm-decision:pm:MARKET:1778987147313",
+            "ts": 1778987147313,
+            "symbol": "MARKET",
+            "candidateType": "market_overview",
+            "candidateKey": "market_overview:zh_CN:2026-05-17",
+            "executable": false,
+            "stageTrace": [
+              {
+                "stageId": "analyst_inputs",
+                "status": "done",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": [
+                  "fundamental_analyst",
+                  "news_analyst",
+                  "chart_analyst",
+                  "onchain_analyst",
+                  "bullish_researcher",
+                  "bearish_researcher",
+                  "trader",
+                  "aggressive_reviewer",
+                  "neutral_reviewer",
+                  "conservative_reviewer",
+                  "memory_loop"
+                ]
+              },
+              {
+                "stageId": "research_lead",
+                "status": "done",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["research_lead"]
+              },
+              {
+                "stageId": "risk_lead",
+                "status": "in_progress",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["risk_lead"]
+              },
+              {
+                "stageId": "trade_decision",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["pm"]
+              },
+              {
+                "stageId": "record_write",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z"
+              },
+              {
+                "stageId": "public_timeline",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z"
+              }
+            ],
+            "tradeDecision": null,
+            "analysisSummary": null
+          }
+        ]
+      },
+      {
+        "poll": 5,
+        "servedAt": 1778988619634,
+        "eventsLength": 1,
+        "orderHash": "pm-decision:pm:MARKET:1778987147313",
+        "events": [
+          {
+            "id": "pm-decision:pm:MARKET:1778987147313",
+            "ts": 1778987147313,
+            "symbol": "MARKET",
+            "candidateType": "market_overview",
+            "candidateKey": "market_overview:zh_CN:2026-05-17",
+            "executable": false,
+            "stageTrace": [
+              {
+                "stageId": "analyst_inputs",
+                "status": "done",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": [
+                  "fundamental_analyst",
+                  "news_analyst",
+                  "chart_analyst",
+                  "onchain_analyst",
+                  "bullish_researcher",
+                  "bearish_researcher",
+                  "trader",
+                  "aggressive_reviewer",
+                  "neutral_reviewer",
+                  "conservative_reviewer",
+                  "memory_loop"
+                ]
+              },
+              {
+                "stageId": "research_lead",
+                "status": "done",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["research_lead"]
+              },
+              {
+                "stageId": "risk_lead",
+                "status": "in_progress",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["risk_lead"]
+              },
+              {
+                "stageId": "trade_decision",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z",
+                "memberIds": ["pm"]
+              },
+              {
+                "stageId": "record_write",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z"
+              },
+              {
+                "stageId": "public_timeline",
+                "status": "pending",
+                "observedAt": "2026-05-17T03:06:09.029Z"
+              }
+            ],
+            "tradeDecision": null,
+            "analysisSummary": null
+          }
+        ]
+      }
+    ],
+    "leakProbe": {
+      "bannedTermCount": 0,
+      "hits": [],
+      "scannedPublicTextFields": 105,
+      "note": "Scans public natural-language text fields only; structural memberId fields are excluded from content leak counting."
+    }
+  }
+}

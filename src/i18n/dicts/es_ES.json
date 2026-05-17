@@ -729,6 +729,7 @@
         "outcome_label": "Resultado",
         "expand": "Ver historial de decisiones",
         "collapse": "Contraer",
+        "close_aria": "Cerrar historial de decisiones",
         "more": "Cargar más",
         "empty": "Aún no hay historial de decisiones",
         "loading": "Cargando",

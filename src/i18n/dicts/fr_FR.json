@@ -729,6 +729,7 @@
         "outcome_label": "Résultat",
         "expand": "Voir l’historique des décisions",
         "collapse": "Replier",
+        "close_aria": "Fermer l’historique des décisions",
         "more": "Charger plus",
         "empty": "Aucun historique de décision",
         "loading": "Chargement",

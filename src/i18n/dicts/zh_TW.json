@@ -729,6 +729,7 @@
         "outcome_label": "結果",
         "expand": "查看決策歷史",
         "collapse": "收起",
+        "close_aria": "關閉決策歷史",
         "more": "載入更多",
         "empty": "暫無決策歷史",
         "loading": "載入中",

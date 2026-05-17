@@ -38,6 +38,8 @@ const FOLLOW_STATS_HIDDEN_POLL_MS = 5 * 60_000;
 const FOLLOW_STATS_BROADCAST = "claw42-follow-stats";
 const FOLLOW_STATS_STORAGE_EVENT = "claw42-follow-stats-updated";
 const DECISION_HISTORY_LIMIT = 20;
+const EMPTY_STATE_REFRESH_CANDIDATE = "market_overview";
+const EMPTY_STATE_REFRESH_SYMBOL = "MARKET";
 
 interface PublicTimelinePayload {
   events: PublicTimelineEvent[];
@@ -95,6 +97,7 @@ export function AgentWatchBoard({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [freshness, setFreshness] = useState<DispatchFreshnessState>({ status: "idle" });
+  const [timelineLoaded, setTimelineLoaded] = useState(false);
   const nextTimelinePollMsRef = useRef(DEFAULT_TIMELINE_POLL_MS);
 
   const applyTimelinePayload = useCallback(
@@ -108,6 +111,7 @@ export function AgentWatchBoard({
           mode === "replace" ? (payload.evidenceMap ?? {}) : { ...current, ...payload.evidenceMap },
         );
       }
+      setTimelineLoaded(true);
     },
     [],
   );
@@ -416,16 +420,29 @@ export function AgentWatchBoard({
   const latestRefreshSymbol = topics[0]?.symbol ?? null;
 
   useEffect(() => {
-    if (!latestRefreshSymbol) return;
+    const refreshTarget = latestRefreshSymbol
+      ? {
+          sessionKey: `freshness-trigger-${agentWatchLocale}-symbol-${latestRefreshSymbol}`,
+          symbol: latestRefreshSymbol,
+          params: { symbol: latestRefreshSymbol },
+        }
+      : timelineLoaded
+        ? {
+            sessionKey: `freshness-trigger-${agentWatchLocale}-${EMPTY_STATE_REFRESH_CANDIDATE}`,
+            symbol: EMPTY_STATE_REFRESH_SYMBOL,
+            params: { candidateType: EMPTY_STATE_REFRESH_CANDIDATE },
+          }
+        : null;
+    if (!refreshTarget) return;
+    const target = refreshTarget;
     let cancelled = false;
     let controller: AbortController | null = null;
-    const sessionKey = `freshness-trigger-${agentWatchLocale}-${latestRefreshSymbol}`;
 
     async function triggerRefresh() {
       if (document.visibilityState !== "visible") return;
       try {
-        if (window.sessionStorage.getItem(sessionKey)) return;
-        window.sessionStorage.setItem(sessionKey, String(Date.now()));
+        if (window.sessionStorage.getItem(target.sessionKey)) return;
+        window.sessionStorage.setItem(target.sessionKey, String(Date.now()));
       } catch {
         // Session storage can be blocked; still allow a single visible effect run.
       }
@@ -433,9 +450,11 @@ export function AgentWatchBoard({
       controller?.abort();
       controller = new AbortController();
       const params = new URLSearchParams({
-        symbol: latestRefreshSymbol ?? "",
         locale: agentWatchLocale,
       });
+      for (const [key, value] of Object.entries(target.params)) {
+        params.set(key, value);
+      }
 
       try {
         const response = await fetch(apiPath(`/api/watch/refresh?${params}`), {
@@ -451,7 +470,7 @@ export function AgentWatchBoard({
         if (!cancelled) {
           setFreshness({
             status: payload.status,
-            symbol: payload.symbol,
+            symbol: payload.symbol || target.symbol,
             lastDecisionAt: payload.lastDecisionAt,
             nextAllowedAt: payload.nextAllowedAt,
             refreshStarted: payload.refreshStarted,
@@ -460,7 +479,7 @@ export function AgentWatchBoard({
         }
       } catch (error: unknown) {
         if ((error as { name?: string }).name === "AbortError") return;
-        if (!cancelled) setFreshness({ status: "error", symbol: latestRefreshSymbol });
+        if (!cancelled) setFreshness({ status: "error", symbol: target.symbol });
         if (process.env.NODE_ENV !== "production") {
           console.warn("[claw42] watch freshness trigger failed", error);
         }
@@ -479,7 +498,7 @@ export function AgentWatchBoard({
       controller?.abort();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [agentWatchLocale, latestRefreshSymbol]);
+  }, [agentWatchLocale, latestRefreshSymbol, timelineLoaded]);
 
   const historySymbols = useMemo(
     () => Array.from(new Set(topics.map((topic) => topic.symbol).filter(Boolean))),

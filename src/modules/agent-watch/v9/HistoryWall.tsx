@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import type { DecisionOutcome } from "@/lib/team/strategyDecisionRecord";
 import type { DecisionHistoryItem } from "@/lib/watch/decisionHistory";
 import { IntensityHeatMap } from "./IntensityHeatMap";
@@ -9,6 +10,7 @@ export interface HistoryWallDict {
   outcome_label: string;
   expand: string;
   collapse: string;
+  close_aria: string;
   more: string;
   empty: string;
   loading: string;
@@ -58,6 +60,15 @@ export function HistoryWall({
   onMore: () => void;
   onSelectSymbol: (symbol: string) => void;
 }) {
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, open]);
+
   if (!open) {
     return (
       <button className={styles.launcher} type="button" onClick={onOpen}>
@@ -71,7 +82,7 @@ export function HistoryWall({
     .slice(0, 24)
     .reverse();
 
-  return (
+  const overlay = (
     <aside className={styles.overlay} aria-label={dict.wall_title}>
       <div className={styles.panel}>
         <header className={styles.header}>
@@ -79,8 +90,14 @@ export function HistoryWall({
             <p className={styles.kicker}>{selectedSymbol ?? "--"}</p>
             <h2>{dict.wall_title}</h2>
           </div>
-          <button className={styles.close} type="button" onClick={onClose}>
-            {dict.collapse}
+          <button
+            className={styles.close}
+            type="button"
+            onClick={onClose}
+            aria-label={dict.close_aria}
+          >
+            <span aria-hidden="true">×</span>
+            <span className={styles.closeText}>{dict.collapse}</span>
           </button>
         </header>
 
@@ -151,6 +168,8 @@ export function HistoryWall({
       </div>
     </aside>
   );
+
+  return typeof document === "undefined" ? overlay : createPortal(overlay, document.body);
 }
 
 function formatOutcome(outcome: DecisionOutcome, dict: HistoryWallDict) {

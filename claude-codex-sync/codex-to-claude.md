@@ -1273,3 +1273,101 @@ Note: remote browser access is protected by Vercel authentication, so browser re
 - No changes were made to PM pipeline, evidence dispatcher, candidate selector, refresh, hydration, or timeline projection.
 
 [DOC-HINT: Stage 3 uses `DispatchTopic.lastUpdatedAt` as a presentation adapter pass-through so v10 can reuse the Stage 0 canonical comparator without touching backend projection.]
+
+# B.14 hotfix-6 调研 + 实施报告
+
+Date: 2026-05-17
+
+Branch: `feature/b14-hotfix6-empty-state-history-close`
+Base: `origin/main` at `8b12dcb211d92a885550079d47187b582d65df8f`
+Preview used for remote verification: `https://claw42-site-nbsuj60c4-agentxmain-collabs-projects.vercel.app`
+
+## Task A Empty State
+
+First-hand root cause:
+
+1. The empty public timeline could not schedule a resident refresh from the browser. `AgentWatchBoard.tsx` only posted `/api/watch/refresh` when `topics[0]?.symbol` existed. With `events.length=0`, `topics=[]`, so the visible-session trigger never fired.
+2. The refresh status API misclassified a future-dated resident record as fresh. On the pre-fix preview, `/api/watch/refresh?candidateType=market_overview&locale=zh_CN` returned `cached` with `lastDecisionAt=2026-05-17T09:00:00.000Z`, while `/api/watch/timeline?...windowMinutes=720` was served at `2026-05-17T02:46:46.815Z` and returned `events=0`. The future record was hidden by timeline's `event.ts < before` filter but still blocked refresh freshness.
+
+F's four guesses:
+
+- Guess 1, visit-trigger did not schedule market_overview / hotspot: **PASS, partial**. Route can schedule when called, but the UI did not call it when timeline was empty.
+- Guess 2, old records aged out or were staleness-filtered: **PASS, refined**. The immediate blocker was a future-dated record being treated as fresh while timeline filtered it out.
+- Guess 3, Stage 2 cost cap blocked the trigger: **FAIL for the observed empty state**. Direct resident refresh does not use the symbol top-N cost cap. Parallel manual probes can hit cooldown locks, but that was not Dan's empty-state path.
+- Guess 4, preview cadence / pmDecisionLock locked the pipeline: **FAIL for the observed empty state**. The route reported freshness from records, not a pmDecisionLock-only condition; preview cron is not required for visible-session refresh.
+
+F did not ask but matters:
+
+- A partial PM record can be written before final public timeline completion. That is acceptable for hotfix-6 as long as public projection remains stable, but it needs a separate follow-up if `risk_lead` / `trade_decision` repeatedly remains pending.
+- Public text leak scan must distinguish natural-language text from schema IDs. The artifact scans user-visible text fields and excludes structural `memberId` / `recordId` fields from leak counting.
+
+Fix implemented:
+
+- `src/modules/agent-watch/AgentWatchBoard.tsx:41-42,100,114,420-501`
+  - Tracks when timeline has loaded.
+  - If there is no topic after load, posts `/api/watch/refresh?candidateType=market_overview&locale=...`.
+  - Keeps symbol refresh behavior unchanged when topics exist.
+- `src/lib/watch/decisionFreshness.ts:9-10,94-96`
+  - Ignores records/timeline candidates more than 2 minutes in the future so a future-dated record cannot block refresh while timeline hides it.
+- `src/lib/watch/__tests__/decisionFreshness.test.ts`
+  - Adds regression coverage for future-dated records not counting as fresh.
+
+Remote verification:
+
+- Pre-fix preview: timeline 720min returned `events=0`; refresh GET returned `cached` against future `lastDecisionAt=2026-05-17T09:00:00.000Z`.
+- Fixed preview: 5 consecutive timeline fetches all returned `events=1`, stable order hash `pm-decision:pm:MARKET:1778987147313`.
+- Fixed preview content leak scan on captured public text fields: `leakCount=0`.
+
+## Task B History Close
+
+First-hand root cause:
+
+- The history panel did have an implicit close action via the old collapse button, but no explicit close affordance / aria label.
+- During local browser verification the fixed overlay close button was still intercepted by the site header after only raising z-index; the panel lived under a parent stacking context. Portaling the overlay to `document.body` fixed the click target without changing the panel layout.
+
+Fix implemented:
+
+- `src/modules/agent-watch/v9/HistoryWall.tsx:1-2,8-14,63-70,85-101,172`
+  - Adds Esc close.
+  - Adds explicit close button with localized `aria-label`.
+  - Portals the overlay to `document.body` to avoid header stacking interception.
+- `src/modules/agent-watch/v9/HistoryWall.module.css:20-28,83-98`
+  - Raises overlay z-index and styles the close affordance without changing drawer layout.
+- `src/i18n/types.ts` and 10 locale dictionaries
+  - Adds `agentWatch.dispatchV10.history.close_aria`.
+- `src/modules/agent-watch/v9/__tests__/HistoryWall.test.tsx`
+  - Covers close aria label and button symbol.
+
+Browser verification:
+
+- Local route: `http://127.0.0.1:3037/zh_CN/agent`
+- Desktop `1440x1000`: close button visible, click-close PASS, Esc-close PASS, axe violations 0.
+- Mobile `390x844`: close button visible, click-close PASS, Esc-close PASS, axe violations 0.
+
+## Raw Artifacts
+
+- `claude-codex-sync/artifacts/b14-hotfix6/empty-state-refresh-remote-evidence.json`
+- `claude-codex-sync/artifacts/b14-hotfix6/history-close-visual-a11y.json`
+- `claude-codex-sync/artifacts/b14-hotfix6/history-closed-zh_CN-1440.png`
+- `claude-codex-sync/artifacts/b14-hotfix6/history-open-zh_CN-1440.png`
+- `claude-codex-sync/artifacts/b14-hotfix6/history-closed-zh_CN-390.png`
+- `claude-codex-sync/artifacts/b14-hotfix6/history-open-zh_CN-390.png`
+
+## Verify Status
+
+- `npx vitest run src/lib/watch/__tests__/decisionFreshness.test.ts src/modules/agent-watch/v9/__tests__/HistoryWall.test.tsx src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx src/app/api/watch/refresh/route.test.ts` PASS
+- `npx vitest run src/modules/agent-watch/v9/__tests__/HistoryWall.test.tsx` PASS after portal change
+- `npm run verify` PASS
+  - `format:check` PASS
+  - `typecheck` PASS
+  - `lint` PASS
+  - `verify:agent-ip` PASS
+  - `verify:news` PASS
+  - `test:news` PASS, 25 tests
+  - `test:watch-pipeline` PASS, 265 tests
+  - `verify:chat-v3-final` PASS, 50 synthetic threads
+- `npm run build` PASS
+- `npm run verify:a11y` PASS, 0 axe violations on checked routes
+- `npm run verify:metrics` PASS, 5 tests
+
+[DOC-HINT: hotfix-6 keeps refresh resident-trigger-only for empty timelines; it does not change PM pipeline, candidate ranking, cron, or production deployment topology.]

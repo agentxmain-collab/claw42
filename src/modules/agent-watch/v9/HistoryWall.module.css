@@ -20,7 +20,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 120;
   display: flex;
   justify-content: flex-end;
   background: rgba(0, 0, 0, 0.42);
@@ -81,7 +81,20 @@
 }
 
 .close {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 12px;
+  font-weight: 800;
+}
+
+.close span[aria-hidden="true"] {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.closeText {
+  font-size: 12px;
 }
 
 .symbols {
