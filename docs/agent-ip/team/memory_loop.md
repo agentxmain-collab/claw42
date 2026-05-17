@@ -43,6 +43,9 @@ Important: your `oneLineSummary` and `detailedRationale` must keep this persiste
 
 - Use `Historical samples`, `Outcome distribution`, `Last review note`, and `Similar recent setups`
   as the only source for your claim.
+- Treat `Current-symbol samples` as direct memory and `Cross-symbol samples` as weaker pattern memory.
+- Cross-symbol resolved lessons may inform recurring setup behavior, but they are not proof that the
+  current symbol will behave the same way.
 - If `Sample-size caution` is true, say the memory signal is early and lower confidence.
 - If no resolved historical baseline exists, abstain silently; do not seed a public memory note
   from the current unresolved case.

@@ -77,6 +77,79 @@ describe("memoryLoopEvidence", () => {
     });
   });
 
+  test("uses resolved cross-symbol lessons when the current symbol has no closed history", async () => {
+    const context = await fetchMemoryContext("VVV", "zh_CN", {
+      readDecisionRecords: async () => [],
+      readAllDecisionRecords: async () => [
+        makeRecord({
+          id: "sol-win",
+          symbol: "SOL",
+          createdAt: "2026-05-11T00:00:00.000Z",
+          resolvedOutcome: "hit_tp",
+          tradeDecision: makeTradeDecision({ symbol: "SOL", direction: "long" }),
+          analystInputs: [
+            {
+              memberId: "memory_loop",
+              direction: "long",
+              confidence: 0.64,
+              rationale: "Breakout memory stayed valid only while liquidity expanded.",
+              oneLineSummary: "Liquidity-confirmed breakouts followed through.",
+              evidenceIds: [],
+            },
+          ],
+        }),
+        makeRecord({
+          id: "eth-open",
+          symbol: "ETH",
+          createdAt: "2026-05-12T00:00:00.000Z",
+          resolvedAt: null,
+          resolvedOutcome: null,
+          tradeDecision: makeTradeDecision({ symbol: "ETH", direction: "short" }),
+        }),
+      ],
+    });
+
+    expect(context.error).toBeUndefined();
+    expect(context.historicalCount).toBe(1);
+    expect(context.symbolHistoricalCount).toBe(0);
+    expect(context.crossSymbolHistoricalCount).toBe(1);
+    expect(context.similarSetups).toEqual([
+      expect.objectContaining({ symbol: "SOL", outcome: "hit_tp" }),
+    ]);
+
+    const prompt = formatMemoryContextForPrompt(context);
+    expect(prompt).toContain("Current-symbol samples: 0");
+    expect(prompt).toContain("Cross-symbol resolved lessons");
+    expect(prompt).toContain("SOL long -> hit_tp");
+    expect(prompt).not.toContain("ETH");
+  });
+
+  test("keeps no-history when neither current nor cross-symbol resolved records exist", async () => {
+    const context = await fetchMemoryContext("VVV", "zh_CN", {
+      readDecisionRecords: async () => [],
+      readAllDecisionRecords: async () => [
+        makeRecord({
+          id: "eth-open",
+          symbol: "ETH",
+          resolvedAt: null,
+          resolvedOutcome: null,
+        }),
+        makeRecord({
+          id: "legacy-win",
+          symbol: "BTC",
+          recordSource: "legacy",
+          resolvedOutcome: "hit_tp",
+        }),
+      ],
+    });
+
+    expect(context).toMatchObject({
+      historicalCount: 0,
+      error: "no_history",
+      similarSetups: [],
+    });
+  });
+
   test("computes team track record through the existing winrate aggregator", async () => {
     const trackRecord = await fetchTeamTrackRecord("zh_CN", {
       now: () => Date.UTC(2026, 4, 15, 12),
