@@ -39,6 +39,8 @@ const FOLLOW_STATS_HIDDEN_POLL_MS = 5 * 60_000;
 const FOLLOW_STATS_BROADCAST = "claw42-follow-stats";
 const FOLLOW_STATS_STORAGE_EVENT = "claw42-follow-stats-updated";
 const DECISION_HISTORY_LIMIT = 20;
+const VISIBLE_SESSION_NO_SIGNAL_RETRY_MS = 5 * 60_000;
+const VISIBLE_SESSION_MAX_RETRY_MS = 5 * 60_000;
 const EMPTY_STATE_REFRESH_CANDIDATE = "market_overview";
 const EMPTY_STATE_REFRESH_SYMBOL = "MARKET";
 const HOTSPOT_REFRESH_CANDIDATE = "hotspot";
@@ -67,6 +69,25 @@ interface WatchRefreshPayload {
   nextAllowedAt: string | null;
   refreshStarted: boolean;
   refreshSource: DispatchFreshnessState["refreshSource"];
+}
+
+type VisibleSessionRefreshStatus = WatchRefreshPayload["status"];
+
+export function shouldPersistVisibleSessionRefreshResult(status: VisibleSessionRefreshStatus) {
+  return status === "cached" || status === "stale";
+}
+
+export function retryDelayForVisibleSessionRefresh(
+  payload: Pick<WatchRefreshPayload, "status" | "nextAllowedAt">,
+  now = Date.now(),
+) {
+  if (payload.status === "locked" || payload.status === "refreshing") {
+    const retryAt = payload.nextAllowedAt ? Date.parse(payload.nextAllowedAt) : Number.NaN;
+    return Number.isFinite(retryAt) ? Math.max(30_000, retryAt - now + 1000) : 60_000;
+  }
+
+  if (payload.status === "no_signal") return VISIBLE_SESSION_NO_SIGNAL_RETRY_MS;
+  return null;
 }
 
 interface VisibleSessionRefreshTarget {
@@ -575,19 +596,18 @@ export function AgentWatchBoard({
             refreshStarted: payload.refreshStarted,
             refreshSource: payload.refreshSource,
           });
-          if (payload.status === "locked" || payload.status === "refreshing") {
-            const retryAt = payload.nextAllowedAt ? Date.parse(payload.nextAllowedAt) : Number.NaN;
-            const retryDelay = Number.isFinite(retryAt)
-              ? Math.max(30_000, retryAt - Date.now() + 1000)
-              : 60_000;
+          const retryDelay = retryDelayForVisibleSessionRefresh(payload);
+          if (retryDelay !== null) {
             if (retryTimer !== null) window.clearTimeout(retryTimer);
             retryTimer = window.setTimeout(
               () => {
                 void triggerRefresh();
               },
-              Math.min(retryDelay, 300_000),
+              Math.min(retryDelay, VISIBLE_SESSION_MAX_RETRY_MS),
             );
-          } else {
+          }
+
+          if (shouldPersistVisibleSessionRefreshResult(payload.status)) {
             try {
               window.sessionStorage.setItem(target.sessionKey, String(Date.now()));
             } catch {

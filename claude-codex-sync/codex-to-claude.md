@@ -1888,3 +1888,45 @@ B22 对应剩余项 2“决策质量继续提升”。本轮不改 PM pipeline /
 - 这一步不是最终“决策智商”改造，只是把公开入口从长墙文收紧成短结论；后续如果要继续提升源头质量，应单独改 prompt + provider evaluation。
 
 [DOC-HINT: B22 keeps raw PM rationale internal and projects concise PM public notes through publicTimelineProjection.]
+
+# B.23 Preview 触发稳定性实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+B23 对应剩余项 4“Preview cron / 触发机制长期稳定性”。不改 Vercel cron、不碰 prod，只补 visible-session refresh 的失败重试语义：preview 不能依赖 cron，所以用户访问触发遇到临时 `no_signal` 时不能把本 session 永久标记为已完成。
+
+## First-hand 判断
+
+- 当前 preview 的核心兜底是 `/api/watch/refresh` + `waitUntil()`，不是 Vercel cron。
+- `AgentWatchBoard` 已对 `locked` / `refreshing` 做 retry，但 `no_signal` 走到了“成功结束”分支，会写入 `sessionStorage`，导致同一浏览会话不再尝试同一目标。
+- 这会让临时数据源不足 / candidate pool 暂无强信号时，preview 在用户当前会话里停住，必须下次新 session 才可能重试。
+
+## Changes
+
+- `src/modules/agent-watch/AgentWatchBoard.tsx`
+  - 新增 `shouldPersistVisibleSessionRefreshResult()`：只有 `cached` / `stale` 才写 session-complete。
+  - 新增 `retryDelayForVisibleSessionRefresh()`：`locked` / `refreshing` 继续按 server `nextAllowedAt` retry；`no_signal` 固定 5 分钟 retry。
+  - visible refresh effect 改成 retry 与 session persistence 分离，`no_signal` 不再永久消耗本 session 触发机会。
+- Tests:
+  - `src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`
+  - 覆盖 no_signal 不持久化、locked 使用 server nextAllowedAt。
+
+## Verify Status
+
+- Red tests observed first:
+  - 缺少 `shouldPersistVisibleSessionRefreshResult()` / `retryDelayForVisibleSessionRefresh()`，现有逻辑无法区分 no_signal 与真正完成。
+- `npx vitest run src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`: PASS, 9 tests
+- `npx vitest run src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts src/app/api/watch/refresh/route.test.ts`: PASS, 17 tests
+- `npm run verify`: PASS, 294 watch/pipeline tests included
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+## Notes
+
+- 没动 Vercel cron / prod / PM pipeline / candidate ranking / hydration / V10 layout。
+- 这是 preview 访问触发的稳定性补丁，不是 durable queue/worker；未来若要生产级调度，仍应单独做 cron/queue/telemetry spec。
+
+[DOC-HINT: B23 keeps preview refresh self-healing by retrying no_signal visible-session triggers instead of marking them session-complete.]
