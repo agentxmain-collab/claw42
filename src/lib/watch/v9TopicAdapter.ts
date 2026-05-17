@@ -34,6 +34,11 @@ import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { DecisionStageTraceId } from "@/lib/team/strategyDecisionRecord";
 import { publicTimelineEventStableId } from "@/lib/watch/publicTimelineOrdering";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
+import {
+  normalizePublicDecisionStageStatuses,
+  PUBLIC_DECISION_STAGE_ORDER,
+  publicDecisionVisibleStageLimit,
+} from "@/lib/watch/publicDecisionStageContract";
 import type {
   DispatchMessage,
   DispatchStageMarker,
@@ -104,16 +109,6 @@ const ROLE_VIEWPOINT_KEY: Record<TeamMemberId, DispatchV10AgentRoleId> = {
   conservative_reviewer: "conservative",
   memory_loop: "memoryLoop",
 };
-
-const PARTIAL_TRACE_STAGE_ORDER: Array<{
-  traceId: DecisionStageTraceId;
-  stage: 1 | 2 | 3 | 4;
-}> = [
-  { traceId: "analyst_inputs", stage: 1 },
-  { traceId: "research_lead", stage: 2 },
-  { traceId: "trade_decision", stage: 3 },
-  { traceId: "risk_lead", stage: 4 },
-];
 
 type PartialTraceStatus = NonNullable<
   PmDecisionTimelineEvent["payload"]["stageTrace"]
@@ -337,7 +332,9 @@ function makePartialStages(
   hasMemoryLoop: boolean,
   hasTradeDecision: boolean,
 ): DispatchStageMarker[] {
-  const statuses = normalizePartialTraceStatuses(trace, hasTradeDecision);
+  const statuses = normalizePublicDecisionStageStatuses(trace, {
+    hasRenderableTradeDecision: hasTradeDecision,
+  });
   const statusFor = (stageId: DecisionStageTraceId) => statuses[stageId] ?? "pending";
   const mappedStatus = (status: PartialTraceStatus) => {
     if (status === "done") return "done" as const;
@@ -396,65 +393,10 @@ function makePartialStages(
   ];
 }
 
-function normalizePartialTraceStatuses(
-  trace: NonNullable<PmDecisionTimelineEvent["payload"]["stageTrace"]>,
-  hasTradeDecision: boolean,
-): Partial<Record<DecisionStageTraceId, PartialTraceStatus>> {
-  const rawStatus = (stageId: DecisionStageTraceId) => {
-    const raw = trace.find((entry) => entry.stageId === stageId)?.status ?? "pending";
-    if (!hasTradeDecision) {
-      if (stageId === "trade_decision" && raw === "done") return "in_progress";
-      if (stageId === "risk_lead") return "pending";
-    }
-    return raw;
-  };
-  const normalized: Partial<Record<DecisionStageTraceId, PartialTraceStatus>> = {};
-  let blocked = false;
-
-  for (let index = 0; index < PARTIAL_TRACE_STAGE_ORDER.length; index += 1) {
-    const { traceId } = PARTIAL_TRACE_STAGE_ORDER[index]!;
-    const raw = rawStatus(traceId);
-
-    if (blocked) {
-      normalized[traceId] = "pending";
-      continue;
-    }
-
-    if (raw === "done") {
-      normalized[traceId] = "done";
-      continue;
-    }
-
-    if (raw === "in_progress") {
-      normalized[traceId] = "in_progress";
-      blocked = true;
-      continue;
-    }
-
-    const laterHasProgress = PARTIAL_TRACE_STAGE_ORDER.slice(index + 1).some(({ traceId }) => {
-      const later = rawStatus(traceId);
-      return later === "done" || later === "in_progress";
-    });
-    normalized[traceId] = laterHasProgress ? "in_progress" : "pending";
-    blocked = true;
-  }
-
-  return normalized;
-}
-
 function visibleMessageStageLimit(event: PmDecisionTimelineEvent, hasTradeDecision: boolean) {
-  if (hasTradeDecision) return 6;
-  const trace = event.payload.stageTrace;
-  if (!trace?.length) return 3;
-  const statuses = normalizePartialTraceStatuses(trace, hasTradeDecision);
-  const active = PARTIAL_TRACE_STAGE_ORDER.find(
-    ({ traceId }) => statuses[traceId] === "in_progress",
-  );
-  if (active) return active.stage;
-  const firstPending = PARTIAL_TRACE_STAGE_ORDER.find(
-    ({ traceId }) => statuses[traceId] === "pending",
-  );
-  return firstPending ? firstPending.stage : 4;
+  return publicDecisionVisibleStageLimit(event.payload.stageTrace, {
+    hasRenderableTradeDecision: hasTradeDecision,
+  });
 }
 
 function messageStageNumber(stageIdValue: string) {
@@ -465,8 +407,10 @@ function messageStageNumber(stageIdValue: string) {
 function currentStageFromTrace(event: PmDecisionTimelineEvent, hasTradeDecision: boolean) {
   const trace = event.payload.stageTrace;
   if (!trace?.length) return null;
-  const statuses = normalizePartialTraceStatuses(trace, hasTradeDecision);
-  const active = PARTIAL_TRACE_STAGE_ORDER.find(
+  const statuses = normalizePublicDecisionStageStatuses(trace, {
+    hasRenderableTradeDecision: hasTradeDecision,
+  });
+  const active = PUBLIC_DECISION_STAGE_ORDER.find(
     ({ traceId }) => statuses[traceId] === "in_progress",
   );
   if (!active) return null;
