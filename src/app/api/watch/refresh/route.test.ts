@@ -15,7 +15,8 @@ const fetchNewsWithChainMock = vi.hoisted(() => vi.fn());
 const normalizeNewsItemMock = vi.hoisted(() => vi.fn());
 const getCoinPoolMock = vi.hoisted(() => vi.fn());
 const marketSignalsFromPoolMock = vi.hoisted(() => vi.fn());
-const triggerPmDecisionPipelineOnceMock = vi.hoisted(() => vi.fn());
+const enqueuePmDecisionJobMock = vi.hoisted(() => vi.fn());
+const runPmDecisionJobMock = vi.hoisted(() => vi.fn());
 const selectPmDecisionTopicsMock = vi.hoisted(() => vi.fn());
 const callOrder = vi.hoisted(() => [] as string[]);
 
@@ -59,11 +60,18 @@ vi.mock("@/lib/marketDataCache", () => ({
 
 vi.mock("@/lib/team/pmDecisionTrigger", () => ({
   marketSignalsFromPool: marketSignalsFromPoolMock,
-  triggerPmDecisionPipelineOnce: triggerPmDecisionPipelineOnceMock,
 }));
 
 vi.mock("@/lib/team/topicSelector", () => ({
   selectPmDecisionTopics: selectPmDecisionTopicsMock,
+}));
+
+vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
+  enqueuePmDecisionJob: enqueuePmDecisionJobMock,
+}));
+
+vi.mock("@/lib/team/pmDecisionJobRunner", () => ({
+  runPmDecisionJob: runPmDecisionJobMock,
 }));
 
 const now = Date.UTC(2026, 4, 15, 12, 0, 0);
@@ -157,8 +165,35 @@ describe("/api/watch/refresh", () => {
     getCoinPoolMock.mockResolvedValue({ majors: [], trending: [], opportunity: [] });
     marketSignalsFromPoolMock.mockReset();
     marketSignalsFromPoolMock.mockReturnValue([]);
-    triggerPmDecisionPipelineOnceMock.mockReset();
-    triggerPmDecisionPipelineOnceMock.mockResolvedValue(null);
+    enqueuePmDecisionJobMock.mockReset();
+    enqueuePmDecisionJobMock.mockImplementation(async (input) => ({
+      id: "pm-job:test",
+      schemaVersion: 1,
+      kind: input.kind,
+      status: "queued",
+      triggerSource: input.triggerSource,
+      locale: input.locale,
+      idempotencyKey: "test",
+      candidate: input.candidate ?? null,
+      symbol: input.symbol ?? null,
+      createdAt: new Date(now).toISOString(),
+      updatedAt: new Date(now).toISOString(),
+      startedAt: null,
+      completedAt: null,
+      attemptCount: 0,
+      maxAttempts: 3,
+      nextRunAt: new Date(now).toISOString(),
+      lastError: null,
+      outputCount: 0,
+      decisionRecordIds: [],
+      auditEventCount: 0,
+    }));
+    runPmDecisionJobMock.mockReset();
+    runPmDecisionJobMock.mockResolvedValue({
+      job: { id: "pm-job:test", status: "succeeded" },
+      outputs: [],
+      auditEvents: [],
+    });
     selectPmDecisionTopicsMock.mockReset();
     selectPmDecisionTopicsMock.mockReturnValue([
       {
@@ -203,11 +238,18 @@ describe("/api/watch/refresh", () => {
     expect(callOrder).toContain("acquire:watch:refresh:in-flight:zh_CN:BTC");
     expect(waitUntilMock).toHaveBeenCalledOnce();
     await waitUntilMock.mock.calls[0][0];
-    expect(triggerPmDecisionPipelineOnceMock).toHaveBeenCalledWith(
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        kind: "once",
         triggerSource: "user_visit_trigger",
         locale: "zh_CN",
         symbol: "BTC",
+      }),
+    );
+    expect(runPmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "pm-job:test" }),
+      expect.objectContaining({
+        partialStageUpdates: true,
       }),
     );
     expect(releaseLockMock).toHaveBeenCalledWith(
@@ -286,8 +328,9 @@ describe("/api/watch/refresh", () => {
     ]);
     expect(waitUntilMock).toHaveBeenCalledOnce();
     await waitUntilMock.mock.calls[0][0];
-    expect(triggerPmDecisionPipelineOnceMock).toHaveBeenCalledWith(
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        kind: "once",
         triggerSource: "user_visit_trigger",
         locale: "zh_CN",
         candidate: expect.objectContaining({
@@ -319,13 +362,14 @@ describe("/api/watch/refresh", () => {
     ]);
     expect(waitUntilMock).toHaveBeenCalledOnce();
     await waitUntilMock.mock.calls[0][0];
-    const triggerArg = triggerPmDecisionPipelineOnceMock.mock.calls[0][0];
-    expect(triggerArg).toMatchObject({
+    const jobArg = enqueuePmDecisionJobMock.mock.calls[0][0];
+    expect(jobArg).toMatchObject({
+      kind: "once",
       triggerSource: "user_visit_trigger",
       locale: "zh_CN",
     });
-    expect(triggerArg.symbol).toBeUndefined();
-    expect(triggerArg.candidate).toBeUndefined();
+    expect(jobArg.symbol).toBeUndefined();
+    expect(jobArg.candidate).toBeUndefined();
   });
 
   it("does not let resident records satisfy auto symbol freshness", async () => {

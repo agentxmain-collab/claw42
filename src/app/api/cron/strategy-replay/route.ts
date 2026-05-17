@@ -13,11 +13,9 @@ import {
   summarizeProviderTelemetry,
   warnIfSingleProviderConcentration,
 } from "@/lib/team/providerTelemetry";
-import {
-  type PmDecisionTriggerAuditEvent,
-  triggerPmDecisionPipelineBatch,
-  triggerPmDecisionPipelineOnce,
-} from "@/lib/team/pmDecisionTrigger";
+import { runPmDecisionJob } from "@/lib/team/pmDecisionJobRunner";
+import type { PmDecisionTriggerAuditEvent } from "@/lib/team/pmDecisionTrigger";
+import { enqueuePmDecisionJob } from "@/lib/watch/pmDecisionJobLedger";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
 import type { NewsItem } from "@/lib/types";
 
@@ -106,28 +104,20 @@ export async function GET(request: NextRequest) {
   });
   const pmDecisionAudit: PmDecisionTriggerAuditEvent[] = [];
   const pmPartialStageUpdates = true;
-  const pmDecisionOutputs =
-    trigger === "now"
-      ? [
-          await triggerPmDecisionPipelineOnce({
-            triggerSource: "user_visit_trigger",
-            pool,
-            newsItems: normalizedItems,
-            locale,
-            now,
-            partialStageUpdates: pmPartialStageUpdates,
-            onAudit: (event) => pmDecisionAudit.push(event),
-          }),
-        ].filter(Boolean)
-      : await triggerPmDecisionPipelineBatch({
-          triggerSource: "cron",
-          pool,
-          newsItems: normalizedItems,
-          locale,
-          now,
-          partialStageUpdates: pmPartialStageUpdates,
-          onAudit: (event) => pmDecisionAudit.push(event),
-        });
+  const pmDecisionJob = await enqueuePmDecisionJob({
+    kind: trigger === "now" ? "once" : "batch",
+    triggerSource: trigger === "now" ? "user_visit_trigger" : "cron",
+    locale,
+    now,
+  });
+  const pmDecisionJobResult = await runPmDecisionJob(pmDecisionJob, {
+    pool,
+    newsItems: normalizedItems,
+    now,
+    partialStageUpdates: pmPartialStageUpdates,
+    onAudit: (event) => pmDecisionAudit.push(event),
+  });
+  const pmDecisionOutputs = pmDecisionJobResult.outputs;
   const providerTelemetry = summarizeProviderTelemetry({ since: now });
   await warnIfSingleProviderConcentration(providerTelemetry);
 
@@ -140,6 +130,8 @@ export async function GET(request: NextRequest) {
     pmDecisionGenerated: pmDecisionOutputs.length > 0,
     generatedPmDecisions: pmDecisionOutputs.length,
     pmPartialStageUpdates,
+    pmDecisionJobId: pmDecisionJob.id,
+    pmDecisionJobStatus: pmDecisionJobResult.job.status,
     pmDecisionAudit: trigger === "now" ? pmDecisionAudit : undefined,
     providerTelemetry: trigger === "now" ? providerTelemetry : undefined,
     newsSourceHealth: trigger === "now" ? getNewsSourceHealthSnapshot() : undefined,
