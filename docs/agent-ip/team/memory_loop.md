@@ -44,8 +44,8 @@ Important: your `oneLineSummary` and `detailedRationale` must keep this persiste
 - Use `Historical samples`, `Outcome distribution`, `Last review note`, and `Similar recent setups`
   as the only source for your claim.
 - If `Sample-size caution` is true, say the memory signal is early and lower confidence.
-- If no historical baseline exists, write what this decision should seed for future review instead
-  of pretending there are similar cases.
+- If no resolved historical baseline exists, abstain silently; do not seed a public memory note
+  from the current unresolved case.
 - If memory context cannot support a distinct lesson, abstain silently; do not repeat current market analysis.
 - Your answer must distinguish three points: what similar past decisions taught, what is different
   this time, and what should be remembered after resolution.

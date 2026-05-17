@@ -1700,3 +1700,55 @@ First-hand 结果：
 - 这是 public projection + adapter quality patch：先把真实分析公开出口变干净、短、相关，再继续 B19 memory loop。
 
 [DOC-HINT: B18 routes analysis-only cards through concise cleaned `analysisSummary`; future prompt work can improve source text, but public projection should continue enforcing a short user-facing summary boundary.]
+
+# B.19 Memory loop 真学习实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+B19 按“Memory loop 真学习”处理 B18 preview 暴露出的 memory_loop 公开输出问题。先查真 payload：VVV symbol record 已是真 PM record，但 memory_loop 输出了“历史决策库中无 VVV 的过往记录 / 样本量为零 / 初始记忆种子”这类后台状态文案。
+
+## Root Cause
+
+- `src/lib/team/memoryLoopEvidence.ts` 把 unresolved open records 也纳入 memory context；这会让当前未闭环决策被当作“学习样本”。
+- `src/lib/team/evidenceDispatcher.ts` 对 `no_history` / `kv_unavailable` 仍生成 `memory` evidence item，导致 memory_loop 角色有机会把“无历史样本”写进公开 rationale。
+- `docs/agent-ip/team/memory_loop.md` 仍允许“no historical baseline 时写当前决策应 seed 什么”，与 hotfix-5 的公开输出纪律冲突。
+- `src/lib/watch/publicContentGuardrails.ts` 之前没有覆盖 legacy memory no-history 变体，例如“历史决策库中无 / 样本量为零”。
+
+## Changes
+
+- `src/lib/team/memoryLoopEvidence.ts`
+  - 只用 `resolvedAt + resolvedOutcome` 都存在的 resolved records 作为 memory learning samples。
+  - unresolved open record 不再算历史样本；返回 `no_history`。
+  - no-history prompt 改成内部 abstain 指令：不要从未闭环 case seed 公开 memory note。
+- `src/lib/team/evidenceDispatcher.ts`
+  - memory context 为 `no_history` / `kv_unavailable` / `historicalCount=0` 时不生成 public memory evidence item。
+  - memory_loop mandate 改为只在 resolved samples 存在时发声，否则 silent abstain。
+- `docs/agent-ip/team/memory_loop.md`
+  - 去掉“无历史时 seed 当前决策”的公开输出路径。
+- `src/lib/watch/publicContentGuardrails.ts`
+  - 增加 legacy memory no-history / zero-sample 中英禁词兜底。
+- Tests:
+  - `src/lib/team/__tests__/memoryLoopEvidence.test.ts`
+  - `src/lib/team/__tests__/evidenceDispatcher.test.ts`
+  - `src/lib/watch/__tests__/publicTimelineProjection.test.ts`
+
+## Verify Status
+
+- Red tests observed first:
+  - unresolved open record 被记入 `historicalCount=1`。
+  - memory_loop no-history 仍出现 `### memory evidence`。
+  - public projection 没过滤“历史决策库中无 / 样本量为零”。
+- `npx vitest run src/lib/team/__tests__/memoryLoopEvidence.test.ts src/lib/team/__tests__/evidenceDispatcher.test.ts src/lib/watch/__tests__/publicTimelineProjection.test.ts`: PASS, 34 tests
+- `npm run verify`: PASS, 286 watch/pipeline tests included
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+## Notes
+
+- 没动 PM pipeline / candidate ranking / refresh / hydration / V10 layout / prod。
+- B19 让 memory_loop 只基于已闭环历史产生公开价值；没有 resolved memory 时不发声，避免“无历史 / 样本量为零 / 等待数据”再次进入公开卡片。
+
+[DOC-HINT: B19 treats memory_loop as resolved-history-only public learning; unresolved current records must not seed public memory rationale.]

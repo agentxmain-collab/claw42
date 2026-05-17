@@ -104,7 +104,7 @@ const MEMBER_MANDATES: Record<TeamMemberId, string> = {
   conservative_reviewer:
     "You are the conservative reviewer. Require strong evidence before endorsing risk; thin signal coverage should lower confidence.",
   memory_loop:
-    "You are the memory loop. Use only historical decision memory. Compare the current setup with prior cases, call out sparse samples, and state what should be remembered for post-trade review.",
+    "You are the memory loop. Use only resolved historical decision memory. Compare the current setup with prior cases only when resolved samples are provided; otherwise abstain silently.",
 };
 
 function section(
@@ -426,6 +426,8 @@ async function fetchMemoryContextWithTimeout(symbol: string, locale?: Locale) {
 }
 
 function memoryItems(symbol: string, context: MemoryContext): TypedEvidenceItem[] {
+  if (context.error || !context.historicalCount) return [];
+
   const status: AnalystDataStatus =
     context.error === "kv_unavailable" ? "missing" : context.sampleSizeCaution ? "partial" : "ok";
   return [
