@@ -77,7 +77,7 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     });
   });
 
-  test("does not refresh pseudo-symbols once resident cards exist", () => {
+  test("asks the server to select a priority symbol once resident cards exist", () => {
     expect(
       resolveVisibleSessionRefreshTarget({
         topics: [
@@ -87,7 +87,10 @@ describe("resolveVisibleSessionRefreshTarget", () => {
         timelineLoaded: true,
         locale: "zh_CN",
       }),
-    ).toBeNull();
+    ).toMatchObject({
+      symbol: "SYMBOL",
+      params: { candidateType: "symbol" },
+    });
   });
 
   test("refreshes latest executable symbol after resident cards exist", () => {
