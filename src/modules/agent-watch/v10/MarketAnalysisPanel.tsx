@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
 import {
   compareDecisionCandidateOrder,
@@ -17,6 +17,8 @@ import type {
 } from "../v9/types";
 import v9Styles from "../v9/dispatchConsoleV9.module.css";
 import { v9AgentToV10Role } from "./staticContent";
+
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function ChatShellStat({ label, value }: { label: string; value: number }) {
   return (
@@ -120,6 +122,83 @@ function orderTopicsByRanking(topics: DispatchTopic[]) {
   return [...topics].sort((left, right) =>
     compareDecisionCandidateOrder(topicOrderKey(left), topicOrderKey(right)),
   );
+}
+
+type TopicCollapseState = Record<string, boolean>;
+
+export function reconcileTopicCollapseState(
+  topics: DispatchTopic[],
+  current: TopicCollapseState,
+): TopicCollapseState {
+  let changed = false;
+  const next: TopicCollapseState = {};
+
+  for (const topic of topics) {
+    if (Object.prototype.hasOwnProperty.call(current, topic.id)) {
+      next[topic.id] = current[topic.id];
+    } else {
+      next[topic.id] = topic.defaultCollapsed;
+      changed = true;
+    }
+  }
+
+  for (const topicId of Object.keys(current)) {
+    if (!Object.prototype.hasOwnProperty.call(next, topicId)) {
+      changed = true;
+      break;
+    }
+  }
+
+  return changed ? next : current;
+}
+
+export function toggleTopicCollapseState(
+  current: TopicCollapseState,
+  topicId: string,
+  fallbackCollapsed: boolean,
+): TopicCollapseState {
+  return {
+    ...current,
+    [topicId]: !(current[topicId] ?? fallbackCollapsed),
+  };
+}
+
+interface ScrollAnchor {
+  topicId: string | null;
+  offset: number;
+  scrollTop: number;
+}
+
+function readScrollAnchor(body: HTMLElement): ScrollAnchor {
+  const cards = Array.from(body.querySelectorAll<HTMLElement>("[data-topic-card-id]"));
+  const scrollTop = body.scrollTop;
+  const anchor =
+    cards.find((card) => card.offsetTop + card.offsetHeight > scrollTop + 1) ?? cards[0] ?? null;
+
+  if (!anchor) {
+    return { topicId: null, offset: 0, scrollTop };
+  }
+
+  return {
+    topicId: anchor.dataset.topicCardId ?? null,
+    offset: anchor.offsetTop - scrollTop,
+    scrollTop,
+  };
+}
+
+function restoreScrollAnchor(body: HTMLElement, anchor: ScrollAnchor) {
+  if (anchor.topicId) {
+    const escapedTopicId =
+      typeof CSS !== "undefined" && typeof CSS.escape === "function"
+        ? CSS.escape(anchor.topicId)
+        : anchor.topicId.replace(/["\\]/g, "\\$&");
+    const nextAnchor = body.querySelector<HTMLElement>(`[data-topic-card-id="${escapedTopicId}"]`);
+    if (nextAnchor) {
+      body.scrollTop = Math.max(0, nextAnchor.offsetTop - anchor.offset);
+      return;
+    }
+  }
+  body.scrollTop = Math.min(anchor.scrollTop, Math.max(0, body.scrollHeight - body.clientHeight));
 }
 
 function TopicRankingV10({ topic }: { topic: DispatchTopic }) {
@@ -331,15 +410,18 @@ function TopicStrategyV10({
 function TopicCardV10({
   topic,
   latest,
+  collapsed,
+  onToggle,
   dict,
   onPlaceholder,
 }: {
   topic: DispatchTopic;
   latest: boolean;
+  collapsed: boolean;
+  onToggle: () => void;
   dict: DispatchV10Dict;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
-  const [collapsed, setCollapsed] = useState(topic.defaultCollapsed);
   const bodyId = `dispatch-v10-topic-${topic.id}`;
   const topicClassName = [
     "topic",
@@ -357,7 +439,7 @@ function TopicCardV10({
         topic={topic}
         bodyId={bodyId}
         collapsed={collapsed}
-        onToggle={() => setCollapsed((current) => !current)}
+        onToggle={onToggle}
         dict={dict}
       />
       <TopicBody topic={topic} bodyId={bodyId} />
@@ -382,10 +464,31 @@ export function MarketAnalysisPanel({
     const normalizedTopics = (topics ?? []).map((topic) => normalizeTopicNames(topic, dict.roles));
     return orderTopicsByRanking(normalizedTopics);
   }, [dict.roles, topics]);
+  const [collapsedByTopicId, setCollapsedByTopicId] = useState<TopicCollapseState>({});
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const scrollAnchorRef = useRef<ScrollAnchor>({ topicId: null, offset: 0, scrollTop: 0 });
+  const topicOrderSignature = resolvedTopics.map((topic) => topic.id).join("|");
   const doneCount = resolvedTopics.filter((topic) => topic.status === "done").length;
   const activeCount = resolvedTopics.filter((topic) => topic.status === "active").length;
   const pendingCount = resolvedTopics.filter((topic) => topic.status === "pending").length;
+  const hotspotCount = resolvedTopics.filter(
+    (topic) => topicCandidateType(topic) === "hotspot",
+  ).length;
   const freshnessText = formatFreshnessText(freshness, dict);
+
+  useEffect(() => {
+    setCollapsedByTopicId((current) => reconcileTopicCollapseState(resolvedTopics, current));
+  }, [resolvedTopics]);
+
+  useIsomorphicLayoutEffect(() => {
+    const body = bodyRef.current;
+    if (body) restoreScrollAnchor(body, scrollAnchorRef.current);
+    return () => {
+      if (bodyRef.current) {
+        scrollAnchorRef.current = readScrollAnchor(bodyRef.current);
+      }
+    };
+  }, [topicOrderSignature]);
 
   return (
     <div className={`${v9Styles.root} v10-market-root`}>
@@ -402,7 +505,7 @@ export function MarketAnalysisPanel({
             </div>
           </div>
           <div className="cs-head-right" aria-label={dict.market.statsAriaLabel}>
-            <ChatShellStat label={dict.market.hot} value={resolvedTopics.length} />
+            <ChatShellStat label={dict.market.hot} value={hotspotCount} />
             <div className="cs-divider" />
             <ChatShellStat label={dict.market.closed} value={doneCount} />
             <div className="cs-divider" />
@@ -412,7 +515,13 @@ export function MarketAnalysisPanel({
           </div>
         </div>
 
-        <div className="chat-shell-body">
+        <div
+          className="chat-shell-body"
+          ref={bodyRef}
+          onScroll={(event) => {
+            scrollAnchorRef.current = readScrollAnchor(event.currentTarget);
+          }}
+        >
           {resolvedTopics.length === 0 ? (
             <div className="topic-empty" role="status">
               <span className="topic-empty-icon" aria-hidden="true">
@@ -423,10 +532,16 @@ export function MarketAnalysisPanel({
             </div>
           ) : (
             resolvedTopics.map((topic, index) => (
-              <div key={topic.id}>
+              <div key={topic.id} data-topic-card-id={topic.id}>
                 <TopicCardV10
                   topic={topic}
                   latest={index === 0}
+                  collapsed={collapsedByTopicId[topic.id] ?? topic.defaultCollapsed}
+                  onToggle={() => {
+                    setCollapsedByTopicId((current) =>
+                      toggleTopicCollapseState(current, topic.id, topic.defaultCollapsed),
+                    );
+                  }}
                   dict={dict}
                   onPlaceholder={onPlaceholder}
                 />

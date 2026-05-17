@@ -12,6 +12,7 @@ import {
   mapPublicTimelineEventsToTopics,
   type FollowStatsSnapshot,
 } from "@/lib/watch/v9TopicAdapter";
+import { normalizeCandidateType } from "@/lib/watch/decisionCandidate";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { DecisionHistoryPayload } from "@/lib/watch/decisionHistory";
 import { DispatchConsoleV9 } from "./v9/DispatchConsoleV9";
@@ -40,6 +41,8 @@ const FOLLOW_STATS_STORAGE_EVENT = "claw42-follow-stats-updated";
 const DECISION_HISTORY_LIMIT = 20;
 const EMPTY_STATE_REFRESH_CANDIDATE = "market_overview";
 const EMPTY_STATE_REFRESH_SYMBOL = "MARKET";
+const HOTSPOT_REFRESH_CANDIDATE = "hotspot";
+const HOTSPOT_REFRESH_SYMBOL = "HOTSPOT";
 
 interface PublicTimelinePayload {
   events: PublicTimelineEvent[];
@@ -64,8 +67,59 @@ interface WatchRefreshPayload {
   refreshSource: DispatchFreshnessState["refreshSource"];
 }
 
+interface VisibleSessionRefreshTarget {
+  sessionKey: string;
+  symbol: string;
+  params: Record<string, string>;
+}
+
 function mergeTimelineEvents(current: PublicTimelineEvent[], next: PublicTimelineEvent[]) {
   return mergePublicTimelineEvents([...current, ...next]);
+}
+
+export function resolveVisibleSessionRefreshTarget({
+  topics,
+  timelineLoaded,
+  locale,
+}: {
+  topics: Pick<DispatchTopic, "candidateType" | "symbol">[];
+  timelineLoaded: boolean;
+  locale: string;
+}): VisibleSessionRefreshTarget | null {
+  if (!timelineLoaded) return null;
+
+  const hasMarketOverviewTopic = topics.some(
+    (topic) => normalizeCandidateType(topic.candidateType) === "market_overview",
+  );
+  if (!hasMarketOverviewTopic) {
+    return {
+      sessionKey: `freshness-trigger-${locale}-${EMPTY_STATE_REFRESH_CANDIDATE}`,
+      symbol: EMPTY_STATE_REFRESH_SYMBOL,
+      params: { candidateType: EMPTY_STATE_REFRESH_CANDIDATE },
+    };
+  }
+
+  const hasHotspotTopic = topics.some(
+    (topic) => normalizeCandidateType(topic.candidateType) === "hotspot",
+  );
+  if (!hasHotspotTopic) {
+    return {
+      sessionKey: `freshness-trigger-${locale}-${HOTSPOT_REFRESH_CANDIDATE}`,
+      symbol: HOTSPOT_REFRESH_SYMBOL,
+      params: { candidateType: HOTSPOT_REFRESH_CANDIDATE },
+    };
+  }
+
+  const latestRefreshSymbol =
+    topics.find((topic) => normalizeCandidateType(topic.candidateType) === "symbol")?.symbol ??
+    null;
+  if (!latestRefreshSymbol) return null;
+
+  return {
+    sessionKey: `freshness-trigger-${locale}-symbol-${latestRefreshSymbol}`,
+    symbol: latestRefreshSymbol,
+    params: { symbol: latestRefreshSymbol },
+  };
 }
 
 export function AgentWatchBoard({
@@ -417,32 +471,22 @@ export function AgentWatchBoard({
       timelineEvidenceMap,
     ],
   );
-  const latestRefreshSymbol = topics[0]?.symbol ?? null;
-
   useEffect(() => {
-    const refreshTarget = latestRefreshSymbol
-      ? {
-          sessionKey: `freshness-trigger-${agentWatchLocale}-symbol-${latestRefreshSymbol}`,
-          symbol: latestRefreshSymbol,
-          params: { symbol: latestRefreshSymbol },
-        }
-      : timelineLoaded
-        ? {
-            sessionKey: `freshness-trigger-${agentWatchLocale}-${EMPTY_STATE_REFRESH_CANDIDATE}`,
-            symbol: EMPTY_STATE_REFRESH_SYMBOL,
-            params: { candidateType: EMPTY_STATE_REFRESH_CANDIDATE },
-          }
-        : null;
+    const refreshTarget = resolveVisibleSessionRefreshTarget({
+      topics,
+      timelineLoaded,
+      locale: agentWatchLocale,
+    });
     if (!refreshTarget) return;
     const target = refreshTarget;
     let cancelled = false;
     let controller: AbortController | null = null;
+    let retryTimer: number | null = null;
 
     async function triggerRefresh() {
       if (document.visibilityState !== "visible") return;
       try {
         if (window.sessionStorage.getItem(target.sessionKey)) return;
-        window.sessionStorage.setItem(target.sessionKey, String(Date.now()));
       } catch {
         // Session storage can be blocked; still allow a single visible effect run.
       }
@@ -476,6 +520,25 @@ export function AgentWatchBoard({
             refreshStarted: payload.refreshStarted,
             refreshSource: payload.refreshSource,
           });
+          if (payload.status === "locked" || payload.status === "refreshing") {
+            const retryAt = payload.nextAllowedAt ? Date.parse(payload.nextAllowedAt) : Number.NaN;
+            const retryDelay = Number.isFinite(retryAt)
+              ? Math.max(30_000, retryAt - Date.now() + 1000)
+              : 60_000;
+            if (retryTimer !== null) window.clearTimeout(retryTimer);
+            retryTimer = window.setTimeout(
+              () => {
+                void triggerRefresh();
+              },
+              Math.min(retryDelay, 300_000),
+            );
+          } else {
+            try {
+              window.sessionStorage.setItem(target.sessionKey, String(Date.now()));
+            } catch {
+              // Session storage can be blocked; the request has already completed.
+            }
+          }
         }
       } catch (error: unknown) {
         if ((error as { name?: string }).name === "AbortError") return;
@@ -496,9 +559,10 @@ export function AgentWatchBoard({
     return () => {
       cancelled = true;
       controller?.abort();
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [agentWatchLocale, latestRefreshSymbol, timelineLoaded]);
+  }, [agentWatchLocale, timelineLoaded, topics]);
 
   const historySymbols = useMemo(
     () => Array.from(new Set(topics.map((topic) => topic.symbol).filter(Boolean))),

@@ -6,7 +6,11 @@ import type { Dict } from "@/i18n/types";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
 import type { DispatchTopic } from "../../v9/types";
 import { dispatchV10DemoTopics } from "../demoTopics";
-import { MarketAnalysisPanel } from "../MarketAnalysisPanel";
+import {
+  MarketAnalysisPanel,
+  reconcileTopicCollapseState,
+  toggleTopicCollapseState,
+} from "../MarketAnalysisPanel";
 
 const dict = (zhCN as Dict).agentWatch.dispatchV10;
 
@@ -170,6 +174,58 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain("candidate-hotspot");
   });
 
+  test("counts hotspot stats from hotspot cards, not total cards", () => {
+    const marketOnlyHtml = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          topicFixture({
+            id: "market-overview-1",
+            candidateType: "market_overview",
+            candidateKey: "market_overview:daily:zh_CN:2026-05-17",
+            title: "今日大盘综述",
+            symbol: "MARKET",
+            score: 1,
+            lastUpdatedAt: 1,
+            executable: false,
+          }),
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+    const marketAndHotspotHtml = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          topicFixture({
+            id: "market-overview-1",
+            candidateType: "market_overview",
+            candidateKey: "market_overview:daily:zh_CN:2026-05-17",
+            title: "今日大盘综述",
+            symbol: "MARKET",
+            score: 1,
+            lastUpdatedAt: 1,
+            executable: false,
+          }),
+          topicFixture({
+            id: "hotspot-1",
+            candidateType: "hotspot",
+            candidateKey: "hotspot:stablecoin-flow:2026-05-17",
+            title: "稳定币资金流热点",
+            symbol: "USDT",
+            score: 1,
+            lastUpdatedAt: 1,
+            executable: false,
+          }),
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(marketOnlyHtml).toContain("<span>热点</span><b>0</b>");
+    expect(marketAndHotspotHtml).toContain("<span>热点</span><b>1</b>");
+  });
+
   test("uses canonical candidate ordering instead of render index", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
@@ -256,5 +312,52 @@ describe("MarketAnalysisPanel v10", () => {
     expect(marketHtml).toContain("watch-only / 不可跟单");
     expect(marketHtml).toContain("仅用于观察分析");
     expect(symbolHtml).toContain("演示模式");
+  });
+
+  test("keeps collapse state attached to record id after reorder", () => {
+    const topicA = topicFixture({
+      id: "record-a",
+      candidateType: "symbol",
+      candidateKey: "BTC",
+      title: "BTC 决策流",
+      symbol: "BTC",
+      score: 1,
+      lastUpdatedAt: 1,
+      executable: true,
+    });
+    const topicB = {
+      ...topicFixture({
+        id: "record-b",
+        candidateType: "hotspot",
+        candidateKey: "hotspot:btc-etf:2026-05-17",
+        title: "ETF 资金热点",
+        symbol: "BTC",
+        score: 2,
+        lastUpdatedAt: 2,
+        executable: false,
+      }),
+      defaultCollapsed: true,
+    };
+    const topicC = {
+      ...topicFixture({
+        id: "record-c",
+        candidateType: "market_overview",
+        candidateKey: "market_overview:daily:zh_CN:2026-05-17",
+        title: "今日大盘综述",
+        symbol: "MARKET",
+        score: 3,
+        lastUpdatedAt: 3,
+        executable: false,
+      }),
+      defaultCollapsed: true,
+    };
+
+    const initial = reconcileTopicCollapseState([topicA, topicB, topicC], {});
+    const expandedB = toggleTopicCollapseState(initial, "record-b", topicB.defaultCollapsed);
+    const reordered = reconcileTopicCollapseState([topicC, topicA, topicB], expandedB);
+
+    expect(reordered["record-b"]).toBe(false);
+    expect(reordered["record-c"]).toBe(true);
+    expect(reordered["record-a"]).toBe(topicA.defaultCollapsed);
   });
 });
