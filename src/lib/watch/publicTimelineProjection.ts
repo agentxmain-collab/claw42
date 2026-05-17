@@ -20,6 +20,7 @@ import {
   cleanPublicDecisionText,
   containsPublicContentLeak,
 } from "@/lib/watch/publicContentGuardrails";
+import { normalizePublicDecisionStageTrace } from "@/lib/watch/publicDecisionStageContract";
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
 
 export interface PublicTimelineProjectionOptions {
@@ -41,14 +42,18 @@ export function buildDecisionRecordIndex(
 
 export function publicStageTraceFromRecord(
   record: StrategyDecisionRecord | null,
+  options: { hasRenderableTradeDecision: boolean } = { hasRenderableTradeDecision: false },
 ): PublicDecisionStageTraceEntry[] | undefined {
   if (!record?.stageTrace?.length) return undefined;
-  return record.stageTrace.map((stage) => ({
-    stageId: stage.stageId,
-    status: stage.status,
-    observedAt: stage.observedAt,
-    ...(stage.memberIds?.length ? { memberIds: stage.memberIds } : {}),
-  }));
+  return normalizePublicDecisionStageTrace(
+    record.stageTrace.map((stage) => ({
+      stageId: stage.stageId,
+      status: stage.status,
+      observedAt: stage.observedAt,
+      ...(stage.memberIds?.length ? { memberIds: stage.memberIds } : {}),
+    })),
+    options,
+  );
 }
 
 function inferredMeta(entry: StreamEntry): WatchEntryMeta {
@@ -241,7 +246,9 @@ function pmDecisionPayload(
     rationaleByMember: derived.rationaleByMember,
     citationsByMember: derived.citationsByMember,
     rounds: derived.rounds,
-    stageTrace: publicStageTraceFromRecord(indexedRecord),
+    stageTrace: publicStageTraceFromRecord(indexedRecord, {
+      hasRenderableTradeDecision: Boolean(tradeDecision),
+    }),
     resolution: resolutionFromRecord(indexedRecord),
   };
 }
@@ -270,7 +277,9 @@ export function projectDecisionRecordToPublicEvent(
     rationaleByMember: derived.rationaleByMember,
     citationsByMember: derived.citationsByMember,
     rounds: derived.rounds,
-    stageTrace: publicStageTraceFromRecord(record),
+    stageTrace: publicStageTraceFromRecord(record, {
+      hasRenderableTradeDecision: Boolean(tradeDecision),
+    }),
     resolution: resolutionFromRecord(record),
   };
 

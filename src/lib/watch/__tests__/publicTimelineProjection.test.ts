@@ -957,6 +957,51 @@ describe("publicTimelineProjection", () => {
     expect(JSON.stringify(event.payload.stageTrace)).not.toContain("private-prompt");
   });
 
+  it("normalizes internal stage trace order before public exposure", () => {
+    const recordWithTrace: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-internal-order",
+      tradeDecision: null,
+      stageTrace: [
+        {
+          stageId: "analyst_inputs",
+          label: "Analyst input generation",
+          status: "done",
+          observedAt: new Date(now - 180_000).toISOString(),
+        },
+        {
+          stageId: "research_lead",
+          label: "Research synthesis",
+          status: "done",
+          observedAt: new Date(now - 120_000).toISOString(),
+        },
+        {
+          stageId: "risk_lead",
+          label: "Risk review",
+          status: "in_progress",
+          observedAt: new Date(now - 60_000).toISOString(),
+        },
+        {
+          stageId: "trade_decision",
+          label: "Trade plan",
+          status: "done",
+          observedAt: new Date(now).toISOString(),
+        },
+      ],
+    };
+
+    const event = projectDecisionRecordToPublicEvent(recordWithTrace);
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.tradeDecision).toBeNull();
+    expect(event.payload.stageTrace?.map((entry) => `${entry.stageId}:${entry.status}`)).toEqual([
+      "analyst_inputs:done",
+      "research_lead:done",
+      "risk_lead:pending",
+      "trade_decision:in_progress",
+    ]);
+  });
+
   it("keeps the newest duplicate decision record when building an index", () => {
     const resolvedRecord: StrategyDecisionRecord = {
       ...decisionRecord,
