@@ -9,6 +9,7 @@ import { dispatchV10DemoTopics } from "../demoTopics";
 import {
   MarketAnalysisPanel,
   reconcileTopicCollapseState,
+  topicDisplayIdentity,
   toggleTopicCollapseState,
 } from "../MarketAnalysisPanel";
 
@@ -353,11 +354,48 @@ describe("MarketAnalysisPanel v10", () => {
     };
 
     const initial = reconcileTopicCollapseState([topicA, topicB, topicC], {});
-    const expandedB = toggleTopicCollapseState(initial, "record-b", topicB.defaultCollapsed);
+    const expandedB = toggleTopicCollapseState(
+      initial,
+      topicDisplayIdentity(topicB),
+      topicB.defaultCollapsed,
+    );
     const reordered = reconcileTopicCollapseState([topicC, topicA, topicB], expandedB);
 
-    expect(reordered["record-b"]).toBe(false);
-    expect(reordered["record-c"]).toBe(true);
-    expect(reordered["record-a"]).toBe(topicA.defaultCollapsed);
+    expect(reordered[topicDisplayIdentity(topicB)]).toBe(false);
+    expect(reordered[topicDisplayIdentity(topicC)]).toBe(true);
+    expect(reordered[topicDisplayIdentity(topicA)]).toBe(topicA.defaultCollapsed);
+  });
+
+  test("keeps collapse state attached to candidate identity when a newer record replaces the card", () => {
+    const firstRecord = {
+      ...topicFixture({
+        id: "record-old",
+        candidateType: "hotspot",
+        candidateKey: "hotspot:btc-etf:2026-05-17",
+        title: "ETF 资金热点",
+        symbol: "BTC",
+        score: 2,
+        lastUpdatedAt: 2,
+        executable: false,
+      }),
+      defaultCollapsed: true,
+    };
+    const nextRecord = {
+      ...firstRecord,
+      id: "record-new",
+      lastUpdatedAt: 3,
+      title: "ETF 资金热点更新",
+    };
+
+    const initial = reconcileTopicCollapseState([firstRecord], {});
+    const expanded = toggleTopicCollapseState(
+      initial,
+      topicDisplayIdentity(firstRecord),
+      firstRecord.defaultCollapsed,
+    );
+    const reconciled = reconcileTopicCollapseState([nextRecord], expanded);
+
+    expect(topicDisplayIdentity(firstRecord)).toBe(topicDisplayIdentity(nextRecord));
+    expect(reconciled[topicDisplayIdentity(nextRecord)]).toBe(false);
   });
 });

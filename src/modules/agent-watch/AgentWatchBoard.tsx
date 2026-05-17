@@ -77,6 +77,21 @@ function mergeTimelineEvents(current: PublicTimelineEvent[], next: PublicTimelin
   return mergePublicTimelineEvents([...current, ...next]);
 }
 
+export function reconcileTimelineEventsForDisplay({
+  current,
+  next,
+  mode,
+}: {
+  current: PublicTimelineEvent[];
+  next: PublicTimelineEvent[];
+  mode: "replace" | "append";
+}) {
+  const merged =
+    mode === "replace" ? mergeTimelineEvents([], next) : mergeTimelineEvents(current, next);
+  if (mode === "replace" && current.length > 0 && merged.length === 0) return current;
+  return merged;
+}
+
 export function mergeTimelinePayloadForDisplay(
   primary: PublicTimelinePayload,
   fallback: PublicTimelinePayload,
@@ -178,11 +193,19 @@ export function AgentWatchBoard({
     (payload: PublicTimelinePayload, mode: "replace" | "append") => {
       const sorted = payload.events.slice().sort(comparePublicTimelineEvents);
       setTimelineEvents((current) =>
-        mode === "replace" ? mergeTimelineEvents([], sorted) : mergeTimelineEvents(current, sorted),
+        reconcileTimelineEventsForDisplay({
+          current,
+          next: sorted,
+          mode,
+        }),
       );
       if (payload.evidenceMap) {
         setTimelineEvidenceMap((current) =>
-          mode === "replace" ? (payload.evidenceMap ?? {}) : { ...current, ...payload.evidenceMap },
+          mode === "replace" && sorted.length === 0
+            ? current
+            : mode === "replace"
+              ? (payload.evidenceMap ?? {})
+              : { ...current, ...payload.evidenceMap },
         );
       }
       setTimelineLoaded(true);

@@ -3,6 +3,7 @@ import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import {
   mergeTimelinePayloadForDisplay,
+  reconcileTimelineEventsForDisplay,
   resolveVisibleSessionRefreshTarget,
 } from "../AgentWatchBoard";
 
@@ -140,5 +141,24 @@ describe("resolveVisibleSessionRefreshTarget", () => {
       ev_primary: { id: "ev_primary" },
       ev_fallback: { id: "ev_fallback" },
     });
+  });
+
+  test("keeps the previous non-empty display snapshot when a replace payload is transiently empty", () => {
+    const current = [pmEvent("btc", 200), pmEvent("eth", 100)];
+
+    expect(
+      reconcileTimelineEventsForDisplay({
+        current,
+        next: [],
+        mode: "replace",
+      }),
+    ).toBe(current);
+    expect(
+      reconcileTimelineEventsForDisplay({
+        current: [],
+        next: [],
+        mode: "replace",
+      }),
+    ).toEqual([]);
   });
 });

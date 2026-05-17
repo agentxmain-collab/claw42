@@ -1567,3 +1567,45 @@ Remote PR gates:
 - No production deployment. This is preview/main-line stabilization only.
 
 [DOC-HINT: B.15 centralizes the public decision stage contract; future PM trace consumers should call `publicDecisionStageContract` rather than reconstructing stage order locally.]
+
+# B.16 实时列表稳定化实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+Dan 验收反馈：行情分析卡片会在刷新时消失后再出现，展开/滚动状态也会被新一轮实时更新打断。Codex first-hand 查到两个 UI/data reconciliation 漏点：
+
+- `AgentWatchBoard.tsx` 的 timeline stream / poll 都走 `replace`，如果某次实时 payload 短暂为空，会把已经展示的非空列表替成 empty state。
+- `MarketAnalysisPanel.tsx` 的折叠状态、React key、滚动锚点都绑定 `topic.id`。当前 `topic.id = recordId`，同一 candidate 生成新 record 后会被 React 当成新卡片，导致收起/展开和滚动锚点失效。
+
+## Changes
+
+- `src/modules/agent-watch/AgentWatchBoard.tsx`
+  - 新增 `reconcileTimelineEventsForDisplay()`。
+  - `replace` payload 为空且当前会话已有非空 events 时，保留上一份非空 display snapshot；初始加载仍允许真实 empty state。
+  - 空 replace 不清空已有 evidenceMap，避免卡片文本/引用随空包闪断。
+- `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx`
+  - 新增 `topicDisplayIdentity()`：优先使用稳定 candidate identity（symbol / candidateType + candidateKey），最后才退回 record id。
+  - 折叠 state、React key、scroll anchor 统一使用 display identity，避免同一候选换 record 后 remount。
+- Tests:
+  - `src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`
+  - `src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`
+
+## Verify Status
+
+Local gates:
+
+- Red test observed first: missing `reconcileTimelineEventsForDisplay` / `topicDisplayIdentity` caused the new tests to fail.
+- `npx vitest run src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: PASS, 17 tests
+- `npm run verify`: PASS
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+- `npm run build`: PASS after clean standalone run. One earlier build attempt was invalid because it ran in parallel with the a11y dev server and both wrote `.next`.
+
+## Notes
+
+- No PM pipeline, candidate selector, refresh endpoint, timeline projection, Vercel cron, visual layout, or production deployment changes.
+- This patch intentionally does not resurrect demo data. If first load truly has no public records, the empty state remains.
+
+[DOC-HINT: B.16 stabilizes realtime list reconciliation by preserving the last non-empty display snapshot during transient empty replaces and by using candidate-level UI identity for v10 topic state.]

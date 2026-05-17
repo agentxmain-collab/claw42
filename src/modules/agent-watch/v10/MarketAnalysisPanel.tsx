@@ -124,6 +124,16 @@ function orderTopicsByRanking(topics: DispatchTopic[]) {
   );
 }
 
+export function topicDisplayIdentity(topic: DispatchTopic) {
+  const candidateType = topicCandidateType(topic);
+  const candidateKey = topic.candidateKey?.trim();
+  const symbol = topic.symbol?.trim().replace(/^\$+/, "").toUpperCase();
+  if (candidateType === "symbol" && symbol) return `symbol:${symbol}`;
+  if (candidateKey) return `${candidateType}:${candidateKey}`;
+  if (symbol) return `${candidateType}:${symbol}`;
+  return `record:${topic.id}`;
+}
+
 type TopicCollapseState = Record<string, boolean>;
 
 export function reconcileTopicCollapseState(
@@ -134,10 +144,11 @@ export function reconcileTopicCollapseState(
   const next: TopicCollapseState = {};
 
   for (const topic of topics) {
-    if (Object.prototype.hasOwnProperty.call(current, topic.id)) {
-      next[topic.id] = current[topic.id];
+    const identity = topicDisplayIdentity(topic);
+    if (Object.prototype.hasOwnProperty.call(current, identity)) {
+      next[identity] = current[identity];
     } else {
-      next[topic.id] = topic.defaultCollapsed;
+      next[identity] = topic.defaultCollapsed;
       changed = true;
     }
   }
@@ -467,7 +478,7 @@ export function MarketAnalysisPanel({
   const [collapsedByTopicId, setCollapsedByTopicId] = useState<TopicCollapseState>({});
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const scrollAnchorRef = useRef<ScrollAnchor>({ topicId: null, offset: 0, scrollTop: 0 });
-  const topicOrderSignature = resolvedTopics.map((topic) => topic.id).join("|");
+  const topicOrderSignature = resolvedTopics.map(topicDisplayIdentity).join("|");
   const doneCount = resolvedTopics.filter((topic) => topic.status === "done").length;
   const activeCount = resolvedTopics.filter((topic) => topic.status === "active").length;
   const pendingCount = resolvedTopics.filter((topic) => topic.status === "pending").length;
@@ -531,27 +542,30 @@ export function MarketAnalysisPanel({
               <span className="topic-empty-text">{dict.market.empty}</span>
             </div>
           ) : (
-            resolvedTopics.map((topic, index) => (
-              <div key={topic.id} data-topic-card-id={topic.id}>
-                <TopicCardV10
-                  topic={topic}
-                  latest={index === 0}
-                  collapsed={collapsedByTopicId[topic.id] ?? topic.defaultCollapsed}
-                  onToggle={() => {
-                    setCollapsedByTopicId((current) =>
-                      toggleTopicCollapseState(current, topic.id, topic.defaultCollapsed),
-                    );
-                  }}
-                  dict={dict}
-                  onPlaceholder={onPlaceholder}
-                />
-                {index < resolvedTopics.length - 1 ? (
-                  <div className="topic-separator" aria-hidden="true">
-                    <span className="topic-separator-dot" />
-                  </div>
-                ) : null}
-              </div>
-            ))
+            resolvedTopics.map((topic, index) => {
+              const topicIdentity = topicDisplayIdentity(topic);
+              return (
+                <div key={topicIdentity} data-topic-card-id={topicIdentity}>
+                  <TopicCardV10
+                    topic={topic}
+                    latest={index === 0}
+                    collapsed={collapsedByTopicId[topicIdentity] ?? topic.defaultCollapsed}
+                    onToggle={() => {
+                      setCollapsedByTopicId((current) =>
+                        toggleTopicCollapseState(current, topicIdentity, topic.defaultCollapsed),
+                      );
+                    }}
+                    dict={dict}
+                    onPlaceholder={onPlaceholder}
+                  />
+                  {index < resolvedTopics.length - 1 ? (
+                    <div className="topic-separator" aria-hidden="true">
+                      <span className="topic-separator-dot" />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })
           )}
         </div>
       </section>
