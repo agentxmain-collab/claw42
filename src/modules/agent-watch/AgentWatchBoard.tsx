@@ -77,6 +77,26 @@ function mergeTimelineEvents(current: PublicTimelineEvent[], next: PublicTimelin
   return mergePublicTimelineEvents([...current, ...next]);
 }
 
+export function mergeTimelinePayloadForDisplay(
+  primary: PublicTimelinePayload,
+  fallback: PublicTimelinePayload,
+): PublicTimelinePayload {
+  const events = mergeTimelineEvents(primary.events, fallback.events);
+
+  return {
+    ...primary,
+    events,
+    evidenceMap: {
+      ...(fallback.evidenceMap ?? {}),
+      ...(primary.evidenceMap ?? {}),
+    },
+    oldestTs:
+      events.length > 0 ? (events[events.length - 1]?.ts ?? fallback.oldestTs) : fallback.oldestTs,
+    hasMore: primary.hasMore || fallback.hasMore,
+    windowMinutes: Math.max(primary.windowMinutes, fallback.windowMinutes),
+  };
+}
+
 export function resolveVisibleSessionRefreshTarget({
   topics,
   timelineLoaded,
@@ -227,15 +247,18 @@ export function AgentWatchBoard({
         : nextTimelinePollMsRef.current;
     }
 
-    async function appendTimelineFallback(primary: PublicTimelinePayload, signal: AbortSignal) {
-      if (primary.events.length >= PUBLIC_TIMELINE_MIN_ENTRIES) return;
+    async function payloadWithTimelineFallback(
+      primary: PublicTimelinePayload,
+      signal: AbortSignal,
+    ) {
+      if (primary.events.length >= PUBLIC_TIMELINE_MIN_ENTRIES) return primary;
       const fallback = await fetchTimelineWindow({
         windowMinutes: PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES,
         before: fallbackBeforeForPublicTimeline(primary),
         limit: 100,
         signal,
       });
-      if (!cancelled) applyTimelinePayload(fallback, "append");
+      return mergeTimelinePayloadForDisplay(primary, fallback);
     }
 
     async function loadTimeline() {
@@ -250,8 +273,9 @@ export function AgentWatchBoard({
         });
         if (cancelled) return;
         nextTimelinePollMsRef.current = primary.nextPollMs ?? DEFAULT_TIMELINE_POLL_MS;
-        applyTimelinePayload(primary, "replace");
-        await appendTimelineFallback(primary, controller.signal);
+        const displayPayload = await payloadWithTimelineFallback(primary, controller.signal);
+        if (cancelled) return;
+        applyTimelinePayload(displayPayload, "replace");
       } catch (error: unknown) {
         if (
           (error as { name?: string }).name !== "AbortError" &&
@@ -268,10 +292,10 @@ export function AgentWatchBoard({
 
     async function applyStreamPayload(payload: PublicTimelinePayload) {
       nextTimelinePollMsRef.current = payload.nextPollMs ?? DEFAULT_TIMELINE_POLL_MS;
-      applyTimelinePayload(payload, "replace");
       controller?.abort();
       controller = new AbortController();
-      await appendTimelineFallback(payload, controller.signal);
+      const displayPayload = await payloadWithTimelineFallback(payload, controller.signal);
+      if (!cancelled) applyTimelinePayload(displayPayload, "replace");
     }
 
     function startPolling(delay = 0) {

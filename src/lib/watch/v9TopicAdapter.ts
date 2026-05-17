@@ -105,6 +105,20 @@ const ROLE_VIEWPOINT_KEY: Record<TeamMemberId, DispatchV10AgentRoleId> = {
   memory_loop: "memoryLoop",
 };
 
+const PARTIAL_TRACE_STAGE_ORDER: Array<{
+  traceId: DecisionStageTraceId;
+  stage: 1 | 2 | 3 | 4;
+}> = [
+  { traceId: "analyst_inputs", stage: 1 },
+  { traceId: "research_lead", stage: 2 },
+  { traceId: "trade_decision", stage: 3 },
+  { traceId: "risk_lead", stage: 4 },
+];
+
+type PartialTraceStatus = NonNullable<
+  PmDecisionTimelineEvent["payload"]["stageTrace"]
+>[number]["status"];
+
 function dispatchDict(locale: Locale) {
   return DISPATCH_DICTS[locale] ?? DISPATCH_DICTS.zh_CN;
 }
@@ -316,18 +330,18 @@ function makePartialStages(
   stageStatusDict: DispatchV10StageStatusDict,
   hasMemoryLoop: boolean,
 ): DispatchStageMarker[] {
-  const statusFor = (stageId: DecisionStageTraceId) =>
-    trace.find((entry) => entry.stageId === stageId)?.status ?? "pending";
-  const mappedStatus = (status: ReturnType<typeof statusFor>) => {
+  const statuses = normalizePartialTraceStatuses(trace);
+  const statusFor = (stageId: DecisionStageTraceId) => statuses[stageId] ?? "pending";
+  const mappedStatus = (status: PartialTraceStatus) => {
     if (status === "done") return "done" as const;
     if (status === "in_progress") return "in_progress" as const;
     return "pending" as const;
   };
-  const labelWithStatus = (stage: number, name: string, status: ReturnType<typeof statusFor>) =>
+  const labelWithStatus = (stage: number, name: string, status: PartialTraceStatus) =>
     status === "in_progress"
       ? `阶段 ${stage} · ${name} · ${stageStatusDict.in_progress}`
       : `阶段 ${stage} · ${name}`;
-  const noteFor = (status: ReturnType<typeof statusFor>) =>
+  const noteFor = (status: PartialTraceStatus) =>
     status === "in_progress"
       ? stageStatusDict.in_progressNote
       : status === "pending"
@@ -373,6 +387,65 @@ function makePartialStages(
           note: stageStatusDict.memoryPending,
         },
   ];
+}
+
+function normalizePartialTraceStatuses(
+  trace: NonNullable<PmDecisionTimelineEvent["payload"]["stageTrace"]>,
+): Partial<Record<DecisionStageTraceId, PartialTraceStatus>> {
+  const rawStatus = (stageId: DecisionStageTraceId) =>
+    trace.find((entry) => entry.stageId === stageId)?.status ?? "pending";
+  const normalized: Partial<Record<DecisionStageTraceId, PartialTraceStatus>> = {};
+  let blocked = false;
+
+  for (let index = 0; index < PARTIAL_TRACE_STAGE_ORDER.length; index += 1) {
+    const { traceId } = PARTIAL_TRACE_STAGE_ORDER[index]!;
+    const raw = rawStatus(traceId);
+
+    if (blocked) {
+      normalized[traceId] = "pending";
+      continue;
+    }
+
+    if (raw === "done") {
+      normalized[traceId] = "done";
+      continue;
+    }
+
+    if (raw === "in_progress") {
+      normalized[traceId] = "in_progress";
+      blocked = true;
+      continue;
+    }
+
+    const laterHasProgress = PARTIAL_TRACE_STAGE_ORDER.slice(index + 1).some(({ traceId }) => {
+      const later = rawStatus(traceId);
+      return later === "done" || later === "in_progress";
+    });
+    normalized[traceId] = laterHasProgress ? "in_progress" : "pending";
+    blocked = true;
+  }
+
+  return normalized;
+}
+
+function visibleMessageStageLimit(event: PmDecisionTimelineEvent, hasTradeDecision: boolean) {
+  if (hasTradeDecision) return 6;
+  const trace = event.payload.stageTrace;
+  if (!trace?.length) return 3;
+  const statuses = normalizePartialTraceStatuses(trace);
+  const active = PARTIAL_TRACE_STAGE_ORDER.find(
+    ({ traceId }) => statuses[traceId] === "in_progress",
+  );
+  if (active) return active.stage;
+  const firstPending = PARTIAL_TRACE_STAGE_ORDER.find(
+    ({ traceId }) => statuses[traceId] === "pending",
+  );
+  return firstPending ? firstPending.stage : 4;
+}
+
+function messageStageNumber(stageIdValue: string) {
+  const match = /-stage-(\d+)$/.exec(stageIdValue);
+  return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
 }
 
 function currentStageFromTrace(event: PmDecisionTimelineEvent) {
@@ -608,12 +681,16 @@ function makeMessages(
 ) {
   const topicId = group.id;
   const event = group.latestDecision;
+  const hasTradeDecision = Boolean(renderableTradeDecision(event));
+  const stageLimit = visibleMessageStageLimit(event, hasTradeDecision);
   return [
     ...makeRationaleMessages({ event, topicId, locale, now, roundDict }),
     makeTraderMessage(topicId, event, locale, hasRationale),
     makePmMessage(topicId, event, locale),
     makeResolutionMessage(topicId, event, locale, now, outcomeDict),
-  ].filter((message): message is DispatchMessage => Boolean(message));
+  ].filter((message): message is DispatchMessage =>
+    Boolean(message && messageStageNumber(message.stageId) <= stageLimit),
+  );
 }
 
 function hasEventRationale(event: PmDecisionTimelineEvent) {
