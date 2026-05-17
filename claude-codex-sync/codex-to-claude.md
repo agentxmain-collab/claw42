@@ -1496,3 +1496,74 @@ Visible text leak scan:
 - The current `zh_CN` live KV only has one hotspot record. The 3-card scroll/expand verification therefore used a controlled browser stream against the real preview shell rather than pretending live KV had three records.
 
 [DOC-HINT: hotfix-6 v1.1 changes only resident refresh target selection and v10 presentation state; it does not change PM pipeline, projection sorting/dedupe, candidate ranking, cron, or production deployment topology.]
+
+# B.15 公共阶段状态机稳定化实施报告
+
+Date: 2026-05-17
+
+## Scope
+
+Dan 验收反馈：行情分析详情里阶段 3 缺失、阶段 4 已出现，且卡片刷新/进度观感仍像跳动。Codex 先做 first-hand 判断后执行：根因不是 v10 layout，而是内部 PM pipeline trace 顺序（`risk_lead` 在 `trade_decision` 前后更新）直接透出到 public payload / v9 adapter，导致公开六阶段仪式被内部执行顺序污染。
+
+本 PR 只修公共阶段显示契约：
+
+- 新增 `src/lib/watch/publicDecisionStageContract.ts`
+  - 定义公开顺序：信息收集 → 多空辩论 → 交易方案 → 风险审查 → record/public audit facts。
+  - 无可渲染 trade card 时，公开进度最多到阶段 3；内部 `risk_lead` progress/done 只作为“阶段 3 进行中”的信号，不让 UI 跳到阶段 4。
+  - `record_write` / `public_timeline` 保留真实 done，作为审计事实，不影响前端可见阶段。
+- `src/lib/watch/publicTimelineProjection.ts`
+  - PM public payload 出口统一调用公共阶段契约。
+- `src/lib/watch/v9TopicAdapter.ts`
+  - 删除 adapter-local partial trace 归一化，复用同一公共阶段契约。
+- Tests:
+  - 新增 `src/lib/watch/__tests__/publicDecisionStageContract.test.ts`
+  - 增补 `src/lib/watch/__tests__/publicTimelineProjection.test.ts`
+  - `package.json` 将新契约测试加入 `test:watch-pipeline`。
+
+## First-hand Preview Verification
+
+PR: https://github.com/agentxmain-collab/claw42/pull/118
+
+Branch preview:
+
+- Preview: https://claw42-site-9ky2pvvyu-agentxmain-collabs-projects.vercel.app
+- Share `/zh_CN/agent`: https://claw42-site-9ky2pvvyu-agentxmain-collabs-projects.vercel.app/zh_CN/agent?_vercel_share=p6vxqYOuOlUKt1nHWHsI1cjYqItKxNLd
+
+Live preview API check:
+
+- `GET /api/watch/timeline?windowMinutes=720&limit=100&locale=zh_CN`: 200
+- Current live record: `candidateType=market_overview`, `recordId=pm:MARKET:1778997450335`
+- Stage trace after contract normalization:
+  - `analyst_inputs: done`
+  - `research_lead: done`
+  - `risk_lead: pending`
+  - `trade_decision: in_progress`
+  - `record_write: done`
+  - `public_timeline: done`
+
+This confirms the public API no longer presents risk review as active before a renderable trade plan exists.
+
+## Verify Status
+
+Local gates:
+
+- `npx vitest run src/lib/watch/__tests__/publicDecisionStageContract.test.ts`: PASS, 4 tests
+- `npx vitest run src/lib/watch/__tests__/publicTimelineProjection.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts src/modules/agent-watch/v9/__tests__/TopicBody.test.tsx`: PASS, 53 tests
+- `npx vitest run src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`: PASS, 15 tests
+- `npm run verify`: PASS, includes 48 watch/pipeline test files and 279 tests
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+- `npm run build`: PASS after clean standalone run
+
+Remote PR gates:
+
+- `verify`: PASS
+- `deploy preview`: PASS
+- `Vercel`: READY
+
+## Notes
+
+- No PM pipeline, candidate selector, refresh, hydration, timeline dedupe/order, or v10 layout changes.
+- No production deployment. This is preview/main-line stabilization only.
+
+[DOC-HINT: B.15 centralizes the public decision stage contract; future PM trace consumers should call `publicDecisionStageContract` rather than reconstructing stage order locally.]
