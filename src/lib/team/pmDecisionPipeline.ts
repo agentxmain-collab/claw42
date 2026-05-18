@@ -1321,10 +1321,14 @@ export async function runPmDecisionPipeline(
     skipReason,
     activeStage,
     failedStage,
+    decisionRecordId = null,
+    quality,
   }: {
     skipReason: string;
     activeStage?: DecisionStageTraceId;
     failedStage?: DecisionStageTraceId;
+    decisionRecordId?: string | null;
+    quality?: DecisionQualityReport;
   }) {
     await writeRun(
       buildDecisionRun({
@@ -1342,6 +1346,8 @@ export async function runPmDecisionPipeline(
         analystRoundCount: latestAnalystRoundCount,
         activeMemberIds: latestActiveMemberIds,
         abstainedMemberIds: latestAbstainedMemberIds,
+        decisionRecordId,
+        quality,
         skipReason,
       }),
     );
@@ -1654,15 +1660,48 @@ export async function runPmDecisionPipeline(
       return null;
     }
     completeStage(stageAudit, "record_write", "decision record persisted");
+    const recordWriteCompletedAt = new Date(Date.now()).toISOString();
+    const recordAfterWrite = withStageTraceStatus(
+      writtenRecord,
+      "record_write",
+      "done",
+      recordWriteCompletedAt,
+      stageAudit,
+    );
+    const quality = assessDecisionQuality(recordAfterWrite);
+    if (!quality.publishable) {
+      const qualityFailedRecord = withStageTraceStatus(
+        recordAfterWrite,
+        "public_timeline",
+        "failed",
+        new Date(Date.now()).toISOString(),
+        stageAudit,
+      );
+      try {
+        await recordUpdater(qualityFailedRecord);
+      } catch (error) {
+        console.warn("[claw42] PM quality gate stage update skipped", {
+          recordId: qualityFailedRecord.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      await writeSkippedRun({
+        skipReason: "public_quality_gate_failed",
+        failedStage: "public_timeline",
+        decisionRecordId: qualityFailedRecord.id,
+        quality,
+      });
+      return null;
+    }
 
     startStage(stageAudit, "public_timeline");
     if (!partialHistoryPublished) {
-      await watchWriter(timelineEntryAsChatThread(writtenRecord, evidenceIds));
+      await watchWriter(timelineEntryAsChatThread(recordAfterWrite, evidenceIds));
     }
     completeStage(stageAudit, "public_timeline", "watch history projection written");
     const completedRecord = withStageTraceStatus(
       withStageTraceStatus(
-        writtenRecord,
+        recordAfterWrite,
         "record_write",
         "done",
         new Date(Date.now()).toISOString(),
@@ -1682,7 +1721,6 @@ export async function runPmDecisionPipeline(
       });
     }
     const publicTimelineEntry = makePublicTimelineEntry(completedRecord, evidenceIds);
-    const quality = assessDecisionQuality(completedRecord);
     await writeRun(
       buildDecisionRun({
         id: runId,

@@ -4,6 +4,7 @@ import { readAllDecisionRecords, readDecisionRecords } from "@/lib/team/decision
 import type { DecisionOutcome, StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { Locale } from "@/i18n/types";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
+import { cleanPublicDecisionText } from "@/lib/watch/publicContentGuardrails";
 
 export interface MemoryContext {
   historicalCount: number | null;
@@ -284,7 +285,8 @@ function latestMemoryLoopNote(records: StrategyDecisionRecord[]) {
       memoryInput?.oneLineSummary?.trim() ||
       memoryInput?.detailedRationale?.trim() ||
       memoryInput?.rationale?.trim();
-    if (note) return note;
+    const cleaned = cleanPublicDecisionText(note, record.locale);
+    if (cleaned) return cleaned;
   }
   return null;
 }

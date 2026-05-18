@@ -2,6 +2,7 @@ import { handleCallback, type MessageMetadata } from "@vercel/queue";
 import {
   PM_DECISION_QUEUE_VISIBILITY_TIMEOUT_SECONDS,
   processPmDecisionQueueMessage,
+  resolvePmDecisionQueueRetry,
   type PmDecisionQueueMessage,
 } from "@/lib/team/pmDecisionJobQueue";
 
@@ -14,10 +15,8 @@ const queueHandler = handleCallback<PmDecisionQueueMessage>(
   },
   {
     visibilityTimeoutSeconds: PM_DECISION_QUEUE_VISIBILITY_TIMEOUT_SECONDS,
-    retry: (_error: unknown, metadata: MessageMetadata) => {
-      if (metadata.deliveryCount >= 5) return { acknowledge: true };
-      return { afterSeconds: Math.min(15 * 60, 2 ** metadata.deliveryCount * 30) };
-    },
+    retry: (error: unknown, metadata: MessageMetadata) =>
+      resolvePmDecisionQueueRetry(error, metadata),
   },
 );
 

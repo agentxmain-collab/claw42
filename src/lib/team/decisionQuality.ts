@@ -19,8 +19,10 @@ export type DecisionQualityWarning =
 export interface DecisionQualityReport {
   schemaVersion: 1;
   score: number;
+  publishable: boolean;
   warningCount: number;
   warnings: DecisionQualityWarning[];
+  blockingWarnings: DecisionQualityWarning[];
   leakCount: number;
   duplicateRationaleCount: number;
   roleCoverage: {
@@ -72,6 +74,7 @@ export function assessDecisionQuality(record: StrategyDecisionRecord): DecisionQ
       ? "low_confidence_trade"
       : null,
   ]);
+  const blockingWarnings = warnings.filter(isPublicBlockingWarning);
 
   return {
     schemaVersion: 1,
@@ -84,8 +87,10 @@ export function assessDecisionQuality(record: StrategyDecisionRecord): DecisionQ
       citedEvidenceCount: citedEvidenceIds.size,
       lowConfidenceTrade: warnings.includes("low_confidence_trade"),
     }),
+    publishable: blockingWarnings.length === 0,
     warningCount: warnings.length,
     warnings,
+    blockingWarnings,
     leakCount,
     duplicateRationaleCount,
     roleCoverage: {
@@ -100,6 +105,12 @@ export function assessDecisionQuality(record: StrategyDecisionRecord): DecisionQ
     },
     trade,
   };
+}
+
+function isPublicBlockingWarning(warning: DecisionQualityWarning) {
+  return (
+    warning === "public_content_leak" || warning === "missing_trade_card_for_executable_symbol"
+  );
 }
 
 function collectPublicDecisionText(record: StrategyDecisionRecord) {

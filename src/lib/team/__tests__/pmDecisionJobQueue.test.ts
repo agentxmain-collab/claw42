@@ -5,6 +5,8 @@ import {
   PM_DECISION_QUEUE_TOPIC,
   processPmDecisionQueueMessage,
   publishPmDecisionJobToQueue,
+  resolvePmDecisionQueueRetry,
+  PmDecisionQueueRetryNotDueError,
 } from "@/lib/team/pmDecisionJobQueue";
 
 function job(overrides: Partial<PmDecisionJobRecord> = {}): PmDecisionJobRecord {
@@ -124,5 +126,120 @@ describe("pmDecisionJobQueue", () => {
     );
 
     expect(runJob).not.toHaveBeenCalled();
+  });
+
+  it("acknowledges exhausted failed jobs without running them again", async () => {
+    const exhaustedJob = job({
+      status: "failed",
+      attemptCount: 3,
+      maxAttempts: 3,
+      nextRunAt: null,
+      lastError: "provider timeout",
+    });
+    const runJob = vi.fn();
+    const loadContext = vi.fn();
+
+    await processPmDecisionQueueMessage(
+      { schemaVersion: 1, jobId: exhaustedJob.id, queuedAt: exhaustedJob.createdAt },
+      { readJob: vi.fn().mockResolvedValue(exhaustedJob), runJob, loadContext },
+    );
+
+    expect(loadContext).not.toHaveBeenCalled();
+    expect(runJob).not.toHaveBeenCalled();
+  });
+
+  it("defers failed jobs until the ledger retry time is due", async () => {
+    const retryAt = "2026-05-17T10:10:00.000Z";
+    const waitingJob = job({
+      status: "failed",
+      attemptCount: 1,
+      maxAttempts: 3,
+      nextRunAt: retryAt,
+      lastError: "provider timeout",
+    });
+    const runJob = vi.fn();
+
+    await expect(
+      processPmDecisionQueueMessage(
+        { schemaVersion: 1, jobId: waitingJob.id, queuedAt: waitingJob.createdAt },
+        {
+          readJob: vi.fn().mockResolvedValue(waitingJob),
+          runJob,
+          now: Date.parse("2026-05-17T10:05:00.000Z"),
+        },
+      ),
+    ).rejects.toBeInstanceOf(PmDecisionQueueRetryNotDueError);
+
+    expect(runJob).not.toHaveBeenCalled();
+  });
+
+  it("uses the ledger retry time when scheduling a queue retry", () => {
+    const retry = resolvePmDecisionQueueRetry(
+      new PmDecisionQueueRetryNotDueError(
+        "pm-job:once:user_visit_trigger:zh_CN:BTC:5934384",
+        "2026-05-17T10:10:00.000Z",
+      ),
+      { deliveryCount: 1 },
+      Date.parse("2026-05-17T10:05:30.000Z"),
+    );
+
+    expect(retry).toEqual({ afterSeconds: 270 });
+  });
+
+  it("acknowledges queue messages after the delivery cap is reached", () => {
+    const retry = resolvePmDecisionQueueRetry(new Error("still failing"), { deliveryCount: 5 });
+
+    expect(retry).toEqual({ acknowledge: true });
+  });
+
+  it("defers duplicate delivery while a job is still actively running", async () => {
+    const runningJob = job({
+      status: "running",
+      startedAt: "2026-05-17T10:00:00.000Z",
+      attemptCount: 1,
+      nextRunAt: null,
+    });
+    const runJob = vi.fn();
+
+    await expect(
+      processPmDecisionQueueMessage(
+        { schemaVersion: 1, jobId: runningJob.id, queuedAt: runningJob.createdAt },
+        {
+          readJob: vi.fn().mockResolvedValue(runningJob),
+          runJob,
+          now: Date.parse("2026-05-17T10:10:00.000Z"),
+        },
+      ),
+    ).rejects.toBeInstanceOf(PmDecisionQueueRetryNotDueError);
+
+    expect(runJob).not.toHaveBeenCalled();
+  });
+
+  it("allows stale running jobs to be recovered by queue retry", async () => {
+    const staleRunningJob = job({
+      status: "running",
+      startedAt: "2026-05-17T09:00:00.000Z",
+      attemptCount: 1,
+      nextRunAt: null,
+    });
+    const runJob = vi
+      .fn()
+      .mockResolvedValue({ job: staleRunningJob, outputs: [], auditEvents: [] });
+    const loadContext = vi.fn().mockResolvedValue({});
+
+    await processPmDecisionQueueMessage(
+      { schemaVersion: 1, jobId: staleRunningJob.id, queuedAt: staleRunningJob.createdAt },
+      {
+        readJob: vi.fn().mockResolvedValue(staleRunningJob),
+        runJob,
+        loadContext,
+        now: Date.parse("2026-05-17T10:00:00.000Z"),
+      },
+    );
+
+    expect(runJob).toHaveBeenCalledWith(
+      staleRunningJob,
+      expect.objectContaining({ partialStageUpdates: true }),
+    );
   });
 });

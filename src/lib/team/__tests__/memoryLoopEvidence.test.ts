@@ -58,6 +58,69 @@ describe("memoryLoopEvidence", () => {
     expect(context.sampleSizeCaution).toBe(true);
   });
 
+  test("drops unsafe historical memory notes before they enter the next prompt", async () => {
+    const context = await fetchMemoryContext("HYPE", "zh_CN", {
+      readDecisionRecords: async () => [
+        makeRecord({
+          id: "hype-leaky-memory",
+          symbol: "HYPE",
+          analystInputs: [
+            {
+              memberId: "memory_loop",
+              direction: "wait",
+              confidence: 0.4,
+              rationale: "暂无链上数据，维持 wait，等待后续更新。",
+              evidenceIds: [],
+            },
+          ],
+        }),
+      ],
+    });
+
+    expect(context.lastReviewNotes).toBeNull();
+    const prompt = formatMemoryContextForPrompt(context);
+    expect(prompt).toContain("Last review note: none");
+    expect(prompt).not.toContain("暂无");
+    expect(prompt).not.toContain("wait");
+  });
+
+  test("uses the newest safe memory note when a newer resolved note is unsafe", async () => {
+    const context = await fetchMemoryContext("HYPE", "zh_CN", {
+      readDecisionRecords: async () => [
+        makeRecord({
+          id: "hype-new-leaky-memory",
+          symbol: "HYPE",
+          createdAt: "2026-05-11T00:00:00.000Z",
+          analystInputs: [
+            {
+              memberId: "memory_loop",
+              direction: "wait",
+              confidence: 0.4,
+              rationale: "missing onchain data; awaiting update",
+              evidenceIds: [],
+            },
+          ],
+        }),
+        makeRecord({
+          id: "hype-older-safe-memory",
+          symbol: "HYPE",
+          createdAt: "2026-05-10T00:00:00.000Z",
+          analystInputs: [
+            {
+              memberId: "memory_loop",
+              direction: "long",
+              confidence: 0.6,
+              rationale: "Volume-confirmed breakouts carried better continuation.",
+              evidenceIds: [],
+            },
+          ],
+        }),
+      ],
+    });
+
+    expect(context.lastReviewNotes).toBe("Volume-confirmed breakouts carried better continuation.");
+  });
+
   test("does not treat unresolved open records as learning memory", async () => {
     const context = await fetchMemoryContext("HYPE", "zh_CN", {
       readDecisionRecords: async () => [
