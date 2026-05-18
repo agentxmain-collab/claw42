@@ -199,4 +199,80 @@ describe("assessDecisionQuality", () => {
     expect(report.roleCoverage.active).toBe(2);
     expect(report.trade.actionable).toBe(false);
   });
+
+  it("blocks public publishing when public stage progress skips an earlier gate", () => {
+    const report = assessDecisionQuality(
+      record({
+        stageTrace: [
+          {
+            stageId: "analyst_inputs",
+            label: "Analyst input generation",
+            status: "pending",
+            observedAt: createdAt,
+          },
+          {
+            stageId: "research_lead",
+            label: "Research synthesis",
+            status: "done",
+            observedAt: createdAt,
+          },
+          {
+            stageId: "trade_decision",
+            label: "PM trade decision",
+            status: "pending",
+            observedAt: createdAt,
+          },
+        ],
+      }),
+    );
+
+    expect(report.warnings).toContain("stage_trace_gap");
+    expect(report.blockingWarnings).toContain("stage_trace_gap");
+    expect(report.publishable).toBe(false);
+  });
+
+  it("blocks very low scoring records even when no single hard leak is present", () => {
+    const repeated = "Cautious view repeats without a distinct role-specific contribution.";
+    const report = assessDecisionQuality(
+      record({
+        candidate: {
+          candidateType: "market_overview",
+          candidateKey: "market_overview:zh_CN:2026-05-18",
+          displayTitle: "今日大盘综述",
+          executable: false,
+          cadence: "daily",
+          score: 60,
+          reasons: [],
+        },
+        contributorIds: ["chart_analyst", "news_analyst"],
+        analystInputs: [
+          analyst("chart_analyst", {
+            direction: "wait",
+            confidence: 0.25,
+            rationale: repeated,
+            oneLineSummary: repeated,
+            detailedRationale: repeated,
+            evidenceIds: [],
+            rounds: [],
+          }),
+          analyst("news_analyst", {
+            direction: "neutral",
+            confidence: 0.3,
+            rationale: repeated,
+            oneLineSummary: repeated,
+            detailedRationale: repeated,
+            evidenceIds: [],
+            rounds: [],
+          }),
+        ],
+        tradeDecision: null,
+      }),
+    );
+
+    expect(report.leakCount).toBe(0);
+    expect(report.score).toBeLessThan(70);
+    expect(report.warnings).toContain("low_quality_score");
+    expect(report.blockingWarnings).toContain("low_quality_score");
+    expect(report.publishable).toBe(false);
+  });
 });

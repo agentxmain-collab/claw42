@@ -75,7 +75,7 @@ export async function fetchMemoryContext(
       .filter((record) => record.recordSource !== "legacy")
       .filter((record) => record.symbol === normalizedSymbol)
       .filter(isResolvedLearningRecord)
-      .sort(sortNewestFirst);
+      .sort((left, right) => sortLearningRecords(left, right, "same_symbol"));
     const crossSymbolRecords = await fetchCrossSymbolLearningRecords(
       normalizedSymbol,
       normalizedLocale,
@@ -197,6 +197,8 @@ export function formatMemoryContextForPrompt(context: MemoryContext) {
     context.lastReviewNotes
       ? `Last review note: ${context.lastReviewNotes}`
       : "Last review note: none",
+    "Focus only on what changed the historical outcome; avoid narrating current market data.",
+    "Do not repeat current-market analysis; add historical contrast only.",
     `Similar recent setups:\n${setups || "- none"}`,
     context.crossSymbolHistoricalCount > 0
       ? "Cross-symbol resolved lessons: use these only as pattern memory, not as symbol-specific proof."
@@ -238,7 +240,7 @@ async function fetchCrossSymbolLearningRecords(
     .filter((record) => record.recordSource !== "legacy")
     .filter((record) => record.symbol !== normalizedSymbol)
     .filter(isResolvedLearningRecord)
-    .sort(sortNewestFirst)
+    .sort((left, right) => sortLearningRecords(left, right, "cross_symbol"))
     .slice(0, SIMILAR_SETUP_LIMIT);
 }
 
@@ -280,15 +282,37 @@ function similarSetupFromRecord(
 
 function latestMemoryLoopNote(records: StrategyDecisionRecord[]) {
   for (const record of records) {
-    const memoryInput = record.analystInputs.find((input) => input.memberId === "memory_loop");
-    const note =
-      memoryInput?.oneLineSummary?.trim() ||
-      memoryInput?.detailedRationale?.trim() ||
-      memoryInput?.rationale?.trim();
-    const cleaned = cleanPublicDecisionText(note, record.locale);
+    const cleaned = memoryLoopNoteFromRecord(record);
     if (cleaned) return cleaned;
   }
   return null;
+}
+
+function sortLearningRecords(
+  left: StrategyDecisionRecord,
+  right: StrategyDecisionRecord,
+  relation: "same_symbol" | "cross_symbol",
+) {
+  const scoreDiff = lessonScore(right, relation) - lessonScore(left, relation);
+  if (scoreDiff !== 0) return scoreDiff;
+  return sortNewestFirst(left, right);
+}
+
+function lessonScore(record: StrategyDecisionRecord, relation: "same_symbol" | "cross_symbol") {
+  const safeMemoryBonus = memoryLoopNoteFromRecord(record) ? 100 : 0;
+  const relationBonus = relation === "same_symbol" ? 30 : 0;
+  const outcomeBonus =
+    record.resolvedOutcome === "hit_tp" ? 12 : isResolvedNonWin(record.resolvedOutcome) ? 6 : 0;
+  return safeMemoryBonus + relationBonus + outcomeBonus;
+}
+
+function memoryLoopNoteFromRecord(record: StrategyDecisionRecord) {
+  const memoryInput = record.analystInputs.find((input) => input.memberId === "memory_loop");
+  const note =
+    memoryInput?.oneLineSummary?.trim() ||
+    memoryInput?.detailedRationale?.trim() ||
+    memoryInput?.rationale?.trim();
+  return cleanPublicDecisionText(note, record.locale);
 }
 
 function sortNewestFirst(left: StrategyDecisionRecord, right: StrategyDecisionRecord) {

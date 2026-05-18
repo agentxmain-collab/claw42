@@ -1,4 +1,5 @@
 import type {
+  DecisionStageTraceId,
   AnalystDirection,
   AnalystInputRecord,
   AnalystInputRoundRecord,
@@ -14,7 +15,9 @@ export type DecisionQualityWarning =
   | "all_wait_or_neutral"
   | "missing_trade_card_for_executable_symbol"
   | "thin_evidence"
-  | "low_confidence_trade";
+  | "low_confidence_trade"
+  | "stage_trace_gap"
+  | "low_quality_score";
 
 export interface DecisionQualityReport {
   schemaVersion: 1;
@@ -46,6 +49,15 @@ export interface DecisionQualityReport {
 const LOW_ROLE_COVERAGE_THRESHOLD = 6;
 const MIN_EVIDENCE_CITATIONS = 2;
 const LOW_TRADE_CONFIDENCE_THRESHOLD = 0.5;
+const LOW_PUBLIC_QUALITY_SCORE_THRESHOLD = 50;
+const PUBLIC_STAGE_ORDER: DecisionStageTraceId[] = [
+  "analyst_inputs",
+  "research_lead",
+  "trade_decision",
+  "risk_lead",
+  "record_write",
+  "public_timeline",
+];
 
 export function assessDecisionQuality(record: StrategyDecisionRecord): DecisionQualityReport {
   const textFields = collectPublicDecisionText(record);
@@ -59,7 +71,8 @@ export function assessDecisionQuality(record: StrategyDecisionRecord): DecisionQ
   const citedEvidenceIds = collectEvidenceIds(record);
   const analystCitationCount = countAnalystEvidenceCitations(record.analystInputs);
   const trade = summarizeTrade(record.tradeDecision);
-  const warnings = uniqueWarnings([
+  const stageTraceGap = hasPublicStageTraceGap(record);
+  const baseWarnings = uniqueWarnings([
     leakCount > 0 ? "public_content_leak" : null,
     duplicateRationaleCount > 0 ? "duplicate_public_rationale" : null,
     activeMemberIds.size < LOW_ROLE_COVERAGE_THRESHOLD ? "low_role_coverage" : null,
@@ -73,20 +86,27 @@ export function assessDecisionQuality(record: StrategyDecisionRecord): DecisionQ
     trade.confidence < LOW_TRADE_CONFIDENCE_THRESHOLD
       ? "low_confidence_trade"
       : null,
+    stageTraceGap ? "stage_trace_gap" : null,
+  ]);
+  const score = scoreFromSignals({
+    leakCount,
+    duplicateRationaleCount,
+    activeRoleCount: activeMemberIds.size,
+    hasDirectionalView: directionDistribution.long + directionDistribution.short > 0,
+    missingExecutableTradeCard: baseWarnings.includes("missing_trade_card_for_executable_symbol"),
+    citedEvidenceCount: citedEvidenceIds.size,
+    lowConfidenceTrade: baseWarnings.includes("low_confidence_trade"),
+    stageTraceGap,
+  });
+  const warnings = uniqueWarnings([
+    ...baseWarnings,
+    score < LOW_PUBLIC_QUALITY_SCORE_THRESHOLD ? "low_quality_score" : null,
   ]);
   const blockingWarnings = warnings.filter(isPublicBlockingWarning);
 
   return {
     schemaVersion: 1,
-    score: scoreFromSignals({
-      leakCount,
-      duplicateRationaleCount,
-      activeRoleCount: activeMemberIds.size,
-      hasDirectionalView: directionDistribution.long + directionDistribution.short > 0,
-      missingExecutableTradeCard: warnings.includes("missing_trade_card_for_executable_symbol"),
-      citedEvidenceCount: citedEvidenceIds.size,
-      lowConfidenceTrade: warnings.includes("low_confidence_trade"),
-    }),
+    score,
     publishable: blockingWarnings.length === 0,
     warningCount: warnings.length,
     warnings,
@@ -109,7 +129,10 @@ export function assessDecisionQuality(record: StrategyDecisionRecord): DecisionQ
 
 function isPublicBlockingWarning(warning: DecisionQualityWarning) {
   return (
-    warning === "public_content_leak" || warning === "missing_trade_card_for_executable_symbol"
+    warning === "public_content_leak" ||
+    warning === "missing_trade_card_for_executable_symbol" ||
+    warning === "stage_trace_gap" ||
+    warning === "low_quality_score"
   );
 }
 
@@ -200,6 +223,19 @@ function isExecutableSymbolCandidate(record: StrategyDecisionRecord) {
   return candidateType === "symbol" && record.candidate?.executable !== false;
 }
 
+function hasPublicStageTraceGap(record: StrategyDecisionRecord) {
+  if (!record.stageTrace?.length) return false;
+  const statuses = new Map(record.stageTrace.map((stage) => [stage.stageId, stage.status]));
+  return PUBLIC_STAGE_ORDER.some((stageId, index) => {
+    const status = statuses.get(stageId) ?? "pending";
+    if (status === "done" || status === "in_progress") return false;
+    return PUBLIC_STAGE_ORDER.slice(index + 1).some((laterStageId) => {
+      const laterStatus = statuses.get(laterStageId);
+      return laterStatus === "done" || laterStatus === "in_progress";
+    });
+  });
+}
+
 function uniqueWarnings(warnings: Array<DecisionQualityWarning | null>): DecisionQualityWarning[] {
   return Array.from(
     new Set(warnings.filter((warning): warning is DecisionQualityWarning => Boolean(warning))),
@@ -214,6 +250,7 @@ function scoreFromSignals({
   missingExecutableTradeCard,
   citedEvidenceCount,
   lowConfidenceTrade,
+  stageTraceGap,
 }: {
   leakCount: number;
   duplicateRationaleCount: number;
@@ -222,6 +259,7 @@ function scoreFromSignals({
   missingExecutableTradeCard: boolean;
   citedEvidenceCount: number;
   lowConfidenceTrade: boolean;
+  stageTraceGap: boolean;
 }) {
   const penalties = [
     Math.min(60, leakCount * 30),
@@ -231,6 +269,7 @@ function scoreFromSignals({
     missingExecutableTradeCard ? 20 : 0,
     citedEvidenceCount < MIN_EVIDENCE_CITATIONS ? 10 : 0,
     lowConfidenceTrade ? 8 : 0,
+    stageTraceGap ? 25 : 0,
   ];
   const score = 100 - penalties.reduce((total, penalty) => total + penalty, 0);
   return Math.max(0, Math.min(100, score));

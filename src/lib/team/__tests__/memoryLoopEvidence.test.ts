@@ -121,6 +121,45 @@ describe("memoryLoopEvidence", () => {
     expect(context.lastReviewNotes).toBe("Volume-confirmed breakouts carried better continuation.");
   });
 
+  test("prioritizes resolved samples that include a usable memory-loop lesson", async () => {
+    const context = await fetchMemoryContext("HYPE", "zh_CN", {
+      readDecisionRecords: async () => [
+        makeRecord({
+          id: "hype-newer-loss-without-memory-note",
+          symbol: "HYPE",
+          createdAt: "2026-05-12T00:00:00.000Z",
+          resolvedOutcome: "hit_sl",
+          tradeDecision: makeTradeDecision({ direction: "short" }),
+        }),
+        makeRecord({
+          id: "hype-older-win-with-memory-note",
+          symbol: "HYPE",
+          createdAt: "2026-05-10T00:00:00.000Z",
+          resolvedOutcome: "hit_tp",
+          tradeDecision: makeTradeDecision({ direction: "long" }),
+          analystInputs: [
+            {
+              memberId: "memory_loop",
+              direction: "long",
+              confidence: 0.6,
+              rationale: "Liquidity expansion was the actual trigger, not the headline itself.",
+              evidenceIds: [],
+            },
+          ],
+        }),
+      ],
+    });
+
+    expect(context.similarSetups[0]).toMatchObject({
+      symbol: "HYPE",
+      direction: "long",
+      outcome: "hit_tp",
+    });
+    expect(context.lastReviewNotes).toBe(
+      "Liquidity expansion was the actual trigger, not the headline itself.",
+    );
+  });
+
   test("does not treat unresolved open records as learning memory", async () => {
     const context = await fetchMemoryContext("HYPE", "zh_CN", {
       readDecisionRecords: async () => [
@@ -183,6 +222,8 @@ describe("memoryLoopEvidence", () => {
     const prompt = formatMemoryContextForPrompt(context);
     expect(prompt).toContain("Current-symbol samples: 0");
     expect(prompt).toContain("Cross-symbol resolved lessons");
+    expect(prompt).toContain("Focus only on what changed the historical outcome");
+    expect(prompt).toContain("Do not repeat current-market analysis");
     expect(prompt).toContain("SOL long -> hit_tp");
     expect(prompt).not.toContain("ETH");
   });
