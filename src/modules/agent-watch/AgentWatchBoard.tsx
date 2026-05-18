@@ -40,6 +40,7 @@ const FOLLOW_STATS_BROADCAST = "claw42-follow-stats";
 const FOLLOW_STATS_STORAGE_EVENT = "claw42-follow-stats-updated";
 const DECISION_HISTORY_LIMIT = 20;
 const VISIBLE_SESSION_NO_SIGNAL_RETRY_MS = 5 * 60_000;
+const VISIBLE_SESSION_REFRESH_STARTED_RETRY_MS = 90_000;
 const VISIBLE_SESSION_MAX_RETRY_MS = 5 * 60_000;
 const EMPTY_STATE_REFRESH_CANDIDATE = "market_overview";
 const EMPTY_STATE_REFRESH_SYMBOL = "MARKET";
@@ -72,13 +73,27 @@ interface WatchRefreshPayload {
 }
 
 type VisibleSessionRefreshStatus = WatchRefreshPayload["status"];
+type VisibleSessionRefreshResult =
+  | VisibleSessionRefreshStatus
+  | Pick<WatchRefreshPayload, "status" | "refreshStarted">;
 
-export function shouldPersistVisibleSessionRefreshResult(status: VisibleSessionRefreshStatus) {
+function visibleSessionRefreshStatus(result: VisibleSessionRefreshResult) {
+  return typeof result === "string" ? result : result.status;
+}
+
+function visibleSessionRefreshStarted(result: VisibleSessionRefreshResult) {
+  return typeof result === "string" ? false : result.refreshStarted;
+}
+
+export function shouldPersistVisibleSessionRefreshResult(result: VisibleSessionRefreshResult) {
+  const status = visibleSessionRefreshStatus(result);
+  if (visibleSessionRefreshStarted(result)) return false;
   return status === "cached" || status === "stale";
 }
 
 export function retryDelayForVisibleSessionRefresh(
-  payload: Pick<WatchRefreshPayload, "status" | "nextAllowedAt">,
+  payload: Pick<WatchRefreshPayload, "status" | "nextAllowedAt"> &
+    Partial<Pick<WatchRefreshPayload, "refreshStarted">>,
   now = Date.now(),
 ) {
   if (payload.status === "locked" || payload.status === "refreshing") {
@@ -86,6 +101,7 @@ export function retryDelayForVisibleSessionRefresh(
     return Number.isFinite(retryAt) ? Math.max(30_000, retryAt - now + 1000) : 60_000;
   }
 
+  if (payload.refreshStarted) return VISIBLE_SESSION_REFRESH_STARTED_RETRY_MS;
   if (payload.status === "no_signal") return VISIBLE_SESSION_NO_SIGNAL_RETRY_MS;
   return null;
 }
@@ -607,7 +623,7 @@ export function AgentWatchBoard({
             );
           }
 
-          if (shouldPersistVisibleSessionRefreshResult(payload.status)) {
+          if (shouldPersistVisibleSessionRefreshResult(payload)) {
             try {
               window.sessionStorage.setItem(target.sessionKey, String(Date.now()));
             } catch {

@@ -8,6 +8,9 @@ import { runPmDecisionJob, type RunPmDecisionJobContext } from "@/lib/team/pmDec
 export const PM_DECISION_QUEUE_TOPIC = "pm-decision-jobs";
 export const PM_DECISION_QUEUE_RETENTION_SECONDS = 24 * 60 * 60;
 export const PM_DECISION_QUEUE_VISIBILITY_TIMEOUT_SECONDS = 30 * 60;
+const PM_DECISION_QUEUE_MAX_DELIVERIES = 5;
+const PM_DECISION_QUEUE_MIN_RETRY_SECONDS = 30;
+const PM_DECISION_QUEUE_MAX_RETRY_SECONDS = 15 * 60;
 
 export interface PmDecisionQueueMessage {
   schemaVersion: 1;
@@ -24,6 +27,20 @@ export type PmDecisionQueuePublishResult =
   | { mode: "failed"; errorMessage: string };
 
 type SendMessage = typeof send;
+type QueueRetryMetadata = { deliveryCount: number };
+type QueueRetryDecision = { acknowledge: true } | { afterSeconds: number };
+
+export class PmDecisionQueueRetryNotDueError extends Error {
+  readonly jobId: string;
+  readonly nextRunAt: string;
+
+  constructor(jobId: string, nextRunAt: string) {
+    super(`pm_decision_job_retry_not_due:${jobId}:${nextRunAt}`);
+    this.name = "PmDecisionQueueRetryNotDueError";
+    this.jobId = jobId;
+    this.nextRunAt = nextRunAt;
+  }
+}
 
 export async function publishPmDecisionJobToQueue(
   job: PmDecisionJobRecord,
@@ -87,6 +104,9 @@ export async function processPmDecisionQueueMessage(
   const job = await readJob(message.jobId);
   if (!job) throw new Error(`pm_decision_job_not_found:${message.jobId}`);
   if (job.status === "succeeded") return;
+  if (isExhaustedFailedJob(job)) return;
+  assertRunningLeaseIsStale(job, now);
+  assertRetryIsDue(job, now);
 
   const context = await loadContext(job);
   await runJob(job, {
@@ -94,6 +114,31 @@ export async function processPmDecisionQueueMessage(
     now,
     partialStageUpdates: true,
   });
+}
+
+export function resolvePmDecisionQueueRetry(
+  error: unknown,
+  metadata: QueueRetryMetadata,
+  now = Date.now(),
+): QueueRetryDecision {
+  if (metadata.deliveryCount >= PM_DECISION_QUEUE_MAX_DELIVERIES) {
+    return { acknowledge: true };
+  }
+
+  if (error instanceof PmDecisionQueueRetryNotDueError) {
+    const nextRunAtMs = Date.parse(error.nextRunAt);
+    if (Number.isFinite(nextRunAtMs) && nextRunAtMs > now) {
+      return {
+        afterSeconds: clampRetrySeconds(Math.ceil((nextRunAtMs - now) / 1000)),
+      };
+    }
+  }
+
+  return {
+    afterSeconds: clampRetrySeconds(
+      2 ** metadata.deliveryCount * PM_DECISION_QUEUE_MIN_RETRY_SECONDS,
+    ),
+  };
 }
 
 function isPmDecisionQueueEnabled(env: NodeJS.ProcessEnv | Record<string, string | undefined>) {
@@ -109,6 +154,35 @@ function isPmDecisionQueueMessage(value: unknown): value is PmDecisionQueueMessa
     "schemaVersion" in value &&
     (value as { schemaVersion?: unknown }).schemaVersion === 1 &&
     typeof (value as { jobId?: unknown }).jobId === "string"
+  );
+}
+
+function isExhaustedFailedJob(job: PmDecisionJobRecord) {
+  return job.status === "failed" && job.nextRunAt === null && job.attemptCount >= job.maxAttempts;
+}
+
+function assertRetryIsDue(job: PmDecisionJobRecord, now: number) {
+  if (job.status !== "failed" || !job.nextRunAt) return;
+  const nextRunAtMs = Date.parse(job.nextRunAt);
+  if (Number.isFinite(nextRunAtMs) && nextRunAtMs > now) {
+    throw new PmDecisionQueueRetryNotDueError(job.id, job.nextRunAt);
+  }
+}
+
+function assertRunningLeaseIsStale(job: PmDecisionJobRecord, now: number) {
+  if (job.status !== "running" || !job.startedAt) return;
+  const startedAtMs = Date.parse(job.startedAt);
+  if (!Number.isFinite(startedAtMs)) return;
+  const recoverAtMs = startedAtMs + PM_DECISION_QUEUE_VISIBILITY_TIMEOUT_SECONDS * 1000;
+  if (recoverAtMs > now) {
+    throw new PmDecisionQueueRetryNotDueError(job.id, new Date(recoverAtMs).toISOString());
+  }
+}
+
+function clampRetrySeconds(value: number) {
+  return Math.min(
+    PM_DECISION_QUEUE_MAX_RETRY_SECONDS,
+    Math.max(PM_DECISION_QUEUE_MIN_RETRY_SECONDS, value),
   );
 }
 

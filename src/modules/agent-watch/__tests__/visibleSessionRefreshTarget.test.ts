@@ -176,6 +176,19 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     expect(shouldPersistVisibleSessionRefreshResult("cached")).toBe(true);
   });
 
+  test("keeps refresh-started stale responses active until completion can be observed", () => {
+    expect(
+      shouldPersistVisibleSessionRefreshResult({ status: "stale", refreshStarted: true }),
+    ).toBe(false);
+    expect(
+      retryDelayForVisibleSessionRefresh({
+        status: "stale",
+        refreshStarted: true,
+        nextAllowedAt: null,
+      }),
+    ).toBe(90_000);
+  });
+
   test("uses the server nextAllowedAt when retrying locked visible refreshes", () => {
     const now = Date.UTC(2026, 4, 17, 12, 0, 0);
     expect(

@@ -2285,3 +2285,83 @@ So even when the client asked for 1440 minutes and the route accepted it, the pa
 - `npx vitest run src/lib/watch/__tests__/publicTimelinePayload.test.ts src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`: PASS, 11 tests
 
 [DOC-HINT: B30 removes the remaining internal 720-minute public timeline cap so the 24h fallback is applied consistently by route, client, and payload backfill.]
+
+# B.31-B.34 batch — queue stability, freshness retry, quality gate, memory hygiene
+
+Date: 2026-05-18 11:15 CST
+
+## Scope
+
+Dan asked to continue with the remaining stability and model-quality work as one uninterrupted batch:
+
+1. Long-term scheduling / queue stability
+2. Analysis freshness state
+3. Model quality gate
+4. Memory loop strengthening
+
+No prod action. Work was done in `/tmp/claw42-b28-single-analysis` on `feature/b31-b34-quality-stability`.
+
+## B31 queue stability
+
+Files:
+
+- `src/lib/team/pmDecisionJobQueue.ts`
+- `src/app/api/queues/pm-decision-job/route.ts`
+- `src/lib/team/__tests__/pmDecisionJobQueue.test.ts`
+
+Changes:
+
+- Queue consumer now acknowledges exhausted failed jobs instead of re-running them forever.
+- Failed jobs with a future `nextRunAt` now throw a typed retry-not-due error so Vercel Queue retry waits against the ledger retry time.
+- Duplicate delivery while a job is still actively `running` is deferred until the visibility window expires; stale running jobs can still be recovered.
+- Queue route retry callback now delegates to the shared ledger-aware retry resolver.
+
+## B32 freshness state
+
+Files:
+
+- `src/modules/agent-watch/AgentWatchBoard.tsx`
+- `src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`
+
+Changes:
+
+- A `stale + refreshStarted` response no longer gets persisted as "session complete".
+- The board schedules a short visible-session recheck after refresh starts, while keeping existing cards visible.
+- This makes the header text "新分析进行中 · 完成后自动刷新" operational instead of depending only on stream push.
+
+## B33 model quality gate
+
+Files:
+
+- `src/lib/team/decisionQuality.ts`
+- `src/lib/team/pmDecisionPipeline.ts`
+- `src/lib/team/__tests__/pmDecisionPipeline.test.ts`
+
+Changes:
+
+- `DecisionQualityReport` now includes `publishable` and `blockingWarnings`.
+- Public blocking warnings currently cover public content leaks and missing executable trade cards.
+- PM pipeline now evaluates the persisted record before public timeline projection; if the record fails the public quality gate, the run is marked skipped with `skipReason=public_quality_gate_failed`, the decision record id and quality report are preserved in the run ledger, and no public watch history entry is written.
+
+## B34 memory loop hygiene
+
+Files:
+
+- `src/lib/team/memoryLoopEvidence.ts`
+- `src/lib/team/__tests__/memoryLoopEvidence.test.ts`
+
+Changes:
+
+- Historical `memory_loop` notes are cleaned through the same public content guardrails before entering future memory prompts.
+- Unsafe old notes are skipped; the newest safe resolved note is used instead.
+- This keeps old backend wording / forbidden terms from being recycled into new public analysis.
+
+## Verify
+
+- `npx vitest run src/lib/team/__tests__/pmDecisionJobQueue.test.ts src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts src/lib/team/__tests__/decisionQuality.test.ts src/lib/team/__tests__/pmDecisionPipeline.test.ts src/lib/team/__tests__/memoryLoopEvidence.test.ts`: PASS, 44 tests
+- `npm run verify`: PASS, format/typecheck/lint/agent-ip/news/news tests/watch-pipeline/chat-v3/execution-safety all passed
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+
+[DOC-HINT: B31-B34 turns queue retry, visible-session freshness, public model-quality gating, and memory-loop prompt hygiene into enforced code paths with regression coverage.]
