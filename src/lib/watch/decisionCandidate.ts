@@ -51,6 +51,18 @@ export function candidateDayKey(ts: number) {
   return Number.isFinite(ts) ? new Date(ts).toISOString().slice(0, 10) : "unknown-date";
 }
 
+function utc8CandidateDayKey(ts: number) {
+  const UTC8_OFFSET_MS = 8 * 60 * 60 * 1000;
+  return Number.isFinite(ts)
+    ? new Date(ts + UTC8_OFFSET_MS).toISOString().slice(0, 10)
+    : "unknown-date";
+}
+
+function dateKeyFromCandidateKey(candidateKey: string | null | undefined) {
+  const match = candidateKey?.match(/\d{4}-\d{2}-\d{2}/);
+  return match?.[0] ?? null;
+}
+
 export function compareDecisionCandidateOrder(
   left: DecisionCandidateOrderKey,
   right: DecisionCandidateOrderKey,
@@ -92,7 +104,7 @@ export function decisionCandidateDedupeKey({
   }
 
   if (type === "market_overview") {
-    return `${locale}:market_overview:${candidateDayKey(ts)}`;
+    return `${locale}:market_overview:${dateKeyFromCandidateKey(candidateKey) ?? utc8CandidateDayKey(ts)}`;
   }
 
   const key = normalizeCandidateKey(candidateKey) ?? normalizeCandidateSymbol(symbol) ?? recordId;

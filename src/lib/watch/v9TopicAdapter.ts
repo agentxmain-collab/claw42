@@ -300,6 +300,7 @@ function makeStages(
   outcomeDict: DispatchV10OutcomeDict,
   stageStatusDict: DispatchV10StageStatusDict,
   event?: PmDecisionTimelineEvent,
+  analysisOnlyCandidate = false,
 ): DispatchStageMarker[] {
   const trace = event?.payload.stageTrace;
   if (!hasTradeDecision && trace?.length) {
@@ -309,6 +310,7 @@ function makeStages(
       stageStatusDict,
       hasResolution || hasMemoryLoop,
       hasTradeDecision,
+      analysisOnlyCandidate,
     );
   }
 
@@ -349,9 +351,11 @@ function makePartialStages(
   stageStatusDict: DispatchV10StageStatusDict,
   hasMemoryLoop: boolean,
   hasTradeDecision: boolean,
+  analysisOnlyCandidate = false,
 ): DispatchStageMarker[] {
   const statuses = normalizePublicDecisionStageStatuses(trace, {
     hasRenderableTradeDecision: hasTradeDecision,
+    analysisOnlyCandidate,
   });
   const statusFor = (stageId: DecisionStageTraceId) => statuses[stageId] ?? "pending";
   const mappedStatus = (status: PartialTraceStatus) => {
@@ -411,9 +415,27 @@ function makePartialStages(
   ];
 }
 
+function isAnalysisOnlyEvent(event: PmDecisionTimelineEvent) {
+  return (
+    event.payload.candidateType === "market_overview" || event.payload.candidateType === "hotspot"
+  );
+}
+
+function hasAnalysisOnlyCompletion(event: PmDecisionTimelineEvent) {
+  if (!isAnalysisOnlyEvent(event)) return false;
+  return Boolean(
+    event.payload.stageTrace?.some(
+      (stage) =>
+        (stage.stageId === "record_write" || stage.stageId === "public_timeline") &&
+        stage.status === "done",
+    ),
+  );
+}
+
 function visibleMessageStageLimit(event: PmDecisionTimelineEvent, hasTradeDecision: boolean) {
   return publicDecisionVisibleStageLimit(event.payload.stageTrace, {
     hasRenderableTradeDecision: hasTradeDecision,
+    analysisOnlyCandidate: isAnalysisOnlyEvent(event),
   });
 }
 
@@ -427,6 +449,7 @@ function currentStageFromTrace(event: PmDecisionTimelineEvent, hasTradeDecision:
   if (!trace?.length) return null;
   const statuses = normalizePublicDecisionStageStatuses(trace, {
     hasRenderableTradeDecision: hasTradeDecision,
+    analysisOnlyCandidate: isAnalysisOnlyEvent(event),
   });
   const active = PUBLIC_DECISION_STAGE_ORDER.find(
     ({ traceId }) => statuses[traceId] === "in_progress",
@@ -536,6 +559,7 @@ function makeTraderMessage(
 ): DispatchMessage | null {
   const decision = renderableTradeDecision(event);
   if (!decision && !hasRationale) return null;
+  if (!decision && isAnalysisOnlyEvent(event)) return null;
   const currentStage = currentStageFromTrace(event, Boolean(decision));
   if (!decision && currentStage !== null && currentStage < 3) return null;
   if (!decision) {
@@ -691,14 +715,19 @@ function makeStrategy(
   stats: FollowStatsSnapshot | undefined,
   hasRationale: boolean,
   executable: boolean,
+  analysisOnlyComplete: boolean,
 ): DispatchStrategy {
   const decision = renderableTradeDecision(group.latestDecision);
   const ticker = `$${group.symbol}`;
 
   if (!decision) {
-    const actionLabel = hasRationale ? "分析中" : "等待中";
+    const actionLabel = analysisOnlyComplete ? "已完成" : hasRationale ? "分析中" : "等待中";
     const name = hasRationale ? "尚未决策" : "暂无决策更新";
-    const meta = hasRationale ? "分析进行中 · 等待交易方案" : "等待真实分析写入";
+    const meta = analysisOnlyComplete
+      ? "观察分析已完成 · 不生成交易方案"
+      : hasRationale
+        ? "分析进行中 · 等待交易方案"
+        : "等待真实分析写入";
 
     return {
       action: "pending",
@@ -792,7 +821,9 @@ function makeProgress(
   now: number,
   hasRenderableTradeDecision: boolean,
   hasRationale: boolean,
+  analysisOnlyComplete: boolean,
 ) {
+  if (analysisOnlyComplete) return `${minutesBetween(group.startedAt, now)} 分钟闭环`;
   if (!hasRenderableTradeDecision) {
     const currentStage = currentStageFromTrace(group.latestDecision, hasRenderableTradeDecision);
     if (currentStage) return `当前进行到阶段 ${currentStage}`;
@@ -847,7 +878,9 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
     const hasTradeDecision = Boolean(tradeDecision);
     const hasRationale = hasEventRationale(latest);
     const hasMemoryLoop = hasMemoryLoopRationale(latest);
-    const status = hasTradeDecision ? "done" : hasRationale ? "active" : "pending";
+    const analysisOnlyComplete = hasAnalysisOnlyCompletion(latest);
+    const status =
+      hasTradeDecision || analysisOnlyComplete ? "done" : hasRationale ? "active" : "pending";
     const symbolMapping = resolveSymbolMapping(group.symbol);
     const executable =
       group.candidateType === "symbol" &&
@@ -874,7 +907,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       originalUrl,
       sourceLabel: originalUrl ? evidence?.source : undefined,
       startedAt: formatTime(group.startedAt),
-      progress: makeProgress(group, now, hasTradeDecision, hasRationale),
+      progress: makeProgress(group, now, hasTradeDecision, hasRationale, analysisOnlyComplete),
       intensity: ranking.intensity,
       topicRanking: formatTopicRanking({
         symbol: group.symbol,
@@ -898,6 +931,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         ctx.outcomeDict,
         ctx.stageStatusDict,
         latest,
+        isAnalysisOnlyEvent(latest),
       ),
       messages: makeMessages(group, ctx.locale, now, hasRationale, ctx.outcomeDict, ctx.roundDict),
       strategy: makeStrategy(
@@ -905,6 +939,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         ctx.followStatsByRecordId?.[recordId],
         hasRationale,
         executable,
+        analysisOnlyComplete,
       ),
       defaultCollapsed: index > 0,
     };

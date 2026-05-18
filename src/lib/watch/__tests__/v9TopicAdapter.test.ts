@@ -659,6 +659,79 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.trigger.text).toBe("市场当前处于多空拉锯但空头证据更扎实的阶段。");
   });
 
+  it("marks completed analysis-only records closed instead of leaving progress at stage 3", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+    const eventTs = now - 12 * 60_000;
+    const [topic] = mapTopics({
+      events: [
+        {
+          ...event,
+          ts: eventTs,
+          payload: {
+            ...event.payload,
+            recordId: "market-complete",
+            symbol: "MARKET",
+            candidateType: "market_overview",
+            candidateKey: "market_overview:zh_CN:2026-05-13",
+            displayTitle: "今日大盘综述",
+            executable: false,
+            analysisSummary: "今日大盘分析已完成。",
+            tradeDecision: null,
+            rationaleByMember: {
+              research_lead: "多空观点已经完成汇总。",
+              risk_lead: "风险边界已经完成审查。",
+            },
+            stageTrace: [
+              {
+                stageId: "analyst_inputs",
+                status: "done",
+                observedAt: new Date(eventTs - 240_000).toISOString(),
+              },
+              {
+                stageId: "research_lead",
+                status: "done",
+                observedAt: new Date(eventTs - 180_000).toISOString(),
+              },
+              {
+                stageId: "trade_decision",
+                status: "done",
+                observedAt: new Date(eventTs - 120_000).toISOString(),
+              },
+              {
+                stageId: "risk_lead",
+                status: "done",
+                observedAt: new Date(eventTs - 60_000).toISOString(),
+              },
+              {
+                stageId: "record_write",
+                status: "done",
+                observedAt: new Date(eventTs - 30_000).toISOString(),
+              },
+              {
+                stageId: "public_timeline",
+                status: "done",
+                observedAt: new Date(eventTs).toISOString(),
+              },
+            ],
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.status).toBe("done");
+    expect(topic.progress).toBe("12 分钟闭环");
+    expect(topic.stages.slice(0, 4).map((stage) => stage.status)).toEqual([
+      "done",
+      "done",
+      "done",
+      "done",
+    ]);
+    expect(topic.messages.some((message) => message.typing)).toBe(false);
+  });
+
   it("renders partial stage trace as a monotonic current in-progress stage", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
