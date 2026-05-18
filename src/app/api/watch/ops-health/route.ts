@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { buildDecisionOpsDeepDiagnostics } from "@/lib/team/decisionOpsDeepDiagnostics";
+import { buildDecisionOpsFreshness } from "@/lib/team/decisionOpsFreshness";
 import {
   buildDecisionOpsHealthDetails,
   summarizeDecisionOpsHealth,
@@ -32,7 +33,8 @@ export async function GET(request: Request) {
   const includeDetails = url.searchParams.get("details") === "1";
   const includeReconciliation = url.searchParams.get("reconcile") === "1";
   const includeDeepDiagnostics = url.searchParams.get("deep") === "1";
-  const needsDecisionRecords = includeReconciliation || includeDeepDiagnostics;
+  const includeFreshness = url.searchParams.get("freshness") === "1";
+  const needsDecisionRecords = includeReconciliation || includeDeepDiagnostics || includeFreshness;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
@@ -40,7 +42,8 @@ export async function GET(request: Request) {
     needsDecisionRecords ? readAllDecisionRecords(500, locale) : Promise.resolve([]),
   ]);
   const queueReadiness = getPmDecisionQueueReadiness();
-  const publicEvents = includeReconciliation ? publicPmEventsFromRecords(decisionRecords) : [];
+  const publicEvents =
+    includeReconciliation || includeFreshness ? publicPmEventsFromRecords(decisionRecords) : [];
 
   return NextResponse.json(
     {
@@ -68,6 +71,15 @@ export async function GET(request: Request) {
               runs,
               records: decisionRecords,
               providerTelemetry: summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 }),
+            }),
+          }
+        : {}),
+      ...(includeFreshness
+        ? {
+            freshness: buildDecisionOpsFreshness({
+              jobs,
+              runs,
+              publicEvents,
             }),
           }
         : {}),
