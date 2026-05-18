@@ -2573,3 +2573,60 @@ retry timing when it is present.
 - Production not touched.
 
 [DOC-HINT: B43 makes KV-backed refresh locks return expiry metadata so locked/refreshing responses can drive visible-session retry timing instead of returning null nextAllowedAt.]
+
+# B44-B47 ops quality next implementation report
+
+Date: 2026-05-18
+
+## Scope
+
+B44-B47 continues the B-line internal quality layer. This batch does not change public layout,
+candidate ranking, PM pipeline execution, or production deployment.
+
+## Changes
+
+- `src/lib/team/pmDecisionJobQueue.ts`
+  - Adds `getPmDecisionQueueReadiness()` so protected diagnostics can report whether jobs are
+    inline-only or queue-enabled.
+  - Keeps durable queue execution strictly opt-in via `PM_DECISION_QUEUE_ENABLED=true`.
+- `src/lib/team/decisionOpsHealth.ts`
+  - Adds `job_zero_output` degraded alert for succeeded jobs that wrote zero public records.
+  - Adds bounded recent job/run detail builders for operator diagnostics.
+- `src/app/api/watch/ops-health/route.ts`
+  - Returns `queueReadiness` to authorized callers.
+  - Adds optional `details=1` recent job/run diagnostics while preserving `no-store` and auth.
+- `src/lib/team/memoryLoopEvidence.ts`
+  - Adds a quantitative `learningSignal` with `none | weak | moderate | strong` strength.
+  - Adds the signal to memory-loop prompt context without changing no-history public-output
+    guardrails.
+- `src/lib/team/evidenceDispatcher.ts`
+  - Keeps KV-timeout memory fallback aligned with the expanded `MemoryContext` contract.
+- `docs/superpowers/plans/2026-05-18-b44-b47-ops-quality-next.md`
+  - Captures the batch scope and production boundary.
+
+## Red / Green
+
+- Red tests first:
+  - queue readiness export missing
+  - ops recent details export missing
+  - zero-output success alert missing
+  - memory learning signal missing
+- Green target test:
+  - `npx vitest run src/lib/team/__tests__/pmDecisionJobQueue.test.ts src/lib/team/__tests__/decisionOpsHealth.test.ts src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/memoryLoopEvidence.test.ts`: PASS, 4 files / 26 tests.
+
+## Verify
+
+- `npm run test:watch-pipeline`: PASS, 56 files / 345 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- No public UI visual change.
+- No queue auto-enable and no auto-retry behavior added.
+- No local Vercel CLI deploy, because the local CLI identity is not the Claw42 project identity.
+- Production not touched.
+
+[DOC-HINT: B44-B47 adds protected queue readiness, recent ops details, zero-output job alerts, and memory-loop learning signal quantification without changing public watch layout or PM execution behavior.]

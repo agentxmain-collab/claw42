@@ -6,6 +6,19 @@ import type { Locale } from "@/i18n/types";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 import { cleanPublicDecisionText } from "@/lib/watch/publicContentGuardrails";
 
+export type MemoryLearningSignalStrength = "none" | "weak" | "moderate" | "strong";
+
+export interface MemoryLearningSignal {
+  score: number;
+  strength: MemoryLearningSignalStrength;
+  basis: {
+    sameSymbolResolved: number;
+    crossSymbolResolved: number;
+    hasUsableReviewNote: boolean;
+    sampleSizeCaution: boolean;
+  };
+}
+
 export interface MemoryContext {
   historicalCount: number | null;
   symbolHistoricalCount: number | null;
@@ -24,6 +37,7 @@ export interface MemoryContext {
   }>;
   lastReviewNotes: string | null;
   sampleSizeCaution: boolean;
+  learningSignal: MemoryLearningSignal;
   error?: "kv_unavailable" | "no_history";
 }
 
@@ -87,6 +101,9 @@ export async function fetchMemoryContext(
     if (learningRecords.length === 0) {
       return emptyMemoryContext("no_history");
     }
+    const lastReviewNotes =
+      latestMemoryLoopNote(usableRecords) ?? latestMemoryLoopNote(crossSymbolRecords);
+    const sampleSizeCaution = learningRecords.length < SAMPLE_SIZE_CAUTION_THRESHOLD;
 
     return {
       historicalCount: learningRecords.length,
@@ -97,9 +114,14 @@ export async function fetchMemoryContext(
         ...usableRecords.map((record) => similarSetupFromRecord(record, "same_symbol")),
         ...crossSymbolRecords.map((record) => similarSetupFromRecord(record, "cross_symbol")),
       ].slice(0, SIMILAR_SETUP_LIMIT),
-      lastReviewNotes:
-        latestMemoryLoopNote(usableRecords) ?? latestMemoryLoopNote(crossSymbolRecords),
-      sampleSizeCaution: learningRecords.length < SAMPLE_SIZE_CAUTION_THRESHOLD,
+      lastReviewNotes,
+      sampleSizeCaution,
+      learningSignal: learningSignalFor({
+        sameSymbolResolved: usableRecords.length,
+        crossSymbolResolved: crossSymbolRecords.length,
+        hasUsableReviewNote: Boolean(lastReviewNotes),
+        sampleSizeCaution,
+      }),
     };
   } catch {
     return emptyMemoryContext("kv_unavailable");
@@ -188,6 +210,7 @@ export function formatMemoryContextForPrompt(context: MemoryContext) {
 
   return [
     `Historical samples: ${context.historicalCount}`,
+    `Memory signal: ${context.learningSignal.strength} (score=${context.learningSignal.score})`,
     `Current-symbol samples: ${context.symbolHistoricalCount ?? 0}`,
     `Cross-symbol samples: ${context.crossSymbolHistoricalCount}`,
     `Outcome distribution: wins=${distribution.wins}, losses=${distribution.losses}, open=${distribution.openTrades}`,
@@ -219,8 +242,44 @@ function emptyMemoryContext(error: MemoryContext["error"]): MemoryContext {
     similarSetups: [],
     lastReviewNotes: null,
     sampleSizeCaution: true,
+    learningSignal: learningSignalFor({
+      sameSymbolResolved: 0,
+      crossSymbolResolved: 0,
+      hasUsableReviewNote: false,
+      sampleSizeCaution: true,
+    }),
     error,
   };
+}
+
+function learningSignalFor({
+  sameSymbolResolved,
+  crossSymbolResolved,
+  hasUsableReviewNote,
+  sampleSizeCaution,
+}: MemoryLearningSignal["basis"]): MemoryLearningSignal {
+  const sameSymbolScore = Math.min(50, sameSymbolResolved * 12);
+  const crossSymbolScore = Math.min(20, crossSymbolResolved * 4);
+  const reviewScore = hasUsableReviewNote ? 20 : 0;
+  const confidenceScore = !sampleSizeCaution ? 10 : 0;
+  const score = Math.min(100, sameSymbolScore + crossSymbolScore + reviewScore + confidenceScore);
+  return {
+    score,
+    strength: learningSignalStrength(score),
+    basis: {
+      sameSymbolResolved,
+      crossSymbolResolved,
+      hasUsableReviewNote,
+      sampleSizeCaution,
+    },
+  };
+}
+
+function learningSignalStrength(score: number): MemoryLearningSignalStrength {
+  if (score >= 70) return "strong";
+  if (score >= 40) return "moderate";
+  if (score > 0) return "weak";
+  return "none";
 }
 
 async function fetchCrossSymbolLearningRecords(

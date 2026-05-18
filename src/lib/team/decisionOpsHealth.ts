@@ -6,6 +6,7 @@ export type DecisionOpsHealthAlert =
   | "queue_stale_running"
   | "queue_exhausted"
   | "queue_failed"
+  | "job_zero_output"
   | "run_failed"
   | "quality_blocking";
 
@@ -32,6 +33,7 @@ export interface DecisionOpsHealthSummary {
     overdueRetry: number;
     exhaustedFailed: number;
     staleRunning: number;
+    zeroOutputSuccess: number;
     oldestQueuedAgeMs: number | null;
     oldestRunningAgeMs: number | null;
   };
@@ -51,6 +53,60 @@ export interface DecisionOpsHealthSummary {
   };
   alerts: DecisionOpsHealthAlert[];
   alertDetails: DecisionOpsHealthAlertDetail[];
+}
+
+export interface DecisionOpsHealthDetails {
+  schemaVersion: 1;
+  recentJobs: DecisionOpsHealthJobDetail[];
+  recentRuns: DecisionOpsHealthRunDetail[];
+}
+
+export interface DecisionOpsHealthJobDetail {
+  id: string;
+  status: PmDecisionJobStatus;
+  kind: PmDecisionJobRecord["kind"];
+  triggerSource: PmDecisionJobRecord["triggerSource"];
+  locale: PmDecisionJobRecord["locale"];
+  symbol: string | null;
+  candidateType: string | null;
+  candidateKey: string | null;
+  createdAt: string;
+  updatedAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  attemptCount: number;
+  maxAttempts: number;
+  nextRunAt: string | null;
+  lastError: string | null;
+  outputCount: number;
+  decisionRecordIds: string[];
+  auditEventCount: number;
+}
+
+export interface DecisionOpsHealthRunDetail {
+  id: string;
+  status: DecisionRunStatus;
+  triggerSource: DecisionRunRecord["triggerSource"];
+  locale: DecisionRunRecord["locale"];
+  symbol: string;
+  candidateType: string;
+  candidateKey: string;
+  startedAt: string;
+  completedAt: string | null;
+  durationMs: number | null;
+  decisionRecordId: string | null;
+  publicTimelineEventId: string | null;
+  skipReason: string | null;
+  error: string | null;
+  quality: {
+    score: number;
+    publishable: boolean;
+    warningCount: number;
+    warnings: string[];
+    blockingWarnings: string[];
+    leakCount: number;
+    duplicateRationaleCount: number;
+  } | null;
 }
 
 const QUEUE_RUNNING_STALE_MS = 30 * 60_000;
@@ -80,6 +136,9 @@ export function summarizeDecisionOpsHealth({
   const exhaustedFailed = jobs.filter(
     (job) => job.status === "failed" && job.nextRunAt === null,
   ).length;
+  const zeroOutputSuccess = jobs.filter(
+    (job) => job.status === "succeeded" && job.outputCount === 0,
+  ).length;
   const overdueRetry = jobs.filter((job) => {
     if (job.status !== "queued" && job.status !== "failed") return false;
     return isPastOrNow(job.nextRunAt, now);
@@ -96,6 +155,7 @@ export function summarizeDecisionOpsHealth({
     staleRunning,
     failedJobs: queueCounts.failed,
     exhaustedFailed,
+    zeroOutputSuccess,
     failedRuns: runCounts.failed,
     qualityBlocked: qualityBlocked.length,
   });
@@ -115,6 +175,7 @@ export function summarizeDecisionOpsHealth({
       overdueRetry,
       exhaustedFailed,
       staleRunning,
+      zeroOutputSuccess,
       oldestQueuedAgeMs: oldestJobAgeMs(
         jobs.filter((job) => job.status === "queued"),
         "createdAt",
@@ -145,11 +206,35 @@ export function summarizeDecisionOpsHealth({
   };
 }
 
+export function buildDecisionOpsHealthDetails({
+  jobs,
+  runs,
+  limit = 20,
+}: {
+  jobs: readonly PmDecisionJobRecord[];
+  runs: readonly DecisionRunRecord[];
+  limit?: number;
+}): DecisionOpsHealthDetails {
+  const boundedLimit = Math.max(1, Math.min(100, Math.floor(limit)));
+  return {
+    schemaVersion: 1,
+    recentJobs: [...jobs]
+      .sort((a, b) => safeTime(b.updatedAt) - safeTime(a.updatedAt))
+      .slice(0, boundedLimit)
+      .map(jobDetailFromRecord),
+    recentRuns: [...runs]
+      .sort((a, b) => safeTime(b.startedAt) - safeTime(a.startedAt))
+      .slice(0, boundedLimit)
+      .map(runDetailFromRecord),
+  };
+}
+
 function buildAlertDetails({
   overdueRetry,
   staleRunning,
   failedJobs,
   exhaustedFailed,
+  zeroOutputSuccess,
   failedRuns,
   qualityBlocked,
 }: {
@@ -157,6 +242,7 @@ function buildAlertDetails({
   staleRunning: number;
   failedJobs: number;
   exhaustedFailed: number;
+  zeroOutputSuccess: number;
   failedRuns: number;
   qualityBlocked: number;
 }): DecisionOpsHealthAlertDetail[] {
@@ -198,6 +284,16 @@ function buildAlertDetails({
     });
   }
 
+  if (zeroOutputSuccess > 0) {
+    details.push({
+      alert: "job_zero_output",
+      severity: "degraded",
+      count: zeroOutputSuccess,
+      action:
+        "Succeeded jobs wrote no public records; inspect decision run skipReason and quality before replay.",
+    });
+  }
+
   if (failedRuns > 0) {
     details.push({
       alert: "run_failed",
@@ -218,6 +314,60 @@ function buildAlertDetails({
   }
 
   return details;
+}
+
+function jobDetailFromRecord(job: PmDecisionJobRecord): DecisionOpsHealthJobDetail {
+  return {
+    id: job.id,
+    status: job.status,
+    kind: job.kind,
+    triggerSource: job.triggerSource,
+    locale: job.locale,
+    symbol: job.symbol,
+    candidateType: job.candidate?.candidateType ?? null,
+    candidateKey: job.candidate?.candidateKey ?? null,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
+    startedAt: job.startedAt,
+    completedAt: job.completedAt,
+    attemptCount: job.attemptCount,
+    maxAttempts: job.maxAttempts,
+    nextRunAt: job.nextRunAt,
+    lastError: job.lastError,
+    outputCount: job.outputCount,
+    decisionRecordIds: [...job.decisionRecordIds],
+    auditEventCount: job.auditEventCount,
+  };
+}
+
+function runDetailFromRecord(run: DecisionRunRecord): DecisionOpsHealthRunDetail {
+  return {
+    id: run.id,
+    status: run.status,
+    triggerSource: run.triggerSource,
+    locale: run.locale,
+    symbol: run.symbol,
+    candidateType: run.candidate.candidateType,
+    candidateKey: run.candidate.candidateKey,
+    startedAt: run.startedAt,
+    completedAt: run.completedAt,
+    durationMs: durationMsForRun(run),
+    decisionRecordId: run.decisionRecordId,
+    publicTimelineEventId: run.publicTimelineEventId,
+    skipReason: run.skipReason,
+    error: run.error,
+    quality: run.quality
+      ? {
+          score: run.quality.score,
+          publishable: run.quality.publishable,
+          warningCount: run.quality.warningCount,
+          warnings: [...run.quality.warnings],
+          blockingWarnings: [...run.quality.blockingWarnings],
+          leakCount: run.quality.leakCount,
+          duplicateRationaleCount: run.quality.duplicateRationaleCount,
+        }
+      : null,
+  };
 }
 
 function statusFromAlerts(alertDetails: readonly DecisionOpsHealthAlertDetail[]) {
@@ -253,14 +403,19 @@ function oldestJobAgeMs(
 }
 
 function durationMsForRuns(runs: readonly DecisionRunRecord[]) {
-  return runs
-    .map((run) => {
-      const startedAt = Date.parse(run.startedAt);
-      const completedAt = Date.parse(run.completedAt ?? "");
-      if (!Number.isFinite(startedAt) || !Number.isFinite(completedAt)) return null;
-      return Math.max(0, completedAt - startedAt);
-    })
-    .filter((value): value is number => typeof value === "number");
+  return runs.map(durationMsForRun).filter((value): value is number => typeof value === "number");
+}
+
+function durationMsForRun(run: DecisionRunRecord) {
+  const startedAt = Date.parse(run.startedAt);
+  const completedAt = Date.parse(run.completedAt ?? "");
+  if (!Number.isFinite(startedAt) || !Number.isFinite(completedAt)) return null;
+  return Math.max(0, completedAt - startedAt);
+}
+
+function safeTime(value: string | null | undefined) {
+  const timestamp = Date.parse(value ?? "");
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function percentile(values: readonly number[], ratio: number) {

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
-import { summarizeDecisionOpsHealth } from "@/lib/team/decisionOpsHealth";
+import {
+  buildDecisionOpsHealthDetails,
+  summarizeDecisionOpsHealth,
+} from "@/lib/team/decisionOpsHealth";
+import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
 import { readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
 
@@ -18,6 +22,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const locale = localeFromRequestUrl(url, request.headers.get("accept-language"));
   const limit = normalizeLimit(url.searchParams.get("limit"));
+  const includeDetails = url.searchParams.get("details") === "1";
+  const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
     readDecisionRuns({ locale, limit }),
@@ -28,6 +34,10 @@ export async function GET(request: Request) {
       ok: true,
       locale,
       health: summarizeDecisionOpsHealth({ jobs, runs }),
+      queueReadiness: getPmDecisionQueueReadiness(),
+      ...(includeDetails
+        ? { details: buildDecisionOpsHealthDetails({ jobs, runs, limit: detailLimit }) }
+        : {}),
     },
     {
       headers: {
@@ -48,4 +58,10 @@ function normalizeLimit(value: string | null) {
   const parsed = Number(value ?? "");
   if (!Number.isFinite(parsed)) return DEFAULT_LIMIT;
   return Math.max(1, Math.min(MAX_LIMIT, Math.floor(parsed)));
+}
+
+function normalizeDetailLimit(value: string | null) {
+  const parsed = Number(value ?? "");
+  if (!Number.isFinite(parsed)) return 20;
+  return Math.max(1, Math.min(100, Math.floor(parsed)));
 }

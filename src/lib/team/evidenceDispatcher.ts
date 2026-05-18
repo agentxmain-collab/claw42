@@ -415,6 +415,16 @@ async function fetchMemoryContextWithTimeout(symbol: string, locale?: Locale) {
           similarSetups: [],
           lastReviewNotes: null,
           sampleSizeCaution: true,
+          learningSignal: {
+            score: 0,
+            strength: "none",
+            basis: {
+              sameSymbolResolved: 0,
+              crossSymbolResolved: 0,
+              hasUsableReviewNote: false,
+              sampleSizeCaution: true,
+            },
+          },
           error: "kv_unavailable",
         }),
       5_000,
