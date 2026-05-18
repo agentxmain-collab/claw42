@@ -125,9 +125,11 @@ export function reconcileTimelineEventsForDisplay({
   next: PublicTimelineEvent[];
   mode: "replace" | "append";
 }) {
+  if (mode === "replace" && current.length > 0 && next.length === 0) return current;
   const merged =
-    mode === "replace" ? mergeTimelineEvents([], next) : mergeTimelineEvents(current, next);
-  if (mode === "replace" && current.length > 0 && merged.length === 0) return current;
+    mode === "replace" && current.length === 0
+      ? mergeTimelineEvents([], next)
+      : mergeTimelineEvents(current, next);
   return merged;
 }
 

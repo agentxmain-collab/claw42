@@ -3080,3 +3080,59 @@ same local day, and where completed analysis-only records kept looking stuck at 
   Claw42 project identity.
 
 [DOC-HINT: B76 aligns market_overview dedupe to candidate local-day keys and separates analysis-only completion from symbol trade-card safety.]
+
+# B77 workbench display stability report
+
+Date: 2026-05-18
+
+## Scope
+
+Fixes the remaining visible-session refresh issue where the workbench could briefly collapse from
+multiple cards to one card when a short-window refresh returned only the currently active record.
+
+## First-hand Root Cause
+
+- `AgentWatchBoard.reconcileTimelineEventsForDisplay()` previously treated every non-empty
+  `mode: "replace"` payload as authoritative.
+- That protected only the fully empty transient case. It did not protect against a valid but
+  incomplete short-window replacement, such as a 60-minute SSE/primary payload returning one live
+  card while the fallback/hydration path still had the broader card set.
+- Result: a stable 3-card display could be replaced by 1 card, then re-expanded later when the wider
+  payload arrived. This matches the user-visible "卡片消失后出现 / 现在分析只有一条" behavior.
+
+## Changes
+
+- `src/modules/agent-watch/AgentWatchBoard.tsx`
+  - Initial load still accepts the incoming payload.
+  - Empty replacement payloads keep the current array reference.
+  - Non-empty replacement payloads now merge into the current display set, so newer records update
+    in place while existing visible cards are retained across transient short-window refreshes.
+
+## Tests Added
+
+- `src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`
+  - Adds a regression case where current display has BTC/ETH/SOL and a replacement payload only has
+    newer BTC. Expected display remains BTC/ETH/SOL.
+
+## Verify
+
+- Red before fix: the new short-window subset regression failed with only `["btc"]`.
+- Target green: `npm exec vitest run src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx` PASS, 2 files / 21 tests.
+- `npm run format:check`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run test:watch-pipeline`: PASS, 62 files / 372 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This does not change PM pipeline, candidate ranking, hydration, refresh cadence, SSE endpoint, or
+  UI layout.
+- No local Vercel deploy from this worktree because local Vercel CLI identity is not the Claw42
+  project identity.
+- Production not touched.
+
+[DOC-HINT: B77 keeps visible workbench cards stable across transient short-window replacement payloads.]
