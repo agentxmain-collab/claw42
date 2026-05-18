@@ -2732,3 +2732,57 @@ selection, refresh cadence, or production deployment.
 - Production not touched.
 
 [DOC-HINT: B52-B55 adds protected read-only job/run/timeline reconciliation, non-executable repair proposals, canary readiness, and 24h/7d history health rollups.]
+
+# B56-B59 deep ops diagnostics implementation report
+
+Date: 2026-05-18
+
+## Scope
+
+B56-B59 adds protected, read-only deep diagnostics for PM decision quality and model/provider
+stability. This batch does not change PM execution, prompts, candidate selection, refresh cadence,
+public UI, or production deployment.
+
+## Changes
+
+- `src/lib/team/decisionOpsDeepDiagnostics.ts`
+  - Adds quality summary: scored runs, publishable runs, quality-blocked runs, average score,
+    warning counts, blocking warning counts, low evidence/role coverage, leak, and duplicate
+    rationale counters.
+  - Adds provider/model summary from persisted decision records and stage trace provider labels.
+  - Attaches in-process provider telemetry summary when requested.
+  - Adds replay dry-run proposals for zero-output jobs, quality-blocked runs, and failed runs.
+    Proposals are recommendations only; every proposal has `executable: false`.
+  - Adds recent-vs-previous quality regression snapshot with stable run-id windows.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `?deep=1` response field.
+  - Shares decision-record loading with `?reconcile=1` so default response remains unchanged.
+- `package.json`
+  - Adds the new deep diagnostics test to `test:watch-pipeline`.
+
+## Red / Green
+
+- Red tests first:
+  - missing deep diagnostics module import
+  - ops-health did not read decision records or return deep diagnostics when requested
+- Green target test:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsDeepDiagnostics.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 2 files / 7 tests.
+
+## Verify
+
+- `npm run test:watch-pipeline`: PASS, 58 files / 356 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS after rerunning alone; the first build attempt raced with `verify:a11y`
+  over `.next` and hit a transient Next `_document` lookup error.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- The new diagnostics remain behind the existing ops-health secret gate.
+- No replay, repair, prompt, or provider-routing behavior is executed by this endpoint.
+- No local Vercel CLI deploy, because the local CLI identity remains outside the Claw42 project
+  identity.
+- Production not touched.
+
+[DOC-HINT: B56-B59 adds protected read-only quality/provider diagnostics, regression snapshots, and non-executable replay dry-run recommendations for PM decision ops.]
