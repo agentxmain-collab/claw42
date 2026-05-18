@@ -2786,3 +2786,58 @@ public UI, or production deployment.
 - Production not touched.
 
 [DOC-HINT: B56-B59 adds protected read-only quality/provider diagnostics, regression snapshots, and non-executable replay dry-run recommendations for PM decision ops.]
+
+# B60-B63 freshness watchdog implementation report
+
+Date: 2026-05-18
+
+## Scope
+
+B60-B63 adds a protected, read-only freshness watchdog for PM decision operations. This batch
+tracks whether cron jobs, successful decision runs, and public PM timeline output are still fresh,
+without changing PM execution, queueing, candidate selection, public UI, refresh cadence, or
+production deployment.
+
+## Changes
+
+- `src/lib/team/decisionOpsFreshness.ts`
+  - Adds a schema-versioned freshness summary with `healthy` / `degraded` / `critical` status.
+  - Tracks latest cron job, latest successful PM run, and latest public PM event timestamps.
+  - Emits deterministic alerts for missing or stale cron jobs, successful runs, and public PM
+    output.
+  - Uses 4h degraded and 8h critical thresholds for all three freshness signals.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `?freshness=1` response field behind the existing ops-health secret gate.
+  - Reuses persisted decision records only when freshness or reconciliation diagnostics are
+    requested.
+- `package.json`
+  - Adds the new freshness watchdog test to `test:watch-pipeline`.
+
+## Red / Green
+
+- Red tests first:
+  - missing freshness watchdog module import
+  - ops-health did not read public records or return freshness diagnostics when requested
+- Green target test:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsFreshness.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 2 files / 7 tests.
+
+## Verify
+
+- `npm run test:watch-pipeline`: PASS, 59 files / 359 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- The endpoint only reads existing job/run/record state; it does not repair, replay, enqueue, or
+  write KV.
+- The public PM freshness signal is derived through the same public event projection used by
+  existing diagnostics, so it detects the actual user-visible output gap rather than only backend
+  completion.
+- No local Vercel CLI deploy, because the local CLI identity remains outside the Claw42 project
+  identity.
+- Production not touched.
+
+[DOC-HINT: B60-B63 adds protected read-only freshness watchdog diagnostics for cron jobs, successful PM runs, and public PM timeline output.]
