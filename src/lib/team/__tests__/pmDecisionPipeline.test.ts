@@ -781,6 +781,86 @@ describe("runPmDecisionPipeline", () => {
     );
   });
 
+  it("blocks public timeline publishing when the persisted record is below the quality floor", async () => {
+    const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
+      void run;
+    });
+    const repeated = "Cautious view repeats without a distinct role-specific contribution.";
+    const recordStrategyDecisionRecord = vi.fn(async (record: StrategyDecisionRecord) => ({
+      ...record,
+      contributorIds: ["chart_analyst", "news_analyst"] as TeamMemberId[],
+      analystInputs: [
+        {
+          memberId: "chart_analyst" as const,
+          direction: "wait" as const,
+          confidence: 0.25,
+          rationale: repeated,
+          oneLineSummary: repeated,
+          detailedRationale: repeated,
+          dataStatus: "ok" as const,
+          evidenceIds: [],
+          rounds: [],
+        },
+        {
+          memberId: "news_analyst" as const,
+          direction: "neutral" as const,
+          confidence: 0.3,
+          rationale: repeated,
+          oneLineSummary: repeated,
+          detailedRationale: repeated,
+          dataStatus: "ok" as const,
+          evidenceIds: [],
+          rounds: [],
+        },
+      ],
+      tradeDecision: null,
+    }));
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+    const candidate = marketOverviewCandidate({ locale: "zh_CN", now });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "user_visit_trigger",
+        candidate,
+        recentMarketSignals: [signal(), signal({ symbol: "ETH", payload: { change24h: 3.2 } })],
+        recentNewsEvidence: [evidence({ symbol: [] })],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack("MARKET"),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Market breadth and liquidity remain constructive",
+          confidence: 0.68,
+        })),
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord: vi.fn(async (record: StrategyDecisionRecord) => {
+          void record;
+        }),
+        upsertDecisionRun,
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+    expect(upsertDecisionRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: "skipped",
+        skipReason: "public_quality_gate_failed",
+        quality: expect.objectContaining({
+          warnings: expect.arrayContaining(["low_quality_score"]),
+          blockingWarnings: expect.arrayContaining(["low_quality_score"]),
+          publishable: false,
+        }),
+      }),
+    );
+  });
+
   it("does not fabricate a trade card when a symbol candidate has no current price", async () => {
     const recordStrategyDecisionRecord = vi.fn(async (record) => record);
     const generateTradeDecision = vi.fn(async () => decision());

@@ -2374,3 +2374,71 @@ Changes:
 - GitHub checks before this report-link commit: `verify` PASS, `deploy preview` PASS, Vercel deployment READY.
 
 [DOC-HINT: B31-B34 turns queue retry, visible-session freshness, public model-quality gating, and memory-loop prompt hygiene into enforced code paths with regression coverage.]
+
+# B35-B38 batch — ops health, quality floor, memory lesson ranking
+
+Date: 2026-05-18
+
+Worktree / branch:
+
+- `/tmp/claw42-b35-b38-quality-ops`
+- `feature/b35-b38-quality-ops`
+- Base: `57a48bd` (`B31-B34 watch stability and model quality hardening (#134)`)
+
+## Scope completed
+
+B35 Queue / cron / run observability:
+
+- Added `src/lib/team/decisionOpsHealth.ts`, a pure read-only summarizer for PM decision queue jobs and decision run ledgers.
+- Added alert coverage for overdue retry jobs, stale running jobs, failed queue jobs, failed runs, and blocking quality warnings.
+- Added protected read-only route `GET /api/watch/ops-health`.
+- Route auth accepts `Authorization: Bearer <OPS_HEALTH_SECRET|CRON_SECRET>` or `x-claw42-ops-secret`.
+- Unauthorized requests return 401 and do not read ledgers.
+
+B36-B37 Quality gate deepening:
+
+- `DecisionQualityReport` now emits public-blocking `stage_trace_gap` when later pipeline stages show progress while earlier required public stages are missing or pending.
+- Very low public score records now emit public-blocking `low_quality_score`.
+- Pipeline regression confirms low-score records are persisted for internal audit but skipped from public watch history with `skipReason=public_quality_gate_failed`.
+
+B38 Memory loop strengthening:
+
+- Memory-loop historical samples now rank usable memory-loop lessons before lower-value recent samples.
+- Ranking favors same-symbol, resolved, safe memory-loop notes while keeping newest tie-break behavior.
+- Prompt context now explicitly says memory_loop should explain what changed historical outcomes and avoid repeating current-market analysis.
+
+## Files changed
+
+- `package.json`
+- `docs/superpowers/plans/2026-05-18-b35-b38-quality-ops.md`
+- `src/app/api/watch/ops-health/route.ts`
+- `src/app/api/watch/ops-health/route.test.ts`
+- `src/lib/team/decisionOpsHealth.ts`
+- `src/lib/team/__tests__/decisionOpsHealth.test.ts`
+- `src/lib/team/decisionQuality.ts`
+- `src/lib/team/__tests__/decisionQuality.test.ts`
+- `src/lib/team/__tests__/pmDecisionPipeline.test.ts`
+- `src/lib/team/memoryLoopEvidence.ts`
+- `src/lib/team/__tests__/memoryLoopEvidence.test.ts`
+
+## Verify
+
+- `npx vitest run src/lib/team/__tests__/decisionOpsHealth.test.ts src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionQuality.test.ts src/lib/team/__tests__/pmDecisionPipeline.test.ts src/lib/team/__tests__/memoryLoopEvidence.test.ts`: PASS, 29 tests
+- `npm run verify`: PASS, includes format/typecheck/lint/agent-ip/news/news tests/watch-pipeline/chat-v3/execution-safety
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+
+## PR / Preview
+
+- PR: https://github.com/agentxmain-collab/claw42/pull/135
+- Commit: `305b5ac24da87062cf8c8f93fe0d05b6505cfe53`
+- Preview: https://claw42-site-git-feature-b35-4f26f5-agentxmain-collabs-projects.vercel.app
+- Bypass: https://claw42-site-git-feature-b35-4f26f5-agentxmain-collabs-projects.vercel.app/?_vercel_share=jQt1erN9KkavbuvjpfWnO3ZIGqtjRaR1
+- Vercel deployment: `dpl_5YYtBnbVSnGg4wqDn62yDqVENhHr`, READY
+- GitHub checks: `verify` PASS, `deploy preview` PASS, Vercel PASS
+- Preview timeline API smoke: `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=1440&limit=100` returned `status=200`, `eventsLength=3`, first event `pm_decision`, first symbol `MARKET`.
+- Preview ops-health auth smoke: `/api/watch/ops-health?locale=zh_CN` without secret returned `status=401`.
+- Production: not touched
+
+[DOC-HINT: B35-B38 adds protected ops health visibility, blocks public records with stage gaps or very low public quality score, and makes memory_loop retrieve higher-value historical lessons instead of repeating current analysis.]
