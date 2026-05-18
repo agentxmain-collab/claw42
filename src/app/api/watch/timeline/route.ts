@@ -6,6 +6,8 @@ import { buildWatchTimelinePayload } from "@/lib/watch/publicTimelinePayload";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+const MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60;
+
 function numberParam(value: string | null, fallback: number) {
   if (!value) return fallback;
   const parsed = Number(value);
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   const windowMinutes = Math.min(
     Math.max(numberParam(url.searchParams.get("windowMinutes"), 60), 1),
-    720,
+    MAX_PUBLIC_TIMELINE_WINDOW_MINUTES,
   );
   const limit = Math.min(Math.max(numberParam(url.searchParams.get("limit"), 30), 1), 100);
   const before = strictNumberParam(url.searchParams.get("before"), Date.now());
