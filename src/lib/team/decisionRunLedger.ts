@@ -166,7 +166,9 @@ function readMemoryRuns(locale: Locale, limit: number) {
 }
 
 function sortRuns(runs: DecisionRunRecord[]) {
-  return [...runs].sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt));
+  return [...runs].sort(
+    (a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt) || a.id.localeCompare(b.id),
+  );
 }
 
 function hasKvConfig() {

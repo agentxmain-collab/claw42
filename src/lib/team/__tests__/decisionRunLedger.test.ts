@@ -89,4 +89,13 @@ describe("decisionRunLedger", () => {
       publicTimelineEventId: "public:pm:BTC:1778407200000",
     });
   });
+
+  it("orders same-startedAt runs with a stable id tie-breaker", async () => {
+    await upsertDecisionRun(run({ id: "run:a" }));
+    await upsertDecisionRun(run({ id: "run:b" }));
+
+    const runs = await readDecisionRuns({ locale: "zh_CN" });
+
+    expect(runs.map((item) => item.id)).toEqual(["run:a", "run:b"]);
+  });
 });

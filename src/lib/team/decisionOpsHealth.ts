@@ -7,6 +7,7 @@ export type DecisionOpsHealthAlert =
   | "queue_exhausted"
   | "queue_failed"
   | "job_zero_output"
+  | "run_stale_running"
   | "run_failed"
   | "quality_blocking";
 
@@ -44,11 +45,16 @@ export interface DecisionOpsHealthSummary {
     skipped: number;
     failed: number;
     qualityBlocked: number;
+    staleRunning: number;
+    oldestRunningAgeMs: number | null;
     p95DurationMs: number | null;
     latestStartedAt: string | null;
   };
   quality: {
     blockedPublications: number;
+    scoredRuns: number;
+    publishableRuns: number;
+    averageScore: number | null;
     warningCounts: Record<string, number>;
   };
   alerts: DecisionOpsHealthAlert[];
@@ -110,6 +116,7 @@ export interface DecisionOpsHealthRunDetail {
 }
 
 const QUEUE_RUNNING_STALE_MS = 30 * 60_000;
+const RUN_RUNNING_STALE_MS = 30 * 60_000;
 
 export function summarizeDecisionOpsHealth({
   jobs,
@@ -149,6 +156,15 @@ export function summarizeDecisionOpsHealth({
     return Number.isFinite(startedAtMs) && now - startedAtMs >= QUEUE_RUNNING_STALE_MS;
   }).length;
   const qualityBlocked = runs.filter((run) => run.skipReason === "public_quality_gate_failed");
+  const staleRunningRuns = runs.filter((run) => {
+    if (run.status !== "running") return false;
+    const startedAtMs = Date.parse(run.startedAt);
+    return Number.isFinite(startedAtMs) && now - startedAtMs >= RUN_RUNNING_STALE_MS;
+  });
+  const qualityScores = runs
+    .map((run) => run.quality?.score)
+    .filter((score): score is number => typeof score === "number" && Number.isFinite(score));
+  const publishableRuns = runs.filter((run) => run.quality?.publishable === true).length;
   const warningCounts = warningCountsFor(runs);
   const alertDetails = buildAlertDetails({
     overdueRetry,
@@ -156,6 +172,7 @@ export function summarizeDecisionOpsHealth({
     failedJobs: queueCounts.failed,
     exhaustedFailed,
     zeroOutputSuccess,
+    staleRunningRuns: staleRunningRuns.length,
     failedRuns: runCounts.failed,
     qualityBlocked: qualityBlocked.length,
   });
@@ -194,11 +211,16 @@ export function summarizeDecisionOpsHealth({
       skipped: runCounts.skipped,
       failed: runCounts.failed,
       qualityBlocked: qualityBlocked.length,
+      staleRunning: staleRunningRuns.length,
+      oldestRunningAgeMs: oldestRunAgeMs(staleRunningRuns, now),
       p95DurationMs: percentile(durationMsForRuns(runs), 0.95),
       latestStartedAt: latestStartedAt(runs),
     },
     quality: {
       blockedPublications: qualityBlocked.length,
+      scoredRuns: qualityScores.length,
+      publishableRuns,
+      averageScore: averageScore(qualityScores),
       warningCounts,
     },
     alerts,
@@ -235,6 +257,7 @@ function buildAlertDetails({
   failedJobs,
   exhaustedFailed,
   zeroOutputSuccess,
+  staleRunningRuns,
   failedRuns,
   qualityBlocked,
 }: {
@@ -243,6 +266,7 @@ function buildAlertDetails({
   failedJobs: number;
   exhaustedFailed: number;
   zeroOutputSuccess: number;
+  staleRunningRuns: number;
   failedRuns: number;
   qualityBlocked: number;
 }): DecisionOpsHealthAlertDetail[] {
@@ -291,6 +315,16 @@ function buildAlertDetails({
       count: zeroOutputSuccess,
       action:
         "Succeeded jobs wrote no public records; inspect decision run skipReason and quality before replay.",
+    });
+  }
+
+  if (staleRunningRuns > 0) {
+    details.push({
+      alert: "run_stale_running",
+      severity: "critical",
+      count: staleRunningRuns,
+      action:
+        "Decision run ledger has stale running records; inspect provider logs and stageStatus before widening cadence.",
     });
   }
 
@@ -411,6 +445,20 @@ function durationMsForRun(run: DecisionRunRecord) {
   const completedAt = Date.parse(run.completedAt ?? "");
   if (!Number.isFinite(startedAt) || !Number.isFinite(completedAt)) return null;
   return Math.max(0, completedAt - startedAt);
+}
+
+function oldestRunAgeMs(runs: readonly DecisionRunRecord[], now: number) {
+  const ages = runs
+    .map((run) => Date.parse(run.startedAt))
+    .filter(Number.isFinite)
+    .map((timestamp) => Math.max(0, now - timestamp));
+  return ages.length ? Math.max(...ages) : null;
+}
+
+function averageScore(scores: readonly number[]) {
+  if (scores.length === 0) return null;
+  const total = scores.reduce((sum, score) => sum + score, 0);
+  return Math.round(total / scores.length);
 }
 
 function safeTime(value: string | null | undefined) {

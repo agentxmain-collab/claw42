@@ -2630,3 +2630,50 @@ candidate ranking, PM pipeline execution, or production deployment.
 - Production not touched.
 
 [DOC-HINT: B44-B47 adds protected queue readiness, recent ops details, zero-output job alerts, and memory-loop learning signal quantification without changing public watch layout or PM execution behavior.]
+
+# B48-B51 ledger stability implementation report
+
+Date: 2026-05-18
+
+## Scope
+
+B48-B51 tightens private ledger ordering and protected ops-health signals. This batch does not touch
+public UI layout, PM prompt/execution, candidate selection, refresh behavior, or production.
+
+## Changes
+
+- `src/lib/watch/pmDecisionJobLedger.ts`
+  - Adds deterministic `id` tie-breaking when jobs have the same `createdAt`.
+- `src/lib/team/decisionRunLedger.ts`
+  - Adds deterministic `id` tie-breaking when runs have the same `startedAt`.
+- `src/lib/team/decisionOpsHealth.ts`
+  - Adds `run_stale_running` critical alert for stale private decision-run records.
+  - Adds `runs.staleRunning` and `runs.oldestRunningAgeMs`.
+  - Adds `quality.scoredRuns`, `quality.publishableRuns`, and `quality.averageScore`.
+- `docs/superpowers/plans/2026-05-18-b48-b51-ledger-stability.md`
+  - Captures the narrow batch plan and validation scope.
+
+## Red / Green
+
+- Red tests first:
+  - same-timestamp PM jobs ordered by insertion side effect instead of stable key
+  - same-startedAt decision runs ordered by insertion side effect instead of stable key
+  - ops-health did not expose stale private running runs
+- Green target test:
+  - `npx vitest run src/lib/watch/__tests__/pmDecisionJobLedger.test.ts src/lib/team/__tests__/decisionRunLedger.test.ts src/lib/team/__tests__/decisionOpsHealth.test.ts`: PASS, 3 files / 7 tests.
+
+## Verify
+
+- `npm run test:watch-pipeline`: PASS, 56 files / 347 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- No public payload schema change.
+- No automatic retry or queue behavior change.
+- Production not touched.
+
+[DOC-HINT: B48-B51 makes private job/run ledgers deterministically ordered and adds run-level stale/quality trend signals to protected ops-health diagnostics.]
