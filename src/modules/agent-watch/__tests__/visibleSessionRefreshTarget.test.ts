@@ -167,6 +167,19 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     ).toEqual([]);
   });
 
+  test("keeps existing display cards when a replacement payload is a transient short-window subset", () => {
+    const current = [pmEvent("btc", 200), pmEvent("eth", 150), pmEvent("sol", 100)];
+    const next = [pmEvent("btc", 300)];
+
+    expect(
+      reconcileTimelineEventsForDisplay({
+        current,
+        next,
+        mode: "replace",
+      }).map((event) => (event.payload.kind === "pm_decision" ? event.payload.recordId : event.id)),
+    ).toEqual(["btc", "eth", "sol"]);
+  });
+
   test("does not persist no-signal visible refresh results as session-complete", () => {
     expect(shouldPersistVisibleSessionRefreshResult("no_signal")).toBe(false);
     expect(retryDelayForVisibleSessionRefresh({ status: "no_signal", nextAllowedAt: null })).toBe(
