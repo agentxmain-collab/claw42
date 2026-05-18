@@ -6,6 +6,7 @@ const readDecisionRunsMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
 const projectDecisionRecordToPublicEventMock = vi.hoisted(() => vi.fn());
 const summarizeProviderTelemetryMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsCronAuditMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -25,6 +26,10 @@ vi.mock("@/lib/watch/publicTimelineProjection", () => ({
 
 vi.mock("@/lib/team/providerTelemetry", () => ({
   summarizeProviderTelemetry: summarizeProviderTelemetryMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsCronAudit", () => ({
+  buildDecisionOpsCronAudit: buildDecisionOpsCronAuditMock,
 }));
 
 function job() {
@@ -103,6 +108,37 @@ describe("/api/watch/ops-health", () => {
         threshold: 0.9,
         alert: false,
       },
+    });
+    buildDecisionOpsCronAuditMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "healthy",
+      schedule: {
+        path: "/api/cron/strategy-replay",
+        expression: "0 */3 * * *",
+        expectedIntervalMs: 10_800_000,
+      },
+      queue: {
+        mode: "inline",
+        enabled: false,
+        topic: "pm-decision-jobs",
+        cronJobs: {
+          total: 1,
+          queued: 1,
+          running: 0,
+          succeeded: 0,
+          failed: 0,
+          retryBacklog: 0,
+          overdueRetry: 0,
+          exhaustedFailed: 0,
+          staleRunning: 0,
+          zeroOutputSuccess: 0,
+        },
+      },
+      latest: {
+        cronJob: null,
+        cronRun: null,
+      },
+      issues: [],
     });
   });
 
@@ -399,6 +435,37 @@ describe("/api/watch/ops-health", () => {
           totalRuns: 1,
           publishableRuns: 1,
         }),
+      },
+    });
+  });
+
+  it("returns optional cron audit diagnostics for authorized callers", async () => {
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&cronAudit=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(buildDecisionOpsCronAuditMock).toHaveBeenCalledWith({
+      jobs: [job()],
+      runs: [run()],
+      queueReadiness: expect.objectContaining({
+        schemaVersion: 1,
+        mode: "inline",
+        topic: "pm-decision-jobs",
+      }),
+    });
+    expect(payload.cronAudit).toMatchObject({
+      schemaVersion: 1,
+      status: "healthy",
+      schedule: {
+        path: "/api/cron/strategy-replay",
+        expression: "0 */3 * * *",
+      },
+      queue: {
+        mode: "inline",
       },
     });
   });
