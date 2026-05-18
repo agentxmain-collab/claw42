@@ -16,6 +16,7 @@ import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueue
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
 import { buildDecisionOpsSlo } from "@/lib/team/decisionOpsSlo";
+import { buildDecisionOpsStability } from "@/lib/team/decisionOpsStability";
 import { buildDecisionOpsSummary } from "@/lib/team/decisionOpsSummary";
 import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
 import { summarizeProviderTelemetry } from "@/lib/team/providerTelemetry";
@@ -52,6 +53,8 @@ export async function GET(request: Request) {
   const includeModelQuality = url.searchParams.get("modelQuality") === "1";
   const includeLifecycle = url.searchParams.get("lifecycle") === "1";
   const includeOpsSummary = url.searchParams.get("opsSummary") === "1";
+  const includeStability = url.searchParams.get("stability") === "1";
+  const ledgerLimit = includeStability ? MAX_LIMIT : limit;
   const needsDecisionRecords =
     includeReconciliation ||
     includeDeepDiagnostics ||
@@ -63,11 +66,12 @@ export async function GET(request: Request) {
     includeRecovery ||
     includeModelQuality ||
     includeLifecycle ||
-    includeOpsSummary;
+    includeOpsSummary ||
+    includeStability;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
-    readPmDecisionJobs({ locale, limit }),
-    readDecisionRuns({ locale, limit }),
+    readPmDecisionJobs({ locale, limit: ledgerLimit }),
+    readDecisionRuns({ locale, limit: ledgerLimit }),
     needsDecisionRecords ? readAllDecisionRecords(500, locale) : Promise.resolve([]),
   ]);
   const queueReadiness = getPmDecisionQueueReadiness();
@@ -79,7 +83,8 @@ export async function GET(request: Request) {
     includeSlo ||
     includeRunbook ||
     includeRecovery ||
-    includeOpsSummary
+    includeOpsSummary ||
+    includeStability
       ? publicPmEventsFromRecords(decisionRecords)
       : [];
   const providerTelemetry =
@@ -217,6 +222,15 @@ export async function GET(request: Request) {
       ...(includeLifecycle
         ? {
             lifecycle,
+          }
+        : {}),
+      ...(includeStability
+        ? {
+            stability: buildDecisionOpsStability({
+              jobs,
+              runs,
+              publicEvents,
+            }),
           }
         : {}),
       ...(includeOpsSummary && runbook && recoveryPolicy && modelQuality && lifecycle
