@@ -1,12 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
-import { buildWatchTimelinePayload } from "@/lib/watch/publicTimelinePayload";
+import {
+  buildWatchTimelinePayload,
+  MAX_PUBLIC_TIMELINE_WINDOW_MINUTES,
+} from "@/lib/watch/publicTimelinePayload";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60;
 
 function numberParam(value: string | null, fallback: number) {
   if (!value) return fallback;
