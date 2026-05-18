@@ -4,12 +4,23 @@ import type { PmDecisionJobRecord, PmDecisionJobStatus } from "@/lib/watch/pmDec
 export type DecisionOpsHealthAlert =
   | "queue_overdue_retry"
   | "queue_stale_running"
+  | "queue_exhausted"
   | "queue_failed"
   | "run_failed"
   | "quality_blocking";
 
+export type DecisionOpsHealthStatus = "healthy" | "degraded" | "critical";
+
+export interface DecisionOpsHealthAlertDetail {
+  alert: DecisionOpsHealthAlert;
+  severity: Exclude<DecisionOpsHealthStatus, "healthy">;
+  count: number;
+  action: string;
+}
+
 export interface DecisionOpsHealthSummary {
   schemaVersion: 1;
+  status: DecisionOpsHealthStatus;
   generatedAt: string;
   queue: {
     total: number;
@@ -19,6 +30,7 @@ export interface DecisionOpsHealthSummary {
     failed: number;
     retryBacklog: number;
     overdueRetry: number;
+    exhaustedFailed: number;
     staleRunning: number;
     oldestQueuedAgeMs: number | null;
     oldestRunningAgeMs: number | null;
@@ -38,6 +50,7 @@ export interface DecisionOpsHealthSummary {
     warningCounts: Record<string, number>;
   };
   alerts: DecisionOpsHealthAlert[];
+  alertDetails: DecisionOpsHealthAlertDetail[];
 }
 
 const QUEUE_RUNNING_STALE_MS = 30 * 60_000;
@@ -64,6 +77,9 @@ export function summarizeDecisionOpsHealth({
     "failed",
   ]);
   const retryBacklog = jobs.filter((job) => job.status === "failed" && job.nextRunAt).length;
+  const exhaustedFailed = jobs.filter(
+    (job) => job.status === "failed" && job.nextRunAt === null,
+  ).length;
   const overdueRetry = jobs.filter((job) => {
     if (job.status !== "queued" && job.status !== "failed") return false;
     return isPastOrNow(job.nextRunAt, now);
@@ -75,20 +91,19 @@ export function summarizeDecisionOpsHealth({
   }).length;
   const qualityBlocked = runs.filter((run) => run.skipReason === "public_quality_gate_failed");
   const warningCounts = warningCountsFor(runs);
-  const alerts = Array.from(
-    new Set<DecisionOpsHealthAlert>(
-      [
-        overdueRetry > 0 ? "queue_overdue_retry" : null,
-        staleRunning > 0 ? "queue_stale_running" : null,
-        queueCounts.failed > 0 ? "queue_failed" : null,
-        runCounts.failed > 0 ? "run_failed" : null,
-        qualityBlocked.length > 0 ? "quality_blocking" : null,
-      ].filter((alert): alert is DecisionOpsHealthAlert => Boolean(alert)),
-    ),
-  );
+  const alertDetails = buildAlertDetails({
+    overdueRetry,
+    staleRunning,
+    failedJobs: queueCounts.failed,
+    exhaustedFailed,
+    failedRuns: runCounts.failed,
+    qualityBlocked: qualityBlocked.length,
+  });
+  const alerts = alertDetails.map((detail) => detail.alert);
 
   return {
     schemaVersion: 1,
+    status: statusFromAlerts(alertDetails),
     generatedAt: new Date(now).toISOString(),
     queue: {
       total: jobs.length,
@@ -98,6 +113,7 @@ export function summarizeDecisionOpsHealth({
       failed: queueCounts.failed,
       retryBacklog,
       overdueRetry,
+      exhaustedFailed,
       staleRunning,
       oldestQueuedAgeMs: oldestJobAgeMs(
         jobs.filter((job) => job.status === "queued"),
@@ -125,7 +141,89 @@ export function summarizeDecisionOpsHealth({
       warningCounts,
     },
     alerts,
+    alertDetails,
   };
+}
+
+function buildAlertDetails({
+  overdueRetry,
+  staleRunning,
+  failedJobs,
+  exhaustedFailed,
+  failedRuns,
+  qualityBlocked,
+}: {
+  overdueRetry: number;
+  staleRunning: number;
+  failedJobs: number;
+  exhaustedFailed: number;
+  failedRuns: number;
+  qualityBlocked: number;
+}): DecisionOpsHealthAlertDetail[] {
+  const details: DecisionOpsHealthAlertDetail[] = [];
+
+  if (overdueRetry > 0) {
+    details.push({
+      alert: "queue_overdue_retry",
+      severity: "degraded",
+      count: overdueRetry,
+      action: "Queue has jobs whose nextRunAt is due; verify queue consumer delivery.",
+    });
+  }
+
+  if (staleRunning > 0) {
+    details.push({
+      alert: "queue_stale_running",
+      severity: "critical",
+      count: staleRunning,
+      action: "Running jobs exceeded the visibility window; inspect stale job lease recovery.",
+    });
+  }
+
+  if (exhaustedFailed > 0) {
+    details.push({
+      alert: "queue_exhausted",
+      severity: "critical",
+      count: exhaustedFailed,
+      action: "Failed jobs exhausted max attempts; review lastError before manual replay.",
+    });
+  }
+
+  if (failedJobs > 0) {
+    details.push({
+      alert: "queue_failed",
+      severity: exhaustedFailed > 0 ? "critical" : "degraded",
+      count: failedJobs,
+      action: "Queue has failed jobs; confirm retry backlog is moving and errors are not repeated.",
+    });
+  }
+
+  if (failedRuns > 0) {
+    details.push({
+      alert: "run_failed",
+      severity: "critical",
+      count: failedRuns,
+      action:
+        "Decision runs failed; inspect run error and provider telemetry before widening cadence.",
+    });
+  }
+
+  if (qualityBlocked > 0) {
+    details.push({
+      alert: "quality_blocking",
+      severity: "degraded",
+      count: qualityBlocked,
+      action: "Public quality gate blocked records; inspect warningCounts before changing prompts.",
+    });
+  }
+
+  return details;
+}
+
+function statusFromAlerts(alertDetails: readonly DecisionOpsHealthAlertDetail[]) {
+  if (alertDetails.some((detail) => detail.severity === "critical")) return "critical";
+  if (alertDetails.length > 0) return "degraded";
+  return "healthy";
 }
 
 function countByStatus<TStatus extends string>(

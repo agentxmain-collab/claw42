@@ -3,6 +3,10 @@
 import { useMemo } from "react";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import { TEAM_MEMBER_IDS, isTeamMemberId, type TeamMemberId } from "@/lib/team/teamRegistry";
+import {
+  isPublicDecisionAgentId,
+  mapPublicDecisionAgentToTeamMember,
+} from "@/lib/watch/publicDecisionAgents";
 import type {
   TeamActivitySnapshot,
   TeamActivityStatus,
@@ -60,7 +64,15 @@ export function deriveTeamActivityStatuses(
 function membersForEvent(event: PublicTimelineEvent): TeamMemberId[] {
   if (event.payload.kind === "pm_decision") {
     const members = new Set<TeamMemberId>();
-    for (const memberId of Object.keys(event.payload.rationaleByMember)) {
+    for (const agentId of Object.keys(event.payload.rationaleByAgent ?? {})) {
+      if (isPublicDecisionAgentId(agentId))
+        members.add(mapPublicDecisionAgentToTeamMember(agentId));
+    }
+    for (const agentId of Object.keys(event.payload.citationsByAgent ?? {})) {
+      if (isPublicDecisionAgentId(agentId))
+        members.add(mapPublicDecisionAgentToTeamMember(agentId));
+    }
+    for (const memberId of Object.keys(event.payload.rationaleByMember ?? {})) {
       if (isTeamMemberId(memberId)) members.add(memberId);
     }
     for (const memberId of Object.keys(event.payload.citationsByMember ?? {})) {
@@ -71,7 +83,12 @@ function membersForEvent(event: PublicTimelineEvent): TeamMemberId[] {
   }
 
   if (event.payload.kind === "team_discussion") {
-    return event.payload.turns.map((turn) => turn.memberId);
+    return event.payload.turns
+      .map((turn) => {
+        if (turn.memberId) return turn.memberId;
+        return turn.agentId ? mapPublicDecisionAgentToTeamMember(turn.agentId) : null;
+      })
+      .filter((memberId): memberId is TeamMemberId => Boolean(memberId));
   }
 
   return [];

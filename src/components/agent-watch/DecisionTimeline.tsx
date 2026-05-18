@@ -8,6 +8,7 @@ import { useTeamActivityStatus } from "@/lib/team/useTeamActivityStatus";
 import { getTeamMember, type TeamMemberId } from "@/lib/team/teamRegistry";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import { mapPublicDecisionAgentToTeamMember } from "@/lib/watch/publicDecisionAgents";
 import type { MarketTickerPayload } from "@/modules/agent-watch/types";
 import { CitationChip, EvidenceMapProvider } from "./CitationChip";
 import { ProcessAccordion } from "./ProcessAccordion";
@@ -22,6 +23,13 @@ function formatTime(ts: number) {
 
 function memberName(memberId: TeamMemberId, team: ReturnType<typeof useI18n>["t"]["team"]) {
   return team[memberId]?.displayName ?? getTeamMember(memberId).id;
+}
+
+function memberIdForTurn(
+  turn: Extract<PublicTimelineEvent["payload"], { kind: "team_discussion" }>["turns"][number],
+) {
+  if (turn.memberId) return turn.memberId;
+  return turn.agentId ? mapPublicDecisionAgentToTeamMember(turn.agentId) : "pm";
 }
 
 function EventBody({
@@ -68,9 +76,9 @@ function EventBody({
     return (
       <div className="space-y-3 rounded-2xl border border-violet-300/20 bg-violet-950/[0.10] p-4">
         {event.payload.turns.map((turn, index) => (
-          <div key={`${turn.memberId}-${index}`} className="rounded-xl bg-black/20 p-3">
+          <div key={`${memberIdForTurn(turn)}-${index}`} className="rounded-xl bg-black/20 p-3">
             <div className="text-xs font-bold text-violet-200">
-              {memberName(turn.memberId, t.team)}
+              {memberName(memberIdForTurn(turn), t.team)}
             </div>
             <p className="mt-1 text-sm leading-relaxed text-white/75">{turn.text}</p>
             <div className="mt-2 flex flex-wrap gap-2">

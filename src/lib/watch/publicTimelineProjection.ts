@@ -3,6 +3,7 @@ import type {
   PublicDecisionStageTraceEntry,
   PublicTimelineEvent,
   PublicTimelineImportance,
+  PublicTradeDecision,
 } from "@/lib/watch/publicTimelineEvent";
 import { PUBLIC_IMPORTANCE_ORDER } from "@/lib/watch/publicTimelineEvent";
 import type { Locale } from "@/i18n/types";
@@ -21,6 +22,10 @@ import {
   cleanPublicDecisionText,
   containsPublicContentLeak,
 } from "@/lib/watch/publicContentGuardrails";
+import {
+  mapTeamMemberToPublicDecisionAgent,
+  type PublicDecisionAgentId,
+} from "@/lib/watch/publicDecisionAgents";
 import { normalizePublicDecisionStageTrace } from "@/lib/watch/publicDecisionStageContract";
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
 
@@ -51,7 +56,9 @@ export function publicStageTraceFromRecord(
       stageId: stage.stageId,
       status: stage.status,
       observedAt: stage.observedAt,
-      ...(stage.memberIds?.length ? { memberIds: stage.memberIds } : {}),
+      ...(stage.memberIds?.length
+        ? { agentIds: stage.memberIds.map(mapTeamMemberToPublicDecisionAgent) }
+        : {}),
     })),
     options,
   );
@@ -126,13 +133,15 @@ function normalizePublicSymbols(symbols: string[]) {
   return Array.from(new Set(symbols.map(normalizePublicSymbol).filter(Boolean))) as string[];
 }
 
-function normalizePublicTradeDecision(
+export function normalizePublicTradeDecision(
   decision: StrategyDecisionRecord["tradeDecision"] | null | undefined,
-): StrategyDecisionRecord["tradeDecision"] | null {
+): PublicTradeDecision | null {
   if (!decision) return null;
   if (containsPublicContentLeak(`${decision.riskNote}\n${decision.invalidatesIf}`)) return null;
+  const { generatedBy: _generatedBy, ...publicDecision } = decision;
+  void _generatedBy;
   return {
-    ...decision,
+    ...publicDecision,
     symbol: normalizePublicSymbol(decision.symbol) ?? "UNKNOWN",
   };
 }
@@ -245,8 +254,8 @@ function pmDecisionPayload(
     executable: executableForRecord(indexedRecord, symbol),
     ...(analysisSummary ? { analysisSummary } : {}),
     tradeDecision,
-    rationaleByMember: derived.rationaleByMember,
-    citationsByMember: derived.citationsByMember,
+    rationaleByAgent: derived.rationaleByAgent,
+    citationsByAgent: derived.citationsByAgent,
     rounds: derived.rounds,
     stageTrace: publicStageTraceFromRecord(indexedRecord, {
       hasRenderableTradeDecision: Boolean(tradeDecision),
@@ -277,8 +286,8 @@ export function projectDecisionRecordToPublicEvent(
     executable: executableForRecord(record, symbol),
     ...(analysisSummary ? { analysisSummary } : {}),
     tradeDecision,
-    rationaleByMember: derived.rationaleByMember,
-    citationsByMember: derived.citationsByMember,
+    rationaleByAgent: derived.rationaleByAgent,
+    citationsByAgent: derived.citationsByAgent,
     rounds: derived.rounds,
     stageTrace: publicStageTraceFromRecord(record, {
       hasRenderableTradeDecision: Boolean(tradeDecision),
@@ -314,6 +323,7 @@ function publicRoundsForInput(
 ): PublicDecisionRoundEntry[] {
   const memberId = String(input.memberId);
   if (!isTeamMemberId(memberId)) return [];
+  const agentId = mapTeamMemberToPublicDecisionAgent(memberId);
 
   const sourceRounds = Array.isArray(input.rounds) ? input.rounds : [];
   if (sourceRounds.length > 0) {
@@ -336,7 +346,7 @@ function publicRoundsForInput(
           : [];
         return {
           round: Number.isFinite(round.round) && round.round > 0 ? Math.round(round.round) : 1,
-          memberId,
+          agentId,
           direction: round.direction,
           confidence: round.confidence,
           rationale,
@@ -359,7 +369,7 @@ function publicRoundsForInput(
   return [
     {
       round: 1,
-      memberId,
+      agentId,
       direction: input.direction,
       confidence: input.confidence,
       rationale,
@@ -425,14 +435,14 @@ function detailForRound(detail: string | undefined, rationale: string) {
 }
 
 export function publicDecisionProcessFromRecord(record: StrategyDecisionRecord | null): {
-  rationaleByMember: Partial<Record<TeamMemberId, string>>;
-  citationsByMember: Partial<Record<TeamMemberId, string[]>>;
+  rationaleByAgent: Partial<Record<PublicDecisionAgentId, string>>;
+  citationsByAgent: Partial<Record<PublicDecisionAgentId, string[]>>;
   rounds?: PublicDecisionRoundEntry[];
 } {
-  const rationaleByMember: Partial<Record<TeamMemberId, string>> = {};
-  const citationsByMember: Partial<Record<TeamMemberId, string[]>> = {};
+  const rationaleByAgent: Partial<Record<PublicDecisionAgentId, string>> = {};
+  const citationsByAgent: Partial<Record<PublicDecisionAgentId, string[]>> = {};
   const rounds: PublicDecisionRoundEntry[] = [];
-  if (!record) return { rationaleByMember, citationsByMember };
+  if (!record) return { rationaleByAgent, citationsByAgent };
 
   const analystInputs = Array.isArray(record.analystInputs) ? record.analystInputs : [];
   for (const input of analystInputs) {
@@ -449,19 +459,20 @@ export function publicDecisionProcessFromRecord(record: StrategyDecisionRecord |
 
     const inputRounds = publicRoundsForInput(input);
     rounds.push(...inputRounds);
+    const agentId = mapTeamMemberToPublicDecisionAgent(memberId);
     const latestRound = inputRounds.reduce<PublicDecisionRoundEntry | undefined>(
       (latest, current) => (!latest || current.round >= latest.round ? current : latest),
       undefined,
     );
     const rationale = latestRound?.rationale ?? "";
-    if (rationale) rationaleByMember[memberId] = rationale;
+    if (rationale) rationaleByAgent[agentId] = rationale;
     const evidenceIds = latestRound?.evidenceIds?.length ? latestRound.evidenceIds : [];
-    if (evidenceIds.length > 0) citationsByMember[memberId] = evidenceIds;
+    if (evidenceIds.length > 0) citationsByAgent[agentId] = evidenceIds;
   }
 
   return {
-    rationaleByMember,
-    citationsByMember,
+    rationaleByAgent,
+    citationsByAgent,
     ...(rounds.length > 0 ? { rounds } : {}),
   };
 }
@@ -476,6 +487,7 @@ function evidenceIdsForPayload(metaEvidenceIds: string[], payload: PublicTimelin
 
   return uniqueEvidenceIds([
     ...metaEvidenceIds,
+    ...Object.values(payload.citationsByAgent ?? {}).flatMap((ids) => ids ?? []),
     ...Object.values(payload.citationsByMember ?? {}).flatMap((ids) => ids ?? []),
     ...(payload.rounds ?? []).flatMap((round) => round.evidenceIds ?? []),
     ...(payload.tradeDecision?.evidenceIds ?? []),

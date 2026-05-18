@@ -7,10 +7,19 @@ import {
 } from "@/lib/watch/publicTimelineProjection";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
-import type { TeamMemberId } from "@/lib/team/teamRegistry";
+import { TEAM_MEMBER_IDS, type TeamMemberId } from "@/lib/team/teamRegistry";
+import { mapTeamMemberToPublicDecisionAgent } from "@/lib/watch/publicDecisionAgents";
 import type { StreamEntry } from "@/modules/agent-watch/types";
 
 const now = Date.now();
+const publicAgent = mapTeamMemberToPublicDecisionAgent;
+
+function expectNoInternalTeamIds(value: unknown) {
+  const json = JSON.stringify(value);
+  for (const memberId of TEAM_MEMBER_IDS.filter((id) => id !== "pm")) {
+    expect(json).not.toContain(memberId);
+  }
+}
 
 const tradeDecision: TradeDecision = {
   id: "trade-1",
@@ -297,21 +306,29 @@ describe("publicTimelineProjection", () => {
     expect(event?.payload.kind === "pm_decision" ? event.payload.tradeDecision?.id : null).toBe(
       "trade-1",
     );
+    expect(
+      event?.payload.kind === "pm_decision" ? "generatedBy" in event.payload.tradeDecision! : true,
+    ).toBe(false);
     expect(event?.evidenceIds).toEqual(["ev_1", "ev_2"]);
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
     expect(event.payload.symbol).toBe("BTC");
     expect(event.payload.executable).toBe(true);
-    expect(event.payload.rationaleByMember.fundamental_analyst).toContain("spot demand");
-    expect(event.payload.rationaleByMember.research_lead).toContain("long thesis");
-    expect(event.payload.rationaleByMember.risk_lead).toContain("Risk lead");
-    expect(event.payload.citationsByMember?.fundamental_analyst).toEqual(["ev_1"]);
-    expect(event.payload.citationsByMember?.research_lead).toEqual(["ev_2"]);
-    expect(event.payload.citationsByMember?.risk_lead).toBeUndefined();
-    expect(event.payload.rounds?.map((round) => `${round.memberId}:${round.round}`)).toEqual([
-      "fundamental_analyst:1",
-      "research_lead:1",
-      "risk_lead:1",
+    expect(event.payload.rationaleByAgent?.[publicAgent("fundamental_analyst")]).toContain(
+      "spot demand",
+    );
+    expect(event.payload.rationaleByAgent?.[publicAgent("research_lead")]).toContain("long thesis");
+    expect(event.payload.rationaleByAgent?.[publicAgent("risk_lead")]).toContain("Risk lead");
+    expect(event.payload.citationsByAgent?.[publicAgent("fundamental_analyst")]).toEqual(["ev_1"]);
+    expect(event.payload.citationsByAgent?.[publicAgent("research_lead")]).toEqual(["ev_2"]);
+    expect(event.payload.citationsByAgent?.[publicAgent("risk_lead")]).toBeUndefined();
+    expect(event.payload.rounds?.map((round) => `${round.agentId}:${round.round}`)).toEqual([
+      `${publicAgent("fundamental_analyst")}:1`,
+      `${publicAgent("research_lead")}:1`,
+      `${publicAgent("risk_lead")}:1`,
     ]);
+    expect(event.payload.rationaleByMember).toBeUndefined();
+    expect(event.payload.citationsByMember).toBeUndefined();
+    expectNoInternalTeamIds(event.payload);
   });
 
   it("removes backstage wording from PM public projection without raw fallback", () => {
@@ -384,13 +401,15 @@ describe("publicTimelineProjection", () => {
 
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
     expect(event.payload.tradeDecision).toBeNull();
-    expect(event.payload.rationaleByMember.onchain_analyst).toBeUndefined();
-    expect(event.payload.rationaleByMember.memory_loop).toBeUndefined();
-    expect(event.payload.citationsByMember?.onchain_analyst).toBeUndefined();
-    expect(event.payload.citationsByMember?.memory_loop).toBeUndefined();
-    expect(event.payload.rationaleByMember.chart_analyst).toContain("反抽失败");
-    expect(event.payload.citationsByMember?.chart_analyst).toEqual(["ev_clean"]);
-    expect(event.payload.rounds?.map((round) => round.memberId)).toEqual(["chart_analyst"]);
+    expect(event.payload.rationaleByAgent?.[publicAgent("onchain_analyst")]).toBeUndefined();
+    expect(event.payload.rationaleByAgent?.[publicAgent("memory_loop")]).toBeUndefined();
+    expect(event.payload.citationsByAgent?.[publicAgent("onchain_analyst")]).toBeUndefined();
+    expect(event.payload.citationsByAgent?.[publicAgent("memory_loop")]).toBeUndefined();
+    expect(event.payload.rationaleByAgent?.[publicAgent("chart_analyst")]).toContain("反抽失败");
+    expect(event.payload.citationsByAgent?.[publicAgent("chart_analyst")]).toEqual(["ev_clean"]);
+    expect(event.payload.rounds?.map((round) => round.agentId)).toEqual([
+      publicAgent("chart_analyst"),
+    ]);
   });
 
   it("keeps watch-only PM records public and marks them non-executable", () => {
@@ -499,6 +518,7 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.displayTitle).toBe("BTC 实时行情分析");
     expect(event.payload.executable).toBe(true);
     expect(event.payload.rounds).toHaveLength(3);
+    expectNoInternalTeamIds(event.payload);
   });
 
   it("projects explicit non-symbol decision candidate metadata without dropping the record", () => {
@@ -587,13 +607,15 @@ describe("publicTimelineProjection", () => {
     const event = projectDecisionRecordToPublicEvent(pmRecord);
 
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
-    expect(event.payload.rationaleByMember.pm).toBe("BTC 拉锯仍偏多，只有跌回 104000 下方才降级。");
+    expect(event.payload.rationaleByAgent?.[publicAgent("pm")]).toBe(
+      "BTC 拉锯仍偏多，只有跌回 104000 下方才降级。",
+    );
     expect(event.payload.rounds?.[0]).toMatchObject({
-      memberId: "pm",
+      agentId: publicAgent("pm"),
       rationale: "BTC 拉锯仍偏多，只有跌回 104000 下方才降级。",
       detailedRationale: "BTC 拉锯仍偏多，只有跌回 104000 下方才降级。",
     });
-    expect(event.payload.rationaleByMember.pm).not.toContain("第二段重复解释");
+    expect(event.payload.rationaleByAgent?.[publicAgent("pm")]).not.toContain("第二段重复解释");
   });
 
   it("projects schema v2 multi-round records while keeping latest rationale maps", () => {
@@ -666,19 +688,19 @@ describe("publicTimelineProjection", () => {
     });
 
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
-    expect(event.payload.rationaleByMember.fundamental_analyst).toBe(
+    expect(event.payload.rationaleByAgent?.[publicAgent("fundamental_analyst")]).toBe(
       "Round two final fundamental view.",
     );
-    expect(event.payload.citationsByMember?.fundamental_analyst).toEqual(["ev_2"]);
+    expect(event.payload.citationsByAgent?.[publicAgent("fundamental_analyst")]).toEqual(["ev_2"]);
     expect(event.payload.rounds).toEqual([
       expect.objectContaining({
         round: 1,
-        memberId: "fundamental_analyst",
+        agentId: publicAgent("fundamental_analyst"),
         rationale: "Round one fundamental view.",
       }),
       expect.objectContaining({
         round: 2,
-        memberId: "fundamental_analyst",
+        agentId: publicAgent("fundamental_analyst"),
         rationale: "Round two final fundamental view.",
       }),
     ]);
@@ -751,9 +773,12 @@ describe("publicTimelineProjection", () => {
     });
 
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
-    expect(Object.keys(event.payload.rationaleByMember).sort()).toEqual([...members].sort());
-    expect(event.payload.citationsByMember?.pm).toEqual(["ev_1"]);
+    expect(Object.keys(event.payload.rationaleByAgent ?? {}).sort()).toEqual(
+      members.map(publicAgent).sort(),
+    );
+    expect(event.payload.citationsByAgent?.[publicAgent("pm")]).toEqual(["ev_1"]);
     expect(event.evidenceIds).toEqual(["ev_1"]);
+    expectNoInternalTeamIds(event.payload);
   });
 
   it("prefers indexed decision record trade decisions over stale entry metadata", () => {
@@ -902,8 +927,10 @@ describe("publicTimelineProjection", () => {
 
     if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
     expect(event.payload.tradeDecision?.id).toBe("trade-1");
-    expect(event.payload.rationaleByMember).toEqual({});
-    expect(event.payload.citationsByMember).toEqual({});
+    expect(event.payload.rationaleByAgent).toEqual({});
+    expect(event.payload.citationsByAgent).toEqual({});
+    expect(event.payload.rationaleByMember).toBeUndefined();
+    expect(event.payload.citationsByMember).toBeUndefined();
   });
 
   it("projects resolved PM decision outcome into the public payload", () => {
@@ -1022,7 +1049,7 @@ describe("publicTimelineProjection", () => {
         stageId: "analyst_inputs",
         status: "done",
         observedAt: new Date(now).toISOString(),
-        memberIds: ["fundamental_analyst"],
+        agentIds: [publicAgent("fundamental_analyst")],
       },
     ]);
     expect(JSON.stringify(event.payload.stageTrace)).not.toContain("durationMs");

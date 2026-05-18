@@ -2442,3 +2442,78 @@ B38 Memory loop strengthening:
 - Production: not touched
 
 [DOC-HINT: B35-B38 adds protected ops health visibility, blocks public records with stage gaps or very low public quality score, and makes memory_loop retrieve higher-value historical lessons instead of repeating current analysis.]
+
+# B39-B42 batch — quality ops runbook and regression corpus
+
+Date: 2026-05-18
+
+Worktree / branch:
+
+- `/tmp/claw42-b39-b42-quality-ops-next`
+- `feature/b39-b42-quality-ops-next`
+- Base: `169b468` (`Add bot avatar design asset (#110)`)
+
+## Scope completed
+
+B39 Ops health actionability:
+
+- `src/lib/team/decisionOpsHealth.ts` now returns a top-level `status`:
+  `healthy | degraded | critical`.
+- Ops health now includes `alertDetails[]` with severity, count, and a concrete operator action.
+- Queue health now distinguishes exhausted failed jobs via `queue.exhaustedFailed` and `queue_exhausted`.
+
+B40 Public quality regression corpus:
+
+- Added `src/lib/team/__tests__/decisionQualityRegressionCorpus.test.ts`.
+- Corpus covers the exact leakage classes from recent Dan screenshots:
+  backend data-status wording, public `wait` wording, missing-data variants, internal
+  `TeamMemberId` / role IDs, and stage trace jumps.
+- Corpus also protects watch-only market records from being blocked only because they have no trade card.
+- Follow-up root-cause fix after preview smoke: public timeline projection was still serializing
+  internal team fields in structured JSON (`rationaleByMember`, `rounds[].memberId`,
+  `stageTrace[].memberIds`, `tradeDecision.generatedBy`).
+- Added opaque public decision agent aliases (`pa_01` ... `pa_14`) for public API payloads.
+  V9/V10 clients map aliases back to team roles locally for rendering; public JSON no longer needs
+  TeamMemberId keys.
+- `pmDecisionPipeline` now writes public timeline entries with stripped public trade decisions and
+  alias-based rationale/citation maps.
+
+B41 Ops runbook:
+
+- Added `docs/operations/watch-ops-health-runbook.md`.
+- Documents protected route auth, status model, first checks, and non-goals.
+- Explicitly keeps ops diagnostics out of public UI and avoids automatic replay.
+
+B42 Normal gate wiring:
+
+- `npm run test:watch-pipeline` now includes `decisionQualityRegressionCorpus.test.ts`.
+
+## Verify
+
+- `npx vitest run src/lib/team/__tests__/decisionOpsHealth.test.ts src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionQualityRegressionCorpus.test.ts src/lib/team/__tests__/decisionQuality.test.ts`: PASS, 10 tests
+- `npx vitest run src/lib/watch/__tests__/publicTimelineProjection.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts src/lib/watch/__tests__/topicRanking.test.ts src/lib/team/__tests__/useTeamActivityStatus.test.ts src/lib/team/__tests__/decisionQualityRegressionCorpus.test.ts`: PASS, 65 tests
+- `npm run verify`: PASS, includes format/typecheck/lint/agent-ip/news/news tests/watch-pipeline/chat-v3/execution-safety
+- `npm run test:watch-pipeline`: PASS, 55 files / 330 tests
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes. Note: first run overlapped with `next build` and logged transient `.next` module errors from concurrent Next processes, but exited PASS; build was rerun separately after clearing `.next`.
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS after isolated rerun with `.next` cleared
+
+## PR / Preview
+
+- PR: https://github.com/agentxmain-collab/claw42/pull/136
+- Commits:
+  - `a6a9f5a` — `feat(watch): harden quality ops diagnostics`
+  - `626e92c` — `fix(watch): hide internal team ids from public timeline payload`
+- Preview branch alias: https://claw42-site-git-feature-b39-a30dd7-agentxmain-collabs-projects.vercel.app
+- Vercel deployment: `dpl_6TcHttSM8uoEQC8ncQ7gUzFQy1VM`, READY
+- GitHub PR checks after alias-payload follow-up: `verify`, `deploy preview`, `Vercel`, and
+  `Vercel Preview Comments` all SUCCESS.
+- Preview smoke after alias-payload follow-up:
+  `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=1440&limit=1` returned
+  `status=200`, first event `pm_decision`. The first public payload now emits
+  `rationaleByAgent`, `citationsByAgent`, `rounds[].agentId`, and
+  `stageTrace[].agentIds`; it no longer emits `rationaleByMember`, `citationsByMember`,
+  `rounds[].memberId`, `stageTrace[].memberIds`, or `tradeDecision.generatedBy`.
+- Production: not touched
+
+[DOC-HINT: B39-B42 turns ops-health into an actionable status surface and adds a public quality regression corpus plus alias-based public PM projection to prevent backend-status wording, TeamMemberId leaks, stage gaps, and watch-only trade-card regressions from returning.]

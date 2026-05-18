@@ -82,6 +82,7 @@ describe("summarizeDecisionOpsHealth", () => {
           nextRunAt: null,
         }),
         job({ id: "failed-retry", status: "failed", nextRunAt: "2026-05-18T11:58:00.000Z" }),
+        job({ id: "failed-exhausted", status: "failed", attemptCount: 3, nextRunAt: null }),
         job({ id: "succeeded", status: "succeeded", completedAt: "2026-05-18T11:45:00.000Z" }),
       ],
       runs: [
@@ -116,14 +117,16 @@ describe("summarizeDecisionOpsHealth", () => {
     });
 
     expect(summary.generatedAt).toBe("2026-05-18T12:00:00.000Z");
+    expect(summary.status).toBe("critical");
     expect(summary.queue).toMatchObject({
-      total: 5,
+      total: 6,
       queued: 2,
       running: 1,
-      failed: 1,
+      failed: 2,
       succeeded: 1,
       retryBacklog: 1,
       overdueRetry: 2,
+      exhaustedFailed: 1,
       staleRunning: 1,
       oldestQueuedAgeMs: 20 * 60_000,
     });
@@ -135,7 +138,26 @@ describe("summarizeDecisionOpsHealth", () => {
       p95DurationMs: 10 * 60_000,
     });
     expect(summary.alerts).toEqual(
-      expect.arrayContaining(["queue_overdue_retry", "queue_stale_running", "quality_blocking"]),
+      expect.arrayContaining([
+        "queue_overdue_retry",
+        "queue_stale_running",
+        "queue_exhausted",
+        "quality_blocking",
+      ]),
+    );
+    expect(summary.alertDetails).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          alert: "queue_exhausted",
+          severity: "critical",
+          count: 1,
+        }),
+        expect.objectContaining({
+          alert: "quality_blocking",
+          severity: "degraded",
+          count: 1,
+        }),
+      ]),
     );
   });
 });
