@@ -9,6 +9,7 @@ import {
   buildDecisionOpsHealthDetails,
   summarizeDecisionOpsHealth,
 } from "@/lib/team/decisionOpsHealth";
+import { buildDecisionOpsLifecycleDiagnostics } from "@/lib/team/decisionOpsLifecycleDiagnostics";
 import { buildDecisionOpsModelQuality } from "@/lib/team/decisionOpsModelQuality";
 import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
 import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueueRecoveryPolicy";
@@ -48,6 +49,7 @@ export async function GET(request: Request) {
   const includeRunbook = url.searchParams.get("runbook") === "1";
   const includeRecovery = url.searchParams.get("recovery") === "1";
   const includeModelQuality = url.searchParams.get("modelQuality") === "1";
+  const includeLifecycle = url.searchParams.get("lifecycle") === "1";
   const needsDecisionRecords =
     includeReconciliation ||
     includeDeepDiagnostics ||
@@ -57,7 +59,8 @@ export async function GET(request: Request) {
     includeQualityGate ||
     includeRunbook ||
     includeRecovery ||
-    includeModelQuality;
+    includeModelQuality ||
+    includeLifecycle;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
@@ -186,6 +189,13 @@ export async function GET(request: Request) {
             modelQuality: buildDecisionOpsModelQuality({
               qualityGate,
               deepDiagnostics,
+            }),
+          }
+        : {}),
+      ...(includeLifecycle
+        ? {
+            lifecycle: buildDecisionOpsLifecycleDiagnostics({
+              records: decisionRecords,
             }),
           }
         : {}),

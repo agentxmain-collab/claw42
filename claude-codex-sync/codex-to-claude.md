@@ -3550,3 +3550,75 @@ model-quality risk report.
 - Production not touched.
 
 [DOC-HINT: B83 adds a protected read-only model-quality risk layer on ops-health without changing prompts, provider routing, PM execution, replay, locks, or public UI.]
+
+# B84 decision lifecycle diagnostics report
+
+Date: 2026-05-19
+
+## Scope
+
+Adds a protected, read-only `lifecycle=1` diagnostics view to `/api/watch/ops-health`. This layer
+checks PM decision record lifecycle consistency: open vs resolved records, stale open decisions,
+resolution field mismatches, missing evaluation windows, and outcome distribution.
+
+## Root Cause / Gap
+
+- Existing B-line diagnostics can tell whether cron / queue / public output / model quality are
+  healthy, but they do not surface whether decision records can safely graduate into track-record
+  or memory-loop metrics.
+- B84 fills that operator gap without changing the resolution writer:
+  - identifies unresolved records whose evaluation window has elapsed
+  - catches `resolvedAt` / `resolvedOutcome` field divergence
+  - flags open trade decisions that cannot be timed because the evaluation window is missing
+  - keeps recommended actions non-executable
+
+## Changes
+
+- `src/lib/team/decisionOpsLifecycleDiagnostics.ts`
+  - New pure builder for decision lifecycle diagnostics.
+  - Status levels: `healthy`, `degraded`, `critical`.
+  - Primary issues: `resolution_field_mismatch`, `stale_open_decision`,
+    `missing_evaluation_window`.
+  - Counts open/resolved/stale/inconsistent records and resolved outcome distribution.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `lifecycle=1`.
+  - Reads decision records only when requested, then exposes only `lifecycle` by default.
+- `package.json`
+  - Adds `decisionOpsLifecycleDiagnostics.test.ts` to `test:watch-pipeline`.
+
+## Tests Added
+
+- `src/lib/team/__tests__/decisionOpsLifecycleDiagnostics.test.ts`
+  - Healthy open/resolved lifecycle state.
+  - Stale open decision after evaluation window elapsed.
+  - Resolution field mismatch where only one of `resolvedAt` / `resolvedOutcome` is present.
+- `src/app/api/watch/ops-health/route.test.ts`
+  - `?lifecycle=1` reads decision records, calls the lifecycle builder, and does not expose
+    reconciliation/freshness by default.
+
+## Verify
+
+- Red before fix:
+  - `decisionOpsLifecycleDiagnostics.test.ts` failed because the module did not exist.
+  - `ops-health route.test.ts` failed because `lifecycle=1` did not read records or call the
+    lifecycle builder.
+- Target green:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsLifecycleDiagnostics.test.ts src/app/api/watch/ops-health/route.test.ts`:
+    PASS, 2 files / 16 tests.
+- Full gates:
+  - `npm run verify`: PASS; includes format, typecheck, lint, agent-ip, news, news tests,
+    watch-pipeline 67 files / 394 tests, chat-v3-final 50 synthetic threads, execution-safety.
+  - `npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This is diagnostics only. It does not change `decisionResolution.ts`, cron resolution, PM
+  pipeline, replay, repair, queue behavior, candidate ranking, public UI, refresh cadence, SSE,
+  locks, KV writes, prompts, provider routing, or production deploy behavior.
+- Local Vercel CLI was not used because this machine is still logged into the wrong Vercel team for
+  Claw42; preview must come from GitHub/Vercel webhook after PR push.
+- Production not touched.
+
+[DOC-HINT: B84 adds a protected read-only decision lifecycle layer on ops-health without changing resolution writers, cron, PM execution, queue behavior, KV writes, or public UI.]
