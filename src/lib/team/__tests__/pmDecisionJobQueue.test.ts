@@ -75,6 +75,17 @@ describe("pmDecisionJobQueue", () => {
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
+  it("stays disabled on Vercel unless the queue feature flag is explicitly enabled", async () => {
+    const sendMessage = vi.fn();
+    const result = await publishPmDecisionJobToQueue(job(), {
+      env: { VERCEL: "1", VERCEL_ENV: "preview" },
+      sendMessage,
+    });
+
+    expect(result).toEqual({ mode: "disabled" });
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
   it("falls back cleanly when the queue service rejects a message", async () => {
     const result = await publishPmDecisionJobToQueue(job(), {
       env: { PM_DECISION_QUEUE_ENABLED: "true" },
