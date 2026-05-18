@@ -127,7 +127,7 @@ describe("resolveVisibleSessionRefreshTarget", () => {
       evidenceMap: { ev_fallback: evidence("ev_fallback") },
       oldestTs: 100,
       hasMore: true,
-      windowMinutes: 720,
+      windowMinutes: 24 * 60,
       servedAt: 300,
       nextPollMs: 30_000,
     };
@@ -141,7 +141,7 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     ).toEqual(["btc", "eth"]);
     expect(merged.oldestTs).toBe(100);
     expect(merged.hasMore).toBe(true);
-    expect(merged.windowMinutes).toBe(720);
+    expect(merged.windowMinutes).toBe(24 * 60);
     expect(merged.evidenceMap).toMatchObject({
       ev_primary: { id: "ev_primary" },
       ev_fallback: { id: "ev_fallback" },

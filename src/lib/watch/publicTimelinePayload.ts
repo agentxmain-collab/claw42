@@ -21,6 +21,8 @@ import {
   projectDecisionRecordToPublicEvent,
 } from "@/lib/watch/publicTimelineProjection";
 
+export const MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60;
+
 const MAX_EVIDENCE_MAP_ITEMS = 120;
 
 export type WatchTimelineMode = "public" | "debug";
@@ -60,6 +62,12 @@ export interface WatchTimelinePayloadOptions {
 
 export function resolveWatchTimelineNextPollMs(servedAt: number) {
   return servedAt % (3 * 60_000) < 30_000 ? 30_000 : 90_000;
+}
+
+export function resolvePublicTimelineRecordCutoff(servedAt: number, windowMinutes: number) {
+  return (
+    servedAt - Math.max(1, Math.min(windowMinutes, MAX_PUBLIC_TIMELINE_WINDOW_MINUTES)) * 60_000
+  );
 }
 
 function shouldReplaceWithRecordEvent(
@@ -182,7 +190,7 @@ export async function buildWatchTimelinePayload({
     ...Array.from(decisionRecordsById.values()),
     ...targetedRecords,
   ]);
-  const cutoff = servedAt - Math.max(1, Math.min(windowMinutes, 720)) * 60_000;
+  const cutoff = resolvePublicTimelineRecordCutoff(servedAt, windowMinutes);
   const recordEvents = Array.from(decisionRecordsForBackfill.values())
     .map(projectDecisionRecordToPublicEvent)
     .filter((event): event is PublicTimelineEvent => Boolean(event))

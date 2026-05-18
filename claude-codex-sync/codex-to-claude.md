@@ -2244,3 +2244,44 @@ This is not fixture/mock data. The missing cards are real decision records in de
 - `npm run verify:a11y`: PASS, 0 axe violations on checked routes
 
 [DOC-HINT: B29 widens the public timeline fallback window to 24h so real decision records do not disappear from the watch board before the next completed PM run replaces them.]
+
+# B.30 hotfix — align public timeline payload cap with 24h route/client window
+
+Date: 2026-05-18 09:38 CST
+
+## First-hand symptom
+
+After B29 merged to main, the new main preview deployment `dpl_Co35gAwpXhJe7FZqqj8zeWpdcTTy` still returned:
+
+- `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=1440`: `events.length = 0`
+- `/api/watch/refresh?locale=zh_CN`: `400 invalid_candidate` because status requires an explicit `symbol` or `candidateType`
+
+This means the B29 route/client change did not fully reach the actual record backfill filter.
+
+## Root cause judgement
+
+B29 changed the route max window and the board fallback request to 24h, but `buildWatchTimelinePayload()` still had an internal hard cap:
+
+```ts
+Math.min(windowMinutes, 720);
+```
+
+So even when the client asked for 1440 minutes and the route accepted it, the payload builder silently reduced the record backfill cutoff back to 12h. VVV and MARKET records remained in decision history but were still filtered out of the public payload.
+
+## Fix
+
+- `src/lib/watch/publicTimelinePayload.ts`
+  - Add exported `MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60`.
+  - Add `resolvePublicTimelineRecordCutoff()` and use it for record backfill filtering.
+- `src/app/api/watch/timeline/route.ts`
+  - Reuse the shared max-window constant instead of keeping a route-only constant.
+- `src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`
+  - Update fallback display-window expectation to 24h.
+- `src/lib/watch/__tests__/publicTimelinePayload.test.ts`
+  - Add regression coverage that 1440 minutes remains 24h and oversized windows cap at 24h, not 720 minutes.
+
+## Verify so far
+
+- `npx vitest run src/lib/watch/__tests__/publicTimelinePayload.test.ts src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`: PASS, 11 tests
+
+[DOC-HINT: B30 removes the remaining internal 720-minute public timeline cap so the 24h fallback is applied consistently by route, client, and payload backfill.]
