@@ -2432,10 +2432,10 @@ B38 Memory loop strengthening:
 ## PR / Preview
 
 - PR: https://github.com/agentxmain-collab/claw42/pull/135
-- Commit: `cc5a0620ccac4b6f8d4026a698eec47a52b52a2d`
+- Commit: `305b5ac24da87062cf8c8f93fe0d05b6505cfe53`
 - Preview: https://claw42-site-git-feature-b35-4f26f5-agentxmain-collabs-projects.vercel.app
 - Bypass: https://claw42-site-git-feature-b35-4f26f5-agentxmain-collabs-projects.vercel.app/?_vercel_share=jQt1erN9KkavbuvjpfWnO3ZIGqtjRaR1
-- Vercel deployment: `dpl_78bx4suMs96DK1LQJLg2Q4RxcExm`, READY
+- Vercel deployment: `dpl_5YYtBnbVSnGg4wqDn62yDqVENhHr`, READY
 - GitHub checks: `verify` PASS, `deploy preview` PASS, Vercel PASS
 - Preview timeline API smoke: `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=1440&limit=100` returned `status=200`, `eventsLength=3`, first event `pm_decision`, first symbol `MARKET`.
 - Preview ops-health auth smoke: `/api/watch/ops-health?locale=zh_CN` without secret returned `status=401`.
