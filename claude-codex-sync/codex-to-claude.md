@@ -2431,8 +2431,14 @@ B38 Memory loop strengthening:
 
 ## PR / Preview
 
-- PR: pending
-- Preview: pending
+- PR: https://github.com/agentxmain-collab/claw42/pull/135
+- Commit: `cc5a0620ccac4b6f8d4026a698eec47a52b52a2d`
+- Preview: https://claw42-site-git-feature-b35-4f26f5-agentxmain-collabs-projects.vercel.app
+- Bypass: https://claw42-site-git-feature-b35-4f26f5-agentxmain-collabs-projects.vercel.app/?_vercel_share=jQt1erN9KkavbuvjpfWnO3ZIGqtjRaR1
+- Vercel deployment: `dpl_78bx4suMs96DK1LQJLg2Q4RxcExm`, READY
+- GitHub checks: `verify` PASS, `deploy preview` PASS, Vercel PASS
+- Preview timeline API smoke: `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=1440&limit=100` returned `status=200`, `eventsLength=3`, first event `pm_decision`, first symbol `MARKET`.
+- Preview ops-health auth smoke: `/api/watch/ops-health?locale=zh_CN` without secret returned `status=401`.
 - Production: not touched
 
 [DOC-HINT: B35-B38 adds protected ops health visibility, blocks public records with stage gaps or very low public quality score, and makes memory_loop retrieve higher-value historical lessons instead of repeating current analysis.]
