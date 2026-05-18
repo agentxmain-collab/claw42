@@ -108,6 +108,51 @@ describe("groupPublicTimelineEventsByTopic", () => {
     });
   });
 
+  it("keeps one market overview topic for the same local-day candidate across UTC midnight", () => {
+    const stale = pmDecision("market-morning", {
+      ts: Date.parse("2026-05-17T23:48:00.000Z"),
+      symbol: "MARKET",
+      payload: {
+        kind: "pm_decision",
+        recordId: "market-morning",
+        symbol: "MARKET",
+        candidateType: "market_overview",
+        candidateKey: "market_overview:zh_CN:2026-05-18",
+        displayTitle: "今日大盘综述",
+        executable: false,
+        tradeDecision: null,
+        rationaleByMember: {},
+      },
+    });
+    const latest = pmDecision("market-afternoon", {
+      ts: Date.parse("2026-05-18T05:18:00.000Z"),
+      symbol: "MARKET",
+      payload: {
+        kind: "pm_decision",
+        recordId: "market-afternoon",
+        symbol: "MARKET",
+        candidateType: "market_overview",
+        candidateKey: "market_overview:zh_CN:2026-05-18",
+        displayTitle: "今日大盘综述",
+        executable: false,
+        tradeDecision: null,
+        rationaleByMember: {},
+      },
+    });
+
+    const groups = groupPublicTimelineEventsByTopic([stale, latest]);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({
+      latestDecision: expect.objectContaining({
+        payload: expect.objectContaining({ recordId: "market-afternoon" }),
+      }),
+      candidateType: "market_overview",
+      candidateKey: "market_overview:zh_CN:2026-05-18",
+      displayTitle: "今日大盘综述",
+    });
+  });
+
   it("skips events without a usable symbol", () => {
     expect(
       groupPublicTimelineEventsByTopic([pmDecision("missing", { symbol: "UNKNOWN" })]),

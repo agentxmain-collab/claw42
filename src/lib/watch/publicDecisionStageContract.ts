@@ -20,6 +20,7 @@ const PUBLIC_PROGRESS_GATE_ORDER = PUBLIC_DECISION_STAGE_ORDER.slice(0, 4);
 
 export interface PublicDecisionStageContractOptions {
   hasRenderableTradeDecision: boolean;
+  analysisOnlyCandidate?: boolean;
 }
 
 export function normalizePublicDecisionStageStatuses(
@@ -30,7 +31,7 @@ export function normalizePublicDecisionStageStatuses(
     trace?.find((entry) => entry.stageId === stageId)?.status ?? "pending";
   const rawStatus = (stageId: DecisionStageTraceId): DecisionStageTraceStatus => {
     const raw = originalStatus(stageId);
-    if (!options.hasRenderableTradeDecision) {
+    if (!options.hasRenderableTradeDecision && !options.analysisOnlyCandidate) {
       if (stageId === "trade_decision" && raw === "done") return "in_progress";
       if (stageId === "risk_lead") return "pending";
     }
@@ -92,6 +93,7 @@ export function publicDecisionVisibleStageLimit(
   options: PublicDecisionStageContractOptions,
 ) {
   if (options.hasRenderableTradeDecision) return 6;
+  if (options.analysisOnlyCandidate) return 6;
   if (!trace?.length) return 3;
   const statuses = normalizePublicDecisionStageStatuses(trace, options);
   const active = PUBLIC_PROGRESS_GATE_ORDER.find(

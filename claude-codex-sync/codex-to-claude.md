@@ -3009,3 +3009,74 @@ or production deployment.
 - Production not touched.
 
 [DOC-HINT: B72-B75 adds protected read-only model quality gate diagnostics split by candidate type, provider, and public quality risk.]
+
+# B76 market overview dedupe + analysis-only progress hotfix report
+
+Date: 2026-05-18
+
+## Scope
+
+Fixes the user-visible issue where the watch board could render two "今日大盘综述" cards for the
+same local day, and where completed analysis-only records kept looking stuck at stage 3.
+
+## First-hand Root Cause
+
+- Duplicate market overview:
+  - `residentCandidate.ts` writes market overview candidate keys by UTC+8 day.
+  - `decisionCandidateDedupeKey()` deduped `market_overview` by raw UTC `event.ts` day.
+  - A China morning record (`2026-05-17T23:48Z`) and afternoon record
+    (`2026-05-18T05:18Z`) therefore had the same product title/local day but different dedupe
+    buckets.
+- Progress stuck:
+  - `publicDecisionStageContract` intentionally forces symbol records without a renderable trade
+    card back to stage 3 for safety.
+  - That rule also hit `market_overview` / `hotspot`, where no trade card is expected, so completed
+    analysis-only records could remain displayed as "当前进行到阶段 3".
+
+## Changes
+
+- `src/lib/watch/decisionCandidate.ts`
+  - Market overview dedupe now prefers the date embedded in `candidateKey`, falling back to UTC+8
+    day from timestamp.
+- `src/lib/watch/publicDecisionStageContract.ts`
+  - Adds `analysisOnlyCandidate` option so non-symbol records can advance stage status without a
+    trade card while symbol safety remains unchanged.
+- `src/lib/watch/publicTimelineProjection.ts`
+  - Passes `analysisOnlyCandidate` for non-symbol records when projecting stage trace.
+- `src/lib/team/pmDecisionPipeline.ts`
+  - Uses the same analysis-only stage projection in the pipeline's public timeline entry.
+- `src/lib/watch/v9TopicAdapter.ts`
+  - Treats completed analysis-only records as closed-loop, removes fake trader typing for those
+    cards, and keeps follow-trade disabled through the existing executable gate.
+
+## Tests Added
+
+- `publicTimelineOrdering.test.ts`: market overview dedupe across UTC midnight keeps latest record.
+- `topicAggregator.test.ts`: same local-day market overview aggregates to one topic.
+- `publicDecisionStageContract.test.ts`: completed analysis-only stage trace advances without a
+  renderable trade card.
+- `v9TopicAdapter.test.ts`: completed analysis-only record shows closed-loop progress instead of
+  stage 3 active progress.
+
+## Verify
+
+- Red before fix: 4 expected failing tests.
+- Target green: `npm exec vitest run src/lib/watch/__tests__/publicTimelineOrdering.test.ts src/lib/watch/__tests__/topicAggregator.test.ts src/lib/watch/__tests__/publicDecisionStageContract.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts` PASS, 4 files / 55 tests.
+- `npm run format:check`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run test:watch-pipeline`: PASS, 62 files / 371 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This does not change candidate ranking, cron cadence, refresh locks, PM prompts, or production.
+- Symbol records without renderable trade decisions still stay capped at stage 3; only non-symbol
+  analysis cards can close without a trade plan.
+- No local Vercel deploy will be run from this worktree because local Vercel identity is not the
+  Claw42 project identity.
+
+[DOC-HINT: B76 aligns market_overview dedupe to candidate local-day keys and separates analysis-only completion from symbol trade-card safety.]

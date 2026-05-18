@@ -48,7 +48,9 @@ export function buildDecisionRecordIndex(
 
 export function publicStageTraceFromRecord(
   record: StrategyDecisionRecord | null,
-  options: { hasRenderableTradeDecision: boolean } = { hasRenderableTradeDecision: false },
+  options: { hasRenderableTradeDecision: boolean; analysisOnlyCandidate?: boolean } = {
+    hasRenderableTradeDecision: false,
+  },
 ): PublicDecisionStageTraceEntry[] | undefined {
   if (!record?.stageTrace?.length) return undefined;
   return normalizePublicDecisionStageTrace(
@@ -62,6 +64,10 @@ export function publicStageTraceFromRecord(
     })),
     options,
   );
+}
+
+function isAnalysisOnlyRecord(record: StrategyDecisionRecord | null) {
+  return normalizeCandidateType(record?.candidate?.candidateType) !== "symbol";
 }
 
 function inferredMeta(entry: StreamEntry): WatchEntryMeta {
@@ -259,6 +265,7 @@ function pmDecisionPayload(
     rounds: derived.rounds,
     stageTrace: publicStageTraceFromRecord(indexedRecord, {
       hasRenderableTradeDecision: Boolean(tradeDecision),
+      analysisOnlyCandidate: isAnalysisOnlyRecord(indexedRecord),
     }),
     resolution: resolutionFromRecord(indexedRecord),
   };
@@ -291,6 +298,7 @@ export function projectDecisionRecordToPublicEvent(
     rounds: derived.rounds,
     stageTrace: publicStageTraceFromRecord(record, {
       hasRenderableTradeDecision: Boolean(tradeDecision),
+      analysisOnlyCandidate: isAnalysisOnlyRecord(record),
     }),
     resolution: resolutionFromRecord(record),
   };

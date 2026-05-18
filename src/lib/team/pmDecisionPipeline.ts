@@ -1131,7 +1131,12 @@ function makePublicTimelineEntry(
       rationaleByAgent: derived.rationaleByAgent,
       citationsByAgent: derived.citationsByAgent,
       rounds: derived.rounds,
-      stageTrace: publicStageTraceFromRecord(record),
+      stageTrace: publicStageTraceFromRecord(record, {
+        hasRenderableTradeDecision: Boolean(normalizePublicTradeDecision(record.tradeDecision)),
+        analysisOnlyCandidate: Boolean(
+          record.candidate && record.candidate.candidateType !== "symbol",
+        ),
+      }),
     },
   };
 }

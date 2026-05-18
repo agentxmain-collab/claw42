@@ -173,6 +173,32 @@ describe("mergePublicTimelineEvents", () => {
     );
     expect(publicTimelinePmCandidateKey(legacy)).toBe("zh_CN:BTC");
   });
+
+  it("dedupes market overview records by the candidate local-day key across UTC midnight", () => {
+    const stale = pmDecision({
+      recordId: "pm:market:morning",
+      symbol: "MARKET",
+      ts: Date.parse("2026-05-17T23:48:00.000Z"),
+      candidateType: "market_overview",
+      candidateKey: "market_overview:zh_CN:2026-05-18",
+      displayTitle: "今日大盘综述",
+    });
+    const latest = pmDecision({
+      recordId: "pm:market:afternoon",
+      symbol: "MARKET",
+      ts: Date.parse("2026-05-18T05:18:00.000Z"),
+      candidateType: "market_overview",
+      candidateKey: "market_overview:zh_CN:2026-05-18",
+      displayTitle: "今日大盘综述",
+    });
+
+    expect(publicTimelinePmCandidateKey(stale)).toBe(publicTimelinePmCandidateKey(latest));
+    expect(
+      mergePublicTimelineEvents([stale, latest]).map((event) =>
+        event.payload.kind === "pm_decision" ? event.payload.recordId : event.id,
+      ),
+    ).toEqual(["pm:market:afternoon"]);
+  });
 });
 
 describe("compareDecisionCandidateOrder", () => {

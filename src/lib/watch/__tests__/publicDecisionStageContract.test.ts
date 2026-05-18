@@ -107,4 +107,30 @@ describe("public decision stage contract", () => {
     expect(statuses.public_timeline).toBe("done");
     expect(publicDecisionVisibleStageLimit(trace, { hasRenderableTradeDecision: false })).toBe(3);
   });
+
+  it("lets completed analysis-only candidates advance without a renderable trade card", () => {
+    const trace = [
+      stage("analyst_inputs", "done"),
+      stage("research_lead", "done"),
+      stage("trade_decision", "done"),
+      stage("risk_lead", "done"),
+      stage("record_write", "done"),
+      stage("public_timeline", "done"),
+    ];
+
+    const options = {
+      hasRenderableTradeDecision: false,
+      analysisOnlyCandidate: true,
+    };
+
+    expect(normalizePublicDecisionStageStatuses(trace, options)).toMatchObject({
+      analyst_inputs: "done",
+      research_lead: "done",
+      trade_decision: "done",
+      risk_lead: "done",
+      record_write: "done",
+      public_timeline: "done",
+    });
+    expect(publicDecisionVisibleStageLimit(trace, options)).toBe(6);
+  });
 });
