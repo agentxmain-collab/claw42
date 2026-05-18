@@ -3397,3 +3397,80 @@ explains the schedule-to-public chain in operator language:
 - Production not touched.
 
 [DOC-HINT: B81 adds a protected read-only schedule-to-public runbook layer on ops-health without changing PM execution, queue behavior, public UI, or cron cadence.]
+
+# B82 queue recovery policy diagnostics report
+
+Date: 2026-05-19
+
+## Scope
+
+Adds a protected, read-only `recovery=1` diagnostics view to `/api/watch/ops-health`. This layer
+turns B80 cron audit + B81 runbook evidence into a conservative queue recovery policy:
+
+- `observe`
+- `manual_intervention`
+- `investigate_before_replay`
+- `pause_new_triggers`
+
+## Root Cause / Gap
+
+- B80/B81 can now say where the schedule-to-public chain is broken.
+- The missing next operational layer was policy guidance for what not to do next, especially around
+  replay pressure, exhausted retries, stale running jobs, zero-output runs, and public projection
+  gaps.
+- B82 keeps recovery intentionally non-executable. It gives operators a safe decision surface but
+  does not perform replay, repair, queue mutation, lock mutation, or trigger suppression.
+
+## Changes
+
+- `src/lib/team/decisionOpsQueueRecoveryPolicy.ts`
+  - New pure builder for read-only recovery guidance.
+  - Always returns `autoRecoveryAllowed: false`.
+  - All recovery steps are `executable: false`.
+  - Escalates exhausted cron retries / stale running jobs to `manual_intervention`.
+  - Routes zero-output, quality blocks, and projection gaps to `investigate_before_replay`.
+  - Allows `pause_new_triggers` as a diagnostic recommendation only; it does not change trigger
+    behavior.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds `recovery=1`.
+  - Internally derives cron audit, freshness, and runbook evidence.
+  - Returns only `recoveryPolicy` by default, unless lower-level diagnostic flags are also requested.
+- `package.json`
+  - Adds the new recovery policy test to `test:watch-pipeline`.
+
+## Tests Added
+
+- `src/lib/team/__tests__/decisionOpsQueueRecoveryPolicy.test.ts`
+  - Healthy chain stays in `observe` mode.
+  - Exhausted scheduled job retries require manual intervention and pause-new-trigger guidance.
+  - Zero-output / quality-blocked runs require investigation before replay.
+- `src/app/api/watch/ops-health/route.test.ts`
+  - `?recovery=1` reads public context, calls the runbook, calls the recovery policy builder, and
+    returns only the recovery policy payload by default.
+
+## Verify
+
+- Red before fix:
+  - `decisionOpsQueueRecoveryPolicy.test.ts` failed because the module did not exist.
+  - `ops-health route.test.ts` failed because `recovery=1` did not read decision records or call the
+    recovery policy builder.
+- Target green:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsQueueRecoveryPolicy.test.ts src/app/api/watch/ops-health/route.test.ts`:
+    PASS, 2 files / 14 tests.
+- Full gates:
+  - `npm run verify`: PASS; includes format, typecheck, lint, agent-ip, news, news tests,
+    watch-pipeline, chat-v3-final, execution-safety.
+  - `npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This is diagnostics only. It does not change cron schedule, queue publishing, queue consuming,
+  PM execution, replay, repair, candidate ranking, public UI, refresh cadence, SSE, locks, or KV
+  writes.
+- Local Vercel CLI was not used because this machine is still logged into the wrong Vercel team for
+  Claw42; preview must come from GitHub/Vercel webhook after PR push.
+- Production not touched.
+
+[DOC-HINT: B82 adds a protected read-only queue recovery policy layer on ops-health without changing PM execution, queue behavior, replay, locks, public UI, or cron cadence.]
