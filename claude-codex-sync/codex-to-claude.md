@@ -2150,3 +2150,53 @@ B27 把 B25 的 PM decision job ledger 接到 Vercel Queues：用户访问触发
 - 后续如果要针对 B26 low-quality run 自动 retry，应在 B28 单独接质量阈值和重试策略，不应塞进 B27。
 
 [DOC-HINT: B27 adds Vercel Queue-backed PM decision job publishing and consumer retry while preserving waitUntil/synchronous fallbacks when queues are disabled or unavailable.]
+
+# B.28 hotfix — queue opt-in safety for single-analysis regression
+
+Date: 2026-05-18
+
+## First-hand symptom
+
+Dan 在 B27 main preview 看到行情分析只剩 1 条：
+
+- `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=720` first-hand fetch 返回 `events.length = 1`
+- 唯一 event：`pm-decision:pm:VVV:1779022214437`
+- payload stageTrace 停在 `research_lead = in_progress`，后续阶段 pending
+- UI 顶部状态显示 `热点 0 / 已闭环 0 / 辩论中 1 / 起步 0`
+
+## Root cause judgement
+
+B27 的 queue enable rule 过激：未设置 `PM_DECISION_QUEUE_ENABLED` 时，只要在 Vercel 环境就自动启用 queue。这样用户访问触发会在 `publishPmDecisionJobToQueue()` 返回 queue 后停止原 `waitUntil(runPmDecisionJob)` fallback。
+
+这在 queue consumer 尚未端到端验证稳定前，会把 public preview 变成“已入队 / 分析进行中”，但没有足够新 public records 落到 timeline，表现就是只剩窗口内旧的一条分析卡。
+
+补充 evidence：
+
+- Vercel build 已包含 `/api/queues/pm-decision-job` route。
+- 但 public timeline 实测没有出现 B27 后应生成的多 candidate events。
+- `/api/watch/refresh` GET 能读到局部 freshness，但 public timeline 不显示足量新 events；说明不能把“触发已启动”当成“public timeline 已可用”。
+
+## Fix
+
+- `src/lib/team/pmDecisionJobQueue.ts`
+  - Queue 改为 explicit opt-in：只有 `PM_DECISION_QUEUE_ENABLED=true` 才发布到 Vercel Queue。
+  - 未配置 / `false` / 普通 Vercel preview 均返回 `{ mode: "disabled" }`，自动走原 waitUntil / cron synchronous fallback。
+- `src/lib/team/__tests__/pmDecisionJobQueue.test.ts`
+  - 新增 red-green test：即使 `VERCEL=1` + `VERCEL_ENV=preview`，未显式开启 flag 时也必须 disabled，不调用 queue send。
+
+## Verify
+
+- Red test observed: new Vercel-default-disabled test initially failed; current code tried queue and returned failed mode.
+- `npx vitest run src/lib/team/__tests__/pmDecisionJobQueue.test.ts`: PASS, 6 tests
+- `npx vitest run src/lib/team/__tests__/pmDecisionJobQueue.test.ts src/app/api/watch/refresh/route.test.ts src/app/api/cron/strategy-replay/route.test.ts`: PASS, 23 tests
+- `npm run verify`: PASS, format/typecheck/lint/agent-ip/news/news tests/watch-pipeline/chat-v3/execution-safety all passed
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+  - Note: an earlier parallel run of `build` + `verify:a11y` collided on `.next` and produced a transient Next module lookup failure; after removing generated `.next` and running build sequentially, build exited 0.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+## Follow-up
+
+This is a safety rollback of queue default behavior, not deletion of B27 infra. Queue code and consumer stay in place for a later explicit `PM_DECISION_QUEUE_ENABLED=true` verification pass.
+
+[DOC-HINT: B28 makes PM decision queue publishing explicit opt-in so preview falls back to the proven waitUntil/synchronous path until queue consumer processing is separately verified.]

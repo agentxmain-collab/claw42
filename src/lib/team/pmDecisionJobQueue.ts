@@ -99,8 +99,7 @@ export async function processPmDecisionQueueMessage(
 function isPmDecisionQueueEnabled(env: NodeJS.ProcessEnv | Record<string, string | undefined>) {
   const configured = env.PM_DECISION_QUEUE_ENABLED?.toLowerCase();
   if (configured === "true") return true;
-  if (configured === "false") return false;
-  return env.VERCEL === "1" && Boolean(env.VERCEL_ENV);
+  return false;
 }
 
 function isPmDecisionQueueMessage(value: unknown): value is PmDecisionQueueMessage {
