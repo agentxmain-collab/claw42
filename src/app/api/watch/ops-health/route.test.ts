@@ -259,4 +259,43 @@ describe("/api/watch/ops-health", () => {
       },
     });
   });
+
+  it("returns an optional rollup summary without exposing nested diagnostics by default", async () => {
+    projectDecisionRecordToPublicEventMock.mockReturnValue({
+      id: "pm-decision:pm:BTC:1779102000000",
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: "pm:BTC:1779102000000",
+        symbol: "BTC",
+      },
+    });
+    readAllDecisionRecordsMock.mockResolvedValue([{ id: "pm:BTC:1779102000000" }]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&rollup=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(summarizeProviderTelemetryMock).toHaveBeenCalled();
+    expect(payload.rollup).toMatchObject({
+      schemaVersion: 1,
+      status: "critical",
+      counts: {
+        runbookActions: expect.any(Number),
+      },
+    });
+    expect(payload.reconciliation).toBeUndefined();
+    expect(payload.deepDiagnostics).toBeUndefined();
+    expect(payload.freshness).toBeUndefined();
+  });
 });
