@@ -3320,3 +3320,80 @@ jobs, and public-output gaps.
 - Production not touched.
 
 [DOC-HINT: B80 adds protected cron-specific queue/run audit diagnostics without changing PM execution, cron cadence, queue behavior, or public UI.]
+
+# B81 schedule-to-public runbook diagnostics report
+
+Date: 2026-05-18
+
+## Scope
+
+Adds a protected, read-only `runbook=1` diagnostics view to `/api/watch/ops-health`. The new view
+explains the schedule-to-public chain in operator language:
+
+1. Vercel cron delivery
+2. PM job ledger / queue
+3. PM runner
+4. Public timeline card output
+
+## Root Cause / Gap
+
+- B80 made cron-specific audit data visible, but operators still had to mentally combine
+  `cronAudit`, `freshness`, and `health` to answer the practical question: "why does the public
+  board have cards or no cards?"
+- B81 keeps the lower-level diagnostics intact and adds a derived runbook layer with one root cause,
+  public board state, four stable chain links, evidence timestamps, and non-executable actions.
+
+## Changes
+
+- `src/lib/team/decisionOpsChainRunbook.ts`
+  - New pure builder for schedule-to-public chain diagnostics.
+  - Root causes include `public_output_recent`, `cron_delivery_stalled`, `job_queue_stalled`,
+    `pm_runner_stalled`, `public_projection_stalled`, `quality_or_zero_output_stalled`, and
+    `unknown_stalled`.
+  - Public board states are `has_recent_public_output`, `public_output_stale`, and
+    `no_public_output`.
+  - Actions are intentionally read-only / non-executable.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds `runbook=1`.
+  - Reads decision records and derives public PM events only when the requested diagnostic needs
+    them.
+  - Builds `cronAudit` and `freshness` internally for the runbook but does not expose those nested
+    payloads unless their own flags are requested.
+- `package.json`
+  - Adds `decisionOpsChainRunbook.test.ts` to `test:watch-pipeline`.
+
+## Tests Added
+
+- `src/lib/team/__tests__/decisionOpsChainRunbook.test.ts`
+  - Healthy chain returns `public_output_recent`.
+  - Missing cron job/run pinpoints `cron_delivery_stalled`.
+  - Successful PM run without a public timeline event pinpoints `public_projection_stalled`.
+- `src/app/api/watch/ops-health/route.test.ts`
+  - `?runbook=1` reads public decision records, calls cron audit + chain runbook builders, returns
+    only the runbook payload by default.
+
+## Verify
+
+- Red before fix:
+  - `decisionOpsChainRunbook.test.ts` failed because the module did not exist.
+  - `ops-health route.test.ts` failed because `runbook=1` did not read decision records or call the
+    runbook builder.
+- Target green:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsChainRunbook.test.ts src/app/api/watch/ops-health/route.test.ts`:
+    PASS, 2 files / 13 tests.
+- Full gates:
+  - `npm run verify`: PASS; includes format, typecheck, lint, agent-ip, news, news tests,
+    watch-pipeline, chat-v3-final, execution-safety.
+  - `npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This is diagnostics only. It does not change cron schedule, queue publishing, queue consuming,
+  PM execution, replay, repair, candidate ranking, public UI, refresh cadence, SSE, or KV writes.
+- Local Vercel CLI was not used because this machine is still logged into the wrong Vercel team for
+  Claw42; preview must come from GitHub/Vercel webhook after PR push.
+- Production not touched.
+
+[DOC-HINT: B81 adds a protected read-only schedule-to-public runbook layer on ops-health without changing PM execution, queue behavior, public UI, or cron cadence.]

@@ -7,6 +7,7 @@ const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
 const projectDecisionRecordToPublicEventMock = vi.hoisted(() => vi.fn());
 const summarizeProviderTelemetryMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsCronAuditMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsChainRunbookMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -30,6 +31,10 @@ vi.mock("@/lib/team/providerTelemetry", () => ({
 
 vi.mock("@/lib/team/decisionOpsCronAudit", () => ({
   buildDecisionOpsCronAudit: buildDecisionOpsCronAuditMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsChainRunbook", () => ({
+  buildDecisionOpsChainRunbook: buildDecisionOpsChainRunbookMock,
 }));
 
 function job() {
@@ -139,6 +144,15 @@ describe("/api/watch/ops-health", () => {
         cronRun: null,
       },
       issues: [],
+    });
+    buildDecisionOpsChainRunbookMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "healthy",
+      rootCause: "public_output_recent",
+      publicBoardState: "has_recent_public_output",
+      summary: "Cron, PM run, and public timeline output are fresh.",
+      chain: [],
+      runbookActions: [],
     });
   });
 
@@ -468,5 +482,47 @@ describe("/api/watch/ops-health", () => {
         mode: "inline",
       },
     });
+  });
+
+  it("returns optional chain runbook diagnostics for authorized callers", async () => {
+    projectDecisionRecordToPublicEventMock.mockReturnValue({
+      id: "pm-decision:pm:BTC:1779102000000",
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: "pm:BTC:1779102000000",
+        symbol: "BTC",
+      },
+    });
+    readAllDecisionRecordsMock.mockResolvedValue([{ id: "pm:BTC:1779102000000" }]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&runbook=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(buildDecisionOpsCronAuditMock).toHaveBeenCalled();
+    expect(buildDecisionOpsChainRunbookMock).toHaveBeenCalledWith({
+      cronAudit: expect.objectContaining({ schemaVersion: 1 }),
+      freshness: expect.objectContaining({ schemaVersion: 1 }),
+      health: expect.objectContaining({ schemaVersion: 1 }),
+    });
+    expect(payload.runbook).toMatchObject({
+      schemaVersion: 1,
+      status: "healthy",
+      rootCause: "public_output_recent",
+      publicBoardState: "has_recent_public_output",
+    });
+    expect(payload.cronAudit).toBeUndefined();
+    expect(payload.freshness).toBeUndefined();
   });
 });
