@@ -9,6 +9,7 @@ import {
   buildDecisionOpsHealthDetails,
   summarizeDecisionOpsHealth,
 } from "@/lib/team/decisionOpsHealth";
+import { buildDecisionOpsModelQuality } from "@/lib/team/decisionOpsModelQuality";
 import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
 import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueueRecoveryPolicy";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
@@ -46,6 +47,7 @@ export async function GET(request: Request) {
   const includeCronAudit = url.searchParams.get("cronAudit") === "1";
   const includeRunbook = url.searchParams.get("runbook") === "1";
   const includeRecovery = url.searchParams.get("recovery") === "1";
+  const includeModelQuality = url.searchParams.get("modelQuality") === "1";
   const needsDecisionRecords =
     includeReconciliation ||
     includeDeepDiagnostics ||
@@ -54,7 +56,8 @@ export async function GET(request: Request) {
     includeSlo ||
     includeQualityGate ||
     includeRunbook ||
-    includeRecovery;
+    includeRecovery ||
+    includeModelQuality;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
@@ -73,7 +76,7 @@ export async function GET(request: Request) {
       ? publicPmEventsFromRecords(decisionRecords)
       : [];
   const providerTelemetry =
-    includeDeepDiagnostics || includeRollup || includeQualityGate
+    includeDeepDiagnostics || includeRollup || includeQualityGate || includeModelQuality
       ? summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 })
       : null;
   const reconciliation =
@@ -86,9 +89,17 @@ export async function GET(request: Request) {
         })
       : null;
   const deepDiagnostics =
-    includeDeepDiagnostics || includeRollup
+    includeDeepDiagnostics || includeRollup || includeModelQuality
       ? buildDecisionOpsDeepDiagnostics({
           jobs,
+          runs,
+          records: decisionRecords,
+          providerTelemetry,
+        })
+      : null;
+  const qualityGate =
+    includeQualityGate || includeModelQuality
+      ? buildDecisionOpsQualityGate({
           runs,
           records: decisionRecords,
           providerTelemetry,
@@ -142,15 +153,7 @@ export async function GET(request: Request) {
             }),
           }
         : {}),
-      ...(includeQualityGate
-        ? {
-            qualityGate: buildDecisionOpsQualityGate({
-              runs,
-              records: decisionRecords,
-              providerTelemetry,
-            }),
-          }
-        : {}),
+      ...(includeQualityGate ? { qualityGate } : {}),
       ...(includeCronAudit
         ? {
             cronAudit,
@@ -175,6 +178,14 @@ export async function GET(request: Request) {
               }),
               cronAudit,
               health,
+            }),
+          }
+        : {}),
+      ...(includeModelQuality && qualityGate && deepDiagnostics
+        ? {
+            modelQuality: buildDecisionOpsModelQuality({
+              qualityGate,
+              deepDiagnostics,
             }),
           }
         : {}),

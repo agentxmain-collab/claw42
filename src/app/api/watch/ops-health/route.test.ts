@@ -9,6 +9,7 @@ const summarizeProviderTelemetryMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsCronAuditMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsChainRunbookMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsQueueRecoveryPolicyMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsModelQualityMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -40,6 +41,10 @@ vi.mock("@/lib/team/decisionOpsChainRunbook", () => ({
 
 vi.mock("@/lib/team/decisionOpsQueueRecoveryPolicy", () => ({
   buildDecisionOpsQueueRecoveryPolicy: buildDecisionOpsQueueRecoveryPolicyMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsModelQuality", () => ({
+  buildDecisionOpsModelQuality: buildDecisionOpsModelQualityMock,
 }));
 
 function job() {
@@ -167,6 +172,14 @@ describe("/api/watch/ops-health", () => {
       autoRecoveryAllowed: false,
       primaryAction: null,
       recoverySteps: [],
+    });
+    buildDecisionOpsModelQualityMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "healthy",
+      riskLevel: "low",
+      primaryRisk: null,
+      dimensions: {},
+      recommendations: [],
     });
   });
 
@@ -580,5 +593,37 @@ describe("/api/watch/ops-health", () => {
     expect(payload.runbook).toBeUndefined();
     expect(payload.cronAudit).toBeUndefined();
     expect(payload.freshness).toBeUndefined();
+  });
+
+  it("returns optional model quality diagnostics for authorized callers", async () => {
+    readAllDecisionRecordsMock.mockResolvedValue([
+      {
+        id: "pm:BTC:1779102000000",
+        modelProvider: "deepseek-chat",
+        stageTrace: [],
+      },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&modelQuality=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(summarizeProviderTelemetryMock).toHaveBeenCalled();
+    expect(buildDecisionOpsModelQualityMock).toHaveBeenCalledWith({
+      qualityGate: expect.objectContaining({ schemaVersion: 1 }),
+      deepDiagnostics: expect.objectContaining({ schemaVersion: 1 }),
+    });
+    expect(payload.modelQuality).toMatchObject({
+      schemaVersion: 1,
+      status: "healthy",
+      riskLevel: "low",
+    });
+    expect(payload.qualityGate).toBeUndefined();
+    expect(payload.deepDiagnostics).toBeUndefined();
   });
 });

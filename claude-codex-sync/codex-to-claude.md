@@ -3474,3 +3474,79 @@ turns B80 cron audit + B81 runbook evidence into a conservative queue recovery p
 - Production not touched.
 
 [DOC-HINT: B82 adds a protected read-only queue recovery policy layer on ops-health without changing PM execution, queue behavior, replay, locks, public UI, or cron cadence.]
+
+# B83 model quality diagnostics report
+
+Date: 2026-05-19
+
+## Scope
+
+Adds a protected, read-only `modelQuality=1` diagnostics view to `/api/watch/ops-health`. This layer
+turns existing quality gate, deep diagnostics, regression, and provider telemetry into a compact
+model-quality risk report.
+
+## Root Cause / Gap
+
+- Existing `deep=1` and `qualityGate=1` diagnostics expose first-hand quality data, but the output is
+  lower-level and split across multiple objects.
+- B83 adds a higher-level quality readout for operator review:
+  - public guardrail risk
+  - evidence depth
+  - role coverage
+  - provider mix
+  - quality regression
+- It is intentionally read-only. It does not tune prompts, alter provider routing, replay jobs, or
+  change PM execution.
+
+## Changes
+
+- `src/lib/team/decisionOpsModelQuality.ts`
+  - New pure builder for model-quality risk summary.
+  - Risk levels: `low`, `medium`, `high`.
+  - Primary risks include public leaks, duplicate rationale, low evidence, low role coverage,
+    provider concentration/fallback/failure, candidate-type low publishable rate, quality
+    regression, and insufficient scored runs.
+  - Recommendations are non-executable.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds `modelQuality=1`.
+  - Internally builds existing quality gate and deep diagnostics, then exposes only `modelQuality`
+    by default unless lower-level flags are requested.
+- `package.json`
+  - Adds `decisionOpsModelQuality.test.ts` to `test:watch-pipeline`.
+
+## Tests Added
+
+- `src/lib/team/__tests__/decisionOpsModelQuality.test.ts`
+  - Healthy public quality/provider mix/regression stays low risk.
+  - Public content leaks become the top critical risk.
+  - Provider concentration and quality regression are surfaced as model-quality risks.
+- `src/app/api/watch/ops-health/route.test.ts`
+  - `?modelQuality=1` reads decision records, summarizes provider telemetry, calls the model-quality
+    builder, and does not expose nested `qualityGate` / `deepDiagnostics` by default.
+
+## Verify
+
+- Red before fix:
+  - `decisionOpsModelQuality.test.ts` failed because the module did not exist.
+  - `ops-health route.test.ts` failed because `modelQuality=1` did not read records or call the
+    model-quality builder.
+- Target green:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsModelQuality.test.ts src/app/api/watch/ops-health/route.test.ts`:
+    PASS, 2 files / 15 tests.
+- Full gates:
+  - `npm run verify`: PASS; includes format, typecheck, lint, agent-ip, news, news tests,
+    watch-pipeline, chat-v3-final, execution-safety.
+  - `npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This is diagnostics only. It does not change prompts, model routing, provider fallback behavior,
+  PM execution, replay, repair, candidate ranking, public UI, refresh cadence, SSE, locks, or KV
+  writes.
+- Local Vercel CLI was not used because this machine is still logged into the wrong Vercel team for
+  Claw42; preview must come from GitHub/Vercel webhook after PR push.
+- Production not touched.
+
+[DOC-HINT: B83 adds a protected read-only model-quality risk layer on ops-health without changing prompts, provider routing, PM execution, replay, locks, or public UI.]
