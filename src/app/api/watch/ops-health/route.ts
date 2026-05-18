@@ -16,6 +16,7 @@ import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueue
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
 import { buildDecisionOpsSlo } from "@/lib/team/decisionOpsSlo";
+import { buildDecisionOpsSummary } from "@/lib/team/decisionOpsSummary";
 import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
 import { summarizeProviderTelemetry } from "@/lib/team/providerTelemetry";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
@@ -50,6 +51,7 @@ export async function GET(request: Request) {
   const includeRecovery = url.searchParams.get("recovery") === "1";
   const includeModelQuality = url.searchParams.get("modelQuality") === "1";
   const includeLifecycle = url.searchParams.get("lifecycle") === "1";
+  const includeOpsSummary = url.searchParams.get("opsSummary") === "1";
   const needsDecisionRecords =
     includeReconciliation ||
     includeDeepDiagnostics ||
@@ -60,7 +62,8 @@ export async function GET(request: Request) {
     includeRunbook ||
     includeRecovery ||
     includeModelQuality ||
-    includeLifecycle;
+    includeLifecycle ||
+    includeOpsSummary;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
@@ -75,11 +78,16 @@ export async function GET(request: Request) {
     includeRollup ||
     includeSlo ||
     includeRunbook ||
-    includeRecovery
+    includeRecovery ||
+    includeOpsSummary
       ? publicPmEventsFromRecords(decisionRecords)
       : [];
   const providerTelemetry =
-    includeDeepDiagnostics || includeRollup || includeQualityGate || includeModelQuality
+    includeDeepDiagnostics ||
+    includeRollup ||
+    includeQualityGate ||
+    includeModelQuality ||
+    includeOpsSummary
       ? summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 })
       : null;
   const reconciliation =
@@ -92,7 +100,7 @@ export async function GET(request: Request) {
         })
       : null;
   const deepDiagnostics =
-    includeDeepDiagnostics || includeRollup || includeModelQuality
+    includeDeepDiagnostics || includeRollup || includeModelQuality || includeOpsSummary
       ? buildDecisionOpsDeepDiagnostics({
           jobs,
           runs,
@@ -101,7 +109,7 @@ export async function GET(request: Request) {
         })
       : null;
   const qualityGate =
-    includeQualityGate || includeModelQuality
+    includeQualityGate || includeModelQuality || includeOpsSummary
       ? buildDecisionOpsQualityGate({
           runs,
           records: decisionRecords,
@@ -109,7 +117,7 @@ export async function GET(request: Request) {
         })
       : null;
   const freshness =
-    includeFreshness || includeRollup || includeRunbook || includeRecovery
+    includeFreshness || includeRollup || includeRunbook || includeRecovery || includeOpsSummary
       ? buildDecisionOpsFreshness({
           jobs,
           runs,
@@ -117,11 +125,40 @@ export async function GET(request: Request) {
         })
       : null;
   const cronAudit =
-    includeCronAudit || includeRunbook || includeRecovery
+    includeCronAudit || includeRunbook || includeRecovery || includeOpsSummary
       ? buildDecisionOpsCronAudit({
           jobs,
           runs,
           queueReadiness,
+        })
+      : null;
+  const runbook =
+    (includeRunbook || includeRecovery || includeOpsSummary) && cronAudit && freshness
+      ? buildDecisionOpsChainRunbook({
+          cronAudit,
+          freshness,
+          health,
+        })
+      : null;
+  const recoveryPolicy =
+    (includeRecovery || includeOpsSummary) && runbook && cronAudit
+      ? buildDecisionOpsQueueRecoveryPolicy({
+          runbook,
+          cronAudit,
+          health,
+        })
+      : null;
+  const modelQuality =
+    (includeModelQuality || includeOpsSummary) && qualityGate && deepDiagnostics
+      ? buildDecisionOpsModelQuality({
+          qualityGate,
+          deepDiagnostics,
+        })
+      : null;
+  const lifecycle =
+    includeLifecycle || includeOpsSummary
+      ? buildDecisionOpsLifecycleDiagnostics({
+          records: decisionRecords,
         })
       : null;
 
@@ -164,38 +201,31 @@ export async function GET(request: Request) {
         : {}),
       ...(includeRunbook && cronAudit && freshness
         ? {
-            runbook: buildDecisionOpsChainRunbook({
-              cronAudit,
-              freshness,
-              health,
-            }),
+            runbook,
           }
         : {}),
       ...(includeRecovery && cronAudit && freshness
         ? {
-            recoveryPolicy: buildDecisionOpsQueueRecoveryPolicy({
-              runbook: buildDecisionOpsChainRunbook({
-                cronAudit,
-                freshness,
-                health,
-              }),
-              cronAudit,
-              health,
-            }),
+            recoveryPolicy,
           }
         : {}),
       ...(includeModelQuality && qualityGate && deepDiagnostics
         ? {
-            modelQuality: buildDecisionOpsModelQuality({
-              qualityGate,
-              deepDiagnostics,
-            }),
+            modelQuality,
           }
         : {}),
       ...(includeLifecycle
         ? {
-            lifecycle: buildDecisionOpsLifecycleDiagnostics({
-              records: decisionRecords,
+            lifecycle,
+          }
+        : {}),
+      ...(includeOpsSummary && runbook && recoveryPolicy && modelQuality && lifecycle
+        ? {
+            opsSummary: buildDecisionOpsSummary({
+              runbook,
+              recoveryPolicy,
+              modelQuality,
+              lifecycle,
             }),
           }
         : {}),

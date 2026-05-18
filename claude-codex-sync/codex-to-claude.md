@@ -3622,3 +3622,77 @@ resolution field mismatches, missing evaluation windows, and outcome distributio
 - Production not touched.
 
 [DOC-HINT: B84 adds a protected read-only decision lifecycle layer on ops-health without changing resolution writers, cron, PM execution, queue behavior, KV writes, or public UI.]
+
+# B85 unified ops summary report
+
+Date: 2026-05-19
+
+## Scope
+
+Adds a protected, read-only `opsSummary=1` diagnostics view to `/api/watch/ops-health`. This layer
+combines the existing runbook, recovery policy, model-quality, and lifecycle diagnostics into one
+operator-facing summary.
+
+## Root Cause / Gap
+
+- B81-B84 created useful diagnostics, but each one is still a separate flag and requires the
+  operator to mentally combine chain health, recovery posture, model quality, and lifecycle state.
+- B85 keeps those lower layers intact and adds a compact triage layer:
+  - one overall status
+  - one primary area
+  - one headline
+  - four area summaries
+  - read-only next actions
+
+## Changes
+
+- `src/lib/team/decisionOpsSummary.ts`
+  - New pure builder for unified ops status.
+  - Areas: `public_chain`, `recovery_policy`, `model_quality`, `decision_lifecycle`.
+  - Status: `healthy`, `degraded`, `critical`.
+  - Prioritizes public-chain blockage first when multiple critical areas exist.
+  - All next actions are `executable:false`.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `opsSummary=1`.
+  - Internally builds cron audit, freshness, runbook, recovery policy, model quality, and lifecycle.
+  - Exposes only `opsSummary` by default unless lower-level flags are explicitly requested.
+- `package.json`
+  - Adds `decisionOpsSummary.test.ts` to `test:watch-pipeline`.
+
+## Tests Added
+
+- `src/lib/team/__tests__/decisionOpsSummary.test.ts`
+  - Healthy all-layers summary.
+  - Public-chain blockage is primary and operator steps remain read-only.
+  - Model-quality risk is primary when chain is fresh and lifecycle is only degraded.
+  - Lifecycle becomes primary when it is the only failing layer.
+- `src/app/api/watch/ops-health/route.test.ts`
+  - `?opsSummary=1` reads records, summarizes provider telemetry, builds the lower diagnostics, and
+    does not expose nested runbook/recovery/model/lifecycle/freshness/cron payloads by default.
+
+## Verify
+
+- Red before fix:
+  - `decisionOpsSummary.test.ts` failed because the module did not exist.
+  - `ops-health route.test.ts` failed because `opsSummary=1` did not read decision records or build
+    the lower diagnostics.
+- Target green:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsSummary.test.ts src/app/api/watch/ops-health/route.test.ts`:
+    PASS, 2 files / 18 tests.
+- Full gates:
+  - `npm run verify`: PASS; includes format, typecheck, lint, agent-ip, news, news tests,
+    watch-pipeline 68 files / 399 tests, chat-v3-final 50 synthetic threads, execution-safety.
+  - `npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This is diagnostics only. It does not change `decisionResolution.ts`, cron resolution, PM
+  pipeline, replay, repair, queue behavior, candidate ranking, public UI, refresh cadence, SSE,
+  locks, KV writes, prompts, provider routing, or production deploy behavior.
+- Local Vercel CLI was not used because this machine is still logged into the wrong Vercel team for
+  Claw42; preview must come from GitHub/Vercel webhook after PR push.
+- Production not touched.
+
+[DOC-HINT: B85 adds a protected read-only unified ops summary on ops-health without changing resolution writers, cron, PM execution, queue behavior, KV writes, prompts, provider routing, or public UI.]
