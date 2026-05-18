@@ -2501,8 +2501,19 @@ B42 Normal gate wiring:
 ## PR / Preview
 
 - PR: https://github.com/agentxmain-collab/claw42/pull/136
+- Commits:
+  - `a6a9f5a` — `feat(watch): harden quality ops diagnostics`
+  - `626e92c` — `fix(watch): hide internal team ids from public timeline payload`
 - Preview branch alias: https://claw42-site-git-feature-b39-a30dd7-agentxmain-collabs-projects.vercel.app
-- Preview smoke after alias-payload follow-up: pending next push
+- Vercel deployment: `dpl_6TcHttSM8uoEQC8ncQ7gUzFQy1VM`, READY
+- GitHub PR checks after alias-payload follow-up: `verify`, `deploy preview`, `Vercel`, and
+  `Vercel Preview Comments` all SUCCESS.
+- Preview smoke after alias-payload follow-up:
+  `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=1440&limit=1` returned
+  `status=200`, first event `pm_decision`. The first public payload now emits
+  `rationaleByAgent`, `citationsByAgent`, `rounds[].agentId`, and
+  `stageTrace[].agentIds`; it no longer emits `rationaleByMember`, `citationsByMember`,
+  `rounds[].memberId`, `stageTrace[].memberIds`, or `tradeDecision.generatedBy`.
 - Production: not touched
 
 [DOC-HINT: B39-B42 turns ops-health into an actionable status surface and adds a public quality regression corpus plus alias-based public PM projection to prevent backend-status wording, TeamMemberId leaks, stage gaps, and watch-only trade-card regressions from returning.]
