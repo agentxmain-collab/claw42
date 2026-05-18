@@ -18,8 +18,8 @@ export interface LockSnapshot {
 }
 
 type KvClient = {
-  set(key: string, value: string, options: { nx: true; px: number }): Promise<unknown>;
-  get(key: string): Promise<unknown>;
+  set(key: string, value: string | number, options?: { nx?: true; px?: number }): Promise<unknown>;
+  get<T = unknown>(key: string): Promise<T | null>;
   del(key: string): Promise<unknown>;
   eval?(script: string, keys: string[], args: string[]): Promise<unknown>;
 };
@@ -34,12 +34,15 @@ const DEFAULT_WAIT_MS = 0;
 const MIN_RETRY_MS = 50;
 const MAX_RETRY_MS = 1_000;
 const lockPrefix = "lock:";
+const lockMetaPrefix = "lock-meta:";
 const memoryLocks = new Map<string, MemoryLock>();
 let warnedAboutFallback = false;
 
 const RELEASE_SCRIPT = `
   if redis.call("get", KEYS[1]) == ARGV[1] then
-    return redis.call("del", KEYS[1])
+    redis.call("del", KEYS[1])
+    redis.call("del", KEYS[2])
+    return 1
   else
     return 0
   end
@@ -87,11 +90,12 @@ export async function tryAcquireLock(
 export async function releaseLock(handle: LockHandle): Promise<boolean> {
   const key = storageKey(handle.key);
   if (!hasKvConfig()) return releaseMemoryLock(key, handle.token);
+  const metadataKey = lockMetadataStorageKey(handle.key);
 
   try {
     const client = kv as KvClient;
     if (typeof client.eval === "function") {
-      const result = await client.eval(RELEASE_SCRIPT, [key], [handle.token]);
+      const result = await client.eval(RELEASE_SCRIPT, [key, metadataKey], [handle.token]);
       return result === 1 || result === "1";
     }
   } catch {
@@ -107,11 +111,13 @@ export async function checkLock(key: string): Promise<LockSnapshot> {
   if (!hasKvConfig()) return checkMemoryLock(key, fullKey);
 
   try {
-    const existing = await (kv as KvClient).get(fullKey);
+    const client = kv as KvClient;
+    const existing = await client.get(fullKey);
+    const locked = existing !== null && existing !== undefined;
     return {
       key,
-      locked: existing !== null && existing !== undefined,
-      expiresAt: null,
+      locked,
+      expiresAt: locked ? await readLockExpiresAt(client, key) : null,
     };
   } catch {
     warnFallbackOnce();
@@ -139,8 +145,16 @@ async function acquireOnce(key: string, token: string, ttlMs: number) {
   if (!hasKvConfig()) return acquireMemoryLock(key, token, ttlMs);
 
   try {
-    const result = await (kv as KvClient).set(key, token, { nx: true, px: ttlMs });
-    return result === "OK" || result === "ok" || result === true;
+    const client = kv as KvClient;
+    const expiresAt = Date.now() + ttlMs;
+    const result = await client.set(key, token, { nx: true, px: ttlMs });
+    const acquired = result === "OK" || result === "ok" || result === true;
+    if (acquired) {
+      await client
+        .set(lockMetadataStorageKeyFromFullKey(key), expiresAt, { px: ttlMs })
+        .catch(() => undefined);
+    }
+    return acquired;
   } catch {
     warnFallbackOnce();
     return acquireMemoryLock(key, token, ttlMs);
@@ -178,7 +192,14 @@ async function releaseWithTokenCheckedFallback(key: string, token: string) {
   const existing = await client.get(key);
   if (existing !== token) return false;
   await client.del(key);
+  await client.del(lockMetadataStorageKeyFromFullKey(key)).catch(() => undefined);
   return true;
+}
+
+async function readLockExpiresAt(client: KvClient, key: string) {
+  const value = await client.get<string | number>(lockMetadataStorageKey(key));
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function cleanupExpiredMemoryLock(key: string) {
@@ -192,6 +213,16 @@ function hasKvConfig() {
 
 function storageKey(key: string) {
   return `${lockPrefix}${key}`;
+}
+
+function lockMetadataStorageKey(key: string) {
+  return `${lockMetaPrefix}${key}`;
+}
+
+function lockMetadataStorageKeyFromFullKey(key: string) {
+  return key.startsWith(lockPrefix)
+    ? `${lockMetaPrefix}${key.slice(lockPrefix.length)}`
+    : `${lockMetaPrefix}${key}`;
 }
 
 function warnFallbackOnce() {
