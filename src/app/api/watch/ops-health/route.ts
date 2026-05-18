@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import { buildDecisionOpsCronAudit } from "@/lib/team/decisionOpsCronAudit";
 import { buildDecisionOpsDeepDiagnostics } from "@/lib/team/decisionOpsDeepDiagnostics";
 import { buildDecisionOpsFreshness } from "@/lib/team/decisionOpsFreshness";
 import {
@@ -40,6 +41,7 @@ export async function GET(request: Request) {
   const includeRollup = url.searchParams.get("rollup") === "1";
   const includeSlo = url.searchParams.get("slo") === "1";
   const includeQualityGate = url.searchParams.get("qualityGate") === "1";
+  const includeCronAudit = url.searchParams.get("cronAudit") === "1";
   const needsDecisionRecords =
     includeReconciliation ||
     includeDeepDiagnostics ||
@@ -127,6 +129,15 @@ export async function GET(request: Request) {
               runs,
               records: decisionRecords,
               providerTelemetry,
+            }),
+          }
+        : {}),
+      ...(includeCronAudit
+        ? {
+            cronAudit: buildDecisionOpsCronAudit({
+              jobs,
+              runs,
+              queueReadiness,
             }),
           }
         : {}),

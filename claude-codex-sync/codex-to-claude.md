@@ -3249,3 +3249,74 @@ Improves the user-visible in-progress state so active cards no longer look froze
 - Production not touched.
 
 [DOC-HINT: B79 adds public stage heartbeat age to active progress labels without changing pipeline or layout.]
+
+# B80 queue / cron auditability report
+
+Date: 2026-05-18
+
+## Scope
+
+Adds a protected, read-only cron audit view to the existing ops-health endpoint. This makes the
+scheduled PM chain easier to inspect as one object: Vercel cron schedule, latest scheduled PM job,
+latest scheduled PM run, queue mode/readiness, cron-only retry backlog, stale leases, zero-output
+jobs, and public-output gaps.
+
+## Root Cause / Gap
+
+- Existing diagnostics already covered queue/run health, freshness, SLO, reconciliation, deep
+  diagnostics, and quality gate checks.
+- The missing operational view was a single cron-specific audit surface that ties `vercel.json`
+  schedule expectations to scheduled job/run ledger state and queue readiness.
+- Without that view, cron delivery issues, queue lease issues, and scheduled-run output gaps had to
+  be inferred across multiple diagnostics.
+
+## Changes
+
+- `src/lib/team/decisionOpsCronAudit.ts`
+  - New pure read-only builder for cron audit diagnostics.
+  - Reports schedule path/expression (`/api/cron/strategy-replay`, `0 */3 * * *`), thresholds,
+    queue mode/topic/visibility window, cron-only job counts, latest cron job/run snapshots, and
+    actionable issues.
+  - Issues include missing/stale cron jobs, overdue cron retries, exhausted cron retries, stale cron
+    running leases, zero-output cron jobs, missing cron runs, failed/stale cron runs, and succeeded
+    runs with missing public timeline output.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds `cronAudit=1` optional response field for authorized callers.
+  - Keeps the endpoint protected by the existing ops secret path and no-store cache header.
+- `package.json`
+  - Adds the new cron audit test to `test:watch-pipeline`.
+
+## Tests Added
+
+- `src/lib/team/__tests__/decisionOpsCronAudit.test.ts`
+  - Recent cron job/run stays healthy and surfaces schedule + queue mode.
+  - Stale cron delivery + missing run ledger becomes critical.
+  - Cron-only retry/stale-running checks ignore user-visit jobs.
+- `src/app/api/watch/ops-health/route.test.ts`
+  - `?cronAudit=1` calls the cron audit builder and returns the optional payload.
+
+## Verify
+
+- Red before fix:
+  - `decisionOpsCronAudit.test.ts` failed because the module did not exist.
+  - `ops-health route.test.ts` failed because the builder was never called.
+- Target green:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsCronAudit.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 2 files / 12 tests.
+- Full gates:
+  - `npm run verify`: PASS; includes format, typecheck, lint, agent-ip, news, news tests,
+    watch-pipeline, chat-v3-final, execution-safety.
+  - `npm run test:watch-pipeline`: PASS via verify, 63 files / 378 tests.
+  - `npm run build`: PASS after rerunning alone. First build attempt was invalid because it ran in
+    parallel with `verify:a11y` local dev and both wrote `.next`.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This is diagnostics only. It does not change cron schedule, queue publishing, queue consuming,
+  PM execution, replay, repair, candidate ranking, public UI, refresh cadence, SSE, or KV writes.
+- Local Vercel CLI was not used because this machine is still logged into the wrong Vercel team for
+  Claw42; preview must come from GitHub/Vercel webhook after PR push.
+- Production not touched.
+
+[DOC-HINT: B80 adds protected cron-specific queue/run audit diagnostics without changing PM execution, cron cadence, queue behavior, or public UI.]
