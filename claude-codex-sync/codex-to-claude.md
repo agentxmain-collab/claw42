@@ -3696,3 +3696,77 @@ operator-facing summary.
 - Production not touched.
 
 [DOC-HINT: B85 adds a protected read-only unified ops summary on ops-health without changing resolution writers, cron, PM execution, queue behavior, KV writes, prompts, provider routing, or public UI.]
+
+# B86 chain stability diagnostics report
+
+Date: 2026-05-19
+
+## Scope
+
+Adds a protected, read-only `stability=1` diagnostics view to `/api/watch/ops-health`. This layer
+checks whether the PM decision chain is stable across 24h and 7d windows, not just whether the most
+recent signal is fresh.
+
+## Root Cause / Gap
+
+- Existing freshness/SLO diagnostics catch current staleness and per-run violations.
+- B86 adds a longer-window stability layer:
+  - scheduled cron coverage vs expected 3h cadence
+  - run success rate
+  - public output rate after successful runs
+  - queued/running backlog
+  - stale running jobs
+- `stability=1` reads the full 500-row ledger window so 7d analysis has enough raw data.
+
+## Changes
+
+- `src/lib/team/decisionOpsStability.ts`
+  - New pure builder for 24h / 168h stability windows.
+  - Primary issues: `stale_running_job`, `public_output_gap`, `run_success_rate_low`,
+    `cron_cadence_gap`, `queue_backlog`.
+  - Thresholds are explicit in payload.
+  - All actions are non-executable.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `stability=1`.
+  - Uses ledger limit 500 for stability requests.
+  - Builds public PM events from records and exposes only `stability` by default.
+- `package.json`
+  - Adds `decisionOpsStability.test.ts` to `test:watch-pipeline`.
+
+## Tests Added
+
+- `src/lib/team/__tests__/decisionOpsStability.test.ts`
+  - Healthy 24h / 7d cron, run, and public output coverage.
+  - Cron cadence gap is degraded before queue/model changes are suggested.
+  - Missing public output after successful runs is critical.
+  - Stale running jobs are critical queue stability risk.
+- `src/app/api/watch/ops-health/route.test.ts`
+  - `?stability=1` reads jobs/runs with limit 500, reads records, builds public events, and exposes
+    only `stability` by default.
+
+## Verify
+
+- Red before fix:
+  - `decisionOpsStability.test.ts` failed because the module did not exist.
+  - `ops-health route.test.ts` failed because `stability=1` did not read the 500-row ledger or build
+    the stability report.
+- Target green:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsStability.test.ts src/app/api/watch/ops-health/route.test.ts`:
+    PASS, 2 files / 19 tests.
+- Full gates:
+  - `npm run verify`: PASS; includes format, typecheck, lint, agent-ip, news, news tests,
+    watch-pipeline 69 files / 404 tests, chat-v3-final 50 synthetic threads, execution-safety.
+  - `npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This is diagnostics only. It does not change `decisionResolution.ts`, cron resolution, PM
+  pipeline, replay, repair, queue behavior, candidate ranking, public UI, refresh cadence, SSE,
+  locks, KV writes, prompts, provider routing, or production deploy behavior.
+- Local Vercel CLI was not used because this machine is still logged into the wrong Vercel team for
+  Claw42; preview must come from GitHub/Vercel webhook after PR push.
+- Production not touched.
+
+[DOC-HINT: B86 adds a protected read-only long-window stability layer on ops-health without changing resolution writers, cron, PM execution, queue behavior, KV writes, prompts, provider routing, or public UI.]
