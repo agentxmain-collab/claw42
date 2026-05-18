@@ -356,7 +356,9 @@ function readMemoryJobs(locale: Locale, limit: number) {
 }
 
 function sortJobs(jobs: PmDecisionJobRecord[]) {
-  return [...jobs].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  return [...jobs].sort(
+    (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || a.id.localeCompare(b.id),
+  );
 }
 
 function hasKvConfig() {

@@ -92,4 +92,26 @@ describe("pmDecisionJobLedger", () => {
       nextRunAt: expect.any(String),
     });
   });
+
+  it("orders same-timestamp jobs with a stable id tie-breaker", async () => {
+    const now = Date.UTC(2026, 4, 17, 10, 0, 0);
+    const btc = await enqueuePmDecisionJob({
+      kind: "once",
+      triggerSource: "user_visit_trigger",
+      locale: "zh_CN",
+      symbol: "BTC",
+      now,
+    });
+    const eth = await enqueuePmDecisionJob({
+      kind: "once",
+      triggerSource: "user_visit_trigger",
+      locale: "zh_CN",
+      symbol: "ETH",
+      now,
+    });
+
+    const jobs = await readPmDecisionJobs({ locale: "zh_CN" });
+
+    expect(jobs.map((job) => job.id)).toEqual([btc.id, eth.id].sort());
+  });
 });

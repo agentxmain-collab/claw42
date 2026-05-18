@@ -123,6 +123,14 @@ describe("summarizeDecisionOpsHealth", () => {
             },
           },
         }),
+        run({
+          id: "run-stale-running",
+          status: "running",
+          startedAt: "2026-05-18T11:00:00.000Z",
+          completedAt: null,
+          decisionRecordId: null,
+          publicTimelineEventId: null,
+        }),
       ],
     });
 
@@ -142,11 +150,19 @@ describe("summarizeDecisionOpsHealth", () => {
       oldestQueuedAgeMs: 20 * 60_000,
     });
     expect(summary.runs).toMatchObject({
-      total: 2,
+      total: 3,
+      running: 1,
       succeeded: 1,
       skipped: 1,
       qualityBlocked: 1,
+      staleRunning: 1,
+      oldestRunningAgeMs: 60 * 60_000,
       p95DurationMs: 10 * 60_000,
+    });
+    expect(summary.quality).toMatchObject({
+      scoredRuns: 1,
+      publishableRuns: 0,
+      averageScore: 42,
     });
     expect(summary.alerts).toEqual(
       expect.arrayContaining([
@@ -154,6 +170,7 @@ describe("summarizeDecisionOpsHealth", () => {
         "queue_stale_running",
         "queue_exhausted",
         "job_zero_output",
+        "run_stale_running",
         "quality_blocking",
       ]),
     );
@@ -173,6 +190,11 @@ describe("summarizeDecisionOpsHealth", () => {
           alert: "job_zero_output",
           severity: "degraded",
           count: 2,
+        }),
+        expect.objectContaining({
+          alert: "run_stale_running",
+          severity: "critical",
+          count: 1,
         }),
       ]),
     );
