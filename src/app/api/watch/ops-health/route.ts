@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import { buildDecisionOpsChainRunbook } from "@/lib/team/decisionOpsChainRunbook";
 import { buildDecisionOpsCronAudit } from "@/lib/team/decisionOpsCronAudit";
 import { buildDecisionOpsDeepDiagnostics } from "@/lib/team/decisionOpsDeepDiagnostics";
 import { buildDecisionOpsFreshness } from "@/lib/team/decisionOpsFreshness";
@@ -42,13 +43,15 @@ export async function GET(request: Request) {
   const includeSlo = url.searchParams.get("slo") === "1";
   const includeQualityGate = url.searchParams.get("qualityGate") === "1";
   const includeCronAudit = url.searchParams.get("cronAudit") === "1";
+  const includeRunbook = url.searchParams.get("runbook") === "1";
   const needsDecisionRecords =
     includeReconciliation ||
     includeDeepDiagnostics ||
     includeFreshness ||
     includeRollup ||
     includeSlo ||
-    includeQualityGate;
+    includeQualityGate ||
+    includeRunbook;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
@@ -58,7 +61,7 @@ export async function GET(request: Request) {
   const queueReadiness = getPmDecisionQueueReadiness();
   const health = summarizeDecisionOpsHealth({ jobs, runs });
   const publicEvents =
-    includeReconciliation || includeFreshness || includeRollup || includeSlo
+    includeReconciliation || includeFreshness || includeRollup || includeSlo || includeRunbook
       ? publicPmEventsFromRecords(decisionRecords)
       : [];
   const providerTelemetry =
@@ -84,11 +87,19 @@ export async function GET(request: Request) {
         })
       : null;
   const freshness =
-    includeFreshness || includeRollup
+    includeFreshness || includeRollup || includeRunbook
       ? buildDecisionOpsFreshness({
           jobs,
           runs,
           publicEvents,
+        })
+      : null;
+  const cronAudit =
+    includeCronAudit || includeRunbook
+      ? buildDecisionOpsCronAudit({
+          jobs,
+          runs,
+          queueReadiness,
         })
       : null;
 
@@ -134,10 +145,15 @@ export async function GET(request: Request) {
         : {}),
       ...(includeCronAudit
         ? {
-            cronAudit: buildDecisionOpsCronAudit({
-              jobs,
-              runs,
-              queueReadiness,
+            cronAudit,
+          }
+        : {}),
+      ...(includeRunbook && cronAudit && freshness
+        ? {
+            runbook: buildDecisionOpsChainRunbook({
+              cronAudit,
+              freshness,
+              health,
             }),
           }
         : {}),
