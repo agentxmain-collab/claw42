@@ -2895,3 +2895,60 @@ cadence, or production deployment.
 - Production not touched.
 
 [DOC-HINT: B64-B67 adds protected read-only ops rollup summary with overall status, Top 3 issues, and non-executable runbook recommendations.]
+
+# B68-B71 ops SLO diagnostics implementation report
+
+Date: 2026-05-18
+
+## Scope
+
+B68-B71 adds protected, read-only SLO diagnostics for the long-running PM decision queue and public
+output chain. This batch does not change PM execution, queueing, replay, repair, candidate
+selection, public UI, refresh cadence, or production deployment.
+
+## Changes
+
+- `src/lib/team/decisionOpsSlo.ts`
+  - Adds queue/run/public-output SLO thresholds.
+  - Detects stale running jobs, overdue retries, exhausted retries, zero-output successes, stale
+    running runs, failed runs, and succeeded runs missing public PM timeline output.
+  - Adds 24h and 7d window summaries for run success rate, zero-output rate, and public projection
+    rate.
+  - Emits deterministic violation records with severity, target id, observed value, threshold, and
+    operator action.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `?slo=1` response field behind the existing ops-health secret gate.
+  - Reuses public timeline projection from persisted records so public-output SLOs match what users
+    can actually see.
+- `package.json`
+  - Adds the new SLO test to `test:watch-pipeline`.
+
+## Red / Green
+
+- Red tests first:
+  - missing SLO module import
+  - `ops-health?slo=1` did not load public records or return SLO diagnostics
+- Green target test:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsSlo.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 2 files / 9 tests.
+
+## Verify
+
+- `npm run format:check`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run test:watch-pipeline`: PASS, 61 files / 365 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- SLO diagnostics are read-only and do not enqueue, repair, replay, or write KV.
+- Public projection SLOs intentionally treat succeeded runs without public PM events as critical
+  because this is the user-visible "backend ran but board looks empty" failure mode.
+- No local Vercel CLI deploy, because the local CLI identity remains outside the Claw42 project
+  identity.
+- Production not touched.
+
+[DOC-HINT: B68-B71 adds protected read-only SLO diagnostics for PM job/run/public-output stability with 24h and 7d windows.]
