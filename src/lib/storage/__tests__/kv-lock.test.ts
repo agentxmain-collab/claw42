@@ -9,7 +9,7 @@ import {
 } from "@/lib/storage/kv-lock";
 
 type SetOptions = { nx?: boolean; px?: number };
-type Entry = { value: string; expiresAt: number };
+type Entry = { value: string | number; expiresAt: number };
 
 const store = new Map<string, Entry>();
 const mocks = vi.hoisted(() => ({
@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     const existing = getValue(keys[0]);
     if (existing === args[0]) {
       store.delete(keys[0]);
+      if (keys[1]) store.delete(keys[1]);
       return 1;
     }
     return 0;
@@ -26,7 +27,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@vercel/kv", () => ({
   kv: {
-    set: vi.fn(async (key: string, value: string, options: SetOptions) => {
+    set: vi.fn(async (key: string, value: string | number, options: SetOptions = {}) => {
       cleanup(key);
       if (options.nx && store.has(key)) return null;
       store.set(key, { value, expiresAt: Date.now() + (options.px ?? 30_000) });
@@ -69,12 +70,14 @@ describe("kv-lock", () => {
   });
 
   test("checkLock reports KV-backed lock presence", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 4, 18, 12, 0, 0));
     await tryAcquireLock("status-key");
 
     await expect(checkLock("status-key")).resolves.toMatchObject({
       key: "status-key",
       locked: true,
-      expiresAt: null,
+      expiresAt: Date.UTC(2026, 4, 18, 12, 0, 30),
     });
     await expect(checkLock("missing-key")).resolves.toMatchObject({
       key: "missing-key",
@@ -101,6 +104,7 @@ describe("kv-lock", () => {
     expect(handle).not.toBeNull();
     await expect(releaseLock(handle!)).resolves.toBe(true);
     expect(store.has("lock:release-key")).toBe(false);
+    expect(store.has("lock-meta:release-key")).toBe(false);
   });
 
   test("releaseLock refuses a mismatched token", async () => {
@@ -108,6 +112,7 @@ describe("kv-lock", () => {
 
     await expect(releaseLock({ ...handle!, token: "wrong-token" })).resolves.toBe(false);
     expect(store.has("lock:token-key")).toBe(true);
+    expect(store.has("lock-meta:token-key")).toBe(true);
   });
 
   test("releaseLock falls back to token-checked get plus del when eval is unavailable", async () => {
@@ -116,6 +121,7 @@ describe("kv-lock", () => {
 
     await expect(releaseLock(handle!)).resolves.toBe(true);
     expect(store.has("lock:fallback-release")).toBe(false);
+    expect(store.has("lock-meta:fallback-release")).toBe(false);
   });
 
   test("withLock returns the wrapped function value and releases", async () => {

@@ -2517,3 +2517,59 @@ B42 Normal gate wiring:
 - Production: not touched
 
 [DOC-HINT: B39-B42 turns ops-health into an actionable status surface and adds a public quality regression corpus plus alias-based public PM projection to prevent backend-status wording, TeamMemberId leaks, stage gaps, and watch-only trade-card regressions from returning.]
+
+# B43 lock expiry metadata implementation report
+
+Date: 2026-05-18
+
+## Scope
+
+B43 fixes a remaining refresh-stability gap in the KV lock layer. Before this patch,
+`checkLock()` could tell the refresh route that a KV-backed lock existed, but could not return an
+expiry timestamp. That meant real Vercel `locked` / `refreshing` responses could still have
+`nextAllowedAt=null`, even though the UI and visible-session retry code are built to respect server
+retry timing when it is present.
+
+## First-hand finding
+
+- `src/lib/storage/kv-lock.ts` stored only the lock token in KV.
+- In-memory locks already carried `expiresAt`; KV-backed locks returned `expiresAt: null`.
+- Red test confirmed the gap: KV `checkLock("status-key")` returned `locked=true` with
+  `expiresAt=null`.
+
+## Changes
+
+- `src/lib/storage/kv-lock.ts`
+  - Adds a companion `lock-meta:<key>` KV entry containing the expiry timestamp when a lock is
+    acquired.
+  - `checkLock()` now reads that metadata and returns `expiresAt` for KV-backed locks.
+  - `releaseLock()` deletes the metadata with the lock, both in the Lua path and token-checked
+    fallback path.
+  - Existing token-based release semantics are preserved.
+- `src/lib/storage/__tests__/kv-lock.test.ts`
+  - Regression coverage for KV `expiresAt` visibility.
+  - Regression coverage that metadata is preserved on failed token release and deleted on valid
+    release.
+- `package.json`
+  - Adds `src/lib/storage/__tests__/kv-lock.test.ts` to `npm run test:watch-pipeline`.
+- `docs/superpowers/plans/2026-05-18-b43-lock-expiry-metadata.md`
+  - Captures the narrow B43 plan and verification scope.
+
+## Verify
+
+- Red test observed first: KV-backed `checkLock()` returned `expiresAt=null`.
+- `npx vitest run src/lib/storage/__tests__/kv-lock.test.ts`: PASS, 13 tests.
+- `npx vitest run src/lib/storage/__tests__/kv-lock.test.ts src/app/api/watch/refresh/route.test.ts src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`: PASS, 32 tests.
+- `npm run test:watch-pipeline`: PASS, 56 files / 343 tests.
+- `npm run verify`: PASS, includes format/typecheck/lint/agent-ip/news/news tests/watch-pipeline/chat-v3/execution-safety.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- No public UI layout change.
+- No PM pipeline / candidate ranking / public timeline schema change.
+- Production not touched.
+
+[DOC-HINT: B43 makes KV-backed refresh locks return expiry metadata so locked/refreshing responses can drive visible-session retry timing instead of returning null nextAllowedAt.]
