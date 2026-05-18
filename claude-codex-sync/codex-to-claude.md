@@ -2364,4 +2364,13 @@ Changes:
 - `npm run verify:metrics`: PASS, 5 tests
 - `npm run build`: PASS
 
+## PR / Preview
+
+- PR: https://github.com/agentxmain-collab/claw42/pull/134
+- Commit: `e18a96b0732da2d071b212c4e8511fd09559b99e`
+- Preview: https://claw42-site-git-feature-b31-ea5c96-agentxmain-collabs-projects.vercel.app
+- Bypass: https://claw42-site-git-feature-b31-ea5c96-agentxmain-collabs-projects.vercel.app/?_vercel_share=oAwGVXrZQnXGh5lTDQNQy0w1Egrtf3VR
+- Preview timeline API smoke: `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=1440&limit=100` returned `eventsLength=4`, `windowMinutes=1440`, first event `pm_decision`, first symbol `MARKET`.
+- GitHub checks before this report-link commit: `verify` PASS, `deploy preview` PASS, Vercel deployment READY.
+
 [DOC-HINT: B31-B34 turns queue retry, visible-session freshness, public model-quality gating, and memory-loop prompt hygiene into enforced code paths with regression coverage.]
