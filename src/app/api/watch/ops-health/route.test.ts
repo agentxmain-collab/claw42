@@ -52,7 +52,7 @@ function job() {
   };
 }
 
-function run() {
+function run(overrides: Record<string, unknown> = {}) {
   return {
     id: "run:pm:BTC:1779102000000",
     schemaVersion: 1,
@@ -77,6 +77,7 @@ function run() {
     publicTimelineEventId: "public:pm:BTC:1779102000000",
     error: null,
     skipReason: null,
+    ...overrides,
   };
 }
 
@@ -336,6 +337,69 @@ describe("/api/watch/ops-health", () => {
         expect.objectContaining({ windowHours: 24 }),
         expect.objectContaining({ windowHours: 168 }),
       ],
+    });
+  });
+
+  it("returns optional quality gate diagnostics for authorized callers", async () => {
+    readDecisionRunsMock.mockResolvedValue([
+      run({
+        quality: {
+          schemaVersion: 1,
+          score: 83,
+          publishable: true,
+          warningCount: 0,
+          warnings: [],
+          blockingWarnings: [],
+          leakCount: 0,
+          duplicateRationaleCount: 0,
+          roleCoverage: { active: 12, contributorCount: 12, analystInputCount: 12 },
+          directionDistribution: { long: 7, short: 2, neutral: 2, wait: 1 },
+          evidence: { citedEvidenceCount: 6, analystCitationCount: 9 },
+          trade: {
+            hasTradeCard: true,
+            direction: "long",
+            confidence: 0.73,
+            actionable: true,
+          },
+        },
+      }),
+    ]);
+    readAllDecisionRecordsMock.mockResolvedValue([
+      {
+        id: "pm:BTC:1779102000000",
+        modelProvider: "deepseek-chat",
+      },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&qualityGate=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(summarizeProviderTelemetryMock).toHaveBeenCalled();
+    expect(payload.qualityGate).toMatchObject({
+      schemaVersion: 1,
+      status: "healthy",
+      publicRisk: {
+        scoredRuns: 1,
+        publishableRuns: 1,
+      },
+      byCandidateType: {
+        symbol: expect.objectContaining({
+          totalRuns: 1,
+          averageScore: 83,
+        }),
+      },
+      byProvider: {
+        "deepseek-chat": expect.objectContaining({
+          totalRuns: 1,
+          publishableRuns: 1,
+        }),
+      },
     });
   });
 });

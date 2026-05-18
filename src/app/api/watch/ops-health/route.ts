@@ -7,6 +7,7 @@ import {
   buildDecisionOpsHealthDetails,
   summarizeDecisionOpsHealth,
 } from "@/lib/team/decisionOpsHealth";
+import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
 import { buildDecisionOpsSlo } from "@/lib/team/decisionOpsSlo";
@@ -38,12 +39,14 @@ export async function GET(request: Request) {
   const includeFreshness = url.searchParams.get("freshness") === "1";
   const includeRollup = url.searchParams.get("rollup") === "1";
   const includeSlo = url.searchParams.get("slo") === "1";
+  const includeQualityGate = url.searchParams.get("qualityGate") === "1";
   const needsDecisionRecords =
     includeReconciliation ||
     includeDeepDiagnostics ||
     includeFreshness ||
     includeRollup ||
-    includeSlo;
+    includeSlo ||
+    includeQualityGate;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
@@ -57,7 +60,7 @@ export async function GET(request: Request) {
       ? publicPmEventsFromRecords(decisionRecords)
       : [];
   const providerTelemetry =
-    includeDeepDiagnostics || includeRollup
+    includeDeepDiagnostics || includeRollup || includeQualityGate
       ? summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 })
       : null;
   const reconciliation =
@@ -115,6 +118,15 @@ export async function GET(request: Request) {
               jobs,
               runs,
               publicEvents,
+            }),
+          }
+        : {}),
+      ...(includeQualityGate
+        ? {
+            qualityGate: buildDecisionOpsQualityGate({
+              runs,
+              records: decisionRecords,
+              providerTelemetry,
             }),
           }
         : {}),

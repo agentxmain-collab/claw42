@@ -2952,3 +2952,60 @@ selection, public UI, refresh cadence, or production deployment.
 - Production not touched.
 
 [DOC-HINT: B68-B71 adds protected read-only SLO diagnostics for PM job/run/public-output stability with 24h and 7d windows.]
+
+# B72-B75 model quality continuous gate implementation report
+
+Date: 2026-05-18
+
+## Scope
+
+B72-B75 adds a protected, read-only model quality gate over recent PM decision runs. This batch does
+not change PM execution, queueing, replay, repair, candidate selection, public UI, refresh cadence,
+or production deployment.
+
+## Changes
+
+- `src/lib/team/decisionOpsQualityGate.ts`
+  - Adds `buildDecisionOpsQualityGate` over decision runs, persisted decision records, and provider
+    telemetry.
+  - Summarizes public quality risk: low evidence, low role coverage, duplicate rationale, and
+    public content leak counts.
+  - Splits quality distribution by `candidateType` (`symbol`, `market_overview`, `hotspot`) and by
+    decision-record `modelProvider`.
+  - Flags provider concentration, fallback rate, and failure rate using existing provider telemetry.
+  - Emits deterministic issues with `healthy` / `degraded` / `critical` status and operator actions.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `?qualityGate=1` response field behind the existing ops-health secret gate.
+  - Loads persisted records and provider telemetry only when the requested diagnostics require them.
+- `package.json`
+  - Adds the new quality gate unit test to `test:watch-pipeline`.
+
+## Red / Green
+
+- Red tests first:
+  - missing quality gate module import
+  - `ops-health?qualityGate=1` did not load decision records or return quality diagnostics
+- Green target test:
+  - `npm exec vitest run src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionOpsQualityGate.test.ts`: PASS, 2 files / 10 tests.
+
+## Verify
+
+- `npm run test:watch-pipeline`: PASS, 62 files / 368 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- Quality gate diagnostics are read-only and do not enqueue, repair, replay, or write KV.
+- Public content leak risk is critical; duplicate rationale / low evidence / low role coverage are
+  degraded signals unless paired with critical provider failures.
+- Provider quality comparison is derived by mapping `DecisionRunRecord.decisionRecordId` to
+  `StrategyDecisionRecord.modelProvider`; runs without a matching record are bucketed under
+  `unknown`.
+- No local Vercel CLI deploy, because the local CLI identity remains outside the Claw42 project
+  identity.
+- Production not touched.
+
+[DOC-HINT: B72-B75 adds protected read-only model quality gate diagnostics split by candidate type, provider, and public quality risk.]
