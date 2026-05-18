@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
+import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import {
   buildDecisionOpsHealthDetails,
   summarizeDecisionOpsHealth,
 } from "@/lib/team/decisionOpsHealth";
+import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
 import { readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
+import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import { projectDecisionRecordToPublicEvent } from "@/lib/watch/publicTimelineProjection";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -23,20 +27,33 @@ export async function GET(request: Request) {
   const locale = localeFromRequestUrl(url, request.headers.get("accept-language"));
   const limit = normalizeLimit(url.searchParams.get("limit"));
   const includeDetails = url.searchParams.get("details") === "1";
+  const includeReconciliation = url.searchParams.get("reconcile") === "1";
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
-  const [jobs, runs] = await Promise.all([
+  const [jobs, runs, publicEvents] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
     readDecisionRuns({ locale, limit }),
+    includeReconciliation ? readPublicPmEvents(locale) : Promise.resolve([]),
   ]);
+  const queueReadiness = getPmDecisionQueueReadiness();
 
   return NextResponse.json(
     {
       ok: true,
       locale,
       health: summarizeDecisionOpsHealth({ jobs, runs }),
-      queueReadiness: getPmDecisionQueueReadiness(),
+      queueReadiness,
       ...(includeDetails
         ? { details: buildDecisionOpsHealthDetails({ jobs, runs, limit: detailLimit }) }
+        : {}),
+      ...(includeReconciliation
+        ? {
+            reconciliation: buildDecisionOpsReconciliation({
+              jobs,
+              runs,
+              publicEvents,
+              queueReadiness,
+            }),
+          }
         : {}),
     },
     {
@@ -45,6 +62,13 @@ export async function GET(request: Request) {
       },
     },
   );
+}
+
+async function readPublicPmEvents(locale: ReturnType<typeof localeFromRequestUrl>) {
+  const records = await readAllDecisionRecords(500, locale);
+  return records
+    .map((record) => projectDecisionRecordToPublicEvent(record))
+    .filter((event): event is PublicTimelineEvent => event?.payload.kind === "pm_decision");
 }
 
 function isAuthorized(request: Request) {
