@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PmDecisionJobRecord } from "@/lib/watch/pmDecisionJobLedger";
 import {
+  getPmDecisionQueueReadiness,
   PM_DECISION_QUEUE_RETENTION_SECONDS,
   PM_DECISION_QUEUE_TOPIC,
   processPmDecisionQueueMessage,
@@ -36,6 +37,23 @@ function job(overrides: Partial<PmDecisionJobRecord> = {}): PmDecisionJobRecord 
 }
 
 describe("pmDecisionJobQueue", () => {
+  it("exposes explicit queue readiness without publishing a message", () => {
+    expect(getPmDecisionQueueReadiness({})).toMatchObject({
+      schemaVersion: 1,
+      enabled: false,
+      mode: "inline",
+      topic: PM_DECISION_QUEUE_TOPIC,
+      reason: "PM_DECISION_QUEUE_ENABLED is not true",
+    });
+    expect(getPmDecisionQueueReadiness({ PM_DECISION_QUEUE_ENABLED: "true" })).toMatchObject({
+      schemaVersion: 1,
+      enabled: true,
+      mode: "queue",
+      topic: PM_DECISION_QUEUE_TOPIC,
+      reason: "PM_DECISION_QUEUE_ENABLED=true",
+    });
+  });
+
   it("publishes a durable queue message with deployment-safe idempotency", async () => {
     const sendMessage = vi.fn().mockResolvedValue({ messageId: "msg_123" });
     const result = await publishPmDecisionJobToQueue(job(), {

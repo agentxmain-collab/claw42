@@ -18,6 +18,10 @@ describe("memoryLoopEvidence", () => {
       historicalCount: 0,
       sampleSizeCaution: true,
       error: "no_history",
+      learningSignal: {
+        strength: "none",
+        score: 0,
+      },
     });
     expect(formatMemoryContextForPrompt(context)).toContain("Return an empty public rationale");
   });
@@ -56,6 +60,17 @@ describe("memoryLoopEvidence", () => {
     expect(context.similarSetups).toHaveLength(2);
     expect(context.lastReviewNotes).toContain("Volume-confirmed");
     expect(context.sampleSizeCaution).toBe(true);
+    expect(context.learningSignal).toMatchObject({
+      strength: "moderate",
+      score: 44,
+      basis: {
+        sameSymbolResolved: 2,
+        crossSymbolResolved: 0,
+        hasUsableReviewNote: true,
+        sampleSizeCaution: true,
+      },
+    });
+    expect(formatMemoryContextForPrompt(context)).toContain("Memory signal: moderate (score=44)");
   });
 
   test("drops unsafe historical memory notes before they enter the next prompt", async () => {
@@ -215,6 +230,16 @@ describe("memoryLoopEvidence", () => {
     expect(context.historicalCount).toBe(1);
     expect(context.symbolHistoricalCount).toBe(0);
     expect(context.crossSymbolHistoricalCount).toBe(1);
+    expect(context.learningSignal).toMatchObject({
+      strength: "weak",
+      score: 24,
+      basis: {
+        sameSymbolResolved: 0,
+        crossSymbolResolved: 1,
+        hasUsableReviewNote: true,
+        sampleSizeCaution: true,
+      },
+    });
     expect(context.similarSetups).toEqual([
       expect.objectContaining({ symbol: "SOL", outcome: "hit_tp" }),
     ]);

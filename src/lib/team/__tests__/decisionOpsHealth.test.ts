@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { summarizeDecisionOpsHealth } from "@/lib/team/decisionOpsHealth";
+import {
+  buildDecisionOpsHealthDetails,
+  summarizeDecisionOpsHealth,
+} from "@/lib/team/decisionOpsHealth";
 import type { DecisionRunRecord } from "@/lib/team/decisionRunLedger";
 import type { PmDecisionJobRecord } from "@/lib/watch/pmDecisionJobLedger";
 
@@ -84,6 +87,13 @@ describe("summarizeDecisionOpsHealth", () => {
         job({ id: "failed-retry", status: "failed", nextRunAt: "2026-05-18T11:58:00.000Z" }),
         job({ id: "failed-exhausted", status: "failed", attemptCount: 3, nextRunAt: null }),
         job({ id: "succeeded", status: "succeeded", completedAt: "2026-05-18T11:45:00.000Z" }),
+        job({
+          id: "succeeded-zero-output",
+          status: "succeeded",
+          outputCount: 0,
+          auditEventCount: 4,
+          completedAt: "2026-05-18T11:50:00.000Z",
+        }),
       ],
       runs: [
         run(),
@@ -119,15 +129,16 @@ describe("summarizeDecisionOpsHealth", () => {
     expect(summary.generatedAt).toBe("2026-05-18T12:00:00.000Z");
     expect(summary.status).toBe("critical");
     expect(summary.queue).toMatchObject({
-      total: 6,
+      total: 7,
       queued: 2,
       running: 1,
       failed: 2,
-      succeeded: 1,
+      succeeded: 2,
       retryBacklog: 1,
       overdueRetry: 2,
       exhaustedFailed: 1,
       staleRunning: 1,
+      zeroOutputSuccess: 2,
       oldestQueuedAgeMs: 20 * 60_000,
     });
     expect(summary.runs).toMatchObject({
@@ -142,6 +153,7 @@ describe("summarizeDecisionOpsHealth", () => {
         "queue_overdue_retry",
         "queue_stale_running",
         "queue_exhausted",
+        "job_zero_output",
         "quality_blocking",
       ]),
     );
@@ -157,7 +169,69 @@ describe("summarizeDecisionOpsHealth", () => {
           severity: "degraded",
           count: 1,
         }),
+        expect.objectContaining({
+          alert: "job_zero_output",
+          severity: "degraded",
+          count: 2,
+        }),
       ]),
     );
+  });
+
+  it("builds bounded operator details for recent jobs and runs", () => {
+    const details = buildDecisionOpsHealthDetails({
+      jobs: [job({ id: "job-newer", updatedAt: "2026-05-18T11:55:00.000Z" }), job()],
+      runs: [
+        run({
+          id: "run-newer",
+          startedAt: "2026-05-18T11:50:00.000Z",
+          quality: {
+            schemaVersion: 1,
+            score: 88,
+            publishable: true,
+            warningCount: 0,
+            warnings: [],
+            blockingWarnings: [],
+            leakCount: 0,
+            duplicateRationaleCount: 0,
+            roleCoverage: { active: 3, contributorCount: 3, analystInputCount: 3 },
+            directionDistribution: { long: 2, short: 0, neutral: 1, wait: 0 },
+            evidence: { citedEvidenceCount: 3, analystCitationCount: 3 },
+            trade: {
+              hasTradeCard: true,
+              direction: "long",
+              confidence: 0.72,
+              actionable: true,
+            },
+          },
+        }),
+        run({ id: "run-older", startedAt: "2026-05-18T11:00:00.000Z" }),
+      ],
+      limit: 1,
+    });
+
+    expect(details).toMatchObject({
+      schemaVersion: 1,
+      recentJobs: [
+        {
+          id: "job-newer",
+          status: "queued",
+          triggerSource: "user_visit_trigger",
+          outputCount: 0,
+        },
+      ],
+      recentRuns: [
+        {
+          id: "run-newer",
+          status: "succeeded",
+          triggerSource: "cron",
+          quality: {
+            score: 88,
+            publishable: true,
+            blockingWarnings: [],
+          },
+        },
+      ],
+    });
   });
 });

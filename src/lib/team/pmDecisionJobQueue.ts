@@ -26,6 +26,17 @@ export type PmDecisionQueuePublishResult =
   | { mode: "disabled" }
   | { mode: "failed"; errorMessage: string };
 
+export interface PmDecisionQueueReadiness {
+  schemaVersion: 1;
+  enabled: boolean;
+  mode: "queue" | "inline";
+  topic: typeof PM_DECISION_QUEUE_TOPIC;
+  retentionSeconds: typeof PM_DECISION_QUEUE_RETENTION_SECONDS;
+  visibilityTimeoutSeconds: typeof PM_DECISION_QUEUE_VISIBILITY_TIMEOUT_SECONDS;
+  maxDeliveries: typeof PM_DECISION_QUEUE_MAX_DELIVERIES;
+  reason: "PM_DECISION_QUEUE_ENABLED=true" | "PM_DECISION_QUEUE_ENABLED is not true";
+}
+
 type SendMessage = typeof send;
 type QueueRetryMetadata = { deliveryCount: number };
 type QueueRetryDecision = { acknowledge: true } | { afterSeconds: number };
@@ -54,7 +65,7 @@ export async function publishPmDecisionJobToQueue(
     sendMessage?: SendMessage;
   } = {},
 ): Promise<PmDecisionQueuePublishResult> {
-  if (!isPmDecisionQueueEnabled(env)) return { mode: "disabled" };
+  if (!getPmDecisionQueueReadiness(env).enabled) return { mode: "disabled" };
 
   const message: PmDecisionQueueMessage = {
     schemaVersion: 1,
@@ -81,6 +92,22 @@ export async function publishPmDecisionJobToQueue(
       errorMessage: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+export function getPmDecisionQueueReadiness(
+  env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
+): PmDecisionQueueReadiness {
+  const enabled = isPmDecisionQueueEnabled(env);
+  return {
+    schemaVersion: 1,
+    enabled,
+    mode: enabled ? "queue" : "inline",
+    topic: PM_DECISION_QUEUE_TOPIC,
+    retentionSeconds: PM_DECISION_QUEUE_RETENTION_SECONDS,
+    visibilityTimeoutSeconds: PM_DECISION_QUEUE_VISIBILITY_TIMEOUT_SECONDS,
+    maxDeliveries: PM_DECISION_QUEUE_MAX_DELIVERIES,
+    reason: enabled ? "PM_DECISION_QUEUE_ENABLED=true" : "PM_DECISION_QUEUE_ENABLED is not true",
+  };
 }
 
 export async function processPmDecisionQueueMessage(

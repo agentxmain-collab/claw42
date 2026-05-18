@@ -85,7 +85,7 @@ describe("/api/watch/ops-health", () => {
 
   it("returns a no-store queue and run health summary for authorized callers", async () => {
     const response = await GET(
-      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&limit=50", {
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&limit=50&details=1", {
         headers: { authorization: "Bearer ops-secret" },
       }),
     );
@@ -102,6 +102,16 @@ describe("/api/watch/ops-health", () => {
         schemaVersion: 1,
         queue: { total: 1, queued: 1 },
         runs: { total: 1, succeeded: 1 },
+      },
+      queueReadiness: {
+        schemaVersion: 1,
+        enabled: false,
+        mode: "inline",
+      },
+      details: {
+        schemaVersion: 1,
+        recentJobs: [expect.objectContaining({ id: job().id })],
+        recentRuns: [expect.objectContaining({ id: run().id })],
       },
     });
   });
