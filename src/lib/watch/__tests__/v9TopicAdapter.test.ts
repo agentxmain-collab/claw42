@@ -869,6 +869,81 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.messages.some((message) => message.typing)).toBe(true);
   });
 
+  it("keeps analysis-only risk messages hidden while trade-plan stage is still in progress", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+    const [topic] = mapTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            candidateType: "market_overview",
+            candidateKey: "market_overview:zh_CN:2026-05-18",
+            displayTitle: "今日大盘综述",
+            executable: false,
+            tradeDecision: null,
+            rationaleByMember: {},
+            rounds: [
+              {
+                round: 1,
+                memberId: "research_lead",
+                direction: "short",
+                confidence: 0.62,
+                rationale: "Market overview synthesis is still preparing the public plan.",
+                evidenceIds: [],
+              },
+              {
+                round: 1,
+                memberId: "risk_lead",
+                direction: "short",
+                confidence: 0.58,
+                rationale: "Risk review must not render before the public stage reaches risk.",
+                evidenceIds: [],
+              },
+            ],
+            stageTrace: [
+              {
+                stageId: "analyst_inputs",
+                status: "done",
+                observedAt: new Date(now - 180_000).toISOString(),
+              },
+              {
+                stageId: "research_lead",
+                status: "done",
+                observedAt: new Date(now - 120_000).toISOString(),
+              },
+              {
+                stageId: "trade_decision",
+                status: "pending",
+                observedAt: new Date(now - 60_000).toISOString(),
+              },
+              {
+                stageId: "risk_lead",
+                status: "done",
+                observedAt: new Date(now).toISOString(),
+              },
+            ],
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.progress).toBe("当前进行到阶段 3");
+    expect(topic.stages.map((stage) => stage.status)).toEqual([
+      "done",
+      "done",
+      "in_progress",
+      "pending",
+      "pending",
+      "pending",
+    ]);
+    expect(topic.messages.some((message) => message.sourceMemberId === "risk_lead")).toBe(false);
+    expect(topic.messages.some((message) => message.stageId === `${topic.id}-stage-4`)).toBe(false);
+  });
+
   it("groups multi-round decision messages by round label", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");

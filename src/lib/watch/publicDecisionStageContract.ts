@@ -93,7 +93,16 @@ export function publicDecisionVisibleStageLimit(
   options: PublicDecisionStageContractOptions,
 ) {
   if (options.hasRenderableTradeDecision) return 6;
-  if (options.analysisOnlyCandidate) return 6;
+  if (
+    options.analysisOnlyCandidate &&
+    trace?.some(
+      (entry) =>
+        (entry.stageId === "record_write" || entry.stageId === "public_timeline") &&
+        entry.status === "done",
+    )
+  ) {
+    return 6;
+  }
   if (!trace?.length) return 3;
   const statuses = normalizePublicDecisionStageStatuses(trace, options);
   const active = PUBLIC_PROGRESS_GATE_ORDER.find(

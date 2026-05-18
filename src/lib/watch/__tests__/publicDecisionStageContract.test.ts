@@ -133,4 +133,25 @@ describe("public decision stage contract", () => {
     });
     expect(publicDecisionVisibleStageLimit(trace, options)).toBe(6);
   });
+
+  it("does not expose later analysis-only stages before the public current stage reaches them", () => {
+    const trace = [
+      stage("analyst_inputs", "done"),
+      stage("research_lead", "done"),
+      stage("trade_decision", "pending"),
+      stage("risk_lead", "done"),
+    ];
+    const options = {
+      hasRenderableTradeDecision: false,
+      analysisOnlyCandidate: true,
+    };
+
+    expect(normalizePublicDecisionStageStatuses(trace, options)).toMatchObject({
+      analyst_inputs: "done",
+      research_lead: "done",
+      trade_decision: "in_progress",
+      risk_lead: "pending",
+    });
+    expect(publicDecisionVisibleStageLimit(trace, options)).toBe(3);
+  });
 });
