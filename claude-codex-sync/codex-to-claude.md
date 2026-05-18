@@ -2442,3 +2442,60 @@ B38 Memory loop strengthening:
 - Production: not touched
 
 [DOC-HINT: B35-B38 adds protected ops health visibility, blocks public records with stage gaps or very low public quality score, and makes memory_loop retrieve higher-value historical lessons instead of repeating current analysis.]
+
+# B39-B42 batch — quality ops runbook and regression corpus
+
+Date: 2026-05-18
+
+Worktree / branch:
+
+- `/tmp/claw42-b39-b42-quality-ops-next`
+- `feature/b39-b42-quality-ops-next`
+- Base: `169b468` (`Add bot avatar design asset (#110)`)
+
+## Scope completed
+
+B39 Ops health actionability:
+
+- `src/lib/team/decisionOpsHealth.ts` now returns a top-level `status`:
+  `healthy | degraded | critical`.
+- Ops health now includes `alertDetails[]` with severity, count, and a concrete operator action.
+- Queue health now distinguishes exhausted failed jobs via `queue.exhaustedFailed` and `queue_exhausted`.
+
+B40 Public quality regression corpus:
+
+- Added `src/lib/team/__tests__/decisionQualityRegressionCorpus.test.ts`.
+- Corpus covers the exact leakage classes from recent Dan screenshots:
+  backend data-status wording, public `wait` wording, missing-data variants, internal
+  `TeamMemberId` / role IDs, and stage trace jumps.
+- Corpus also protects watch-only market records from being blocked only because they have no trade card.
+
+B41 Ops runbook:
+
+- Added `docs/operations/watch-ops-health-runbook.md`.
+- Documents protected route auth, status model, first checks, and non-goals.
+- Explicitly keeps ops diagnostics out of public UI and avoids automatic replay.
+
+B42 Normal gate wiring:
+
+- `npm run test:watch-pipeline` now includes `decisionQualityRegressionCorpus.test.ts`.
+
+## Verify
+
+- `npx vitest run src/lib/team/__tests__/decisionOpsHealth.test.ts src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionQualityRegressionCorpus.test.ts src/lib/team/__tests__/decisionQuality.test.ts`: PASS, 10 tests
+- `npm run format:check`: PASS
+- `npm run typecheck`: PASS
+- `npm run lint`: PASS
+- `npm run test:watch-pipeline`: PASS, 55 files / 329 tests
+- `npm run verify`: PASS
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes. Note: first run overlapped with `next build` and logged transient `.next` module errors from concurrent Next processes, but exited PASS; build was rerun separately after clearing `.next`.
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS after isolated rerun
+
+## PR / Preview
+
+- PR: pending
+- Preview: pending
+- Production: not touched
+
+[DOC-HINT: B39-B42 turns ops-health into an actionable status surface and adds a public quality regression corpus to prevent backend-status wording, TeamMemberId leaks, stage gaps, and watch-only trade-card regressions from returning.]
