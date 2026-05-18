@@ -10,6 +10,7 @@ import {
   summarizeDecisionOpsHealth,
 } from "@/lib/team/decisionOpsHealth";
 import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
+import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueueRecoveryPolicy";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
 import { buildDecisionOpsSlo } from "@/lib/team/decisionOpsSlo";
@@ -44,6 +45,7 @@ export async function GET(request: Request) {
   const includeQualityGate = url.searchParams.get("qualityGate") === "1";
   const includeCronAudit = url.searchParams.get("cronAudit") === "1";
   const includeRunbook = url.searchParams.get("runbook") === "1";
+  const includeRecovery = url.searchParams.get("recovery") === "1";
   const needsDecisionRecords =
     includeReconciliation ||
     includeDeepDiagnostics ||
@@ -51,7 +53,8 @@ export async function GET(request: Request) {
     includeRollup ||
     includeSlo ||
     includeQualityGate ||
-    includeRunbook;
+    includeRunbook ||
+    includeRecovery;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
@@ -61,7 +64,12 @@ export async function GET(request: Request) {
   const queueReadiness = getPmDecisionQueueReadiness();
   const health = summarizeDecisionOpsHealth({ jobs, runs });
   const publicEvents =
-    includeReconciliation || includeFreshness || includeRollup || includeSlo || includeRunbook
+    includeReconciliation ||
+    includeFreshness ||
+    includeRollup ||
+    includeSlo ||
+    includeRunbook ||
+    includeRecovery
       ? publicPmEventsFromRecords(decisionRecords)
       : [];
   const providerTelemetry =
@@ -87,7 +95,7 @@ export async function GET(request: Request) {
         })
       : null;
   const freshness =
-    includeFreshness || includeRollup || includeRunbook
+    includeFreshness || includeRollup || includeRunbook || includeRecovery
       ? buildDecisionOpsFreshness({
           jobs,
           runs,
@@ -95,7 +103,7 @@ export async function GET(request: Request) {
         })
       : null;
   const cronAudit =
-    includeCronAudit || includeRunbook
+    includeCronAudit || includeRunbook || includeRecovery
       ? buildDecisionOpsCronAudit({
           jobs,
           runs,
@@ -153,6 +161,19 @@ export async function GET(request: Request) {
             runbook: buildDecisionOpsChainRunbook({
               cronAudit,
               freshness,
+              health,
+            }),
+          }
+        : {}),
+      ...(includeRecovery && cronAudit && freshness
+        ? {
+            recoveryPolicy: buildDecisionOpsQueueRecoveryPolicy({
+              runbook: buildDecisionOpsChainRunbook({
+                cronAudit,
+                freshness,
+                health,
+              }),
+              cronAudit,
               health,
             }),
           }
