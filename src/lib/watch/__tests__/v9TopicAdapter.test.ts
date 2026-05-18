@@ -617,7 +617,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.status).toBe("active");
     expect(topic.title).toBe("BTC 实时行情分析");
     expect(topic.explanation).toBe("分析进行中");
-    expect(topic.progress).toBe("当前进行到阶段 3");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 0 秒前");
     expect(topic.strategy).toMatchObject({
       action: "pending",
       actionLabel: "分析中",
@@ -772,7 +772,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("active");
-    expect(topic.progress).toBe("当前进行到阶段 3");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 0 秒前");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -856,7 +856,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("active");
-    expect(topic.progress).toBe("当前进行到阶段 3");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 1 分钟前");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -931,7 +931,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.progress).toBe("当前进行到阶段 3");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 1 分钟前");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -1097,7 +1097,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.status).toBe("active");
     expect(topic.title).toBe("BTC 实时行情分析");
     expect(topic.explanation).toBe("分析进行中");
-    expect(topic.progress).toBe("当前进行到阶段 3");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 0 秒前");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",

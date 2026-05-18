@@ -455,18 +455,37 @@ function currentStageFromTrace(event: PmDecisionTimelineEvent, hasTradeDecision:
     ({ traceId }) => statuses[traceId] === "in_progress",
   );
   if (!active) return null;
-  switch (active.traceId) {
-    case "analyst_inputs":
-      return 1;
-    case "research_lead":
-      return 2;
-    case "trade_decision":
-      return 3;
-    case "risk_lead":
-      return 4;
-    default:
-      return null;
-  }
+  const observedAt = trace.find((entry) => entry.stageId === active.traceId)?.observedAt;
+  const stage = (() => {
+    switch (active.traceId) {
+      case "analyst_inputs":
+        return 1;
+      case "research_lead":
+        return 2;
+      case "trade_decision":
+        return 3;
+      case "risk_lead":
+        return 4;
+      default:
+        return null;
+    }
+  })();
+  if (!stage) return null;
+  return { stage, observedAt };
+}
+
+function formatCurrentStageProgress(stage: number, heartbeatAt: string | number, now: number) {
+  const parsed = typeof heartbeatAt === "number" ? heartbeatAt : Date.parse(heartbeatAt);
+  const suffix = Number.isFinite(parsed) ? ` · ${formatDataAge(parsed, now)}` : "";
+  return `当前进行到阶段 ${stage}${suffix}`;
+}
+
+function fallbackCurrentStageProgress(event: PmDecisionTimelineEvent, now: number) {
+  return formatCurrentStageProgress(3, event.ts, now);
+}
+
+function currentStageNumberFromTrace(event: PmDecisionTimelineEvent, hasTradeDecision: boolean) {
+  return currentStageFromTrace(event, hasTradeDecision)?.stage ?? null;
 }
 
 function makeRationaleMessages({
@@ -560,7 +579,7 @@ function makeTraderMessage(
   const decision = renderableTradeDecision(event);
   if (!decision && !hasRationale) return null;
   if (!decision && isAnalysisOnlyEvent(event)) return null;
-  const currentStage = currentStageFromTrace(event, Boolean(decision));
+  const currentStage = currentStageNumberFromTrace(event, Boolean(decision));
   if (!decision && currentStage !== null && currentStage < 3) return null;
   if (!decision) {
     return {
@@ -826,8 +845,14 @@ function makeProgress(
   if (analysisOnlyComplete) return `${minutesBetween(group.startedAt, now)} 分钟闭环`;
   if (!hasRenderableTradeDecision) {
     const currentStage = currentStageFromTrace(group.latestDecision, hasRenderableTradeDecision);
-    if (currentStage) return `当前进行到阶段 ${currentStage}`;
-    return hasRationale ? "当前进行到阶段 3" : "暂无决策更新";
+    if (currentStage) {
+      return formatCurrentStageProgress(
+        currentStage.stage,
+        currentStage.observedAt ?? group.latestDecision.ts,
+        now,
+      );
+    }
+    return hasRationale ? fallbackCurrentStageProgress(group.latestDecision, now) : "暂无决策更新";
   }
   return `${minutesBetween(group.startedAt, now)} 分钟闭环`;
 }

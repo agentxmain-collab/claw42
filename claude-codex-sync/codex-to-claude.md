@@ -3195,3 +3195,57 @@ stage 4 risk-review messages while the public progress still said stage 3 was in
 - Production not touched.
 
 [DOC-HINT: B78 narrows analysis-only 6-stage visibility to completed records so in-progress cards cannot expose later-stage messages early.]
+
+# B79 stage heartbeat progress report
+
+Date: 2026-05-18
+
+## Scope
+
+Improves the user-visible in-progress state so active cards no longer look frozen at a static
+`当前进行到阶段 N` label. The card now includes the latest public stage heartbeat age.
+
+## Root Cause
+
+- `v9TopicAdapter.makeProgress()` rendered active records as only `当前进行到阶段 3`.
+- Stage traces already carried `observedAt`, and fallback event timestamps were available, but the
+  public progress copy discarded that heartbeat.
+- Result: even when polling/SSE refreshed correctly, the progress label could look unchanged for a
+  long time.
+
+## Changes
+
+- `src/lib/watch/v9TopicAdapter.ts`
+  - `currentStageFromTrace()` now returns the current stage plus its source `observedAt`.
+  - Active progress now renders as `当前进行到阶段 N · 数据 X 分钟前` when a heartbeat timestamp is
+    available.
+  - Records without a stage trace but with rationale use the event timestamp as the fallback
+    heartbeat for stage 3.
+  - No visual layout or pipeline behavior changed.
+
+## Tests Added / Updated
+
+- `src/lib/watch/__tests__/v9TopicAdapter.test.ts`
+  - Red first: active record expected heartbeat copy and failed on old static label.
+  - Updated active partial-stage regressions to assert heartbeat text for current stage age.
+
+## Verify
+
+- Red before fix: `v9TopicAdapter.test.ts` failed because progress was still `当前进行到阶段 3`.
+- Target green: `npm exec vitest run src/lib/watch/__tests__/v9TopicAdapter.test.ts` PASS, 1 file / 32 tests.
+- `npm run format:check`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run test:watch-pipeline`: PASS, 62 files / 374 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This does not change PM pipeline, stage trace writing, candidate ranking, refresh, SSE, or visual
+  layout.
+- Production not touched.
+
+[DOC-HINT: B79 adds public stage heartbeat age to active progress labels without changing pipeline or layout.]
