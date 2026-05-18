@@ -2200,3 +2200,47 @@ B27 的 queue enable rule 过激：未设置 `PM_DECISION_QUEUE_ENABLED` 时，�
 This is a safety rollback of queue default behavior, not deletion of B27 infra. Queue code and consumer stay in place for a later explicit `PM_DECISION_QUEUE_ENABLED=true` verification pass.
 
 [DOC-HINT: B28 makes PM decision queue publishing explicit opt-in so preview falls back to the proven waitUntil/synchronous path until queue consumer processing is separately verified.]
+
+# B.29 hotfix — public timeline 24h backstop for disappearing analysis cards
+
+Date: 2026-05-18
+
+## First-hand symptom
+
+After B28 merged to main, the new main preview deployment `dpl_EiPTrHYFckhDEWmNUyjBmLvz55mQ` returned:
+
+- `/api/watch/timeline?mode=public&locale=zh_CN&windowMinutes=720`: `events.length = 0`
+- `/api/watch/decision-history?symbol=VVV&locale=zh_CN&limit=10`: latest VVV records at `2026-05-17T12:50:14.437Z` and `2026-05-17T09:59:59.925Z`
+- `/api/watch/decision-history?symbol=MARKET&locale=zh_CN&limit=10`: latest MARKET record at `2026-05-17T09:00:00.000Z`
+
+Dan earlier saw only 1 analysis card because VVV was still barely inside the 12h public timeline window. Once it aged past 12h, the same code path fell to 0 cards.
+
+## Root cause judgement
+
+B28 fixed the queue default regression, but the display layer still had a separate fragility: the public board backstop was capped at 720 minutes. The board intentionally fetches a 60-minute primary window first, then a larger fallback window when too few cards exist. That larger fallback was still only 12h, so real records aged out before the next completed run could replace them.
+
+This is not fixture/mock data. The missing cards are real decision records in decision history, but the public timeline display query was too narrow to keep the workbench stable while the next run is in progress.
+
+## Fix
+
+- `src/modules/agent-watch/AgentWatchBoard.tsx`
+  - Increase `PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES` from `720` to `24 * 60`.
+  - The primary live window remains 60 minutes; only the fallback backstop widens when the board has too few cards.
+- `src/app/api/watch/timeline/route.ts`
+  - Increase max accepted public timeline window from 720 minutes to 24h so the client fallback request can actually use the wider backstop.
+
+## Intended behavior
+
+- Fresh records still sort first.
+- New visible-session refresh still runs and shows `新分析进行中`.
+- Older real records remain visible as a backstop instead of the board collapsing to one card or empty while waiting for the next completed analysis.
+
+## Verify
+
+- `npx vitest run src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts src/lib/watch/__tests__/publicTimelineOrdering.test.ts src/lib/watch/__tests__/publicTimelineProjection.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: PASS, 54 tests
+- `npm run verify`: PASS, format/typecheck/lint/agent-ip/news/news tests/watch-pipeline/chat-v3/execution-safety all passed
+- `npm run verify:metrics`: PASS, 5 tests
+- `npm run build`: PASS
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes
+
+[DOC-HINT: B29 widens the public timeline fallback window to 24h so real decision records do not disappear from the watch board before the next completed PM run replaces them.]
