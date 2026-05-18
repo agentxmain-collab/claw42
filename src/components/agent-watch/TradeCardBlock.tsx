@@ -1,8 +1,8 @@
 "use client";
 
-import type { TradeDecision } from "@/lib/team/tradeDecision";
+import type { PublicTradeDecision } from "@/lib/watch/publicTimelineEvent";
 
-const RATING_STYLES: Record<TradeDecision["rating"], string> = {
+const RATING_STYLES: Record<PublicTradeDecision["rating"], string> = {
   1: "border-rose-300/30 bg-rose-400/[0.10] text-rose-100",
   2: "border-amber-300/30 bg-amber-400/[0.10] text-amber-100",
   3: "border-white/15 bg-white/[0.06] text-white/70",
@@ -17,13 +17,13 @@ function formatPrice(value: number | null) {
   })}`;
 }
 
-function directionLabel(direction: TradeDecision["direction"]) {
+function directionLabel(direction: PublicTradeDecision["direction"]) {
   if (direction === "long") return "Long";
   if (direction === "short") return "Short";
   return "Wait";
 }
 
-export function TradeCardBlock({ decision }: { decision: TradeDecision | null | undefined }) {
+export function TradeCardBlock({ decision }: { decision: PublicTradeDecision | null | undefined }) {
   if (!decision) {
     return (
       <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white/55">

@@ -10,6 +10,7 @@ import type {
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { Locale } from "@/i18n/types";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
+import type { PublicDecisionAgentId } from "@/lib/watch/publicDecisionAgents";
 import type { MarketDataSource } from "@/modules/agent-watch/types";
 
 export type PublicTimelineSourceTrigger =
@@ -27,12 +28,16 @@ export interface PublicDecisionStageTraceEntry {
   stageId: DecisionStageTraceId;
   status: DecisionStageTraceStatus;
   observedAt: string;
+  agentIds?: PublicDecisionAgentId[];
+  /** @deprecated Public payloads should use agentIds. Kept for legacy fixture compatibility. */
   memberIds?: TeamMemberId[];
 }
 
 export interface PublicDecisionRoundEntry {
   round: number;
-  memberId: TeamMemberId;
+  agentId?: PublicDecisionAgentId;
+  /** @deprecated Public payloads should use agentId. Kept for legacy fixture compatibility. */
+  memberId?: TeamMemberId;
   direction?: AnalystDirection;
   confidence?: number;
   rationale: string;
@@ -42,6 +47,8 @@ export interface PublicDecisionRoundEntry {
   evidenceIds?: string[];
   observedAt?: string;
 }
+
+export type PublicTradeDecision = Omit<TradeDecision, "generatedBy">;
 
 export type PublicTimelinePayload =
   | {
@@ -66,8 +73,12 @@ export type PublicTimelinePayload =
       executable?: boolean;
       /** Analysis-only resident candidates can publish a summary without a trade card. */
       analysisSummary?: string;
-      tradeDecision?: TradeDecision | null;
-      rationaleByMember: Partial<Record<TeamMemberId, string>>;
+      tradeDecision?: PublicTradeDecision | null;
+      rationaleByAgent?: Partial<Record<PublicDecisionAgentId, string>>;
+      /** @deprecated Public payloads should use rationaleByAgent. Kept for legacy fixture compatibility. */
+      rationaleByMember?: Partial<Record<TeamMemberId, string>>;
+      citationsByAgent?: Partial<Record<PublicDecisionAgentId, string[]>>;
+      /** @deprecated Public payloads should use citationsByAgent. Kept for legacy fixture compatibility. */
       citationsByMember?: Partial<Record<TeamMemberId, string[]>>;
       rounds?: PublicDecisionRoundEntry[];
       stageTrace?: PublicDecisionStageTraceEntry[];
@@ -82,7 +93,13 @@ export type PublicTimelinePayload =
   | {
       kind: "team_discussion";
       recordId: string;
-      turns: Array<{ memberId: TeamMemberId; text: string; citations: string[] }>;
+      turns: Array<{
+        agentId?: PublicDecisionAgentId;
+        /** @deprecated Public payloads should use agentId. Kept for legacy fixture compatibility. */
+        memberId?: TeamMemberId;
+        text: string;
+        citations: string[];
+      }>;
     };
 
 export interface PublicTimelineEvent {

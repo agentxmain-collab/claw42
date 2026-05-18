@@ -4,9 +4,10 @@ import type {
   DecisionStageTraceId,
   StrategyDecisionRecord,
 } from "@/lib/team/strategyDecisionRecord";
-import type { TeamMemberId } from "@/lib/team/teamRegistry";
+import { TEAM_MEMBER_IDS, type TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import { containsPublicContentLeak } from "@/lib/watch/publicContentGuardrails";
+import { projectDecisionRecordToPublicEvent } from "@/lib/watch/publicTimelineProjection";
 
 const createdAt = "2026-05-18T12:00:00.000Z";
 const publicStageOrder: DecisionStageTraceId[] = [
@@ -127,6 +128,20 @@ describe("decision quality regression corpus", () => {
     for (const sample of leakCorpus) {
       expect(containsPublicContentLeak(sample), sample).toBe(true);
     }
+  });
+
+  it("does not serialize internal TeamMemberId fields in projected public PM payloads", () => {
+    const event = projectDecisionRecordToPublicEvent(record());
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm_decision payload");
+    const payloadJson = JSON.stringify(event.payload);
+    for (const memberId of TEAM_MEMBER_IDS.filter((id) => id !== "pm")) {
+      expect(payloadJson, memberId).not.toContain(memberId);
+    }
+    expect(event.payload.rationaleByMember).toBeUndefined();
+    expect(event.payload.citationsByMember).toBeUndefined();
+    expect(event.payload.rounds?.every((round) => round.agentId && !round.memberId)).toBe(true);
+    expect(event.payload.tradeDecision).not.toHaveProperty("generatedBy");
   });
 
   it("blocks publication when any earlier public stage is missing while a later stage advanced", () => {

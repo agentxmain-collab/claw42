@@ -28,12 +28,15 @@ import {
   type DispatchTopicGroup,
   type PmDecisionTimelineEvent,
 } from "@/lib/watch/topicAggregator";
-import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import type { PublicTimelineEvent, PublicTradeDecision } from "@/lib/watch/publicTimelineEvent";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
-import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { DecisionStageTraceId } from "@/lib/team/strategyDecisionRecord";
 import { publicTimelineEventStableId } from "@/lib/watch/publicTimelineOrdering";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
+import {
+  mapPublicDecisionAgentToTeamMember,
+  mapTeamMemberToPublicDecisionAgent,
+} from "@/lib/watch/publicDecisionAgents";
 import {
   normalizePublicDecisionStageStatuses,
   PUBLIC_DECISION_STAGE_ORDER,
@@ -170,7 +173,9 @@ function formatRoundLabel(round: number, maxRound: number, roundDict: DispatchV1
   });
 }
 
-function formatEntry(entryRange: TradeDecision["entryRange"], entryPrice: number | null) {
+type PmDecisionPayload = PmDecisionTimelineEvent["payload"];
+
+function formatEntry(entryRange: PublicTradeDecision["entryRange"], entryPrice: number | null) {
   if (entryRange) return `${formatPrice(entryRange.low)} - ${formatPrice(entryRange.high)}`;
   if (typeof entryPrice === "number") return formatPrice(entryPrice);
   return "待定";
@@ -188,7 +193,7 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function renderableTradeDecision(event: PmDecisionTimelineEvent): TradeDecision | null {
+function renderableTradeDecision(event: PmDecisionTimelineEvent): PublicTradeDecision | null {
   const decision = event.payload.tradeDecision;
   if (!decision || typeof decision !== "object") return null;
   if (
@@ -227,6 +232,19 @@ function renderableTradeDecision(event: PmDecisionTimelineEvent): TradeDecision 
   if (typeof decision.riskNote !== "string") return null;
   if (typeof decision.invalidatesIf !== "string") return null;
   return decision;
+}
+
+function memberForRoundEntry(entry: NonNullable<PmDecisionPayload["rounds"]>[number]) {
+  if (entry.memberId) return entry.memberId;
+  if (entry.agentId) return mapPublicDecisionAgentToTeamMember(entry.agentId);
+  return null;
+}
+
+function rationaleForMember(payload: PmDecisionPayload, memberId: TeamMemberId) {
+  return (
+    payload.rationaleByMember?.[memberId] ??
+    payload.rationaleByAgent?.[mapTeamMemberToPublicDecisionAgent(memberId)]
+  );
 }
 
 function firstEvidence(group: DispatchTopicGroup, evidenceMap: V9AdapterContext["evidenceMap"]) {
@@ -451,7 +469,7 @@ function makeRationaleMessages({
         let roundLabelUsed = false;
         return TEAM_MESSAGE_ORDER.flatMap((memberId): DispatchMessage[] => {
           const entry = roundEntries.find(
-            (candidate) => candidate.round === round && candidate.memberId === memberId,
+            (candidate) => candidate.round === round && memberForRoundEntry(candidate) === memberId,
           );
           const rationale = entry?.rationale.trim();
           if (!rationale) return [];
@@ -489,9 +507,8 @@ function makeRationaleMessages({
       });
   }
 
-  const rationaleByMember = event.payload.rationaleByMember ?? {};
   return TEAM_MESSAGE_ORDER.flatMap((memberId): DispatchMessage[] => {
-    const rationale = rationaleByMember[memberId]?.trim();
+    const rationale = rationaleForMember(event.payload, memberId)?.trim();
     if (!rationale) return [];
     const agentId = mapTeamMemberToDispatchAgent(memberId, directionHint);
     const stage = stageForMember(memberId);
@@ -654,6 +671,7 @@ function makeMessages(
 
 function hasEventRationale(event: PmDecisionTimelineEvent) {
   return (
+    Object.values(event.payload.rationaleByAgent ?? {}).some((value) => value?.trim()) ||
     Object.values(event.payload.rationaleByMember ?? {}).some((value) => value?.trim()) ||
     (event.payload.rounds ?? []).some((round) => round.rationale.trim())
   );
@@ -661,9 +679,9 @@ function hasEventRationale(event: PmDecisionTimelineEvent) {
 
 function hasMemoryLoopRationale(event: PmDecisionTimelineEvent) {
   return Boolean(
-    event.payload.rationaleByMember?.memory_loop?.trim() ||
+    rationaleForMember(event.payload, "memory_loop")?.trim() ||
     (event.payload.rounds ?? []).some(
-      (round) => round.memberId === "memory_loop" && round.rationale.trim(),
+      (round) => memberForRoundEntry(round) === "memory_loop" && round.rationale.trim(),
     ),
   );
 }

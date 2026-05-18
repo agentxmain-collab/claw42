@@ -85,18 +85,20 @@ function consensusScore(event: PmDecisionTimelineEvent) {
 function latestDirections(event: PmDecisionTimelineEvent): Direction[] {
   const rounds = event.payload.rounds ?? [];
   if (rounds.length > 0) {
-    const latestByMember = new Map<string, { round: number; direction?: Direction }>();
+    const latestByAgent = new Map<string, { round: number; direction?: Direction }>();
     for (const round of rounds) {
       if (!round.direction) continue;
-      const current = latestByMember.get(round.memberId);
+      const actorKey = round.memberId ?? round.agentId;
+      if (!actorKey) continue;
+      const current = latestByAgent.get(actorKey);
       if (!current || round.round >= current.round) {
-        latestByMember.set(round.memberId, {
+        latestByAgent.set(actorKey, {
           round: round.round,
           direction: round.direction,
         });
       }
     }
-    return Array.from(latestByMember.values())
+    return Array.from(latestByAgent.values())
       .map((entry) => entry.direction)
       .filter((direction): direction is Direction => Boolean(direction));
   }

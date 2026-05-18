@@ -2469,6 +2469,14 @@ B40 Public quality regression corpus:
   backend data-status wording, public `wait` wording, missing-data variants, internal
   `TeamMemberId` / role IDs, and stage trace jumps.
 - Corpus also protects watch-only market records from being blocked only because they have no trade card.
+- Follow-up root-cause fix after preview smoke: public timeline projection was still serializing
+  internal team fields in structured JSON (`rationaleByMember`, `rounds[].memberId`,
+  `stageTrace[].memberIds`, `tradeDecision.generatedBy`).
+- Added opaque public decision agent aliases (`pa_01` ... `pa_14`) for public API payloads.
+  V9/V10 clients map aliases back to team roles locally for rendering; public JSON no longer needs
+  TeamMemberId keys.
+- `pmDecisionPipeline` now writes public timeline entries with stripped public trade decisions and
+  alias-based rationale/citation maps.
 
 B41 Ops runbook:
 
@@ -2483,19 +2491,18 @@ B42 Normal gate wiring:
 ## Verify
 
 - `npx vitest run src/lib/team/__tests__/decisionOpsHealth.test.ts src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionQualityRegressionCorpus.test.ts src/lib/team/__tests__/decisionQuality.test.ts`: PASS, 10 tests
-- `npm run format:check`: PASS
-- `npm run typecheck`: PASS
-- `npm run lint`: PASS
-- `npm run test:watch-pipeline`: PASS, 55 files / 329 tests
-- `npm run verify`: PASS
+- `npx vitest run src/lib/watch/__tests__/publicTimelineProjection.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts src/lib/watch/__tests__/topicRanking.test.ts src/lib/team/__tests__/useTeamActivityStatus.test.ts src/lib/team/__tests__/decisionQualityRegressionCorpus.test.ts`: PASS, 65 tests
+- `npm run verify`: PASS, includes format/typecheck/lint/agent-ip/news/news tests/watch-pipeline/chat-v3/execution-safety
+- `npm run test:watch-pipeline`: PASS, 55 files / 330 tests
 - `npm run verify:a11y`: PASS, 0 axe violations on checked routes. Note: first run overlapped with `next build` and logged transient `.next` module errors from concurrent Next processes, but exited PASS; build was rerun separately after clearing `.next`.
 - `npm run verify:metrics`: PASS, 5 tests
-- `npm run build`: PASS after isolated rerun
+- `npm run build`: PASS after isolated rerun with `.next` cleared
 
 ## PR / Preview
 
-- PR: pending
-- Preview: pending
+- PR: https://github.com/agentxmain-collab/claw42/pull/136
+- Preview branch alias: https://claw42-site-git-feature-b39-a30dd7-agentxmain-collabs-projects.vercel.app
+- Preview smoke after alias-payload follow-up: pending next push
 - Production: not touched
 
-[DOC-HINT: B39-B42 turns ops-health into an actionable status surface and adds a public quality regression corpus to prevent backend-status wording, TeamMemberId leaks, stage gaps, and watch-only trade-card regressions from returning.]
+[DOC-HINT: B39-B42 turns ops-health into an actionable status surface and adds a public quality regression corpus plus alias-based public PM projection to prevent backend-status wording, TeamMemberId leaks, stage gaps, and watch-only trade-card regressions from returning.]

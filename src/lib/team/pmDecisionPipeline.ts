@@ -50,6 +50,7 @@ import type {
 } from "@/lib/watch/publicTimelineEvent";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import {
+  normalizePublicTradeDecision,
   publicDecisionProcessFromRecord,
   publicStageTraceFromRecord,
 } from "@/lib/watch/publicTimelineProjection";
@@ -1126,9 +1127,9 @@ function makePublicTimelineEntry(
       displayTitle: record.candidate?.displayTitle,
       executable: record.candidate?.executable,
       analysisSummary: record.analysisSummary,
-      tradeDecision: record.tradeDecision,
-      rationaleByMember: derived.rationaleByMember,
-      citationsByMember: derived.citationsByMember,
+      tradeDecision: normalizePublicTradeDecision(record.tradeDecision),
+      rationaleByAgent: derived.rationaleByAgent,
+      citationsByAgent: derived.citationsByAgent,
       rounds: derived.rounds,
       stageTrace: publicStageTraceFromRecord(record),
     },

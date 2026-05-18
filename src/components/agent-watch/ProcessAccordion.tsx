@@ -7,6 +7,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { trackEvent } from "@/lib/analytics";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { PublicTimelinePayload } from "@/lib/watch/publicTimelineEvent";
+import { mapTeamMemberToPublicDecisionAgent } from "@/lib/watch/publicDecisionAgents";
 import { AnalystRow } from "./AnalystRow";
 import { LeadRow } from "./LeadRow";
 import { RiskRow } from "./RiskRow";
@@ -22,6 +23,21 @@ const ANALYST_IDS: TeamMemberId[] = [
 ];
 
 const LEAD_IDS: TeamMemberId[] = ["research_lead", "risk_lead"];
+
+function rationaleForMember(payload: PmDecisionPayload, memberId: TeamMemberId) {
+  return (
+    payload.rationaleByMember?.[memberId] ??
+    payload.rationaleByAgent?.[mapTeamMemberToPublicDecisionAgent(memberId)]
+  );
+}
+
+function citationsForMember(payload: PmDecisionPayload, memberId: TeamMemberId) {
+  return (
+    payload.citationsByMember?.[memberId] ??
+    payload.citationsByAgent?.[mapTeamMemberToPublicDecisionAgent(memberId)] ??
+    []
+  );
+}
 
 export function ProcessAccordion({
   payload,
@@ -44,8 +60,8 @@ export function ProcessAccordion({
             <AnalystRow
               key={memberId}
               memberId={memberId}
-              rationale={payload.rationaleByMember[memberId]}
-              evidenceIds={payload.citationsByMember?.[memberId] ?? []}
+              rationale={rationaleForMember(payload, memberId)}
+              evidenceIds={citationsForMember(payload, memberId)}
             />
           ))}
         </div>
@@ -63,15 +79,15 @@ export function ProcessAccordion({
               <RiskRow
                 key={memberId}
                 memberId={memberId}
-                rationale={payload.rationaleByMember[memberId]}
-                evidenceIds={payload.citationsByMember?.[memberId] ?? []}
+                rationale={rationaleForMember(payload, memberId)}
+                evidenceIds={citationsForMember(payload, memberId)}
               />
             ) : (
               <LeadRow
                 key={memberId}
                 memberId={memberId}
-                rationale={payload.rationaleByMember[memberId]}
-                evidenceIds={payload.citationsByMember?.[memberId] ?? []}
+                rationale={rationaleForMember(payload, memberId)}
+                evidenceIds={citationsForMember(payload, memberId)}
               />
             ),
           )}
