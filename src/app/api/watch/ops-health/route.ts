@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import { buildDecisionOpsDeepDiagnostics } from "@/lib/team/decisionOpsDeepDiagnostics";
 import {
   buildDecisionOpsHealthDetails,
   summarizeDecisionOpsHealth,
 } from "@/lib/team/decisionOpsHealth";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
+import { summarizeProviderTelemetry } from "@/lib/team/providerTelemetry";
+import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
@@ -28,13 +31,16 @@ export async function GET(request: Request) {
   const limit = normalizeLimit(url.searchParams.get("limit"));
   const includeDetails = url.searchParams.get("details") === "1";
   const includeReconciliation = url.searchParams.get("reconcile") === "1";
+  const includeDeepDiagnostics = url.searchParams.get("deep") === "1";
+  const needsDecisionRecords = includeReconciliation || includeDeepDiagnostics;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
-  const [jobs, runs, publicEvents] = await Promise.all([
+  const [jobs, runs, decisionRecords] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
     readDecisionRuns({ locale, limit }),
-    includeReconciliation ? readPublicPmEvents(locale) : Promise.resolve([]),
+    needsDecisionRecords ? readAllDecisionRecords(500, locale) : Promise.resolve([]),
   ]);
   const queueReadiness = getPmDecisionQueueReadiness();
+  const publicEvents = includeReconciliation ? publicPmEventsFromRecords(decisionRecords) : [];
 
   return NextResponse.json(
     {
@@ -55,6 +61,16 @@ export async function GET(request: Request) {
             }),
           }
         : {}),
+      ...(includeDeepDiagnostics
+        ? {
+            deepDiagnostics: buildDecisionOpsDeepDiagnostics({
+              jobs,
+              runs,
+              records: decisionRecords,
+              providerTelemetry: summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 }),
+            }),
+          }
+        : {}),
     },
     {
       headers: {
@@ -64,8 +80,7 @@ export async function GET(request: Request) {
   );
 }
 
-async function readPublicPmEvents(locale: ReturnType<typeof localeFromRequestUrl>) {
-  const records = await readAllDecisionRecords(500, locale);
+function publicPmEventsFromRecords(records: readonly StrategyDecisionRecord[]) {
   return records
     .map((record) => projectDecisionRecordToPublicEvent(record))
     .filter((event): event is PublicTimelineEvent => event?.payload.kind === "pm_decision");

@@ -5,6 +5,7 @@ const readPmDecisionJobsMock = vi.hoisted(() => vi.fn());
 const readDecisionRunsMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
 const projectDecisionRecordToPublicEventMock = vi.hoisted(() => vi.fn());
+const summarizeProviderTelemetryMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -20,6 +21,10 @@ vi.mock("@/lib/team/decisionRecordStore", () => ({
 
 vi.mock("@/lib/watch/publicTimelineProjection", () => ({
   projectDecisionRecordToPublicEvent: projectDecisionRecordToPublicEventMock,
+}));
+
+vi.mock("@/lib/team/providerTelemetry", () => ({
+  summarizeProviderTelemetry: summarizeProviderTelemetryMock,
 }));
 
 function job() {
@@ -85,6 +90,19 @@ describe("/api/watch/ops-health", () => {
     readDecisionRunsMock.mockReset().mockResolvedValue([run()]);
     readAllDecisionRecordsMock.mockReset().mockResolvedValue([]);
     projectDecisionRecordToPublicEventMock.mockReset();
+    summarizeProviderTelemetryMock.mockReset().mockReturnValue({
+      totalCalls: 0,
+      providerCounts: {},
+      fallbackCalls: 0,
+      failureCalls: 0,
+      singleProviderConcentration: {
+        provider: null,
+        count: 0,
+        ratio: 0,
+        threshold: 0.9,
+        alert: false,
+      },
+    });
   });
 
   it("rejects unauthenticated diagnostics access", async () => {
@@ -168,6 +186,41 @@ describe("/api/watch/ops-health", () => {
         checks: expect.arrayContaining([
           expect.objectContaining({ name: "public_timeline", status: "ready" }),
         ]),
+      },
+    });
+  });
+
+  it("returns optional deep quality diagnostics for authorized callers", async () => {
+    readAllDecisionRecordsMock.mockResolvedValue([
+      {
+        id: "pm:BTC:1779102000000",
+        modelProvider: "deepseek-chat",
+        stageTrace: [],
+      },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&deep=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(summarizeProviderTelemetryMock).toHaveBeenCalled();
+    expect(payload.deepDiagnostics).toMatchObject({
+      schemaVersion: 1,
+      quality: {
+        scoredRuns: 0,
+      },
+      provider: {
+        recordModelProviderCounts: {
+          "deepseek-chat": 1,
+        },
+      },
+      replayDryRun: {
+        proposals: [],
       },
     });
   });
