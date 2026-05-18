@@ -3136,3 +3136,62 @@ multiple cards to one card when a short-window refresh returned only the current
 - Production not touched.
 
 [DOC-HINT: B77 keeps visible workbench cards stable across transient short-window replacement payloads.]
+
+# B78 analysis-only stage visibility report
+
+Date: 2026-05-18
+
+## Scope
+
+Fixes the stage-order issue where an in-progress `market_overview` / `hotspot` card could show
+stage 4 risk-review messages while the public progress still said stage 3 was in progress.
+
+## First-hand Root Cause
+
+- B76 intentionally allowed analysis-only records to close without a renderable trade card.
+- The implementation used `analysisOnlyCandidate` as a blanket 6-stage visibility override inside
+  `publicDecisionVisibleStageLimit()`.
+- That was too broad: completed analysis-only records should show all stages, but in-progress
+  analysis-only records must still respect the public monotonic gate.
+- Because stage 4 messages were filtered by the 6-stage visible limit, a risk-review message could
+  render under stage 4 before stage 3 was publicly complete.
+
+## Changes
+
+- `src/lib/watch/publicDecisionStageContract.ts`
+  - Analysis-only candidates now get 6-stage visibility only after `record_write` or
+    `public_timeline` is done.
+  - In-progress analysis-only candidates continue through the normal public stage gate, so later
+    stage messages stay hidden until the current stage reaches them.
+
+## Tests Added
+
+- `src/lib/watch/__tests__/publicDecisionStageContract.test.ts`
+  - Adds a regression where analysis-only stage 4 has progress but stage 3 is pending. Expected
+    visible limit remains 3.
+- `src/lib/watch/__tests__/v9TopicAdapter.test.ts`
+  - Adds a regression where a `market_overview` record has a risk-lead message while trade-plan
+    stage is still pending. Expected risk message is not rendered.
+
+## Verify
+
+- Red before fix: both new regressions failed.
+- Target green: `npm exec vitest run src/lib/watch/__tests__/publicDecisionStageContract.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts` PASS, 2 files / 38 tests.
+- `npm run format:check`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run test:watch-pipeline`: PASS, 62 files / 374 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This does not change PM pipeline, candidate ranking, refresh, hydration, timeline ordering, or
+  visual layout.
+- Symbol records without renderable trade decisions remain capped at the public trade-plan gate.
+- Completed analysis-only records still close correctly when write/public timeline stages are done.
+- Production not touched.
+
+[DOC-HINT: B78 narrows analysis-only 6-stage visibility to completed records so in-progress cards cannot expose later-stage messages early.]
