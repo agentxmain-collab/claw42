@@ -8,6 +8,7 @@ import {
   summarizeDecisionOpsHealth,
 } from "@/lib/team/decisionOpsHealth";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
+import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
 import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
 import { summarizeProviderTelemetry } from "@/lib/team/providerTelemetry";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
@@ -34,7 +35,9 @@ export async function GET(request: Request) {
   const includeReconciliation = url.searchParams.get("reconcile") === "1";
   const includeDeepDiagnostics = url.searchParams.get("deep") === "1";
   const includeFreshness = url.searchParams.get("freshness") === "1";
-  const needsDecisionRecords = includeReconciliation || includeDeepDiagnostics || includeFreshness;
+  const includeRollup = url.searchParams.get("rollup") === "1";
+  const needsDecisionRecords =
+    includeReconciliation || includeDeepDiagnostics || includeFreshness || includeRollup;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
@@ -42,44 +45,61 @@ export async function GET(request: Request) {
     needsDecisionRecords ? readAllDecisionRecords(500, locale) : Promise.resolve([]),
   ]);
   const queueReadiness = getPmDecisionQueueReadiness();
+  const health = summarizeDecisionOpsHealth({ jobs, runs });
   const publicEvents =
-    includeReconciliation || includeFreshness ? publicPmEventsFromRecords(decisionRecords) : [];
+    includeReconciliation || includeFreshness || includeRollup
+      ? publicPmEventsFromRecords(decisionRecords)
+      : [];
+  const providerTelemetry =
+    includeDeepDiagnostics || includeRollup
+      ? summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 })
+      : null;
+  const reconciliation =
+    includeReconciliation || includeRollup
+      ? buildDecisionOpsReconciliation({
+          jobs,
+          runs,
+          publicEvents,
+          queueReadiness,
+        })
+      : null;
+  const deepDiagnostics =
+    includeDeepDiagnostics || includeRollup
+      ? buildDecisionOpsDeepDiagnostics({
+          jobs,
+          runs,
+          records: decisionRecords,
+          providerTelemetry,
+        })
+      : null;
+  const freshness =
+    includeFreshness || includeRollup
+      ? buildDecisionOpsFreshness({
+          jobs,
+          runs,
+          publicEvents,
+        })
+      : null;
 
   return NextResponse.json(
     {
       ok: true,
       locale,
-      health: summarizeDecisionOpsHealth({ jobs, runs }),
+      health,
       queueReadiness,
       ...(includeDetails
         ? { details: buildDecisionOpsHealthDetails({ jobs, runs, limit: detailLimit }) }
         : {}),
-      ...(includeReconciliation
+      ...(includeReconciliation ? { reconciliation } : {}),
+      ...(includeDeepDiagnostics ? { deepDiagnostics } : {}),
+      ...(includeFreshness ? { freshness } : {}),
+      ...(includeRollup && reconciliation && deepDiagnostics && freshness
         ? {
-            reconciliation: buildDecisionOpsReconciliation({
-              jobs,
-              runs,
-              publicEvents,
-              queueReadiness,
-            }),
-          }
-        : {}),
-      ...(includeDeepDiagnostics
-        ? {
-            deepDiagnostics: buildDecisionOpsDeepDiagnostics({
-              jobs,
-              runs,
-              records: decisionRecords,
-              providerTelemetry: summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 }),
-            }),
-          }
-        : {}),
-      ...(includeFreshness
-        ? {
-            freshness: buildDecisionOpsFreshness({
-              jobs,
-              runs,
-              publicEvents,
+            rollup: buildDecisionOpsRollup({
+              health,
+              reconciliation,
+              deepDiagnostics,
+              freshness,
             }),
           }
         : {}),

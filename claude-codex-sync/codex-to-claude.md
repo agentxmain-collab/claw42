@@ -2841,3 +2841,57 @@ production deployment.
 - Production not touched.
 
 [DOC-HINT: B60-B63 adds protected read-only freshness watchdog diagnostics for cron jobs, successful PM runs, and public PM timeline output.]
+
+# B64-B67 ops rollup implementation report
+
+Date: 2026-05-18
+
+## Scope
+
+B64-B67 turns the existing protected diagnostics into a single operator-facing rollup. This batch
+does not change PM execution, queueing, replay, repair, candidate selection, public UI, refresh
+cadence, or production deployment.
+
+## Changes
+
+- `src/lib/team/decisionOpsRollup.ts`
+  - Adds `buildDecisionOpsRollup` over health, reconciliation, freshness, and deep diagnostics.
+  - Produces one overall `healthy` / `degraded` / `critical` status.
+  - Produces Top 3 issues with deterministic ordering: severity, source priority, count, code, id.
+  - Produces up to 3 source-deduped runbook actions. Every action is `executable: false`.
+  - Surfaces source-level status for freshness / health / reconciliation / deep diagnostics.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `?rollup=1` response field behind the existing ops-health secret gate.
+  - Internally computes the needed nested diagnostics but does not expose reconciliation / deep /
+    freshness payloads unless their explicit flags are also requested.
+- `package.json`
+  - Adds the new rollup unit test to `test:watch-pipeline`.
+
+## Red / Green
+
+- Red tests first:
+  - missing rollup module import
+  - `ops-health?rollup=1` did not load decision records or return rollup
+- Green target test:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsRollup.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 2 files / 8 tests.
+
+## Verify
+
+- `npm run format:check`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run test:watch-pipeline`: PASS, 60 files / 362 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- Rollup is read-only and does not enqueue, repair, replay, or write KV.
+- Runbook actions are deliberately recommendations only and remain non-executable.
+- No local Vercel CLI deploy, because the local CLI identity remains outside the Claw42 project
+  identity.
+- Production not touched.
+
+[DOC-HINT: B64-B67 adds protected read-only ops rollup summary with overall status, Top 3 issues, and non-executable runbook recommendations.]
