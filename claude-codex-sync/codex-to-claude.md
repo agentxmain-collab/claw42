@@ -2677,3 +2677,58 @@ public UI layout, PM prompt/execution, candidate selection, refresh behavior, or
 - Production not touched.
 
 [DOC-HINT: B48-B51 makes private job/run ledgers deterministically ordered and adds run-level stale/quality trend signals to protected ops-health diagnostics.]
+
+# B52-B55 ops reconciliation implementation report
+
+Date: 2026-05-18
+
+## Scope
+
+B52-B55 adds a protected, read-only reconciliation layer for PM job ledger, decision-run ledger, and
+public timeline projection. It does not change public UI, PM execution, queue behavior, candidate
+selection, refresh cadence, or production deployment.
+
+## Changes
+
+- `src/lib/team/decisionOpsReconciliation.ts`
+  - Adds `buildDecisionOpsReconciliation()` for pure, deterministic diagnostics.
+  - Flags succeeded jobs without matching runs, zero-output succeeded jobs, succeeded runs without
+    matching jobs, succeeded runs without projected public PM timeline events, and stale running runs.
+  - Emits repair proposals as recommendations only; every proposal has `executable: false`.
+  - Adds canary chain status across queue readiness, job success, run success, and public timeline
+    projection.
+  - Adds history rollups for 24h and 7d: job/run/event counts, run success rate, zero-output rate,
+    quality-block rate, average duration, and average quality score.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `?reconcile=1` response field.
+  - Keeps existing default response compatible.
+  - Keeps authorization and `no-store` behavior unchanged.
+- `package.json`
+  - Adds the new reconciliation test to `test:watch-pipeline`.
+
+## Red / Green
+
+- Red tests first:
+  - missing reconciliation module import
+  - ops-health did not read public records or return reconciliation when requested
+- Green target test:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsReconciliation.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 2 files / 7 tests.
+
+## Verify
+
+- `npm run test:watch-pipeline`: PASS, 57 files / 352 tests.
+- `npm run verify`: PASS.
+- `npm run build`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- Reconciliation is explicitly protected behind the existing ops-health secret gate.
+- The endpoint projects existing decision records into public PM events for diagnostics; it does not
+  write KV and does not repair or replay anything.
+- No local Vercel CLI deploy, because the local CLI identity remains outside the Claw42 project
+  identity.
+- Production not touched.
+
+[DOC-HINT: B52-B55 adds protected read-only job/run/timeline reconciliation, non-executable repair proposals, canary readiness, and 24h/7d history health rollups.]

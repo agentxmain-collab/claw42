@@ -3,6 +3,8 @@ import { GET } from "./route";
 
 const readPmDecisionJobsMock = vi.hoisted(() => vi.fn());
 const readDecisionRunsMock = vi.hoisted(() => vi.fn());
+const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
+const projectDecisionRecordToPublicEventMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -10,6 +12,14 @@ vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
 
 vi.mock("@/lib/team/decisionRunLedger", () => ({
   readDecisionRuns: readDecisionRunsMock,
+}));
+
+vi.mock("@/lib/team/decisionRecordStore", () => ({
+  readAllDecisionRecords: readAllDecisionRecordsMock,
+}));
+
+vi.mock("@/lib/watch/publicTimelineProjection", () => ({
+  projectDecisionRecordToPublicEvent: projectDecisionRecordToPublicEventMock,
 }));
 
 function job() {
@@ -73,6 +83,8 @@ describe("/api/watch/ops-health", () => {
     vi.stubEnv("CRON_SECRET", "");
     readPmDecisionJobsMock.mockReset().mockResolvedValue([job()]);
     readDecisionRunsMock.mockReset().mockResolvedValue([run()]);
+    readAllDecisionRecordsMock.mockReset().mockResolvedValue([]);
+    projectDecisionRecordToPublicEventMock.mockReset();
   });
 
   it("rejects unauthenticated diagnostics access", async () => {
@@ -112,6 +124,50 @@ describe("/api/watch/ops-health", () => {
         schemaVersion: 1,
         recentJobs: [expect.objectContaining({ id: job().id })],
         recentRuns: [expect.objectContaining({ id: run().id })],
+      },
+    });
+  });
+
+  it("returns optional reconciliation diagnostics for authorized callers", async () => {
+    projectDecisionRecordToPublicEventMock.mockReturnValue({
+      id: "public:pm:BTC:1779102000000",
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: "pm:BTC:1779102000000",
+        symbol: "BTC",
+      },
+    });
+    readAllDecisionRecordsMock.mockResolvedValue([{ id: "pm:BTC:1779102000000" }]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&reconcile=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(projectDecisionRecordToPublicEventMock).toHaveBeenCalledWith({
+      id: "pm:BTC:1779102000000",
+    });
+    expect(payload.reconciliation).toMatchObject({
+      schemaVersion: 1,
+      counts: {
+        jobs: 1,
+        runs: 1,
+        publicPmEvents: 1,
+      },
+      canary: {
+        checks: expect.arrayContaining([
+          expect.objectContaining({ name: "public_timeline", status: "ready" }),
+        ]),
       },
     });
   });
