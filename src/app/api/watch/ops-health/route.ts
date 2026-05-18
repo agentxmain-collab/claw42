@@ -9,6 +9,7 @@ import {
 } from "@/lib/team/decisionOpsHealth";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
+import { buildDecisionOpsSlo } from "@/lib/team/decisionOpsSlo";
 import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
 import { summarizeProviderTelemetry } from "@/lib/team/providerTelemetry";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
@@ -36,8 +37,13 @@ export async function GET(request: Request) {
   const includeDeepDiagnostics = url.searchParams.get("deep") === "1";
   const includeFreshness = url.searchParams.get("freshness") === "1";
   const includeRollup = url.searchParams.get("rollup") === "1";
+  const includeSlo = url.searchParams.get("slo") === "1";
   const needsDecisionRecords =
-    includeReconciliation || includeDeepDiagnostics || includeFreshness || includeRollup;
+    includeReconciliation ||
+    includeDeepDiagnostics ||
+    includeFreshness ||
+    includeRollup ||
+    includeSlo;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
     readPmDecisionJobs({ locale, limit }),
@@ -47,7 +53,7 @@ export async function GET(request: Request) {
   const queueReadiness = getPmDecisionQueueReadiness();
   const health = summarizeDecisionOpsHealth({ jobs, runs });
   const publicEvents =
-    includeReconciliation || includeFreshness || includeRollup
+    includeReconciliation || includeFreshness || includeRollup || includeSlo
       ? publicPmEventsFromRecords(decisionRecords)
       : [];
   const providerTelemetry =
@@ -100,6 +106,15 @@ export async function GET(request: Request) {
               reconciliation,
               deepDiagnostics,
               freshness,
+            }),
+          }
+        : {}),
+      ...(includeSlo
+        ? {
+            slo: buildDecisionOpsSlo({
+              jobs,
+              runs,
+              publicEvents,
             }),
           }
         : {}),
