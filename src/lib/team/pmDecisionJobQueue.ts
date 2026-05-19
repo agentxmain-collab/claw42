@@ -2,8 +2,17 @@ import { send } from "@vercel/queue";
 import { getCoinPool } from "@/lib/marketDataCache";
 import { normalizeNewsItem } from "@/lib/news/normalizer";
 import { fetchNewsWithChain } from "@/lib/news/sourceChain";
-import { readPmDecisionJob, type PmDecisionJobRecord } from "@/lib/watch/pmDecisionJobLedger";
+import {
+  readPmDecisionJob,
+  readPmDecisionJobs,
+  type PmDecisionJobRecord,
+} from "@/lib/watch/pmDecisionJobLedger";
 import { runPmDecisionJob, type RunPmDecisionJobContext } from "@/lib/team/pmDecisionJobRunner";
+import {
+  findResidentPriorityBlockers,
+  getPmDecisionJobQueuePriority,
+  type DecisionOpsQueuePriority,
+} from "@/lib/team/decisionOpsQueuePriorityPolicy";
 
 export const PM_DECISION_QUEUE_TOPIC = "pm-decision-jobs";
 export const PM_DECISION_QUEUE_RETENTION_SECONDS = 24 * 60 * 60;
@@ -19,6 +28,7 @@ export interface PmDecisionQueueMessage {
   kind?: PmDecisionJobRecord["kind"];
   triggerSource?: PmDecisionJobRecord["triggerSource"];
   locale?: PmDecisionJobRecord["locale"];
+  priority?: DecisionOpsQueuePriority;
 }
 
 export type PmDecisionQueuePublishResult =
@@ -53,6 +63,20 @@ export class PmDecisionQueueRetryNotDueError extends Error {
   }
 }
 
+export class PmDecisionQueueResidentPriorityDeferError extends Error {
+  readonly jobId: string;
+  readonly blockingJobIds: string[];
+  readonly retryAt: string;
+
+  constructor(jobId: string, blockingJobIds: string[], retryAt: string) {
+    super(`pm_decision_job_resident_priority_defer:${jobId}:${retryAt}`);
+    this.name = "PmDecisionQueueResidentPriorityDeferError";
+    this.jobId = jobId;
+    this.blockingJobIds = blockingJobIds;
+    this.retryAt = retryAt;
+  }
+}
+
 export async function publishPmDecisionJobToQueue(
   job: PmDecisionJobRecord,
   {
@@ -67,6 +91,7 @@ export async function publishPmDecisionJobToQueue(
 ): Promise<PmDecisionQueuePublishResult> {
   if (!getPmDecisionQueueReadiness(env).enabled) return { mode: "disabled" };
 
+  const priority = getPmDecisionJobQueuePriority(job);
   const message: PmDecisionQueueMessage = {
     schemaVersion: 1,
     jobId: job.id,
@@ -74,6 +99,7 @@ export async function publishPmDecisionJobToQueue(
     kind: job.kind,
     triggerSource: job.triggerSource,
     locale: job.locale,
+    priority,
   };
 
   try {
@@ -83,6 +109,8 @@ export async function publishPmDecisionJobToQueue(
       headers: {
         "x-claw42-job-id": job.id,
         "x-claw42-trigger-source": job.triggerSource,
+        "x-claw42-queue-priority": String(priority.rank),
+        "x-claw42-queue-priority-band": priority.band,
       },
     });
     return { mode: "queue", messageId: result.messageId };
@@ -114,11 +142,13 @@ export async function processPmDecisionQueueMessage(
   message: PmDecisionQueueMessage,
   {
     readJob = readPmDecisionJob,
+    readJobs = readPmDecisionJobs,
     runJob = runPmDecisionJob,
     loadContext = loadPmDecisionQueueRunContext,
     now = Date.now(),
   }: {
     readJob?: typeof readPmDecisionJob;
+    readJobs?: typeof readPmDecisionJobs;
     runJob?: typeof runPmDecisionJob;
     loadContext?: (job: PmDecisionJobRecord) => Promise<RunPmDecisionJobContext>;
     now?: number;
@@ -134,6 +164,17 @@ export async function processPmDecisionQueueMessage(
   if (isExhaustedFailedJob(job)) return;
   assertRunningLeaseIsStale(job, now);
   assertRetryIsDue(job, now);
+  const jobs = await readJobs({ locale: job.locale, limit: 100 }).catch(() => [job]);
+  const residentPriorityBlock = findResidentPriorityBlockers(job, jobs, now, {
+    visibilityTimeoutSeconds: PM_DECISION_QUEUE_VISIBILITY_TIMEOUT_SECONDS,
+  });
+  if (residentPriorityBlock) {
+    throw new PmDecisionQueueResidentPriorityDeferError(
+      job.id,
+      residentPriorityBlock.blockingJobIds,
+      new Date(now + residentPriorityBlock.retryAfterSeconds * 1000).toISOString(),
+    );
+  }
 
   const context = await loadContext(job);
   await runJob(job, {
@@ -153,12 +194,11 @@ export function resolvePmDecisionQueueRetry(
   }
 
   if (error instanceof PmDecisionQueueRetryNotDueError) {
-    const nextRunAtMs = Date.parse(error.nextRunAt);
-    if (Number.isFinite(nextRunAtMs) && nextRunAtMs > now) {
-      return {
-        afterSeconds: clampRetrySeconds(Math.ceil((nextRunAtMs - now) / 1000)),
-      };
-    }
+    return retryAtOrDefault(error.nextRunAt, now);
+  }
+
+  if (error instanceof PmDecisionQueueResidentPriorityDeferError) {
+    return retryAtOrDefault(error.retryAt, now);
   }
 
   return {
@@ -166,6 +206,16 @@ export function resolvePmDecisionQueueRetry(
       2 ** metadata.deliveryCount * PM_DECISION_QUEUE_MIN_RETRY_SECONDS,
     ),
   };
+}
+
+function retryAtOrDefault(retryAt: string, now: number): QueueRetryDecision {
+  const retryAtMs = Date.parse(retryAt);
+  if (Number.isFinite(retryAtMs) && retryAtMs > now) {
+    return {
+      afterSeconds: clampRetrySeconds(Math.ceil((retryAtMs - now) / 1000)),
+    };
+  }
+  return { afterSeconds: PM_DECISION_QUEUE_MIN_RETRY_SECONDS };
 }
 
 function isPmDecisionQueueEnabled(env: NodeJS.ProcessEnv | Record<string, string | undefined>) {
