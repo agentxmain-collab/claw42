@@ -257,6 +257,11 @@ export type DispatchV10Dict = {
     newAnalysisRunning: string;
     autoRefreshOnComplete: string;
     cachedStateLabel: string;
+    residentUpdating: string;
+    residentQueued: string;
+    residentUpdateIssue: string;
+    residentCachedState: string;
+    residentCacheFallback: string;
     candidateBadges: {
       market_overview: string;
       hotspot: string;

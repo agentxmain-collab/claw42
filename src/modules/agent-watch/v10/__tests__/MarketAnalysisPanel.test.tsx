@@ -114,6 +114,53 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain("完成后自动刷新");
   });
 
+  test("renders resident prewarm status ahead of user-trigger freshness copy", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        dict={dict}
+        freshness={{
+          status: "idle",
+          symbol: "SYMBOL",
+          lastDecisionAt: "2026-05-19T02:00:00.000Z",
+          refreshSource: "records",
+          residentStatus: {
+            schemaVersion: 1,
+            servedAt: Date.parse("2026-05-19T12:00:00.000Z"),
+            overallState: "failed",
+            latestSucceededAt: "2026-05-19T11:00:00.000Z",
+            marketOverview: {
+              kind: "market_overview",
+              state: "ready",
+              stale: false,
+              lastSucceededAt: "2026-05-19T11:00:00.000Z",
+              lastAttemptAt: null,
+              nextRunAt: null,
+              lastError: null,
+              jobId: null,
+              candidateKey: null,
+            },
+            hotspot: {
+              kind: "hotspot",
+              state: "failed",
+              stale: true,
+              lastSucceededAt: null,
+              lastAttemptAt: "2026-05-19T11:50:00.000Z",
+              nextRunAt: "2026-05-19T11:55:00.000Z",
+              lastError: "provider timeout",
+              jobId: "pm-job:hotspot",
+              candidateKey: "hotspot:utc:zh_CN:2026-05-19T12:market",
+            },
+          },
+        }}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("后台更新异常");
+    expect(html).toContain("仍显示缓存数据");
+    expect(html).not.toContain("分析于 600 分钟前");
+  });
+
   test("renders an explicit non-followable badge for watch-only topics", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel

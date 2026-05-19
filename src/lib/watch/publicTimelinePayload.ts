@@ -4,6 +4,11 @@ import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { readAllDecisionRecords, readDecisionRecords } from "@/lib/team/decisionRecordStore";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { knownSymbolMappings } from "@/lib/team/symbolMapping";
+import { readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
+import {
+  deriveResidentPrewarmStatus,
+  type ResidentPrewarmStatus,
+} from "@/lib/watch/residentPrewarmStatus";
 import type { StreamEntry } from "@/modules/agent-watch/types";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
 import {
@@ -36,6 +41,7 @@ export interface PublicWatchTimelinePayload {
   locale: Locale;
   servedAt: number;
   nextPollMs: number;
+  residentStatus?: ResidentPrewarmStatus;
 }
 
 export interface DebugWatchTimelinePayload {
@@ -167,9 +173,14 @@ export async function buildWatchTimelinePayload({
     };
   }
 
+  const [decisionRecords, pmDecisionJobs] = stagingFixture
+    ? [Array.from(stagingFixture.decisionRecordsById.values()), []]
+    : await Promise.all([
+        readAllDecisionRecords(500, locale),
+        readPmDecisionJobs({ locale, limit: 100 }).catch(() => []),
+      ]);
   const decisionRecordsById =
-    stagingFixture?.decisionRecordsById ??
-    buildDecisionRecordIndex(await readAllDecisionRecords(500, locale));
+    stagingFixture?.decisionRecordsById ?? buildDecisionRecordIndex(decisionRecords);
   const projectedEvents = filterPublicTimelineEvents(result.entries, {
     mode: "public",
     importanceThreshold: "high",
@@ -238,5 +249,10 @@ export async function buildWatchTimelinePayload({
     locale,
     servedAt,
     nextPollMs: resolveWatchTimelineNextPollMs(servedAt),
+    residentStatus: deriveResidentPrewarmStatus({
+      records: Array.from(decisionRecordsById.values()),
+      jobs: pmDecisionJobs,
+      now: servedAt,
+    }),
   };
 }

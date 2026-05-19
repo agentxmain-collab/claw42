@@ -8,6 +8,7 @@ import {
   comparePublicTimelineEvents,
   mergePublicTimelineEvents,
 } from "@/lib/watch/publicTimelineOrdering";
+import type { ResidentPrewarmStatus } from "@/lib/watch/residentPrewarmStatus";
 import {
   mapPublicTimelineEventsToTopics,
   type FollowStatsSnapshot,
@@ -53,6 +54,7 @@ interface PublicTimelinePayload {
   windowMinutes: number;
   servedAt: number;
   nextPollMs?: number;
+  residentStatus?: ResidentPrewarmStatus;
 }
 
 interface FollowStatsPayload {
@@ -146,6 +148,7 @@ export function mergeTimelinePayloadForDisplay(
       events.length > 0 ? (events[events.length - 1]?.ts ?? fallback.oldestTs) : fallback.oldestTs,
     hasMore: primary.hasMore || fallback.hasMore,
     windowMinutes: Math.max(primary.windowMinutes, fallback.windowMinutes),
+    residentStatus: primary.residentStatus ?? fallback.residentStatus,
   };
 }
 
@@ -207,6 +210,7 @@ export function AgentWatchBoard({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [freshness, setFreshness] = useState<DispatchFreshnessState>({ status: "idle" });
+  const [residentStatus, setResidentStatus] = useState<ResidentPrewarmStatus | null>(null);
   const [timelineLoaded, setTimelineLoaded] = useState(false);
   const nextTimelinePollMsRef = useRef(DEFAULT_TIMELINE_POLL_MS);
 
@@ -229,6 +233,7 @@ export function AgentWatchBoard({
               : { ...current, ...payload.evidenceMap },
         );
       }
+      if (payload.residentStatus) setResidentStatus(payload.residentStatus);
       setTimelineLoaded(true);
     },
     [],
@@ -539,6 +544,13 @@ export function AgentWatchBoard({
       timelineEvidenceMap,
     ],
   );
+  const consoleFreshness = useMemo<DispatchFreshnessState>(
+    () => ({
+      ...freshness,
+      ...(residentStatus ? { residentStatus } : {}),
+    }),
+    [freshness, residentStatus],
+  );
   useEffect(() => {
     const refreshTarget = resolveVisibleSessionRefreshTarget({
       topics,
@@ -792,7 +804,7 @@ export function AgentWatchBoard({
         onTopicAction={handleTopicAction}
         marketSnapshot={null}
         followTradeDict={followTradeDict}
-        freshness={freshness}
+        freshness={consoleFreshness}
       />
       <HistoryWall
         open={historyOpen}

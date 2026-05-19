@@ -30,7 +30,10 @@ function ChatShellStat({ label, value }: { label: string; value: number }) {
 }
 
 function formatFreshnessText(freshness: DispatchFreshnessState | undefined, dict: DispatchV10Dict) {
-  if (!freshness || freshness.status === "idle") return null;
+  if (!freshness) return null;
+  const residentText = formatResidentPrewarmText(freshness, dict);
+  if (residentText) return residentText;
+  if (freshness.status === "idle") return null;
   if (freshness.status === "refreshing" || freshness.refreshStarted) {
     return `${dict.market.newAnalysisRunning} · ${dict.market.autoRefreshOnComplete}`;
   }
@@ -45,6 +48,31 @@ function formatFreshnessText(freshness: DispatchFreshnessState | undefined, dict
     )}`;
   }
   if (freshness.status === "no_signal") return dict.market.cachedStateLabel;
+  return null;
+}
+
+function formatResidentPrewarmText(freshness: DispatchFreshnessState, dict: DispatchV10Dict) {
+  const status = freshness.residentStatus;
+  if (!status) return null;
+  if (status.overallState === "running") {
+    return `${dict.market.residentUpdating} · ${dict.market.autoRefreshOnComplete}`;
+  }
+  if (status.overallState === "queued") {
+    return `${dict.market.residentQueued} · ${dict.market.autoRefreshOnComplete}`;
+  }
+  if (status.overallState === "failed") {
+    return `${dict.market.residentUpdateIssue} · ${dict.market.residentCacheFallback}`;
+  }
+  if (status.latestSucceededAt) {
+    const minutes = Math.max(
+      0,
+      Math.round((status.servedAt - Date.parse(status.latestSucceededAt)) / 60_000),
+    );
+    return `${dict.market.residentCachedState} · ${dict.market.analyzedAgo.replace(
+      "{minutes}",
+      String(minutes),
+    )}`;
+  }
   return null;
 }
 
