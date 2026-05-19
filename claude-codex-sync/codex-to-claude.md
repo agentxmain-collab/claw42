@@ -3850,3 +3850,79 @@ stable acceptance baseline for future model-quality work.
 - Production not touched.
 
 [DOC-HINT: B87 adds a protected read-only model-quality baseline layer on ops-health without changing resolution writers, cron, PM execution, queue behavior, KV writes, prompts, provider routing, or public UI.]
+
+# B88 public output stability diagnostics report
+
+Date: 2026-05-19
+
+## Scope
+
+Adds a protected, read-only `outputStability=1` diagnostics view to `/api/watch/ops-health`.
+This checks the public PM event set that backs the watch board, without changing projection,
+hydration, candidate ranking, refresh, SSE, UI, or PM execution.
+
+## Root Cause / Gap
+
+- Earlier fixes already added canonical ordering, candidate dedupe, and public stage normalization.
+- B88 adds an operator acceptance layer that detects when those guarantees drift in real data:
+  - zero or single visible public PM cards
+  - duplicate candidate cards such as repeated daily market overview cards
+  - public events arriving in non-canonical order
+  - public stage progress gaps where a later stage advances while an earlier stage remains pending
+  - missing public stage trace that can make progress bars unstable
+
+## Changes
+
+- `src/lib/team/decisionOpsPublicOutputStability.ts`
+  - New pure builder for public PM event stability.
+  - Primary issues: `empty_public_output`, `duplicate_candidate_card`, `stage_progress_gap`,
+    `unstable_order`, `minimum_visible_cards_gap`, `missing_stage_trace`.
+  - Counts candidate-type mix and public status mix.
+  - Returns current event order vs expected canonical order.
+  - All actions are non-executable.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `outputStability=1`.
+  - Reads projected public PM events from decision records.
+  - Exposes only `outputStability` by default; nested freshness/reconciliation diagnostics remain
+    hidden unless explicitly requested.
+- `package.json`
+  - Adds `decisionOpsPublicOutputStability.test.ts` to `test:watch-pipeline`.
+
+## Tests Added
+
+- `src/lib/team/__tests__/decisionOpsPublicOutputStability.test.ts`
+  - Healthy unique ordered cards with complete stage traces.
+  - Duplicate candidate cards are critical.
+  - Non-canonical event order is degraded.
+  - Stage progress gaps are critical.
+  - Empty output is critical; single-card output is degraded.
+- `src/app/api/watch/ops-health/route.test.ts`
+  - `?outputStability=1` reads decision records, projects public events, calls the stability
+    builder, and does not expose nested diagnostics by default.
+
+## Verify
+
+- Red before fix:
+  - `ops-health route.test.ts` failed because `outputStability=1` did not read decision records or
+    build the public output stability report.
+- Target green:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsPublicOutputStability.test.ts src/app/api/watch/ops-health/route.test.ts`:
+    PASS, 2 files / 22 tests.
+- Full gates:
+  - `npm run lint`: PASS.
+  - `npm run verify`: PASS; includes format, typecheck, lint, agent-ip, news, news tests,
+    watch-pipeline 71 files / 416 tests, chat-v3-final 50 synthetic threads, execution-safety.
+  - `npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This is diagnostics only. It does not change `decisionResolution.ts`, cron resolution, PM
+  pipeline, replay, repair, queue behavior, candidate ranking, public UI, refresh cadence, SSE,
+  locks, KV writes, prompts, provider routing, or production deploy behavior.
+- Local Vercel CLI deploy remains prohibited because this machine is logged into the wrong Vercel
+  team for Claw42. Preview must come from GitHub/Vercel webhook after PR push.
+- Production not touched.
+
+[DOC-HINT: B88 adds a protected read-only public output stability layer on ops-health without changing projection, hydration, candidate ranking, refresh, SSE, UI, PM execution, or production deployment.]
