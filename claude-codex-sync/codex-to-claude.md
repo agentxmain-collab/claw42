@@ -3926,3 +3926,71 @@ hydration, candidate ranking, refresh, SSE, UI, or PM execution.
 - Production not touched.
 
 [DOC-HINT: B88 adds a protected read-only public output stability layer on ops-health without changing projection, hydration, candidate ranking, refresh, SSE, UI, PM execution, or production deployment.]
+
+# B89 causal runbook diagnostics report
+
+Date: 2026-05-19
+Branch: feature/b89-ops-causal-runbook
+Base: 2734b4e
+
+## Scope
+
+- Added a protected read-only causal runbook layer for `/api/watch/ops-health?causalRunbook=1`.
+- No prod deploy, no Vercel CLI deploy, no KV writes, no cron changes, no PM pipeline changes, no UI changes.
+- Purpose: connect the existing chain/recovery/stability/public-output/quality-baseline diagnostics into a single operator-facing first-cause ordering.
+
+## Implementation
+
+- New builder: `src/lib/team/decisionOpsCausalRunbook.ts`
+  - Inputs:
+    - `DecisionOpsChainRunbook`
+    - `DecisionOpsQueueRecoveryPolicy`
+    - `DecisionOpsStabilityReport`
+    - `DecisionOpsPublicOutputStabilityReport`
+    - `DecisionOpsQualityBaselineReport`
+  - Output:
+    - `status`
+    - `primaryLayer`
+    - `primaryIssue`
+    - stable `alert.dedupeKey`
+    - alert cooldown metadata
+    - diagnosis ladder
+    - read-only operator actions
+- Route integration: `src/app/api/watch/ops-health/route.ts`
+  - New query flag: `causalRunbook=1`
+  - Uses full 500-record ledger window.
+  - Builds nested diagnostics internally but only returns `causalRunbook` unless callers explicitly request nested reports.
+- Test coverage:
+  - `src/lib/team/__tests__/decisionOpsCausalRunbook.test.ts`
+  - Extended `src/app/api/watch/ops-health/route.test.ts`
+  - Added the causal runbook test to `npm run test:watch-pipeline`.
+
+## Root-Cause Ordering
+
+Primary ordering is intentionally conservative:
+
+1. `schedule_to_public_chain`
+2. `queue_and_cron_stability`
+3. `public_output_surface`
+4. `model_quality_baseline`
+5. `recovery_policy`
+
+This means an empty board caused by cron/chain failure will not be misreported as a UI/public-card issue, while duplicate cards or skipped stages become primary only when the schedule-to-public chain is otherwise fresh.
+
+## Verification
+
+- RED verified:
+  - Missing builder import failed.
+  - `causalRunbook=1` initially read only the default ledger window instead of 500.
+- Target tests:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsCausalRunbook.test.ts src/app/api/watch/ops-health/route.test.ts`
+  - Result: 2 files / 22 tests PASS.
+- Static gates already run before this report:
+  - `npm run typecheck` PASS.
+  - `npm run format:check` PASS.
+  - `npm run lint` PASS.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Local Vercel CLI deploy remains disabled for this project because the local CLI account is not the Claw42 Vercel team.
