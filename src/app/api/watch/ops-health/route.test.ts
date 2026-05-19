@@ -31,6 +31,7 @@ const buildDecisionOpsResidentPrewarmCoverageMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsRuntimeStabilityGateMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsModelQualityEvidenceMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsRuntimeQualityGateMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsQueuePriorityPolicyMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -150,6 +151,10 @@ vi.mock("@/lib/team/decisionOpsModelQualityEvidence", () => ({
 
 vi.mock("@/lib/team/decisionOpsRuntimeQualityGate", () => ({
   buildDecisionOpsRuntimeQualityGate: buildDecisionOpsRuntimeQualityGateMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsQueuePriorityPolicy", () => ({
+  buildDecisionOpsQueuePriorityPolicy: buildDecisionOpsQueuePriorityPolicyMock,
 }));
 
 function job() {
@@ -277,6 +282,21 @@ describe("/api/watch/ops-health", () => {
       autoRecoveryAllowed: false,
       primaryAction: null,
       recoverySteps: [],
+    });
+    buildDecisionOpsQueuePriorityPolicyMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      generatedAt: "2026-05-18T12:00:00.000Z",
+      status: "ready",
+      residentPriorityActive: false,
+      pendingOrder: [],
+      blockedLowerPriorityJobs: [],
+      priorityBands: {
+        residentMarketOverview: 0,
+        residentHotspot: 0,
+        symbolOnce: 0,
+        batch: 0,
+      },
+      nextActions: [],
     });
     buildDecisionOpsModelQualityMock.mockReset().mockReturnValue({
       schemaVersion: 1,
@@ -1871,5 +1891,58 @@ describe("/api/watch/ops-health", () => {
     expect(payload.outputStability).toBeUndefined();
     expect(payload.qualityBaseline).toBeUndefined();
     expect(payload.modelQuality).toBeUndefined();
+  });
+
+  it("returns optional queue priority policy for authorized callers", async () => {
+    buildDecisionOpsQueuePriorityPolicyMock.mockReturnValueOnce({
+      schemaVersion: 1,
+      generatedAt: "2026-05-18T12:00:00.000Z",
+      status: "prioritizing_resident",
+      residentPriorityActive: true,
+      pendingOrder: [
+        {
+          jobId: "pm-job:market",
+          priority: {
+            rank: 10,
+            band: "resident_market_overview",
+            resident: true,
+          },
+          status: "queued",
+          due: true,
+        },
+      ],
+      blockedLowerPriorityJobs: [
+        {
+          jobId: "pm-job:batch",
+          blockingJobIds: ["pm-job:market"],
+          retryAfterSeconds: 30,
+        },
+      ],
+      priorityBands: {
+        residentMarketOverview: 1,
+        residentHotspot: 0,
+        symbolOnce: 0,
+        batch: 1,
+      },
+      nextActions: [],
+    });
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&queuePriority=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(buildDecisionOpsQueuePriorityPolicyMock).toHaveBeenCalledWith({
+      jobs: [expect.objectContaining({ id: "pm-job:once:user_visit_trigger:zh_CN:BTC:5934384" })],
+      now: Date.parse("2026-05-18T12:00:00.000Z"),
+    });
+    expect(payload.queuePriority).toMatchObject({
+      schemaVersion: 1,
+      status: "prioritizing_resident",
+      residentPriorityActive: true,
+    });
   });
 });

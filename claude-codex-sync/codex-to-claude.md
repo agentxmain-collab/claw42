@@ -4584,3 +4584,64 @@ Base: 27cc46f
 - Preview should be created by the GitHub/Vercel PR webhook.
 
 [DOC-HINT: B106-B120 add ops-only runtime-quality gates and tighten resident prewarm cadence to UTC 3h for market overview; live sparse execution and production release remain explicitly disabled.]
+
+# B121-B130 resident queue priority report
+
+Date: 2026-05-19
+Branch: feature/b121-b130-prewarm-recovery
+Base: b146cdd
+
+## Scope
+
+- Add queue-level priority protection so global resident lanes drain before lower-value PM work.
+- Priority order:
+  - market overview resident prewarm: rank 10
+  - hotspot resident prewarm: rank 20
+  - symbol once jobs: rank 30
+  - batch jobs: rank 40
+- Add explicit priority metadata to Vercel Queue messages and headers.
+- Defer lower-priority queue deliveries while due higher-priority resident jobs exist.
+- Add authorized-only `queuePriority=1` ops-health diagnostics.
+- Public UI layout, PM prompt fan-out, candidate ranking, live sparse execution, and production release behavior are unchanged.
+
+## Implementation
+
+- `src/lib/team/decisionOpsQueuePriorityPolicy.ts`
+  - New priority policy module.
+  - Builds due-job ordering, priority bands, resident-priority active status, and blocked lower-priority job diagnostics.
+  - Treats exhausted resident failures as non-blocking so they do not stall the queue forever.
+  - Treats active running resident jobs as blockers only until the queue visibility lease expires.
+- `src/lib/team/pmDecisionJobQueue.ts`
+  - Publishes queue priority metadata in the message body and queue headers.
+  - Before running a delivered job, reads same-locale jobs and defers lower-priority work if a due higher-priority resident job exists.
+  - Adds `PmDecisionQueueResidentPriorityDeferError` and retry timing so queue delivery can retry after the resident lane gets a chance to drain.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds `queuePriority=1` diagnostics for authorized callers only.
+- `package.json`
+  - Adds the priority policy test to `test:watch-pipeline`.
+
+## Verification
+
+- RED verified:
+  - New priority-policy tests failed before implementation because the module did not exist.
+  - Queue publish/consumer tests failed before implementation because priority metadata and resident defer behavior did not exist.
+  - Ops-health test failed before implementation because `queuePriority=1` was not wired.
+- Target tests:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsQueuePriorityPolicy.test.ts src/lib/team/__tests__/pmDecisionJobQueue.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 3 files / 49 tests.
+- Full gates:
+  - `npm run format:check`: PASS.
+  - `npm run typecheck`: PASS.
+  - `npm run lint`: PASS.
+  - `npm run test:watch-pipeline`: PASS, 87 files / 481 tests.
+  - `npm run verify`: PASS, includes 481 watch-pipeline tests, 50 chat final synthetic threads, and execution-safety check.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `rm -rf .next && npm run build`: PASS.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Production not touched.
+- No local Vercel deployment was run.
+- Preview should be created by the GitHub/Vercel PR webhook after push.
+
+[DOC-HINT: B121-B130 add queue-level resident priority so market overview and hotspot prewarm jobs drain before symbol and batch PM jobs; public UI, live sparse execution, and production release remain unchanged.]

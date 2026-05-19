@@ -16,6 +16,7 @@ import { buildDecisionOpsModelQuality } from "@/lib/team/decisionOpsModelQuality
 import { buildDecisionOpsPublicOutputStability } from "@/lib/team/decisionOpsPublicOutputStability";
 import { buildDecisionOpsQualityBaseline } from "@/lib/team/decisionOpsQualityBaseline";
 import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
+import { buildDecisionOpsQueuePriorityPolicy } from "@/lib/team/decisionOpsQueuePriorityPolicy";
 import { buildDecisionOpsResidentPrewarmCoverage } from "@/lib/team/decisionOpsResidentPrewarmCoverage";
 import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueueRecoveryPolicy";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
@@ -88,6 +89,7 @@ export async function GET(request: Request) {
   const includeRuntimeStabilityGate = url.searchParams.get("runtimeStabilityGate") === "1";
   const includeModelQualityEvidence = url.searchParams.get("modelQualityEvidence") === "1";
   const includeRuntimeQualityGate = url.searchParams.get("runtimeQualityGate") === "1";
+  const includeQueuePriority = url.searchParams.get("queuePriority") === "1";
   const now = Date.now();
   const includeStability = url.searchParams.get("stability") === "1";
   const includeCausalRunbook = url.searchParams.get("causalRunbook") === "1";
@@ -140,6 +142,12 @@ export async function GET(request: Request) {
     needsDecisionRecords ? readAllDecisionRecords(500, locale) : Promise.resolve([]),
   ]);
   const queueReadiness = getPmDecisionQueueReadiness();
+  const queuePriority = includeQueuePriority
+    ? buildDecisionOpsQueuePriorityPolicy({
+        jobs,
+        now,
+      })
+    : null;
   const health = summarizeDecisionOpsHealth({ jobs, runs });
   const publicEvents =
     includeReconciliation ||
@@ -490,6 +498,11 @@ export async function GET(request: Request) {
       locale,
       health,
       queueReadiness,
+      ...(includeQueuePriority
+        ? {
+            queuePriority,
+          }
+        : {}),
       ...(includeDetails
         ? { details: buildDecisionOpsHealthDetails({ jobs, runs, limit: detailLimit }) }
         : {}),

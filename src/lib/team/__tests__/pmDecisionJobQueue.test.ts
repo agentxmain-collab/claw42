@@ -8,6 +8,7 @@ import {
   publishPmDecisionJobToQueue,
   resolvePmDecisionQueueRetry,
   PmDecisionQueueRetryNotDueError,
+  PmDecisionQueueResidentPriorityDeferError,
 } from "@/lib/team/pmDecisionJobQueue";
 
 function job(overrides: Partial<PmDecisionJobRecord> = {}): PmDecisionJobRecord {
@@ -72,6 +73,11 @@ describe("pmDecisionJobQueue", () => {
         kind: "once",
         triggerSource: "user_visit_trigger",
         locale: "zh_CN",
+        priority: {
+          rank: 30,
+          band: "symbol_once",
+          resident: false,
+        },
       },
       {
         idempotencyKey: "pm-job:once:user_visit_trigger:zh_CN:BTC:5934384",
@@ -79,6 +85,8 @@ describe("pmDecisionJobQueue", () => {
         headers: {
           "x-claw42-job-id": "pm-job:once:user_visit_trigger:zh_CN:BTC:5934384",
           "x-claw42-trigger-source": "user_visit_trigger",
+          "x-claw42-queue-priority": "30",
+          "x-claw42-queue-priority-band": "symbol_once",
         },
       },
     );
@@ -191,6 +199,94 @@ describe("pmDecisionJobQueue", () => {
     expect(runJob).not.toHaveBeenCalled();
   });
 
+  it("defers lower-priority batch jobs behind due resident prewarm jobs", async () => {
+    const batchJob = job({
+      id: "pm-job:batch:cron:zh_CN:auto:5934384",
+      kind: "batch",
+      triggerSource: "cron",
+      candidate: null,
+      symbol: null,
+    });
+    const residentMarketJob = job({
+      id: "pm-job:once:cron:zh_CN:market:5934384",
+      triggerSource: "cron",
+      candidate: {
+        candidateType: "market_overview",
+        candidateKey: "market_overview:utc:zh_CN:2026-05-17T09",
+        displayTitle: "今日大盘综述",
+        executable: false,
+        cadence: "daily",
+        score: 100,
+        reasons: [],
+      },
+      symbol: null,
+    });
+    const runJob = vi.fn();
+    const loadContext = vi.fn();
+
+    await expect(
+      processPmDecisionQueueMessage(
+        { schemaVersion: 1, jobId: batchJob.id, queuedAt: batchJob.createdAt },
+        {
+          readJob: vi.fn().mockResolvedValue(batchJob),
+          readJobs: vi.fn().mockResolvedValue([batchJob, residentMarketJob]),
+          runJob,
+          loadContext,
+          now: Date.parse("2026-05-17T10:05:00.000Z"),
+        },
+      ),
+    ).rejects.toBeInstanceOf(PmDecisionQueueResidentPriorityDeferError);
+
+    expect(loadContext).not.toHaveBeenCalled();
+    expect(runJob).not.toHaveBeenCalled();
+  });
+
+  it("does not defer batch jobs behind exhausted resident failures", async () => {
+    const batchJob = job({
+      id: "pm-job:batch:cron:zh_CN:auto:5934384",
+      kind: "batch",
+      triggerSource: "cron",
+      candidate: null,
+      symbol: null,
+    });
+    const exhaustedMarketJob = job({
+      id: "pm-job:once:cron:zh_CN:market:5934384",
+      status: "failed",
+      attemptCount: 3,
+      maxAttempts: 3,
+      nextRunAt: null,
+      triggerSource: "cron",
+      candidate: {
+        candidateType: "market_overview",
+        candidateKey: "market_overview:utc:zh_CN:2026-05-17T09",
+        displayTitle: "今日大盘综述",
+        executable: false,
+        cadence: "daily",
+        score: 100,
+        reasons: [],
+      },
+      symbol: null,
+    });
+    const runJob = vi.fn().mockResolvedValue({ job: batchJob, outputs: [], auditEvents: [] });
+    const loadContext = vi.fn().mockResolvedValue({});
+
+    await processPmDecisionQueueMessage(
+      { schemaVersion: 1, jobId: batchJob.id, queuedAt: batchJob.createdAt },
+      {
+        readJob: vi.fn().mockResolvedValue(batchJob),
+        readJobs: vi.fn().mockResolvedValue([batchJob, exhaustedMarketJob]),
+        runJob,
+        loadContext,
+        now: Date.parse("2026-05-17T10:05:00.000Z"),
+      },
+    );
+
+    expect(runJob).toHaveBeenCalledWith(
+      batchJob,
+      expect.objectContaining({ now: expect.any(Number) }),
+    );
+  });
+
   it("uses the ledger retry time when scheduling a queue retry", () => {
     const retry = resolvePmDecisionQueueRetry(
       new PmDecisionQueueRetryNotDueError(
@@ -208,6 +304,20 @@ describe("pmDecisionJobQueue", () => {
     const retry = resolvePmDecisionQueueRetry(new Error("still failing"), { deliveryCount: 5 });
 
     expect(retry).toEqual({ acknowledge: true });
+  });
+
+  it("uses resident-priority defer timing when queue receives lower-priority work first", () => {
+    const retry = resolvePmDecisionQueueRetry(
+      new PmDecisionQueueResidentPriorityDeferError(
+        "pm-job:batch:cron:zh_CN:auto:5934384",
+        ["pm-job:once:cron:zh_CN:market:5934384"],
+        "2026-05-17T10:05:30.000Z",
+      ),
+      { deliveryCount: 1 },
+      Date.parse("2026-05-17T10:05:00.000Z"),
+    );
+
+    expect(retry).toEqual({ afterSeconds: 30 });
   });
 
   it("defers duplicate delivery while a job is still actively running", async () => {
