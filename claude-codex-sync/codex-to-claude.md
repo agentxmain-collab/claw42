@@ -4410,3 +4410,54 @@ Base: 35b2c3f
 - Production not touched.
 
 [DOC-HINT: B99 adds an ops-only fail-closed sparse fan-out config gate that can prepare shadow diagnostics but cannot change live PM fan-out or public behavior.]
+
+# B100 sparse readiness rollup report
+
+Date: 2026-05-19
+Branch: feature/b100-sparse-readiness
+Base: 8436271
+
+## Scope
+
+- Adds one ops-only sparse readiness rollup over B96-B99 diagnostics.
+- The rollup is available only from authorized `ops-health?sparseReadiness=1`.
+- Nested sparse diagnostics remain hidden unless their own flags are requested.
+- Live PM fan-out, public behavior, public payload, model calls, prompts, candidate ranking, refresh behavior, UI, and production deployment are unchanged.
+
+## Implementation
+
+- `src/lib/team/decisionOpsSparseReadiness.ts`
+  - Combines sparse execution trace, sparse shadow, shadow history, and config gate into one readiness report.
+  - Emits `collecting_trace`, `blocked_by_shadow_risk`, `ready_for_shadow_config`, or `ready_for_shadow_telemetry`.
+  - Keeps `canChangeLiveFanout=false` and `canChangePublicBehavior=false` in every state.
+  - Uses explicit blocking reasons for insufficient trace, unsafe shadow, unsafe history, or unopened config gate.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds authorized-only `?sparseReadiness=1`.
+  - Builds the four source sparse reports only when needed.
+  - Does not expose source reports unless `sparseExecution=1`, `sparseShadow=1`, `sparseShadowHistory=1`, or `sparseConfigGate=1` is also requested.
+
+## Verification
+
+- RED verified:
+  - Missing `decisionOpsSparseReadiness` module failed.
+  - `ops-health?sparseReadiness=1` did not read records or build readiness before route integration.
+- Target tests:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsSparseReadiness.test.ts`: PASS, 4 tests.
+  - `npx vitest run src/app/api/watch/ops-health/route.test.ts --testNamePattern "sparse readiness"`: PASS, 1 test.
+  - `npx vitest run src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionOpsSparseReadiness.test.ts`: PASS, 2 files / 29 tests.
+- Full gates:
+  - `npm run format:check`: PASS.
+  - `npm run typecheck`: PASS.
+  - `npm run lint`: PASS.
+  - `npm run verify`: PASS, 76 files / 444 tests.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `rm -rf .next && npm run build`: PASS.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Worktree has no `.vercel/project.json`, so local Vercel CLI deploy is not used.
+- Production not touched.
+
+[DOC-HINT: B100 adds an ops-only sparse readiness rollup that tells operators whether sparse diagnostics are ready for telemetry-only shadow work, while explicitly forbidding live fan-out and public behavior changes.]
