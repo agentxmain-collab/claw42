@@ -4047,3 +4047,58 @@ Base: da818be
 - Production not touched.
 
 [DOC-HINT: B90 adds a protected read-only ops alert snapshot on ops-health without changing PM execution, queue behavior, refresh, SSE, KV writes, public UI, or production deployment.]
+
+# B93 resident prewarm SLA/backfill report
+
+Date: 2026-05-19
+Branch: feature/b93-resident-sla-backfill
+Base: 8e665c8
+
+## Scope
+
+- Added resident market/hotspot SLA diagnostics for UTC prewarm cadence.
+- Added due-failed resident job backfill so cron does not wait for the next fixed UTC boundary after a failed resident prewarm retry becomes due.
+- Surfaced resident prewarm health in `/api/watch/ops-health?freshness=1`.
+- Kept production untouched. No public layout changes, no PM prompt changes, no candidate ranking changes, no Vercel CLI deploy.
+
+## Implementation
+
+- `src/lib/watch/residentPrewarmStatus.ts`
+  - Adds `slaState`, `ageMs`, `expectedIntervalMs`, and `staleAfterMs` per resident kind.
+  - Market overview SLA follows 6h expected cadence / 12h stale threshold.
+  - Hotspot SLA follows 3h expected cadence / 6h stale threshold.
+- `src/lib/watch/residentPrewarm.ts`
+  - Adds `residentPrewarmPlan()`.
+  - Keeps fixed UTC cadence and burst hotspot selection.
+  - Adds due failed-job backfill candidates when `nextRunAt <= now`.
+  - Does not treat a totally empty resident history as a forced backfill. Empty remains critical in ops-health, but fixed UTC cadence is still the controlled first-fill path.
+  - Exposes hotspot burst threshold metadata: `HOTSPOT_BURST_SCORE_THRESHOLD = 130`.
+- `src/app/api/cron/strategy-replay/route.ts`
+  - Uses `residentPrewarmPlan()` instead of raw `residentPrewarmCandidates()`.
+  - Adds response diagnostics: fixed cadence candidates, backfill candidates, burst metadata, and resident SLA snapshot.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds top-level `residentPrewarm` when `freshness=1` is requested.
+
+## Verification
+
+- RED verified:
+  - `residentPrewarmPlan` missing failed.
+  - Missing `slaState` on resident status failed.
+  - Scheduled cron outside fixed UTC cadence returned no resident backfill.
+  - `ops-health?freshness=1` returned no resident prewarm health.
+- Target tests:
+  - `npx vitest run src/lib/watch/__tests__/residentPrewarm.test.ts src/lib/watch/__tests__/residentPrewarmStatus.test.ts src/app/api/cron/strategy-replay/route.test.ts src/app/api/watch/ops-health/route.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`
+  - Result: 5 files / 46 tests PASS.
+- Full gates:
+  - `npm run verify`: PASS, 76 files / 436 tests.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run build`: PASS.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Local Vercel CLI deploy remains disabled for this project because the project identity card requires GitHub PR webhook preview unless Vercel CLI scope is explicitly confirmed.
+- Production not touched.
+
+[DOC-HINT: B93 adds resident UTC prewarm SLA diagnostics, due failed-job backfill, hotspot burst metadata, and ops-health resident visibility without changing public UI layout, PM prompts, candidate ranking, KV schema, or production deployment.]

@@ -453,6 +453,66 @@ describe("/api/watch/ops-health", () => {
     });
   });
 
+  it("includes resident market and hotspot SLA health with freshness diagnostics", async () => {
+    readAllDecisionRecordsMock.mockResolvedValue([
+      {
+        id: "pm:MARKET:2026-05-17T23:00:00.000Z",
+        locale: "zh_CN",
+        symbol: "MARKET",
+        createdAt: "2026-05-17T23:00:00.000Z",
+        candidate: {
+          candidateType: "market_overview",
+          candidateKey: "market_overview:utc:zh_CN:2026-05-17T18",
+          displayTitle: "今日大盘综述",
+          executable: false,
+          cadence: "daily",
+          score: 100,
+          reasons: [],
+        },
+      },
+      {
+        id: "pm:HOTSPOT:2026-05-18T10:30:00.000Z",
+        locale: "zh_CN",
+        symbol: "HOTSPOT",
+        createdAt: "2026-05-18T10:30:00.000Z",
+        candidate: {
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:2026-05-18T09:market",
+          displayTitle: "热点叙事追踪",
+          executable: false,
+          cadence: "intraday",
+          score: 80,
+          reasons: [],
+        },
+      },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&freshness=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.residentPrewarm).toMatchObject({
+      schemaVersion: 1,
+      slaState: "critical",
+      marketOverview: {
+        kind: "market_overview",
+        slaState: "critical",
+        expectedIntervalMs: 6 * 60 * 60_000,
+        staleAfterMs: 12 * 60 * 60_000,
+      },
+      hotspot: {
+        kind: "hotspot",
+        slaState: "healthy",
+        expectedIntervalMs: 3 * 60 * 60_000,
+        staleAfterMs: 6 * 60 * 60_000,
+      },
+    });
+  });
+
   it("returns an optional rollup summary without exposing nested diagnostics by default", async () => {
     projectDecisionRecordToPublicEventMock.mockReturnValue({
       id: "pm-decision:pm:BTC:1779102000000",

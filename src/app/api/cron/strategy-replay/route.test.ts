@@ -12,6 +12,7 @@ const getCoinPoolMock = vi.hoisted(() => vi.fn());
 const adjustDebtFromReplaysMock = vi.hoisted(() => vi.fn());
 const tryAcquireLockMock = vi.hoisted(() => vi.fn());
 const enqueuePmDecisionJobMock = vi.hoisted(() => vi.fn());
+const readPmDecisionJobsMock = vi.hoisted(() => vi.fn());
 const publishPmDecisionJobToQueueMock = vi.hoisted(() => vi.fn());
 const runPmDecisionJobMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
@@ -49,6 +50,7 @@ vi.mock("@/lib/storage/kv-lock", () => ({
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   enqueuePmDecisionJob: enqueuePmDecisionJobMock,
+  readPmDecisionJobs: readPmDecisionJobsMock,
 }));
 
 vi.mock("@/lib/team/pmDecisionJobQueue", () => ({
@@ -112,6 +114,7 @@ describe("/api/cron/strategy-replay", () => {
     adjustDebtFromReplaysMock.mockReset();
     tryAcquireLockMock.mockReset();
     enqueuePmDecisionJobMock.mockReset();
+    readPmDecisionJobsMock.mockReset();
     publishPmDecisionJobToQueueMock.mockReset();
     runPmDecisionJobMock.mockReset();
     readAllDecisionRecordsMock.mockReset();
@@ -154,6 +157,7 @@ describe("/api/cron/strategy-replay", () => {
       decisionRecordIds: [],
       auditEventCount: 0,
     }));
+    readPmDecisionJobsMock.mockResolvedValue([]);
     publishPmDecisionJobToQueueMock.mockResolvedValue({ mode: "disabled" });
     runPmDecisionJobMock.mockImplementation(async (job, context) => {
       context.onAudit?.({
@@ -324,6 +328,64 @@ describe("/api/cron/strategy-replay", () => {
         triggerSource: "cron",
         locale: "zh_CN",
         now: prewarmNow,
+      }),
+    );
+  });
+
+  it("backfills due failed resident prewarm jobs outside the fixed UTC cadence window", async () => {
+    const retryNow = Date.parse("2026-05-13T20:10:00.000Z");
+    vi.setSystemTime(retryNow);
+    readPmDecisionJobsMock.mockResolvedValueOnce([
+      {
+        id: "pm-job:hotspot:failed",
+        schemaVersion: 1,
+        kind: "once",
+        status: "failed",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        idempotencyKey: "once:cron:zh_CN:hotspot:failed",
+        candidate: {
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
+          displayTitle: "热点叙事追踪",
+          executable: false,
+          cadence: "intraday",
+          score: 80,
+          reasons: [],
+        },
+        symbol: null,
+        createdAt: "2026-05-13T18:00:00.000Z",
+        updatedAt: "2026-05-13T18:05:00.000Z",
+        startedAt: "2026-05-13T18:00:00.000Z",
+        completedAt: "2026-05-13T18:05:00.000Z",
+        attemptCount: 1,
+        maxAttempts: 3,
+        nextRunAt: "2026-05-13T20:00:00.000Z",
+        lastError: "provider timeout",
+        outputCount: 0,
+        decisionRecordIds: [],
+        auditEventCount: 0,
+      },
+    ]);
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.residentPrewarmCandidates).toEqual(["hotspot:utc:zh_CN:2026-05-13T18:market"]);
+    expect(payload.residentPrewarmBackfillCandidates).toEqual([
+      "hotspot:utc:zh_CN:2026-05-13T18:market",
+    ]);
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        candidate: expect.objectContaining({
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
+        }),
+        now: retryNow,
       }),
     );
   });

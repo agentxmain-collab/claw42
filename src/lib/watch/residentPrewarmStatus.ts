@@ -9,11 +9,16 @@ import {
 export type ResidentPrewarmKind = "market_overview" | "hotspot";
 export type ResidentPrewarmKindState = "empty" | "ready" | "queued" | "running" | "failed";
 export type ResidentPrewarmOverallState = ResidentPrewarmKindState;
+export type ResidentPrewarmSlaState = "healthy" | "degraded" | "critical";
 
 export interface ResidentPrewarmKindStatus {
   kind: ResidentPrewarmKind;
   state: ResidentPrewarmKindState;
+  slaState: ResidentPrewarmSlaState;
   stale: boolean;
+  ageMs: number | null;
+  expectedIntervalMs: number;
+  staleAfterMs: number;
   lastSucceededAt: string | null;
   lastAttemptAt: string | null;
   nextRunAt: string | null;
@@ -26,6 +31,7 @@ export interface ResidentPrewarmStatus {
   schemaVersion: 1;
   servedAt: number;
   overallState: ResidentPrewarmOverallState;
+  slaState: ResidentPrewarmSlaState;
   latestSucceededAt: string | null;
   marketOverview: ResidentPrewarmKindStatus;
   hotspot: ResidentPrewarmKindStatus;
@@ -54,6 +60,7 @@ export function deriveResidentPrewarmStatus({
     schemaVersion: 1,
     servedAt: now,
     overallState: overallState([marketOverview, hotspot]),
+    slaState: overallSlaState([marketOverview, hotspot]),
     latestSucceededAt,
     marketOverview,
     hotspot,
@@ -86,9 +93,11 @@ function deriveKindStatus(
 
   const lastSucceededAt = latestRecord?.iso ?? null;
   const lastSucceededAtMs = latestRecord?.ts ?? null;
-  const stale =
-    lastSucceededAtMs === null ||
-    now - lastSucceededAtMs > KIND_INTERVAL_MS[kind] * STALE_MULTIPLIER;
+  const expectedIntervalMs = KIND_INTERVAL_MS[kind];
+  const staleAfterMs = expectedIntervalMs * STALE_MULTIPLIER;
+  const ageMs =
+    lastSucceededAtMs === null ? null : Math.max(0, Math.floor(now - lastSucceededAtMs));
+  const stale = lastSucceededAtMs === null || now - lastSucceededAtMs > staleAfterMs;
   const activeState =
     latestJob?.status === "running" || latestJob?.status === "queued" ? latestJob.status : null;
   const latestJobUpdatedAtMs = latestJob ? jobTime(latestJob) : null;
@@ -108,7 +117,19 @@ function deriveKindStatus(
   return {
     kind,
     state,
+    slaState: kindSlaState({
+      state,
+      ageMs,
+      expectedIntervalMs,
+      staleAfterMs,
+      stale,
+      nextRunAt: latestJob?.nextRunAt ?? null,
+      now,
+    }),
     stale,
+    ageMs,
+    expectedIntervalMs,
+    staleAfterMs,
     lastSucceededAt,
     lastAttemptAt: latestJob?.updatedAt ?? latestJob?.createdAt ?? null,
     nextRunAt: latestJob?.nextRunAt ?? null,
@@ -124,6 +145,39 @@ function overallState(statuses: readonly ResidentPrewarmKindStatus[]): ResidentP
   if (statuses.some((status) => status.state === "failed")) return "failed";
   if (statuses.some((status) => status.state === "ready")) return "ready";
   return "empty";
+}
+
+function overallSlaState(statuses: readonly ResidentPrewarmKindStatus[]): ResidentPrewarmSlaState {
+  if (statuses.some((status) => status.slaState === "critical")) return "critical";
+  if (statuses.some((status) => status.slaState === "degraded")) return "degraded";
+  return "healthy";
+}
+
+function kindSlaState({
+  state,
+  ageMs,
+  expectedIntervalMs,
+  staleAfterMs,
+  stale,
+  nextRunAt,
+  now,
+}: {
+  state: ResidentPrewarmKindState;
+  ageMs: number | null;
+  expectedIntervalMs: number;
+  staleAfterMs: number;
+  stale: boolean;
+  nextRunAt: string | null;
+  now: number;
+}): ResidentPrewarmSlaState {
+  if (state === "empty") return "critical";
+  if (stale || (ageMs !== null && ageMs > staleAfterMs)) return "critical";
+  if (state === "failed") {
+    const nextRunAtMs = Date.parse(nextRunAt ?? "");
+    return !Number.isFinite(nextRunAtMs) || nextRunAtMs <= now ? "critical" : "degraded";
+  }
+  if (ageMs !== null && ageMs > expectedIntervalMs) return "degraded";
+  return "healthy";
 }
 
 function latestIso(values: Array<string | null>) {
