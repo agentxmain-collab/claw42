@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 import type { NewsItem } from "@/lib/types";
+import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { residentPrewarmCandidates, residentPrewarmPlan } from "@/lib/watch/residentPrewarm";
 import type { PmDecisionJobRecord } from "@/lib/watch/pmDecisionJobLedger";
 
@@ -81,7 +82,7 @@ describe("residentPrewarmCandidates", () => {
         majors: [],
       },
       newsItems: [],
-      records: [],
+      records: [residentRecord("market_overview", "2026-05-13T18:30:00.000Z")],
       jobs: [
         residentJob({
           candidateType: "hotspot",
@@ -106,7 +107,66 @@ describe("residentPrewarmCandidates", () => {
       nextRunAt: "2026-05-13T20:00:00.000Z",
     });
   });
+
+  it("fills a missing market overview when hotspot already exists outside the fixed UTC cadence window", () => {
+    const retryNow = Date.parse("2026-05-13T20:10:00.000Z");
+    const plan = residentPrewarmPlan({
+      locale: "zh_CN",
+      now: retryNow,
+      pool: {
+        ...pool(),
+        ts: retryNow,
+        majors: [],
+      },
+      newsItems: [],
+      records: [residentRecord("hotspot", "2026-05-13T19:00:00.000Z")],
+      jobs: [],
+    });
+
+    expect(plan.fixedCadenceCandidateKeys).toEqual([]);
+    expect(plan.backfillCandidateKeys).toEqual(["market_overview:utc:zh_CN:2026-05-13T18"]);
+    expect(plan.candidates.map((candidate) => candidate.candidateKey)).toEqual([
+      "market_overview:utc:zh_CN:2026-05-13T18",
+    ]);
+    expect(plan.residentStatus.marketOverview).toMatchObject({
+      state: "empty",
+      slaState: "critical",
+    });
+  });
 });
+
+function residentRecord(
+  candidateType: "market_overview" | "hotspot",
+  createdAt: string,
+): StrategyDecisionRecord {
+  return {
+    id: `pm:${candidateType}:${createdAt}`,
+    schemaVersion: 2,
+    recordSource: "paper",
+    symbol: candidateType === "market_overview" ? "MARKET" : "HOTSPOT",
+    candidate: {
+      candidateType,
+      candidateKey: `${candidateType}:utc:zh_CN:${createdAt}`,
+      displayTitle: candidateType === "market_overview" ? "今日大盘综述" : "热点叙事追踪",
+      executable: false,
+      cadence: candidateType === "market_overview" ? "daily" : "intraday",
+      score: 100,
+      reasons: [],
+    },
+    locale: "zh_CN",
+    decisionOwnerId: "pm",
+    contributorIds: ["pm"],
+    analystInputs: [],
+    sourceThreadId: null,
+    tradeDecision: null,
+    createdAt,
+    evaluationWindowEndsAt: null,
+    resolvedAt: null,
+    resolvedOutcome: null,
+    promptVersion: "test",
+    modelProvider: "test",
+  };
+}
 
 function residentJob({
   candidateType,

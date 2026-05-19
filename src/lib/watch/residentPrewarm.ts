@@ -73,6 +73,7 @@ export function residentPrewarmPlan({
   records = [],
   jobs = [],
   force = false,
+  allowFirstFillBackfill = true,
 }: {
   locale: Locale;
   now: number;
@@ -81,6 +82,7 @@ export function residentPrewarmPlan({
   records?: readonly StrategyDecisionRecord[];
   jobs?: readonly PmDecisionJobRecord[];
   force?: boolean;
+  allowFirstFillBackfill?: boolean;
 }): ResidentPrewarmPlan {
   const fixedCadenceCandidates = residentPrewarmCandidates({
     locale,
@@ -103,8 +105,12 @@ export function residentPrewarmPlan({
   const residentStatus = deriveResidentPrewarmStatus({ records, jobs, now });
   const baselineKeys = new Set(baselineCandidates.map((candidate) => candidate.candidateKey));
   const backfillCandidates = [
-    backfillCandidateForKind("market_overview", residentStatus.marketOverview, jobs, locale, now),
-    backfillCandidateForKind("hotspot", residentStatus.hotspot, jobs, locale, now),
+    backfillCandidateForKind("market_overview", residentStatus.marketOverview, jobs, locale, now, {
+      allowFirstFillBackfill,
+    }),
+    backfillCandidateForKind("hotspot", residentStatus.hotspot, jobs, locale, now, {
+      allowFirstFillBackfill,
+    }),
   ]
     .filter((candidate): candidate is DecisionCandidate => Boolean(candidate))
     .filter((candidate) => !baselineKeys.has(candidate.candidateKey));
@@ -163,18 +169,30 @@ function backfillCandidateForKind(
   jobs: readonly PmDecisionJobRecord[],
   locale: Locale,
   now: number,
+  {
+    allowFirstFillBackfill,
+  }: {
+    allowFirstFillBackfill: boolean;
+  },
 ) {
   if (status.state === "queued" || status.state === "running") return null;
   const dueFailedJob = latestDueFailedResidentJob(kind, jobs, now);
   if (dueFailedJob?.candidate) return dueFailedJob.candidate;
-  if (!shouldSlaBackfill(status)) return null;
+  if (!shouldSlaBackfill(status, { allowFirstFillBackfill })) return null;
   return kind === "market_overview"
     ? marketOverviewCandidate({ locale, now })
     : hotspotDecisionCandidate({ locale, now });
 }
 
-function shouldSlaBackfill(status: ResidentPrewarmKindStatus) {
-  if (status.state === "empty") return false;
+function shouldSlaBackfill(
+  status: ResidentPrewarmKindStatus,
+  {
+    allowFirstFillBackfill,
+  }: {
+    allowFirstFillBackfill: boolean;
+  },
+) {
+  if (status.state === "empty") return allowFirstFillBackfill;
   if (status.stale) return true;
   return status.slaState === "critical" && status.state === "failed";
 }

@@ -4102,3 +4102,52 @@ Base: 8e665c8
 - Production not touched.
 
 [DOC-HINT: B93 adds resident UTC prewarm SLA diagnostics, due failed-job backfill, hotspot burst metadata, and ops-health resident visibility without changing public UI layout, PM prompts, candidate ranking, KV schema, or production deployment.]
+
+# B94 resident market first-fill hotfix report
+
+Date: 2026-05-19
+Branch: feature/b94-resident-firstfill
+Base: 075293a
+
+## Root Cause
+
+Dan observed the public board showing only hotspot + HYPE, with no market overview card.
+
+First-hand diagnosis:
+
+- B93 intentionally marked empty resident history as `critical` in ops-health but did not schedule a first-fill backfill for empty resident tracks.
+- That was too conservative for the current product rule: market overview and hotspot are global high-value resident analyses and must be backfilled when one is missing.
+- Result: if hotspot existed but market overview did not, scheduled cron outside the 6h UTC boundary would not enqueue a market overview candidate until the next fixed boundary.
+
+## Implementation
+
+- `src/lib/watch/residentPrewarm.ts`
+  - `residentPrewarmPlan()` now accepts `allowFirstFillBackfill`.
+  - Empty resident tracks can generate first-fill backfill candidates when records were read successfully.
+  - Existing queued/running jobs still suppress duplicate backfill.
+  - Due failed-job backfill behavior from B93 is preserved.
+- `src/app/api/cron/strategy-replay/route.ts`
+  - `readCronDecisionRecords()` now returns `{ records, readable }`.
+  - Cron passes `allowFirstFillBackfill: readable` into the resident plan.
+  - If decision records cannot be read, cron does not infer empty state and does not first-fill blindly.
+
+## Verification
+
+- RED verified:
+  - Missing market overview + existing hotspot outside fixed UTC cadence returned no market candidate before fix.
+  - Cron with readable records and missing market overview returned no resident candidate before fix.
+- Target tests:
+  - `npx vitest run src/lib/watch/__tests__/residentPrewarm.test.ts src/app/api/cron/strategy-replay/route.test.ts`
+  - Result: 2 files / 15 tests PASS.
+- Full gates:
+  - `npm run verify`: PASS, 76 files / 439 tests.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run build`: PASS.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Production not touched.
+
+[DOC-HINT: B94 changes resident first-fill policy so missing market overview/hotspot tracks can be backfilled when decision records are readable, while suppressing blind first-fill if record reads fail.]
