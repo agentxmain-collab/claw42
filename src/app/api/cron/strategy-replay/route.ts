@@ -84,7 +84,8 @@ export async function GET(request: NextRequest) {
   }
 
   const pool = await getCoinPool();
-  const decisionRecords = await readCronDecisionRecords(locale);
+  const decisionRecordRead = await readCronDecisionRecords(locale);
+  const decisionRecords = decisionRecordRead.records;
   const pmDecisionJobs = await readPmDecisionJobs({ locale, limit: 100 }).catch(() => []);
   const resolvedPmDecisions = await resolveOpenPmDecisions(pool, decisionRecords, now);
   const replayed = [];
@@ -118,6 +119,7 @@ export async function GET(request: NextRequest) {
     force: trigger === "now",
     records: decisionRecords,
     jobs: pmDecisionJobs,
+    allowFirstFillBackfill: decisionRecordRead.readable,
   });
   const residentCandidates = residentPlan.candidates;
   const residentPrewarmResults = [];
@@ -304,11 +306,17 @@ async function resolveOpenPmDecisions(
 
 async function readCronDecisionRecords(locale: ReturnType<typeof localeFromRequestUrl>) {
   try {
-    return await readAllDecisionRecords(PM_RESOLUTION_RECORD_LIMIT, locale);
+    return {
+      records: await readAllDecisionRecords(PM_RESOLUTION_RECORD_LIMIT, locale),
+      readable: true,
+    };
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[claw42] PM decision records unavailable for cron diagnostics", error);
     }
-    return [];
+    return {
+      records: [],
+      readable: false,
+    };
   }
 }

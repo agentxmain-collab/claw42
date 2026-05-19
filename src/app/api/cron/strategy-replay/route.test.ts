@@ -190,6 +190,8 @@ describe("/api/cron/strategy-replay", () => {
         tradeDecision: { id: "trade:BTC:open" },
         resolvedOutcome: null,
       },
+      residentDecisionRecord("market_overview", "2026-05-13T18:30:00.000Z"),
+      residentDecisionRecord("hotspot", "2026-05-13T18:45:00.000Z"),
     ]);
     resolveDecisionRecordFromPriceMock.mockResolvedValue({
       record: { id: "pm:BTC:open", resolvedOutcome: "hit_tp" },
@@ -335,6 +337,9 @@ describe("/api/cron/strategy-replay", () => {
   it("backfills due failed resident prewarm jobs outside the fixed UTC cadence window", async () => {
     const retryNow = Date.parse("2026-05-13T20:10:00.000Z");
     vi.setSystemTime(retryNow);
+    readAllDecisionRecordsMock.mockResolvedValueOnce([
+      residentDecisionRecord("market_overview", "2026-05-13T18:30:00.000Z"),
+    ]);
     readPmDecisionJobsMock.mockResolvedValueOnce([
       {
         id: "pm-job:hotspot:failed",
@@ -386,6 +391,73 @@ describe("/api/cron/strategy-replay", () => {
           candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
         }),
         now: retryNow,
+      }),
+    );
+  });
+
+  it("fills a missing market overview outside the fixed UTC cadence window when records are readable", async () => {
+    const retryNow = Date.parse("2026-05-13T20:10:00.000Z");
+    vi.setSystemTime(retryNow);
+    readAllDecisionRecordsMock.mockResolvedValueOnce([
+      {
+        id: "pm:HOTSPOT:2026-05-13T19:00:00.000Z",
+        schemaVersion: 2,
+        recordSource: "paper",
+        symbol: "HOTSPOT",
+        candidate: {
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
+          displayTitle: "热点叙事追踪",
+          executable: false,
+          cadence: "intraday",
+          score: 80,
+          reasons: [],
+        },
+        locale: "zh_CN",
+        tradeDecision: null,
+        createdAt: "2026-05-13T19:00:00.000Z",
+        resolvedOutcome: null,
+      },
+    ]);
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.residentPrewarmCandidates).toEqual(["market_overview:utc:zh_CN:2026-05-13T18"]);
+    expect(payload.residentPrewarmBackfillCandidates).toEqual([
+      "market_overview:utc:zh_CN:2026-05-13T18",
+    ]);
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        candidate: expect.objectContaining({
+          candidateType: "market_overview",
+          candidateKey: "market_overview:utc:zh_CN:2026-05-13T18",
+        }),
+        now: retryNow,
+      }),
+    );
+  });
+
+  it("does not first-fill resident prewarm candidates when decision records cannot be read", async () => {
+    const retryNow = Date.parse("2026-05-13T20:10:00.000Z");
+    vi.setSystemTime(retryNow);
+    readAllDecisionRecordsMock.mockRejectedValueOnce(new Error("kv unavailable"));
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.residentPrewarmCandidates).toEqual([]);
+    expect(payload.residentPrewarmBackfillCandidates).toEqual([]);
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledTimes(1);
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "batch",
+        triggerSource: "cron",
       }),
     );
   });
@@ -551,3 +623,25 @@ describe("/api/cron/strategy-replay", () => {
     );
   });
 });
+
+function residentDecisionRecord(candidateType: "market_overview" | "hotspot", createdAt: string) {
+  return {
+    id: `pm:${candidateType}:${createdAt}`,
+    schemaVersion: 2,
+    recordSource: "paper",
+    symbol: candidateType === "market_overview" ? "MARKET" : "HOTSPOT",
+    candidate: {
+      candidateType,
+      candidateKey: `${candidateType}:utc:zh_CN:${createdAt}`,
+      displayTitle: candidateType === "market_overview" ? "今日大盘综述" : "热点叙事追踪",
+      executable: false,
+      cadence: candidateType === "market_overview" ? "daily" : "intraday",
+      score: 100,
+      reasons: [],
+    },
+    locale: "zh_CN",
+    tradeDecision: null,
+    createdAt,
+    resolvedOutcome: null,
+  };
+}
