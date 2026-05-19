@@ -53,7 +53,7 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     ).toBeNull();
   });
 
-  test("fills market overview before hotspot when no resident card exists", () => {
+  test("does not ask user visits to create global resident cards", () => {
     expect(
       resolveVisibleSessionRefreshTarget({
         topics: [],
@@ -61,12 +61,12 @@ describe("resolveVisibleSessionRefreshTarget", () => {
         locale: "zh_CN",
       }),
     ).toMatchObject({
-      symbol: "MARKET",
-      params: { candidateType: "market_overview" },
+      symbol: "SYMBOL",
+      params: { candidateType: "symbol" },
     });
   });
 
-  test("fills missing hotspot after market overview exists", () => {
+  test("skips missing hotspot because global prewarm owns resident analysis", () => {
     expect(
       resolveVisibleSessionRefreshTarget({
         topics: [{ candidateType: "market_overview", symbol: "MARKET" }],
@@ -74,8 +74,8 @@ describe("resolveVisibleSessionRefreshTarget", () => {
         locale: "zh_CN",
       }),
     ).toMatchObject({
-      symbol: "HOTSPOT",
-      params: { candidateType: "hotspot" },
+      symbol: "SYMBOL",
+      params: { candidateType: "symbol" },
     });
   });
 

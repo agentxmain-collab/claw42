@@ -174,7 +174,7 @@ describe("mergePublicTimelineEvents", () => {
     expect(publicTimelinePmCandidateKey(legacy)).toBe("zh_CN:BTC");
   });
 
-  it("dedupes market overview records by the candidate local-day key across UTC midnight", () => {
+  it("dedupes market overview records by the candidate UTC day key across UTC midnight", () => {
     const stale = pmDecision({
       recordId: "pm:market:morning",
       symbol: "MARKET",
