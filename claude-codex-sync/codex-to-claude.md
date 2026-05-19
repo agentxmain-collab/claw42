@@ -4151,3 +4151,54 @@ First-hand diagnosis:
 - Production not touched.
 
 [DOC-HINT: B94 changes resident first-fill policy so missing market overview/hotspot tracks can be backfilled when decision records are readable, while suppressing blind first-fill if record reads fail.]
+
+# B95 sparse execution foundation report
+
+Date: 2026-05-19
+Branch: feature/b95-sparse-execution-foundation
+Base: 5a8fbf1
+
+## Scope
+
+- Keeps the full 14-role visible team and current public UI unchanged.
+- Adds internal role responsibility contracts with one unique question per visible role.
+- Adds a non-public `roleExecutionTrace` audit field on strategy decision records.
+- Does not change PM prompt fan-out, V10 layout, public payload shape, candidate ranking, or production deployment.
+
+## Implementation
+
+- `src/lib/team/roleExecutionPolicy.ts`
+  - Defines `TEAM_ROLE_EXECUTION_CONTRACTS` for all 14 `TeamMemberId` values.
+  - Captures each role's visible responsibility, unique question, activation trigger, public output shape, and fallback behavior.
+  - Builds one execution trace entry per visible role.
+- `src/lib/team/strategyDecisionRecord.ts`
+  - Adds internal `RoleExecutionMode` and `RoleExecutionTraceEntry`.
+  - Adds optional `roleExecutionTrace` to `StrategyDecisionRecord`.
+- `src/lib/team/pmDecisionPipeline.ts`
+  - Writes trace entries for core, conditional, derived, silent, and skipped roles.
+  - Marks PM/research/risk leads as core roles.
+  - Preserves abstain behavior as skipped-by-policy, not public filler.
+  - Keeps `roleExecutionTrace` out of public projection.
+
+## Verification
+
+- RED verified:
+  - Missing `roleExecutionPolicy` module failed.
+  - Missing `roleExecutionTrace` on written records failed.
+  - Missing skipped-role trace failed.
+- Target tests:
+  - `npx vitest run src/lib/team/__tests__/roleExecutionPolicy.test.ts src/lib/team/__tests__/pmDecisionPipeline.test.ts`
+  - Result: 2 files / 15 tests PASS.
+- Full gates:
+  - `npm run verify`: PASS, 76 files / 439 tests.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+  - `npm run build`: PASS after clean `.next` rebuild.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Production not touched.
+- Local Vercel CLI deploy not used.
+
+[DOC-HINT: B95 adds internal role responsibility contracts and non-public roleExecutionTrace for full-visible-team sparse-execution auditability without changing public UI, public payload, prompt fan-out policy, candidate ranking, or production deployment.]

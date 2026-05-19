@@ -115,6 +115,28 @@ export interface DecisionStageTraceEntry {
   rounds?: DispatchStageRoundRecord[];
 }
 
+export type RoleExecutionMode =
+  | "core_active"
+  | "conditional_active"
+  | "derived_visible"
+  | "silent_evaluator"
+  | "skipped_by_policy";
+
+export interface RoleExecutionTraceEntry {
+  /** Visible team member represented by this internal execution trace row. */
+  memberId: TeamMemberId;
+  /** Internal execution class. This must not be projected as public copy. */
+  executionMode: RoleExecutionMode;
+  /** Internal reason why the role executed, projected, or stayed silent. */
+  activationReason: string;
+  /** Internal evidence ids used by this role or by its derived projection. */
+  evidenceIdsUsed: string[];
+  /** True only when this role materially changed PM synthesis or trade inputs. */
+  contributedToPmDecision: boolean;
+  /** True when this role produced a veto, risk warning, or downgrade signal. */
+  vetoOrWarning: boolean;
+}
+
 export interface StrategyDecisionRecord {
   /** Stable record id. */
   id: string;
@@ -142,6 +164,8 @@ export interface StrategyDecisionRecord {
   analystInputs: AnalystInputRecord[];
   /** Non-public internal trace of the compressed PM decision pipeline. */
   stageTrace?: DecisionStageTraceEntry[];
+  /** Non-public per-visible-role execution/projection trace for sparse team audit. */
+  roleExecutionTrace?: RoleExecutionTraceEntry[];
   /** Chat/thread id that produced this decision, when known. */
   sourceThreadId: string | null;
   /**
