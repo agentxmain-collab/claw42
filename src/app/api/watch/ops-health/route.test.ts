@@ -27,6 +27,10 @@ const buildDecisionOpsSparseReleaseGateMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsStabilityMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsCausalRunbookMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsAlertSnapshotMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsResidentPrewarmCoverageMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsRuntimeStabilityGateMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsModelQualityEvidenceMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsRuntimeQualityGateMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -130,6 +134,22 @@ vi.mock("@/lib/team/decisionOpsCausalRunbook", () => ({
 
 vi.mock("@/lib/team/decisionOpsAlertSnapshot", () => ({
   buildDecisionOpsAlertSnapshot: buildDecisionOpsAlertSnapshotMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsResidentPrewarmCoverage", () => ({
+  buildDecisionOpsResidentPrewarmCoverage: buildDecisionOpsResidentPrewarmCoverageMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsRuntimeStabilityGate", () => ({
+  buildDecisionOpsRuntimeStabilityGate: buildDecisionOpsRuntimeStabilityGateMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsModelQualityEvidence", () => ({
+  buildDecisionOpsModelQualityEvidence: buildDecisionOpsModelQualityEvidenceMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsRuntimeQualityGate", () => ({
+  buildDecisionOpsRuntimeQualityGate: buildDecisionOpsRuntimeQualityGateMock,
 }));
 
 function job() {
@@ -506,6 +526,77 @@ describe("/api/watch/ops-health", () => {
       operatorSummary: "No ops alert is active.",
       recommendedActions: [],
     });
+    buildDecisionOpsResidentPrewarmCoverageMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "ready",
+      allGlobalLanesCovered: true,
+      utcPolicy: {
+        clock: "UTC",
+        marketOverviewIntervalHours: 3,
+        hotspotIntervalHours: 3,
+        hotspotBurstWindowHours: 1,
+        hotspotBurstScoreThreshold: 130,
+      },
+      lanes: {},
+      blockingReasons: [],
+      actions: [],
+    });
+    buildDecisionOpsRuntimeStabilityGateMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "ready_for_runtime_observe",
+      readyForLongRunningPreview: true,
+      canChangeRefreshBehavior: false,
+      publicBehaviorChanged: false,
+      sourceStatuses: {
+        residentCoverage: "ready",
+        outputStability: "healthy",
+      },
+      summary: {
+        allGlobalLanesCovered: true,
+        publicPmEvents: 3,
+        uniqueCandidateCards: 3,
+        duplicateCandidateCards: 0,
+        stageProgressGaps: 0,
+        unstableOrderEvents: 0,
+      },
+      blockingReasons: [],
+      nextActions: [],
+    });
+    buildDecisionOpsModelQualityEvidenceMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "ready",
+      evidenceReady: true,
+      canIncreaseModelCost: false,
+      canReduceModelFanout: false,
+      sourceStatuses: {
+        qualityBaseline: "healthy",
+        modelQuality: "healthy",
+      },
+      summary: {
+        scoredRuns: 9,
+        candidateTypesCovered: 3,
+        publishableRate: 1,
+        averageScore: 86,
+        primaryRisk: null,
+      },
+      blockingReasons: [],
+      nextActions: [],
+    });
+    buildDecisionOpsRuntimeQualityGateMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "ready_for_sparse_telemetry_observe",
+      longRunningPreviewAllowed: true,
+      sparseTelemetryAllowed: true,
+      liveSparseReleaseAllowed: false,
+      productionReleaseAllowed: false,
+      sourceStatuses: {
+        runtimeStability: "ready_for_runtime_observe",
+        modelQualityEvidence: "ready",
+        sparseReleaseGate: "ready_for_telemetry_only_release",
+      },
+      blockingReasons: [],
+      nextActions: [],
+    });
   });
 
   it("rejects unauthenticated diagnostics access", async () => {
@@ -711,8 +802,8 @@ describe("/api/watch/ops-health", () => {
       marketOverview: {
         kind: "market_overview",
         slaState: "critical",
-        expectedIntervalMs: 6 * 60 * 60_000,
-        staleAfterMs: 12 * 60 * 60_000,
+        expectedIntervalMs: 3 * 60 * 60_000,
+        staleAfterMs: 6 * 60 * 60_000,
       },
       hotspot: {
         kind: "hotspot",
@@ -1719,5 +1810,66 @@ describe("/api/watch/ops-health", () => {
     expect(payload.stability).toBeUndefined();
     expect(payload.outputStability).toBeUndefined();
     expect(payload.qualityBaseline).toBeUndefined();
+  });
+
+  it("returns optional runtime quality gate without exposing nested B106-B120 inputs by default", async () => {
+    projectDecisionRecordToPublicEventMock.mockReturnValue({
+      id: "pm-decision:pm:BTC:1779102000000",
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: "pm:BTC:1779102000000",
+        symbol: "BTC",
+        candidateType: "symbol",
+        candidateKey: "BTC",
+      },
+    });
+    readAllDecisionRecordsMock.mockResolvedValue([{ id: "pm:BTC:1779102000000" }]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&runtimeQualityGate=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readPmDecisionJobsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readDecisionRunsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(buildDecisionOpsResidentPrewarmCoverageMock).toHaveBeenCalledWith({
+      residentStatus: expect.objectContaining({ schemaVersion: 1 }),
+    });
+    expect(buildDecisionOpsRuntimeStabilityGateMock).toHaveBeenCalledWith({
+      residentCoverage: expect.objectContaining({ status: "ready" }),
+      outputStability: expect.objectContaining({ status: "healthy" }),
+    });
+    expect(buildDecisionOpsModelQualityEvidenceMock).toHaveBeenCalledWith({
+      qualityBaseline: expect.objectContaining({ status: "healthy" }),
+      modelQuality: expect.objectContaining({ status: "healthy" }),
+    });
+    expect(buildDecisionOpsRuntimeQualityGateMock).toHaveBeenCalledWith({
+      runtimeStability: expect.objectContaining({ status: "ready_for_runtime_observe" }),
+      modelQualityEvidence: expect.objectContaining({ status: "ready" }),
+      sparseReleaseGate: expect.objectContaining({ status: "ready_for_telemetry_only_release" }),
+    });
+    expect(payload.runtimeQualityGate).toMatchObject({
+      schemaVersion: 1,
+      status: "ready_for_sparse_telemetry_observe",
+      productionReleaseAllowed: false,
+      liveSparseReleaseAllowed: false,
+    });
+    expect(payload.residentCoverage).toBeUndefined();
+    expect(payload.runtimeStabilityGate).toBeUndefined();
+    expect(payload.modelQualityEvidence).toBeUndefined();
+    expect(payload.sparseReleaseGate).toBeUndefined();
+    expect(payload.outputStability).toBeUndefined();
+    expect(payload.qualityBaseline).toBeUndefined();
+    expect(payload.modelQuality).toBeUndefined();
   });
 });

@@ -4522,3 +4522,65 @@ Base: 63a8181
 - Production not touched.
 
 [DOC-HINT: B101-B105 complete the ops-only sparse shadow readiness chain through telemetry, operator report, candidate policy, diagnostics-only runtime plan, and release gate; live sparse execution remains explicitly disabled.]
+
+# B106-B120 runtime quality gate report
+
+Date: 2026-05-19
+Branch: feature/b106-b120-runtime-quality
+Base: 27cc46f
+
+## Scope
+
+- B106-B108 harden global resident prewarm coverage for market overview and hotspot.
+- B109-B112 add a runtime stability gate over resident prewarm coverage plus public output stability.
+- B113-B116 add a model-quality evidence gate over quality baseline and model-quality diagnostics.
+- B117-B120 add a final runtime quality gate that composes runtime stability, model-quality evidence, and sparse release safety.
+- Public UI layout, PM prompt routing, candidate ranking, execution behavior, live sparse fan-out, and production deployment are unchanged.
+
+## Implementation
+
+- `src/lib/watch/residentCandidate.ts`
+  - Tightens market overview cadence to a UTC 3-hour bucket, matching hotspot cadence and Dan's high-value global analysis direction.
+- `src/lib/watch/residentPrewarm.ts`
+  - Allows degraded resident lanes to queue SLA backfill before they become fully stale/critical.
+- `src/lib/team/decisionOpsResidentPrewarmCoverage.ts`
+  - Reports whether both global lanes exist and are ready.
+  - Exposes UTC policy: market overview 3h, hotspot 3h, hotspot burst 1h, burst score threshold 130.
+- `src/lib/team/decisionOpsRuntimeStabilityGate.ts`
+  - Blocks runtime behavior expansion on missing resident lanes, duplicate cards, unstable order, stage progress gaps, or too few visible cards.
+  - Keeps `canChangeRefreshBehavior=false` and `publicBehaviorChanged=false`.
+- `src/lib/team/decisionOpsModelQualityEvidence.ts`
+  - Blocks model-cost or fan-out changes unless model quality and scored baseline evidence are ready.
+  - Keeps `canIncreaseModelCost=false` and `canReduceModelFanout=false`.
+- `src/lib/team/decisionOpsRuntimeQualityGate.ts`
+  - Allows only long-running preview or sparse telemetry observation when upstream gates are ready.
+  - Keeps `liveSparseReleaseAllowed=false` and `productionReleaseAllowed=false`.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds authorized-only flags: `residentCoverage`, `runtimeStabilityGate`, `modelQualityEvidence`, and `runtimeQualityGate`.
+  - `runtimeQualityGate=1` builds the required source chain but does not expose intermediate reports unless their own flags are requested.
+- `package.json`
+  - Adds B106-B120 tests to `test:watch-pipeline`.
+
+## Verification
+
+- RED verified:
+  - B106-B120 module tests failed before implementation because the new production modules did not exist.
+- Target tests:
+  - `npx vitest run src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionOpsResidentPrewarmCoverage.test.ts src/lib/team/__tests__/decisionOpsRuntimeStabilityGate.test.ts src/lib/team/__tests__/decisionOpsModelQualityEvidence.test.ts src/lib/team/__tests__/decisionOpsRuntimeQualityGate.test.ts src/lib/watch/__tests__/residentPrewarm.test.ts src/lib/watch/__tests__/residentPrewarmStatus.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: PASS, 8 files / 56 tests.
+- Full gates:
+  - `npm run format:check`: PASS.
+  - `npm run typecheck`: PASS.
+  - `npm run lint`: PASS.
+  - `npm run test:watch-pipeline`: PASS, 86 files / 472 tests.
+  - `npm run verify`: PASS, includes 472 watch-pipeline tests, 50 chat final synthetic threads, and execution-safety check.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `rm -rf .next && npm run build`: PASS.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Production not touched.
+- No local Vercel deployment was run because Vercel CLI is not installed globally and this worktree has no linked `.vercel/project.json`.
+- Preview should be created by the GitHub/Vercel PR webhook.
+
+[DOC-HINT: B106-B120 add ops-only runtime-quality gates and tighten resident prewarm cadence to UTC 3h for market overview; live sparse execution and production release remain explicitly disabled.]

@@ -12,7 +12,7 @@ describe("resident candidate UTC cadence keys", () => {
 
     expect(utcDayKey(lateUtc)).toBe("2026-05-15");
     expect(marketOverviewCandidate({ locale: "zh_CN", now: lateUtc }).candidateKey).toBe(
-      "market_overview:utc:zh_CN:2026-05-15T18",
+      "market_overview:utc:zh_CN:2026-05-15T21",
     );
   });
 

@@ -3,7 +3,7 @@ import type { TopicSelectionReason } from "@/lib/team/topicSelector";
 import type { Locale } from "@/i18n/types";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 
-export const MARKET_OVERVIEW_INTERVAL_HOURS = 6;
+export const MARKET_OVERVIEW_INTERVAL_HOURS = 3;
 export const HOTSPOT_WINDOW_HOURS = 3;
 
 export const MARKET_OVERVIEW_STORAGE_SYMBOL = "MARKET";

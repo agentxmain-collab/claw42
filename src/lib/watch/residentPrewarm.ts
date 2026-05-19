@@ -193,6 +193,7 @@ function shouldSlaBackfill(
   },
 ) {
   if (status.state === "empty") return allowFirstFillBackfill;
+  if (status.slaState === "degraded") return true;
   if (status.stale) return true;
   return status.slaState === "critical" && status.state === "failed";
 }
