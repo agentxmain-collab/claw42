@@ -4461,3 +4461,64 @@ Base: 8436271
 - Production not touched.
 
 [DOC-HINT: B100 adds an ops-only sparse readiness rollup that tells operators whether sparse diagnostics are ready for telemetry-only shadow work, while explicitly forbidding live fan-out and public behavior changes.]
+
+# B101-B105 sparse shadow runtime diagnostics report
+
+Date: 2026-05-19
+Branch: feature/b101-b105-sparse-shadow-runtime
+Base: 63a8181
+
+## Scope
+
+- B101 adds shadow telemetry aggregation over sparse shadow outcomes.
+- B102 adds an operator-facing sparse decision report.
+- B103 adds candidate-type sparse policy diagnostics.
+- B104 adds a controlled diagnostics-only shadow runtime plan.
+- B105 adds the final sparse release gate.
+- All five reports are authorized ops-health diagnostics only.
+- Live PM fan-out, public behavior, public payload, model calls, prompts, candidate ranking, refresh behavior, UI, and production deployment are unchanged.
+
+## Implementation
+
+- `src/lib/team/decisionOpsSparseShadowTelemetry.ts`
+  - Groups sparse shadow outcomes by candidate type.
+  - Keeps `telemetryMode="shadow_only"`, `liveFanoutChanged=false`, and `publicBehaviorChanged=false`.
+  - Keeps `market_overview` on `keep_full_team` even when shadow-safe, because it is high-value global analysis.
+- `src/lib/team/decisionOpsSparseOperatorReport.ts`
+  - Combines B100 readiness and B101 telemetry into one operator summary.
+  - Emits a hold state unless both readiness and telemetry are green.
+- `src/lib/team/decisionOpsSparseCandidatePolicy.ts`
+  - Defines candidate-type policy: market overview stays full team; hotspot and symbol can be measured as shadow sparse only when telemetry is safe.
+  - Keeps `liveSparseAllowed=false` for every candidate type.
+- `src/lib/team/decisionOpsSparseRuntimePlan.ts`
+  - Plans diagnostics-only runtime telemetry when config is `shadow` and gates are green.
+  - Keeps `willExecuteSparseRoles=false`, `willCallAdditionalModels=false`, and `willChangePublicPayload=false`.
+- `src/lib/team/decisionOpsSparseReleaseGate.ts`
+  - Allows only telemetry-only release.
+  - Keeps `liveSparseReleaseAllowed=false` and `productionReleaseAllowed=false`.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds authorized-only flags: `sparseTelemetry`, `sparseOperatorReport`, `sparseCandidatePolicy`, `sparseRuntimePlan`, `sparseReleaseGate`.
+  - `sparseReleaseGate=1` builds the full source chain while hiding intermediate reports unless their own flags are requested.
+- `package.json`
+  - Adds B100-B105 sparse diagnostics tests to `test:watch-pipeline` so CI verify covers them.
+
+## Verification
+
+- RED verified:
+  - Missing B101-B105 modules failed before implementation.
+  - `ops-health?sparseReleaseGate=1` did not read records or build the chain before route integration.
+- Target tests:
+  - `npx vitest run src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionOpsSparseShadowTelemetry.test.ts src/lib/team/__tests__/decisionOpsSparseOperatorReport.test.ts src/lib/team/__tests__/decisionOpsSparseCandidatePolicy.test.ts src/lib/team/__tests__/decisionOpsSparseRuntimePlan.test.ts src/lib/team/__tests__/decisionOpsSparseReleaseGate.test.ts`: PASS, 6 files / 36 tests.
+- Full gates:
+  - `npm run verify`: PASS, 82 files / 459 tests.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `rm -rf .next && npm run build`: PASS.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Worktree has no `.vercel/project.json`, so local Vercel CLI deploy is not used.
+- Production not touched.
+
+[DOC-HINT: B101-B105 complete the ops-only sparse shadow readiness chain through telemetry, operator report, candidate policy, diagnostics-only runtime plan, and release gate; live sparse execution remains explicitly disabled.]
