@@ -27,6 +27,7 @@ import { summarizeProviderTelemetry } from "@/lib/team/providerTelemetry";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
+import { deriveResidentPrewarmStatus } from "@/lib/watch/residentPrewarmStatus";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import { projectDecisionRecordToPublicEvent } from "@/lib/watch/publicTimelineProjection";
 
@@ -59,6 +60,7 @@ export async function GET(request: Request) {
   const includeOutputStability = url.searchParams.get("outputStability") === "1";
   const includeLifecycle = url.searchParams.get("lifecycle") === "1";
   const includeOpsSummary = url.searchParams.get("opsSummary") === "1";
+  const now = Date.now();
   const includeStability = url.searchParams.get("stability") === "1";
   const includeCausalRunbook = url.searchParams.get("causalRunbook") === "1";
   const includeAlertSnapshot = url.searchParams.get("alertSnapshot") === "1";
@@ -115,6 +117,18 @@ export async function GET(request: Request) {
     includeAlertSnapshot ||
     includeOpsSummary
       ? summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 })
+      : null;
+  const residentPrewarm =
+    includeFreshness ||
+    includeRollup ||
+    includeCausalRunbook ||
+    includeAlertSnapshot ||
+    includeOpsSummary
+      ? deriveResidentPrewarmStatus({
+          records: decisionRecords,
+          jobs,
+          now,
+        })
       : null;
   const reconciliation =
     includeReconciliation || includeRollup
@@ -273,6 +287,7 @@ export async function GET(request: Request) {
       ...(includeReconciliation ? { reconciliation } : {}),
       ...(includeDeepDiagnostics ? { deepDiagnostics } : {}),
       ...(includeFreshness ? { freshness } : {}),
+      ...(includeFreshness && residentPrewarm ? { residentPrewarm } : {}),
       ...(includeRollup && reconciliation && deepDiagnostics && freshness
         ? {
             rollup: buildDecisionOpsRollup({

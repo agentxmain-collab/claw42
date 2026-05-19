@@ -131,4 +131,29 @@ describe("deriveResidentPrewarmStatus", () => {
       jobId: "pm-job:hotspot:2026-05-19T11:59:00.000Z",
     });
   });
+
+  it("classifies UTC SLA health for resident market and hotspot tracks", () => {
+    const status = deriveResidentPrewarmStatus({
+      records: [
+        record("market_overview", "2026-05-18T23:30:00.000Z"),
+        record("hotspot", "2026-05-19T10:30:00.000Z"),
+      ],
+      jobs: [],
+      now,
+    });
+
+    expect(status.slaState).toBe("critical");
+    expect(status.marketOverview).toMatchObject({
+      expectedIntervalMs: 6 * 60 * 60_000,
+      staleAfterMs: 12 * 60 * 60_000,
+      slaState: "critical",
+      ageMs: 12.5 * 60 * 60_000,
+    });
+    expect(status.hotspot).toMatchObject({
+      expectedIntervalMs: 3 * 60 * 60_000,
+      staleAfterMs: 6 * 60 * 60_000,
+      slaState: "healthy",
+      ageMs: 1.5 * 60 * 60_000,
+    });
+  });
 });

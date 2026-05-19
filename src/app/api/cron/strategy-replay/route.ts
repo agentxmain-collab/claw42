@@ -16,8 +16,8 @@ import {
 import { publishPmDecisionJobToQueue } from "@/lib/team/pmDecisionJobQueue";
 import { runPmDecisionJob } from "@/lib/team/pmDecisionJobRunner";
 import type { PmDecisionTriggerAuditEvent } from "@/lib/team/pmDecisionTrigger";
-import { enqueuePmDecisionJob } from "@/lib/watch/pmDecisionJobLedger";
-import { residentPrewarmCandidates } from "@/lib/watch/residentPrewarm";
+import { enqueuePmDecisionJob, readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
+import { residentPrewarmPlan } from "@/lib/watch/residentPrewarm";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import type { NewsItem } from "@/lib/types";
@@ -84,7 +84,9 @@ export async function GET(request: NextRequest) {
   }
 
   const pool = await getCoinPool();
-  const resolvedPmDecisions = await resolveOpenPmDecisions(pool, locale, now);
+  const decisionRecords = await readCronDecisionRecords(locale);
+  const pmDecisionJobs = await readPmDecisionJobs({ locale, limit: 100 }).catch(() => []);
+  const resolvedPmDecisions = await resolveOpenPmDecisions(pool, decisionRecords, now);
   const replayed = [];
 
   for (const debate of listNewsDebates(20)) {
@@ -108,13 +110,16 @@ export async function GET(request: NextRequest) {
   const pmDecisionAudit: PmDecisionTriggerAuditEvent[] = [];
   const pmPartialStageUpdates = true;
 
-  const residentCandidates = residentPrewarmCandidates({
+  const residentPlan = residentPrewarmPlan({
     locale,
     now,
     pool,
     newsItems: normalizedItems,
     force: trigger === "now",
+    records: decisionRecords,
+    jobs: pmDecisionJobs,
   });
+  const residentCandidates = residentPlan.candidates;
   const residentPrewarmResults = [];
   for (const candidate of residentCandidates) {
     residentPrewarmResults.push(
@@ -166,6 +171,15 @@ export async function GET(request: NextRequest) {
     pmDecisionQueueMessageId:
       batchResult.queueResult.mode === "queue" ? batchResult.queueResult.messageId : undefined,
     residentPrewarmCandidates: residentCandidates.map((candidate) => candidate.candidateKey),
+    residentPrewarmFixedCadenceCandidates: residentPlan.fixedCadenceCandidateKeys,
+    residentPrewarmBackfillCandidates: residentPlan.backfillCandidateKeys,
+    residentPrewarmBurst: {
+      threshold: residentPlan.burstThreshold,
+      candidateKey: residentPlan.burstCandidateKey,
+      score: residentPlan.burstScore,
+      triggered: residentPlan.burstCandidateKey !== null,
+    },
+    residentPrewarmSla: residentPlan.residentStatus,
     residentPrewarmGenerated: residentPrewarmResults.reduce(
       (total, result) => total + result.outputs.length,
       0,
@@ -239,7 +253,7 @@ async function dispatchPmDecisionJob({
 
 async function resolveOpenPmDecisions(
   pool: Awaited<ReturnType<typeof getCoinPool>>,
-  locale: ReturnType<typeof localeFromRequestUrl>,
+  records: Awaited<ReturnType<typeof readAllDecisionRecords>>,
   now: number,
 ) {
   try {
@@ -249,7 +263,6 @@ async function resolveOpenPmDecisions(
         return symbol ? ([[symbol, item.price]] as const) : [];
       }),
     );
-    const records = await readAllDecisionRecords(PM_RESOLUTION_RECORD_LIMIT, locale);
     let resolved = 0;
 
     for (const record of records) {
@@ -286,5 +299,16 @@ async function resolveOpenPmDecisions(
       console.warn("[claw42] PM decision resolution skipped", error);
     }
     return 0;
+  }
+}
+
+async function readCronDecisionRecords(locale: ReturnType<typeof localeFromRequestUrl>) {
+  try {
+    return await readAllDecisionRecords(PM_RESOLUTION_RECORD_LIMIT, locale);
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[claw42] PM decision records unavailable for cron diagnostics", error);
+    }
+    return [];
   }
 }
