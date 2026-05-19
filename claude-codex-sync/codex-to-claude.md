@@ -4257,3 +4257,55 @@ Base: a62df8f
 - Production not touched.
 
 [DOC-HINT: B96 adds ops-only sparse execution readiness diagnostics from internal roleExecutionTrace, enabling later shadow sparse fan-out decisions without changing live fan-out, public UI, public payload, candidate ranking, or production deployment.]
+
+# B97 sparse shadow fan-out safety report
+
+Date: 2026-05-19
+Branch: feature/b97-sparse-shadow
+Base: f38877a
+
+## Scope
+
+- Adds read-only shadow sparse fan-out safety evaluation.
+- Uses B96 sparse policy recommendations and B95 `roleExecutionTrace` to test whether a hypothetical sparse policy would have skipped material contributors or warning roles.
+- Does not change live PM fan-out, model calls, prompts, public UI, public payload, candidate ranking, or production deployment.
+
+## Implementation
+
+- `src/lib/team/decisionOpsSparseShadow.ts`
+  - Builds a `schemaVersion: 1` shadow report from recent `StrategyDecisionRecord[]`.
+  - Reuses B96 `buildDecisionOpsSparseExecution()` as the policy source.
+  - Computes per-record full-team calls vs shadow calls and avoided-call rate.
+  - Flags risk when sparse policy would skip:
+    - a role that contributed to PM synthesis
+    - a role that produced a veto or warning
+    - a role with a missing trace row
+  - Emits `safeToTrial=false` if any missed contribution / warning / trace-gap risk exists.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds authorized-only `?sparseShadow=1`.
+  - Keeps `sparseExecution`, `qualityGate`, and nested diagnostics hidden unless explicitly requested.
+
+## Verification
+
+- RED verified:
+  - Missing `decisionOpsSparseShadow` module failed.
+  - `ops-health?sparseShadow=1` did not read records or return diagnostics before route integration.
+- Target tests:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsSparseShadow.test.ts`
+  - `npx vitest run src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionOpsSparseShadow.test.ts`
+  - Result: 2 files / 25 tests PASS.
+- Full gates:
+  - `npm run format:check`: PASS.
+  - `npm run typecheck`: PASS.
+  - `npm run verify`: PASS, 76 files / 441 tests.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run build`: PASS.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Worktree has no `.vercel/project.json`, so local Vercel CLI deploy is not used.
+- Production not touched.
+
+[DOC-HINT: B97 adds ops-only shadow sparse fan-out safety diagnostics that compare B96 sparse policy recommendations against historical roleExecutionTrace risks, without changing live PM fan-out, model calls, public UI, public payload, candidate ranking, or production deployment.]
