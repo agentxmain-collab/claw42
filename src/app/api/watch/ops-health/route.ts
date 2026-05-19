@@ -20,6 +20,7 @@ import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueue
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
 import { buildDecisionOpsSlo } from "@/lib/team/decisionOpsSlo";
+import { buildDecisionOpsSparseExecution } from "@/lib/team/decisionOpsSparseExecution";
 import { buildDecisionOpsStability } from "@/lib/team/decisionOpsStability";
 import { buildDecisionOpsSummary } from "@/lib/team/decisionOpsSummary";
 import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
@@ -60,6 +61,7 @@ export async function GET(request: Request) {
   const includeOutputStability = url.searchParams.get("outputStability") === "1";
   const includeLifecycle = url.searchParams.get("lifecycle") === "1";
   const includeOpsSummary = url.searchParams.get("opsSummary") === "1";
+  const includeSparseExecution = url.searchParams.get("sparseExecution") === "1";
   const now = Date.now();
   const includeStability = url.searchParams.get("stability") === "1";
   const includeCausalRunbook = url.searchParams.get("causalRunbook") === "1";
@@ -84,6 +86,7 @@ export async function GET(request: Request) {
     includeAlertSnapshot ||
     includeLifecycle ||
     includeOpsSummary ||
+    includeSparseExecution ||
     includeStability;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
@@ -274,6 +277,11 @@ export async function GET(request: Request) {
           causalRunbook,
         })
       : null;
+  const sparseExecution = includeSparseExecution
+    ? buildDecisionOpsSparseExecution({
+        records: decisionRecords,
+      })
+    : null;
 
   return NextResponse.json(
     {
@@ -356,6 +364,11 @@ export async function GET(request: Request) {
       ...(includeAlertSnapshot
         ? {
             alertSnapshot,
+          }
+        : {}),
+      ...(includeSparseExecution
+        ? {
+            sparseExecution,
           }
         : {}),
       ...(includeOpsSummary && runbook && recoveryPolicy && modelQuality && lifecycle

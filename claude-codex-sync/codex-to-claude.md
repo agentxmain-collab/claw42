@@ -4202,3 +4202,58 @@ Base: 5a8fbf1
 - Local Vercel CLI deploy not used.
 
 [DOC-HINT: B95 adds internal role responsibility contracts and non-public roleExecutionTrace for full-visible-team sparse-execution auditability without changing public UI, public payload, prompt fan-out policy, candidate ranking, or production deployment.]
+
+# B96 sparse execution eval report
+
+Date: 2026-05-19
+Branch: feature/b96-sparse-eval
+Base: a62df8f
+
+## Scope
+
+- Uses B95 `roleExecutionTrace` to evaluate sparse-vs-full role execution readiness.
+- Adds an internal ops-only diagnostic, not a public UI or payload change.
+- Does not change live PM fan-out, prompts, candidate ranking, V10 layout, or production deployment.
+
+## Implementation
+
+- `src/lib/team/decisionOpsSparseExecution.ts`
+  - Builds a `schemaVersion: 1` sparse execution report from recent `StrategyDecisionRecord[]`.
+  - Reports trace coverage, full-team call baseline, observed sparse call-equivalent count, avoided calls, and avoided-call rate.
+  - Computes per-role execution/contribution/warning/evidence rates.
+  - Recommends one read-only policy per role:
+    - `always_execute`
+    - `execute_when_evidence_present`
+    - `derive_visible_from_synthesis`
+    - `silent_until_signal`
+    - `needs_more_trace_data`
+  - Requires at least 3 traced records before recommending sparse trial readiness.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds authorized-only `?sparseExecution=1`.
+  - Reads decision records and returns `sparseExecution`.
+  - Keeps nested quality/deep diagnostics hidden unless their own flags are requested.
+
+## Verification
+
+- RED verified:
+  - Missing `decisionOpsSparseExecution` module failed.
+  - `ops-health?sparseExecution=1` did not read records or return diagnostics before route integration.
+- Target tests:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsSparseExecution.test.ts`
+  - `npx vitest run src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionOpsSparseExecution.test.ts`
+  - Result: 2 files / 23 tests PASS.
+- Full gates:
+  - `npm run format:check`: PASS.
+  - `npm run typecheck`: PASS.
+  - `npm run verify`: PASS, 76 files / 440 tests.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run build`: PASS.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Worktree has no `.vercel/project.json`, so local Vercel CLI deploy is not used.
+- Production not touched.
+
+[DOC-HINT: B96 adds ops-only sparse execution readiness diagnostics from internal roleExecutionTrace, enabling later shadow sparse fan-out decisions without changing live fan-out, public UI, public payload, candidate ranking, or production deployment.]
