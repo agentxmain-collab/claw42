@@ -11,6 +11,7 @@ import {
 } from "@/lib/team/decisionOpsHealth";
 import { buildDecisionOpsLifecycleDiagnostics } from "@/lib/team/decisionOpsLifecycleDiagnostics";
 import { buildDecisionOpsModelQuality } from "@/lib/team/decisionOpsModelQuality";
+import { buildDecisionOpsPublicOutputStability } from "@/lib/team/decisionOpsPublicOutputStability";
 import { buildDecisionOpsQualityBaseline } from "@/lib/team/decisionOpsQualityBaseline";
 import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
 import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueueRecoveryPolicy";
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
   const includeRecovery = url.searchParams.get("recovery") === "1";
   const includeModelQuality = url.searchParams.get("modelQuality") === "1";
   const includeQualityBaseline = url.searchParams.get("qualityBaseline") === "1";
+  const includeOutputStability = url.searchParams.get("outputStability") === "1";
   const includeLifecycle = url.searchParams.get("lifecycle") === "1";
   const includeOpsSummary = url.searchParams.get("opsSummary") === "1";
   const includeStability = url.searchParams.get("stability") === "1";
@@ -68,6 +70,7 @@ export async function GET(request: Request) {
     includeRecovery ||
     includeModelQuality ||
     includeQualityBaseline ||
+    includeOutputStability ||
     includeLifecycle ||
     includeOpsSummary ||
     includeStability;
@@ -87,7 +90,8 @@ export async function GET(request: Request) {
     includeRunbook ||
     includeRecovery ||
     includeOpsSummary ||
-    includeStability
+    includeStability ||
+    includeOutputStability
       ? publicPmEventsFromRecords(decisionRecords)
       : [];
   const providerTelemetry =
@@ -171,6 +175,11 @@ export async function GET(request: Request) {
         providerTelemetry,
       })
     : null;
+  const outputStability = includeOutputStability
+    ? buildDecisionOpsPublicOutputStability({
+        publicEvents,
+      })
+    : null;
   const lifecycle =
     includeLifecycle || includeOpsSummary
       ? buildDecisionOpsLifecycleDiagnostics({
@@ -233,6 +242,11 @@ export async function GET(request: Request) {
       ...(includeQualityBaseline
         ? {
             qualityBaseline,
+          }
+        : {}),
+      ...(includeOutputStability
+        ? {
+            outputStability,
           }
         : {}),
       ...(includeLifecycle

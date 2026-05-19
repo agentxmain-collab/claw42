@@ -11,6 +11,7 @@ const buildDecisionOpsChainRunbookMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsQueueRecoveryPolicyMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsModelQualityMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsQualityBaselineMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsPublicOutputStabilityMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsLifecycleDiagnosticsMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsSummaryMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsStabilityMock = vi.hoisted(() => vi.fn());
@@ -53,6 +54,10 @@ vi.mock("@/lib/team/decisionOpsModelQuality", () => ({
 
 vi.mock("@/lib/team/decisionOpsQualityBaseline", () => ({
   buildDecisionOpsQualityBaseline: buildDecisionOpsQualityBaselineMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsPublicOutputStability", () => ({
+  buildDecisionOpsPublicOutputStability: buildDecisionOpsPublicOutputStabilityMock,
 }));
 
 vi.mock("@/lib/team/decisionOpsLifecycleDiagnostics", () => ({
@@ -209,6 +214,17 @@ describe("/api/watch/ops-health", () => {
         ready: true,
         scoredRuns: 6,
         candidateTypesCovered: 3,
+      },
+      issues: [],
+      actions: [],
+    });
+    buildDecisionOpsPublicOutputStabilityMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "healthy",
+      primaryIssue: null,
+      counts: {
+        publicPmEvents: 1,
+        uniqueCandidateCards: 1,
       },
       issues: [],
       actions: [],
@@ -752,6 +768,53 @@ describe("/api/watch/ops-health", () => {
     });
     expect(payload.qualityGate).toBeUndefined();
     expect(payload.deepDiagnostics).toBeUndefined();
+  });
+
+  it("returns optional public output stability diagnostics from projected records", async () => {
+    projectDecisionRecordToPublicEventMock.mockReturnValue({
+      id: "pm-decision:pm:BTC:1779102000000",
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: "pm:BTC:1779102000000",
+        symbol: "BTC",
+        candidateType: "symbol",
+        candidateKey: "BTC",
+      },
+    });
+    readAllDecisionRecordsMock.mockResolvedValue([{ id: "pm:BTC:1779102000000" }]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&outputStability=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(projectDecisionRecordToPublicEventMock).toHaveBeenCalledWith({
+      id: "pm:BTC:1779102000000",
+    });
+    expect(buildDecisionOpsPublicOutputStabilityMock).toHaveBeenCalledWith({
+      publicEvents: [
+        expect.objectContaining({
+          id: "pm-decision:pm:BTC:1779102000000",
+        }),
+      ],
+    });
+    expect(payload.outputStability).toMatchObject({
+      schemaVersion: 1,
+      status: "healthy",
+      primaryIssue: null,
+    });
+    expect(payload.reconciliation).toBeUndefined();
+    expect(payload.freshness).toBeUndefined();
   });
 
   it("returns optional decision lifecycle diagnostics for authorized callers", async () => {
