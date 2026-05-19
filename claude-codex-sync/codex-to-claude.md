@@ -4522,3 +4522,192 @@ Base: 63a8181
 - Production not touched.
 
 [DOC-HINT: B101-B105 complete the ops-only sparse shadow readiness chain through telemetry, operator report, candidate policy, diagnostics-only runtime plan, and release gate; live sparse execution remains explicitly disabled.]
+
+# C 线 UI 优化前置调研
+
+Date: 2026-05-19
+Branch: `feature/c-line-ui-research`
+Base: `27cc46f`
+Scope: first-hand research only. No `src` files changed. No Vercel command was run.
+
+## 0. Deployment / `.vercel/project.json` discipline check
+
+- Global registry confirms Claw42 is ACTIVE at `/Users/dannybrown/Claude/职业规划/web-dev/claw42`, GitHub repo `https://github.com/agentxmain-collab/claw42.git`, expected GitHub owner `agentxmain-collab`, Vercel project `claw42-site`, projectId `prj_UjubflJkr8XJFUm36cUmoLCl3NrH`, orgId `team_URED5oO6s2OI5bakH3FJUQpC`: `/Users/dannybrown/Claude/总调度/deployment-identity-registry.md:86-108`.
+- Project-local identity card repeats the same projectId / orgId and says preferred preview mode is GitHub PR / push webhook; local Vercel CLI deploy is forbidden unless team scope matches: `docs/deployment-identity.md:1-8`, `docs/deployment-identity.md:13-24`, `docs/deployment-identity.md:28-43`, `docs/deployment-identity.md:58-63`.
+- This isolated research worktree does **not** contain `.vercel/project.json`; the main workspace copy contains:
+  `{"projectId":"prj_UjubflJkr8XJFUm36cUmoLCl3NrH","orgId":"team_URED5oO6s2OI5bakH3FJUQpC","projectName":"claw42-site"}`.
+- Current GitHub CLI account is `agentxmain-collab`; repo is `agentxmain-collab/claw42`; branch is `feature/c-line-ui-research`.
+- Recommendation for N=2 hardening: any future preview/deploy task should record three facts before action: worktree `.vercel/project.json` present/missing, canonical project tuple from main workspace / identity docs, and current `gh` login. If temp worktree lacks `.vercel`, do not use Vercel CLI; rely on GitHub PR webhook or stop for identity clarification.
+
+## 1. Agent 页面 14 角色 avatar 当前实装
+
+Current route wiring:
+
+- `/zh_CN/agent` imports and renders `DispatchConsoleV10`: `src/app/[locale]/agent/page.tsx:1-6`, `src/app/[locale]/agent/page.tsx:24-42`.
+- `AgentWatchBoard` renders the injected console at `src/modules/agent-watch/AgentWatchBoard.tsx:798-808`.
+- `DispatchConsoleV10` renders shared `Hero`, flow panel, and market panel: `src/modules/agent-watch/v10/DispatchConsoleV10.tsx:50-80`.
+
+14-role registry:
+
+| `TeamMemberId` | current `avatarPath` | type |
+|---|---|---|
+| `fundamental_analyst` | `/images/team/fundamental_analyst.svg` | SVG character art |
+| `news_analyst` | `/images/team/news_analyst.svg` | SVG character art |
+| `chart_analyst` | `/images/team/chart_analyst.svg` | SVG character art |
+| `onchain_analyst` | `/images/team/onchain_analyst.svg` | SVG character art |
+| `research_lead` | `/images/team/research_lead.svg` | SVG character art |
+| `risk_lead` | `/images/team/risk_lead.svg` | SVG character art |
+| `pm` | `/images/team/pm.svg` | SVG character art |
+| `bullish_researcher` | `/images/team/bullish_researcher.svg` | SVG character art |
+| `bearish_researcher` | `/images/team/bearish_researcher.svg` | SVG character art |
+| `trader` | `/images/team/trader.svg` | SVG character art |
+| `aggressive_reviewer` | `/images/team/aggressive_reviewer.svg` | SVG character art |
+| `neutral_reviewer` | `/images/team/neutral_reviewer.svg` | SVG character art |
+| `conservative_reviewer` | `/images/team/conservative_reviewer.svg` | SVG character art |
+| `memory_loop` | `/images/team/memory_loop.svg` | SVG character art |
+
+Evidence: `TeamMemberId` union is `src/lib/team/teamRegistry.ts:3-17`; `avatarPath` field is `src/lib/team/teamRegistry.ts:29-39`; mapping is `src/lib/team/teamRegistry.ts:41-252`; all 14 files exist under `public/images/team/*.svg`.
+
+Render mechanisms:
+
+- Registry-backed image render exists in shared team components:
+  - `TeamMemberCard` calls `getTeamMember(memberId)` and renders `next/image` from `member.avatarPath`: `src/components/agent-watch/TeamMemberCard.tsx:23-44`.
+  - `WorkflowNode` does the same at 48px: `src/components/agent-watch/WorkflowNode.tsx:36-57`.
+- Current v10 hero / flow **does not use those 14 SVG images**. It uses CSS robot-face avatars:
+  - v10 roles / flow roles are defined in `src/modules/agent-watch/v10/staticContent.ts:9-158`.
+  - Flow cards render `<div className="fagent-avatar ...">` labels, not `Image`: `src/modules/agent-watch/v10/FlowStageCard.tsx:27-45`.
+  - CSS converts `.fagent-avatar` / `.msg-avatar` into generic robot faces with pseudo-elements and hides text via `font-size: 0`: `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:1015-1056`.
+
+Codex judgment:
+
+- There are two live avatar systems: 14-role SVG registry art, and v10 CSS robot avatars. A C-line spec that says "14 角色 avatar 用 bot-avatar-v1 延展" must say which surfaces are in scope. If the intent is visible v10 `/agent`, replacing only `public/images/team/*.svg` is insufficient because v10 hero / flow will still show CSS robot avatars.
+- v10 visible role model is not a full 14-role one. Flow has 12 role IDs (`memoryLoop` included), hero has 11 nodes (`memoryLoop` excluded), while registry has 14 (`research_lead` and `risk_lead` exist in registry but not v10 hero/flow). See `src/modules/agent-watch/v10/staticContent.ts:104-126` and `src/modules/agent-watch/v10/staticContent.ts:143-156`.
+
+## 2. Hero 当前状态
+
+Current hero files:
+
+- `Hero`: `src/modules/agent-watch/v10/Hero.tsx:7-79`.
+- `Constellation`: `src/modules/agent-watch/v10/Constellation.tsx:10-116`.
+- `AgentNode`: `src/modules/agent-watch/v10/AgentNode.tsx:6-55`.
+- Hover / proximity focus hook: `src/modules/agent-watch/v10/useConstellationFocus.ts:15-128`.
+- Styling and animations: `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:262-315`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:560-680`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:1685-1804`.
+
+Current hover / focus behavior:
+
+- `Hero` passes `active={activeView === "flow"}` into `Constellation`: `src/modules/agent-watch/v10/Hero.tsx:76`.
+- `useConstellationFocus` only runs when `active && !reducedMotion`: `src/modules/agent-watch/v10/Constellation.tsx:10-13`.
+- The hook measures `.anode` centers, picks nearest node within `PICK_RADIUS = 160`, adds `.is-focus`, adds `.focused` to constellation, and sets `--fx / --fy / --ox / --oy`: `src/modules/agent-watch/v10/useConstellationFocus.ts:5-7`, `src/modules/agent-watch/v10/useConstellationFocus.ts:24-27`, `src/modules/agent-watch/v10/useConstellationFocus.ts:58-72`, `src/modules/agent-watch/v10/useConstellationFocus.ts:74-104`.
+- CSS then zooms the scene to `scale(1.42)`, dims non-focused nodes, scales the focused avatar, and shows `.tip-card`: `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:287-294`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:579-608`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:646-650`.
+
+Speech dots:
+
+- Speech dots are fixed, not random. They are rendered only when `agent.hasSpeech` is true: `src/modules/agent-watch/v10/AgentNode.tsx:29-35`.
+- Current fixed nodes are `fundamental`, `portfolioManager`, `bullish`, and `trader`: `src/modules/agent-watch/v10/staticContent.ts:43-49`, `src/modules/agent-watch/v10/staticContent.ts:68-74`, `src/modules/agent-watch/v10/staticContent.ts:77-83`, `src/modules/agent-watch/v10/staticContent.ts:94-100`.
+- Runtime screenshot check on local `/zh_CN/agent?view=flow`: 11 `.anode` nodes, 4 `.speech-dot` nodes.
+
+Focus indicator frame:
+
+- JSX has `.reticle` and `.readout`: `src/modules/agent-watch/v10/AgentNode.tsx:37-48`.
+- CSS explicitly hides both: `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:652-655`.
+- Runtime focused-state check: after focusing `a-bull`, `.anode.is-focus` count is 1 and `.constellation.focused` is true, but `reticleDisplay` and `readoutDisplay` are both `none`. So the focus indication exists only as zoom / dim / tooltip, not as a visible reticle frame.
+
+Expression changes:
+
+- Agent faces are static two-eye screens: `src/modules/agent-watch/v10/AgentNode.tsx:24-28`; core robot face is also two eyes: `src/modules/agent-watch/v10/Constellation.tsx:96-106`.
+- There is an eye blink keyframe, but no expression state machine or prop-driven mood change: `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:1748-1759`.
+- Role color changes come from CSS variables such as `--eye` per role, not expression changes: `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:682-763`.
+
+Screenshots:
+
+![flow hero](assets/c-line-ui-research/flow-hero.png)
+
+![focused hero bullish](assets/c-line-ui-research/hero-focus-bullish.png)
+
+## 3. 流程 6 步当前每步交互
+
+Files:
+
+- Stage data: `src/modules/agent-watch/v10/staticContent.ts:104-110`.
+- Stage render and connector: `src/modules/agent-watch/v10/FlowPanel.tsx:10-18`, `src/modules/agent-watch/v10/FlowPanel.tsx:21-43`.
+- Stage card render: `src/modules/agent-watch/v10/FlowStageCard.tsx:6-59`.
+- Entry animation: `src/modules/agent-watch/v10/useStageEntryAnimation.ts:5-46`.
+- CSS stage / agent / connector effects: `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:784-835`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:959-1007`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:1126-1162`.
+
+Current interaction model:
+
+- The 6 stages are card-based, not timeline-simulation based.
+- `useStageEntryAnimation` reveals stage cards when they enter viewport; each observed batch staggers by `index * 90ms`, with a 900ms fallback: `src/modules/agent-watch/v10/useStageEntryAnimation.ts:12-15`, `src/modules/agent-watch/v10/useStageEntryAnimation.ts:23-40`.
+- Each card fades from `opacity: 0` / `translateY(28px)` to visible via a 0.8s transition: `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:784-808`.
+- Card hover changes border, background, box-shadow, and slight vertical shift: `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:810-815`.
+- Agent hover changes border, background, box-shadow, and `translateY(-1px)`: `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:981-1007`.
+- Connectors are decorative S-curve SVG paths with dashed lime stroke animation: `src/modules/agent-watch/v10/FlowPanel.tsx:10-18`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:1126-1162`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:1796-1804`.
+
+Per-step current state:
+
+| Step | Data | Current visual / interaction |
+|---|---|---|
+| 1 信息收集 | `["fundamental", "onchain", "news", "technical"]` | 4 cards in `fagents-4` grid; all shown together after the stage reveal. No sequential 4-agent light-up. Evidence: `src/modules/agent-watch/v10/staticContent.ts:105`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:977-979`. |
+| 2 多空辩论 | `["bullish", "bearish"]`, `variant: "debate"` | 2 cards in `fagents-2`; debate variant only changes border color. No point-light collision / impact animation. Evidence: `src/modules/agent-watch/v10/staticContent.ts:106`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:817-819`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:968-970`. |
+| 3 交易方案 | `["trader"]` | 1-card grid, standard stage reveal and hover. Evidence: `src/modules/agent-watch/v10/staticContent.ts:107`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:964-966`. |
+| 4 风险审查 | `["aggressive", "neutral", "conservative"]`, `variant: "debate"` | 3 cards in `fagents-3`; same debate border style as step 2. Evidence: `src/modules/agent-watch/v10/staticContent.ts:108`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:972-975`. |
+| 5 最终决策 | `["portfolioManager"]`, `variant: "final"` | 1 card, lime final variant background / hover. Evidence: `src/modules/agent-watch/v10/staticContent.ts:109`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:821-829`. |
+| 6 复盘沉淀 | `["memoryLoop"]`, `variant: "memory"` | 1 card, dashed border / muted memory style. Evidence: `src/modules/agent-watch/v10/staticContent.ts:110`, `src/modules/agent-watch/v10/DispatchConsoleV10.module.css:831-835`. |
+
+Runtime screenshot check confirms six visible stages and step membership:
+
+![flow stages](assets/c-line-ui-research/flow-stages.png)
+
+Codex judgment:
+
+- The requested C-line interactions for step 1 and step 2 are not present. The spec should introduce explicit stage-local animation state or CSS timing hooks. Reusing the existing stage reveal alone will not produce "4 agent 依次亮起" or "多空对决点光冲击".
+- Search terms `collision`, `impact`, `shock`, `duel` are absent in v10 flow code; current "debate" is a style variant, not an interaction model.
+
+## 4. 行情分析 hero vs 流程介绍 hero 差异
+
+Current v10 implementation:
+
+- There is one shared hero, not two separate hero components. `DispatchConsoleV10` always renders `<Hero />` once before both panels: `src/modules/agent-watch/v10/DispatchConsoleV10.tsx:50-56`.
+- Flow panel and market panel are separate tab panels below the same hero: `src/modules/agent-watch/v10/DispatchConsoleV10.tsx:57-80`.
+- `Hero` changes tab active state through `WatchTabs`, and enables `Constellation` focus only when `activeView === "flow"`: `src/modules/agent-watch/v10/Hero.tsx:67-77`.
+- Market analysis top content is the `MarketAnalysisPanel` chat shell, not a separate hero: `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx:532-555`.
+
+Current visual / behavior difference:
+
+| Surface | Path | Current behavior |
+|---|---|---|
+| 流程介绍 hero | `src/modules/agent-watch/v10/Hero.tsx`, `src/modules/agent-watch/v10/Constellation.tsx` | Shared hero copy + constellation. `activeView=flow` enables proximity focus hook; hover/proximity can zoom the constellation, dim other nodes, and show role tooltip. |
+| 行情分析 view top | Same `Hero` plus `src/modules/agent-watch/v10/MarketAnalysisPanel.tsx` below | Same hero copy/layout, but `Constellation` focus hook is disabled because `activeView !== "flow"`. Below hero is chat-shell header with stats / empty state. |
+
+Runtime evidence:
+
+- `/zh_CN/agent?view=flow`: active panel is flow, 11 hero nodes, 4 speech dots, reticle/readout hidden.
+- `/zh_CN/agent?view=mkt`: active panel is market; same hero exists, market chat shell title is `AI 团队工作台`; no topics in local no-env run so empty state says `工作台启动中，暂无最近决策`.
+- Hover test in market view: after moving pointer over the same hero node, `.anode.is-focus` remains 0 and `.constellation.focused` remains false. CSS `:hover` can still affect the face, but the flow-mode focus behavior is not active.
+
+Screenshots:
+
+![market view top](assets/c-line-ui-research/market-view-top.png)
+
+![market hero hover test](assets/c-line-ui-research/market-hero-hover-test.png)
+
+Legacy v9 note:
+
+- v9 still has a shared `DispatchPageHeader`, `FlowIntroView`, and `MarketAnalysisView`: `src/modules/agent-watch/v9/DispatchConsoleV9.tsx:15-55`, `src/modules/agent-watch/v9/DispatchConsoleV9.tsx:93-118`, `src/modules/agent-watch/v9/FlowIntroView.tsx:68-87`, `src/modules/agent-watch/v9/MarketAnalysisView.tsx:7-25`.
+- Current route does not use v9 by default because `/agent` passes `DispatchConsoleV10`: `src/app/[locale]/agent/page.tsx:1-6`, `src/app/[locale]/agent/page.tsx:40-42`.
+
+Codex judgment:
+
+- If the product instruction is "行情分析 hero 统一到流程介绍 hero 那版", the current v10 code is already using one shared Hero component for both tabs. The remaining meaningful gap is behavior: market view disables constellation focus interactions via `activeView === "flow"`.
+- F's spec should avoid creating a second market hero unless the product intent changed. The lower-risk implementation path is to keep one `Hero` component and decide whether market view should also pass an active focus mode, or whether the market panel should visually start lower / differently under the shared hero.
+
+## 5. First-hand conclusions for C-line spec
+
+1. Avatar scope must be explicit: registry SVG assets, v10 hero nodes, v10 flow cards, and v9 legacy surfaces are separate implementation paths.
+2. Current v10 hero speech dots are fixed configuration, not random. Random speech should be added at `heroAgents` / `AgentNode` level or through a small client hook; otherwise static data will keep four permanent dots.
+3. Focus indicator is not missing from JSX, but hidden in CSS. The reticle/readout can be restored or redesigned from existing markup, but current visible focus is zoom + dim + tooltip only.
+4. Expression variation is not implemented; only blink animation and role-color variables exist.
+5. Step 1 and step 2 requested interactions are absent. They need new per-stage animation hooks/CSS, not just token tweaks.
+6. Market/flow hero unification should preserve the current single-Hero architecture unless F intentionally wants a broader layout rewrite.
+
+[DOC-HINT: C-line UI optimization spec should distinguish registry SVG avatars from v10 CSS robot avatars, and should treat market/flow hero unification as behavior alignment inside the shared v10 Hero unless product direction explicitly asks for a second hero.]
