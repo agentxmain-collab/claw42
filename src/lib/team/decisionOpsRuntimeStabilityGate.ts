@@ -1,4 +1,5 @@
 import type { DecisionOpsPublicOutputStabilityReport } from "@/lib/team/decisionOpsPublicOutputStability";
+import type { DecisionOpsResidentPublicVisibilityReport } from "@/lib/team/decisionOpsResidentPublicVisibility";
 import type {
   DecisionOpsResidentPrewarmCoverageReport,
   DecisionOpsResidentPrewarmCoverageStatus,
@@ -21,10 +22,14 @@ export interface DecisionOpsRuntimeStabilityGateReport {
   publicBehaviorChanged: false;
   sourceStatuses: {
     residentCoverage: DecisionOpsResidentPrewarmCoverageStatus;
+    residentPublicVisibility?: DecisionOpsResidentPublicVisibilityReport["status"];
     outputStability: DecisionOpsPublicOutputStabilityReport["status"];
   };
   summary: {
     allGlobalLanesCovered: boolean;
+    allResidentCardsVisible?: boolean;
+    visibleMarketOverviewCards?: number;
+    visibleHotspotCards?: number;
     publicPmEvents: number;
     uniqueCandidateCards: number;
     duplicateCandidateCards: number;
@@ -37,14 +42,20 @@ export interface DecisionOpsRuntimeStabilityGateReport {
 
 export function buildDecisionOpsRuntimeStabilityGate({
   residentCoverage,
+  residentPublicVisibility,
   outputStability,
   now = Date.now(),
 }: {
   residentCoverage: DecisionOpsResidentPrewarmCoverageReport;
+  residentPublicVisibility?: DecisionOpsResidentPublicVisibilityReport;
   outputStability: DecisionOpsPublicOutputStabilityReport;
   now?: number;
 }): DecisionOpsRuntimeStabilityGateReport {
-  const blockingReasons = blockingReasonsFor({ residentCoverage, outputStability });
+  const blockingReasons = blockingReasonsFor({
+    residentCoverage,
+    residentPublicVisibility,
+    outputStability,
+  });
   const ready = blockingReasons.length === 0;
 
   return {
@@ -56,10 +67,20 @@ export function buildDecisionOpsRuntimeStabilityGate({
     publicBehaviorChanged: false,
     sourceStatuses: {
       residentCoverage: residentCoverage.status,
+      ...(residentPublicVisibility
+        ? { residentPublicVisibility: residentPublicVisibility.status }
+        : {}),
       outputStability: outputStability.status,
     },
     summary: {
       allGlobalLanesCovered: residentCoverage.allGlobalLanesCovered,
+      ...(residentPublicVisibility
+        ? {
+            allResidentCardsVisible: residentPublicVisibility.allResidentCardsVisible,
+            visibleMarketOverviewCards: residentPublicVisibility.counts.marketOverview,
+            visibleHotspotCards: residentPublicVisibility.counts.hotspot,
+          }
+        : {}),
       publicPmEvents: outputStability.counts.publicPmEvents,
       uniqueCandidateCards: outputStability.counts.uniqueCandidateCards,
       duplicateCandidateCards: outputStability.counts.duplicateCandidateCards,
@@ -73,14 +94,22 @@ export function buildDecisionOpsRuntimeStabilityGate({
 
 function blockingReasonsFor({
   residentCoverage,
+  residentPublicVisibility,
   outputStability,
 }: {
   residentCoverage: DecisionOpsResidentPrewarmCoverageReport;
+  residentPublicVisibility?: DecisionOpsResidentPublicVisibilityReport;
   outputStability: DecisionOpsPublicOutputStabilityReport;
 }) {
   const reasons: string[] = [];
   if (residentCoverage.status !== "ready" || !residentCoverage.allGlobalLanesCovered) {
     reasons.push(...residentCoverage.blockingReasons, "resident_prewarm_not_ready");
+  }
+  if (residentPublicVisibility && residentPublicVisibility.status !== "ready") {
+    reasons.push(
+      ...residentPublicVisibility.blockingReasons,
+      "resident_public_visibility_not_ready",
+    );
   }
   if (outputStability.status !== "healthy") {
     reasons.push("public_output_stability_not_ready");

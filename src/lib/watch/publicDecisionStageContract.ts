@@ -93,18 +93,19 @@ export function publicDecisionVisibleStageLimit(
   options: PublicDecisionStageContractOptions,
 ) {
   if (options.hasRenderableTradeDecision) return 6;
+  if (!trace?.length) return 3;
+  const statuses = normalizePublicDecisionStageStatuses(trace, options);
   if (
     options.analysisOnlyCandidate &&
-    trace?.some(
+    trace.some(
       (entry) =>
         (entry.stageId === "record_write" || entry.stageId === "public_timeline") &&
         entry.status === "done",
-    )
+    ) &&
+    PUBLIC_PROGRESS_GATE_ORDER.every(({ traceId }) => statuses[traceId] === "done")
   ) {
     return 6;
   }
-  if (!trace?.length) return 3;
-  const statuses = normalizePublicDecisionStageStatuses(trace, options);
   const active = PUBLIC_PROGRESS_GATE_ORDER.find(
     ({ traceId }) => statuses[traceId] === "in_progress",
   );

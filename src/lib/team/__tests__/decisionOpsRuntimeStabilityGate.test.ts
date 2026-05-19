@@ -4,6 +4,7 @@ import {
   type DecisionOpsRuntimeStabilityGateReport,
 } from "@/lib/team/decisionOpsRuntimeStabilityGate";
 import type { DecisionOpsPublicOutputStabilityReport } from "@/lib/team/decisionOpsPublicOutputStability";
+import type { DecisionOpsResidentPublicVisibilityReport } from "@/lib/team/decisionOpsResidentPublicVisibility";
 import type { DecisionOpsResidentPrewarmCoverageReport } from "@/lib/team/decisionOpsResidentPrewarmCoverage";
 
 const generatedAt = "2026-05-19T12:00:00.000Z";
@@ -100,6 +101,30 @@ function outputStability(
   };
 }
 
+function residentPublicVisibility(
+  overrides: Partial<DecisionOpsResidentPublicVisibilityReport> = {},
+): DecisionOpsResidentPublicVisibilityReport {
+  return {
+    schemaVersion: 1,
+    generatedAt,
+    status: "ready",
+    allResidentCardsVisible: true,
+    counts: {
+      marketOverview: 1,
+      hotspot: 1,
+      symbol: 1,
+    },
+    missingResidentTypes: [],
+    visibleResidentEventIds: {
+      marketOverview: ["market"],
+      hotspot: ["hotspot"],
+    },
+    blockingReasons: [],
+    actions: [],
+    ...overrides,
+  };
+}
+
 describe("buildDecisionOpsRuntimeStabilityGate", () => {
   it("passes only when global prewarm and public output stability are both healthy", () => {
     const report = buildDecisionOpsRuntimeStabilityGate({
@@ -157,6 +182,44 @@ describe("buildDecisionOpsRuntimeStabilityGate", () => {
         "public_output_stability_not_ready",
         "duplicate_candidate_card",
         "stage_progress_gap",
+      ],
+    });
+  });
+
+  it("blocks when resident lanes are covered but resident cards are missing from public output", () => {
+    const report = buildDecisionOpsRuntimeStabilityGate({
+      residentCoverage: residentCoverage(),
+      residentPublicVisibility: residentPublicVisibility({
+        status: "critical",
+        allResidentCardsVisible: false,
+        counts: {
+          marketOverview: 0,
+          hotspot: 1,
+          symbol: 1,
+        },
+        missingResidentTypes: ["market_overview"],
+        blockingReasons: ["resident_market_overview_not_visible"],
+      }),
+      outputStability: outputStability(),
+    });
+
+    expect(report).toMatchObject({
+      status: "hold",
+      readyForLongRunningPreview: false,
+      sourceStatuses: {
+        residentCoverage: "ready",
+        residentPublicVisibility: "critical",
+        outputStability: "healthy",
+      },
+      summary: {
+        allGlobalLanesCovered: true,
+        allResidentCardsVisible: false,
+        visibleMarketOverviewCards: 0,
+        visibleHotspotCards: 1,
+      },
+      blockingReasons: [
+        "resident_market_overview_not_visible",
+        "resident_public_visibility_not_ready",
       ],
     });
   });

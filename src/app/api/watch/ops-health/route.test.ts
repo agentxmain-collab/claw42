@@ -1233,6 +1233,98 @@ describe("/api/watch/ops-health", () => {
     expect(payload.freshness).toBeUndefined();
   });
 
+  it("returns optional resident public visibility diagnostics from projected cards", async () => {
+    projectDecisionRecordToPublicEventMock.mockImplementation((record: { id: string }) => ({
+      id: `pm-decision:${record.id}`,
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: record.id,
+        symbol: record.id.includes("HOTSPOT") ? "HOTSPOT" : "MARKET",
+        candidateType: record.id.includes("HOTSPOT") ? "hotspot" : "market_overview",
+        candidateKey: record.id.includes("HOTSPOT")
+          ? "hotspot:utc:zh_CN:2026-05-18T09:market"
+          : "market_overview:utc:zh_CN:2026-05-18T09",
+      },
+    }));
+    readAllDecisionRecordsMock.mockResolvedValue([
+      { id: "pm:MARKET:1779102000000" },
+      { id: "pm:HOTSPOT:1779102000000" },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&residentVisibility=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readPmDecisionJobsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readDecisionRunsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(payload.residentVisibility).toMatchObject({
+      schemaVersion: 1,
+      status: "ready",
+      allResidentCardsVisible: true,
+      counts: {
+        marketOverview: 1,
+        hotspot: 1,
+      },
+      blockingReasons: [],
+    });
+    expect(payload.outputStability).toBeUndefined();
+    expect(payload.residentCoverage).toBeUndefined();
+  });
+
+  it("returns optional memory learning diagnostics from decision records", async () => {
+    readAllDecisionRecordsMock.mockResolvedValue([
+      {
+        id: "pm:BTC:1779102000000",
+        recordSource: "live",
+        symbol: "BTC",
+        resolvedAt: "2026-05-18T11:30:00.000Z",
+        resolvedOutcome: "hit_tp",
+        analystInputs: [
+          {
+            memberId: "memory_loop",
+            direction: "neutral",
+            confidence: 0.5,
+            rationale: "Historical setup lesson.",
+            evidenceIds: [],
+          },
+        ],
+      },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&memoryLearning=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(payload.memoryLearning).toMatchObject({
+      schemaVersion: 1,
+      status: "warming",
+      memoryLoopLearningReady: false,
+      counts: {
+        resolvedNonLegacyRecords: 1,
+        resolvedRecordsWithMemoryLoopNote: 1,
+      },
+      blockingReasons: ["memory_loop_sample_size_caution"],
+    });
+    expect(payload.outputStability).toBeUndefined();
+    expect(payload.lifecycle).toBeUndefined();
+  });
+
   it("returns optional decision lifecycle diagnostics for authorized callers", async () => {
     readAllDecisionRecordsMock.mockResolvedValue([{ id: "pm:BTC:1779120000000" }]);
 
@@ -1867,6 +1959,7 @@ describe("/api/watch/ops-health", () => {
     });
     expect(buildDecisionOpsRuntimeStabilityGateMock).toHaveBeenCalledWith({
       residentCoverage: expect.objectContaining({ status: "ready" }),
+      residentPublicVisibility: expect.objectContaining({ status: "critical" }),
       outputStability: expect.objectContaining({ status: "healthy" }),
     });
     expect(buildDecisionOpsModelQualityEvidenceMock).toHaveBeenCalledWith({

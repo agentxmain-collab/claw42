@@ -4645,3 +4645,88 @@ Base: b146cdd
 - Preview should be created by the GitHub/Vercel PR webhook after push.
 
 [DOC-HINT: B121-B130 add queue-level resident priority so market overview and hotspot prewarm jobs drain before symbol and batch PM jobs; public UI, live sparse execution, and production release remain unchanged.]
+
+# B131-B145 P0/P1 resident visibility + memory learning gate report
+
+Date: 2026-05-19  
+Branch: feature/b131-b145-p0-p1-stability  
+Base: 6ddf57c
+
+## Scope
+
+- P0: Prevent analysis-only cards from displaying closed / later-stage state when stage 3 has not
+  truthfully completed.
+- P0: Add ops-only resident public visibility diagnostics so "resident coverage says ready but the
+  public board is missing market overview or hotspot" becomes an explicit blocking signal.
+- P1: Add ops-only memory learning diagnostics so memory-loop product claims have a resolved
+  non-legacy sample gate.
+- No public layout changes, no PM pipeline changes, no refresh/SSE/candidate-ranking changes, no KV
+  writes, no production deploy behavior changes.
+
+## Implementation
+
+- `src/lib/watch/publicDecisionStageContract.ts`
+  - `publicDecisionVisibleStageLimit` now lets analysis-only candidates expose stage 5/6 only after
+    the first four public progress stages normalize to `done`.
+  - Record-write / public-timeline audit completion no longer bypasses a stage 3/4 gap.
+- `src/lib/watch/v9TopicAdapter.ts`
+  - Analysis-only completion now reuses the same visible stage limit contract.
+  - This keeps risk-review messages hidden when trade-decision stage is still in progress.
+- `src/lib/team/decisionOpsResidentPublicVisibility.ts`
+  - New read-only diagnostics report for visible resident cards.
+  - Requires both `market_overview` and `hotspot` to be present in public PM events.
+  - Emits `resident_market_overview_not_visible` / `resident_hotspot_not_visible` blocking reasons.
+- `src/lib/team/decisionOpsRuntimeStabilityGate.ts`
+  - Runtime stability now optionally consumes resident public visibility.
+  - A covered resident lane is not enough if the public board is missing the corresponding card.
+- `src/lib/team/decisionOpsMemoryLearning.ts`
+  - New read-only diagnostics report for memory-loop learning readiness.
+  - Counts resolved non-legacy records, memory-loop note coverage, distinct symbols, and sample-size
+    caution.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds protected query flags:
+    - `residentVisibility=1`
+    - `memoryLearning=1`
+  - `runtimeStabilityGate=1` / `runtimeQualityGate=1` now build resident visibility internally.
+- `package.json`
+  - Adds the two new diagnostics tests to `test:watch-pipeline`.
+
+## Verification
+
+- RED verified:
+  - Stage contract returned 6 instead of 3 when record-write/public-timeline were done but stage 3
+    was still pending.
+  - V9 adapter showed `0 分钟闭环` and risk messages for the same stage-gap case.
+  - `decisionOpsResidentPublicVisibility` did not exist.
+  - `memoryLearning=1` did not read decision records or return diagnostics.
+- Target tests:
+  - `npx vitest run src/lib/watch/__tests__/publicDecisionStageContract.test.ts src/lib/watch/__tests__/v9TopicAdapter.test.ts src/lib/team/__tests__/decisionOpsResidentPublicVisibility.test.ts src/lib/team/__tests__/decisionOpsRuntimeStabilityGate.test.ts src/lib/team/__tests__/decisionOpsMemoryLearning.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 6 files / 78 tests.
+- Full gates:
+  - `npm run typecheck`: PASS.
+  - `npm run format:check`: PASS.
+  - `npm run lint`: PASS.
+  - `npm run test:watch-pipeline`: PASS, 89 files / 490 tests.
+  - `npm run verify`: PASS, includes 490 watch-pipeline tests, 50 chat final synthetic threads,
+    and execution-safety check.
+  - `rm -rf .next && npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Self Review
+
+- Write set stays within watch/team ops diagnostics, V9 adapter stage gating, tests, and package
+  test list.
+- No UI layout, visual hierarchy, PM execution, candidate ranking, queue execution, refresh lock,
+  SSE, or production deployment code was changed.
+- The new resident public visibility gate is stricter than prewarm coverage by design: background
+  readiness no longer implies public visibility.
+- Memory learning remains ops-only. It does not turn memory-loop into a public claim unless enough
+  resolved non-legacy samples and memory notes exist.
+
+## Deployment Discipline
+
+- Production not touched.
+- No local Vercel deployment was run.
+- Preview should come from the GitHub/Vercel PR webhook.
+
+[DOC-HINT: B131-B145 tighten analysis-only stage truthfulness and add ops-only resident public visibility plus memory-learning gates; public layout, PM execution, refresh/SSE, candidate ranking, and production release remain unchanged.]
