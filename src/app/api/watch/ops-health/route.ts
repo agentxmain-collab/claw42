@@ -20,6 +20,7 @@ import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueue
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
 import { buildDecisionOpsSlo } from "@/lib/team/decisionOpsSlo";
+import { buildDecisionOpsSparseConfigGate } from "@/lib/team/decisionOpsSparseConfigGate";
 import { buildDecisionOpsSparseExecution } from "@/lib/team/decisionOpsSparseExecution";
 import { buildDecisionOpsSparseShadow } from "@/lib/team/decisionOpsSparseShadow";
 import { buildDecisionOpsSparseShadowHistory } from "@/lib/team/decisionOpsSparseShadowHistory";
@@ -66,6 +67,7 @@ export async function GET(request: Request) {
   const includeSparseExecution = url.searchParams.get("sparseExecution") === "1";
   const includeSparseShadow = url.searchParams.get("sparseShadow") === "1";
   const includeSparseShadowHistory = url.searchParams.get("sparseShadowHistory") === "1";
+  const includeSparseConfigGate = url.searchParams.get("sparseConfigGate") === "1";
   const now = Date.now();
   const includeStability = url.searchParams.get("stability") === "1";
   const includeCausalRunbook = url.searchParams.get("causalRunbook") === "1";
@@ -93,6 +95,7 @@ export async function GET(request: Request) {
     includeSparseExecution ||
     includeSparseShadow ||
     includeSparseShadowHistory ||
+    includeSparseConfigGate ||
     includeStability;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
@@ -293,9 +296,17 @@ export async function GET(request: Request) {
         records: decisionRecords,
       })
     : null;
-  const sparseShadowHistory = includeSparseShadowHistory
-    ? buildDecisionOpsSparseShadowHistory({
-        records: decisionRecords,
+  const sparseShadowHistorySource =
+    includeSparseShadowHistory || includeSparseConfigGate
+      ? buildDecisionOpsSparseShadowHistory({
+          records: decisionRecords,
+        })
+      : null;
+  const sparseShadowHistory = includeSparseShadowHistory ? sparseShadowHistorySource : null;
+  const sparseConfigGate = includeSparseConfigGate
+    ? buildDecisionOpsSparseConfigGate({
+        sparseShadowHistory: sparseShadowHistorySource!,
+        env: process.env,
       })
     : null;
 
@@ -395,6 +406,11 @@ export async function GET(request: Request) {
       ...(includeSparseShadowHistory
         ? {
             sparseShadowHistory,
+          }
+        : {}),
+      ...(includeSparseConfigGate
+        ? {
+            sparseConfigGate,
           }
         : {}),
       ...(includeOpsSummary && runbook && recoveryPolicy && modelQuality && lifecycle

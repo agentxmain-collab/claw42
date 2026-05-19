@@ -4361,3 +4361,52 @@ Base: 7dd0268
 - Production not touched.
 
 [DOC-HINT: B98 adds ops-only sparse shadow history diagnostics for consecutive safe-batch validation before any disabled sparse fan-out config gate, without changing live fan-out or public behavior.]
+
+# B99 sparse fan-out config gate report
+
+Date: 2026-05-19
+Branch: feature/b99-sparse-config-gate
+Base: 35b2c3f
+
+## Scope
+
+- Adds a fail-closed sparse fan-out config gate report.
+- The gate reads `CLAW42_SPARSE_FANOUT_MODE`, but only supports `off` and `shadow`.
+- Unknown values are ignored and reported as config warnings.
+- `shadow` can open only when B98 sparse shadow history is ready.
+- Runtime effect remains `diagnostics_only`: live PM fan-out, public behavior, model calls, prompts, UI, payload, candidate ranking, refresh behavior, and production deployment are unchanged.
+
+## Implementation
+
+- `src/lib/team/decisionOpsSparseConfigGate.ts`
+  - Emits `disabled`, `blocked_by_history`, or `shadow_ready`.
+  - Keeps `liveFanoutChangeAllowed=false` and `publicBehaviorChangeAllowed=false` in every state.
+  - Fails closed on unsupported env values such as `live_sparse`.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds authorized-only `?sparseConfigGate=1`.
+  - Reuses B98 sparse shadow history as its source precondition.
+  - Keeps `sparseShadowHistory` hidden unless explicitly requested.
+
+## Verification
+
+- RED verified:
+  - Missing `decisionOpsSparseConfigGate` module failed.
+  - `ops-health?sparseConfigGate=1` did not read records or return diagnostics before route integration.
+- Target tests:
+  - `npx vitest run src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionOpsSparseConfigGate.test.ts`: PASS, 2 files / 28 tests.
+- Full gates:
+  - `npm run format:check`: PASS.
+  - `npm run typecheck`: PASS.
+  - `npm run lint`: PASS.
+  - `npm run verify`: PASS, 76 files / 443 tests.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run build`: PASS.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Worktree has no `.vercel/project.json`, so local Vercel CLI deploy is not used.
+- Production not touched.
+
+[DOC-HINT: B99 adds an ops-only fail-closed sparse fan-out config gate that can prepare shadow diagnostics but cannot change live PM fan-out or public behavior.]
