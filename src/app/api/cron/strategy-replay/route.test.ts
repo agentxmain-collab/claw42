@@ -218,13 +218,15 @@ describe("/api/cron/strategy-replay", () => {
     const payload = await response.json();
 
     expect(payload.pmDecisionGenerated).toBe(true);
-    expect(payload.pmDecisionAudit).toEqual([
-      expect.objectContaining({
-        type: "candidate_considered",
-        symbol: "BTC",
-        hasTrigger: true,
-      }),
-    ]);
+    expect(payload.pmDecisionAudit).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "candidate_considered",
+          symbol: "BTC",
+          hasTrigger: true,
+        }),
+      ]),
+    );
     expect(payload.newsSourceHealth).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -277,6 +279,53 @@ describe("/api/cron/strategy-replay", () => {
       }),
     );
     expect(runPmDecisionJobMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("prewarms global resident market and hotspot candidates from scheduled cron", async () => {
+    const prewarmNow = Date.parse("2026-05-13T18:00:00.000Z");
+    vi.setSystemTime(prewarmNow);
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.residentPrewarmGenerated).toBe(2);
+    expect(payload.residentPrewarmCandidates).toEqual([
+      "market_overview:utc:zh_CN:2026-05-13T18",
+      "hotspot:utc:zh_CN:2026-05-13T18:market",
+    ]);
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        candidate: expect.objectContaining({
+          candidateType: "market_overview",
+          candidateKey: "market_overview:utc:zh_CN:2026-05-13T18",
+        }),
+        now: prewarmNow,
+      }),
+    );
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        candidate: expect.objectContaining({
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
+        }),
+        now: prewarmNow,
+      }),
+    );
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "batch",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        now: prewarmNow,
+      }),
+    );
   });
 
   it("queues scheduled cron PM jobs instead of blocking on the PM pipeline when queue is available", async () => {

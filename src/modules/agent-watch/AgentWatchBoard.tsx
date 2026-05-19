@@ -42,10 +42,6 @@ const DECISION_HISTORY_LIMIT = 20;
 const VISIBLE_SESSION_NO_SIGNAL_RETRY_MS = 5 * 60_000;
 const VISIBLE_SESSION_REFRESH_STARTED_RETRY_MS = 90_000;
 const VISIBLE_SESSION_MAX_RETRY_MS = 5 * 60_000;
-const EMPTY_STATE_REFRESH_CANDIDATE = "market_overview";
-const EMPTY_STATE_REFRESH_SYMBOL = "MARKET";
-const HOTSPOT_REFRESH_CANDIDATE = "hotspot";
-const HOTSPOT_REFRESH_SYMBOL = "HOTSPOT";
 const AUTO_SYMBOL_REFRESH_CANDIDATE = "symbol";
 const AUTO_SYMBOL_REFRESH_SYMBOL = "SYMBOL";
 
@@ -163,28 +159,6 @@ export function resolveVisibleSessionRefreshTarget({
   locale: string;
 }): VisibleSessionRefreshTarget | null {
   if (!timelineLoaded) return null;
-
-  const hasMarketOverviewTopic = topics.some(
-    (topic) => normalizeCandidateType(topic.candidateType) === "market_overview",
-  );
-  if (!hasMarketOverviewTopic) {
-    return {
-      sessionKey: `freshness-trigger-${locale}-${EMPTY_STATE_REFRESH_CANDIDATE}`,
-      symbol: EMPTY_STATE_REFRESH_SYMBOL,
-      params: { candidateType: EMPTY_STATE_REFRESH_CANDIDATE },
-    };
-  }
-
-  const hasHotspotTopic = topics.some(
-    (topic) => normalizeCandidateType(topic.candidateType) === "hotspot",
-  );
-  if (!hasHotspotTopic) {
-    return {
-      sessionKey: `freshness-trigger-${locale}-${HOTSPOT_REFRESH_CANDIDATE}`,
-      symbol: HOTSPOT_REFRESH_SYMBOL,
-      params: { candidateType: HOTSPOT_REFRESH_CANDIDATE },
-    };
-  }
 
   const latestRefreshSymbol =
     topics.find((topic) => normalizeCandidateType(topic.candidateType) === "symbol")?.symbol ??

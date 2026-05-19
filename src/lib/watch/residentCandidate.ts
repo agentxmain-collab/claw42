@@ -3,8 +3,8 @@ import type { TopicSelectionReason } from "@/lib/team/topicSelector";
 import type { Locale } from "@/i18n/types";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 
-const UTC8_OFFSET_MS = 8 * 60 * 60 * 1000;
-const HOTSPOT_WINDOW_HOURS = 8;
+export const MARKET_OVERVIEW_INTERVAL_HOURS = 6;
+export const HOTSPOT_WINDOW_HOURS = 3;
 
 export const MARKET_OVERVIEW_STORAGE_SYMBOL = "MARKET";
 export const HOTSPOT_STORAGE_SYMBOL = "HOTSPOT";
@@ -35,15 +35,25 @@ const HOTSPOT_TITLES: Record<Locale, string> = {
   en_XA: "Narrative watch",
 };
 
-export function utc8DayKey(ts: number) {
-  return new Date(ts + UTC8_OFFSET_MS).toISOString().slice(0, 10);
+export function utcDayKey(ts: number) {
+  return Number.isFinite(ts) ? new Date(ts).toISOString().slice(0, 10) : "unknown-date";
 }
 
-export function utc8HourWindowKey(ts: number, windowHours = HOTSPOT_WINDOW_HOURS) {
-  const shifted = ts + UTC8_OFFSET_MS;
-  const hour = new Date(shifted).getUTCHours();
+export function utcHourWindowKey(ts: number, windowHours = HOTSPOT_WINDOW_HOURS) {
+  if (!Number.isFinite(ts)) return "unknown-dateT00";
+  const hour = new Date(ts).getUTCHours();
   const bucket = Math.floor(hour / windowHours) * windowHours;
-  return `${utc8DayKey(ts)}T${String(bucket).padStart(2, "0")}`;
+  return `${utcDayKey(ts)}T${String(bucket).padStart(2, "0")}`;
+}
+
+export function shouldRunMarketOverviewPrewarm(ts: number) {
+  if (!Number.isFinite(ts)) return false;
+  return new Date(ts).getUTCHours() % MARKET_OVERVIEW_INTERVAL_HOURS === 0;
+}
+
+export function shouldRunHotspotPrewarm(ts: number) {
+  if (!Number.isFinite(ts)) return false;
+  return new Date(ts).getUTCHours() % HOTSPOT_WINDOW_HOURS === 0;
 }
 
 export function normalizePipelineSymbol(value: string | undefined | null) {
@@ -91,7 +101,10 @@ export function marketOverviewCandidate({
 }): DecisionCandidate {
   return {
     candidateType: "market_overview",
-    candidateKey: `market_overview:${locale}:${utc8DayKey(now)}`,
+    candidateKey: `market_overview:utc:${locale}:${utcHourWindowKey(
+      now,
+      MARKET_OVERVIEW_INTERVAL_HOURS,
+    )}`,
     displayTitle: MARKET_OVERVIEW_TITLES[locale] ?? MARKET_OVERVIEW_TITLES.en_US,
     executable: false,
     cadence: "daily",
@@ -123,8 +136,8 @@ export function hotspotDecisionCandidate({
   const resolvedKey =
     candidateKey?.trim() ||
     (normalizedSymbol
-      ? `hotspot:${locale}:${utc8HourWindowKey(now)}:${normalizedSymbol}`
-      : `hotspot:${locale}:${utc8HourWindowKey(now)}:market`);
+      ? `hotspot:utc:${locale}:${utcHourWindowKey(now)}:${normalizedSymbol}`
+      : `hotspot:utc:${locale}:${utcHourWindowKey(now)}:market`);
   return {
     candidateType: "hotspot",
     candidateKey: resolvedKey,

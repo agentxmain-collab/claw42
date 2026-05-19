@@ -17,7 +17,9 @@ import { publishPmDecisionJobToQueue } from "@/lib/team/pmDecisionJobQueue";
 import { runPmDecisionJob } from "@/lib/team/pmDecisionJobRunner";
 import type { PmDecisionTriggerAuditEvent } from "@/lib/team/pmDecisionTrigger";
 import { enqueuePmDecisionJob } from "@/lib/watch/pmDecisionJobLedger";
+import { residentPrewarmCandidates } from "@/lib/watch/residentPrewarm";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
+import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import type { NewsItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -105,27 +107,47 @@ export async function GET(request: NextRequest) {
   });
   const pmDecisionAudit: PmDecisionTriggerAuditEvent[] = [];
   const pmPartialStageUpdates = true;
-  const pmDecisionJob = await enqueuePmDecisionJob({
+
+  const residentCandidates = residentPrewarmCandidates({
+    locale,
+    now,
+    pool,
+    newsItems: normalizedItems,
+    force: trigger === "now",
+  });
+  const residentPrewarmResults = [];
+  for (const candidate of residentCandidates) {
+    residentPrewarmResults.push(
+      await dispatchPmDecisionJob({
+        kind: "once",
+        triggerSource: "cron",
+        locale,
+        now,
+        candidate,
+        pool,
+        newsItems: normalizedItems,
+        partialStageUpdates: pmPartialStageUpdates,
+        useQueue: trigger !== "now",
+        onAudit: (event) => pmDecisionAudit.push(event),
+      }),
+    );
+  }
+
+  const batchResult = await dispatchPmDecisionJob({
     kind: trigger === "now" ? "once" : "batch",
     triggerSource: trigger === "now" ? "user_visit_trigger" : "cron",
     locale,
     now,
+    pool,
+    newsItems: normalizedItems,
+    partialStageUpdates: pmPartialStageUpdates,
+    useQueue: trigger !== "now",
+    onAudit: (event) => pmDecisionAudit.push(event),
   });
-  const pmDecisionQueueResult =
-    trigger === "now"
-      ? ({ mode: "disabled" } as const)
-      : await publishPmDecisionJobToQueue(pmDecisionJob, { now });
-  const pmDecisionJobResult =
-    pmDecisionQueueResult.mode === "queue"
-      ? null
-      : await runPmDecisionJob(pmDecisionJob, {
-          pool,
-          newsItems: normalizedItems,
-          now,
-          partialStageUpdates: pmPartialStageUpdates,
-          onAudit: (event) => pmDecisionAudit.push(event),
-        });
-  const pmDecisionOutputs = pmDecisionJobResult?.outputs ?? [];
+  const pmDecisionOutputs = [
+    ...residentPrewarmResults.flatMap((result) => result.outputs),
+    ...batchResult.outputs,
+  ];
   const providerTelemetry = summarizeProviderTelemetry({ since: now });
   await warnIfSingleProviderConcentration(providerTelemetry);
 
@@ -138,11 +160,20 @@ export async function GET(request: NextRequest) {
     pmDecisionGenerated: pmDecisionOutputs.length > 0,
     generatedPmDecisions: pmDecisionOutputs.length,
     pmPartialStageUpdates,
-    pmDecisionJobId: pmDecisionJob.id,
-    pmDecisionJobStatus: pmDecisionJobResult?.job.status ?? pmDecisionJob.status,
-    pmDecisionQueueMode: pmDecisionQueueResult.mode,
+    pmDecisionJobId: batchResult.job.id,
+    pmDecisionJobStatus: batchResult.jobResult?.job.status ?? batchResult.job.status,
+    pmDecisionQueueMode: batchResult.queueResult.mode,
     pmDecisionQueueMessageId:
-      pmDecisionQueueResult.mode === "queue" ? pmDecisionQueueResult.messageId : undefined,
+      batchResult.queueResult.mode === "queue" ? batchResult.queueResult.messageId : undefined,
+    residentPrewarmCandidates: residentCandidates.map((candidate) => candidate.candidateKey),
+    residentPrewarmGenerated: residentPrewarmResults.reduce(
+      (total, result) => total + result.outputs.length,
+      0,
+    ),
+    residentPrewarmQueued: residentPrewarmResults.filter(
+      (result) => result.queueResult.mode === "queue",
+    ).length,
+    residentPrewarmJobIds: residentPrewarmResults.map((result) => result.job.id),
     pmDecisionAudit: trigger === "now" ? pmDecisionAudit : undefined,
     providerTelemetry: trigger === "now" ? providerTelemetry : undefined,
     newsSourceHealth: trigger === "now" ? getNewsSourceHealthSnapshot() : undefined,
@@ -152,6 +183,58 @@ export async function GET(request: NextRequest) {
     triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,
     servedAt: now,
   });
+}
+
+async function dispatchPmDecisionJob({
+  kind,
+  triggerSource,
+  locale,
+  now,
+  candidate,
+  pool,
+  newsItems,
+  partialStageUpdates,
+  useQueue,
+  onAudit,
+}: {
+  kind: "once" | "batch";
+  triggerSource: "cron" | "user_visit_trigger";
+  locale: ReturnType<typeof localeFromRequestUrl>;
+  now: number;
+  candidate?: DecisionCandidate;
+  pool: Awaited<ReturnType<typeof getCoinPool>>;
+  newsItems: NewsItem[];
+  partialStageUpdates: boolean;
+  useQueue: boolean;
+  onAudit: (event: PmDecisionTriggerAuditEvent) => void;
+}) {
+  const job = await enqueuePmDecisionJob({
+    kind,
+    triggerSource,
+    locale,
+    ...(candidate ? { candidate } : {}),
+    now,
+  });
+  const queueResult = useQueue
+    ? await publishPmDecisionJobToQueue(job, { now })
+    : ({ mode: "disabled" } as const);
+  const jobResult =
+    queueResult.mode === "queue"
+      ? null
+      : await runPmDecisionJob(job, {
+          pool,
+          newsItems,
+          now,
+          partialStageUpdates,
+          onAudit,
+        });
+
+  return {
+    job,
+    queueResult,
+    jobResult,
+    outputs: jobResult?.outputs ?? [],
+  };
 }
 
 async function resolveOpenPmDecisions(

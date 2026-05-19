@@ -350,15 +350,15 @@ describe("/api/watch/refresh", () => {
       refreshStarted: true,
       symbol: "MARKET",
       candidateType: "market_overview",
-      candidateKey: "market_overview:zh_CN:2026-05-15",
+      candidateKey: "market_overview:utc:zh_CN:2026-05-15T12",
       displayTitle: "今日大盘综述",
     });
     expect(callOrder.slice(0, 5)).toEqual([
       "rate",
-      "check:watch:refresh:in-flight:zh_CN:market_overview:zh_CN:2026-05-15",
+      "check:watch:refresh:in-flight:zh_CN:market_overview:utc:zh_CN:2026-05-15T12",
       "freshness:records",
       "check:watch:refresh:cooldown:zh_CN",
-      "check:watch:pm-decision:zh_CN:market_overview:zh_CN:2026-05-15",
+      "check:watch:pm-decision:zh_CN:market_overview:utc:zh_CN:2026-05-15T12",
     ]);
     expect(waitUntilMock).toHaveBeenCalledOnce();
     await waitUntilMock.mock.calls[0][0];
