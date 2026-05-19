@@ -16,6 +16,7 @@ const buildDecisionOpsLifecycleDiagnosticsMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsSummaryMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsStabilityMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsCausalRunbookMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsAlertSnapshotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -75,6 +76,10 @@ vi.mock("@/lib/team/decisionOpsStability", () => ({
 
 vi.mock("@/lib/team/decisionOpsCausalRunbook", () => ({
   buildDecisionOpsCausalRunbook: buildDecisionOpsCausalRunbookMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsAlertSnapshot", () => ({
+  buildDecisionOpsAlertSnapshot: buildDecisionOpsAlertSnapshotMock,
 }));
 
 function job() {
@@ -277,6 +282,19 @@ describe("/api/watch/ops-health", () => {
       },
       diagnosis: [],
       actions: [],
+    });
+    buildDecisionOpsAlertSnapshotMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "healthy",
+      shouldNotify: false,
+      activeAlert: null,
+      repeatGuard: {
+        dedupeKey: null,
+        cooldownMs: null,
+        nextEligibleAt: null,
+      },
+      operatorSummary: "No ops alert is active.",
+      recommendedActions: [],
     });
   });
 
@@ -1040,5 +1058,92 @@ describe("/api/watch/ops-health", () => {
     expect(payload.qualityBaseline).toBeUndefined();
     expect(payload.cronAudit).toBeUndefined();
     expect(payload.freshness).toBeUndefined();
+  });
+
+  it("returns optional alert snapshot diagnostics without exposing nested causal inputs by default", async () => {
+    projectDecisionRecordToPublicEventMock.mockReturnValue({
+      id: "pm-decision:pm:BTC:1779102000000",
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: "pm:BTC:1779102000000",
+        symbol: "BTC",
+        candidateType: "symbol",
+        candidateKey: "BTC",
+      },
+    });
+    readAllDecisionRecordsMock.mockResolvedValue([{ id: "pm:BTC:1779102000000" }]);
+    buildDecisionOpsCausalRunbookMock.mockReturnValue({
+      schemaVersion: 1,
+      status: "critical",
+      primaryLayer: "public_output_surface",
+      primaryIssue: "duplicate_candidate_card",
+      alert: {
+        shouldNotify: true,
+        dedupeKey: "ops-causal:public_output_surface:duplicate_candidate_card",
+      },
+      diagnosis: [],
+      actions: [],
+    });
+    buildDecisionOpsAlertSnapshotMock.mockReturnValue({
+      schemaVersion: 1,
+      status: "critical",
+      shouldNotify: true,
+      activeAlert: {
+        severity: "critical",
+        layer: "public_output_surface",
+        issue: "duplicate_candidate_card",
+      },
+      repeatGuard: {
+        dedupeKey: "ops-causal:public_output_surface:duplicate_candidate_card",
+        cooldownMs: 900000,
+        nextEligibleAt: "2026-05-18T12:15:00.000Z",
+      },
+      operatorSummary: "Active ops alert: duplicate_candidate_card in public_output_surface.",
+      recommendedActions: [],
+    });
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&alertSnapshot=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readPmDecisionJobsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readDecisionRunsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(buildDecisionOpsCausalRunbookMock).toHaveBeenCalledWith({
+      runbook: expect.objectContaining({ schemaVersion: 1 }),
+      recoveryPolicy: expect.objectContaining({ schemaVersion: 1 }),
+      stability: expect.objectContaining({ schemaVersion: 1 }),
+      outputStability: expect.objectContaining({ schemaVersion: 1 }),
+      qualityBaseline: expect.objectContaining({ schemaVersion: 1 }),
+    });
+    expect(buildDecisionOpsAlertSnapshotMock).toHaveBeenCalledWith({
+      causalRunbook: expect.objectContaining({
+        primaryIssue: "duplicate_candidate_card",
+      }),
+    });
+    expect(payload.alertSnapshot).toMatchObject({
+      schemaVersion: 1,
+      status: "critical",
+      shouldNotify: true,
+      repeatGuard: {
+        dedupeKey: "ops-causal:public_output_surface:duplicate_candidate_card",
+      },
+    });
+    expect(payload.causalRunbook).toBeUndefined();
+    expect(payload.runbook).toBeUndefined();
+    expect(payload.recoveryPolicy).toBeUndefined();
+    expect(payload.stability).toBeUndefined();
+    expect(payload.outputStability).toBeUndefined();
+    expect(payload.qualityBaseline).toBeUndefined();
   });
 });
