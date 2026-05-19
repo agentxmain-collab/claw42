@@ -700,7 +700,12 @@
         },
         "watchOnlyLabel": "Watch only / フォロー不可",
         "watchOnlyCopy": "この銘柄はまだ CoinW で実行できません。観察用の分析のみ表示します。",
-        "analysisOnlyCopy": "このカードは観察用の分析のみで、フォロー取引操作は表示しません。"
+        "analysisOnlyCopy": "このカードは観察用の分析のみで、フォロー取引操作は表示しません。",
+        "residentUpdating": "市場/注目テーマをバックグラウンド更新中",
+        "residentQueued": "市場/注目テーマの更新待機中",
+        "residentUpdateIssue": "バックグラウンド更新に問題",
+        "residentCachedState": "グローバル分析キャッシュ",
+        "residentCacheFallback": "キャッシュデータを表示中"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

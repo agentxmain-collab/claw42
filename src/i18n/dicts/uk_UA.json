@@ -700,7 +700,12 @@
         },
         "watchOnlyLabel": "Watch only / Не для копіювання",
         "watchOnlyCopy": "Цей символ поки не можна виконати на CoinW; аналіз показано лише для спостереження.",
-        "analysisOnlyCopy": "Ця картка лише для спостереження й не показує дію копіювання."
+        "analysisOnlyCopy": "Ця картка лише для спостереження й не показує дію копіювання.",
+        "residentUpdating": "Фонове оновлення ринку/тем виконується",
+        "residentQueued": "Оновлення ринку/тем у черзі",
+        "residentUpdateIssue": "Проблема фонового оновлення",
+        "residentCachedState": "Кеш глобального аналізу",
+        "residentCacheFallback": "показано кешовані дані"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

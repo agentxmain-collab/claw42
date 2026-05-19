@@ -700,7 +700,12 @@
         },
         "watchOnlyLabel": "Watch only / غير قابل للنسخ",
         "watchOnlyCopy": "هذا الرمز غير قابل للتنفيذ على CoinW بعد؛ يظهر التحليل للمراقبة فقط.",
-        "analysisOnlyCopy": "هذه البطاقة للمراقبة والتحليل فقط ولا تعرض إجراء متابعة."
+        "analysisOnlyCopy": "هذه البطاقة للمراقبة والتحليل فقط ولا تعرض إجراء متابعة.",
+        "residentUpdating": "تحديث السوق/الموضوعات في الخلفية جارٍ",
+        "residentQueued": "تحديث السوق/الموضوعات في الخلفية بانتظار الدور",
+        "residentUpdateIssue": "مشكلة في تحديث الخلفية",
+        "residentCachedState": "ذاكرة التحليل العام المؤقتة",
+        "residentCacheFallback": "يتم عرض البيانات المخزنة مؤقتًا"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

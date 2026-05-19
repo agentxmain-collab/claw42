@@ -700,7 +700,12 @@
         },
         "watchOnlyLabel": "watch-only / 不可跟单",
         "watchOnlyCopy": "该币种暂不支持 CoinW 跟单，仅展示观察分析。",
-        "analysisOnlyCopy": "该卡片仅用于观察分析，不提供跟单操作。"
+        "analysisOnlyCopy": "该卡片仅用于观察分析，不提供跟单操作。",
+        "residentUpdating": "大盘/热点后台更新中",
+        "residentQueued": "大盘/热点等待后台更新",
+        "residentUpdateIssue": "后台更新异常",
+        "residentCachedState": "全局分析缓存",
+        "residentCacheFallback": "仍显示缓存数据"
       },
       "placeholder": {
         "title": "跟单功能开发中",

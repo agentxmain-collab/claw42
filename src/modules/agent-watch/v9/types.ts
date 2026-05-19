@@ -4,6 +4,7 @@ import type { DispatchV10FollowTradeDict } from "@/i18n/types";
 import type { AnalystDataStatus, AnalystDirection } from "@/lib/team/strategyDecisionRecord";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
+import type { ResidentPrewarmStatus } from "@/lib/watch/residentPrewarmStatus";
 import type { MarketTickerPayload } from "../types";
 
 export type DispatchView = "flow" | "mkt";
@@ -129,6 +130,7 @@ export interface DispatchFreshnessState {
   nextAllowedAt?: string | null;
   refreshStarted?: boolean;
   refreshSource?: "records" | "timeline" | "none";
+  residentStatus?: ResidentPrewarmStatus;
 }
 
 export interface DispatchTopic {
