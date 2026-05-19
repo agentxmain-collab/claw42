@@ -22,6 +22,7 @@ import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
 import { buildDecisionOpsSlo } from "@/lib/team/decisionOpsSlo";
 import { buildDecisionOpsSparseExecution } from "@/lib/team/decisionOpsSparseExecution";
 import { buildDecisionOpsSparseShadow } from "@/lib/team/decisionOpsSparseShadow";
+import { buildDecisionOpsSparseShadowHistory } from "@/lib/team/decisionOpsSparseShadowHistory";
 import { buildDecisionOpsStability } from "@/lib/team/decisionOpsStability";
 import { buildDecisionOpsSummary } from "@/lib/team/decisionOpsSummary";
 import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
@@ -64,6 +65,7 @@ export async function GET(request: Request) {
   const includeOpsSummary = url.searchParams.get("opsSummary") === "1";
   const includeSparseExecution = url.searchParams.get("sparseExecution") === "1";
   const includeSparseShadow = url.searchParams.get("sparseShadow") === "1";
+  const includeSparseShadowHistory = url.searchParams.get("sparseShadowHistory") === "1";
   const now = Date.now();
   const includeStability = url.searchParams.get("stability") === "1";
   const includeCausalRunbook = url.searchParams.get("causalRunbook") === "1";
@@ -90,6 +92,7 @@ export async function GET(request: Request) {
     includeOpsSummary ||
     includeSparseExecution ||
     includeSparseShadow ||
+    includeSparseShadowHistory ||
     includeStability;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
@@ -290,6 +293,11 @@ export async function GET(request: Request) {
         records: decisionRecords,
       })
     : null;
+  const sparseShadowHistory = includeSparseShadowHistory
+    ? buildDecisionOpsSparseShadowHistory({
+        records: decisionRecords,
+      })
+    : null;
 
   return NextResponse.json(
     {
@@ -382,6 +390,11 @@ export async function GET(request: Request) {
       ...(includeSparseShadow
         ? {
             sparseShadow,
+          }
+        : {}),
+      ...(includeSparseShadowHistory
+        ? {
+            sparseShadowHistory,
           }
         : {}),
       ...(includeOpsSummary && runbook && recoveryPolicy && modelQuality && lifecycle

@@ -16,6 +16,7 @@ const buildDecisionOpsLifecycleDiagnosticsMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsSummaryMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsSparseExecutionMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsSparseShadowMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsSparseShadowHistoryMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsStabilityMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsCausalRunbookMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsAlertSnapshotMock = vi.hoisted(() => vi.fn());
@@ -78,6 +79,10 @@ vi.mock("@/lib/team/decisionOpsSparseExecution", () => ({
 
 vi.mock("@/lib/team/decisionOpsSparseShadow", () => ({
   buildDecisionOpsSparseShadow: buildDecisionOpsSparseShadowMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsSparseShadowHistory", () => ({
+  buildDecisionOpsSparseShadowHistory: buildDecisionOpsSparseShadowHistoryMock,
 }));
 
 vi.mock("@/lib/team/decisionOpsStability", () => ({
@@ -311,6 +316,25 @@ describe("/api/watch/ops-health", () => {
       },
       roleOutcomes: [],
       recordOutcomes: [],
+      recommendations: [],
+    });
+    buildDecisionOpsSparseShadowHistoryMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "ready_for_config_gate",
+      safeToPrepareConfigGate: true,
+      parameters: {
+        batchSize: 3,
+        minimumSafeBatches: 2,
+      },
+      stability: {
+        totalBatches: 2,
+        evaluatedBatches: 2,
+        safeBatches: 2,
+        riskyBatches: 0,
+        insufficientBatches: 0,
+        consecutiveSafeBatches: 2,
+      },
+      batchOutcomes: [],
       recommendations: [],
     });
     buildDecisionOpsStabilityMock.mockReset().mockReturnValue({
@@ -1127,6 +1151,51 @@ describe("/api/watch/ops-health", () => {
     });
     expect(payload.sparseExecution).toBeUndefined();
     expect(payload.qualityGate).toBeUndefined();
+  });
+
+  it("returns optional sparse shadow history diagnostics for authorized callers", async () => {
+    readAllDecisionRecordsMock.mockResolvedValue([
+      {
+        id: "pm:BTC:1779120000000",
+        roleExecutionTrace: [
+          {
+            memberId: "pm",
+            executionMode: "core_active",
+            activationReason: "Always active as final decision owner.",
+            evidenceIdsUsed: ["evidence:pm"],
+            contributedToPmDecision: true,
+            vetoOrWarning: false,
+          },
+        ],
+      },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&sparseShadowHistory=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(buildDecisionOpsSparseShadowHistoryMock).toHaveBeenCalledWith({
+      records: [
+        expect.objectContaining({
+          id: "pm:BTC:1779120000000",
+        }),
+      ],
+    });
+    expect(payload.sparseShadowHistory).toMatchObject({
+      schemaVersion: 1,
+      status: "ready_for_config_gate",
+      safeToPrepareConfigGate: true,
+      stability: {
+        consecutiveSafeBatches: 2,
+      },
+    });
+    expect(payload.sparseShadow).toBeUndefined();
+    expect(payload.sparseExecution).toBeUndefined();
   });
 
   it("returns optional long-window stability diagnostics and reads the full ledger window", async () => {

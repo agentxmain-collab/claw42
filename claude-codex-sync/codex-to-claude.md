@@ -4309,3 +4309,55 @@ Base: f38877a
 - Production not touched.
 
 [DOC-HINT: B97 adds ops-only shadow sparse fan-out safety diagnostics that compare B96 sparse policy recommendations against historical roleExecutionTrace risks, without changing live PM fan-out, model calls, public UI, public payload, candidate ranking, or production deployment.]
+
+# B98 sparse shadow history report
+
+Date: 2026-05-19
+Branch: feature/b98-sparse-shadow-history
+Base: 7dd0268
+
+## Scope
+
+- Adds read-only batch history evaluation for sparse shadow safety.
+- The new report answers whether multiple recent batches are consecutively safe before preparing any disabled config gate.
+- Does not change live PM fan-out, model calls, prompts, public UI, public payload, candidate ranking, refresh behavior, or production deployment.
+
+## Implementation
+
+- `src/lib/team/decisionOpsSparseShadowHistory.ts`
+  - Sorts records by `createdAt` desc with `id` tie-breaker.
+  - Splits records into complete fixed-size batches, default `batchSize=3`.
+  - Runs B97 `buildDecisionOpsSparseShadow()` on each batch.
+  - Emits `ready_for_config_gate` only after `minimumSafeBatches=2` consecutive safe batches.
+  - Blocks on any risky batch and waits on insufficient or incomplete trace batches.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds authorized-only `?sparseShadowHistory=1`.
+  - Reads decision records only when requested.
+  - Keeps `sparseShadow` and `sparseExecution` hidden unless their own flags are requested.
+
+## Verification
+
+- RED verified:
+  - Missing `decisionOpsSparseShadowHistory` module failed.
+  - `ops-health?sparseShadowHistory=1` did not read records or return diagnostics before route integration.
+- Target tests:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsSparseShadowHistory.test.ts`
+  - `npx vitest run src/app/api/watch/ops-health/route.test.ts --testNamePattern "sparse shadow history"`
+  - Result: target tests PASS after implementation.
+- Full gates:
+  - `npx vitest run src/app/api/watch/ops-health/route.test.ts src/lib/team/__tests__/decisionOpsSparseShadowHistory.test.ts`: PASS, 2 files / 26 tests.
+  - `npm run format:check`: PASS.
+  - `npm run typecheck`: PASS.
+  - `npm run lint`: PASS.
+  - `npm run verify`: PASS, 76 files / 442 tests.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run build`: PASS after rerun as a standalone command. The first parallel build was invalidated by concurrent `.next` access from a11y/dev-server verification.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Worktree has no `.vercel/project.json`, so local Vercel CLI deploy is not used.
+- Production not touched.
+
+[DOC-HINT: B98 adds ops-only sparse shadow history diagnostics for consecutive safe-batch validation before any disabled sparse fan-out config gate, without changing live fan-out or public behavior.]
