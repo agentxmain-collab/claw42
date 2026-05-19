@@ -16,9 +16,12 @@ import { buildDecisionOpsModelQuality } from "@/lib/team/decisionOpsModelQuality
 import { buildDecisionOpsPublicOutputStability } from "@/lib/team/decisionOpsPublicOutputStability";
 import { buildDecisionOpsQualityBaseline } from "@/lib/team/decisionOpsQualityBaseline";
 import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
+import { buildDecisionOpsResidentPrewarmCoverage } from "@/lib/team/decisionOpsResidentPrewarmCoverage";
 import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueueRecoveryPolicy";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
+import { buildDecisionOpsRuntimeQualityGate } from "@/lib/team/decisionOpsRuntimeQualityGate";
+import { buildDecisionOpsRuntimeStabilityGate } from "@/lib/team/decisionOpsRuntimeStabilityGate";
 import { buildDecisionOpsSlo } from "@/lib/team/decisionOpsSlo";
 import { buildDecisionOpsSparseCandidatePolicy } from "@/lib/team/decisionOpsSparseCandidatePolicy";
 import { buildDecisionOpsSparseConfigGate } from "@/lib/team/decisionOpsSparseConfigGate";
@@ -31,6 +34,7 @@ import { buildDecisionOpsSparseShadow } from "@/lib/team/decisionOpsSparseShadow
 import { buildDecisionOpsSparseShadowHistory } from "@/lib/team/decisionOpsSparseShadowHistory";
 import { buildDecisionOpsSparseShadowTelemetry } from "@/lib/team/decisionOpsSparseShadowTelemetry";
 import { buildDecisionOpsStability } from "@/lib/team/decisionOpsStability";
+import { buildDecisionOpsModelQualityEvidence } from "@/lib/team/decisionOpsModelQualityEvidence";
 import { buildDecisionOpsSummary } from "@/lib/team/decisionOpsSummary";
 import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
 import { summarizeProviderTelemetry } from "@/lib/team/providerTelemetry";
@@ -80,12 +84,22 @@ export async function GET(request: Request) {
   const includeSparseCandidatePolicy = url.searchParams.get("sparseCandidatePolicy") === "1";
   const includeSparseRuntimePlan = url.searchParams.get("sparseRuntimePlan") === "1";
   const includeSparseReleaseGate = url.searchParams.get("sparseReleaseGate") === "1";
+  const includeResidentCoverage = url.searchParams.get("residentCoverage") === "1";
+  const includeRuntimeStabilityGate = url.searchParams.get("runtimeStabilityGate") === "1";
+  const includeModelQualityEvidence = url.searchParams.get("modelQualityEvidence") === "1";
+  const includeRuntimeQualityGate = url.searchParams.get("runtimeQualityGate") === "1";
   const now = Date.now();
   const includeStability = url.searchParams.get("stability") === "1";
   const includeCausalRunbook = url.searchParams.get("causalRunbook") === "1";
   const includeAlertSnapshot = url.searchParams.get("alertSnapshot") === "1";
   const ledgerLimit =
-    includeStability || includeQualityBaseline || includeCausalRunbook || includeAlertSnapshot
+    includeStability ||
+    includeQualityBaseline ||
+    includeRuntimeStabilityGate ||
+    includeModelQualityEvidence ||
+    includeRuntimeQualityGate ||
+    includeCausalRunbook ||
+    includeAlertSnapshot
       ? MAX_LIMIT
       : limit;
   const needsDecisionRecords =
@@ -104,6 +118,10 @@ export async function GET(request: Request) {
     includeAlertSnapshot ||
     includeLifecycle ||
     includeOpsSummary ||
+    includeResidentCoverage ||
+    includeRuntimeStabilityGate ||
+    includeModelQualityEvidence ||
+    includeRuntimeQualityGate ||
     includeSparseExecution ||
     includeSparseShadow ||
     includeSparseShadowHistory ||
@@ -133,6 +151,8 @@ export async function GET(request: Request) {
     includeOpsSummary ||
     includeStability ||
     includeOutputStability ||
+    includeRuntimeStabilityGate ||
+    includeRuntimeQualityGate ||
     includeCausalRunbook ||
     includeAlertSnapshot
       ? publicPmEventsFromRecords(decisionRecords)
@@ -145,7 +165,9 @@ export async function GET(request: Request) {
     includeQualityBaseline ||
     includeCausalRunbook ||
     includeAlertSnapshot ||
-    includeOpsSummary
+    includeOpsSummary ||
+    includeModelQualityEvidence ||
+    includeRuntimeQualityGate
       ? summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 })
       : null;
   const residentPrewarm =
@@ -153,7 +175,10 @@ export async function GET(request: Request) {
     includeRollup ||
     includeCausalRunbook ||
     includeAlertSnapshot ||
-    includeOpsSummary
+    includeOpsSummary ||
+    includeResidentCoverage ||
+    includeRuntimeStabilityGate ||
+    includeRuntimeQualityGate
       ? deriveResidentPrewarmStatus({
           records: decisionRecords,
           jobs,
@@ -173,6 +198,8 @@ export async function GET(request: Request) {
     includeDeepDiagnostics ||
     includeRollup ||
     includeModelQuality ||
+    includeModelQualityEvidence ||
+    includeRuntimeQualityGate ||
     includeCausalRunbook ||
     includeAlertSnapshot ||
     includeOpsSummary
@@ -186,6 +213,8 @@ export async function GET(request: Request) {
   const qualityGate =
     includeQualityGate ||
     includeModelQuality ||
+    includeModelQualityEvidence ||
+    includeRuntimeQualityGate ||
     includeCausalRunbook ||
     includeAlertSnapshot ||
     includeOpsSummary
@@ -247,7 +276,12 @@ export async function GET(request: Request) {
         })
       : null;
   const modelQuality =
-    (includeModelQuality || includeCausalRunbook || includeAlertSnapshot || includeOpsSummary) &&
+    (includeModelQuality ||
+      includeModelQualityEvidence ||
+      includeRuntimeQualityGate ||
+      includeCausalRunbook ||
+      includeAlertSnapshot ||
+      includeOpsSummary) &&
     qualityGate &&
     deepDiagnostics
       ? buildDecisionOpsModelQuality({
@@ -256,7 +290,11 @@ export async function GET(request: Request) {
         })
       : null;
   const qualityBaseline =
-    includeQualityBaseline || includeCausalRunbook || includeAlertSnapshot
+    includeQualityBaseline ||
+    includeModelQualityEvidence ||
+    includeRuntimeQualityGate ||
+    includeCausalRunbook ||
+    includeAlertSnapshot
       ? buildDecisionOpsQualityBaseline({
           runs,
           records: decisionRecords,
@@ -264,9 +302,36 @@ export async function GET(request: Request) {
         })
       : null;
   const outputStability =
-    includeOutputStability || includeCausalRunbook || includeAlertSnapshot
+    includeOutputStability ||
+    includeRuntimeStabilityGate ||
+    includeRuntimeQualityGate ||
+    includeCausalRunbook ||
+    includeAlertSnapshot
       ? buildDecisionOpsPublicOutputStability({
           publicEvents,
+        })
+      : null;
+  const residentCoverage =
+    (includeResidentCoverage || includeRuntimeStabilityGate || includeRuntimeQualityGate) &&
+    residentPrewarm
+      ? buildDecisionOpsResidentPrewarmCoverage({
+          residentStatus: residentPrewarm,
+        })
+      : null;
+  const runtimeStabilityGate =
+    (includeRuntimeStabilityGate || includeRuntimeQualityGate) &&
+    residentCoverage &&
+    outputStability
+      ? buildDecisionOpsRuntimeStabilityGate({
+          residentCoverage,
+          outputStability,
+        })
+      : null;
+  const modelQualityEvidence =
+    (includeModelQualityEvidence || includeRuntimeQualityGate) && qualityBaseline && modelQuality
+      ? buildDecisionOpsModelQualityEvidence({
+          qualityBaseline,
+          modelQuality,
         })
       : null;
   const lifecycle =
@@ -309,17 +374,20 @@ export async function GET(request: Request) {
     includeSparseOperatorReport ||
     includeSparseCandidatePolicy ||
     includeSparseRuntimePlan ||
-    includeSparseReleaseGate;
+    includeSparseReleaseGate ||
+    includeRuntimeQualityGate;
   const needsSparseReadiness =
     includeSparseReadiness ||
     includeSparseOperatorReport ||
     includeSparseRuntimePlan ||
-    includeSparseReleaseGate;
+    includeSparseReleaseGate ||
+    includeRuntimeQualityGate;
   const needsSparseConfigGate =
     includeSparseConfigGate ||
     includeSparseReadiness ||
     includeSparseRuntimePlan ||
-    includeSparseReleaseGate;
+    includeSparseReleaseGate ||
+    includeRuntimeQualityGate;
   const needsSparseShadowHistory =
     includeSparseShadowHistory || needsSparseConfigGate || needsSparseReadiness;
   const needsSparseShadow = includeSparseShadow || needsSparseTelemetry || needsSparseReadiness;
@@ -366,7 +434,7 @@ export async function GET(request: Request) {
     : null;
   const sparseTelemetry = includeSparseTelemetry ? sparseTelemetrySource : null;
   const sparseOperatorReportSource =
-    includeSparseOperatorReport || includeSparseReleaseGate
+    includeSparseOperatorReport || includeSparseReleaseGate || includeRuntimeQualityGate
       ? buildDecisionOpsSparseOperatorReport({
           sparseReadiness: sparseReadinessSource!,
           sparseTelemetry: sparseTelemetrySource!,
@@ -374,14 +442,17 @@ export async function GET(request: Request) {
       : null;
   const sparseOperatorReport = includeSparseOperatorReport ? sparseOperatorReportSource : null;
   const sparseCandidatePolicySource =
-    includeSparseCandidatePolicy || includeSparseRuntimePlan || includeSparseReleaseGate
+    includeSparseCandidatePolicy ||
+    includeSparseRuntimePlan ||
+    includeSparseReleaseGate ||
+    includeRuntimeQualityGate
       ? buildDecisionOpsSparseCandidatePolicy({
           sparseTelemetry: sparseTelemetrySource!,
         })
       : null;
   const sparseCandidatePolicy = includeSparseCandidatePolicy ? sparseCandidatePolicySource : null;
   const sparseRuntimePlanSource =
-    includeSparseRuntimePlan || includeSparseReleaseGate
+    includeSparseRuntimePlan || includeSparseReleaseGate || includeRuntimeQualityGate
       ? buildDecisionOpsSparseRuntimePlan({
           sparseReadiness: sparseReadinessSource!,
           sparseConfigGate: sparseConfigGateSource!,
@@ -397,6 +468,21 @@ export async function GET(request: Request) {
         sparseRuntimePlan: sparseRuntimePlanSource!,
       })
     : null;
+  const runtimeQualityGate =
+    includeRuntimeQualityGate && runtimeStabilityGate && modelQualityEvidence
+      ? buildDecisionOpsRuntimeQualityGate({
+          runtimeStability: runtimeStabilityGate,
+          modelQualityEvidence,
+          sparseReleaseGate:
+            sparseReleaseGate ??
+            buildDecisionOpsSparseReleaseGate({
+              sparseOperatorReport: sparseOperatorReportSource!,
+              sparseTelemetry: sparseTelemetrySource!,
+              sparseCandidatePolicy: sparseCandidatePolicySource!,
+              sparseRuntimePlan: sparseRuntimePlanSource!,
+            }),
+        })
+      : null;
 
   return NextResponse.json(
     {
@@ -529,6 +615,26 @@ export async function GET(request: Request) {
       ...(includeSparseReleaseGate
         ? {
             sparseReleaseGate,
+          }
+        : {}),
+      ...(includeResidentCoverage
+        ? {
+            residentCoverage,
+          }
+        : {}),
+      ...(includeRuntimeStabilityGate
+        ? {
+            runtimeStabilityGate,
+          }
+        : {}),
+      ...(includeModelQualityEvidence
+        ? {
+            modelQualityEvidence,
+          }
+        : {}),
+      ...(includeRuntimeQualityGate
+        ? {
+            runtimeQualityGate,
           }
         : {}),
       ...(includeOpsSummary && runbook && recoveryPolicy && modelQuality && lifecycle

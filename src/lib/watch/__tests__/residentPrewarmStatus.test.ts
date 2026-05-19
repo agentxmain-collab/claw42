@@ -144,8 +144,8 @@ describe("deriveResidentPrewarmStatus", () => {
 
     expect(status.slaState).toBe("critical");
     expect(status.marketOverview).toMatchObject({
-      expectedIntervalMs: 6 * 60 * 60_000,
-      staleAfterMs: 12 * 60 * 60_000,
+      expectedIntervalMs: 3 * 60 * 60_000,
+      staleAfterMs: 6 * 60 * 60_000,
       slaState: "critical",
       ageMs: 12.5 * 60 * 60_000,
     });
