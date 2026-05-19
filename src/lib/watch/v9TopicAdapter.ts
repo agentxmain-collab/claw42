@@ -423,13 +423,7 @@ function isAnalysisOnlyEvent(event: PmDecisionTimelineEvent) {
 
 function hasAnalysisOnlyCompletion(event: PmDecisionTimelineEvent) {
   if (!isAnalysisOnlyEvent(event)) return false;
-  return Boolean(
-    event.payload.stageTrace?.some(
-      (stage) =>
-        (stage.stageId === "record_write" || stage.stageId === "public_timeline") &&
-        stage.status === "done",
-    ),
-  );
+  return visibleMessageStageLimit(event, false) >= 6;
 }
 
 function visibleMessageStageLimit(event: PmDecisionTimelineEvent, hasTradeDecision: boolean) {

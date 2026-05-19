@@ -154,4 +154,29 @@ describe("public decision stage contract", () => {
     });
     expect(publicDecisionVisibleStageLimit(trace, options)).toBe(3);
   });
+
+  it("does not let record-write completion expose analysis-only later stages when an earlier stage has a gap", () => {
+    const trace = [
+      stage("analyst_inputs", "done"),
+      stage("research_lead", "done"),
+      stage("trade_decision", "pending"),
+      stage("risk_lead", "done"),
+      stage("record_write", "done"),
+      stage("public_timeline", "done"),
+    ];
+    const options = {
+      hasRenderableTradeDecision: false,
+      analysisOnlyCandidate: true,
+    };
+
+    expect(normalizePublicDecisionStageStatuses(trace, options)).toMatchObject({
+      analyst_inputs: "done",
+      research_lead: "done",
+      trade_decision: "in_progress",
+      risk_lead: "pending",
+      record_write: "done",
+      public_timeline: "done",
+    });
+    expect(publicDecisionVisibleStageLimit(trace, options)).toBe(3);
+  });
 });

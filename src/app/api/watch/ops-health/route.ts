@@ -12,11 +12,13 @@ import {
   summarizeDecisionOpsHealth,
 } from "@/lib/team/decisionOpsHealth";
 import { buildDecisionOpsLifecycleDiagnostics } from "@/lib/team/decisionOpsLifecycleDiagnostics";
+import { buildDecisionOpsMemoryLearning } from "@/lib/team/decisionOpsMemoryLearning";
 import { buildDecisionOpsModelQuality } from "@/lib/team/decisionOpsModelQuality";
 import { buildDecisionOpsPublicOutputStability } from "@/lib/team/decisionOpsPublicOutputStability";
 import { buildDecisionOpsQualityBaseline } from "@/lib/team/decisionOpsQualityBaseline";
 import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
 import { buildDecisionOpsQueuePriorityPolicy } from "@/lib/team/decisionOpsQueuePriorityPolicy";
+import { buildDecisionOpsResidentPublicVisibility } from "@/lib/team/decisionOpsResidentPublicVisibility";
 import { buildDecisionOpsResidentPrewarmCoverage } from "@/lib/team/decisionOpsResidentPrewarmCoverage";
 import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueueRecoveryPolicy";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
@@ -74,6 +76,7 @@ export async function GET(request: Request) {
   const includeQualityBaseline = url.searchParams.get("qualityBaseline") === "1";
   const includeOutputStability = url.searchParams.get("outputStability") === "1";
   const includeLifecycle = url.searchParams.get("lifecycle") === "1";
+  const includeMemoryLearning = url.searchParams.get("memoryLearning") === "1";
   const includeOpsSummary = url.searchParams.get("opsSummary") === "1";
   const includeSparseExecution = url.searchParams.get("sparseExecution") === "1";
   const includeSparseShadow = url.searchParams.get("sparseShadow") === "1";
@@ -86,6 +89,7 @@ export async function GET(request: Request) {
   const includeSparseRuntimePlan = url.searchParams.get("sparseRuntimePlan") === "1";
   const includeSparseReleaseGate = url.searchParams.get("sparseReleaseGate") === "1";
   const includeResidentCoverage = url.searchParams.get("residentCoverage") === "1";
+  const includeResidentVisibility = url.searchParams.get("residentVisibility") === "1";
   const includeRuntimeStabilityGate = url.searchParams.get("runtimeStabilityGate") === "1";
   const includeModelQualityEvidence = url.searchParams.get("modelQualityEvidence") === "1";
   const includeRuntimeQualityGate = url.searchParams.get("runtimeQualityGate") === "1";
@@ -97,6 +101,8 @@ export async function GET(request: Request) {
   const ledgerLimit =
     includeStability ||
     includeQualityBaseline ||
+    includeResidentVisibility ||
+    includeMemoryLearning ||
     includeRuntimeStabilityGate ||
     includeModelQualityEvidence ||
     includeRuntimeQualityGate ||
@@ -119,8 +125,10 @@ export async function GET(request: Request) {
     includeCausalRunbook ||
     includeAlertSnapshot ||
     includeLifecycle ||
+    includeMemoryLearning ||
     includeOpsSummary ||
     includeResidentCoverage ||
+    includeResidentVisibility ||
     includeRuntimeStabilityGate ||
     includeModelQualityEvidence ||
     includeRuntimeQualityGate ||
@@ -159,6 +167,7 @@ export async function GET(request: Request) {
     includeOpsSummary ||
     includeStability ||
     includeOutputStability ||
+    includeResidentVisibility ||
     includeRuntimeStabilityGate ||
     includeRuntimeQualityGate ||
     includeCausalRunbook ||
@@ -319,6 +328,13 @@ export async function GET(request: Request) {
           publicEvents,
         })
       : null;
+  const residentVisibility =
+    includeResidentVisibility || includeRuntimeStabilityGate || includeRuntimeQualityGate
+      ? buildDecisionOpsResidentPublicVisibility({
+          publicEvents,
+          now,
+        })
+      : null;
   const residentCoverage =
     (includeResidentCoverage || includeRuntimeStabilityGate || includeRuntimeQualityGate) &&
     residentPrewarm
@@ -332,6 +348,7 @@ export async function GET(request: Request) {
     outputStability
       ? buildDecisionOpsRuntimeStabilityGate({
           residentCoverage,
+          residentPublicVisibility: residentVisibility ?? undefined,
           outputStability,
         })
       : null;
@@ -348,6 +365,12 @@ export async function GET(request: Request) {
           records: decisionRecords,
         })
       : null;
+  const memoryLearning = includeMemoryLearning
+    ? buildDecisionOpsMemoryLearning({
+        records: decisionRecords,
+        now,
+      })
+    : null;
   const stability =
     includeStability || includeCausalRunbook || includeAlertSnapshot
       ? buildDecisionOpsStability({
@@ -565,6 +588,11 @@ export async function GET(request: Request) {
             lifecycle,
           }
         : {}),
+      ...(includeMemoryLearning
+        ? {
+            memoryLearning,
+          }
+        : {}),
       ...(includeStability
         ? {
             stability,
@@ -633,6 +661,11 @@ export async function GET(request: Request) {
       ...(includeResidentCoverage
         ? {
             residentCoverage,
+          }
+        : {}),
+      ...(includeResidentVisibility
+        ? {
+            residentVisibility,
           }
         : {}),
       ...(includeRuntimeStabilityGate
