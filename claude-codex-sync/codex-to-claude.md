@@ -3770,3 +3770,83 @@ recent signal is fresh.
 - Production not touched.
 
 [DOC-HINT: B86 adds a protected read-only long-window stability layer on ops-health without changing resolution writers, cron, PM execution, queue behavior, KV writes, prompts, provider routing, or public UI.]
+
+# B87 model quality baseline diagnostics report
+
+Date: 2026-05-19
+
+## Scope
+
+Adds a protected, read-only `qualityBaseline=1` diagnostics view to `/api/watch/ops-health`.
+This does not score or trigger new analysis. It turns existing decision-run quality reports into a
+stable acceptance baseline for future model-quality work.
+
+## Root Cause / Gap
+
+- Existing `modelQuality=1` summarizes current public guardrail, evidence, role coverage, provider
+  mix, and short regression risk.
+- B87 adds a stricter baseline layer for longer-running model changes:
+  - whether there are enough scored samples to judge the model mix
+  - whether all candidate types (`symbol`, `market_overview`, `hotspot`) have at least one scored
+    sample
+  - aggregate score / publishable-rate floor
+  - recent 5-run vs previous 5-run score regression
+  - provider concentration visibility
+- `qualityBaseline=1` reads the 500-row ledger window so the baseline is not based on the default
+  100-row request limit.
+
+## Changes
+
+- `src/lib/team/decisionOpsQualityBaseline.ts`
+  - New pure builder for model-quality baseline readiness and regression.
+  - Primary issues: `public_content_leak`, `recent_score_regression`, `publishable_rate_low`,
+    `score_floor_low`, `duplicate_rationale`, `candidate_type_sample_gap`,
+    `insufficient_scored_runs`, `provider_concentration`.
+  - All actions are non-executable.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds optional `qualityBaseline=1`.
+  - Uses ledger limit 500 for quality baseline requests.
+  - Reads decision records and provider telemetry only when requested.
+  - Exposes only `qualityBaseline` by default; nested `qualityGate` / `deepDiagnostics` remain
+    hidden unless explicitly requested.
+- `package.json`
+  - Adds `decisionOpsQualityBaseline.test.ts` to `test:watch-pipeline`.
+
+## Tests Added
+
+- `src/lib/team/__tests__/decisionOpsQualityBaseline.test.ts`
+  - Healthy baseline when clean scored runs cover all candidate types.
+  - Observe/degraded mode when samples are too thin.
+  - Public content leak is the top critical issue.
+  - Recent score regression is detected against the previous score window.
+  - Provider concentration remains visible and read-only.
+- `src/app/api/watch/ops-health/route.test.ts`
+  - `?qualityBaseline=1` reads jobs/runs with limit 500, reads records, reads provider telemetry,
+    calls the baseline builder, and does not expose nested diagnostics by default.
+
+## Verify
+
+- Red before fix:
+  - `ops-health route.test.ts` failed because `qualityBaseline=1` still read the default
+    ledger limit instead of 500 and did not expose the new baseline report.
+- Target green:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsQualityBaseline.test.ts src/app/api/watch/ops-health/route.test.ts`:
+    PASS, 2 files / 21 tests.
+- Full gates:
+  - `npm run verify`: PASS; includes format, typecheck, lint, agent-ip, news, news tests,
+    watch-pipeline 70 files / 410 tests, chat-v3-final 50 synthetic threads, execution-safety.
+  - `npm run build`: PASS. First parallel attempt conflicted with `verify:a11y` writing `.next`;
+    rerun sequentially after clearing generated `.next` passed.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Notes
+
+- This is diagnostics only. It does not change `decisionResolution.ts`, cron resolution, PM
+  pipeline, replay, repair, queue behavior, candidate ranking, public UI, refresh cadence, SSE,
+  locks, KV writes, prompts, provider routing, or production deploy behavior.
+- Local Vercel CLI was not used because this machine is still logged into the wrong Vercel team for
+  Claw42; preview must come from GitHub/Vercel webhook after PR push.
+- Production not touched.
+
+[DOC-HINT: B87 adds a protected read-only model-quality baseline layer on ops-health without changing resolution writers, cron, PM execution, queue behavior, KV writes, prompts, provider routing, or public UI.]

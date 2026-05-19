@@ -10,6 +10,7 @@ const buildDecisionOpsCronAuditMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsChainRunbookMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsQueueRecoveryPolicyMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsModelQualityMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsQualityBaselineMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsLifecycleDiagnosticsMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsSummaryMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsStabilityMock = vi.hoisted(() => vi.fn());
@@ -48,6 +49,10 @@ vi.mock("@/lib/team/decisionOpsQueueRecoveryPolicy", () => ({
 
 vi.mock("@/lib/team/decisionOpsModelQuality", () => ({
   buildDecisionOpsModelQuality: buildDecisionOpsModelQualityMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsQualityBaseline", () => ({
+  buildDecisionOpsQualityBaseline: buildDecisionOpsQualityBaselineMock,
 }));
 
 vi.mock("@/lib/team/decisionOpsLifecycleDiagnostics", () => ({
@@ -195,6 +200,18 @@ describe("/api/watch/ops-health", () => {
       primaryRisk: null,
       dimensions: {},
       recommendations: [],
+    });
+    buildDecisionOpsQualityBaselineMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "healthy",
+      primaryIssue: null,
+      baseline: {
+        ready: true,
+        scoredRuns: 6,
+        candidateTypesCovered: 3,
+      },
+      issues: [],
+      actions: [],
     });
     buildDecisionOpsLifecycleDiagnosticsMock.mockReset().mockReturnValue({
       schemaVersion: 1,
@@ -669,6 +686,69 @@ describe("/api/watch/ops-health", () => {
       schemaVersion: 1,
       status: "healthy",
       riskLevel: "low",
+    });
+    expect(payload.qualityGate).toBeUndefined();
+    expect(payload.deepDiagnostics).toBeUndefined();
+  });
+
+  it("returns optional quality baseline diagnostics and reads the full ledger window", async () => {
+    readDecisionRunsMock.mockResolvedValue([
+      run({
+        quality: {
+          schemaVersion: 1,
+          score: 84,
+          publishable: true,
+          warningCount: 0,
+          warnings: [],
+          blockingWarnings: [],
+          leakCount: 0,
+          duplicateRationaleCount: 0,
+          roleCoverage: { active: 12, contributorCount: 12, analystInputCount: 12 },
+          directionDistribution: { long: 6, short: 3, neutral: 2, wait: 1 },
+          evidence: { citedEvidenceCount: 7, analystCitationCount: 11 },
+          trade: {
+            hasTradeCard: true,
+            direction: "long",
+            confidence: 0.74,
+            actionable: true,
+          },
+        },
+      }),
+    ]);
+    readAllDecisionRecordsMock.mockResolvedValue([
+      {
+        id: "pm:BTC:1779102000000",
+        modelProvider: "deepseek-chat",
+      },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&qualityBaseline=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readPmDecisionJobsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readDecisionRunsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(summarizeProviderTelemetryMock).toHaveBeenCalled();
+    expect(buildDecisionOpsQualityBaselineMock).toHaveBeenCalledWith({
+      runs: [expect.objectContaining({ id: "run:pm:BTC:1779102000000" })],
+      records: [
+        expect.objectContaining({
+          id: "pm:BTC:1779102000000",
+        }),
+      ],
+      providerTelemetry: expect.objectContaining({
+        totalCalls: 0,
+      }),
+    });
+    expect(payload.qualityBaseline).toMatchObject({
+      schemaVersion: 1,
+      status: "healthy",
+      primaryIssue: null,
     });
     expect(payload.qualityGate).toBeUndefined();
     expect(payload.deepDiagnostics).toBeUndefined();

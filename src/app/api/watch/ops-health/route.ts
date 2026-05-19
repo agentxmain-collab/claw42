@@ -11,6 +11,7 @@ import {
 } from "@/lib/team/decisionOpsHealth";
 import { buildDecisionOpsLifecycleDiagnostics } from "@/lib/team/decisionOpsLifecycleDiagnostics";
 import { buildDecisionOpsModelQuality } from "@/lib/team/decisionOpsModelQuality";
+import { buildDecisionOpsQualityBaseline } from "@/lib/team/decisionOpsQualityBaseline";
 import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
 import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueueRecoveryPolicy";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
@@ -51,10 +52,11 @@ export async function GET(request: Request) {
   const includeRunbook = url.searchParams.get("runbook") === "1";
   const includeRecovery = url.searchParams.get("recovery") === "1";
   const includeModelQuality = url.searchParams.get("modelQuality") === "1";
+  const includeQualityBaseline = url.searchParams.get("qualityBaseline") === "1";
   const includeLifecycle = url.searchParams.get("lifecycle") === "1";
   const includeOpsSummary = url.searchParams.get("opsSummary") === "1";
   const includeStability = url.searchParams.get("stability") === "1";
-  const ledgerLimit = includeStability ? MAX_LIMIT : limit;
+  const ledgerLimit = includeStability || includeQualityBaseline ? MAX_LIMIT : limit;
   const needsDecisionRecords =
     includeReconciliation ||
     includeDeepDiagnostics ||
@@ -65,6 +67,7 @@ export async function GET(request: Request) {
     includeRunbook ||
     includeRecovery ||
     includeModelQuality ||
+    includeQualityBaseline ||
     includeLifecycle ||
     includeOpsSummary ||
     includeStability;
@@ -92,6 +95,7 @@ export async function GET(request: Request) {
     includeRollup ||
     includeQualityGate ||
     includeModelQuality ||
+    includeQualityBaseline ||
     includeOpsSummary
       ? summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 })
       : null;
@@ -160,6 +164,13 @@ export async function GET(request: Request) {
           deepDiagnostics,
         })
       : null;
+  const qualityBaseline = includeQualityBaseline
+    ? buildDecisionOpsQualityBaseline({
+        runs,
+        records: decisionRecords,
+        providerTelemetry,
+      })
+    : null;
   const lifecycle =
     includeLifecycle || includeOpsSummary
       ? buildDecisionOpsLifecycleDiagnostics({
@@ -217,6 +228,11 @@ export async function GET(request: Request) {
       ...(includeModelQuality && qualityGate && deepDiagnostics
         ? {
             modelQuality,
+          }
+        : {}),
+      ...(includeQualityBaseline
+        ? {
+            qualityBaseline,
           }
         : {}),
       ...(includeLifecycle
