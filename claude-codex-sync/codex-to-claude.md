@@ -3994,3 +3994,56 @@ This means an empty board caused by cron/chain failure will not be misreported a
 
 - Preview must be GitHub/Vercel webhook only.
 - Local Vercel CLI deploy remains disabled for this project because the local CLI account is not the Claw42 Vercel team.
+
+# B90 ops alert snapshot diagnostics report
+
+Date: 2026-05-19
+Branch: feature/b90-ops-alert-snapshot
+Base: da818be
+
+## Scope
+
+- Added a protected read-only alert snapshot layer for `/api/watch/ops-health?alertSnapshot=1`.
+- No prod deploy, no Vercel CLI deploy, no KV writes, no cron changes, no PM pipeline changes, no public UI changes.
+- Purpose: turn B89 causal runbook output into an operator-facing alert summary: whether a human should look, what issue is active, which layer owns it, what evidence supports it, and when the same alert can notify again.
+
+## Implementation
+
+- New builder: `src/lib/team/decisionOpsAlertSnapshot.ts`
+  - Inputs: `DecisionOpsCausalRunbook`.
+  - Output: `schemaVersion`, `generatedAt`, `status`, `shouldNotify`, `activeAlert`, `repeatGuard`, `operatorSummary`, `recommendedActions`.
+  - Repeat guard uses stable dedupe key format `ops-causal:<layer>:<issue>`.
+  - Cooldown metadata follows the causal runbook policy and adds `nextEligibleAt` for alert consumers.
+- Route integration: `src/app/api/watch/ops-health/route.ts`
+  - New query flag: `alertSnapshot=1`.
+  - Uses the full 500-record ledger window.
+  - Builds the nested diagnostics internally but only returns `alertSnapshot` unless callers explicitly request nested reports.
+- Test coverage:
+  - `src/lib/team/__tests__/decisionOpsAlertSnapshot.test.ts`
+  - Extended `src/app/api/watch/ops-health/route.test.ts`
+  - Added the alert snapshot test to `npm run test:watch-pipeline`.
+
+## Verification
+
+- RED verified:
+  - Missing builder import failed before implementation.
+  - `alertSnapshot=1` initially read only the default ledger window instead of 500.
+- Target tests:
+  - `npm exec vitest run src/lib/team/__tests__/decisionOpsAlertSnapshot.test.ts src/app/api/watch/ops-health/route.test.ts`
+  - Result: 2 files / 22 tests PASS.
+- Full gates:
+  - `npm run typecheck`: PASS.
+  - `npm run format:check`: PASS.
+  - `npm run lint`: PASS.
+  - `npm run verify`: PASS, 73 files / 425 tests.
+  - `npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Deployment Discipline
+
+- Preview must be GitHub/Vercel webhook only.
+- Local Vercel CLI deploy remains disabled for this project because the local CLI account is not the Claw42 Vercel team.
+- Production not touched.
+
+[DOC-HINT: B90 adds a protected read-only ops alert snapshot on ops-health without changing PM execution, queue behavior, refresh, SSE, KV writes, public UI, or production deployment.]

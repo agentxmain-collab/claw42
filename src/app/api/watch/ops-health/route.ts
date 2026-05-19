@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import { buildDecisionOpsAlertSnapshot } from "@/lib/team/decisionOpsAlertSnapshot";
 import { buildDecisionOpsCausalRunbook } from "@/lib/team/decisionOpsCausalRunbook";
 import { buildDecisionOpsChainRunbook } from "@/lib/team/decisionOpsChainRunbook";
 import { buildDecisionOpsCronAudit } from "@/lib/team/decisionOpsCronAudit";
@@ -60,8 +61,11 @@ export async function GET(request: Request) {
   const includeOpsSummary = url.searchParams.get("opsSummary") === "1";
   const includeStability = url.searchParams.get("stability") === "1";
   const includeCausalRunbook = url.searchParams.get("causalRunbook") === "1";
+  const includeAlertSnapshot = url.searchParams.get("alertSnapshot") === "1";
   const ledgerLimit =
-    includeStability || includeQualityBaseline || includeCausalRunbook ? MAX_LIMIT : limit;
+    includeStability || includeQualityBaseline || includeCausalRunbook || includeAlertSnapshot
+      ? MAX_LIMIT
+      : limit;
   const needsDecisionRecords =
     includeReconciliation ||
     includeDeepDiagnostics ||
@@ -75,6 +79,7 @@ export async function GET(request: Request) {
     includeQualityBaseline ||
     includeOutputStability ||
     includeCausalRunbook ||
+    includeAlertSnapshot ||
     includeLifecycle ||
     includeOpsSummary ||
     includeStability;
@@ -96,7 +101,8 @@ export async function GET(request: Request) {
     includeOpsSummary ||
     includeStability ||
     includeOutputStability ||
-    includeCausalRunbook
+    includeCausalRunbook ||
+    includeAlertSnapshot
       ? publicPmEventsFromRecords(decisionRecords)
       : [];
   const providerTelemetry =
@@ -106,6 +112,7 @@ export async function GET(request: Request) {
     includeModelQuality ||
     includeQualityBaseline ||
     includeCausalRunbook ||
+    includeAlertSnapshot ||
     includeOpsSummary
       ? summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 })
       : null;
@@ -123,6 +130,7 @@ export async function GET(request: Request) {
     includeRollup ||
     includeModelQuality ||
     includeCausalRunbook ||
+    includeAlertSnapshot ||
     includeOpsSummary
       ? buildDecisionOpsDeepDiagnostics({
           jobs,
@@ -132,7 +140,11 @@ export async function GET(request: Request) {
         })
       : null;
   const qualityGate =
-    includeQualityGate || includeModelQuality || includeCausalRunbook || includeOpsSummary
+    includeQualityGate ||
+    includeModelQuality ||
+    includeCausalRunbook ||
+    includeAlertSnapshot ||
+    includeOpsSummary
       ? buildDecisionOpsQualityGate({
           runs,
           records: decisionRecords,
@@ -145,6 +157,7 @@ export async function GET(request: Request) {
     includeRunbook ||
     includeRecovery ||
     includeCausalRunbook ||
+    includeAlertSnapshot ||
     includeOpsSummary
       ? buildDecisionOpsFreshness({
           jobs,
@@ -157,6 +170,7 @@ export async function GET(request: Request) {
     includeRunbook ||
     includeRecovery ||
     includeCausalRunbook ||
+    includeAlertSnapshot ||
     includeOpsSummary
       ? buildDecisionOpsCronAudit({
           jobs,
@@ -165,7 +179,11 @@ export async function GET(request: Request) {
         })
       : null;
   const runbook =
-    (includeRunbook || includeRecovery || includeCausalRunbook || includeOpsSummary) &&
+    (includeRunbook ||
+      includeRecovery ||
+      includeCausalRunbook ||
+      includeAlertSnapshot ||
+      includeOpsSummary) &&
     cronAudit &&
     freshness
       ? buildDecisionOpsChainRunbook({
@@ -175,7 +193,9 @@ export async function GET(request: Request) {
         })
       : null;
   const recoveryPolicy =
-    (includeRecovery || includeCausalRunbook || includeOpsSummary) && runbook && cronAudit
+    (includeRecovery || includeCausalRunbook || includeAlertSnapshot || includeOpsSummary) &&
+    runbook &&
+    cronAudit
       ? buildDecisionOpsQueueRecoveryPolicy({
           runbook,
           cronAudit,
@@ -183,7 +203,7 @@ export async function GET(request: Request) {
         })
       : null;
   const modelQuality =
-    (includeModelQuality || includeCausalRunbook || includeOpsSummary) &&
+    (includeModelQuality || includeCausalRunbook || includeAlertSnapshot || includeOpsSummary) &&
     qualityGate &&
     deepDiagnostics
       ? buildDecisionOpsModelQuality({
@@ -192,7 +212,7 @@ export async function GET(request: Request) {
         })
       : null;
   const qualityBaseline =
-    includeQualityBaseline || includeCausalRunbook
+    includeQualityBaseline || includeCausalRunbook || includeAlertSnapshot
       ? buildDecisionOpsQualityBaseline({
           runs,
           records: decisionRecords,
@@ -200,7 +220,7 @@ export async function GET(request: Request) {
         })
       : null;
   const outputStability =
-    includeOutputStability || includeCausalRunbook
+    includeOutputStability || includeCausalRunbook || includeAlertSnapshot
       ? buildDecisionOpsPublicOutputStability({
           publicEvents,
         })
@@ -212,7 +232,7 @@ export async function GET(request: Request) {
         })
       : null;
   const stability =
-    includeStability || includeCausalRunbook
+    includeStability || includeCausalRunbook || includeAlertSnapshot
       ? buildDecisionOpsStability({
           jobs,
           runs,
@@ -220,7 +240,7 @@ export async function GET(request: Request) {
         })
       : null;
   const causalRunbook =
-    includeCausalRunbook &&
+    (includeCausalRunbook || includeAlertSnapshot) &&
     runbook &&
     recoveryPolicy &&
     stability &&
@@ -232,6 +252,12 @@ export async function GET(request: Request) {
           stability,
           outputStability,
           qualityBaseline,
+        })
+      : null;
+  const alertSnapshot =
+    includeAlertSnapshot && causalRunbook
+      ? buildDecisionOpsAlertSnapshot({
+          causalRunbook,
         })
       : null;
 
@@ -310,6 +336,11 @@ export async function GET(request: Request) {
       ...(includeCausalRunbook
         ? {
             causalRunbook,
+          }
+        : {}),
+      ...(includeAlertSnapshot
+        ? {
+            alertSnapshot,
           }
         : {}),
       ...(includeOpsSummary && runbook && recoveryPolicy && modelQuality && lifecycle
