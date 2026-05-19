@@ -218,6 +218,13 @@ describe("runPmDecisionPipeline", () => {
       (input) => input.memberId === "chart_analyst",
     );
     expect(fallbackInput).toBeUndefined();
+    expect(
+      result?.record.roleExecutionTrace?.find((entry) => entry.memberId === "chart_analyst"),
+    ).toMatchObject({
+      executionMode: "skipped_by_policy",
+      contributedToPmDecision: false,
+    });
+    expect(result?.record.roleExecutionTrace).toHaveLength(14);
     expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
   });
 
@@ -376,6 +383,43 @@ describe("runPmDecisionPipeline", () => {
       "risk_lead",
       "pm",
     ]);
+    expect(writtenRecord.roleExecutionTrace).toHaveLength(14);
+    expect(writtenRecord.roleExecutionTrace?.map((entry) => entry.memberId).sort()).toEqual(
+      [
+        "fundamental_analyst",
+        "news_analyst",
+        "chart_analyst",
+        "onchain_analyst",
+        "research_lead",
+        "risk_lead",
+        "pm",
+        "bullish_researcher",
+        "bearish_researcher",
+        "trader",
+        "aggressive_reviewer",
+        "neutral_reviewer",
+        "conservative_reviewer",
+        "memory_loop",
+      ].sort(),
+    );
+    expect(
+      writtenRecord.roleExecutionTrace?.find((entry) => entry.memberId === "pm"),
+    ).toMatchObject({
+      executionMode: "core_active",
+      contributedToPmDecision: true,
+    });
+    expect(
+      writtenRecord.roleExecutionTrace?.find((entry) => entry.memberId === "chart_analyst"),
+    ).toMatchObject({
+      executionMode: "conditional_active",
+      contributedToPmDecision: true,
+    });
+    expect(
+      writtenRecord.roleExecutionTrace?.find((entry) => entry.memberId === "risk_lead"),
+    ).toMatchObject({
+      executionMode: "core_active",
+      vetoOrWarning: true,
+    });
     expect(
       writtenRecord.analystInputs.find((input) => input.memberId === "memory_loop")?.rounds,
     ).toHaveLength(2);
@@ -388,6 +432,7 @@ describe("runPmDecisionPipeline", () => {
     expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("startedAt");
     expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("completedAt");
     expect(result.publicTimelineEntry.payload.stageTrace?.[0]).not.toHaveProperty("durationMs");
+    expect(result.publicTimelineEntry.payload).not.toHaveProperty("roleExecutionTrace");
     expect(
       writtenRecord.stageTrace?.find((stage) => stage.stageId === "record_write"),
     ).toMatchObject({

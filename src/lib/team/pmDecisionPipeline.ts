@@ -21,6 +21,7 @@ import {
   shouldAbstainMember,
   type EvidenceContextPack,
 } from "@/lib/team/evidenceDispatcher";
+import { buildRoleExecutionTrace } from "@/lib/team/roleExecutionPolicy";
 import type {
   StrategyDecisionRecord,
   AnalystInputRecord,
@@ -693,6 +694,14 @@ function singleRoundRecord({
   ];
 }
 
+function latestAnalystOutputsMemberIds(outputs: readonly AnalystOutput[]) {
+  return outputs.map((output) => output.memberId);
+}
+
+function evidenceIdsFromAnalystOutputs(outputs: readonly AnalystOutput[]) {
+  return Array.from(new Set(outputs.flatMap((output) => output.citations)));
+}
+
 function makeRecord({
   input,
   candidate,
@@ -704,6 +713,8 @@ function makeRecord({
   tradeDecision,
   analysisSummary,
   stageAudit,
+  evidencePack,
+  abstainedInputMemberIds,
 }: {
   input: PmDecisionPipelineInput;
   candidate: DecisionCandidate;
@@ -715,6 +726,8 @@ function makeRecord({
   tradeDecision: TradeDecision | null;
   analysisSummary?: string;
   stageAudit: StageAuditMap;
+  evidencePack: EvidenceContextPack;
+  abstainedInputMemberIds: TeamMemberId[];
 }): StrategyDecisionRecord {
   const symbol = symbolFromCandidate(candidate);
   const locale = normalizeWatchLocale(input.locale);
@@ -806,6 +819,26 @@ function makeRecord({
     contributorIds: TEAM_MEMBER_IDS,
     analystInputs,
     stageTrace: makeStageTrace(observedAt, tradeDecision, stageAudit, analystRoundOutputs),
+    roleExecutionTrace: buildRoleExecutionTrace({
+      evidencePack,
+      activeInputMemberIds: PIPELINE_INPUT_MEMBER_IDS.filter(
+        (memberId) => !shouldAbstainMember(memberId, evidencePack),
+      ),
+      executedInputMemberIds: latestAnalystOutputsMemberIds(analystOutputs),
+      abstainedInputMemberIds,
+      materialContributorIds: [
+        ...latestAnalystOutputsMemberIds(analystOutputs),
+        "research_lead",
+        "risk_lead",
+        "pm",
+      ],
+      warningMemberIds: ["risk_lead"],
+      pmEvidenceIds: tradeDecision?.evidenceIds ?? evidenceIdsFromAnalystOutputs(analystOutputs),
+      leadEvidenceIds: [
+        ...input.recentNewsEvidence.map((evidence) => evidence.id),
+        ...evidenceIdsFromAnalystOutputs(analystOutputs),
+      ],
+    }),
     sourceThreadId: null,
     tradeDecision,
     createdAt: new Date(now).toISOString(),
@@ -828,6 +861,8 @@ function makePartialRecord({
   riskLead,
   activeStage,
   stageAudit,
+  evidencePack,
+  abstainedInputMemberIds,
 }: {
   input: PmDecisionPipelineInput;
   candidate: DecisionCandidate;
@@ -838,6 +873,8 @@ function makePartialRecord({
   riskLead?: LeadOutput;
   activeStage: "research_lead" | "risk_lead" | "trade_decision";
   stageAudit: StageAuditMap;
+  evidencePack: EvidenceContextPack;
+  abstainedInputMemberIds: TeamMemberId[];
 }): StrategyDecisionRecord {
   const symbol = symbolFromCandidate(candidate);
   const locale = normalizeWatchLocale(input.locale);
@@ -905,6 +942,24 @@ function makePartialRecord({
       riskLead,
       stageAudit,
       analystRoundOutputs,
+    }),
+    roleExecutionTrace: buildRoleExecutionTrace({
+      evidencePack,
+      activeInputMemberIds: PIPELINE_INPUT_MEMBER_IDS.filter(
+        (memberId) => !shouldAbstainMember(memberId, evidencePack),
+      ),
+      executedInputMemberIds: latestAnalystOutputsMemberIds(analystOutputs),
+      abstainedInputMemberIds,
+      materialContributorIds: [
+        ...latestAnalystOutputsMemberIds(analystOutputs),
+        ...(researchLead ? (["research_lead"] as const) : []),
+        ...(riskLead ? (["risk_lead"] as const) : []),
+      ],
+      warningMemberIds: riskLead ? ["risk_lead"] : [],
+      leadEvidenceIds: [
+        ...input.recentNewsEvidence.map((evidence) => evidence.id),
+        ...evidenceIdsFromAnalystOutputs(analystOutputs),
+      ],
     }),
     sourceThreadId: null,
     tradeDecision: null,
@@ -1489,6 +1544,8 @@ export async function runPmDecisionPipeline(
         analystRoundOutputs: publicAnalystRoundOutputs,
         activeStage: "research_lead",
         stageAudit,
+        evidencePack,
+        abstainedInputMemberIds: latestAbstainedMemberIds,
       }),
       evidenceIdsForPartial(localizedInput, publicAnalystRoundOutputs),
     );
@@ -1522,6 +1579,8 @@ export async function runPmDecisionPipeline(
         researchLead,
         activeStage: "risk_lead",
         stageAudit,
+        evidencePack,
+        abstainedInputMemberIds: latestAbstainedMemberIds,
       }),
       evidenceIdsForPartial(localizedInput, publicAnalystRoundOutputs),
     );
@@ -1557,6 +1616,8 @@ export async function runPmDecisionPipeline(
         riskLead,
         activeStage: "trade_decision",
         stageAudit,
+        evidencePack,
+        abstainedInputMemberIds: latestAbstainedMemberIds,
       }),
       evidenceIdsForPartial(localizedInput, publicAnalystRoundOutputs),
     );
@@ -1644,6 +1705,8 @@ export async function runPmDecisionPipeline(
       tradeDecision,
       analysisSummary,
       stageAudit,
+      evidencePack,
+      abstainedInputMemberIds: latestAbstainedMemberIds,
     });
     startStage(stageAudit, "record_write");
     const recordWriteObservedAt = new Date(Date.now()).toISOString();
