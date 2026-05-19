@@ -20,11 +20,16 @@ import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueue
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
 import { buildDecisionOpsSlo } from "@/lib/team/decisionOpsSlo";
+import { buildDecisionOpsSparseCandidatePolicy } from "@/lib/team/decisionOpsSparseCandidatePolicy";
 import { buildDecisionOpsSparseConfigGate } from "@/lib/team/decisionOpsSparseConfigGate";
 import { buildDecisionOpsSparseExecution } from "@/lib/team/decisionOpsSparseExecution";
+import { buildDecisionOpsSparseOperatorReport } from "@/lib/team/decisionOpsSparseOperatorReport";
 import { buildDecisionOpsSparseReadiness } from "@/lib/team/decisionOpsSparseReadiness";
+import { buildDecisionOpsSparseReleaseGate } from "@/lib/team/decisionOpsSparseReleaseGate";
+import { buildDecisionOpsSparseRuntimePlan } from "@/lib/team/decisionOpsSparseRuntimePlan";
 import { buildDecisionOpsSparseShadow } from "@/lib/team/decisionOpsSparseShadow";
 import { buildDecisionOpsSparseShadowHistory } from "@/lib/team/decisionOpsSparseShadowHistory";
+import { buildDecisionOpsSparseShadowTelemetry } from "@/lib/team/decisionOpsSparseShadowTelemetry";
 import { buildDecisionOpsStability } from "@/lib/team/decisionOpsStability";
 import { buildDecisionOpsSummary } from "@/lib/team/decisionOpsSummary";
 import { getPmDecisionQueueReadiness } from "@/lib/team/pmDecisionJobQueue";
@@ -70,6 +75,11 @@ export async function GET(request: Request) {
   const includeSparseShadowHistory = url.searchParams.get("sparseShadowHistory") === "1";
   const includeSparseConfigGate = url.searchParams.get("sparseConfigGate") === "1";
   const includeSparseReadiness = url.searchParams.get("sparseReadiness") === "1";
+  const includeSparseTelemetry = url.searchParams.get("sparseTelemetry") === "1";
+  const includeSparseOperatorReport = url.searchParams.get("sparseOperatorReport") === "1";
+  const includeSparseCandidatePolicy = url.searchParams.get("sparseCandidatePolicy") === "1";
+  const includeSparseRuntimePlan = url.searchParams.get("sparseRuntimePlan") === "1";
+  const includeSparseReleaseGate = url.searchParams.get("sparseReleaseGate") === "1";
   const now = Date.now();
   const includeStability = url.searchParams.get("stability") === "1";
   const includeCausalRunbook = url.searchParams.get("causalRunbook") === "1";
@@ -99,6 +109,11 @@ export async function GET(request: Request) {
     includeSparseShadowHistory ||
     includeSparseConfigGate ||
     includeSparseReadiness ||
+    includeSparseTelemetry ||
+    includeSparseOperatorReport ||
+    includeSparseCandidatePolicy ||
+    includeSparseRuntimePlan ||
+    includeSparseReleaseGate ||
     includeStability;
   const detailLimit = normalizeDetailLimit(url.searchParams.get("detailLimit"));
   const [jobs, runs, decisionRecords] = await Promise.all([
@@ -289,41 +304,97 @@ export async function GET(request: Request) {
           causalRunbook,
         })
       : null;
-  const sparseExecutionSource =
-    includeSparseExecution || includeSparseReadiness
-      ? buildDecisionOpsSparseExecution({
-          records: decisionRecords,
-        })
-      : null;
+  const needsSparseTelemetry =
+    includeSparseTelemetry ||
+    includeSparseOperatorReport ||
+    includeSparseCandidatePolicy ||
+    includeSparseRuntimePlan ||
+    includeSparseReleaseGate;
+  const needsSparseReadiness =
+    includeSparseReadiness ||
+    includeSparseOperatorReport ||
+    includeSparseRuntimePlan ||
+    includeSparseReleaseGate;
+  const needsSparseConfigGate =
+    includeSparseConfigGate ||
+    includeSparseReadiness ||
+    includeSparseRuntimePlan ||
+    includeSparseReleaseGate;
+  const needsSparseShadowHistory =
+    includeSparseShadowHistory || needsSparseConfigGate || needsSparseReadiness;
+  const needsSparseShadow = includeSparseShadow || needsSparseTelemetry || needsSparseReadiness;
+  const needsSparseExecution = includeSparseExecution || needsSparseShadow || needsSparseReadiness;
+  const sparseExecutionSource = needsSparseExecution
+    ? buildDecisionOpsSparseExecution({
+        records: decisionRecords,
+      })
+    : null;
   const sparseExecution = includeSparseExecution ? sparseExecutionSource : null;
-  const sparseShadowSource =
-    includeSparseShadow || includeSparseReadiness
-      ? buildDecisionOpsSparseShadow({
-          records: decisionRecords,
-        })
-      : null;
+  const sparseShadowSource = needsSparseShadow
+    ? buildDecisionOpsSparseShadow({
+        records: decisionRecords,
+      })
+    : null;
   const sparseShadow = includeSparseShadow ? sparseShadowSource : null;
-  const sparseShadowHistorySource =
-    includeSparseShadowHistory || includeSparseConfigGate || includeSparseReadiness
-      ? buildDecisionOpsSparseShadowHistory({
-          records: decisionRecords,
-        })
-      : null;
+  const sparseShadowHistorySource = needsSparseShadowHistory
+    ? buildDecisionOpsSparseShadowHistory({
+        records: decisionRecords,
+      })
+    : null;
   const sparseShadowHistory = includeSparseShadowHistory ? sparseShadowHistorySource : null;
-  const sparseConfigGateSource =
-    includeSparseConfigGate || includeSparseReadiness
-      ? buildDecisionOpsSparseConfigGate({
-          sparseShadowHistory: sparseShadowHistorySource!,
-          env: process.env,
-        })
-      : null;
+  const sparseConfigGateSource = needsSparseConfigGate
+    ? buildDecisionOpsSparseConfigGate({
+        sparseShadowHistory: sparseShadowHistorySource!,
+        env: process.env,
+      })
+    : null;
   const sparseConfigGate = includeSparseConfigGate ? sparseConfigGateSource : null;
-  const sparseReadiness = includeSparseReadiness
+  const sparseReadinessSource = needsSparseReadiness
     ? buildDecisionOpsSparseReadiness({
         sparseExecution: sparseExecutionSource!,
         sparseShadow: sparseShadowSource!,
         sparseShadowHistory: sparseShadowHistorySource!,
         sparseConfigGate: sparseConfigGateSource!,
+      })
+    : null;
+  const sparseReadiness = includeSparseReadiness ? sparseReadinessSource : null;
+  const sparseTelemetrySource = needsSparseTelemetry
+    ? buildDecisionOpsSparseShadowTelemetry({
+        records: decisionRecords,
+        sparseShadow: sparseShadowSource!,
+      })
+    : null;
+  const sparseTelemetry = includeSparseTelemetry ? sparseTelemetrySource : null;
+  const sparseOperatorReportSource =
+    includeSparseOperatorReport || includeSparseReleaseGate
+      ? buildDecisionOpsSparseOperatorReport({
+          sparseReadiness: sparseReadinessSource!,
+          sparseTelemetry: sparseTelemetrySource!,
+        })
+      : null;
+  const sparseOperatorReport = includeSparseOperatorReport ? sparseOperatorReportSource : null;
+  const sparseCandidatePolicySource =
+    includeSparseCandidatePolicy || includeSparseRuntimePlan || includeSparseReleaseGate
+      ? buildDecisionOpsSparseCandidatePolicy({
+          sparseTelemetry: sparseTelemetrySource!,
+        })
+      : null;
+  const sparseCandidatePolicy = includeSparseCandidatePolicy ? sparseCandidatePolicySource : null;
+  const sparseRuntimePlanSource =
+    includeSparseRuntimePlan || includeSparseReleaseGate
+      ? buildDecisionOpsSparseRuntimePlan({
+          sparseReadiness: sparseReadinessSource!,
+          sparseConfigGate: sparseConfigGateSource!,
+          sparseCandidatePolicy: sparseCandidatePolicySource!,
+        })
+      : null;
+  const sparseRuntimePlan = includeSparseRuntimePlan ? sparseRuntimePlanSource : null;
+  const sparseReleaseGate = includeSparseReleaseGate
+    ? buildDecisionOpsSparseReleaseGate({
+        sparseOperatorReport: sparseOperatorReportSource!,
+        sparseTelemetry: sparseTelemetrySource!,
+        sparseCandidatePolicy: sparseCandidatePolicySource!,
+        sparseRuntimePlan: sparseRuntimePlanSource!,
       })
     : null;
 
@@ -433,6 +504,31 @@ export async function GET(request: Request) {
       ...(includeSparseReadiness
         ? {
             sparseReadiness,
+          }
+        : {}),
+      ...(includeSparseTelemetry
+        ? {
+            sparseTelemetry,
+          }
+        : {}),
+      ...(includeSparseOperatorReport
+        ? {
+            sparseOperatorReport,
+          }
+        : {}),
+      ...(includeSparseCandidatePolicy
+        ? {
+            sparseCandidatePolicy,
+          }
+        : {}),
+      ...(includeSparseRuntimePlan
+        ? {
+            sparseRuntimePlan,
+          }
+        : {}),
+      ...(includeSparseReleaseGate
+        ? {
+            sparseReleaseGate,
           }
         : {}),
       ...(includeOpsSummary && runbook && recoveryPolicy && modelQuality && lifecycle

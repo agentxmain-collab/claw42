@@ -19,6 +19,11 @@ const buildDecisionOpsSparseShadowMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsSparseShadowHistoryMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsSparseConfigGateMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsSparseReadinessMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsSparseShadowTelemetryMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsSparseOperatorReportMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsSparseCandidatePolicyMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsSparseRuntimePlanMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsSparseReleaseGateMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsStabilityMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsCausalRunbookMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsAlertSnapshotMock = vi.hoisted(() => vi.fn());
@@ -93,6 +98,26 @@ vi.mock("@/lib/team/decisionOpsSparseConfigGate", () => ({
 
 vi.mock("@/lib/team/decisionOpsSparseReadiness", () => ({
   buildDecisionOpsSparseReadiness: buildDecisionOpsSparseReadinessMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsSparseShadowTelemetry", () => ({
+  buildDecisionOpsSparseShadowTelemetry: buildDecisionOpsSparseShadowTelemetryMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsSparseOperatorReport", () => ({
+  buildDecisionOpsSparseOperatorReport: buildDecisionOpsSparseOperatorReportMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsSparseCandidatePolicy", () => ({
+  buildDecisionOpsSparseCandidatePolicy: buildDecisionOpsSparseCandidatePolicyMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsSparseRuntimePlan", () => ({
+  buildDecisionOpsSparseRuntimePlan: buildDecisionOpsSparseRuntimePlanMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsSparseReleaseGate", () => ({
+  buildDecisionOpsSparseReleaseGate: buildDecisionOpsSparseReleaseGateMock,
 }));
 
 vi.mock("@/lib/team/decisionOpsStability", () => ({
@@ -385,6 +410,68 @@ describe("/api/watch/ops-health", () => {
       },
       blockingReasons: ["sparse_config_gate_not_shadow_ready"],
       nextActions: [],
+    });
+    buildDecisionOpsSparseShadowTelemetryMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "telemetry_ready",
+      telemetryMode: "shadow_only",
+      canRecordShadowTelemetry: true,
+      liveFanoutChanged: false,
+      publicBehaviorChanged: false,
+      summary: {
+        recordsEvaluated: 1,
+        safeRecords: 1,
+        riskyRecords: 0,
+        avoidedCallRate: 0.643,
+        missedContributions: 0,
+        missedWarnings: 0,
+        traceGaps: 0,
+      },
+      candidateTypes: [],
+      roleRiskHighlights: [],
+      recommendations: [],
+    });
+    buildDecisionOpsSparseOperatorReportMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "shadow_telemetry_ready",
+      headline: "Sparse diagnostics are ready for telemetry-only shadow work.",
+      canProceedToShadowTelemetry: true,
+      canChangeLiveFanout: false,
+      canChangePublicBehavior: false,
+      decisions: [],
+      blockingReasons: [],
+      nextActions: [],
+    });
+    buildDecisionOpsSparseCandidatePolicyMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "policy_ready",
+      canChangeLiveFanout: false,
+      publicBehaviorChanged: false,
+      policies: [],
+      blockingReasons: [],
+      recommendations: [],
+    });
+    buildDecisionOpsSparseRuntimePlanMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "shadow_plan_ready",
+      configuredMode: "shadow",
+      executionMode: "diagnostics_only",
+      willExecuteSparseRoles: false,
+      willCallAdditionalModels: false,
+      willChangePublicPayload: false,
+      canChangeLiveFanout: false,
+      candidatePlans: [],
+      blockingReasons: [],
+      nextActions: [],
+    });
+    buildDecisionOpsSparseReleaseGateMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "ready_for_telemetry_only_release",
+      telemetryOnlyReleaseAllowed: true,
+      liveSparseReleaseAllowed: false,
+      productionReleaseAllowed: false,
+      nextStep: "ship_shadow_telemetry_only",
+      blockingReasons: [],
     });
     buildDecisionOpsStabilityMock.mockReset().mockReturnValue({
       schemaVersion: 1,
@@ -1353,6 +1440,67 @@ describe("/api/watch/ops-health", () => {
     expect(payload.sparseShadow).toBeUndefined();
     expect(payload.sparseShadowHistory).toBeUndefined();
     expect(payload.sparseConfigGate).toBeUndefined();
+  });
+
+  it("returns optional sparse release gate without exposing intermediate sparse reports by default", async () => {
+    readAllDecisionRecordsMock.mockResolvedValue([
+      {
+        id: "pm:BTC:1779120000000",
+        roleExecutionTrace: [
+          {
+            memberId: "pm",
+            executionMode: "core_active",
+            activationReason: "Always active as final decision owner.",
+            evidenceIdsUsed: ["evidence:pm"],
+            contributedToPmDecision: true,
+            vetoOrWarning: false,
+          },
+        ],
+      },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&sparseReleaseGate=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(buildDecisionOpsSparseShadowTelemetryMock).toHaveBeenCalledWith({
+      records: [expect.objectContaining({ id: "pm:BTC:1779120000000" })],
+      sparseShadow: expect.objectContaining({ status: "ready_for_shadow_trial" }),
+    });
+    expect(buildDecisionOpsSparseOperatorReportMock).toHaveBeenCalledWith({
+      sparseReadiness: expect.objectContaining({ status: "ready_for_shadow_config" }),
+      sparseTelemetry: expect.objectContaining({ status: "telemetry_ready" }),
+    });
+    expect(buildDecisionOpsSparseCandidatePolicyMock).toHaveBeenCalledWith({
+      sparseTelemetry: expect.objectContaining({ status: "telemetry_ready" }),
+    });
+    expect(buildDecisionOpsSparseRuntimePlanMock).toHaveBeenCalledWith({
+      sparseReadiness: expect.objectContaining({ status: "ready_for_shadow_config" }),
+      sparseConfigGate: expect.objectContaining({ status: "disabled" }),
+      sparseCandidatePolicy: expect.objectContaining({ status: "policy_ready" }),
+    });
+    expect(buildDecisionOpsSparseReleaseGateMock).toHaveBeenCalledWith({
+      sparseOperatorReport: expect.objectContaining({ status: "shadow_telemetry_ready" }),
+      sparseTelemetry: expect.objectContaining({ status: "telemetry_ready" }),
+      sparseCandidatePolicy: expect.objectContaining({ status: "policy_ready" }),
+      sparseRuntimePlan: expect.objectContaining({ status: "shadow_plan_ready" }),
+    });
+    expect(payload.sparseReleaseGate).toMatchObject({
+      schemaVersion: 1,
+      status: "ready_for_telemetry_only_release",
+      liveSparseReleaseAllowed: false,
+      productionReleaseAllowed: false,
+    });
+    expect(payload.sparseReadiness).toBeUndefined();
+    expect(payload.sparseTelemetry).toBeUndefined();
+    expect(payload.sparseOperatorReport).toBeUndefined();
+    expect(payload.sparseCandidatePolicy).toBeUndefined();
+    expect(payload.sparseRuntimePlan).toBeUndefined();
   });
 
   it("returns optional long-window stability diagnostics and reads the full ledger window", async () => {
