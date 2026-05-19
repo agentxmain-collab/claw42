@@ -15,6 +15,7 @@ const buildDecisionOpsPublicOutputStabilityMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsLifecycleDiagnosticsMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsSummaryMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsStabilityMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsCausalRunbookMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -70,6 +71,10 @@ vi.mock("@/lib/team/decisionOpsSummary", () => ({
 
 vi.mock("@/lib/team/decisionOpsStability", () => ({
   buildDecisionOpsStability: buildDecisionOpsStabilityMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsCausalRunbook", () => ({
+  buildDecisionOpsCausalRunbook: buildDecisionOpsCausalRunbookMock,
 }));
 
 function job() {
@@ -259,6 +264,18 @@ describe("/api/watch/ops-health", () => {
       primaryIssue: null,
       windows: [],
       issues: [],
+      actions: [],
+    });
+    buildDecisionOpsCausalRunbookMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      status: "healthy",
+      primaryLayer: null,
+      primaryIssue: null,
+      alert: {
+        shouldNotify: false,
+        dedupeKey: null,
+      },
+      diagnosis: [],
       actions: [],
     });
   });
@@ -940,6 +957,88 @@ describe("/api/watch/ops-health", () => {
       primaryIssue: null,
     });
     expect(payload.slo).toBeUndefined();
+    expect(payload.freshness).toBeUndefined();
+  });
+
+  it("returns optional causal runbook diagnostics without exposing nested inputs by default", async () => {
+    projectDecisionRecordToPublicEventMock.mockReturnValue({
+      id: "pm-decision:pm:BTC:1779102000000",
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: "pm:BTC:1779102000000",
+        symbol: "BTC",
+        candidateType: "symbol",
+        candidateKey: "BTC",
+      },
+    });
+    readAllDecisionRecordsMock.mockResolvedValue([{ id: "pm:BTC:1779102000000" }]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&causalRunbook=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readPmDecisionJobsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readDecisionRunsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(summarizeProviderTelemetryMock).toHaveBeenCalled();
+    expect(buildDecisionOpsCronAuditMock).toHaveBeenCalled();
+    expect(buildDecisionOpsChainRunbookMock).toHaveBeenCalled();
+    expect(buildDecisionOpsQueueRecoveryPolicyMock).toHaveBeenCalled();
+    expect(buildDecisionOpsStabilityMock).toHaveBeenCalledWith({
+      jobs: [job()],
+      runs: [run()],
+      publicEvents: [
+        expect.objectContaining({
+          id: "pm-decision:pm:BTC:1779102000000",
+        }),
+      ],
+    });
+    expect(buildDecisionOpsPublicOutputStabilityMock).toHaveBeenCalledWith({
+      publicEvents: [
+        expect.objectContaining({
+          id: "pm-decision:pm:BTC:1779102000000",
+        }),
+      ],
+    });
+    expect(buildDecisionOpsQualityBaselineMock).toHaveBeenCalledWith({
+      runs: [expect.objectContaining({ id: "run:pm:BTC:1779102000000" })],
+      records: [
+        expect.objectContaining({
+          id: "pm:BTC:1779102000000",
+        }),
+      ],
+      providerTelemetry: expect.objectContaining({
+        totalCalls: 0,
+      }),
+    });
+    expect(buildDecisionOpsCausalRunbookMock).toHaveBeenCalledWith({
+      runbook: expect.objectContaining({ schemaVersion: 1 }),
+      recoveryPolicy: expect.objectContaining({ schemaVersion: 1 }),
+      stability: expect.objectContaining({ schemaVersion: 1 }),
+      outputStability: expect.objectContaining({ schemaVersion: 1 }),
+      qualityBaseline: expect.objectContaining({ schemaVersion: 1 }),
+    });
+    expect(payload.causalRunbook).toMatchObject({
+      schemaVersion: 1,
+      status: "healthy",
+      primaryLayer: null,
+    });
+    expect(payload.runbook).toBeUndefined();
+    expect(payload.recoveryPolicy).toBeUndefined();
+    expect(payload.stability).toBeUndefined();
+    expect(payload.outputStability).toBeUndefined();
+    expect(payload.qualityBaseline).toBeUndefined();
+    expect(payload.cronAudit).toBeUndefined();
     expect(payload.freshness).toBeUndefined();
   });
 });
