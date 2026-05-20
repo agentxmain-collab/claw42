@@ -105,6 +105,10 @@ export async function GET(request: Request) {
   const includeRoleDiversityGate = url.searchParams.get("roleDiversity") === "1";
   const includeMemoryProductizationGate = url.searchParams.get("memoryProductization") === "1";
   const includeGlobalAutonomy = url.searchParams.get("globalAutonomy") === "1";
+  const residentPrewarmExecutorEnabled =
+    process.env.OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED?.toLowerCase() === "true";
+  const residentPrewarmQueuePublishEnabled =
+    process.env.OPS_RESIDENT_PREWARM_QUEUE_PUBLISH_ENABLED?.toLowerCase() === "true";
   const needsGlobalPrewarmPlan =
     includeGlobalPrewarmPlan || includeAutonomousRemediation || includeGlobalAutonomy;
   const needsAutonomousRemediation = includeAutonomousRemediation || includeGlobalAutonomy;
@@ -657,6 +661,11 @@ export async function GET(request: Request) {
           globalPrewarmPlan,
           queueRecoveryPolicy: recoveryPolicy,
           outputStability,
+          residentPrewarmExecutor: {
+            executorEnabled: residentPrewarmExecutorEnabled,
+            queuePublishEnabled: residentPrewarmQueuePublishEnabled,
+            queueReady: queueReadiness.enabled,
+          },
           now,
         })
       : null;

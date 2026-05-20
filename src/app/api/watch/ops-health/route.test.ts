@@ -242,6 +242,9 @@ describe("/api/watch/ops-health", () => {
     vi.setSystemTime(Date.parse("2026-05-18T12:00:00.000Z"));
     vi.stubEnv("OPS_HEALTH_SECRET", "ops-secret");
     vi.stubEnv("CRON_SECRET", "");
+    vi.stubEnv("OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED", "");
+    vi.stubEnv("OPS_RESIDENT_PREWARM_QUEUE_PUBLISH_ENABLED", "");
+    vi.stubEnv("PM_DECISION_QUEUE_ENABLED", "");
     readPmDecisionJobsMock.mockReset().mockResolvedValue([job()]);
     readDecisionRunsMock.mockReset().mockResolvedValue([run()]);
     readAllDecisionRecordsMock.mockReset().mockResolvedValue([]);
@@ -2234,6 +2237,9 @@ describe("/api/watch/ops-health", () => {
   });
 
   it("returns optional global autonomy gates as a read-only rollup", async () => {
+    vi.stubEnv("OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED", "true");
+    vi.stubEnv("OPS_RESIDENT_PREWARM_QUEUE_PUBLISH_ENABLED", "true");
+    vi.stubEnv("PM_DECISION_QUEUE_ENABLED", "true");
     projectDecisionRecordToPublicEventMock.mockImplementation((record: { id: string }) => ({
       id: `pm-decision:${record.id}`,
       ts: Date.parse("2026-05-18T11:03:00.000Z"),
@@ -2281,6 +2287,11 @@ describe("/api/watch/ops-health", () => {
       globalPrewarmPlan: expect.objectContaining({ schemaVersion: 1 }),
       queueRecoveryPolicy: expect.objectContaining({ schemaVersion: 1 }),
       outputStability: expect.objectContaining({ schemaVersion: 1 }),
+      residentPrewarmExecutor: {
+        executorEnabled: true,
+        queuePublishEnabled: true,
+        queueReady: true,
+      },
       now: Date.parse("2026-05-18T12:00:00.000Z"),
     });
     expect(buildDecisionOpsRoleDiversityGateMock).toHaveBeenCalledWith({

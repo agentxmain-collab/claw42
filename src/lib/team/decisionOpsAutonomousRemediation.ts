@@ -2,6 +2,7 @@ import type { DecisionOpsGlobalPrewarmPlanReport } from "@/lib/team/decisionOpsG
 import type { DecisionOpsGlobalProgressGateReport } from "@/lib/team/decisionOpsGlobalProgressGate";
 import type { DecisionOpsPublicOutputStabilityReport } from "@/lib/team/decisionOpsPublicOutputStability";
 import type { DecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueueRecoveryPolicy";
+import { RESIDENT_PREWARM_EXECUTOR_CONFIRMATION } from "@/lib/team/decisionOpsResidentPrewarmExecutor";
 
 export type DecisionOpsAutonomousRemediationStatus =
   | "observe"
@@ -23,6 +24,24 @@ export interface DecisionOpsAutonomousRemediationItem {
   description: string;
   executable: false;
   evidence: string[];
+  operatorEndpoint?: {
+    method: "POST";
+    path: string;
+    confirmationHeader: "x-claw42-resident-prewarm-confirm";
+    confirmationValue: typeof RESIDENT_PREWARM_EXECUTOR_CONFIRMATION;
+    requiredEnv: string[];
+  };
+}
+
+export interface DecisionOpsResidentPrewarmExecutorReadiness {
+  ledgerEnqueueReady: boolean;
+  queuePublishReady: boolean;
+  queuePublishEndpoint: "/api/watch/ops-resident-prewarm?mode=execute&publishQueue=true";
+  requiredEnv: {
+    executorEnabled: boolean;
+    queuePublishEnabled: boolean;
+    pmDecisionQueueEnabled: boolean;
+  };
 }
 
 export interface DecisionOpsAutonomousRemediationReport {
@@ -39,6 +58,7 @@ export interface DecisionOpsAutonomousRemediationReport {
     outputStability: DecisionOpsPublicOutputStabilityReport["status"];
   };
   blockingReasons: string[];
+  residentPrewarmExecutor: DecisionOpsResidentPrewarmExecutorReadiness;
   remediations: DecisionOpsAutonomousRemediationItem[];
 }
 
@@ -54,12 +74,18 @@ export function buildDecisionOpsAutonomousRemediation({
   globalPrewarmPlan,
   queueRecoveryPolicy,
   outputStability,
+  residentPrewarmExecutor,
   now = Date.now(),
 }: {
   globalProgress: DecisionOpsGlobalProgressGateReport;
   globalPrewarmPlan: DecisionOpsGlobalPrewarmPlanReport;
   queueRecoveryPolicy: DecisionOpsQueueRecoveryPolicy;
   outputStability: DecisionOpsPublicOutputStabilityReport;
+  residentPrewarmExecutor?: {
+    executorEnabled: boolean;
+    queuePublishEnabled: boolean;
+    queueReady: boolean;
+  };
   now?: number;
 }): DecisionOpsAutonomousRemediationReport {
   const blockingReasons = blockingReasonsFor({
@@ -70,6 +96,7 @@ export function buildDecisionOpsAutonomousRemediation({
   const status = statusFor({ blockingReasons, globalPrewarmPlan, globalProgress });
   const safeAutomationLevel: DecisionOpsSafeAutomationLevel =
     status === "resident_prewarm_ready" ? "resident_prewarm_only" : "none";
+  const executorReadiness = residentPrewarmExecutorReadiness(residentPrewarmExecutor);
 
   return {
     schemaVersion: 1,
@@ -85,7 +112,37 @@ export function buildDecisionOpsAutonomousRemediation({
       outputStability: outputStability.status,
     },
     blockingReasons,
-    remediations: remediationsFor({ status, globalPrewarmPlan, outputStability }),
+    residentPrewarmExecutor: executorReadiness,
+    remediations: remediationsFor({
+      status,
+      globalPrewarmPlan,
+      outputStability,
+      residentPrewarmExecutor: executorReadiness,
+    }),
+  };
+}
+
+function residentPrewarmExecutorReadiness(
+  value:
+    | {
+        executorEnabled: boolean;
+        queuePublishEnabled: boolean;
+        queueReady: boolean;
+      }
+    | undefined,
+): DecisionOpsResidentPrewarmExecutorReadiness {
+  const executorEnabled = value?.executorEnabled === true;
+  const queuePublishEnabled = value?.queuePublishEnabled === true;
+  const pmDecisionQueueEnabled = value?.queueReady === true;
+  return {
+    ledgerEnqueueReady: executorEnabled,
+    queuePublishReady: executorEnabled && queuePublishEnabled && pmDecisionQueueEnabled,
+    queuePublishEndpoint: "/api/watch/ops-resident-prewarm?mode=execute&publishQueue=true",
+    requiredEnv: {
+      executorEnabled,
+      queuePublishEnabled,
+      pmDecisionQueueEnabled,
+    },
   };
 }
 
@@ -133,10 +190,12 @@ function remediationsFor({
   status,
   globalPrewarmPlan,
   outputStability,
+  residentPrewarmExecutor,
 }: {
   status: DecisionOpsAutonomousRemediationStatus;
   globalPrewarmPlan: DecisionOpsGlobalPrewarmPlanReport;
   outputStability: DecisionOpsPublicOutputStabilityReport;
+  residentPrewarmExecutor: DecisionOpsResidentPrewarmExecutorReadiness;
 }): DecisionOpsAutonomousRemediationItem[] {
   if (status === "paused") {
     return [
@@ -151,6 +210,8 @@ function remediationsFor({
     ];
   }
   if (status === "resident_prewarm_ready") {
+    const endpoint = residentPrewarmOperatorEndpoint();
+    const executionEvidence = residentPrewarmExecutionEvidence(residentPrewarmExecutor);
     return globalPrewarmPlan.targets
       .filter((target) => target.shouldEnqueue)
       .map((target) => ({
@@ -165,7 +226,8 @@ function remediationsFor({
         description:
           "Safe resident-only remediation. This report remains read-only; an executor must explicitly consume the plan.",
         executable: false,
-        evidence: [target.reason, target.candidate.candidateKey],
+        evidence: [target.reason, target.candidate.candidateKey, ...executionEvidence],
+        operatorEndpoint: endpoint,
       }));
   }
   if (status === "operator_required") {
@@ -184,4 +246,41 @@ function remediationsFor({
     ];
   }
   return [];
+}
+
+function residentPrewarmOperatorEndpoint(): NonNullable<
+  DecisionOpsAutonomousRemediationItem["operatorEndpoint"]
+> {
+  return {
+    method: "POST" as const,
+    path: "/api/watch/ops-resident-prewarm?mode=execute&publishQueue=true",
+    confirmationHeader: "x-claw42-resident-prewarm-confirm" as const,
+    confirmationValue: RESIDENT_PREWARM_EXECUTOR_CONFIRMATION,
+    requiredEnv: [
+      "OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED=true",
+      "OPS_RESIDENT_PREWARM_QUEUE_PUBLISH_ENABLED=true",
+      "PM_DECISION_QUEUE_ENABLED=true",
+    ],
+  };
+}
+
+function residentPrewarmExecutionEvidence(readiness: DecisionOpsResidentPrewarmExecutorReadiness) {
+  const evidence = [
+    readiness.ledgerEnqueueReady
+      ? "resident_ledger_enqueue_ready"
+      : "resident_ledger_enqueue_not_ready",
+    readiness.queuePublishReady
+      ? "resident_queue_publish_ready"
+      : "resident_queue_publish_not_ready",
+  ];
+  if (!readiness.requiredEnv.executorEnabled) {
+    evidence.push("OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED=false");
+  }
+  if (!readiness.requiredEnv.queuePublishEnabled) {
+    evidence.push("OPS_RESIDENT_PREWARM_QUEUE_PUBLISH_ENABLED=false");
+  }
+  if (!readiness.requiredEnv.pmDecisionQueueEnabled) {
+    evidence.push("PM_DECISION_QUEUE_ENABLED=false");
+  }
+  return evidence;
 }
