@@ -108,7 +108,7 @@ describe("groupPublicTimelineEventsByTopic", () => {
     });
   });
 
-  it("keeps one market overview topic for the same local-day candidate across UTC midnight", () => {
+  it("keeps one market overview topic across candidate windows", () => {
     const stale = pmDecision("market-morning", {
       ts: Date.parse("2026-05-17T23:48:00.000Z"),
       symbol: "MARKET",
@@ -117,7 +117,7 @@ describe("groupPublicTimelineEventsByTopic", () => {
         recordId: "market-morning",
         symbol: "MARKET",
         candidateType: "market_overview",
-        candidateKey: "market_overview:zh_CN:2026-05-18",
+        candidateKey: "market_overview:zh_CN:2026-05-17",
         displayTitle: "今日大盘综述",
         executable: false,
         tradeDecision: null,
@@ -150,6 +150,51 @@ describe("groupPublicTimelineEventsByTopic", () => {
       candidateType: "market_overview",
       candidateKey: "market_overview:zh_CN:2026-05-18",
       displayTitle: "今日大盘综述",
+    });
+  });
+
+  it("keeps one hotspot topic across candidate windows", () => {
+    const stale = pmDecision("hotspot-older", {
+      ts: Date.parse("2026-05-20T04:47:00.000Z"),
+      symbol: "HOTSPOT",
+      payload: {
+        kind: "pm_decision",
+        recordId: "hotspot-older",
+        symbol: "HOTSPOT",
+        candidateType: "hotspot",
+        candidateKey: "hotspot:utc:zh_CN:2026-05-20T03:market",
+        displayTitle: "热点叙事追踪",
+        executable: false,
+        tradeDecision: null,
+        rationaleByMember: {},
+      },
+    });
+    const latest = pmDecision("hotspot-latest", {
+      ts: Date.parse("2026-05-20T10:12:00.000Z"),
+      symbol: "HOTSPOT",
+      payload: {
+        kind: "pm_decision",
+        recordId: "hotspot-latest",
+        symbol: "HOTSPOT",
+        candidateType: "hotspot",
+        candidateKey: "hotspot:utc:zh_CN:2026-05-20T09:market",
+        displayTitle: "热点叙事追踪",
+        executable: false,
+        tradeDecision: null,
+        rationaleByMember: {},
+      },
+    });
+
+    const groups = groupPublicTimelineEventsByTopic([stale, latest]);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({
+      latestDecision: expect.objectContaining({
+        payload: expect.objectContaining({ recordId: "hotspot-latest" }),
+      }),
+      candidateType: "hotspot",
+      candidateKey: "hotspot:utc:zh_CN:2026-05-20T09:market",
+      displayTitle: "热点叙事追踪",
     });
   });
 

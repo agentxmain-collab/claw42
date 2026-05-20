@@ -146,13 +146,41 @@ describe("buildDecisionOpsPublicOutputStability", () => {
 
     expect(report.status).toBe("critical");
     expect(report.primaryIssue).toBe("duplicate_candidate_card");
-    expect(report.duplicateCandidateKeys).toEqual(["zh_CN:market_overview:2026-05-19"]);
+    expect(report.duplicateCandidateKeys).toEqual(["zh_CN:market_overview"]);
     expect(report.actions).toEqual([
       expect.objectContaining({
         title: "Inspect candidate dedupe and hydration",
         executable: false,
       }),
     ]);
+  });
+
+  it("flags duplicate hotspot cards by public lane instead of time-window key", () => {
+    const report = buildDecisionOpsPublicOutputStability({
+      publicEvents: [
+        pmEvent({
+          id: "hotspot-a",
+          recordId: "pm:HOTSPOT:1",
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:2026-05-20T03:market",
+          symbol: "HOTSPOT",
+          ts: now,
+        }),
+        pmEvent({
+          id: "hotspot-b",
+          recordId: "pm:HOTSPOT:2",
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:2026-05-20T09:market",
+          symbol: "HOTSPOT",
+          ts: now - 60_000,
+        }),
+      ],
+      now,
+    });
+
+    expect(report.status).toBe("critical");
+    expect(report.primaryIssue).toBe("duplicate_candidate_card");
+    expect(report.duplicateCandidateKeys).toEqual(["zh_CN:hotspot"]);
   });
 
   it("flags public event order that does not match the canonical comparator", () => {

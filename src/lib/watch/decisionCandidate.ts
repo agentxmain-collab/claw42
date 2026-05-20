@@ -51,11 +51,6 @@ export function candidateDayKey(ts: number) {
   return Number.isFinite(ts) ? new Date(ts).toISOString().slice(0, 10) : "unknown-date";
 }
 
-function dateKeyFromCandidateKey(candidateKey: string | null | undefined) {
-  const match = candidateKey?.match(/\d{4}-\d{2}-\d{2}/);
-  return match?.[0] ?? null;
-}
-
 export function compareDecisionCandidateOrder(
   left: DecisionCandidateOrderKey,
   right: DecisionCandidateOrderKey,
@@ -78,10 +73,7 @@ export function compareDecisionCandidateOrder(
 export function decisionCandidateDedupeKey({
   locale,
   candidateType,
-  candidateKey,
   symbol,
-  recordId,
-  ts,
 }: {
   locale: Locale;
   candidateType?: CandidateType | null;
@@ -96,12 +88,8 @@ export function decisionCandidateDedupeKey({
     return normalizedSymbol ? `${locale}:${normalizedSymbol}` : null;
   }
 
-  if (type === "market_overview") {
-    return `${locale}:market_overview:${dateKeyFromCandidateKey(candidateKey) ?? candidateDayKey(ts)}`;
-  }
-
-  const key = normalizeCandidateKey(candidateKey) ?? normalizeCandidateSymbol(symbol) ?? recordId;
-  return key ? `${locale}:hotspot:${key}` : null;
+  if (type === "market_overview") return `${locale}:market_overview`;
+  return `${locale}:hotspot`;
 }
 
 function finiteScore(value: unknown) {
