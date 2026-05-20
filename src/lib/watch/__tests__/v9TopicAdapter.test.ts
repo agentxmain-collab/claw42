@@ -1094,6 +1094,83 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
   });
 
+  it("keeps second-round analyst refinements inside the debate stage instead of stage one", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+
+    const [topic] = mapTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            tradeDecision: null,
+            rationaleByMember: {},
+            rounds: [
+              {
+                round: 1,
+                memberId: "chart_analyst",
+                direction: "short",
+                confidence: 0.61,
+                rationale: "Round one chart input belongs to information collection.",
+                evidenceIds: [],
+              },
+              {
+                round: 1,
+                memberId: "bullish_researcher",
+                direction: "long",
+                confidence: 0.58,
+                rationale: "Round one bullish debate view belongs to debate.",
+                evidenceIds: [],
+              },
+              {
+                round: 2,
+                memberId: "fundamental_analyst",
+                direction: "short",
+                confidence: 0.66,
+                rationale: "Round two fundamental refinement belongs to debate, not collection.",
+                evidenceIds: [],
+              },
+            ],
+            stageTrace: [
+              {
+                stageId: "analyst_inputs",
+                status: "done",
+                observedAt: new Date(now - 120_000).toISOString(),
+              },
+              {
+                stageId: "research_lead",
+                status: "in_progress",
+                observedAt: new Date(now - 60_000).toISOString(),
+              },
+            ],
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    const stageOneId = topic.stages[0]?.id;
+    const stageTwoId = topic.stages[1]?.id;
+    const fundamentalRoundTwo = topic.messages.find(
+      (message) =>
+        message.sourceMemberId === "fundamental_analyst" &&
+        message.content.includes("Round two fundamental refinement"),
+    );
+
+    expect(fundamentalRoundTwo).toMatchObject({
+      stageId: stageTwoId,
+      roundLabel: "第 2 轮 · 多轮辩论",
+    });
+    expect(
+      topic.messages
+        .filter((message) => message.stageId === stageOneId)
+        .map((message) => message.roundLabel)
+        .filter(Boolean),
+    ).not.toContain("第 2 轮 · 多轮辩论");
+  });
+
   it("keeps empty incomplete PM decisions pending instead of active", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
