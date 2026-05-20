@@ -281,16 +281,6 @@ export const quickInsights: QuickInsightItem[] = [
     },
     severity: "medium",
   },
-  {
-    id: "social",
-    label: { zh: "社媒/X 热点", en: "Top social/X" },
-    value: { zh: "ETH 升级讨论", en: "ETH upgrade debate" },
-    detail: {
-      zh: "开发者节奏与 L2 费用最受关注。",
-      en: "Developer cadence and L2 fees lead discussion.",
-    },
-    severity: "low",
-  },
 ];
 
 export const calendarItems: MacroItem[] = [

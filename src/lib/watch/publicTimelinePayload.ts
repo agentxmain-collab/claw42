@@ -27,6 +27,7 @@ import {
 } from "@/lib/watch/publicTimelineProjection";
 
 export const MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60;
+export const MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES = 72 * 60;
 
 const MAX_EVIDENCE_MAP_ITEMS = 120;
 
@@ -120,6 +121,49 @@ function mergeDecisionRecordBackfillEvents(
   );
 }
 
+function residentLane(event: PublicTimelineEvent): "market_overview" | "hotspot" | null {
+  if (event.payload.kind !== "pm_decision") return null;
+  if (event.payload.candidateType === "market_overview") return "market_overview";
+  if (event.payload.candidateType === "hotspot") return "hotspot";
+  return null;
+}
+
+export function selectResidentFloorRecordEvents(
+  events: PublicTimelineEvent[],
+  {
+    locale,
+    before,
+    since,
+    servedAt,
+  }: {
+    locale: Locale;
+    before: number;
+    since?: number;
+    servedAt: number;
+  },
+) {
+  const minTs = servedAt - MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES * 60_000;
+  const byLane = new Map<"market_overview" | "hotspot", PublicTimelineEvent>();
+
+  for (const event of events) {
+    const lane = residentLane(event);
+    if (!lane) continue;
+    if (event.locale !== locale) continue;
+    if (event.ts >= before || event.ts < minTs) continue;
+    if (since !== undefined && event.ts <= since) continue;
+    const existing = byLane.get(lane);
+    if (
+      !existing ||
+      event.ts > existing.ts ||
+      (event.ts === existing.ts && event.id < existing.id)
+    ) {
+      byLane.set(lane, event);
+    }
+  }
+
+  return Array.from(byLane.values()).sort(comparePublicTimelineEvents);
+}
+
 function symbolsNeedingRecordHydration(events: PublicTimelineEvent[]) {
   return Array.from(
     new Set(
@@ -202,19 +246,23 @@ export async function buildWatchTimelinePayload({
     ...targetedRecords,
   ]);
   const cutoff = resolvePublicTimelineRecordCutoff(servedAt, windowMinutes);
-  const recordEvents = Array.from(decisionRecordsForBackfill.values())
+  const allRecordEvents = Array.from(decisionRecordsForBackfill.values())
     .map(projectDecisionRecordToPublicEvent)
     .filter((event): event is PublicTimelineEvent => Boolean(event))
     .filter(
       (event) =>
-        event.locale === locale &&
-        event.ts < before &&
-        event.ts >= cutoff &&
-        (since === undefined || event.ts > since),
+        event.locale === locale && event.ts < before && (since === undefined || event.ts > since),
     );
+  const recordEvents = allRecordEvents.filter((event) => event.ts >= cutoff);
+  const residentFloorRecordEvents = selectResidentFloorRecordEvents(allRecordEvents, {
+    locale,
+    before,
+    since,
+    servedAt,
+  });
   const events = mergeDecisionRecordBackfillEvents(
     projectedEvents.sort(comparePublicTimelineEvents),
-    recordEvents.sort(comparePublicTimelineEvents),
+    [...recordEvents, ...residentFloorRecordEvents].sort(comparePublicTimelineEvents),
     limit,
   );
   const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(

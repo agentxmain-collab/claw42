@@ -5085,3 +5085,74 @@ Dan reported that the expanded decision flow showed a `第 2 轮 · 多轮辩论
 - This is a public message stage mapping fix only.
 
 [DOC-HINT: B262 maps round>1 foundation analyst refinements from public stage 1 to stage 2 so debate labels cannot render inside the information-collection section.]
+
+# P0/P1 coverage-progress + hotfix-7 social fake 清理
+
+## Intake Judgement
+
+- Claude hotfix-7 is valid. First-hand check found `TopicReasonKind` still contained `social`,
+  `scoreBreakdown()` initialized `social: 0`, and `PUBLIC_REASON_LABELS` had `社交热度`, while no real
+  social reason builder existed and public reason ordering excluded it.
+- Codex chose Option 1: fully remove `social` from the selector type/breakdown/labels. Option 2 would
+  preserve a fake dimension with zero weight, which is worse for AI/market honesty.
+
+## Implemented
+
+- Hotfix-7 honesty cleanup:
+  - Removed `social` from `src/lib/team/topicSelector.ts`.
+  - Removed the old `社媒/X 热点` mock quick insight from `src/lib/data/mock-db.ts`.
+  - Added regression tests proving selector score breakdown, selection summary, and quickInsights do
+    not advertise social data.
+- P0 progress ordering:
+  - Tightened `src/lib/watch/publicDecisionStageContract.ts` so analysis-only candidates cannot show
+    later risk stages while stage 3 has no public completion. They can still close when
+    `public_timeline` is done.
+  - Added regression coverage for the exact “stage 3 missing but stage 4 visible” class of bug.
+- P1 resident coverage:
+  - Added a real-record resident floor in `src/lib/watch/publicTimelinePayload.ts`.
+  - Public timeline still caps ordinary backfill at 24h, but keeps the latest real
+    `market_overview` and `hotspot` record for up to 72h so the workbench does not collapse to only a
+    symbol card when a global lane is stale.
+  - This does not create fake data and does not revive fixtures; stale records are still real records.
+
+## Raw Artifact
+
+- `claude-codex-sync/artifacts/hotfix-7-social-cleanup/topic-selector-raw.json`
+  - Deterministic topic-selection artifact.
+  - `scoreBreakdown` contains only marketCap / volume / news / executable / market / momentum / pool
+    / memory / total.
+  - `socialKeyPresent: false`.
+  - Live LLM was intentionally not invoked from this clean worktree; PM trigger selection context is
+    covered by `pmDecisionTrigger.topicSelector.test.ts`.
+
+## Verification
+
+- RED:
+  - `npx vitest run src/lib/team/__tests__/topicSelector.test.ts src/lib/data/__tests__/mock-db.test.ts --reporter=dot`: failed on `social` still present.
+  - `npx vitest run src/lib/watch/__tests__/publicDecisionStageContract.test.ts src/lib/watch/__tests__/publicTimelinePayload.test.ts --reporter=dot`: failed on analysis-only stage skip and missing resident floor helper.
+- GREEN / gates:
+  - Targeted regression: PASS, 114 tests across topic selector, mock-db, public stage contract,
+    public timeline payload/projection, v9 adapter, v10 market panel, visible-session refresh.
+  - `rg -n "\bsocial\b|社交热度|社媒|Top social" src/lib src/modules src/app --glob '!**/__tests__/**' --glob '!node_modules'`: 0 source hits.
+  - `npm run format:check`: PASS.
+  - `npm run typecheck`: PASS.
+  - `npm run lint`: PASS.
+  - `npm run test:watch-pipeline`: PASS, 96 files / 515 tests.
+  - `npm run verify:agent-ip`: PASS.
+  - `npm run verify:news`: PASS.
+  - `npm run test:news`: PASS, 25 tests.
+  - `npm run verify:chat-v3-final`: PASS, 50 synthetic threads.
+  - `npm run verify:execution-safety`: PASS.
+  - `npm run verify:metrics`: PASS, 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations.
+  - `npm run build`: PASS.
+  - `npm run verify`: PASS.
+
+## Boundary
+
+- No production deploy.
+- No Vercel local deploy from this worktree because `.vercel/project.json` is absent; preview should
+  come from the GitHub PR integration.
+- No PM pipeline, prompt, candidate ranking, cron, or UI layout rewrite.
+
+[DOC-HINT: hotfix-7 removes the fake social scoring dimension; public timeline keeps one real stale resident market/hotspot floor for up to 72h; analysis-only progress cannot jump to risk before public timeline completion.]

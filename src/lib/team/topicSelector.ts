@@ -12,8 +12,7 @@ type TopicReasonKind =
   | "market"
   | "momentum"
   | "pool"
-  | "memory"
-  | "social";
+  | "memory";
 
 export type TopicScoreBreakdown = Record<TopicReasonKind, number> & {
   total: number;
@@ -112,7 +111,6 @@ const PUBLIC_REASON_LABELS = {
   momentum: "24h波动",
   pool: "候选池",
   memory: "复盘记忆",
-  social: "社交热度",
 } satisfies Record<TopicReasonKind, string>;
 
 const PUBLIC_REASON_ORDER: TopicReasonKind[] = [
@@ -393,7 +391,6 @@ function scoreBreakdown(reasons: TopicSelectionReason[]): TopicScoreBreakdown {
     momentum: 0,
     pool: 0,
     memory: 0,
-    social: 0,
     total: 0,
   };
   for (const reason of reasons) {
