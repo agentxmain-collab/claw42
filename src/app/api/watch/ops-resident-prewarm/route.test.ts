@@ -5,6 +5,8 @@ const readPmDecisionJobsMock = vi.hoisted(() => vi.fn());
 const enqueuePmDecisionJobMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
 const projectDecisionRecordToPublicEventMock = vi.hoisted(() => vi.fn());
+const getPmDecisionQueueReadinessMock = vi.hoisted(() => vi.fn());
+const publishPmDecisionJobToQueueMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -13,6 +15,11 @@ vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
 
 vi.mock("@/lib/team/decisionRecordStore", () => ({
   readAllDecisionRecords: readAllDecisionRecordsMock,
+}));
+
+vi.mock("@/lib/team/pmDecisionJobQueue", () => ({
+  getPmDecisionQueueReadiness: getPmDecisionQueueReadinessMock,
+  publishPmDecisionJobToQueue: publishPmDecisionJobToQueueMock,
 }));
 
 vi.mock("@/lib/watch/publicTimelineProjection", () => ({
@@ -34,6 +41,20 @@ describe("/api/watch/ops-resident-prewarm", () => {
     readPmDecisionJobsMock.mockReset().mockResolvedValue([]);
     readAllDecisionRecordsMock.mockReset().mockResolvedValue([]);
     projectDecisionRecordToPublicEventMock.mockReset().mockReturnValue(null);
+    getPmDecisionQueueReadinessMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      enabled: false,
+      mode: "inline",
+      topic: "pm-decision-jobs",
+      retentionSeconds: 86_400,
+      visibilityTimeoutSeconds: 1800,
+      maxDeliveries: 5,
+      reason: "PM_DECISION_QUEUE_ENABLED is not true",
+    });
+    publishPmDecisionJobToQueueMock.mockReset().mockResolvedValue({
+      mode: "queue",
+      messageId: "msg_resident",
+    });
     enqueuePmDecisionJobMock.mockReset().mockImplementation(async (input) => ({
       id: `job:${input.candidate?.candidateKey}`,
       schemaVersion: 1,
@@ -128,6 +149,7 @@ describe("/api/watch/ops-resident-prewarm", () => {
 
     expect(response.status).toBe(200);
     expect(enqueuePmDecisionJobMock).toHaveBeenCalledTimes(2);
+    expect(publishPmDecisionJobToQueueMock).not.toHaveBeenCalled();
     expect(enqueuePmDecisionJobMock).toHaveBeenNthCalledWith(1, {
       kind: "once",
       triggerSource: "cron",
@@ -151,6 +173,97 @@ describe("/api/watch/ops-resident-prewarm", () => {
       enqueuedJobs: [
         { candidateKey: "market_overview:utc:zh_CN:2026-05-20T12" },
         { candidateKey: "hotspot:utc:zh_CN:2026-05-20T12:market" },
+      ],
+    });
+  });
+
+  it("blocks queue publishing unless both queue env gates are enabled", async () => {
+    vi.stubEnv("OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED", "true");
+
+    const response = await POST(
+      new Request(`${url}&mode=execute&publishQueue=true`, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer ops-secret",
+          "x-claw42-resident-prewarm-confirm": "enqueue-resident-prewarm",
+        },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(payload.plan).toMatchObject({
+      mode: "execute",
+      status: "queue_publish_disabled",
+      willPublishQueue: false,
+      queuePublish: {
+        requested: true,
+        enabled: false,
+        queueReady: false,
+      },
+    });
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalled();
+    expect(publishPmDecisionJobToQueueMock).not.toHaveBeenCalled();
+  });
+
+  it("explicitly publishes resident prewarm jobs to the PM decision queue", async () => {
+    vi.stubEnv("OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED", "true");
+    vi.stubEnv("OPS_RESIDENT_PREWARM_QUEUE_PUBLISH_ENABLED", "true");
+    getPmDecisionQueueReadinessMock.mockReturnValue({
+      schemaVersion: 1,
+      enabled: true,
+      mode: "queue",
+      topic: "pm-decision-jobs",
+      retentionSeconds: 86_400,
+      visibilityTimeoutSeconds: 1800,
+      maxDeliveries: 5,
+      reason: "PM_DECISION_QUEUE_ENABLED=true",
+    });
+
+    const response = await POST(
+      new Request(`${url}&mode=execute&publishQueue=true`, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer ops-secret",
+          "x-claw42-resident-prewarm-confirm": "enqueue-resident-prewarm",
+        },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledTimes(2);
+    expect(publishPmDecisionJobToQueueMock).toHaveBeenCalledTimes(2);
+    expect(publishPmDecisionJobToQueueMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ id: "job:market_overview:utc:zh_CN:2026-05-20T12" }),
+      { now },
+    );
+    expect(publishPmDecisionJobToQueueMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ id: "job:hotspot:utc:zh_CN:2026-05-20T12:market" }),
+      { now },
+    );
+    expect(payload.plan).toMatchObject({
+      mode: "execute",
+      status: "executed",
+      executionAllowed: false,
+      willRunPmPipeline: false,
+      willPublishQueue: true,
+      queuePublish: {
+        requested: true,
+        enabled: true,
+        queueReady: true,
+      },
+      enqueuedJobs: [
+        {
+          candidateKey: "market_overview:utc:zh_CN:2026-05-20T12",
+          queuePublishResult: { mode: "queue", messageId: "msg_resident" },
+        },
+        {
+          candidateKey: "hotspot:utc:zh_CN:2026-05-20T12:market",
+          queuePublishResult: { mode: "queue", messageId: "msg_resident" },
+        },
       ],
     });
   });

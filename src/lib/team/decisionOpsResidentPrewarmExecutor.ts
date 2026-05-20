@@ -3,6 +3,10 @@ import type {
   DecisionOpsGlobalPrewarmPlanReport,
   DecisionOpsGlobalPrewarmTarget,
 } from "@/lib/team/decisionOpsGlobalPrewarmPlan";
+import {
+  publishPmDecisionJobToQueue,
+  type PmDecisionQueuePublishResult,
+} from "@/lib/team/pmDecisionJobQueue";
 import { enqueuePmDecisionJob, type PmDecisionJobRecord } from "@/lib/watch/pmDecisionJobLedger";
 
 export const RESIDENT_PREWARM_EXECUTOR_CONFIRMATION = "enqueue-resident-prewarm";
@@ -17,6 +21,7 @@ export type DecisionOpsResidentPrewarmExecutorStatus =
   | "blocked"
   | "execution_disabled"
   | "confirmation_missing"
+  | "queue_publish_disabled"
   | "partial_failed";
 
 export interface DecisionOpsResidentPrewarmExecutorTarget {
@@ -39,7 +44,12 @@ export interface DecisionOpsResidentPrewarmExecutorPlan {
   productionReleaseAllowed: false;
   publicBehaviorChanged: false;
   willRunPmPipeline: false;
-  willPublishQueue: false;
+  willPublishQueue: boolean;
+  queuePublish: {
+    requested: boolean;
+    enabled: boolean;
+    queueReady: boolean;
+  };
   sourceStatus: DecisionOpsGlobalPrewarmPlanReport["status"];
   summary: {
     targetCount: number;
@@ -56,6 +66,7 @@ export interface DecisionOpsResidentPrewarmEnqueuedJob {
   kind: DecisionOpsResidentPrewarmExecutorTarget["kind"];
   candidateKey: string;
   status: PmDecisionJobRecord["status"];
+  queuePublishResult?: PmDecisionQueuePublishResult;
 }
 
 export function buildDecisionOpsResidentPrewarmExecutorPlan({
@@ -63,6 +74,9 @@ export function buildDecisionOpsResidentPrewarmExecutorPlan({
   mode,
   executorEnabled,
   confirmed,
+  queuePublishRequested,
+  queuePublishEnabled,
+  queueReady,
   locale,
   now = Date.now(),
 }: {
@@ -70,6 +84,9 @@ export function buildDecisionOpsResidentPrewarmExecutorPlan({
   mode: DecisionOpsResidentPrewarmExecutorMode;
   executorEnabled: boolean;
   confirmed: boolean;
+  queuePublishRequested: boolean;
+  queuePublishEnabled: boolean;
+  queueReady: boolean;
   locale: Locale;
   now?: number;
 }): DecisionOpsResidentPrewarmExecutorPlan {
@@ -82,6 +99,9 @@ export function buildDecisionOpsResidentPrewarmExecutorPlan({
     mode,
     executorEnabled,
     confirmed,
+    queuePublishRequested,
+    queuePublishEnabled,
+    queueReady,
   });
   const status = statusFor({
     globalPrewarmPlan,
@@ -89,8 +109,13 @@ export function buildDecisionOpsResidentPrewarmExecutorPlan({
     mode,
     executorEnabled,
     confirmed,
+    queuePublishRequested,
+    queuePublishEnabled,
+    queueReady,
     blockingReasons,
   });
+  const willPublishQueue =
+    status === "ready_to_execute" && queuePublishRequested && queuePublishEnabled && queueReady;
 
   return {
     schemaVersion: 1,
@@ -103,7 +128,12 @@ export function buildDecisionOpsResidentPrewarmExecutorPlan({
     productionReleaseAllowed: false,
     publicBehaviorChanged: false,
     willRunPmPipeline: false,
-    willPublishQueue: false,
+    willPublishQueue,
+    queuePublish: {
+      requested: queuePublishRequested,
+      enabled: queuePublishEnabled,
+      queueReady,
+    },
     sourceStatus: globalPrewarmPlan.status,
     summary: {
       targetCount: targets.length,
@@ -119,10 +149,12 @@ export function buildDecisionOpsResidentPrewarmExecutorPlan({
 export async function executeDecisionOpsResidentPrewarmPlan({
   plan,
   enqueueJob = enqueuePmDecisionJob,
+  publishJobToQueue = publishPmDecisionJobToQueue,
   now = Date.now(),
 }: {
   plan: DecisionOpsResidentPrewarmExecutorPlan;
   enqueueJob?: typeof enqueuePmDecisionJob;
+  publishJobToQueue?: typeof publishPmDecisionJobToQueue;
   now?: number;
 }): Promise<DecisionOpsResidentPrewarmExecutorPlan> {
   if (plan.status !== "ready_to_execute") {
@@ -138,11 +170,15 @@ export async function executeDecisionOpsResidentPrewarmPlan({
       candidate: target.candidate,
       now,
     });
+    const queuePublishResult = plan.willPublishQueue
+      ? await publishJobToQueue(job, { now })
+      : undefined;
     enqueuedJobs.push({
       jobId: job.id,
       kind: target.kind,
       candidateKey: target.candidate.candidateKey,
       status: job.status,
+      ...(queuePublishResult ? { queuePublishResult } : {}),
     });
   }
 
@@ -151,7 +187,11 @@ export async function executeDecisionOpsResidentPrewarmPlan({
     generatedAt: new Date(now).toISOString(),
     status:
       enqueuedJobs.length === plan.targets.length &&
-      enqueuedJobs.every((job) => job.status !== "failed")
+      enqueuedJobs.every(
+        (job) =>
+          job.status !== "failed" &&
+          (!plan.willPublishQueue || job.queuePublishResult?.mode === "queue"),
+      )
         ? "executed"
         : "partial_failed",
     executionAllowed: false,
@@ -178,12 +218,18 @@ function blockingReasonsFor({
   mode,
   executorEnabled,
   confirmed,
+  queuePublishRequested,
+  queuePublishEnabled,
+  queueReady,
 }: {
   globalPrewarmPlan: DecisionOpsGlobalPrewarmPlanReport;
   targets: readonly DecisionOpsResidentPrewarmExecutorTarget[];
   mode: DecisionOpsResidentPrewarmExecutorMode;
   executorEnabled: boolean;
   confirmed: boolean;
+  queuePublishRequested: boolean;
+  queuePublishEnabled: boolean;
+  queueReady: boolean;
 }) {
   const reasons: string[] = [];
   if (globalPrewarmPlan.status === "blocked_by_queue") {
@@ -198,6 +244,12 @@ function blockingReasonsFor({
   if (mode === "execute" && !confirmed) {
     reasons.push("resident_prewarm_confirmation_missing");
   }
+  if (mode === "execute" && queuePublishRequested && !queuePublishEnabled) {
+    reasons.push("resident_prewarm_queue_publish_disabled");
+  }
+  if (mode === "execute" && queuePublishRequested && !queueReady) {
+    reasons.push("resident_prewarm_queue_not_ready");
+  }
   return Array.from(new Set(reasons));
 }
 
@@ -207,6 +259,9 @@ function statusFor({
   mode,
   executorEnabled,
   confirmed,
+  queuePublishRequested,
+  queuePublishEnabled,
+  queueReady,
   blockingReasons,
 }: {
   globalPrewarmPlan: DecisionOpsGlobalPrewarmPlanReport;
@@ -214,6 +269,9 @@ function statusFor({
   mode: DecisionOpsResidentPrewarmExecutorMode;
   executorEnabled: boolean;
   confirmed: boolean;
+  queuePublishRequested: boolean;
+  queuePublishEnabled: boolean;
+  queueReady: boolean;
   blockingReasons: readonly string[];
 }): DecisionOpsResidentPrewarmExecutorStatus {
   if (globalPrewarmPlan.status === "blocked_by_queue") return "blocked";
@@ -221,5 +279,8 @@ function statusFor({
   if (mode === "dry_run") return "dry_run_ready";
   if (!executorEnabled) return "execution_disabled";
   if (!confirmed) return "confirmation_missing";
+  if (queuePublishRequested && (!queuePublishEnabled || !queueReady)) {
+    return "queue_publish_disabled";
+  }
   return blockingReasons.length > 0 ? "blocked" : "ready_to_execute";
 }

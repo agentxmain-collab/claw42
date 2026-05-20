@@ -4,6 +4,7 @@ import {
   executeDecisionOpsResidentPrewarmPlan,
 } from "@/lib/team/decisionOpsResidentPrewarmExecutor";
 import type { DecisionOpsGlobalPrewarmPlanReport } from "@/lib/team/decisionOpsGlobalPrewarmPlan";
+import type { publishPmDecisionJobToQueue } from "@/lib/team/pmDecisionJobQueue";
 import type { enqueuePmDecisionJob, PmDecisionJobRecord } from "@/lib/watch/pmDecisionJobLedger";
 
 const now = Date.parse("2026-05-20T12:00:00.000Z");
@@ -16,6 +17,9 @@ describe("decisionOpsResidentPrewarmExecutor", () => {
       mode: "dry_run",
       executorEnabled: false,
       confirmed: false,
+      queuePublishRequested: false,
+      queuePublishEnabled: false,
+      queueReady: false,
       locale: "zh_CN",
       now,
     });
@@ -49,6 +53,9 @@ describe("decisionOpsResidentPrewarmExecutor", () => {
       mode: "execute",
       executorEnabled: false,
       confirmed: true,
+      queuePublishRequested: false,
+      queuePublishEnabled: false,
+      queueReady: false,
       locale: "zh_CN",
       now,
     });
@@ -57,6 +64,9 @@ describe("decisionOpsResidentPrewarmExecutor", () => {
       mode: "execute",
       executorEnabled: true,
       confirmed: false,
+      queuePublishRequested: false,
+      queuePublishEnabled: false,
+      queueReady: false,
       locale: "zh_CN",
       now,
     });
@@ -103,6 +113,9 @@ describe("decisionOpsResidentPrewarmExecutor", () => {
       mode: "execute",
       executorEnabled: true,
       confirmed: true,
+      queuePublishRequested: false,
+      queuePublishEnabled: false,
+      queueReady: false,
       locale: "zh_CN",
       now,
     });
@@ -148,6 +161,127 @@ describe("decisionOpsResidentPrewarmExecutor", () => {
       }),
       now,
     });
+  });
+
+  it("blocks explicit queue publishing unless the queue publish gate and queue readiness are both enabled", async () => {
+    const enqueueJob = vi.fn<typeof enqueuePmDecisionJob>();
+    const envDisabledPlan = buildDecisionOpsResidentPrewarmExecutorPlan({
+      globalPrewarmPlan: globalPrewarmPlan(),
+      mode: "execute",
+      executorEnabled: true,
+      confirmed: true,
+      queuePublishRequested: true,
+      queuePublishEnabled: false,
+      queueReady: true,
+      locale: "zh_CN",
+      now,
+    });
+    const queueDisabledPlan = buildDecisionOpsResidentPrewarmExecutorPlan({
+      globalPrewarmPlan: globalPrewarmPlan(),
+      mode: "execute",
+      executorEnabled: true,
+      confirmed: true,
+      queuePublishRequested: true,
+      queuePublishEnabled: true,
+      queueReady: false,
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(envDisabledPlan.status).toBe("queue_publish_disabled");
+    expect(envDisabledPlan.blockingReasons).toContain("resident_prewarm_queue_publish_disabled");
+    expect(queueDisabledPlan.status).toBe("queue_publish_disabled");
+    expect(queueDisabledPlan.blockingReasons).toContain("resident_prewarm_queue_not_ready");
+    await expect(
+      executeDecisionOpsResidentPrewarmPlan({
+        plan: envDisabledPlan,
+        enqueueJob,
+        now,
+      }),
+    ).rejects.toThrow("resident_prewarm_plan_not_executable:queue_publish_disabled");
+    expect(enqueueJob).not.toHaveBeenCalled();
+  });
+
+  it("publishes resident jobs to the queue only after explicit queue approval", async () => {
+    const enqueueJob = vi.fn<typeof enqueuePmDecisionJob>(
+      async (input): Promise<PmDecisionJobRecord> => ({
+        id: `job:${input.candidate?.candidateKey}`,
+        schemaVersion: 1 as const,
+        kind: input.kind,
+        status: "queued" as const,
+        triggerSource: input.triggerSource,
+        locale: input.locale ?? "zh_CN",
+        idempotencyKey: `once:cron:${input.candidate?.candidateKey}`,
+        candidate: input.candidate ?? null,
+        symbol: input.symbol ?? input.candidate?.symbol ?? null,
+        createdAt: generatedAt,
+        updatedAt: generatedAt,
+        startedAt: null,
+        completedAt: null,
+        attemptCount: 0,
+        maxAttempts: 3,
+        nextRunAt: generatedAt,
+        lastError: null,
+        outputCount: 0,
+        decisionRecordIds: [],
+        auditEventCount: 0,
+      }),
+    );
+    const publishJobToQueue = vi.fn<typeof publishPmDecisionJobToQueue>().mockResolvedValue({
+      mode: "queue",
+      messageId: "msg_resident",
+    });
+    const plan = buildDecisionOpsResidentPrewarmExecutorPlan({
+      globalPrewarmPlan: globalPrewarmPlan(),
+      mode: "execute",
+      executorEnabled: true,
+      confirmed: true,
+      queuePublishRequested: true,
+      queuePublishEnabled: true,
+      queueReady: true,
+      locale: "zh_CN",
+      now,
+    });
+
+    const result = await executeDecisionOpsResidentPrewarmPlan({
+      plan,
+      enqueueJob,
+      publishJobToQueue,
+      now,
+    });
+
+    expect(plan).toMatchObject({
+      status: "ready_to_execute",
+      willRunPmPipeline: false,
+      willPublishQueue: true,
+      queuePublish: {
+        requested: true,
+        enabled: true,
+        queueReady: true,
+      },
+    });
+    expect(result.status).toBe("executed");
+    expect(result.enqueuedJobs).toEqual([
+      expect.objectContaining({
+        jobId: "job:market_overview:utc:zh_CN:2026-05-20T12",
+        queuePublishResult: { mode: "queue", messageId: "msg_resident" },
+      }),
+      expect.objectContaining({
+        jobId: "job:hotspot:utc:zh_CN:2026-05-20T12:market",
+        queuePublishResult: { mode: "queue", messageId: "msg_resident" },
+      }),
+    ]);
+    expect(publishJobToQueue).toHaveBeenCalledTimes(2);
+    expect(publishJobToQueue).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ id: "job:market_overview:utc:zh_CN:2026-05-20T12" }),
+      { now },
+    );
+    expect(publishJobToQueue).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ id: "job:hotspot:utc:zh_CN:2026-05-20T12:market" }),
+      { now },
+    );
   });
 });
 
