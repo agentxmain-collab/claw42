@@ -4730,3 +4730,213 @@ Base: 6ddf57c
 - Preview should come from the GitHub/Vercel PR webhook.
 
 [DOC-HINT: B131-B145 tighten analysis-only stage truthfulness and add ops-only resident public visibility plus memory-learning gates; public layout, PM execution, refresh/SSE, candidate ranking, and production release remain unchanged.]
+
+## C-Series 4 Spec Round 1 评估
+
+READ by Codex @ 2026-05-20T08:58+08:00
+
+Scope: 仅做 first-hand 评估，不实施、不改 `src/`、不触碰 production、不回滚 PR。评估基线按 Dan 指定的 `main HEAD: e6e359b (PR #175)`；同时发现远端 `origin/main` 当前已到 `16ab7d8` / PR #176，本轮判断没有把 #176 计入实现事实。
+
+Sources checked: 四份 spec 原文、`docs/project-constitution.md`、`docs/deployment-identity.md`、`/Users/dannybrown/Claude/总调度/deployment-identity-registry.md`、本地代码、GitHub PR/commit history、当前双 prod HTTP 响应、Next.js 官方 [`v14.2.35` release](https://github.com/vercel/next.js/releases/tag/v14.2.35) 与 [security update](https://nextjs.org/blog/security-update-2025-12-11) 页面。
+
+### 1. `spec-c-series-security-hygiene-uplift.md`
+
+Intake / Constitution:
+- Rule 1 Deployment Identity: PASS for evaluation only；如进入 Stage 3 / headers / dependency deploy，必须重新核对 Vercel scope。
+- Rule 2 Double Prod: PARTIAL；spec 没有明确 Tier 1 `ai.coinw.com/claw42` 与 Tier 2 `claw42.ai` 的安全 header 差异验证。
+- Rule 3 Visual: N/A。
+- Rule 4 Schema: PASS with adjustment；T207 不应把 internal `StrategyDecisionRecord` / stageTrace 的 `memberIds` 当作 public schema 泄漏。
+- Rule 5 AI/market honesty: PASS。
+- Rule 6 Sync closure: PASS。
+- Rule 7 Verification: PARTIAL；缺 browser-level CSP report validation 与 SVG regression page list。
+
+F 假设裁决:
+- H1 "Next 14.2.35 stable / no breaking": PASS with gate。当前 `package.json` 是 `next@14.2.33`，官方 `v14.2.35` release / security update 没看到显式 breaking section，但它是安全补丁，仍需 `build + verify:a11y + verify:metrics + visual smoke`。
+- H2 "CSP enforcing 不会 break third-party": PARTIAL / high risk。当前 `next.config.mjs:31-40` 还是 `Content-Security-Policy-Report-Only`，且 `script-src` 含 `'unsafe-inline' 'unsafe-eval'` 与 GTM；`src/lib/analytics.ts` 引入 `posthog-js`。没有实际 browser report soak 前不能直接 enforcing。
+- H3 "dangerouslyAllowSVG 可关闭，因为无 SVG-as-image": FAIL。`next.config.mjs:12-16` 启用 `images.dangerouslyAllowSVG`；实际 SVG-as-image 用例包括 `src/lib/team/teamRegistry.ts:55,70,85,100,115,130,145,160,175,190,205,220,235,250` 的 14 个 team avatar，渲染点在 `src/components/agent-watch/TeamMemberCard.tsx:36-43`、`src/components/agent-watch/WorkflowNode.tsx:50-57`；Why icon 也有 `src/app/[locale]/page.tsx:273-280` 的 SVG image 用例。
+- H4 "Stage 1 no prod side effects": PARTIAL。依赖升级和 CSP header 本身就是 runtime 行为；Stage 1 可以低风险，但不能写成无 prod side effects。
+
+Stage 边界评估:
+- Stage 1 应拆成 "dependency patch" 与 "CSP report-only hardening audit" 两个独立 gate；Next patch 可先走，CSP enforcing 不应同 stage。
+- Stage 2 的 T201 / T207 需要先建立 public-vs-internal boundary，不然会误删内部审计字段。
+- Stage 3 适合作为 final hardening + browser verification，不适合承载第一次 enforcing。
+
+§13 cannot-do 漏项:
+- 禁止在未列出所有 SVG-as-image 替代方案前关闭 `dangerouslyAllowSVG`。
+- 禁止把 `memberIds` grep zero 作为验收；应只限制 public API / public timeline payload。
+- 禁止直接从 Report-Only 跳 enforcing；至少需要 report sample 或 browser smoke 证据。
+- 禁止把 Redis Lua `.eval` 误判为 browser CSP `unsafe-eval`。
+
+§17 Anti-R 漏防御:
+- 防 "CSP 变严 = 一定更安全"：如果 breaking analytics / agent page，会产生 blind spot。
+- 防 "grep memberId = 泄漏"：internal record 与 public projection 必须分层判断。
+- 防 "SVG 禁用是卫生任务"：当前 UI 有真实 SVG image 依赖。
+
+AI 天数估算: 3-4 AI days。若需要 CSP enforcing soak / replacement assets，升到 5-6 days。
+
+双脑 judgement:
+- (a) 最高风险: T201 `dangerouslyAllowSVG`，因为 F 的前提已被 first-hand 证据推翻，直接关会破 14 角色头像和 Why icon。
+- (b) F 没问到的 angle: 当前 rate-limit key 多处直接使用 raw IP，例如 `src/app/api/analytics/route.ts:43-44`、`src/app/api/watch/timeline/route.ts:29-30`；这比 T207 更像真实隐私卫生点。
+- (c) Codex 修正点: T207 应定义 "public payload strip" 而不是 "全仓库不出现 memberId"。`src/lib/watch/publicTimelineProjection.ts:236-315` 当前已输出 `agentId` / `rationaleByAgent` / `citationsByAgent`，但 `src/lib/watch/publicTimelineEvent.ts` 仍保留 legacy compatibility type。
+
+v1.1 diff 建议:
+- T101: 保留，增加 official release link + local gate。
+- T103: 改成 Report-Only 收敛与 third-party report audit，enforcing 后置。
+- T201: 改成 SVG inventory + replacement plan；不能直接关闭。
+- T207: 改为 public API contract test，不要求 internal stageTrace / StrategyDecisionRecord 清零。
+- 新增 P0/P1: raw IP rate-limit hashing / logging audit。
+
+### 2. `spec-c-series-blind-spot-audit.md`
+
+Intake / Constitution:
+- Rule 1 Deployment Identity: PASS，评估不部署。
+- Rule 2 Double Prod: PARTIAL；如果 audit 覆盖 prod behavior，需区分 `claw42.ai` 与 `ai.coinw.com/claw42` 的不同 build。
+- Rule 3 Visual: N/A。
+- Rule 4 Schema: PASS with caution；topicSelector / public projection / pm decision schema 要以当前代码为准。
+- Rule 5 AI/market honesty: FAIL risk；social 维度当前是 fake / placeholder。
+- Rule 6 Sync closure: PASS。
+- Rule 7 Verification: PARTIAL；spec 没要求把 PR #173 未合入作为输入修正。
+
+F 假设裁决:
+- "PR #161-#175 = 15 个已合并 PR": FAIL / PARTIAL。`#173` 当前是 OPEN，title `docs: C-line UI optimization research`，未 merge；`e6e359b` 只包含 #161-#172、#174、#175 共 14 个 merge commits。
+- "topicSelector 有 9 维度": PARTIAL。`src/lib/team/topicSelector.ts:7-16` 的 type 包含 `social`，但 `PUBLIC_REASON_ORDER:118-127` 排除 social，实际 reason builders 在 `485-494` 只有 8 项。
+- "social 维度可 audit": FAIL。`scoreBreakdown.social` 初始化为 0；全仓只有 `src/lib/data/mock-db.ts:285-292` 有旧 mock social 文案，没有真实 social 数据源。必须标 fake data / placeholder。
+- "15 PR diff + topicSelector 是主要盲区": PASS with adjustment。PR 链确实快速堆叠 resident prewarm / sparse execution / visibility / memory gates，适合审，但必须先修输入集。
+
+Stage 边界评估:
+- Stage A 应先做 "ground truth inventory"，把 #173 open、#176 drift、social fake 记录为前置事实。
+- Stage B 才做 PR #161-#175 diff audit；否则 audit 集合一开始就错。
+- Stage C 应优先 topicSelector 数据源诚实性，而不是平均分配 8 task。
+
+§13 cannot-do 漏项:
+- 禁止把 #173 当作 merged main 事实。
+- 禁止把 social 作为真实 topic reason 展示或验收。
+- 禁止把 mock-db 的 social 文案当 production datasource。
+- 禁止在没有 `origin/main` drift note 的情况下输出 PR #161-#175 全量结论。
+
+§17 Anti-R 漏防御:
+- 防 "type 里有字段 = 产品能力存在"。
+- 防 "PR number range = merged set"。
+- 防 "diagnostics 越多 = blind spot 变少"；需要验证 public-visible outcome。
+
+AI 天数估算: 2-3 AI days 做 Round 1 audit；若要转为修复 spec / implementation plan，另加 1-2 days。
+
+双脑 judgement:
+- (a) 最高风险: topicSelector social 维度，因为它直接触及 AI/market honesty，且现在没有真实数据源。
+- (b) F 没问到的 angle: `origin/main` 已有 #176，Round 1 基线与远端 main 发生 drift；v1.1 要明确是继续锁 `e6e359b`，还是纳入 #176。
+- (c) Codex 修正点: blind spot audit 应把 "merged commit truth" 作为 T000，不然所有 PR range 结论都不稳定。
+
+v1.1 diff 建议:
+- T000: 生成 PR inventory 表，列 PR number / merge sha / state / included-in-base。
+- T001: topicSelector reason kind 真实数据源矩阵；social 标 `NOT_IMPLEMENTED`。
+- T002: public output honesty gate，任何未实现 reason 不得进入用户可见排序/文案。
+- 把 #173 从 merged audit 移到 open-doc reference，或明确排除。
+
+### 3. `spec-c-series-prod-release-dry-run.md`
+
+Intake / Constitution:
+- Rule 1 Deployment Identity: PARTIAL / STOP for any deploy。registry 要求 GitHub/Vercel 为 `agentxmain-collab` / team `team_URED5oO6s2OI5bakH3FJUQpC`；当前 CLI `npx vercel whoami` 返回 `xxcryptoofficial-collab`，不能执行任何 Vercel release / promote。
+- Rule 2 Double Prod: PARTIAL。双 prod 当前均 200，但不是同一个 build artifact。
+- Rule 3 Visual: PASS for dry-run only。
+- Rule 4 Schema: PASS if dry-run only。
+- Rule 5 AI/market honesty: PASS。
+- Rule 6 Sync closure: PASS。
+- Rule 7 Verification: PARTIAL；缺 "wrong Vercel account" hard stop。
+
+F 假设裁决:
+- "release-locked = b74023a": PASS。`origin/release-locked` 指向 `b74023a5e31b8e46582edd852b89ce5cd8f2c0f9`，commit subject `Phase 5 V16: update why section icons (#63)`。
+- "`e6e359b` leads release-locked by 172 commits": PASS。`git rev-list --count b74023a..e6e359b` = 172。
+- "production-1.0 branch exists": FAIL。`git ls-remote --heads origin production-1.0` 无结果。
+- "Vercel scope is ready for prod dry-run": FAIL for CLI actions。当前 CLI identity mismatch。
+- "双 prod 可统一 release plan": PARTIAL。`https://claw42.ai/zh_CN` 是 Vercel build `_QPmcfdRds3DyWmt-aOCo`；`https://ai.coinw.com/claw42/zh_CN` 是 CoinW build `y7DtQKAiZLL4HmeS6oHvg`，assetPrefix `/claw42`。`https://ai.coinw.com/zh_CN/claw42` 为 404，说明 base path 纪律仍是关键。
+
+Stage 边界评估:
+- Prod release spec 应先做 identity / branch reality T000；现在 Stage 直接按 branch 假设推进，风险过高。
+- 172 commits 不应单波 dry-run，建议 7 waves:
+  1. Landing / visual baseline / Phase 5 followups: `2cea485` -> `32c681c` / `475edf6`。
+  2. Watch v3 / spec-4 / PM timeline foundation: #65-#81。
+  3. A1/v10 + v9 dispatch UI shells: #82 + patch v3.6/v3.7。
+  4. B1 / B-master / B2-B8 role and PM pipeline expansion: #86-#94。
+  5. B10 / B12 / B13 / B14 + public experience hotfix chain: #95-#128。
+  6. Queue / model quality / ops diagnostics: #129-#160。
+  7. Resident prewarm / sparse execution / visibility / memory gates: #161-#175。
+- CoinW Tier 1 and Vercel Tier 2 must have separate release checklists; they are not same deployment mechanism.
+
+§13 cannot-do 漏项:
+- 禁止在 Vercel CLI account mismatch 时运行 deploy / promote / rollback。
+- 禁止假设 `production-1.0` 存在。
+- 禁止把 `ai.coinw.com/zh_CN/claw42` 当合法 path；合法路径是 `/claw42/zh_CN`。
+- 禁止把 two prod 200 当作 same artifact verified。
+
+§17 Anti-R 漏防御:
+- 防 "dry-run 不会动 prod，所以 identity 不重要"。
+- 防 "172 commits count correct = release plan correct"。
+- 防 "Vercel prod 与 CoinW Jenkins prod 可共用一套验收"。
+
+AI 天数估算: 2-3 AI days 做 safe dry-run spec / wave matrix；真正 release rehearsal 需 4-6 AI days + Dan / ops wait time。
+
+双脑 judgement:
+- (a) 最高风险: Deployment Identity + double-prod drift。当前 CLI 账号错，且两条 prod build ID 不一致。
+- (b) F 没问到的 angle: `release-locked` 是 GitHub/Vercel 语义，CoinW GitLab/Jenkins 还需要本地包 / GPG / YubiKey / `.env.production` base path 纪律，不能被 GitHub release spec 覆盖。
+- (c) Codex 修正点: v1.1 应把 "no production action" 写成 enforceable stop，不只是 cannot-do 描述。
+
+v1.1 diff 建议:
+- T000: identity preflight：Git remote、branch heads、`.vercel/project.json`、`vercel whoami`、GitHub account。
+- T001: branch reality：`release-locked` exists / `production-1.0` missing / decide whether to create or rename.
+- T002: double-prod artifact matrix：URL / buildId / assetPrefix / canonical / path behavior。
+- Rewrite waves from 1 monolithic 172-commit plan to 7 staged verification waves。
+
+### 4. `spec-watch-B15-multi-agent-debate-drama.md`
+
+Intake / Constitution:
+- Rule 1 Deployment Identity: PASS for evaluation only。
+- Rule 2 Double Prod: N/A until release。
+- Rule 3 Visual: N/A；this is logic layer, but public drama behavior can affect approved layout copy density.
+- Rule 4 Schema: PARTIAL / high risk。Proposed `DebateRound` is not currently compatible with `PublicTimelineEvent` without schema/projection work。
+- Rule 5 AI/market honesty: PARTIAL；debate drama must not invent citations or attacks unsupported by evidence.
+- Rule 6 Sync closure: PASS。
+- Rule 7 Verification: PARTIAL；cost cap and schema tests are underspecified.
+
+F 假设裁决:
+- "pmDecisionPipeline / evidenceDispatcher existing multi-round can carry debate": PARTIAL。`src/lib/team/multiRoundPipeline.ts:4` already has `PM_DECISION_ANALYST_ROUNDS = 2` and prompt context lines `61-85` passes prior round outputs, but it is a generic all-roles multi-round synthesis, not bullish/bearish cross-examination. `evidenceDispatcher.ts:63-64` gives both bullish/bearish similar domains; no dedicated clash structure.
+- "bullish_researcher / bearish_researcher prompts can carry cross-reference": PARTIAL。`docs/agent-ip/team/bullish_researcher.md` and `bearish_researcher.md` define directional identity, but both still have status placeholder lines `18-21` and no final examples / cross-reference contract.
+- "Cost cap 5 call / candidate fits B.14 20 cap": FAIL。Current PM pipeline can call up to 11 input roles x 2 rounds, plus research lead, risk lead, PM decision and retries. B.14 user-visit candidate cap is 3 symbols, but not a 5-call total per candidate.
+- "`DebateRound` schema compatible": FAIL / PARTIAL。`src/lib/watch/publicTimelineEvent.ts` has `rounds?: PublicDecisionRoundEntry[]` and `stageTrace?: PublicDecisionStageTraceEntry[]` but no `debateRounds` / `attacks` / `supports` / `evidenceId[]` shape. `StrategyDecisionRecord` has `analystInputs[].rounds`, not the proposed drama schema.
+
+Stage 边界评估:
+- Stage 1 should be schema / cost / prompt contract only. Do not implement drama before agreeing whether it is an adapter over existing `rounds` or a new public payload field.
+- Stage 2 can add internal debate extraction after schema is settled.
+- Stage 3 public projection/UI should be last; otherwise drama can leak unsupported or inflated arguments.
+
+§13 cannot-do 漏项:
+- 禁止新增 public `debateRounds` 字段而不做 backward compatibility / projection tests。
+- 禁止把 current multi-round generic summaries marketed as explicit bull-vs-bear debate。
+- 禁止忽略 retry cost；5-call cap 必须定义含不含 retry / leads / PM。
+- 禁止让 prompt 生成 unsupported `evidenceId`。
+
+§17 Anti-R 漏防御:
+- 防 "更戏剧化 = 更好理解"；金融场景可能降低可信度。
+- 防 "现有 rounds 字段 = DebateRound 已存在"。
+- 防 "cost cap 是产品口径，不影响工程"；当前 call topology 会直接突破 cap。
+
+AI 天数估算: 4-6 AI days if schema/cost are resolved first；若保留 5-call cap 且要重构 execution topology，升到 7-9 days。
+
+双脑 judgement:
+- (a) 最高风险: schema + cost 双重不成立。直接实现会同时破 public contract 和 runtime budget。
+- (b) F 没问到的 angle: debate drama 应该有 "evidence fidelity" gate，要求每条 attack/support 绑定已有 citation/evidence，不允许模型自由编 ID。
+- (c) Codex 修正点: B15 不是 UI enhancement，而是 PM pipeline contract change；需要先决定 "derive drama from existing analyst rounds" 还是 "introduce new debate stage"。
+
+v1.1 diff 建议:
+- T000: Current topology inventory：roles x rounds x retry x leads x PM call budget。
+- T001: Schema decision：adapter-only over `rounds` vs new `debateRounds` field，列 backward compatibility。
+- T002: Prompt contract：bullish/bearish examples + cross-reference constraints + citation fidelity。
+- T003: Cost contract：明确 per candidate 上限包含哪些 calls；若坚持 5，必须降低角色数/轮数/lead strategy。
+
+### Round 1 总判断
+
+- C-S: GO to v1.1, but must rewrite SVG / CSP / memberId assumptions before implementation。
+- C-A: GO to v1.1, but #173 和 social fake 是必须修的输入错误。
+- C-R: NO-GO for any release action；only continue as dry-run spec after identity / branch / double-prod artifact matrix is fixed。
+- B.15: NO-GO for implementation；schema and cost assumptions未成立，v1.1 应先收敛为 contract spec。
+
+[DOC-HINT: C-Series Round 1 first-hand review found false assumptions in SVG usage, topicSelector social data, production branch/identity, and B15 cost/schema compatibility; v1.1 should fix these before any implementation dispatch.]
