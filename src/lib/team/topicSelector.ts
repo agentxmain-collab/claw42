@@ -340,17 +340,21 @@ function volumeReason(
   };
 }
 
-function executableReason(symbol: string): TopicSelectionReason {
-  const mapping = resolveSymbolMapping(symbol);
-  const score = mapping.execution.executable
+function executionForSymbol(symbol: string, ticker?: CoinTickerEntry) {
+  return ticker?.execution ?? resolveSymbolMapping(symbol).execution;
+}
+
+function executableReason(symbol: string, ticker?: CoinTickerEntry): TopicSelectionReason {
+  const execution = executionForSymbol(symbol, ticker);
+  const score = execution.executable
     ? 18
-    : mapping.execution.watchOnlyReason === "not_listed_on_coinw"
+    : execution.watchOnlyReason === "not_listed_on_coinw"
       ? 6
       : 2;
   return {
     kind: "executable",
-    label: mapping.execution.executable ? "CoinW executable" : "watch-only",
-    detail: mapping.execution.executable ? "CoinW可执行标的" : "仅观察标的",
+    label: execution.executable ? "CoinW futures executable" : "watch-only",
+    detail: execution.executable ? "CoinW合约可交易标的" : "仅观察标的",
     score,
   };
 }
@@ -464,15 +468,32 @@ function selectPmDecisionTopicsUncached({
   const suppressedSymbols = symbol
     ? new Set<string>()
     : recentPmDecisionSymbols(recentTimelineEvents, now);
-  const symbols = orderedCandidateSymbols({ pool, marketSignals, newsEvidence, symbol }).filter(
-    (candidateSymbol) => !suppressedSymbols.has(normalizeSymbol(candidateSymbol)),
+  const tickerBySymbol = new Map(
+    entries.map((entry) => [normalizeSymbol(entry.symbol), entry] as const),
   );
+  const symbolIsExecutable = (candidateSymbol: string) => {
+    const normalizedSymbol = normalizeSymbol(candidateSymbol);
+    return executionForSymbol(normalizedSymbol, tickerBySymbol.get(normalizedSymbol)).executable;
+  };
+  const rawSymbols = orderedCandidateSymbols({ pool, marketSignals, newsEvidence, symbol }).filter(
+    (candidateSymbol) =>
+      symbolIsExecutable(candidateSymbol) &&
+      !suppressedSymbols.has(normalizeSymbol(candidateSymbol)),
+  );
+  const symbols =
+    !symbol && rawSymbols.length === 0
+      ? STATIC_FALLBACK_SYMBOLS.filter(
+          (candidateSymbol) =>
+            symbolIsExecutable(candidateSymbol) &&
+            !suppressedSymbols.has(normalizeSymbol(candidateSymbol)),
+        )
+      : rawSymbols;
 
   return symbols
     .map((candidateSymbol, index) => {
       const normalizedSymbol = normalizeSymbol(candidateSymbol);
-      const symbolMapping = resolveSymbolMapping(normalizedSymbol);
-      const ticker = entries.find((item) => normalizeSymbol(item.symbol) === normalizedSymbol);
+      const ticker = tickerBySymbol.get(normalizedSymbol);
+      const execution = executionForSymbol(normalizedSymbol, ticker);
       const scopedSignals = marketSignals.filter(
         (signal) => normalizeSymbol(signal.symbol) === normalizedSymbol,
       );
@@ -483,7 +504,7 @@ function selectPmDecisionTopicsUncached({
         marketCapReason(ticker, entries),
         volumeReason(ticker, entries),
         newsHeatReason(scopedEvidence, now) ?? strongestNewsReason(scopedEvidence),
-        executableReason(normalizedSymbol),
+        executableReason(normalizedSymbol, ticker),
         strongestSignalReason(scopedSignals),
         tickerReason(ticker),
         poolReason(ticker),
@@ -495,10 +516,10 @@ function selectPmDecisionTopicsUncached({
       return {
         symbol: normalizedSymbol,
         execution: {
-          executable: symbolMapping.execution.executable,
-          coinwPair: symbolMapping.execution.coinwPair,
-          watchOnly: !symbolMapping.execution.executable,
-          watchOnlyReason: symbolMapping.execution.watchOnlyReason,
+          executable: execution.executable,
+          coinwPair: execution.coinwPair,
+          watchOnly: !execution.executable,
+          watchOnlyReason: execution.watchOnlyReason,
         },
         score,
         scoreBreakdown: breakdown,

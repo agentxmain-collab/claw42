@@ -5361,3 +5361,49 @@ Base: `origin/main` = `adfc67f69c83d3c2f88b327a84d6d047839c0127`
 - Full existing verification before PR/merge.
 
 [DOC-HINT: public analysis beta is preview-only, feedback-enabled, and explicitly separate from production release, trusted learning claims, and real trading.]
+
+# CoinW contract release integration pass
+
+Codex time: 2026-05-20 22:43 CST
+Branch: `feature/coinw-contract-release`
+Base: `origin/main` = `1ad6407f7c0931993908601319ff0a2a8bb6cb2d`
+
+## Product outcome
+
+- Public symbol analysis is now CoinW-futures-first: automatic symbol candidates are filtered by
+  the CoinW futures instrument universe before entering the public main board.
+- Non-CoinW futures symbols are dropped instead of becoming watch-only cards.
+- `BILL` is now treated as CoinW futures executable. `VVV` / `IRYS` remain non-executable and are
+  used in safety tests.
+- Public analysis cards now expose a CoinW futures navigation link. Until CoinW confirms the exact
+  pair URL template, the link falls back to the safe futures market entry.
+- Added a disabled-by-default follow-intent backend entry. It validates a CoinW futures order draft,
+  creates a `claw42_...` `thirdOrderId`, and returns the intent for confirmation/testing. It does
+  not call CoinW or submit an order.
+
+## CoinW open confirmations
+
+- Confirm `thirdOrderId` duplicate behavior.
+- Confirm precision / minimum order fields as final source of truth.
+- Confirm exact futures pair deep-link template.
+- Confirm test account credentials and OAuth app scope names.
+- Confirm whether CoinW supports an additional internal source field beyond `thirdOrderId`.
+
+## Verification
+
+- `npm run verify`: PASS.
+- `npm run build`: PASS after clearing the temp worktree `.next` cache; first run hit a transient
+  Next cache/path `/_document` error, second clean run passed.
+- `npm run verify:metrics`: PASS, 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+- Targeted CoinW / watch tests: PASS, 78 tests.
+
+## Boundary
+
+- No production deploy.
+- No Vercel CLI deploy.
+- No CoinW secrets read or written.
+- Real CoinW submission remains disabled until test account + idempotency + precision rules are
+  confirmed.
+
+[DOC-HINT: CoinW futures beta now has futures-only candidate filtering, CoinW navigation, and a disabled follow-intent contract with `thirdOrderId` source marking.]

@@ -1,4 +1,8 @@
 import fallbackTickerData from "@/modules/agent-watch/skills/fallback-tickers.json";
+import {
+  filterCoinWFuturesPoolEntries,
+  getCoinWFuturesInstrumentSet,
+} from "@/lib/coinw/futuresInstruments";
 import type {
   CoinPoolPayload,
   CoinTickerEntry,
@@ -537,6 +541,7 @@ async function majorsFromTickers(tickers: TickerMap): Promise<CoinTickerEntry[]>
 
 export async function getCoinPool(): Promise<CoinPoolPayload> {
   const analysisContext = await getMarketAnalysisContext();
+  const futuresInstrumentSet = await getCoinWFuturesInstrumentSet();
 
   const [trendingResult, opportunityResult] = await Promise.allSettled([
     getCached(TRENDING_CACHE_KEY, TRENDING_TTL_MS, fetchTrendingPool),
@@ -563,9 +568,18 @@ export async function getCoinPool(): Promise<CoinPoolPayload> {
   return {
     ts: Date.now(),
     tickers: analysisContext.tickers,
-    majors: await majorsFromTickers(analysisContext.tickers),
-    trending: trendingResult.status === "fulfilled" ? trendingResult.value : [],
-    opportunity: opportunityResult.status === "fulfilled" ? opportunityResult.value : [],
+    majors: filterCoinWFuturesPoolEntries(
+      await majorsFromTickers(analysisContext.tickers),
+      futuresInstrumentSet,
+    ),
+    trending:
+      trendingResult.status === "fulfilled"
+        ? filterCoinWFuturesPoolEntries(trendingResult.value, futuresInstrumentSet)
+        : [],
+    opportunity:
+      opportunityResult.status === "fulfilled"
+        ? filterCoinWFuturesPoolEntries(opportunityResult.value, futuresInstrumentSet)
+        : [],
     signals: analysisContext.coinw,
     source: analysisContext.source,
     isStale: analysisContext.isStale,

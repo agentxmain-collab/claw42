@@ -269,6 +269,7 @@ export type DispatchV10Dict = {
     watchOnlyLabel: string;
     watchOnlyCopy: string;
     analysisOnlyCopy: string;
+    coinwFuturesLink: string;
     feedbackAriaLabel: string;
     feedbackPrompt: string;
     feedbackHelpful: string;

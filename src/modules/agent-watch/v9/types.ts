@@ -110,6 +110,7 @@ export interface DispatchStrategy {
 export interface DispatchTopicExecutionMode {
   executable: boolean;
   coinwPair: string | null;
+  tradeUrl?: string;
   watchOnly: boolean;
   watchOnlyReason?: "not_listed_on_coinw" | "mapping_unknown";
 }

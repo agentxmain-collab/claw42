@@ -701,6 +701,7 @@
         "watchOnlyLabel": "Watch only / Sin seguimiento",
         "watchOnlyCopy": "Este símbolo aún no es ejecutable en CoinW; el análisis se muestra solo para observación.",
         "analysisOnlyCopy": "Esta tarjeta es solo de observación y no muestra una acción de seguimiento.",
+        "coinwFuturesLink": "Abrir futuros de CoinW",
         "residentUpdating": "Actualización global de mercado/temas en curso",
         "residentQueued": "Actualización global de mercado/temas en cola",
         "residentUpdateIssue": "Incidencia en la actualización en segundo plano",

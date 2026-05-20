@@ -66,6 +66,12 @@ export interface CoinTickerEntry {
   change24h: number;
   marketCapUsd?: number | null;
   totalVolumeUsd24h?: number | null;
+  execution?: {
+    executable: boolean;
+    coinwPair: string | null;
+    watchOnly: boolean;
+    watchOnlyReason?: "not_listed_on_coinw" | "mapping_unknown";
+  };
   category: CoinCategory;
 }
 

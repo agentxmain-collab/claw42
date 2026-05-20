@@ -701,6 +701,7 @@
         "watchOnlyLabel": "[!! Watch only / Not followable !!]",
         "watchOnlyCopy": "[!! This symbol is not executable on CoinW yet; analysis is shown for observation only. !!]",
         "analysisOnlyCopy": "[!! This card is observation-only and does not expose a follow-trade action. !!]",
+        "coinwFuturesLink": "[!! Open CoinW Futures !!]",
         "residentUpdating": "[!! Global market/topic update running !!]",
         "residentQueued": "[!! Global market/topic update queued !!]",
         "residentUpdateIssue": "[!! Background update issue !!]",

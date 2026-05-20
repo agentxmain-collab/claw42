@@ -302,16 +302,16 @@ describe("mapPublicTimelineEventsToTopics", () => {
     const event = pmDecision({
       payload: {
         kind: "pm_decision",
-        recordId: "record-bill",
-        symbol: "BILL",
+        recordId: "record-irys",
+        symbol: "IRYS",
         executable: false,
         tradeDecision: {
           ...tradeDecision,
-          id: "trade-bill",
-          symbol: "BILL",
+          id: "trade-irys",
+          symbol: "IRYS",
           direction: "long",
         },
-        rationaleByMember: { research_lead: "BILL is observable but not executable." },
+        rationaleByMember: { research_lead: "IRYS is observable but not executable." },
         citationsByMember: {},
       },
     });

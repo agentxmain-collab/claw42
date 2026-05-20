@@ -33,6 +33,7 @@ import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { DecisionStageTraceId } from "@/lib/team/strategyDecisionRecord";
 import { publicTimelineEventStableId } from "@/lib/watch/publicTimelineOrdering";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
+import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
 import {
   mapPublicDecisionAgentToTeamMember,
   mapTeamMemberToPublicDecisionAgent,
@@ -916,6 +917,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       (typeof latest.payload.executable === "boolean"
         ? latest.payload.executable
         : symbolMapping.execution.executable);
+    const coinwPair = executable ? symbolMapping.execution.coinwPair : null;
 
     return {
       id: recordId,
@@ -926,7 +928,8 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       lastUpdatedAt: group.latestAt,
       execution: {
         executable,
-        coinwPair: executable ? symbolMapping.execution.coinwPair : null,
+        coinwPair,
+        tradeUrl: buildCoinWFuturesTradeUrl({ coinwPair }),
         watchOnly: !executable,
         watchOnlyReason: symbolMapping.execution.watchOnlyReason,
       },

@@ -701,6 +701,7 @@
         "watchOnlyLabel": "Watch only / Не для копіювання",
         "watchOnlyCopy": "Цей символ поки не можна виконати на CoinW; аналіз показано лише для спостереження.",
         "analysisOnlyCopy": "Ця картка лише для спостереження й не показує дію копіювання.",
+        "coinwFuturesLink": "Відкрити ф'ючерси CoinW",
         "residentUpdating": "Фонове оновлення ринку/тем виконується",
         "residentQueued": "Оновлення ринку/тем у черзі",
         "residentUpdateIssue": "Проблема фонового оновлення",

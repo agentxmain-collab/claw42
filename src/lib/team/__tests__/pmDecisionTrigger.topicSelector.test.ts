@@ -270,7 +270,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     tryAcquireLockMock.mockResolvedValue(null);
     const poolWithQuietCandidate = {
       ...pool(),
-      opportunity: [{ symbol: "XRP", price: 2.1, change24h: 0.2, category: "opportunity" }],
+      opportunity: [{ symbol: "BILL", price: 0.12, change24h: 0.2, category: "opportunity" }],
     } satisfies CoinPoolPayload;
 
     await triggerPmDecisionPipelineOnce({
@@ -297,7 +297,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
         }),
         expect.objectContaining({
           type: "candidate_skipped",
-          symbol: "XRP",
+          symbol: "BILL",
           reason: "no_trigger",
         }),
       ]),
@@ -409,7 +409,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
       expect.arrayContaining([
         expect.objectContaining({
           type: "candidate_cost_cap_applied",
-          candidateCount: 5,
+          candidateCount: 4,
           cappedTo: 3,
           maxResidentCandidates: 1,
           maxSymbolCandidates: 3,
@@ -439,7 +439,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
         { symbol: "HYPE", price: 34, change24h: 0.6, category: "trending" },
         { symbol: "ENA", price: 0.8, change24h: 0.7, category: "trending" },
       ],
-      opportunity: [{ symbol: "BLEND", price: 0.12, change24h: 18, category: "opportunity" }],
+      opportunity: [{ symbol: "BILL", price: 0.12, change24h: 18, category: "opportunity" }],
     } satisfies CoinPoolPayload;
 
     const outputs = await triggerPmDecisionPipelineBatch({
@@ -453,7 +453,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     expect(outputs).toHaveLength(1);
     expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
     const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
-    expect(input.recentMarketSignals.map((signal) => signal.symbol)).toEqual(["BLEND"]);
+    expect(input.recentMarketSignals.map((signal) => signal.symbol)).toEqual(["BILL"]);
   });
 
   it("emits an audit event when recent-topic suppression leaves no candidates", async () => {
@@ -502,6 +502,22 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
           kind: "pm_decision",
           recordId: "record-sol",
           symbol: "SOL",
+          tradeDecision: null,
+          rationaleByMember: {},
+        },
+      },
+      {
+        id: "event-hype",
+        ts: now - 20 * 60_000,
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: [],
+        locale: "zh_CN",
+        payload: {
+          kind: "pm_decision",
+          recordId: "record-hype",
+          symbol: "HYPE",
           tradeDecision: null,
           rationaleByMember: {},
         },

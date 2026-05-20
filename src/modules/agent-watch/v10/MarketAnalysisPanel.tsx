@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
 import { trackEvent } from "@/lib/analytics";
+import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
 import {
   compareDecisionCandidateOrder,
   normalizeCandidateType,
@@ -438,6 +439,11 @@ function TopicStrategyV10({
       ? `${strategy.follow.watchCount} ${dict.market.watchReminder}`
       : `${strategy.follow.watchCount} ${dict.market.watchCount} · ${strategy.follow.followCount} ${dict.market.followed}`;
   const followNoteId = `${topic.id}-follow-trade-disabled-note`;
+  const coinwFuturesUrl =
+    topic.execution?.tradeUrl ??
+    buildCoinWFuturesTradeUrl({
+      coinwPair: canRenderFollowTrade ? topic.execution?.coinwPair : null,
+    });
 
   return (
     <div className={["topic-strategy", latest && "latest"].filter(Boolean).join(" ")}>
@@ -488,6 +494,15 @@ function TopicStrategyV10({
               {dict.followTrade.disabled_label}
             </button>
           ) : null}
+          <a
+            className="cta-btn secondary"
+            href={coinwFuturesUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {dict.market.coinwFuturesLink}
+          </a>
           <button
             className="cta-btn secondary"
             type="button"

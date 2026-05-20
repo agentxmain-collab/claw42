@@ -237,30 +237,32 @@ describe("selectPmDecisionTopics", () => {
     });
   });
 
-  it("falls back to news symbols when the CoinW pool is unavailable", () => {
+  it("keeps CoinW futures executable news symbols when the CoinW pool is unavailable", () => {
     const topics = selectPmDecisionTopics({
-      newsEvidence: [evidence({ symbol: ["SUI"], id: "ev_sui", summary: "Sui rally accelerates" })],
+      newsEvidence: [
+        evidence({ symbol: ["HYPE"], id: "ev_hype", summary: "HYPE rally accelerates" }),
+      ],
       now,
     });
 
     expect(topics[0]).toMatchObject({
-      symbol: "SUI",
+      symbol: "HYPE",
       scoreBreakdown: expect.objectContaining({
         marketCap: 15,
         volume: 12.5,
         news: 60,
-        executable: 2,
+        executable: 18,
         market: 0,
         momentum: 0,
         pool: 0,
         memory: 0,
       }),
-      newsEvidenceIds: ["ev_sui"],
+      newsEvidenceIds: ["ev_hype"],
     });
-    expect(topics[0].scoreBreakdown.total).toBeCloseTo(89.5);
+    expect(topics[0].scoreBreakdown.total).toBeCloseTo(105.5);
   });
 
-  it("keeps opportunity-pool symbols in the candidate set after majors and trending fill six slots", () => {
+  it("keeps CoinW futures opportunity-pool symbols in the candidate set", () => {
     const expandedPool: CoinPoolPayload = {
       ...pool(),
       majors: [
@@ -273,7 +275,10 @@ describe("selectPmDecisionTopics", () => {
         { symbol: "HYPE", price: 34, change24h: 0.6, category: "trending" },
         { symbol: "ENA", price: 0.8, change24h: 0.7, category: "trending" },
       ],
-      opportunity: [{ symbol: "BLEND", price: 0.12, change24h: 18, category: "opportunity" }],
+      opportunity: [
+        { symbol: "BILL", price: 0.12, change24h: 18, category: "opportunity" },
+        { symbol: "BLEND", price: 0.12, change24h: 22, category: "opportunity" },
+      ],
     };
 
     const topics = selectPmDecisionTopics({
@@ -282,22 +287,24 @@ describe("selectPmDecisionTopics", () => {
     });
 
     expect(topics[0]).toMatchObject({
-      symbol: "BLEND",
+      symbol: "BILL",
       scoreBreakdown: expect.objectContaining({
         momentum: 20,
         pool: 2,
       }),
     });
-    expect(topics.map((topic) => topic.symbol)).toContain("BLEND");
+    expect(topics.map((topic) => topic.symbol)).toContain("BILL");
+    expect(topics.map((topic) => topic.symbol)).not.toContain("BLEND");
   });
 
-  it("marks explicit executable and watch-only symbols from symbol metadata", () => {
+  it("keeps only CoinW futures executable symbols in automatic topic selection", () => {
     const topics = selectPmDecisionTopics({
       pool: {
         ...pool(),
         trending: [
           { symbol: "HYPE", price: 36, change24h: 4.2, category: "trending" },
           { symbol: "BILL", price: 0.01, change24h: 18, category: "trending" },
+          { symbol: "IRYS", price: 0.03, change24h: 21, category: "trending" },
         ],
       },
       now,
@@ -308,31 +315,19 @@ describe("selectPmDecisionTopics", () => {
       coinwPair: "HYPE_USDT",
       watchOnly: false,
     });
-    expect(topics.find((topic) => topic.symbol === "BILL")?.execution).toMatchObject({
-      executable: false,
-      coinwPair: null,
-      watchOnly: true,
-      watchOnlyReason: "not_listed_on_coinw",
-    });
+    expect(topics.map((topic) => topic.symbol)).not.toContain("IRYS");
   });
 
-  it("does not treat unknown fallback pair strings as executable", () => {
-    const [topic] = selectPmDecisionTopics({
+  it("passes non-CoinW futures symbols instead of creating watch-only public topics", () => {
+    const topics = selectPmDecisionTopics({
       newsEvidence: [
         evidence({ symbol: ["UNKNOWNCOIN"], id: "ev_unknown", summary: "Unknown coin rallies" }),
       ],
       now,
     });
 
-    expect(topic).toMatchObject({
-      symbol: "UNKNOWNCOIN",
-      execution: {
-        executable: false,
-        coinwPair: null,
-        watchOnly: true,
-        watchOnlyReason: "mapping_unknown",
-      },
-    });
+    expect(topics.map((topic) => topic.symbol)).not.toContain("UNKNOWNCOIN");
+    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH", "SOL", "HYPE"]);
   });
 
   it("anchors symbol-less market news to BTC instead of every pool candidate", () => {
@@ -432,24 +427,24 @@ describe("selectPmDecisionTopics", () => {
   it("scores 7d CryptoCompare-style news heat by article count, source diversity, and high impact count", () => {
     const topics = selectPmDecisionTopics({
       newsEvidence: [
-        evidence({ id: "ev_sui_1", symbol: ["SUI"], source: "CryptoCompare", sourceDomain: "a" }),
+        evidence({ id: "ev_hype_1", symbol: ["HYPE"], source: "CryptoCompare", sourceDomain: "a" }),
         evidence({
-          id: "ev_sui_2",
-          symbol: ["SUI"],
+          id: "ev_hype_2",
+          symbol: ["HYPE"],
           source: "CryptoCompare",
           sourceDomain: "b",
           impactSeverity: "medium",
         }),
         evidence({
-          id: "ev_sui_3",
-          symbol: ["SUI"],
+          id: "ev_hype_3",
+          symbol: ["HYPE"],
           source: "CryptoCompare",
           sourceDomain: "c",
           impactSeverity: "medium",
         }),
         evidence({
-          id: "ev_sui_old",
-          symbol: ["SUI"],
+          id: "ev_hype_old",
+          symbol: ["HYPE"],
           source: "CryptoCompare",
           sourceDomain: "d",
           impactSeverity: "high",
@@ -459,9 +454,14 @@ describe("selectPmDecisionTopics", () => {
       now,
     });
 
-    expect(topics[0].symbol).toBe("SUI");
+    expect(topics[0].symbol).toBe("HYPE");
     expect(topics[0].scoreBreakdown.news).toBeGreaterThan(60);
-    expect(topics[0].newsEvidenceIds).toEqual(["ev_sui_1", "ev_sui_2", "ev_sui_3", "ev_sui_old"]);
+    expect(topics[0].newsEvidenceIds).toEqual([
+      "ev_hype_1",
+      "ev_hype_2",
+      "ev_hype_3",
+      "ev_hype_old",
+    ]);
     expect(buildTopicSelectionEvidence(topics[0], now).summary).toContain("7d 3篇 / 3源 / 1高影响");
   });
 

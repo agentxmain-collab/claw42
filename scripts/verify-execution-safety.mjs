@@ -103,6 +103,22 @@ requireNotIncludes(
   "follow-stats route must not submit orders",
 );
 
+requireIncludes(
+  "src/app/api/watch/follow-intents/route.ts",
+  "coinw_real_submission_not_enabled",
+  "follow-intents route must default to disabled real submission",
+);
+requireNotIncludes(
+  "src/app/api/watch/follow-intents/route.ts",
+  "fetch(",
+  "follow-intents route must not submit directly to CoinW",
+);
+requireNotIncludes(
+  "src/app/api/watch/follow-intents/route.ts",
+  "/v1/perpum/order",
+  "follow-intents route must not embed a direct CoinW order submission",
+);
+
 const apiRouteFiles = listFiles("src/app/api").filter(
   (file) => file.endsWith("/route.ts") || file.endsWith("/route.tsx"),
 );

@@ -386,6 +386,40 @@ describe("MarketAnalysisPanel v10", () => {
     expect(symbolHtml).toContain("演示模式");
   });
 
+  test("renders a CoinW futures navigation link for public analysis cards", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          topicFixture({
+            id: "market-daily",
+            candidateType: "market_overview",
+            candidateKey: "market_overview:daily:zh_CN:2026-05-17",
+            title: "今日大盘综述",
+            symbol: "MARKET",
+            score: 3,
+            lastUpdatedAt: 3,
+            executable: false,
+          }),
+          topicFixture({
+            id: "symbol-hype",
+            candidateType: "symbol",
+            candidateKey: "HYPE",
+            title: "HYPE 实时行情分析",
+            symbol: "HYPE",
+            score: 2,
+            lastUpdatedAt: 2,
+            executable: true,
+          }),
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("去 CoinW 合约");
+    expect(html).toContain('href="https://www.coinw.com/market/futures"');
+  });
+
   test("keeps collapse state attached to record id after reorder", () => {
     const topicA = topicFixture({
       id: "record-a",

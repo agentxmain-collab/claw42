@@ -701,6 +701,7 @@
         "watchOnlyLabel": "Watch only / غير قابل للنسخ",
         "watchOnlyCopy": "هذا الرمز غير قابل للتنفيذ على CoinW بعد؛ يظهر التحليل للمراقبة فقط.",
         "analysisOnlyCopy": "هذه البطاقة للمراقبة والتحليل فقط ولا تعرض إجراء متابعة.",
+        "coinwFuturesLink": "فتح عقود CoinW",
         "residentUpdating": "تحديث السوق/الموضوعات في الخلفية جارٍ",
         "residentQueued": "تحديث السوق/الموضوعات في الخلفية بانتظار الدور",
         "residentUpdateIssue": "مشكلة في تحديث الخلفية",
