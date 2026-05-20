@@ -185,7 +185,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("分析于 600 分钟前");
   });
 
-  test("renders an explicit non-followable badge for watch-only topics", () => {
+  test("renders an explicit analysis-only badge for non-followable topics", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
@@ -205,8 +205,8 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("watch-only / 不可跟单");
-    expect(html).toContain("该币种暂不支持 CoinW 跟单");
+    expect(html).toContain("仅分析 / 不自动下单");
+    expect(html).toContain("该币种暂不支持 CoinW 合约开单");
     expect(html).not.toContain("演示模式：当前不会真实下单");
   });
 
@@ -381,8 +381,8 @@ describe("MarketAnalysisPanel v10", () => {
     );
 
     expect(marketHtml).not.toContain("演示模式");
-    expect(marketHtml).toContain("watch-only / 不可跟单");
-    expect(marketHtml).toContain("仅用于观察分析");
+    expect(marketHtml).toContain("仅分析 / 不自动下单");
+    expect(marketHtml).toContain("公开分析和交易跳转");
     expect(symbolHtml).toContain("演示模式");
   });
 

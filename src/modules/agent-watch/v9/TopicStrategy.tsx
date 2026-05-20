@@ -77,7 +77,7 @@ export function TopicStrategy({
       <StrategyValue label="止盈" value={strategy.takeProfit} tone={muted ?? "lime"} />
       <div className="strat-cta">
         <div className="cta-row">
-          {watchOnly ? <span className="watch-only-pill">watch-only / 不可跟单</span> : null}
+          {watchOnly ? <span className="watch-only-pill">仅分析 / 不自动下单</span> : null}
           {canRenderFollowTrade ? (
             <button
               className="cta-btn"
@@ -100,7 +100,7 @@ export function TopicStrategy({
         </div>
         <div className="cta-meta" id={followNoteId}>
           {watchOnly
-            ? `该币种暂不支持 CoinW 跟单，仅展示观察分析。 · ${followStatus}`
+            ? `该卡片用于公开分析和交易跳转，不自动下单。 · ${followStatus}`
             : `${followTradeDict.safety_copy} · ${followStatus}`}
         </div>
       </div>

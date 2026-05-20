@@ -5407,3 +5407,69 @@ Base: `origin/main` = `1ad6407f7c0931993908601319ff0a2a8bb6cb2d`
   confirmed.
 
 [DOC-HINT: CoinW futures beta now has futures-only candidate filtering, CoinW navigation, and a disabled follow-intent contract with `thirdOrderId` source marking.]
+
+# CoinW contract release beta1 closeout + beta2 foundation
+
+Codex time: 2026-05-20 23:50 CST
+Branch: `feature/coinw-contract-release`
+
+## Beta1 completed
+
+- Public symbol analysis is now limited to confirmed CoinW futures instruments.
+- Unsupported symbol PM records are filtered out at public timeline projection and v9 topic mapping.
+- Market overview and hotspot analysis remain visible as global analysis cards.
+- Analysis-only cards no longer use watch-only wording. Public copy now says "仅分析 / 不自动下单"
+  and does not imply manual or automatic order execution.
+- Follow-trade affordance remains strictly gated: only symbol cards with `executable=true` can render
+  the disabled beta order affordance.
+- Existing UTC global prewarm policy remains in place for market/hotspot freshness.
+
+## Beta2 implemented now
+
+- Added OAuth/test-account/order-mode readiness checks without exposing secret values.
+- Added `/api/watch/follow-intents/status` so the UI or operator layer can see whether real order
+  prerequisites are configured.
+- Added beta leverage cap support through `COINW_FUTURES_BETA_MAX_LEVERAGE`, defaulting to 3x.
+- Follow-intent validation now includes readiness metadata while still returning `mode=disabled`.
+- `COINW_FUTURES_ORDER_MODE=live` remains blocked until a separate release decision.
+
+## External info still needed
+
+1. OAuth authorize URL, token URL, callback registration, and exact scope names.
+2. Confirmation that first release can use futures-trade-only scope with no withdrawal capability.
+3. Test OAuth app and test futures account.
+4. Stable pair-specific CoinW futures deep-link template.
+5. `thirdOrderId` duplicate retry behavior.
+6. TP / SL submission model: same order request or separate endpoints.
+7. Precision, min quantity, min notional, and max leverage source fields.
+8. Whether margin mode, position mode, or leverage must be set before order placement.
+9. Order status query and receipt fields for accepted / filled / rejected states.
+10. OAuth revoke / token expiry / refresh / optional webhook behavior.
+11. Rate limits for OAuth and futures order APIs.
+12. Emergency OAuth app disable and single-user token revoke process.
+
+## Verification
+
+- Targeted CoinW / watch / UI tests: PASS, 91 tests.
+- `npm run format:check`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run test:watch-pipeline`: PASS, 104 files / 549 tests.
+- `npm run test:news`: PASS, 6 files / 25 tests.
+- `npm run verify:agent-ip`: PASS.
+- `npm run verify:news`: PASS.
+- `npm run verify:chat-v3-final`: PASS, 50 synthetic threads.
+- `npm run verify:execution-safety`: PASS.
+- `npm run verify:metrics`: PASS, 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+- `npm run build`: PASS.
+- `npm run verify`: PASS.
+
+## Boundary
+
+- No production deploy.
+- No Vercel CLI deploy.
+- No CoinW secrets read or written.
+- No real CoinW order submission.
+
+[DOC-HINT: Beta1 is now CoinW-futures-only for symbol cards; Beta2 has disabled order readiness and leverage-cap plumbing, with external OAuth/test-account/order semantics still required.]

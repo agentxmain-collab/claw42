@@ -883,9 +883,18 @@ function compareRankedGroups(
   );
 }
 
+function displayablePublicBetaGroup(group: DispatchTopicGroup) {
+  if (group.candidateType !== "symbol") return true;
+  const latest = group.latestDecision;
+  if (latest.payload.kind !== "pm_decision") return false;
+  if (typeof latest.payload.executable === "boolean") return latest.payload.executable;
+  return resolveSymbolMapping(group.symbol).execution.executable;
+}
+
 export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): DispatchTopic[] {
   const now = ctx.now ?? Date.now();
   const rankedGroups = groupPublicTimelineEventsByTopic(ctx.events)
+    .filter(displayablePublicBetaGroup)
     .map((group) => {
       const tradeDecision = renderableTradeDecision(group.latestDecision);
       return {

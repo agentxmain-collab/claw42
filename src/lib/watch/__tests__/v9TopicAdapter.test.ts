@@ -298,7 +298,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
   });
 
-  it("uses PM payload executable=false as the follow-trade safety gate", () => {
+  it("drops non-CoinW futures symbol decisions from the public beta board", () => {
     const event = pmDecision({
       payload: {
         kind: "pm_decision",
@@ -322,12 +322,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.execution).toMatchObject({
-      executable: false,
-      watchOnly: true,
-      watchOnlyReason: "not_listed_on_coinw",
-    });
-    expect(topic.strategy.follow.primaryDisabled).toBe(true);
+    expect(topic).toBeUndefined();
   });
 
   it("does not allow non-symbol topics to become followable even when payload says executable", () => {
@@ -390,7 +385,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topics[0].id).toBe("latest-record");
   });
 
-  it("dedupes stale same-symbol records before rendering topic cards", () => {
+  it("dedupes stale same-symbol executable records before rendering topic cards", () => {
     const topics = mapTopics({
       events: [
         pmDecisionWithRecordId("old-bill-record", {
@@ -400,7 +395,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
             kind: "pm_decision",
             recordId: "old-bill-record",
             symbol: "BILL",
-            executable: false,
+            executable: true,
             tradeDecision: {
               ...tradeDecision,
               id: "trade-bill-old",
@@ -418,7 +413,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
             kind: "pm_decision",
             recordId: "latest-bill-record",
             symbol: "BILL",
-            executable: false,
+            executable: true,
             tradeDecision: {
               ...tradeDecision,
               id: "trade-bill-latest",
@@ -438,7 +433,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topics[0]).toMatchObject({
       id: "latest-bill-record",
       symbol: "BILL",
-      execution: { executable: false, watchOnly: true },
+      execution: { executable: true, watchOnly: false },
     });
   });
 

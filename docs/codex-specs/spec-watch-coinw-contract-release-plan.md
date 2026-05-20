@@ -46,3 +46,55 @@ global market overview, hotspot narrative, daily CoinW futures coin analysis, an
 - Confirm precision and minimum order fields as the final source of truth.
 - Confirm stable futures trading deeplink pattern.
 - Confirm whether CoinW supports an additional internal source field beyond `thirdOrderId`.
+
+## 2026-05-20 Beta1 Completion Criteria
+
+Beta1 is the public analysis beta for CoinW futures traffic. It must be usable for outside review
+without implying real order submission.
+
+Completed scope:
+
+- Public symbol cards are restricted to confirmed CoinW futures instruments.
+- Unsupported symbol records are dropped from the public beta timeline and board instead of being
+  rendered as watch-only cards.
+- Market overview and hotspot cards remain visible because they are product-level analysis, not
+  symbol execution opportunities.
+- Market overview and hotspot cards render as analysis-only: no automatic order claim and no
+  follow-trade button.
+- Public labels now say "analysis only / no automatic order" instead of watch-only phrasing.
+- CoinW futures navigation is present; exact pair-level URL still waits for CoinW confirmation and
+  falls back to a safe futures market landing URL.
+- Existing UTC resident prewarm posture remains the source for global market/hotspot freshness.
+
+Beta1 still requires an operations-level preview access decision before sharing broadly if Vercel
+preview protection blocks external reviewers. This is outside application code.
+
+## 2026-05-20 Beta2 Partial Foundation
+
+Beta2 is the one-click futures order path. Real submission remains disabled, but the safe foundation
+is now in place:
+
+- `/api/watch/follow-intents` validates a CoinW futures order draft and returns a disabled intent
+  without calling CoinW.
+- `thirdOrderId` uses the `claw42_<intent_id>_<attempt>` source-marking pattern.
+- `COINW_FUTURES_BETA_MAX_LEVERAGE` caps beta leverage; default is 3x.
+- `/api/watch/follow-intents/status` reports whether OAuth/test-account/order-mode prerequisites
+  are configured, without exposing secret values.
+- Live mode remains blocked until a separate release decision.
+
+Beta2 external information still needed:
+
+1. OAuth authorization URL, token URL, exact callback registration, and required scope names.
+2. Confirmation that the first release can use futures-trade-only scope with no withdrawal
+   capability.
+3. Test OAuth app and test futures account details.
+4. Stable CoinW futures deep-link template for pair-specific contract pages.
+5. `thirdOrderId` duplicate behavior on retry.
+6. Whether take-profit / stop-loss can be submitted with the order or require separate calls.
+7. Instrument precision, minimum quantity, minimum notional, and max leverage field source.
+8. Whether margin mode, position mode, or leverage must be set before order placement, plus exact
+   endpoints.
+9. Order status query response, accepted-vs-filled semantics, and receipt fields.
+10. OAuth revoke / token invalidation / optional webhook behavior.
+11. Rate limits for OAuth and futures order APIs.
+12. Emergency disable process for the Claw 42 OAuth app.

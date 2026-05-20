@@ -341,6 +341,31 @@ NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE
 COINW_OAUTH_CLIENT_ID
 COINW_OAUTH_CLIENT_SECRET
 COINW_OAUTH_REDIRECT_URI
+COINW_OAUTH_AUTHORIZE_URL
+COINW_OAUTH_TOKEN_URL
+COINW_OAUTH_SCOPES
 COINW_FUTURES_TEST_ACCOUNT_ID
 COINW_FUTURES_ORDER_MODE
+COINW_FUTURES_BETA_MAX_LEVERAGE
 ```
+
+### Beta1 / Beta2 当前边界
+
+- Beta1 公开分析只展示 CoinW 合约支持的币种分析卡；非 CoinW 合约币种直接不进入公开主列表。
+- 大盘和热点是全局分析卡，不对应单币开单，保留展示但只显示"仅分析 / 不自动下单"。
+- Beta2 当前只做到开单意图校验和准备状态检查，不提交真实订单。
+- `/api/watch/follow-intents/status` 只返回配置就绪状态，不返回任何密钥值。
+- `COINW_FUTURES_ORDER_MODE=live` 仍被阻断；真实提交需要单独 release 决策。
+
+### 还需 CoinW / 运维确认的上线项
+
+1. OAuth 授权页、token 接口、callback 白名单和 scope 名称。
+2. 测试账号、测试 OAuth app、测试交易权限。
+3. 精确合约交易对跳转 URL 模板。
+4. `thirdOrderId` 重复提交语义。
+5. TP / SL 是随单提交还是单独接口。
+6. 合约下单前是否必须设置杠杆、保证金模式、持仓模式。
+7. 精度、最小数量、最小名义金额、最大杠杆字段的最终来源。
+8. 订单状态查询和成交回执字段。
+9. OAuth token revoke / 过期 / refresh 行为。
+10. Rate limit、异常升级、紧急关闭 OAuth app 的运维流程。

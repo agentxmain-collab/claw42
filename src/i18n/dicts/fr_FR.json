@@ -698,9 +698,9 @@
           "market_overview": "Marché",
           "hotspot": "Tendance"
         },
-        "watchOnlyLabel": "Watch only / Suivi impossible",
-        "watchOnlyCopy": "Ce symbole n'est pas encore exécutable sur CoinW ; l'analyse est affichée uniquement pour observation.",
-        "analysisOnlyCopy": "Cette carte est uniquement destinée à l'observation et n'affiche aucune action de suivi.",
+        "watchOnlyLabel": "Analyse seule / pas d'ordre auto",
+        "watchOnlyCopy": "Ce symbole ne peut pas encore ouvrir un ordre futures CoinW ; seule l'analyse est affichée.",
+        "analysisOnlyCopy": "Cette carte fournit une analyse publique et un lien de trading, sans ordre automatique.",
         "coinwFuturesLink": "Ouvrir CoinW Futures",
         "residentUpdating": "Mise à jour marché/thèmes en arrière-plan",
         "residentQueued": "Mise à jour marché/thèmes en attente",

@@ -128,4 +128,26 @@ describe("CoinW futures order intent", () => {
       ),
     ).toThrow("coinw_futures_limit_price_required");
   });
+
+  it("applies the beta leverage cap before real order submission is enabled", () => {
+    expect(() =>
+      buildCoinWFuturesOrderIntent(
+        {
+          recordId: "pm:BTC:20260520",
+          symbol: "BTC",
+          direction: "long",
+          orderType: "market",
+          quantity: "20",
+          leverage: 10,
+          marginMode: "isolated",
+        },
+        {
+          instruments,
+          now: "2026-05-20T12:00:00.000Z",
+          intentId: "intent-high-leverage",
+          betaMaxLeverage: 3,
+        },
+      ),
+    ).toThrow("coinw_futures_leverage_exceeds_beta_limit");
+  });
 });

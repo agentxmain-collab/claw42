@@ -698,9 +698,9 @@
           "market_overview": "[!! Market !!]",
           "hotspot": "[!! Hotspot !!]"
         },
-        "watchOnlyLabel": "[!! Watch only / Not followable !!]",
-        "watchOnlyCopy": "[!! This symbol is not executable on CoinW yet; analysis is shown for observation only. !!]",
-        "analysisOnlyCopy": "[!! This card is observation-only and does not expose a follow-trade action. !!]",
+        "watchOnlyLabel": "[!! Analysis only / No auto-order !!]",
+        "watchOnlyCopy": "[!! This symbol cannot be opened as a CoinW futures order yet; analysis only. !!]",
+        "analysisOnlyCopy": "[!! This card supports public analysis and a trading link, but no automatic order. !!]",
         "coinwFuturesLink": "[!! Open CoinW Futures !!]",
         "residentUpdating": "[!! Global market/topic update running !!]",
         "residentQueued": "[!! Global market/topic update queued !!]",

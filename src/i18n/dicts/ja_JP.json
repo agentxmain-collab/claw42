@@ -698,9 +698,9 @@
           "market_overview": "市場",
           "hotspot": "注目"
         },
-        "watchOnlyLabel": "Watch only / フォロー不可",
-        "watchOnlyCopy": "この銘柄はまだ CoinW で実行できません。観察用の分析のみ表示します。",
-        "analysisOnlyCopy": "このカードは観察用の分析のみで、フォロー取引操作は表示しません。",
+        "watchOnlyLabel": "分析のみ / 自動注文なし",
+        "watchOnlyCopy": "この銘柄はまだ CoinW 先物注文に対応していません。分析のみ表示します。",
+        "analysisOnlyCopy": "このカードは公開分析と取引リンクを提供しますが、自動注文は行いません。",
         "coinwFuturesLink": "CoinW 先物を開く",
         "residentUpdating": "市場/注目テーマをバックグラウンド更新中",
         "residentQueued": "市場/注目テーマの更新待機中",

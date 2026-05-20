@@ -412,7 +412,7 @@ describe("publicTimelineProjection", () => {
     ]);
   });
 
-  it("keeps watch-only PM records public and marks them non-executable", () => {
+  it("drops non-CoinW futures symbol PM records from the public beta timeline", () => {
     const irysRecord: StrategyDecisionRecord = {
       ...decisionRecord,
       id: "record-irys",
@@ -460,12 +460,10 @@ describe("publicTimelineProjection", () => {
       decisionRecordsById: new Map([[irysRecord.id, irysRecord]]),
     });
 
-    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
-    expect(event.payload.symbol).toBe("IRYS");
-    expect(event.payload.executable).toBe(false);
+    expect(event).toBeNull();
   });
 
-  it("falls back to PM record id symbol when history lacks record hydration", () => {
+  it("does not publish non-CoinW symbol fallbacks when history lacks record hydration", () => {
     const entry: StreamEntry = {
       kind: "chat_thread",
       id: "thread-irys",
@@ -501,9 +499,7 @@ describe("publicTimelineProjection", () => {
       decisionRecordsById: new Map(),
     });
 
-    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
-    expect(event.payload.symbol).toBe("IRYS");
-    expect(event.payload.executable).toBe(false);
+    expect(event).toBeNull();
   });
 
   it("can project a PM decision directly from a strategy record", () => {

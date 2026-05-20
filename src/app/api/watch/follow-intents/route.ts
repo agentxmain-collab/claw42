@@ -11,12 +11,14 @@ import {
   getCoinWFuturesInstrumentSet,
   staticCoinWFuturesInstrumentSet,
 } from "@/lib/coinw/futuresInstruments";
+import { coinWOAuthReadiness } from "@/lib/coinw/oauthReadiness";
 import { checkRateLimit } from "@/lib/storage/kv-rate-limiter";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 4096;
+const DEFAULT_BETA_MAX_LEVERAGE = 3;
 
 function clientIp(request: NextRequest) {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -102,6 +104,11 @@ function errorStatus(errorCode: string) {
   return 400;
 }
 
+function betaMaxLeverage() {
+  const parsed = Number(process.env.COINW_FUTURES_BETA_MAX_LEVERAGE);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_BETA_MAX_LEVERAGE;
+}
+
 export async function POST(request: NextRequest) {
   const rateLimit = await checkRateLimit(
     `watch-follow-intent:ip:${hashForRateLimit(clientIp(request))}`,
@@ -118,12 +125,15 @@ export async function POST(request: NextRequest) {
     const input = parseIntentInput(await readJson(request));
     const intent = buildCoinWFuturesOrderIntent(input, {
       instruments: await resolveInstrumentSet(),
+      betaMaxLeverage: betaMaxLeverage(),
     });
+    const readiness = coinWOAuthReadiness();
 
     return NextResponse.json(
       {
         mode: "disabled",
         reason: "coinw_real_submission_not_enabled",
+        readiness,
         intent,
       },
       { headers: { "Cache-Control": "no-store" } },

@@ -114,6 +114,16 @@ function assertLeverage(leverage: number, maxLeverage?: number) {
   }
 }
 
+function assertBetaLeverageCap(leverage: number, betaMaxLeverage?: number) {
+  if (betaMaxLeverage === undefined) return;
+  if (!Number.isInteger(betaMaxLeverage) || betaMaxLeverage < 1) {
+    throw new Error("coinw_futures_beta_leverage_limit_invalid");
+  }
+  if (leverage > betaMaxLeverage) {
+    throw new Error("coinw_futures_leverage_exceeds_beta_limit");
+  }
+}
+
 export function buildCoinWFuturesOrderIntent(
   input: CoinWFuturesOrderIntentInput,
   options: {
@@ -121,6 +131,7 @@ export function buildCoinWFuturesOrderIntent(
     now?: string;
     intentId?: string;
     attempt?: number;
+    betaMaxLeverage?: number;
   },
 ): CoinWFuturesOrderIntent {
   const symbol = normalizeCoinWFuturesSymbol(input.symbol);
@@ -137,6 +148,7 @@ export function buildCoinWFuturesOrderIntent(
   const takeProfit = normalizeOptionalPositiveDecimal(input.takeProfit);
   const stopLoss = normalizeOptionalPositiveDecimal(input.stopLoss);
   assertLeverage(input.leverage, instrument.maxLeverage);
+  assertBetaLeverageCap(input.leverage, options.betaMaxLeverage);
 
   const intentId = options.intentId ?? randomUUID();
   const createdAt = options.now ?? new Date().toISOString();
