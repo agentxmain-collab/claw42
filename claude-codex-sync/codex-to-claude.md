@@ -4806,3 +4806,93 @@ Base: `e6e359b`
   analysis, queue drain, model quality, and memory learning are all ready, or which layer is blocking.
 
 [DOC-HINT: B146-B160 adds protected ops-health globalProgress=1 as the combined B-line gate for resident coverage/visibility, queue drain, runtime quality, and memory learning; no public UI, PM execution, refresh/SSE, candidate ranking, or production behavior changed.]
+
+---
+
+# B161-B240 全局自治只读门禁报告
+
+Date: 2026-05-20
+Branch: `feature/b161-b240-global-autonomy`
+Base: `16ab7d8`
+
+## Scope
+
+- B161-B180: add a UTC global prewarm planner for missing/stale/hidden resident lanes.
+- B181-B200: add autonomous remediation policy, but keep it read-only and restricted to
+  resident-prewarm-only as the highest safe automation level.
+- B201-B220: add role diversity quality gate so deeper model-quality work cannot expand when roles
+  collapse into one direction, duplicate summaries, or high wait bias.
+- B221-B240: add memory productization gate so memory-loop learning can become an internal claim
+  only after resolved non-legacy samples, historical contrast, and distinct symbols accumulate.
+- No public UI layout change.
+- No PM pipeline execution change.
+- No refresh/SSE behavior change.
+- No candidate ranking change.
+- No production deploy behavior change.
+
+## Implementation
+
+- `src/lib/team/decisionOpsGlobalPrewarmPlan.ts`
+  - Builds read-only UTC targets for market overview and hotspot resident lanes.
+  - Uses current resident candidate helpers; no new cadence or local-time policy.
+  - Status values: `ready`, `needs_global_prewarm`, `blocked_by_queue`.
+- `src/lib/team/decisionOpsAutonomousRemediation.ts`
+  - Combines global progress, prewarm plan, queue recovery, and public output stability.
+  - Status values: `observe`, `resident_prewarm_ready`, `operator_required`, `paused`.
+  - `safeAutomationLevel` is never more than `resident_prewarm_only`; all actions remain
+    `executable=false`.
+- `src/lib/team/decisionOpsRoleDiversityGate.ts`
+  - Measures direction dominance, unique summary rate, and wait-rate bias across analyst inputs.
+  - Blocks model-quality expansion when the public team output becomes homogeneous.
+- `src/lib/team/decisionOpsMemoryProductizationGate.ts`
+  - Requires resolved non-legacy samples, memory-loop historical contrast, and distinct symbols.
+  - Allows only `private_claim_ready`; `publicWinRateClaimAllowed=false` is fixed.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds protected query flags:
+    - `globalPrewarmPlan=1`
+    - `autonomousRemediation=1`
+    - `roleDiversity=1`
+    - `memoryProductization=1`
+    - `globalAutonomy=1`
+  - `globalAutonomy=1` returns a nested read-only rollup and does not expose nested reports as
+    top-level fields unless their own flags are requested.
+- `package.json`
+  - Adds the four new unit suites to `test:watch-pipeline`.
+
+## Verification
+
+- RED verified:
+  - New module imports failed before implementation.
+  - `globalAutonomy=1` did not exist before route integration.
+- Target tests:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsGlobalPrewarmPlan.test.ts src/lib/team/__tests__/decisionOpsAutonomousRemediation.test.ts src/lib/team/__tests__/decisionOpsRoleDiversityGate.test.ts src/lib/team/__tests__/decisionOpsMemoryProductizationGate.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 5 files / 42 tests.
+- Full gates:
+  - `npm run verify`: PASS.
+    - format:check PASS.
+    - typecheck PASS.
+    - lint PASS.
+    - verify:agent-ip PASS.
+    - verify:news PASS.
+    - test:news PASS, 6 files / 25 tests.
+    - test:watch-pipeline PASS, 94 files / 505 tests.
+    - verify:chat-v3-final PASS, 50 synthetic threads.
+    - verify:execution-safety PASS.
+  - `rm -rf .next && npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Self Review
+
+- This batch remains backend/ops-only. It creates decision gates for future autonomy; it does not
+  execute the remediation plan.
+- The new reports preserve all production and public-behavior locks:
+  - `productionReleaseAllowed=false`
+  - `publicBehaviorChanged=false`
+  - `executable=false`
+  - `publicWinRateClaimAllowed=false`
+- The most useful next readout is:
+  - `/api/watch/ops-health?globalAutonomy=1`
+  - It answers whether global resident lanes, queue safety, public-output stability, role diversity,
+    and memory productization are ready, or which layer is blocking.
+
+[DOC-HINT: B161-B240 adds protected ops-health globalAutonomy read-only gates for UTC global prewarm, autonomous remediation planning, role diversity, and memory productization; no public UI, PM execution, refresh/SSE, candidate ranking, or production behavior changed.]

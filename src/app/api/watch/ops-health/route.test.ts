@@ -33,6 +33,10 @@ const buildDecisionOpsModelQualityEvidenceMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsRuntimeQualityGateMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsQueuePriorityPolicyMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsGlobalProgressGateMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsGlobalPrewarmPlanMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsAutonomousRemediationMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsRoleDiversityGateMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsMemoryProductizationGateMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -160,6 +164,22 @@ vi.mock("@/lib/team/decisionOpsQueuePriorityPolicy", () => ({
 
 vi.mock("@/lib/team/decisionOpsGlobalProgressGate", () => ({
   buildDecisionOpsGlobalProgressGate: buildDecisionOpsGlobalProgressGateMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsGlobalPrewarmPlan", () => ({
+  buildDecisionOpsGlobalPrewarmPlan: buildDecisionOpsGlobalPrewarmPlanMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsAutonomousRemediation", () => ({
+  buildDecisionOpsAutonomousRemediation: buildDecisionOpsAutonomousRemediationMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsRoleDiversityGate", () => ({
+  buildDecisionOpsRoleDiversityGate: buildDecisionOpsRoleDiversityGateMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsMemoryProductizationGate", () => ({
+  buildDecisionOpsMemoryProductizationGate: buildDecisionOpsMemoryProductizationGateMock,
 }));
 
 function job() {
@@ -643,6 +663,101 @@ describe("/api/watch/ops-health", () => {
       },
       blockingReasons: [],
       nextActions: [],
+    });
+    buildDecisionOpsGlobalPrewarmPlanMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      generatedAt: "2026-05-18T12:00:00.000Z",
+      status: "ready",
+      clock: "UTC",
+      safeToEnqueueResidentPrewarm: false,
+      productionReleaseAllowed: false,
+      publicBehaviorChanged: false,
+      utcPolicy: {
+        marketOverviewIntervalHours: 3,
+        hotspotIntervalHours: 3,
+      },
+      summary: {
+        plannedTargets: 0,
+        missingVisibleResidentCards: 0,
+        blockedByQueue: false,
+      },
+      targets: [],
+      blockingReasons: [],
+      actions: [],
+    });
+    buildDecisionOpsAutonomousRemediationMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      generatedAt: "2026-05-18T12:00:00.000Z",
+      status: "observe",
+      safeAutomationLevel: "none",
+      productionReleaseAllowed: false,
+      publicBehaviorChanged: false,
+      sourceStatuses: {
+        globalProgress: "ready_for_memory_learning_observe",
+        globalPrewarmPlan: "ready",
+        queueRecoveryPolicy: "healthy",
+        outputStability: "healthy",
+      },
+      blockingReasons: [],
+      remediations: [],
+    });
+    buildDecisionOpsRoleDiversityGateMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      generatedAt: "2026-05-18T12:00:00.000Z",
+      status: "ready",
+      roleDiversityReady: true,
+      productionReleaseAllowed: false,
+      publicBehaviorChanged: false,
+      thresholds: {
+        minimumEvaluatedRecords: 2,
+        maximumDirectionDominance: 0.75,
+        minimumUniqueSummaryRate: 0.65,
+        maximumWaitRate: 0.75,
+      },
+      counts: {
+        totalRecords: 2,
+        evaluatedRecords: 2,
+        evaluatedRoleInputs: 28,
+      },
+      metrics: {
+        directionDominance: 0.5,
+        uniqueSummaryRate: 0.9,
+        waitRate: 0.1,
+      },
+      directionCounts: {
+        long: 10,
+        short: 8,
+        neutral: 7,
+        wait: 3,
+      },
+      blockingReasons: [],
+      actions: [],
+    });
+    buildDecisionOpsMemoryProductizationGateMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      generatedAt: "2026-05-18T12:00:00.000Z",
+      status: "private_claim_ready",
+      memoryProductizationReady: true,
+      publicWinRateClaimAllowed: false,
+      productionReleaseAllowed: false,
+      publicBehaviorChanged: false,
+      thresholds: {
+        minimumResolvedRecords: 5,
+        minimumMemoryContrastCoverage: 0.6,
+        minimumDistinctResolvedSymbols: 3,
+      },
+      sourceStatus: "ready",
+      counts: {
+        totalRecords: 8,
+        resolvedNonLegacyRecords: 6,
+        memoryContrastRecords: 5,
+        distinctResolvedSymbols: 3,
+      },
+      ratios: {
+        memoryContrastCoverage: 0.833,
+      },
+      blockingReasons: [],
+      actions: [],
     });
   });
 
@@ -2116,5 +2231,108 @@ describe("/api/watch/ops-health", () => {
     expect(payload.memoryLearning).toBeUndefined();
     expect(payload.residentCoverage).toBeUndefined();
     expect(payload.residentVisibility).toBeUndefined();
+  });
+
+  it("returns optional global autonomy gates as a read-only rollup", async () => {
+    projectDecisionRecordToPublicEventMock.mockImplementation((record: { id: string }) => ({
+      id: `pm-decision:${record.id}`,
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: record.id,
+        symbol: record.id.includes("HOTSPOT") ? "HOTSPOT" : "MARKET",
+        candidateType: record.id.includes("HOTSPOT") ? "hotspot" : "market_overview",
+        candidateKey: record.id.includes("HOTSPOT")
+          ? "hotspot:utc:zh_CN:2026-05-18T09:market"
+          : "market_overview:utc:zh_CN:2026-05-18T09",
+      },
+    }));
+    readAllDecisionRecordsMock.mockResolvedValue([
+      { id: "pm:MARKET:1779102000000" },
+      { id: "pm:HOTSPOT:1779102000000" },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&globalAutonomy=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readPmDecisionJobsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readDecisionRunsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(buildDecisionOpsGlobalPrewarmPlanMock).toHaveBeenCalledWith({
+      residentStatus: expect.objectContaining({ schemaVersion: 1 }),
+      residentVisibility: expect.objectContaining({ schemaVersion: 1 }),
+      queuePriority: expect.objectContaining({ schemaVersion: 1 }),
+      locale: "zh_CN",
+      now: Date.parse("2026-05-18T12:00:00.000Z"),
+    });
+    expect(buildDecisionOpsGlobalProgressGateMock).toHaveBeenCalled();
+    expect(buildDecisionOpsAutonomousRemediationMock).toHaveBeenCalledWith({
+      globalProgress: expect.objectContaining({ schemaVersion: 1 }),
+      globalPrewarmPlan: expect.objectContaining({ schemaVersion: 1 }),
+      queueRecoveryPolicy: expect.objectContaining({ schemaVersion: 1 }),
+      outputStability: expect.objectContaining({ schemaVersion: 1 }),
+      now: Date.parse("2026-05-18T12:00:00.000Z"),
+    });
+    expect(buildDecisionOpsRoleDiversityGateMock).toHaveBeenCalledWith({
+      records: [
+        expect.objectContaining({ id: "pm:MARKET:1779102000000" }),
+        expect.objectContaining({ id: "pm:HOTSPOT:1779102000000" }),
+      ],
+      now: Date.parse("2026-05-18T12:00:00.000Z"),
+    });
+    expect(buildDecisionOpsMemoryProductizationGateMock).toHaveBeenCalledWith({
+      memoryLearning: expect.objectContaining({ schemaVersion: 1 }),
+      records: [
+        expect.objectContaining({ id: "pm:MARKET:1779102000000" }),
+        expect.objectContaining({ id: "pm:HOTSPOT:1779102000000" }),
+      ],
+      now: Date.parse("2026-05-18T12:00:00.000Z"),
+    });
+    expect(payload.globalAutonomy).toMatchObject({
+      globalProgress: {
+        schemaVersion: 1,
+        productionReleaseAllowed: false,
+        publicBehaviorChanged: false,
+      },
+      globalPrewarmPlan: {
+        schemaVersion: 1,
+        productionReleaseAllowed: false,
+        publicBehaviorChanged: false,
+      },
+      autonomousRemediation: {
+        schemaVersion: 1,
+        safeAutomationLevel: "none",
+        productionReleaseAllowed: false,
+        publicBehaviorChanged: false,
+      },
+      roleDiversityGate: {
+        schemaVersion: 1,
+        roleDiversityReady: true,
+        productionReleaseAllowed: false,
+        publicBehaviorChanged: false,
+      },
+      memoryProductizationGate: {
+        schemaVersion: 1,
+        memoryProductizationReady: true,
+        publicWinRateClaimAllowed: false,
+        productionReleaseAllowed: false,
+        publicBehaviorChanged: false,
+      },
+    });
+    expect(payload.globalProgress).toBeUndefined();
+    expect(payload.globalPrewarmPlan).toBeUndefined();
+    expect(payload.autonomousRemediation).toBeUndefined();
+    expect(payload.roleDiversityGate).toBeUndefined();
+    expect(payload.memoryProductizationGate).toBeUndefined();
   });
 });

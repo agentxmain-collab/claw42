@@ -7,13 +7,16 @@ import { buildDecisionOpsChainRunbook } from "@/lib/team/decisionOpsChainRunbook
 import { buildDecisionOpsCronAudit } from "@/lib/team/decisionOpsCronAudit";
 import { buildDecisionOpsDeepDiagnostics } from "@/lib/team/decisionOpsDeepDiagnostics";
 import { buildDecisionOpsFreshness } from "@/lib/team/decisionOpsFreshness";
+import { buildDecisionOpsAutonomousRemediation } from "@/lib/team/decisionOpsAutonomousRemediation";
 import { buildDecisionOpsGlobalProgressGate } from "@/lib/team/decisionOpsGlobalProgressGate";
+import { buildDecisionOpsGlobalPrewarmPlan } from "@/lib/team/decisionOpsGlobalPrewarmPlan";
 import {
   buildDecisionOpsHealthDetails,
   summarizeDecisionOpsHealth,
 } from "@/lib/team/decisionOpsHealth";
 import { buildDecisionOpsLifecycleDiagnostics } from "@/lib/team/decisionOpsLifecycleDiagnostics";
 import { buildDecisionOpsMemoryLearning } from "@/lib/team/decisionOpsMemoryLearning";
+import { buildDecisionOpsMemoryProductizationGate } from "@/lib/team/decisionOpsMemoryProductizationGate";
 import { buildDecisionOpsModelQuality } from "@/lib/team/decisionOpsModelQuality";
 import { buildDecisionOpsPublicOutputStability } from "@/lib/team/decisionOpsPublicOutputStability";
 import { buildDecisionOpsQualityBaseline } from "@/lib/team/decisionOpsQualityBaseline";
@@ -21,6 +24,7 @@ import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
 import { buildDecisionOpsQueuePriorityPolicy } from "@/lib/team/decisionOpsQueuePriorityPolicy";
 import { buildDecisionOpsResidentPublicVisibility } from "@/lib/team/decisionOpsResidentPublicVisibility";
 import { buildDecisionOpsResidentPrewarmCoverage } from "@/lib/team/decisionOpsResidentPrewarmCoverage";
+import { buildDecisionOpsRoleDiversityGate } from "@/lib/team/decisionOpsRoleDiversityGate";
 import { buildDecisionOpsQueueRecoveryPolicy } from "@/lib/team/decisionOpsQueueRecoveryPolicy";
 import { buildDecisionOpsReconciliation } from "@/lib/team/decisionOpsReconciliation";
 import { buildDecisionOpsRollup } from "@/lib/team/decisionOpsRollup";
@@ -96,6 +100,17 @@ export async function GET(request: Request) {
   const includeRuntimeQualityGate = url.searchParams.get("runtimeQualityGate") === "1";
   const includeQueuePriority = url.searchParams.get("queuePriority") === "1";
   const includeGlobalProgress = url.searchParams.get("globalProgress") === "1";
+  const includeGlobalPrewarmPlan = url.searchParams.get("globalPrewarmPlan") === "1";
+  const includeAutonomousRemediation = url.searchParams.get("autonomousRemediation") === "1";
+  const includeRoleDiversityGate = url.searchParams.get("roleDiversity") === "1";
+  const includeMemoryProductizationGate = url.searchParams.get("memoryProductization") === "1";
+  const includeGlobalAutonomy = url.searchParams.get("globalAutonomy") === "1";
+  const needsGlobalPrewarmPlan =
+    includeGlobalPrewarmPlan || includeAutonomousRemediation || includeGlobalAutonomy;
+  const needsAutonomousRemediation = includeAutonomousRemediation || includeGlobalAutonomy;
+  const needsRoleDiversityGate = includeRoleDiversityGate || includeGlobalAutonomy;
+  const needsMemoryProductizationGate = includeMemoryProductizationGate || includeGlobalAutonomy;
+  const needsGlobalProgress = includeGlobalProgress || needsAutonomousRemediation;
   const now = Date.now();
   const includeStability = url.searchParams.get("stability") === "1";
   const includeCausalRunbook = url.searchParams.get("causalRunbook") === "1";
@@ -108,7 +123,10 @@ export async function GET(request: Request) {
     includeRuntimeStabilityGate ||
     includeModelQualityEvidence ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress ||
+    needsGlobalProgress ||
+    needsGlobalPrewarmPlan ||
+    needsRoleDiversityGate ||
+    needsMemoryProductizationGate ||
     includeCausalRunbook ||
     includeAlertSnapshot
       ? MAX_LIMIT
@@ -129,7 +147,10 @@ export async function GET(request: Request) {
     includeAlertSnapshot ||
     includeLifecycle ||
     includeMemoryLearning ||
-    includeGlobalProgress ||
+    needsGlobalProgress ||
+    needsGlobalPrewarmPlan ||
+    needsRoleDiversityGate ||
+    needsMemoryProductizationGate ||
     includeOpsSummary ||
     includeResidentCoverage ||
     includeResidentVisibility ||
@@ -155,7 +176,7 @@ export async function GET(request: Request) {
   ]);
   const queueReadiness = getPmDecisionQueueReadiness();
   const queuePriority =
-    includeQueuePriority || includeGlobalProgress
+    includeQueuePriority || needsGlobalProgress || needsGlobalPrewarmPlan
       ? buildDecisionOpsQueuePriorityPolicy({
           jobs,
           now,
@@ -175,7 +196,8 @@ export async function GET(request: Request) {
     includeResidentVisibility ||
     includeRuntimeStabilityGate ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress ||
+    needsGlobalProgress ||
+    needsGlobalPrewarmPlan ||
     includeCausalRunbook ||
     includeAlertSnapshot
       ? publicPmEventsFromRecords(decisionRecords)
@@ -191,7 +213,7 @@ export async function GET(request: Request) {
     includeOpsSummary ||
     includeModelQualityEvidence ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress
+    needsGlobalProgress
       ? summarizeProviderTelemetry({ since: Date.now() - 24 * 60_000 })
       : null;
   const residentPrewarm =
@@ -203,7 +225,8 @@ export async function GET(request: Request) {
     includeResidentCoverage ||
     includeRuntimeStabilityGate ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress
+    needsGlobalProgress ||
+    needsGlobalPrewarmPlan
       ? deriveResidentPrewarmStatus({
           records: decisionRecords,
           jobs,
@@ -225,7 +248,7 @@ export async function GET(request: Request) {
     includeModelQuality ||
     includeModelQualityEvidence ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress ||
+    needsGlobalProgress ||
     includeCausalRunbook ||
     includeAlertSnapshot ||
     includeOpsSummary
@@ -241,7 +264,7 @@ export async function GET(request: Request) {
     includeModelQuality ||
     includeModelQualityEvidence ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress ||
+    needsGlobalProgress ||
     includeCausalRunbook ||
     includeAlertSnapshot ||
     includeOpsSummary
@@ -256,6 +279,7 @@ export async function GET(request: Request) {
     includeRollup ||
     includeRunbook ||
     includeRecovery ||
+    needsAutonomousRemediation ||
     includeCausalRunbook ||
     includeAlertSnapshot ||
     includeOpsSummary
@@ -269,6 +293,7 @@ export async function GET(request: Request) {
     includeCronAudit ||
     includeRunbook ||
     includeRecovery ||
+    needsAutonomousRemediation ||
     includeCausalRunbook ||
     includeAlertSnapshot ||
     includeOpsSummary
@@ -281,6 +306,7 @@ export async function GET(request: Request) {
   const runbook =
     (includeRunbook ||
       includeRecovery ||
+      needsAutonomousRemediation ||
       includeCausalRunbook ||
       includeAlertSnapshot ||
       includeOpsSummary) &&
@@ -293,7 +319,11 @@ export async function GET(request: Request) {
         })
       : null;
   const recoveryPolicy =
-    (includeRecovery || includeCausalRunbook || includeAlertSnapshot || includeOpsSummary) &&
+    (includeRecovery ||
+      needsAutonomousRemediation ||
+      includeCausalRunbook ||
+      includeAlertSnapshot ||
+      includeOpsSummary) &&
     runbook &&
     cronAudit
       ? buildDecisionOpsQueueRecoveryPolicy({
@@ -306,7 +336,7 @@ export async function GET(request: Request) {
     (includeModelQuality ||
       includeModelQualityEvidence ||
       includeRuntimeQualityGate ||
-      includeGlobalProgress ||
+      needsGlobalProgress ||
       includeCausalRunbook ||
       includeAlertSnapshot ||
       includeOpsSummary) &&
@@ -321,7 +351,7 @@ export async function GET(request: Request) {
     includeQualityBaseline ||
     includeModelQualityEvidence ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress ||
+    needsGlobalProgress ||
     includeCausalRunbook ||
     includeAlertSnapshot
       ? buildDecisionOpsQualityBaseline({
@@ -334,7 +364,8 @@ export async function GET(request: Request) {
     includeOutputStability ||
     includeRuntimeStabilityGate ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress ||
+    needsGlobalProgress ||
+    needsAutonomousRemediation ||
     includeCausalRunbook ||
     includeAlertSnapshot
       ? buildDecisionOpsPublicOutputStability({
@@ -345,7 +376,8 @@ export async function GET(request: Request) {
     includeResidentVisibility ||
     includeRuntimeStabilityGate ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress
+    needsGlobalProgress ||
+    needsGlobalPrewarmPlan
       ? buildDecisionOpsResidentPublicVisibility({
           publicEvents,
           now,
@@ -355,7 +387,8 @@ export async function GET(request: Request) {
     (includeResidentCoverage ||
       includeRuntimeStabilityGate ||
       includeRuntimeQualityGate ||
-      includeGlobalProgress) &&
+      needsGlobalProgress ||
+      needsGlobalPrewarmPlan) &&
     residentPrewarm
       ? buildDecisionOpsResidentPrewarmCoverage({
           residentStatus: residentPrewarm,
@@ -372,7 +405,7 @@ export async function GET(request: Request) {
         })
       : null;
   const globalProgressRuntimeStability =
-    includeGlobalProgress && residentCoverage && outputStability
+    needsGlobalProgress && residentCoverage && outputStability
       ? buildDecisionOpsRuntimeStabilityGate({
           residentCoverage,
           residentPublicVisibility: residentVisibility ?? undefined,
@@ -393,8 +426,32 @@ export async function GET(request: Request) {
         })
       : null;
   const memoryLearning =
-    includeMemoryLearning || includeGlobalProgress
+    includeMemoryLearning || needsGlobalProgress || needsMemoryProductizationGate
       ? buildDecisionOpsMemoryLearning({
+          records: decisionRecords,
+          now,
+        })
+      : null;
+  const globalPrewarmPlan =
+    needsGlobalPrewarmPlan && residentPrewarm && residentVisibility && queuePriority
+      ? buildDecisionOpsGlobalPrewarmPlan({
+          residentStatus: residentPrewarm,
+          residentVisibility,
+          queuePriority,
+          locale,
+          now,
+        })
+      : null;
+  const roleDiversityGate = needsRoleDiversityGate
+    ? buildDecisionOpsRoleDiversityGate({
+        records: decisionRecords,
+        now,
+      })
+    : null;
+  const memoryProductizationGate =
+    needsMemoryProductizationGate && memoryLearning
+      ? buildDecisionOpsMemoryProductizationGate({
+          memoryLearning,
           records: decisionRecords,
           now,
         })
@@ -435,21 +492,21 @@ export async function GET(request: Request) {
     includeSparseRuntimePlan ||
     includeSparseReleaseGate ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress;
+    needsGlobalProgress;
   const needsSparseReadiness =
     includeSparseReadiness ||
     includeSparseOperatorReport ||
     includeSparseRuntimePlan ||
     includeSparseReleaseGate ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress;
+    needsGlobalProgress;
   const needsSparseConfigGate =
     includeSparseConfigGate ||
     includeSparseReadiness ||
     includeSparseRuntimePlan ||
     includeSparseReleaseGate ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress;
+    needsGlobalProgress;
   const needsSparseShadowHistory =
     includeSparseShadowHistory || needsSparseConfigGate || needsSparseReadiness;
   const needsSparseShadow = includeSparseShadow || needsSparseTelemetry || needsSparseReadiness;
@@ -499,7 +556,7 @@ export async function GET(request: Request) {
     includeSparseOperatorReport ||
     includeSparseReleaseGate ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress
+    needsGlobalProgress
       ? buildDecisionOpsSparseOperatorReport({
           sparseReadiness: sparseReadinessSource!,
           sparseTelemetry: sparseTelemetrySource!,
@@ -511,7 +568,7 @@ export async function GET(request: Request) {
     includeSparseRuntimePlan ||
     includeSparseReleaseGate ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress
+    needsGlobalProgress
       ? buildDecisionOpsSparseCandidatePolicy({
           sparseTelemetry: sparseTelemetrySource!,
         })
@@ -521,7 +578,7 @@ export async function GET(request: Request) {
     includeSparseRuntimePlan ||
     includeSparseReleaseGate ||
     includeRuntimeQualityGate ||
-    includeGlobalProgress
+    needsGlobalProgress
       ? buildDecisionOpsSparseRuntimePlan({
           sparseReadiness: sparseReadinessSource!,
           sparseConfigGate: sparseConfigGateSource!,
@@ -553,14 +610,14 @@ export async function GET(request: Request) {
         })
       : null;
   const globalProgressModelQualityEvidence =
-    includeGlobalProgress && qualityBaseline && modelQuality
+    needsGlobalProgress && qualityBaseline && modelQuality
       ? buildDecisionOpsModelQualityEvidence({
           qualityBaseline,
           modelQuality,
         })
       : modelQualityEvidence;
   const globalProgressRuntimeQualityGate =
-    includeGlobalProgress && globalProgressRuntimeStability && globalProgressModelQualityEvidence
+    needsGlobalProgress && globalProgressRuntimeStability && globalProgressModelQualityEvidence
       ? buildDecisionOpsRuntimeQualityGate({
           runtimeStability: globalProgressRuntimeStability,
           modelQualityEvidence: globalProgressModelQualityEvidence,
@@ -575,7 +632,7 @@ export async function GET(request: Request) {
         })
       : runtimeQualityGate;
   const globalProgress =
-    includeGlobalProgress &&
+    needsGlobalProgress &&
     residentCoverage &&
     residentVisibility &&
     queuePriority &&
@@ -587,6 +644,20 @@ export async function GET(request: Request) {
           queuePriority,
           runtimeQualityGate: globalProgressRuntimeQualityGate,
           memoryLearning,
+        })
+      : null;
+  const autonomousRemediation =
+    needsAutonomousRemediation &&
+    globalProgress &&
+    globalPrewarmPlan &&
+    recoveryPolicy &&
+    outputStability
+      ? buildDecisionOpsAutonomousRemediation({
+          globalProgress,
+          globalPrewarmPlan,
+          queueRecoveryPolicy: recoveryPolicy,
+          outputStability,
+          now,
         })
       : null;
 
@@ -761,6 +832,37 @@ export async function GET(request: Request) {
       ...(includeGlobalProgress
         ? {
             globalProgress,
+          }
+        : {}),
+      ...(includeGlobalPrewarmPlan
+        ? {
+            globalPrewarmPlan,
+          }
+        : {}),
+      ...(includeAutonomousRemediation
+        ? {
+            autonomousRemediation,
+          }
+        : {}),
+      ...(includeRoleDiversityGate
+        ? {
+            roleDiversityGate,
+          }
+        : {}),
+      ...(includeMemoryProductizationGate
+        ? {
+            memoryProductizationGate,
+          }
+        : {}),
+      ...(includeGlobalAutonomy
+        ? {
+            globalAutonomy: {
+              globalProgress,
+              globalPrewarmPlan,
+              autonomousRemediation,
+              roleDiversityGate,
+              memoryProductizationGate,
+            },
           }
         : {}),
       ...(includeOpsSummary && runbook && recoveryPolicy && modelQuality && lifecycle
