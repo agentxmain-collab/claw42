@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import type { ResidentPrewarmStatus } from "@/lib/watch/residentPrewarmStatus";
 import {
   mergeTimelinePayloadForDisplay,
   reconcileTimelineEventsForDisplay,
@@ -112,6 +113,26 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     });
   });
 
+  test("repairs a missing market overview resident lane before refreshing the visible symbol", () => {
+    expect(
+      resolveVisibleSessionRefreshTarget({
+        topics: [
+          { candidateType: "hotspot", symbol: "HOTSPOT" },
+          { candidateType: "symbol", symbol: "HYPE" },
+        ],
+        residentStatus: residentStatus({
+          marketOverviewState: "empty",
+          hotspotState: "ready",
+        }),
+        timelineLoaded: true,
+        locale: "zh_CN",
+      }),
+    ).toMatchObject({
+      symbol: "MARKET",
+      params: { candidateType: "market_overview" },
+    });
+  });
+
   test("merges primary and fallback timeline windows before replacing display events", () => {
     const primary = {
       events: [pmEvent("btc", 200)],
@@ -215,3 +236,52 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     ).toBe(46_000);
   });
 });
+
+function residentStatus({
+  marketOverviewState,
+  hotspotState,
+}: {
+  marketOverviewState: ResidentPrewarmStatus["marketOverview"]["state"];
+  hotspotState: ResidentPrewarmStatus["hotspot"]["state"];
+}): ResidentPrewarmStatus {
+  const servedAt = Date.parse("2026-05-20T12:00:00.000Z");
+  return {
+    schemaVersion: 1,
+    servedAt,
+    overallState:
+      marketOverviewState === "running" || hotspotState === "running"
+        ? "running"
+        : marketOverviewState === "queued" || hotspotState === "queued"
+          ? "queued"
+          : marketOverviewState === "failed" || hotspotState === "failed"
+            ? "failed"
+            : marketOverviewState === "ready" || hotspotState === "ready"
+              ? "ready"
+              : "empty",
+    slaState: marketOverviewState === "ready" && hotspotState === "ready" ? "healthy" : "critical",
+    latestSucceededAt: hotspotState === "ready" ? "2026-05-20T11:00:00.000Z" : null,
+    marketOverview: residentLane("market_overview", marketOverviewState),
+    hotspot: residentLane("hotspot", hotspotState),
+  };
+}
+
+function residentLane(
+  kind: "market_overview" | "hotspot",
+  state: ResidentPrewarmStatus["marketOverview"]["state"],
+): ResidentPrewarmStatus["marketOverview"] {
+  return {
+    kind,
+    state,
+    slaState: state === "ready" ? "healthy" : "critical",
+    stale: state !== "ready",
+    ageMs: state === "ready" ? 60 * 60_000 : null,
+    expectedIntervalMs: 3 * 60 * 60_000,
+    staleAfterMs: 6 * 60 * 60_000,
+    lastSucceededAt: state === "ready" ? "2026-05-20T11:00:00.000Z" : null,
+    lastAttemptAt: null,
+    nextRunAt: null,
+    lastError: null,
+    jobId: null,
+    candidateKey: null,
+  };
+}

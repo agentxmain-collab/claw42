@@ -4962,3 +4962,68 @@ Base: `16ab7d8`
 - This should be safe to expose only as a protected internal endpoint. The next higher-risk step would be queue publish or autonomous execution, which remains out of scope.
 
 [DOC-HINT: B241-B260 adds a protected resident-prewarm dry-run/explicit-execute ops endpoint that can enqueue PM decision job ledger records only after auth, env enablement, and confirmation; it does not run PM, publish queue jobs, change public UI, or touch production behavior.]
+
+# B261 resident visible-session repair report
+
+## Trigger
+
+Dan reported the current preview only showed hotspot + HYPE. The screenshot also showed
+`全局分析缓存 · 分析于 1432 分钟前`, so the visible board had no current market-overview card and
+the global resident cache was nearly 24 hours old.
+
+## First-Hand Root Cause
+
+- Public API direct curl to the preview is blocked by Vercel deployment protection, so the data-path
+  investigation used current `origin/main` code plus the screenshot state.
+- `AgentWatchBoard.resolveVisibleSessionRefreshTarget()` only looked at rendered topics:
+  - if no symbol existed, it requested server-selected symbol refresh;
+  - if a symbol existed, it refreshed that symbol.
+- In the observed state there was already a HYPE symbol card, so the visible-session trigger kept
+  selecting HYPE and never repaired the missing `market_overview` resident lane.
+- Cron/global prewarm remains the primary path, but preview/edge cases need a self-healing fallback
+  when `residentStatus.marketOverview` or `residentStatus.hotspot` is empty/stale/failed.
+
+## Implementation
+
+- `src/modules/agent-watch/AgentWatchBoard.tsx`
+  - `resolveVisibleSessionRefreshTarget()` now accepts `residentStatus`.
+  - It prioritizes resident lane repair before symbol refresh:
+    1. market overview if empty/failed/stale/non-healthy and not queued/running;
+    2. hotspot under the same conditions;
+    3. server-selected symbol or latest symbol as before.
+  - The main effect passes the timeline payload's `residentStatus` into the target resolver.
+- `src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`
+  - Adds the failing regression case: topics = hotspot + HYPE, resident marketOverview = empty.
+  - Expected target is `candidateType=market_overview`, not `symbol=HYPE`.
+
+## Verification
+
+- RED verified:
+  - `npx vitest run src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts`
+  - Failed because the target was `{ symbol: "HYPE" }` instead of `{ candidateType: "market_overview" }`.
+- Target GREEN:
+  - `npx vitest run src/modules/agent-watch/__tests__/visibleSessionRefreshTarget.test.ts src/app/api/watch/refresh/route.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: PASS, 3 files / 32 tests.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- Full gates:
+  - `npm run verify`: PASS.
+    - `test:watch-pipeline`: PASS, 96 files / 513 tests.
+    - `verify:chat-v3-final`: PASS, 50 synthetic threads.
+    - `verify:execution-safety`: PASS.
+  - `rm -rf .next && npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+    - The local a11y run also exercised the repaired path and showed
+      `POST /api/watch/refresh?locale=zh_CN&candidateType=market_overview 200`.
+
+## Boundary
+
+- No layout change.
+- No public copy change.
+- No candidate ranking change.
+- No PM prompt/model change.
+- No production deploy.
+- This is a fallback repair target selection only; scheduled global prewarm remains the primary
+  design.
+
+[DOC-HINT: B261 changes visible-session refresh target selection so missing/stale resident market-overview or hotspot lanes repair before symbol refresh; no layout, ranking, PM prompt, or production behavior changed.]
