@@ -2320,6 +2320,21 @@ describe("/api/watch/ops-health", () => {
         productionReleaseAllowed: false,
         publicBehaviorChanged: false,
       },
+      residentQueueCanary: {
+        schemaVersion: 1,
+        status: "blocked",
+        allResidentClosedLoopReady: false,
+        lanes: {
+          marketOverview: {
+            kind: "market_overview",
+            issue: "job_missing",
+          },
+          hotspot: {
+            kind: "hotspot",
+            issue: "job_missing",
+          },
+        },
+      },
       autonomousRemediation: {
         schemaVersion: 1,
         safeAutomationLevel: "none",
@@ -2342,6 +2357,7 @@ describe("/api/watch/ops-health", () => {
     });
     expect(payload.globalProgress).toBeUndefined();
     expect(payload.globalPrewarmPlan).toBeUndefined();
+    expect(payload.residentQueueCanary).toBeUndefined();
     expect(payload.autonomousRemediation).toBeUndefined();
     expect(payload.roleDiversityGate).toBeUndefined();
     expect(payload.memoryProductizationGate).toBeUndefined();
