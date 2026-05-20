@@ -5156,3 +5156,67 @@ Dan reported that the expanded decision flow showed a `第 2 轮 · 多轮辩论
 - No PM pipeline, prompt, candidate ranking, cron, or UI layout rewrite.
 
 [DOC-HINT: hotfix-7 removes the fake social scoring dimension; public timeline keeps one real stale resident market/hotspot floor for up to 72h; analysis-only progress cannot jump to risk before public timeline completion.]
+
+# P0/P1 global resident prewarm queue publish gate
+
+Codex time: 2026-05-20 14:19 CST
+Branch: `feature/p0p1-global-resident-stability`
+Base: `origin/main` = `e761ef9a928d90be0b65867ba01792eeebfe20e7`
+
+## First-hand finding
+
+- `src/app/api/cron/strategy-replay/route.ts` already publishes cron-created PM jobs to the
+  Vercel queue when `PM_DECISION_QUEUE_ENABLED=true`.
+- The protected ops endpoint `/api/watch/ops-resident-prewarm` only created PM decision ledger
+  jobs. Its plan explicitly reported `willPublishQueue=false` / `willRunPmPipeline=false`.
+- That meant ops could identify missing global lanes and create queue-looking records, but could
+  not actually hand resident market/hotspot work to the PM queue when preview cron was unavailable
+  or delayed.
+
+## Implemented
+
+- Kept existing default behavior unchanged: `mode=execute` still only enqueues ledger records unless
+  queue publish is explicitly requested.
+- Added an explicit queue-publish path guarded by all of:
+  - `mode=execute`
+  - `publishQueue=true`
+  - `OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED=true`
+  - `OPS_RESIDENT_PREWARM_QUEUE_PUBLISH_ENABLED=true`
+  - `PM_DECISION_QUEUE_ENABLED=true` via `getPmDecisionQueueReadiness()`
+  - `x-claw42-resident-prewarm-confirm: enqueue-resident-prewarm`
+- The executor now reports a `queuePublish` block and sets `willPublishQueue=true` only when all
+  queue gates pass.
+- Queue publishing uses the existing `publishPmDecisionJobToQueue()` path, so it inherits existing
+  idempotency key, retention, priority headers, and queue consumer behavior.
+- `willRunPmPipeline` remains `false`; this endpoint never runs the 14-role PM pipeline inline.
+
+## Verification
+
+- RED tests added first for:
+  - queue publishing blocked when publish env / queue readiness is missing.
+  - queue publishing calls `publishPmDecisionJobToQueue()` for market overview + hotspot only after
+    explicit approval.
+- GREEN:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsResidentPrewarmExecutor.test.ts src/app/api/watch/ops-resident-prewarm/route.test.ts`: PASS, 11 tests.
+  - `npm run typecheck`: PASS.
+  - `npm run lint`: PASS.
+  - `npm run format:check`: PASS.
+  - `npm run test:watch-pipeline`: PASS, 96 files / 519 tests.
+  - `npm run verify:agent-ip`: PASS.
+  - `npm run verify:news`: PASS.
+  - `npm run test:news`: PASS, 6 files / 25 tests.
+  - `npm run verify:chat-v3-final`: PASS, 50 synthetic threads.
+  - `npm run verify:execution-safety`: PASS.
+  - `npm run verify:metrics`: PASS, 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+  - `npm run build`: PASS.
+  - `npm run verify`: PASS.
+
+## Boundary
+
+- No production deploy.
+- No Vercel local deploy from this worktree.
+- No PM pipeline, prompt, model, candidate ranking, UI layout, cron schedule, or Vercel env change.
+- This is a protected ops execution seam only; queue publishing remains off by default.
+
+[DOC-HINT: `/api/watch/ops-resident-prewarm?mode=execute&publishQueue=true` can now hand global resident market/hotspot jobs to the existing PM decision queue, but only with explicit ops confirmation plus separate executor and queue env gates.]

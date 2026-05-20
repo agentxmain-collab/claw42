@@ -9,6 +9,10 @@ import { buildDecisionOpsGlobalPrewarmPlan } from "@/lib/team/decisionOpsGlobalP
 import { buildDecisionOpsQueuePriorityPolicy } from "@/lib/team/decisionOpsQueuePriorityPolicy";
 import { buildDecisionOpsResidentPublicVisibility } from "@/lib/team/decisionOpsResidentPublicVisibility";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import {
+  getPmDecisionQueueReadiness,
+  publishPmDecisionJobToQueue,
+} from "@/lib/team/pmDecisionJobQueue";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
 import { enqueuePmDecisionJob, readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
@@ -44,6 +48,10 @@ async function handle(request: Request, mode: DecisionOpsResidentPrewarmExecutor
     RESIDENT_PREWARM_EXECUTOR_CONFIRMATION;
   const executorEnabled =
     process.env.OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED?.toLowerCase() === "true";
+  const queuePublishRequested = url.searchParams.get("publishQueue") === "true";
+  const queuePublishEnabled =
+    process.env.OPS_RESIDENT_PREWARM_QUEUE_PUBLISH_ENABLED?.toLowerCase() === "true";
+  const queueReadiness = getPmDecisionQueueReadiness();
   const [jobs, records] = await Promise.all([
     readPmDecisionJobs({ locale, limit: LEDGER_LIMIT }),
     readAllDecisionRecords(LEDGER_LIMIT, locale),
@@ -74,6 +82,9 @@ async function handle(request: Request, mode: DecisionOpsResidentPrewarmExecutor
     mode,
     executorEnabled,
     confirmed,
+    queuePublishRequested,
+    queuePublishEnabled,
+    queueReady: queueReadiness.enabled,
     locale,
     now,
   });
@@ -97,6 +108,7 @@ async function handle(request: Request, mode: DecisionOpsResidentPrewarmExecutor
   const executedPlan = await executeDecisionOpsResidentPrewarmPlan({
     plan,
     enqueueJob: enqueuePmDecisionJob,
+    publishJobToQueue: publishPmDecisionJobToQueue,
     now,
   });
 
