@@ -4730,3 +4730,79 @@ Base: 6ddf57c
 - Preview should come from the GitHub/Vercel PR webhook.
 
 [DOC-HINT: B131-B145 tighten analysis-only stage truthfulness and add ops-only resident public visibility plus memory-learning gates; public layout, PM execution, refresh/SSE, candidate ranking, and production release remain unchanged.]
+
+---
+
+# B146-B160 全局推进门禁报告
+
+Date: 2026-05-20
+Branch: `feature/b146-b160-global-quality`
+Base: `e6e359b`
+
+## Scope
+
+- P0/P1: Add one protected global progress gate that combines the four current B-line priorities:
+  - resident global lanes: market overview + hotspot must be covered and visible.
+  - queue/cron stability: resident priority drain must not be actively blocking lower-priority work.
+  - model quality: runtime-quality gate must allow long-running preview observation.
+  - memory learning: memory-loop learning must remain an explicit observe-mode gate until resolved
+    non-legacy samples and memory notes accumulate.
+- No public UI layout change.
+- No PM pipeline execution change.
+- No candidate ranking change.
+- No refresh/SSE behavior change.
+- No production deploy behavior change.
+
+## Implementation
+
+- `src/lib/team/decisionOpsGlobalProgressGate.ts`
+  - New read-only report builder for combined B-line readiness.
+  - Status values:
+    - `hold`
+    - `ready_for_global_runtime_observe`
+    - `ready_for_memory_learning_observe`
+  - Keeps `productionReleaseAllowed=false` and `publicBehaviorChanged=false`.
+  - Blocks on resident coverage / resident visibility / resident queue drain / runtime-quality /
+    memory-learning reasons in deterministic order.
+- `src/app/api/watch/ops-health/route.ts`
+  - Adds protected query flag `globalProgress=1`.
+  - Internally derives the needed inputs without exposing nested reports unless their own flags are
+    requested.
+  - Reads full ledger window for this gate because it needs public projection, runtime quality, queue
+    priority, and memory-learning context.
+- `package.json`
+  - Adds `decisionOpsGlobalProgressGate.test.ts` to `test:watch-pipeline`.
+
+## Verification
+
+- RED verified:
+  - New module import failed before implementation.
+  - `globalProgress=1` initially did not read full ledger and did not call the new gate.
+- Target tests:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsGlobalProgressGate.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 2 files / 34 tests.
+- Full gates:
+  - `npm run verify`: PASS.
+    - format:check PASS.
+    - typecheck PASS.
+    - lint PASS.
+    - verify:agent-ip PASS.
+    - verify:news PASS.
+    - test:news PASS, 6 files / 25 tests.
+    - test:watch-pipeline PASS, 90 files / 494 tests.
+    - verify:chat-v3-final PASS, 50 synthetic threads.
+    - verify:execution-safety PASS.
+  - `rm -rf .next && npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Self Review
+
+- This is intentionally an ops-only consolidation gate, not a public UX change.
+- It does not claim memory learning is complete unless `memoryLearning.memoryLoopLearningReady` is
+  true.
+- It preserves the production lock: no prod release flag, no public behavior change, no Vercel prod
+  action.
+- The gate gives Dan/F one single readout for the current B-line question: whether global resident
+  analysis, queue drain, model quality, and memory learning are all ready, or which layer is blocking.
+
+[DOC-HINT: B146-B160 adds protected ops-health globalProgress=1 as the combined B-line gate for resident coverage/visibility, queue drain, runtime quality, and memory learning; no public UI, PM execution, refresh/SSE, candidate ranking, or production behavior changed.]
