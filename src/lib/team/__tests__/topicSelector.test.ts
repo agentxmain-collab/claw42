@@ -127,6 +127,7 @@ describe("selectPmDecisionTopics", () => {
       memory: 0,
     });
     expect(topics[0].scoreBreakdown.total).toBeCloseTo(157.3);
+    expect(topics[0].scoreBreakdown).not.toHaveProperty("social");
     expect(topics[0].reasons).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ kind: "news", label: "7d news heat" }),
@@ -501,6 +502,8 @@ describe("selectPmDecisionTopics", () => {
     expect(selection.summary).toContain("24h -5.40%");
     expect(selection.summary).toContain("新闻热度、市场信号是主因");
     expect(selection.summary).toContain("可执行性、市值权重提供辅助");
+    expect(selection.summary).not.toContain("社交热度");
+    expect(selection.summary.toLowerCase()).not.toContain("social");
     expect(selection.summary).not.toContain("high impact news");
   });
 });

@@ -29,9 +29,14 @@ export function normalizePublicDecisionStageStatuses(
 ): Partial<Record<DecisionStageTraceId, DecisionStageTraceStatus>> {
   const originalStatus = (stageId: DecisionStageTraceId): DecisionStageTraceStatus =>
     trace?.find((entry) => entry.stageId === stageId)?.status ?? "pending";
+  const analysisOnlyPublicTimelineDone =
+    options.analysisOnlyCandidate && originalStatus("public_timeline") === "done";
   const rawStatus = (stageId: DecisionStageTraceId): DecisionStageTraceStatus => {
     const raw = originalStatus(stageId);
-    if (!options.hasRenderableTradeDecision && !options.analysisOnlyCandidate) {
+    if (
+      !options.hasRenderableTradeDecision &&
+      (!options.analysisOnlyCandidate || !analysisOnlyPublicTimelineDone)
+    ) {
       if (stageId === "trade_decision" && raw === "done") return "in_progress";
       if (stageId === "risk_lead") return "pending";
     }
@@ -97,11 +102,7 @@ export function publicDecisionVisibleStageLimit(
   const statuses = normalizePublicDecisionStageStatuses(trace, options);
   if (
     options.analysisOnlyCandidate &&
-    trace.some(
-      (entry) =>
-        (entry.stageId === "record_write" || entry.stageId === "public_timeline") &&
-        entry.status === "done",
-    ) &&
+    trace.some((entry) => entry.stageId === "public_timeline" && entry.status === "done") &&
     PUBLIC_PROGRESS_GATE_ORDER.every(({ traceId }) => statuses[traceId] === "done")
   ) {
     return 6;

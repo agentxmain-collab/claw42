@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-05-20T05:20:31.657Z",
+  "note": "Deterministic topic-selector raw artifact for hotfix-7. It captures the PM trigger selection context before LLM execution; live LLM was intentionally not invoked from this clean worktree.",
+  "selectedSymbol": "ETH",
+  "scoreBreakdown": {
+    "marketCap": 15,
+    "volume": 12.5,
+    "news": 60,
+    "executable": 18,
+    "market": 40,
+    "momentum": 10.8,
+    "pool": 1,
+    "memory": 0,
+    "total": 157.3
+  },
+  "reasonKinds": ["marketCap", "volume", "news", "executable", "market", "momentum", "pool"],
+  "selectionSummary": "本轮优先分析 ETH：新闻热度、市场信号是主因；可执行性、市值权重提供辅助。依据：市值权重：基础市值权重；24h成交量：基础成交量权重；新闻热度：7d 1篇 / 1源 / 1高影响；可执行性：CoinW可执行标的；市场信号：ETH 24h -5.40%；24h波动：24h -5.40%；候选池：主流高流动性池。",
+  "socialKeyPresent": false
+}
