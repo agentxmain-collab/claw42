@@ -5027,3 +5027,61 @@ the global resident cache was nearly 24 hours old.
   design.
 
 [DOC-HINT: B261 changes visible-session refresh target selection so missing/stale resident market-overview or hotspot lanes repair before symbol refresh; no layout, ranking, PM prompt, or production behavior changed.]
+
+# B262 stage message order repair report
+
+## Trigger
+
+Dan reported that the expanded decision flow showed a `第 2 轮 · 多轮辩论` message under
+`阶段 1 · 信息收集`.
+
+## First-Hand Root Cause
+
+- The public stage UI groups messages by `message.stageId`.
+- `src/lib/watch/v9TopicAdapter.ts` mapped every message by `stageForMember(memberId)`.
+- That is correct for round-1 analyst collection, but wrong for multi-round analyst refinements:
+  foundation / chart / news / on-chain analysts still map to stage 1 even when their `round > 1`.
+- Result: a round-2 analyst refinement rendered inside the stage-1 group, so the user saw debate copy
+  before the stage-2 marker.
+
+## Implementation
+
+- `src/lib/watch/v9TopicAdapter.ts`
+  - Added `stageForRoundEntry()`.
+  - If a base stage-1 analyst message has `round > 1`, it now maps to public stage 2.
+  - Round-1 collection still maps to stage 1.
+  - Native stage-2, stage-3, stage-4, stage-5, and memory-loop messages keep their existing stages.
+- `src/lib/watch/__tests__/v9TopicAdapter.test.ts`
+  - Added a regression case proving second-round fundamental analyst refinements render in stage 2
+    and no `第 2 轮 · 多轮辩论` label appears under stage 1.
+- `src/lib/watch/__tests__/chatAuthenticityBoundary.test.ts`
+  - Raised the madge dependency-graph boundary test timeout to 15s. The test passed standalone in
+    ~1.3-2.1s but timed out twice under full parallel `npm run verify` at the default 5s; assertion
+    and product behavior are unchanged.
+
+## Verification
+
+- RED verified:
+  - `npx vitest run src/lib/watch/__tests__/v9TopicAdapter.test.ts -t "keeps second-round analyst refinements"`
+  - Failed with round-2 fundamental message at `stage-1` instead of `stage-2`.
+- GREEN / gates:
+  - `npx vitest run src/lib/watch/__tests__/v9TopicAdapter.test.ts src/modules/agent-watch/v9/__tests__/TopicBody.test.tsx src/lib/watch/__tests__/publicDecisionStageContract.test.ts`: PASS, 42 tests.
+  - `npx vitest run src/lib/watch/__tests__/v9TopicAdapter.test.ts src/lib/watch/__tests__/chatAuthenticityBoundary.test.ts`: PASS, 47 tests.
+  - `npm run typecheck`: PASS.
+  - `npm run lint`: PASS.
+  - `npm run format:check`: PASS.
+  - `git diff --check`: PASS.
+  - `npm run verify`: PASS, 96 files / 514 tests plus chat-v3-final and execution-safety.
+  - `rm -rf .next && npm run build`: PASS.
+  - `npm run verify:metrics`: PASS.
+  - `npm run verify:a11y`: PASS, 0 axe violations.
+
+## Boundary
+
+- No layout change.
+- No prompt/model change.
+- No candidate ranking change.
+- No production deploy.
+- This is a public message stage mapping fix only.
+
+[DOC-HINT: B262 maps round>1 foundation analyst refinements from public stage 1 to stage 2 so debate labels cannot render inside the information-collection section.]

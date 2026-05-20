@@ -292,6 +292,15 @@ function stageForMember(memberId: TeamMemberId) {
   return 5;
 }
 
+function stageForRoundEntry(
+  entry: NonNullable<PmDecisionPayload["rounds"]>[number],
+  memberId: TeamMemberId,
+) {
+  const baseStage = stageForMember(memberId);
+  if (baseStage === 1 && entry.round > 1) return 2;
+  return baseStage;
+}
+
 function makeStages(
   topicId: string,
   hasTradeDecision: boolean,
@@ -507,10 +516,11 @@ function makeRationaleMessages({
           const entry = roundEntries.find(
             (candidate) => candidate.round === round && memberForRoundEntry(candidate) === memberId,
           );
-          const rationale = entry?.rationale.trim();
+          if (!entry) return [];
+          const rationale = entry.rationale.trim();
           if (!rationale) return [];
           const agentId = mapTeamMemberToDispatchAgent(memberId, directionHint);
-          const stage = stageForMember(memberId);
+          const stage = stageForRoundEntry(entry, memberId);
           const roundLabel = roundLabelUsed
             ? undefined
             : formatRoundLabel(round, maxRound, roundDict);
