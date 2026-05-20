@@ -150,7 +150,7 @@ describe("mergePublicTimelineEvents", () => {
     ).toEqual(["pm:market:latest", "pm:hotspot:latest", "pm:BTC:latest"]);
   });
 
-  it("dedupes PM events by candidate type specific history keys", () => {
+  it("dedupes PM events by public card lane keys", () => {
     const market = pmDecision({
       recordId: "pm:market:latest",
       symbol: "MARKET",
@@ -167,14 +167,12 @@ describe("mergePublicTimelineEvents", () => {
     });
     const legacy = pmDecision({ recordId: "pm:BTC:latest", symbol: "BTC", ts: now });
 
-    expect(publicTimelinePmCandidateKey(market)).toBe("zh_CN:market_overview:2026-05-16");
-    expect(publicTimelinePmCandidateKey(hotspot)).toBe(
-      "zh_CN:hotspot:hotspot:btc-etf:window-2026-05-16T09",
-    );
+    expect(publicTimelinePmCandidateKey(market)).toBe("zh_CN:market_overview");
+    expect(publicTimelinePmCandidateKey(hotspot)).toBe("zh_CN:hotspot");
     expect(publicTimelinePmCandidateKey(legacy)).toBe("zh_CN:BTC");
   });
 
-  it("dedupes market overview records by the candidate UTC day key across UTC midnight", () => {
+  it("keeps only the latest market overview public card across candidate windows", () => {
     const stale = pmDecision({
       recordId: "pm:market:morning",
       symbol: "MARKET",
@@ -198,6 +196,32 @@ describe("mergePublicTimelineEvents", () => {
         event.payload.kind === "pm_decision" ? event.payload.recordId : event.id,
       ),
     ).toEqual(["pm:market:afternoon"]);
+  });
+
+  it("keeps only the latest hotspot public card across candidate windows", () => {
+    const stale = pmDecision({
+      recordId: "pm:hotspot:older",
+      symbol: "HOTSPOT",
+      ts: Date.parse("2026-05-20T04:47:00.000Z"),
+      candidateType: "hotspot",
+      candidateKey: "hotspot:utc:zh_CN:2026-05-20T03:market",
+      displayTitle: "热点叙事追踪",
+    });
+    const latest = pmDecision({
+      recordId: "pm:hotspot:latest",
+      symbol: "HOTSPOT",
+      ts: Date.parse("2026-05-20T10:12:00.000Z"),
+      candidateType: "hotspot",
+      candidateKey: "hotspot:utc:zh_CN:2026-05-20T09:market",
+      displayTitle: "热点叙事追踪",
+    });
+
+    expect(publicTimelinePmCandidateKey(stale)).toBe(publicTimelinePmCandidateKey(latest));
+    expect(
+      mergePublicTimelineEvents([stale, latest]).map((event) =>
+        event.payload.kind === "pm_decision" ? event.payload.recordId : event.id,
+      ),
+    ).toEqual(["pm:hotspot:latest"]);
   });
 });
 
