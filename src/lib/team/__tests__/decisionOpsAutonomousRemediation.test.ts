@@ -21,6 +21,11 @@ describe("buildDecisionOpsAutonomousRemediation", () => {
         status: "degraded",
         primaryIssue: "minimum_visible_cards_gap",
       }),
+      residentPrewarmExecutor: {
+        executorEnabled: true,
+        queuePublishEnabled: true,
+        queueReady: true,
+      },
       now,
     });
 
@@ -31,12 +36,69 @@ describe("buildDecisionOpsAutonomousRemediation", () => {
       safeAutomationLevel: "resident_prewarm_only",
       productionReleaseAllowed: false,
       publicBehaviorChanged: false,
+      residentPrewarmExecutor: {
+        ledgerEnqueueReady: true,
+        queuePublishReady: true,
+        queuePublishEndpoint: "/api/watch/ops-resident-prewarm?mode=execute&publishQueue=true",
+      },
     });
     expect(report.remediations.map((item) => item.kind)).toEqual([
       "enqueue_resident_market_overview",
       "enqueue_resident_hotspot",
     ]);
     expect(report.remediations.every((item) => item.executable === false)).toBe(true);
+    expect(report.remediations[0]).toMatchObject({
+      operatorEndpoint: {
+        method: "POST",
+        path: "/api/watch/ops-resident-prewarm?mode=execute&publishQueue=true",
+        confirmationHeader: "x-claw42-resident-prewarm-confirm",
+        confirmationValue: "enqueue-resident-prewarm",
+      },
+      evidence: expect.arrayContaining(["resident_queue_publish_ready"]),
+    });
+  });
+
+  it("surfaces missing resident prewarm execution gates without marking the action executable", () => {
+    const report = buildDecisionOpsAutonomousRemediation({
+      globalProgress: globalProgress({
+        status: "hold",
+        blockingReasons: ["resident_market_overview_missing"],
+      }),
+      globalPrewarmPlan: globalPrewarmPlan(),
+      queueRecoveryPolicy: queueRecoveryPolicy(),
+      outputStability: outputStability({
+        status: "degraded",
+        primaryIssue: "minimum_visible_cards_gap",
+      }),
+      residentPrewarmExecutor: {
+        executorEnabled: true,
+        queuePublishEnabled: false,
+        queueReady: false,
+      },
+      now,
+    });
+
+    expect(report).toMatchObject({
+      status: "resident_prewarm_ready",
+      safeAutomationLevel: "resident_prewarm_only",
+      residentPrewarmExecutor: {
+        ledgerEnqueueReady: true,
+        queuePublishReady: false,
+        requiredEnv: {
+          executorEnabled: true,
+          queuePublishEnabled: false,
+          pmDecisionQueueEnabled: false,
+        },
+      },
+    });
+    expect(report.remediations[0]).toMatchObject({
+      executable: false,
+      evidence: expect.arrayContaining([
+        "resident_queue_publish_not_ready",
+        "OPS_RESIDENT_PREWARM_QUEUE_PUBLISH_ENABLED=false",
+        "PM_DECISION_QUEUE_ENABLED=false",
+      ]),
+    });
   });
 
   it("pauses automation when queue recovery says new triggers should stop", () => {

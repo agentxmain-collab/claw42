@@ -5220,3 +5220,56 @@ Base: `origin/main` = `e761ef9a928d90be0b65867ba01792eeebfe20e7`
 - This is a protected ops execution seam only; queue publishing remains off by default.
 
 [DOC-HINT: `/api/watch/ops-resident-prewarm?mode=execute&publishQueue=true` can now hand global resident market/hotspot jobs to the existing PM decision queue, but only with explicit ops confirmation plus separate executor and queue env gates.]
+
+# P0/P1 global autonomy ops readiness
+
+Codex time: 2026-05-20 14:54 CST
+Branch: `feature/p0p1-ops-readiness`
+Base: `origin/main` = `6c104ea6d0346d334aaad998684acf057967c3f9`
+
+## First-hand finding
+
+- PR #183 added the protected queue-publish seam for resident market/hotspot prewarm.
+- `/api/watch/ops-health?globalAutonomy=1` still only said resident prewarm was needed; it did not
+  expose whether the executor env, queue-publish env, and PM queue flag were all ready.
+- That made the next operational step ambiguous: the system could diagnose missing global lanes but
+  the health payload did not show the exact protected endpoint and required gates to repair them.
+
+## Implemented
+
+- Extended `buildDecisionOpsAutonomousRemediation()` with a read-only
+  `residentPrewarmExecutor` readiness block:
+  - `ledgerEnqueueReady`
+  - `queuePublishReady`
+  - `queuePublishEndpoint`
+  - `requiredEnv.executorEnabled`
+  - `requiredEnv.queuePublishEnabled`
+  - `requiredEnv.pmDecisionQueueEnabled`
+- Resident prewarm remediations now include a non-executable `operatorEndpoint`:
+  - `POST /api/watch/ops-resident-prewarm?mode=execute&publishQueue=true`
+  - confirmation header `x-claw42-resident-prewarm-confirm`
+  - confirmation value `enqueue-resident-prewarm`
+  - required env gate names only, no secret values.
+- `/api/watch/ops-health?globalAutonomy=1` now passes actual env/queue readiness into the
+  autonomous remediation report.
+- The report remains read-only: remediation items still have `executable=false`.
+
+## Verification
+
+- `npx vitest run src/lib/team/__tests__/decisionOpsAutonomousRemediation.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 36 tests.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run format:check`: PASS.
+- `npm run verify`: PASS.
+- `npm run verify:metrics`: PASS, 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+- `npm run build`: PASS.
+
+## Boundary
+
+- No production deploy.
+- No Vercel local deploy.
+- No queue publish, no PM pipeline run, no env mutation.
+- No UI, prompt, candidate ranking, cron schedule, or public payload change.
+
+[DOC-HINT: `globalAutonomy=1` now exposes resident prewarm execution readiness and the protected queue-publish operator endpoint without executing it.]
