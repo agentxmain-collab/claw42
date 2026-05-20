@@ -4896,3 +4896,69 @@ Base: `16ab7d8`
     and memory productization are ready, or which layer is blocking.
 
 [DOC-HINT: B161-B240 adds protected ops-health globalAutonomy read-only gates for UTC global prewarm, autonomous remediation planning, role diversity, and memory productization; no public UI, PM execution, refresh/SSE, candidate ranking, or production behavior changed.]
+
+# B241-B260 resident prewarm executor guard report
+
+## Scope
+
+- Branch: `feature/b241-b260-resident-executor`
+- Base: `75be9a1` (`feat(watch): add global autonomy ops gates`)
+- Goal: turn the previous read-only global prewarm plan into a protected dry-run endpoint plus an explicit executor that can enqueue resident prewarm jobs only after ops auth, env enablement, and confirmation.
+- No public UI change.
+- No production deploy behavior change.
+- No direct PM pipeline run.
+- No queue publish.
+- No candidate ranking change.
+
+## Implementation
+
+- `src/lib/team/decisionOpsResidentPrewarmExecutor.ts`
+  - Builds dry-run and execute plans from `decisionOpsGlobalPrewarmPlan`.
+  - Keeps safety locks fixed:
+    - `productionReleaseAllowed=false`
+    - `publicBehaviorChanged=false`
+    - `willRunPmPipeline=false`
+    - `willPublishQueue=false`
+  - Execute mode requires both `executorEnabled=true` and explicit confirmation.
+  - `executeDecisionOpsResidentPrewarmPlan()` enqueues only PM decision job ledger records and returns the job ids.
+- `src/app/api/watch/ops-resident-prewarm/route.ts`
+  - Adds protected `GET` dry-run and protected `POST` execute route.
+  - Uses existing ops auth style: `OPS_HEALTH_SECRET || CRON_SECRET` via bearer or `x-claw42-ops-secret`.
+  - Execute requires `OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED=true` and `x-claw42-resident-prewarm-confirm: enqueue-resident-prewarm`.
+  - Reads records/jobs and derives resident status, public visibility, queue priority, and global prewarm targets before building the executor plan.
+- `package.json`
+  - Adds the executor and route tests to `test:watch-pipeline`.
+
+## Verification
+
+- RED verified:
+  - `src/lib/team/__tests__/decisionOpsResidentPrewarmExecutor.test.ts` initially failed because the executor module did not exist.
+  - `src/app/api/watch/ops-resident-prewarm/route.test.ts` initially failed because the route module did not exist.
+- Target tests:
+  - `npx vitest run src/lib/team/__tests__/decisionOpsResidentPrewarmExecutor.test.ts src/app/api/watch/ops-resident-prewarm/route.test.ts`: PASS, 2 files / 7 tests.
+- Full gates:
+  - `npm run verify`: PASS.
+    - `format:check`: PASS.
+    - `typecheck`: PASS.
+    - `lint`: PASS.
+    - `verify:agent-ip`: PASS.
+    - `verify:news`: PASS.
+    - `test:news`: PASS, 6 files / 25 tests.
+    - `test:watch-pipeline`: PASS, 96 files / 512 tests.
+    - `verify:chat-v3-final`: PASS, 50 synthetic threads.
+    - `verify:execution-safety`: PASS.
+  - `rm -rf .next && npm run build`: PASS.
+  - `npm run verify:metrics`: PASS, 2 files / 5 tests.
+  - `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+
+## Self Review
+
+- This is still an ops-only layer. It creates the smallest explicit bridge from "plan" to "enqueue job", but does not run the PM pipeline and does not publish jobs to the queue.
+- The new route is fail-closed:
+  - Missing ops secret returns `401`.
+  - Execute without env enablement returns `403`.
+  - Execute without exact confirmation returns `403`.
+  - Dry-run never enqueues.
+- This should be safe to expose only as a protected internal endpoint. The next higher-risk step would be queue publish or autonomous execution, which remains out of scope.
+
+[DOC-HINT: B241-B260 adds a protected resident-prewarm dry-run/explicit-execute ops endpoint that can enqueue PM decision job ledger records only after auth, env enablement, and confirmation; it does not run PM, publish queue jobs, change public UI, or touch production behavior.]
