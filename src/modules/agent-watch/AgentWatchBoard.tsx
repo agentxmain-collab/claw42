@@ -154,14 +154,19 @@ export function mergeTimelinePayloadForDisplay(
 
 export function resolveVisibleSessionRefreshTarget({
   topics,
+  residentStatus,
   timelineLoaded,
   locale,
 }: {
   topics: Pick<DispatchTopic, "candidateType" | "symbol">[];
+  residentStatus?: ResidentPrewarmStatus | null;
   timelineLoaded: boolean;
   locale: string;
 }): VisibleSessionRefreshTarget | null {
   if (!timelineLoaded) return null;
+
+  const residentTarget = residentRefreshTarget({ residentStatus, locale });
+  if (residentTarget) return residentTarget;
 
   const latestRefreshSymbol =
     topics.find((topic) => normalizeCandidateType(topic.candidateType) === "symbol")?.symbol ??
@@ -179,6 +184,38 @@ export function resolveVisibleSessionRefreshTarget({
     symbol: latestRefreshSymbol,
     params: { symbol: latestRefreshSymbol },
   };
+}
+
+function residentRefreshTarget({
+  residentStatus,
+  locale,
+}: {
+  residentStatus?: ResidentPrewarmStatus | null;
+  locale: string;
+}): VisibleSessionRefreshTarget | null {
+  if (!residentStatus) return null;
+  if (shouldRefreshResidentLane(residentStatus.marketOverview)) {
+    return {
+      sessionKey: `freshness-trigger-${locale}-resident-market_overview`,
+      symbol: "MARKET",
+      params: { candidateType: "market_overview" },
+    };
+  }
+  if (shouldRefreshResidentLane(residentStatus.hotspot)) {
+    return {
+      sessionKey: `freshness-trigger-${locale}-resident-hotspot`,
+      symbol: "HOTSPOT",
+      params: { candidateType: "hotspot" },
+    };
+  }
+  return null;
+}
+
+function shouldRefreshResidentLane(lane: ResidentPrewarmStatus["marketOverview"]) {
+  if (lane.state === "queued" || lane.state === "running") return false;
+  return (
+    lane.state === "empty" || lane.state === "failed" || lane.stale || lane.slaState !== "healthy"
+  );
 }
 
 export function AgentWatchBoard({
@@ -554,6 +591,7 @@ export function AgentWatchBoard({
   useEffect(() => {
     const refreshTarget = resolveVisibleSessionRefreshTarget({
       topics,
+      residentStatus,
       timelineLoaded,
       locale: agentWatchLocale,
     });
@@ -641,7 +679,7 @@ export function AgentWatchBoard({
       if (retryTimer !== null) window.clearTimeout(retryTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [agentWatchLocale, timelineLoaded, topics]);
+  }, [agentWatchLocale, residentStatus, timelineLoaded, topics]);
 
   const historySymbols = useMemo(
     () => Array.from(new Set(topics.map((topic) => topic.symbol).filter(Boolean))),
