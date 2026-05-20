@@ -32,6 +32,7 @@ const buildDecisionOpsRuntimeStabilityGateMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsModelQualityEvidenceMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsRuntimeQualityGateMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsQueuePriorityPolicyMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsGlobalProgressGateMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -155,6 +156,10 @@ vi.mock("@/lib/team/decisionOpsRuntimeQualityGate", () => ({
 
 vi.mock("@/lib/team/decisionOpsQueuePriorityPolicy", () => ({
   buildDecisionOpsQueuePriorityPolicy: buildDecisionOpsQueuePriorityPolicyMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsGlobalProgressGate", () => ({
+  buildDecisionOpsGlobalProgressGate: buildDecisionOpsGlobalProgressGateMock,
 }));
 
 function job() {
@@ -613,6 +618,28 @@ describe("/api/watch/ops-health", () => {
         runtimeStability: "ready_for_runtime_observe",
         modelQualityEvidence: "ready",
         sparseReleaseGate: "ready_for_telemetry_only_release",
+      },
+      blockingReasons: [],
+      nextActions: [],
+    });
+    buildDecisionOpsGlobalProgressGateMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      generatedAt: "2026-05-18T12:00:00.000Z",
+      status: "ready_for_memory_learning_observe",
+      productionReleaseAllowed: false,
+      publicBehaviorChanged: false,
+      sourceStatuses: {
+        residentCoverage: "ready",
+        residentVisibility: "ready",
+        queuePriority: "ready",
+        runtimeQualityGate: "ready_for_sparse_telemetry_observe",
+        memoryLearning: "ready",
+      },
+      readiness: {
+        globalResidentLanesReady: true,
+        queueDrainReady: true,
+        runtimeQualityReady: true,
+        memoryLearningReady: true,
       },
       blockingReasons: [],
       nextActions: [],
@@ -2037,5 +2064,57 @@ describe("/api/watch/ops-health", () => {
       status: "prioritizing_resident",
       residentPriorityActive: true,
     });
+  });
+
+  it("returns optional global progress gate without exposing nested inputs by default", async () => {
+    projectDecisionRecordToPublicEventMock.mockReturnValue({
+      id: "pm-decision:pm:MARKET:1779102000000",
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: "pm:MARKET:1779102000000",
+        symbol: "MARKET",
+        candidateType: "market_overview",
+        candidateKey: "market_overview:utc:zh_CN:2026-05-18T09",
+      },
+    });
+    readAllDecisionRecordsMock.mockResolvedValue([{ id: "pm:MARKET:1779102000000" }]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&globalProgress=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readPmDecisionJobsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readDecisionRunsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(buildDecisionOpsQueuePriorityPolicyMock).toHaveBeenCalled();
+    expect(buildDecisionOpsRuntimeQualityGateMock).toHaveBeenCalled();
+    expect(buildDecisionOpsGlobalProgressGateMock).toHaveBeenCalledWith({
+      residentCoverage: expect.objectContaining({ status: "ready" }),
+      residentVisibility: expect.objectContaining({ status: "critical" }),
+      queuePriority: expect.objectContaining({ status: "ready" }),
+      runtimeQualityGate: expect.objectContaining({ status: "ready_for_sparse_telemetry_observe" }),
+      memoryLearning: expect.objectContaining({ status: "critical" }),
+    });
+    expect(payload.globalProgress).toMatchObject({
+      schemaVersion: 1,
+      status: "ready_for_memory_learning_observe",
+      productionReleaseAllowed: false,
+      publicBehaviorChanged: false,
+    });
+    expect(payload.queuePriority).toBeUndefined();
+    expect(payload.runtimeQualityGate).toBeUndefined();
+    expect(payload.memoryLearning).toBeUndefined();
+    expect(payload.residentCoverage).toBeUndefined();
+    expect(payload.residentVisibility).toBeUndefined();
   });
 });
