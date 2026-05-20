@@ -4940,3 +4940,139 @@ v1.1 diff 建议:
 - B.15: NO-GO for implementation；schema and cost assumptions未成立，v1.1 应先收敛为 contract spec。
 
 [DOC-HINT: C-Series Round 1 first-hand review found false assumptions in SVG usage, topicSelector social data, production branch/identity, and B15 cost/schema compatibility; v1.1 should fix these before any implementation dispatch.]
+
+## C-Series 4 Spec Round 2 评估
+
+READ by Codex @ 2026-05-20T09:42+08:00
+
+Scope: 仅评估 v1.1，不实施、不改 `src/`、不触碰 prod、不回滚 PR。报告追加到 Draft PR #177 分支。四份 v1.1 spec 作为未跟踪输入复制进临时 worktree，仅用于读取。
+
+Baseline note: v1.1 都声明锁 `e6e359b`。Round 2 first-hand 发现远端 `origin/main` 当前已到 `75be9a1` / PR #178，`e6e359b..origin/main` 现在有 #176 与 #178 两个 drift commits；因此所有 "只处理 #176 drift" 的文案需要改成 "post-baseline drift PRs"。
+
+### 1. C-S Security Hygiene v1.1
+
+Round 1 cover 结论:
+- RESOLVED: Next 14.2.35 已改成 "PASS with gate"，不再无条件升级。
+- RESOLVED: CSP 已拆成 T103a Report-Only soak 与 T103b enforcing，且 Stage 4 依赖 Stage 3。
+- RESOLVED: `dangerouslyAllowSVG` 不再直接关闭，先做 SVG inventory / replacement decision。
+- RESOLVED: T207 已改成仅 public payload strip，不动 internal `StrategyDecisionRecord` / `stageTrace`。
+- RESOLVED: raw IP hashing 被提升到 P0，方向正确。
+
+仍需修正 / Round 1 漏 flag:
+- NEW_ISSUE: T108 文件清单不完整。first-hand `rg getClientIp/rateLimit` 还看到 `src/app/api/agents/analysis/route.ts:14-15`、`src/app/api/watch/history/route.ts:15-16`、`src/app/api/observability/errors/route.ts:103-108`、`src/app/api/observability/web-vitals/route.ts:106-111`、`src/app/api/watch/refresh/route.ts:83-87,323`。这些应进 T108 inventory。
+- NEW_ISSUE: T108 把 `/api/daily-brief`、`/api/daily-narratives`、`/api/debates/[id]` 写成 raw IP hashing 范围，但这三处当前没有 rate limit / IP key；它们应属于 T204 "新增 rate limit 且从第一天用 hash key"，不应写成 "raw IP -> hash"。
+- NEW_ISSUE: `src/app/api/watch/follow-stats/route.ts:73-80` 当前已通过 `hashAnonIdForFollowStats(ip)` 做 hash key；不要被简单 grep `getClientIp` 误判为 raw IP 存储。
+- NEW_ISSUE: Success Criteria "raw IP grep 在所有 endpoint KV key 0 命中" 过粗。合理验收应是 "rateLimit/checkRateLimit key 不含 raw IP"，允许读取 header 后 hash。
+- MINOR: Stage 4 依赖 "一周 soak"，所以不能作为连续 AI task 紧接 Stage 3；需要显式外部等待门槛。
+- MINOR: T101 应同步检查 `eslint-config-next` 与 `next` 版本一致，避免框架包 drift。
+
+§13 / §17 仍漏:
+- §13 加：不把 header read / `getClientIp()` 本身当隐私泄漏；重点是禁止 raw IP 进入 storage / rate-limit key / logs。
+- §13 加：新增 rate limit 的 endpoint 必须从第一版就用 hash key，不走 raw-key 迁移。
+- §17 加：防 "grep 有 IP 读取 = 必须改掉"；正确是分辨读取、规范化、hash、存储四层。
+
+Stage / 派工判断:
+- Stage 依赖关系总体合理，7 stage 比 v1.0 安全。
+- GO with micro patch: Stage 1 T101 可以派工；Stage 2 T108 需要先修清单和验收口径；Stage 4 不能派工到 soak 完成前。
+
+双脑 judgement:
+- (a) 最高风险: T108，因为它现在同时漏列真实 raw-IP key，又把无 rate-limit endpoint 混进 "raw->hash" 迁移。
+- (b) F 没问到的 angle: observability endpoints 也是用户侧可打接口，当前内存 Map 用 raw IP；如果做隐私卫生，不能只看 watch/market endpoints。
+- (c) Codex 修正点: v1.1 可收敛，但需要 v1.1.1 微补 T108 inventory / validation。
+
+### 2. C-A Blind Spot Audit v1.1
+
+Round 1 cover 结论:
+- RESOLVED: #173 已从 merged set 移出，并要求 T000 truth table。
+- RESOLVED: `social` 被承认为 fake / placeholder，不再当真实 9 维度。
+- RESOLVED: baseline lock `e6e359b` 与 #176 drift 被显式写入。
+- RESOLVED: PR audit 改为 doc-only，且禁止回滚 / 禁止直接改 B.14 / decision-log。
+
+仍需修正 / Round 1 漏 flag:
+- NEW_ISSUE: drift policy 太具体。当前 `origin/main` 已包含 #176 和 #178，v1.1 只写 #176。建议改成 "baseline locked to e6e359b; every PR after e6e359b is listed as drift, currently #176 and #178 as of Round 2"。
+- NEW_ISSUE: v1.1 多处写 "hotfix-7 已紧急修 / 已关联"，但 first-hand 未看到 hotfix-7 branch / PR；`origin/main:src/lib/team/topicSelector.ts` 仍保留 `social` type/label/zero score，`origin/main:src/lib/data/mock-db.ts:285-292` 仍有旧 mock social 文案。应改成 `hotfix-7 pending / separate required PR`，除非 F 有尚未 push 的分支。
+- PARTIAL: T-B matrix 中 `market` / `momentum` / `pool` 仍写 `?`，作为调研任务可以接受；但老板简报不能提前说 "已升级为紧急修复独立处理" 如果没有 PR 事实。
+
+§13 / §17 仍漏:
+- §13 加：不把 "hotfix 计划" 写成 "hotfix 已完成"；必须列 PR/branch/sha。
+- §13 加：不把 post-baseline PR 简写成 "#176 drift"，要生成动态 drift table。
+- §17 加：防 "关联 hotfix = hotfix 已存在"。
+
+Stage / 派工判断:
+- GO with micro patch: 这是 doc-only audit，v1.1 结构可派工；但 T000 必须先重新拉当前 PR state，不能只复用 v1.1 写死的 #176。
+- 直接派工前建议 F 改 v1.1.1：把 hotfix-7 状态改 pending，并把 drift policy generalize。
+
+双脑 judgement:
+- (a) 最高风险: hotfix-7 状态漂移。spec 把未落地修复写成已处理，会再次制造产品诚实性盲区。
+- (b) F 没问到的 angle: #178 已合入，且是 global autonomy ops gates；如果 blind spot audit 仍只审到 #175，应明确 "不审 #176/#178 的理由和 owner"。
+- (c) Codex 修正点: v1.1 的 baseline lock 可以保留，但 drift policy 要从单个 PR 改成可枚举规则。
+
+### 3. C-R Prod Release Dry-Run v1.1
+
+Round 1 cover 结论:
+- RESOLVED: T000 identity preflight 已升为 STOP gate。
+- RESOLVED: `production-1.0` 不存在已纳入 T001 branch reality。
+- RESOLVED: 双 prod artifact matrix 已区分 Vercel Tier 2 与 CoinW Jenkins Tier 1。
+- RESOLVED: 172 commits 已拆成 7 waves，不再单 wave。
+- RESOLVED: `ai.coinw.com/claw42/zh_CN` vs `ai.coinw.com/zh_CN/claw42` 路径纪律已写明。
+
+仍需修正 / Round 1 漏 flag:
+- NEW_ISSUE: release head 已继续漂移。`b74023a..e6e359b` = 172 commits，但 `b74023a..origin/main` 现在 = 174 commits，新增 #176 / #178。v1.1 如果锁 e6e359b，可以继续作为 "release candidate e6e359b dry-run"；如果目标是 latest main release，wave 7 后还要加 Wave 8 或扩展 Wave 7。
+- NEW_ISSUE: `.vercel/project.json` 在临时 worktree 中通常不存在（它被 gitignore / 本地绑定管理），主工作区有正确 projectId/orgId。T000c 应明确用哪个 workspace 验，或要求 release worktree 显式复制/校验 `.vercel/project.json`，禁止 `vercel link` 自行重绑。
+- MINOR: T000b 只用 `npx vercel whoami` 可能不足以证明 active team/project scope；应同时校验 `.vercel/project.json.orgId = team_URED5oO6s2OI5bakH3FJUQpC`，并用 read-only Vercel project inspection 确认当前 token可访问该 project。
+- MINOR: §13 / Edge Cases 对 "CLI account mismatch" 有两种口径：line 48 禁 deploy/promote/rollback，line 99/130 写禁所有 Vercel 操作。建议统一为 "允许 read-only identity checks；禁止 mutating actions: deploy/promote/rollback/env/link/alias"。
+
+§13 / §17 仍漏:
+- §13 加：禁止 `vercel link` / project rebind 作为修复身份不匹配的捷径。
+- §13 加：禁止把 missing `.vercel/project.json` 的 worktree 当可发布 worktree。
+- §17 加：防 "whoami 对了 = project scope 一定对"。
+- §17 加：防 "release candidate head 未冻结，wave plan 还能自动适配"。
+
+Stage / 派工判断:
+- GO for dry-run planning only。
+- NO-GO for any release/deploy/prod action remains correct。
+- T000 STOP gate 足够防大部分 prod 误操作，但需 v1.1.1 明确 read-only vs mutating Vercel 操作、project binding source、release candidate head freeze。
+
+双脑 judgement:
+- (a) 最高风险: 身份与 project binding。账号切对但 project binding 错，仍可能发错项目。
+- (b) F 没问到的 angle: release plan 必须先冻结 RC head；否则从 172 commits 变 174 commits 后，7 waves 的验收范围已经不是完整 latest main。
+- (c) Codex 修正点: v1.1 已经从危险 release spec 降成安全 dry-run spec；微补后可以派 T000-T002。
+
+### 4. B.15 Multi-Agent Debate Drama v1.1
+
+Round 1 cover 结论:
+- RESOLVED: v1.1 已降级为 contract spec，不再直接 implement。
+- RESOLVED: T000 要 first-hand call topology，含 retries/leads/PM。
+- RESOLVED: T001 明确 adapter over existing `rounds` vs new `debateRounds` field。
+- RESOLVED: T002 加 evidence fidelity gate。
+- RESOLVED: T003 要 5-call cap vs N-call cap 决策。
+
+仍需修正 / Round 1 漏 flag:
+- NEW_ISSUE: `citationId` / `evidenceId` 命名需要统一。当前 internal record 是 `evidenceIds`，public payload 用 `citationsByAgent` / `rounds[].evidenceIds`，multi-round output 是 `citations: string[]`。v1.1 同时写 `citationId` 与 `evidenceId`，实现前必须选 canonical naming。
+- NEW_ISSUE: "post-hoc grep counter 是否真引用 bearish round 1 关键句" 太脆弱，也不适合多语言。更稳的是让内部 debate contract 输出结构化 `references: [{ targetMemberId, targetRound, evidenceIds }]`，再做 ID-level validation。
+- MINOR: Cost contract 需要明确 lower bound。当前 topology first attempt 至少 11 roles × 2 rounds + 2 leads + PM = 25 calls before retries（trade disabled / partial record 另算），因此 "5-call cap" 不是调参，是机制重构。
+- MINOR: Stage 2 prompt contract 仍应禁止 inline TeamMemberId，同时允许 public agent labels；否则容易把 hotfix-5 红线误解成不能表达角色立场。
+
+§13 / §17 仍漏:
+- §13 加：不使用自然语言 grep 作为唯一 cross-reference proof。
+- §13 加：不混用 `citationId` / `evidenceId` / `citations` 命名。
+- §17 加：防 "有 evidence fidelity 文案 = fidelity 可验证"；必须结构化 ID 集合校验。
+
+Stage / 派工判断:
+- GO for Stage 0 T000 topology inventory。
+- GO for Stage 1-3 as contract-research tasks after T000 输出；NO-GO for implementation remains correct。
+- v1.1 范围降级合理，符合 Round 1 要求。
+
+双脑 judgement:
+- (a) 最高风险: T002 evidence fidelity。如果只靠 prompt 和 grep，可能把假辩论包装成可验证辩论。
+- (b) F 没问到的 angle: Debate contract 应先决定 internal structured reference model，再谈 public drama copy；否则 public copy 会反推 schema。
+- (c) Codex 修正点: v1.1 可以作为 contract spec 进入调研，但需要 v1.1.1 固定 naming + reference validation。
+
+### Round 2 总判断
+
+- C-S: **GO with v1.1.1 micro patch**。可先派 T101；T108 必须修清单和验收口径后派。
+- C-A: **GO with v1.1.1 micro patch**。doc-only audit 可派，但 hotfix-7 状态和 drift policy 必须修。
+- C-R: **GO for dry-run planning only / NO-GO release action**。T000 足够大方向，但要补 project binding 与 mutating action 禁令。
+- B.15: **GO for contract research / NO-GO implementation**。降级合理；补 naming + structured reference validation 后派 T000。
+
+[DOC-HINT: C-Series Round 2 confirms v1.1 absorbed Round 1 major corrections, but asks v1.1.1 micro patches for C-S raw-IP inventory, C-A hotfix/drift truth, C-R project-binding release head freeze, and B15 evidence/reference contract.]
