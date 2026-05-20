@@ -5273,3 +5273,59 @@ Base: `origin/main` = `6c104ea6d0346d334aaad998684acf057967c3f9`
 - No UI, prompt, candidate ranking, cron schedule, or public payload change.
 
 [DOC-HINT: `globalAutonomy=1` now exposes resident prewarm execution readiness and the protected queue-publish operator endpoint without executing it.]
+
+# P0/P1 resident queue closed-loop canary
+
+Codex time: 2026-05-20 15:55 CST
+Branch: `feature/p0p1-queue-closed-loop`
+Base: `origin/main` = `43b1d863a37e2869164c98213d88352cc27bbd77`
+
+## First-hand finding
+
+- PR #183 made resident market/hotspot prewarm queue publishing possible behind explicit gates.
+- PR #184 made those gates visible through `ops-health?globalAutonomy=1`.
+- The remaining blind spot was closed-loop observability: ops could see whether a lane should be
+  queued and whether the endpoint was ready, but not whether each resident lane had actually
+  completed `PM job -> decision run -> public timeline card`.
+
+## Implemented
+
+- Added `buildDecisionOpsResidentQueueCanary()` as a read-only diagnostic for the two global
+  resident lanes:
+  - `market_overview`
+  - `hotspot`
+- Each lane now reports the latest job id/status, output count, run id/status, decision record id,
+  public timeline event id, timestamps, and the exact break reason:
+  - `job_missing`
+  - `job_pending`
+  - `job_failed`
+  - `job_zero_output`
+  - `run_missing`
+  - `run_not_succeeded`
+  - `public_event_missing`
+- `/api/watch/ops-health?residentQueueCanary=1` returns the canary directly.
+- `/api/watch/ops-health?globalAutonomy=1` embeds the same canary inside the global autonomy
+  rollup, so resident queue health and remediation readiness are visible together.
+- The canary is diagnostic only. It does not enqueue jobs, publish queue messages, run PM pipeline,
+  mutate env, or change public UI.
+
+## Verification
+
+- `npx vitest run src/lib/team/__tests__/decisionOpsResidentQueueCanary.test.ts src/app/api/watch/ops-health/route.test.ts`: PASS, 36 tests.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run format:check`: PASS.
+- `npm run test:watch-pipeline`: PASS, 97 files / 524 tests.
+- `npm run verify`: PASS.
+- `npm run verify:metrics`: PASS, 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+- `npm run build`: PASS.
+
+## Boundary
+
+- No production deploy.
+- No Vercel local deploy.
+- No queue publish, no PM pipeline run, no env mutation.
+- No UI, prompt, candidate ranking, cron schedule, or public payload change.
+
+[DOC-HINT: `residentQueueCanary=1` and `globalAutonomy=1` now identify exactly where each global resident lane breaks across PM job, decision run, and public timeline projection.]
