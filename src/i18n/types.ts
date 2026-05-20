@@ -269,6 +269,11 @@ export type DispatchV10Dict = {
     watchOnlyLabel: string;
     watchOnlyCopy: string;
     analysisOnlyCopy: string;
+    feedbackAriaLabel: string;
+    feedbackPrompt: string;
+    feedbackHelpful: string;
+    feedbackNotHelpful: string;
+    feedbackThanks: string;
   };
   placeholder: {
     title: string;

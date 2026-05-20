@@ -18,6 +18,7 @@ import { buildDecisionOpsLifecycleDiagnostics } from "@/lib/team/decisionOpsLife
 import { buildDecisionOpsMemoryLearning } from "@/lib/team/decisionOpsMemoryLearning";
 import { buildDecisionOpsMemoryProductizationGate } from "@/lib/team/decisionOpsMemoryProductizationGate";
 import { buildDecisionOpsModelQuality } from "@/lib/team/decisionOpsModelQuality";
+import { buildDecisionOpsPublicAnalysisBetaGate } from "@/lib/team/decisionOpsPublicAnalysisBetaGate";
 import { buildDecisionOpsPublicOutputStability } from "@/lib/team/decisionOpsPublicOutputStability";
 import { buildDecisionOpsQualityBaseline } from "@/lib/team/decisionOpsQualityBaseline";
 import { buildDecisionOpsQualityGate } from "@/lib/team/decisionOpsQualityGate";
@@ -107,6 +108,7 @@ export async function GET(request: Request) {
   const includeRoleDiversityGate = url.searchParams.get("roleDiversity") === "1";
   const includeMemoryProductizationGate = url.searchParams.get("memoryProductization") === "1";
   const includeGlobalAutonomy = url.searchParams.get("globalAutonomy") === "1";
+  const includePublicBeta = url.searchParams.get("publicBeta") === "1";
   const residentPrewarmExecutorEnabled =
     process.env.OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED?.toLowerCase() === "true";
   const residentPrewarmQueuePublishEnabled =
@@ -114,10 +116,13 @@ export async function GET(request: Request) {
   const needsGlobalPrewarmPlan =
     includeGlobalPrewarmPlan || includeAutonomousRemediation || includeGlobalAutonomy;
   const needsAutonomousRemediation = includeAutonomousRemediation || includeGlobalAutonomy;
-  const needsResidentQueueCanary = includeResidentQueueCanary || includeGlobalAutonomy;
+  const needsPublicBeta = includePublicBeta || includeGlobalAutonomy;
+  const needsResidentQueueCanary =
+    includeResidentQueueCanary || includeGlobalAutonomy || needsPublicBeta;
   const needsRoleDiversityGate = includeRoleDiversityGate || includeGlobalAutonomy;
   const needsMemoryProductizationGate = includeMemoryProductizationGate || includeGlobalAutonomy;
-  const needsGlobalProgress = includeGlobalProgress || needsAutonomousRemediation;
+  const needsGlobalProgress =
+    includeGlobalProgress || needsAutonomousRemediation || needsPublicBeta;
   const now = Date.now();
   const includeStability = url.searchParams.get("stability") === "1";
   const includeCausalRunbook = url.searchParams.get("causalRunbook") === "1";
@@ -683,6 +688,28 @@ export async function GET(request: Request) {
           now,
         })
       : null;
+  const publicAnalysisBetaGate =
+    needsPublicBeta &&
+    globalProgress &&
+    residentQueueCanary &&
+    qualityGate &&
+    globalProgressRuntimeQualityGate &&
+    memoryLearning
+      ? buildDecisionOpsPublicAnalysisBetaGate({
+          globalProgress,
+          residentQueueCanary,
+          qualityGate,
+          runtimeQualityGate: globalProgressRuntimeQualityGate,
+          memoryLearning,
+          feedbackCaptureReady: true,
+          costPolicy: {
+            queuePublishExplicitOptIn: true,
+            maxVisitResidentJobs: 1,
+            maxVisitSymbolJobs: 3,
+          },
+          now,
+        })
+      : null;
 
   return NextResponse.json(
     {
@@ -882,6 +909,11 @@ export async function GET(request: Request) {
             memoryProductizationGate,
           }
         : {}),
+      ...(includePublicBeta
+        ? {
+            publicAnalysisBetaGate,
+          }
+        : {}),
       ...(includeGlobalAutonomy
         ? {
             globalAutonomy: {
@@ -891,6 +923,7 @@ export async function GET(request: Request) {
               autonomousRemediation,
               roleDiversityGate,
               memoryProductizationGate,
+              publicAnalysisBetaGate,
             },
           }
         : {}),

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
+import { trackEvent } from "@/lib/analytics";
 import {
   compareDecisionCandidateOrder,
   normalizeCandidateType,
@@ -163,6 +164,8 @@ export function topicDisplayIdentity(topic: DispatchTopic) {
 }
 
 type TopicCollapseState = Record<string, boolean>;
+type TopicFeedbackValue = "helpful" | "not_helpful";
+type TopicFeedbackState = Record<string, TopicFeedbackValue>;
 
 export function reconcileTopicCollapseState(
   topics: DispatchTopic[],
@@ -356,16 +359,73 @@ function StrategyValue({
   );
 }
 
+function topicFeedbackLabel(topic: DispatchTopic) {
+  const symbol = topic.symbol?.trim().replace(/^\$+/, "").toUpperCase();
+  return symbol || topic.candidateKey || topicDisplayIdentity(topic);
+}
+
+function TopicFeedback({
+  topic,
+  dict,
+  value,
+  onFeedback,
+}: {
+  topic: DispatchTopic;
+  dict: DispatchV10Dict;
+  value?: TopicFeedbackValue;
+  onFeedback: (topic: DispatchTopic, value: TopicFeedbackValue) => void;
+}) {
+  const feedbackTopic = topicFeedbackLabel(topic);
+
+  return (
+    <div
+      className="topic-feedback"
+      data-feedback-topic={feedbackTopic}
+      aria-label={dict.market.feedbackAriaLabel}
+    >
+      <span className="topic-feedback-label">
+        {value ? dict.market.feedbackThanks : dict.market.feedbackPrompt}
+      </span>
+      <div className="topic-feedback-actions">
+        <button
+          className={["topic-feedback-btn", value === "helpful" && "active"]
+            .filter(Boolean)
+            .join(" ")}
+          type="button"
+          aria-pressed={value === "helpful"}
+          onClick={() => onFeedback(topic, "helpful")}
+        >
+          {dict.market.feedbackHelpful}
+        </button>
+        <button
+          className={["topic-feedback-btn", value === "not_helpful" && "active"]
+            .filter(Boolean)
+            .join(" ")}
+          type="button"
+          aria-pressed={value === "not_helpful"}
+          onClick={() => onFeedback(topic, "not_helpful")}
+        >
+          {dict.market.feedbackNotHelpful}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function TopicStrategyV10({
   topic,
   latest,
   dict,
   onPlaceholder,
+  feedbackValue,
+  onFeedback,
 }: {
   topic: DispatchTopic;
   latest: boolean;
   dict: DispatchV10Dict;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
+  feedbackValue?: TopicFeedbackValue;
+  onFeedback: (topic: DispatchTopic, value: TopicFeedbackValue) => void;
 }) {
   const { strategy } = topic;
   const candidateType = topicCandidateType(topic);
@@ -441,6 +501,7 @@ function TopicStrategyV10({
             ? `${nonFollowableCopy} · ${followStatus}`
             : `${dict.followTrade.safety_copy} · ${followStatus}`}
         </div>
+        <TopicFeedback topic={topic} dict={dict} value={feedbackValue} onFeedback={onFeedback} />
       </div>
     </div>
   );
@@ -453,6 +514,8 @@ function TopicCardV10({
   onToggle,
   dict,
   onPlaceholder,
+  feedbackValue,
+  onFeedback,
 }: {
   topic: DispatchTopic;
   latest: boolean;
@@ -460,6 +523,8 @@ function TopicCardV10({
   onToggle: () => void;
   dict: DispatchV10Dict;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
+  feedbackValue?: TopicFeedbackValue;
+  onFeedback: (topic: DispatchTopic, value: TopicFeedbackValue) => void;
 }) {
   const bodyId = `dispatch-v10-topic-${topic.id}`;
   const topicClassName = [
@@ -482,7 +547,14 @@ function TopicCardV10({
         dict={dict}
       />
       <TopicBody topic={topic} bodyId={bodyId} />
-      <TopicStrategyV10 topic={topic} latest={latest} dict={dict} onPlaceholder={onPlaceholder} />
+      <TopicStrategyV10
+        topic={topic}
+        latest={latest}
+        dict={dict}
+        onPlaceholder={onPlaceholder}
+        feedbackValue={feedbackValue}
+        onFeedback={onFeedback}
+      />
       <TopicRankingV10 topic={topic} />
     </article>
   );
@@ -504,6 +576,7 @@ export function MarketAnalysisPanel({
     return orderTopicsByRanking(normalizedTopics);
   }, [dict.roles, topics]);
   const [collapsedByTopicId, setCollapsedByTopicId] = useState<TopicCollapseState>({});
+  const [feedbackByTopicId, setFeedbackByTopicId] = useState<TopicFeedbackState>({});
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const scrollAnchorRef = useRef<ScrollAnchor>({ topicId: null, offset: 0, scrollTop: 0 });
   const topicOrderSignature = resolvedTopics.map(topicDisplayIdentity).join("|");
@@ -514,6 +587,18 @@ export function MarketAnalysisPanel({
     (topic) => topicCandidateType(topic) === "hotspot",
   ).length;
   const freshnessText = formatFreshnessText(freshness, dict);
+  const handleFeedback = useCallback((topic: DispatchTopic, value: TopicFeedbackValue) => {
+    const topicIdentity = topicDisplayIdentity(topic);
+    setFeedbackByTopicId((current) => ({ ...current, [topicIdentity]: value }));
+    trackEvent("watch_topic_feedback", {
+      topicId: topic.id,
+      topicIdentity,
+      candidateType: topicCandidateType(topic),
+      candidateKey: topic.candidateKey ?? null,
+      symbol: topic.symbol ?? null,
+      feedback: value,
+    });
+  }, []);
 
   useEffect(() => {
     setCollapsedByTopicId((current) => reconcileTopicCollapseState(resolvedTopics, current));
@@ -585,6 +670,8 @@ export function MarketAnalysisPanel({
                     }}
                     dict={dict}
                     onPlaceholder={onPlaceholder}
+                    feedbackValue={feedbackByTopicId[topicIdentity]}
+                    onFeedback={handleFeedback}
                   />
                   {index < resolvedTopics.length - 1 ? (
                     <div className="topic-separator" aria-hidden="true">

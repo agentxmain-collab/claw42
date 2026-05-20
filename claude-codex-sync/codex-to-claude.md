@@ -5329,3 +5329,35 @@ Base: `origin/main` = `43b1d863a37e2869164c98213d88352cc27bbd77`
 - No UI, prompt, candidate ranking, cron schedule, or public payload change.
 
 [DOC-HINT: `residentQueueCanary=1` and `globalAutonomy=1` now identify exactly where each global resident lane breaks across PM job, decision run, and public timeline projection.]
+
+# Public analysis beta path judgement
+
+Codex time: 2026-05-20 16:20 CST
+Branch: `feature/public-analysis-beta-hardening`
+Base: `origin/main` = `adfc67f69c83d3c2f88b327a84d6d047839c0127`
+
+## Judgement
+
+- `public analysis beta` is the next workable layer: show real public analysis to real reviewers
+  in preview, collect lightweight feedback, and keep every release/automation/trading boundary
+  locked.
+- This is not a production release. `claw42.ai` remains on the rollback production build.
+- This is not trusted memory learning. Memory-loop sample size can be observed, but no public
+  win-rate or learning claim is allowed until enough resolved records accumulate.
+- This is not real execution. Follow-trade and production release stay disabled.
+
+## Implementation scope
+
+- Add a read-only beta readiness gate to ops health.
+- Add lightweight feedback controls on each public analysis card so beta review has user signal.
+- Keep queue publishing, PM pipeline execution, cron cadence, candidate ranking, and production
+  deployment untouched.
+
+## Verification plan
+
+- Unit tests for beta readiness allowed/hold cases.
+- Route tests for `ops-health?publicBeta=1` and `globalAutonomy=1`.
+- V10 render test for feedback controls.
+- Full existing verification before PR/merge.
+
+[DOC-HINT: public analysis beta is preview-only, feedback-enabled, and explicitly separate from production release, trusted learning claims, and real trading.]

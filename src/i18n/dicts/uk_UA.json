@@ -705,7 +705,12 @@
         "residentQueued": "Оновлення ринку/тем у черзі",
         "residentUpdateIssue": "Проблема фонового оновлення",
         "residentCachedState": "Кеш глобального аналізу",
-        "residentCacheFallback": "показано кешовані дані"
+        "residentCacheFallback": "показано кешовані дані",
+        "feedbackAriaLabel": "Відгук про аналіз",
+        "feedbackPrompt": "Цей аналіз корисний?",
+        "feedbackHelpful": "Корисний",
+        "feedbackNotHelpful": "Не корисний",
+        "feedbackThanks": "Записано"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

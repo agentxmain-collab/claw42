@@ -705,7 +705,12 @@
         "residentQueued": "تحديث السوق/الموضوعات في الخلفية بانتظار الدور",
         "residentUpdateIssue": "مشكلة في تحديث الخلفية",
         "residentCachedState": "ذاكرة التحليل العام المؤقتة",
-        "residentCacheFallback": "يتم عرض البيانات المخزنة مؤقتًا"
+        "residentCacheFallback": "يتم عرض البيانات المخزنة مؤقتًا",
+        "feedbackAriaLabel": "ملاحظات التحليل",
+        "feedbackPrompt": "هل كان هذا التحليل مفيدًا؟",
+        "feedbackHelpful": "مفيد",
+        "feedbackNotHelpful": "غير مفيد",
+        "feedbackThanks": "تم التسجيل"
       },
       "placeholder": {
         "title": "Copy-trading is in development",
