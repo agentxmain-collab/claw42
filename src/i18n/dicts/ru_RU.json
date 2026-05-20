@@ -705,7 +705,12 @@
         "residentQueued": "Обновление рынка/тем в очереди",
         "residentUpdateIssue": "Проблема фонового обновления",
         "residentCachedState": "Кэш глобального анализа",
-        "residentCacheFallback": "показаны кэшированные данные"
+        "residentCacheFallback": "показаны кэшированные данные",
+        "feedbackAriaLabel": "Оценка анализа",
+        "feedbackPrompt": "Этот анализ полезен?",
+        "feedbackHelpful": "Полезен",
+        "feedbackNotHelpful": "Не полезен",
+        "feedbackThanks": "Записано"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

@@ -705,7 +705,12 @@
         "residentQueued": "市場/注目テーマの更新待機中",
         "residentUpdateIssue": "バックグラウンド更新に問題",
         "residentCachedState": "グローバル分析キャッシュ",
-        "residentCacheFallback": "キャッシュデータを表示中"
+        "residentCacheFallback": "キャッシュデータを表示中",
+        "feedbackAriaLabel": "分析フィードバック",
+        "feedbackPrompt": "この分析は役に立ちましたか",
+        "feedbackHelpful": "役に立った",
+        "feedbackNotHelpful": "役に立たない",
+        "feedbackThanks": "記録しました"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

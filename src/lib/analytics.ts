@@ -34,6 +34,7 @@ export const ANALYTICS_EVENTS = [
   "chat_thread_view",
   "chat_message_action",
   "watch_track_wall_view",
+  "watch_topic_feedback",
   "team_member_card_click",
   "workflow_panel_view",
   "workflow_node_status_change",

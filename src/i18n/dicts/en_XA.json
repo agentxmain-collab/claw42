@@ -705,7 +705,12 @@
         "residentQueued": "[!! Global market/topic update queued !!]",
         "residentUpdateIssue": "[!! Background update issue !!]",
         "residentCachedState": "[!! Global analysis cache !!]",
-        "residentCacheFallback": "[!! showing cached data !!]"
+        "residentCacheFallback": "[!! showing cached data !!]",
+        "feedbackAriaLabel": "[!! Analysis feedback !!]",
+        "feedbackPrompt": "[!! Was this analysis helpful? !!]",
+        "feedbackHelpful": "[!! Helpful !!]",
+        "feedbackNotHelpful": "[!! Not helpful !!]",
+        "feedbackThanks": "[!! Recorded !!]"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

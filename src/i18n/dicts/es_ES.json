@@ -705,7 +705,12 @@
         "residentQueued": "Actualización global de mercado/temas en cola",
         "residentUpdateIssue": "Incidencia en la actualización en segundo plano",
         "residentCachedState": "Caché de análisis global",
-        "residentCacheFallback": "mostrando datos en caché"
+        "residentCacheFallback": "mostrando datos en caché",
+        "feedbackAriaLabel": "Comentarios del análisis",
+        "feedbackPrompt": "¿Fue útil este análisis?",
+        "feedbackHelpful": "Útil",
+        "feedbackNotHelpful": "No útil",
+        "feedbackThanks": "Registrado"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

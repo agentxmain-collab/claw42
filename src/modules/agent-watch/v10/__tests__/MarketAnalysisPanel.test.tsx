@@ -96,6 +96,21 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain("交易策略总监");
   });
 
+  test("renders lightweight card feedback controls for public beta learning", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[dispatchV10DemoTopics[0]!]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("这条分析有帮助吗");
+    expect(html).toContain("有帮助");
+    expect(html).toContain("没帮助");
+    expect(html).toContain('data-feedback-topic="BTC"');
+  });
+
   test("renders visible-session freshness state", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel

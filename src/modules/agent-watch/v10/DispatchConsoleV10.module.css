@@ -1523,6 +1523,48 @@
   );
 }
 
+.dispatchConsoleV10 :global(.topic-feedback) {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgb(255 255 255 / 7%);
+}
+
+.dispatchConsoleV10 :global(.topic-feedback-label) {
+  color: var(--fg-3);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dispatchConsoleV10 :global(.topic-feedback-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dispatchConsoleV10 :global(.topic-feedback-btn) {
+  padding: 6px 9px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 5%);
+  color: var(--fg-2);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    color 0.16s;
+}
+
+.dispatchConsoleV10 :global(.topic-feedback-btn:hover),
+.dispatchConsoleV10 :global(.topic-feedback-btn.active) {
+  border-color: rgb(209 255 85 / 38%);
+  background: rgb(209 255 85 / 12%);
+  color: var(--lime);
+}
+
 .dispatchConsoleV10 :global(.strategy-latest-badge) {
   padding: 4px 9px;
   border: 1px solid rgb(209 255 85 / 24%);

@@ -705,7 +705,12 @@
         "residentQueued": "Mise à jour marché/thèmes en attente",
         "residentUpdateIssue": "Incident de mise à jour en arrière-plan",
         "residentCachedState": "Cache d'analyse globale",
-        "residentCacheFallback": "affichage des données en cache"
+        "residentCacheFallback": "affichage des données en cache",
+        "feedbackAriaLabel": "Avis sur l’analyse",
+        "feedbackPrompt": "Cette analyse est-elle utile ?",
+        "feedbackHelpful": "Utile",
+        "feedbackNotHelpful": "Pas utile",
+        "feedbackThanks": "Enregistré"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

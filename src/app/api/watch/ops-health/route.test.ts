@@ -37,6 +37,7 @@ const buildDecisionOpsGlobalPrewarmPlanMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsAutonomousRemediationMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsRoleDiversityGateMock = vi.hoisted(() => vi.fn());
 const buildDecisionOpsMemoryProductizationGateMock = vi.hoisted(() => vi.fn());
+const buildDecisionOpsPublicAnalysisBetaGateMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
@@ -180,6 +181,10 @@ vi.mock("@/lib/team/decisionOpsRoleDiversityGate", () => ({
 
 vi.mock("@/lib/team/decisionOpsMemoryProductizationGate", () => ({
   buildDecisionOpsMemoryProductizationGate: buildDecisionOpsMemoryProductizationGateMock,
+}));
+
+vi.mock("@/lib/team/decisionOpsPublicAnalysisBetaGate", () => ({
+  buildDecisionOpsPublicAnalysisBetaGate: buildDecisionOpsPublicAnalysisBetaGateMock,
 }));
 
 function job() {
@@ -760,6 +765,36 @@ describe("/api/watch/ops-health", () => {
         memoryContrastCoverage: 0.833,
       },
       blockingReasons: [],
+      actions: [],
+    });
+    buildDecisionOpsPublicAnalysisBetaGateMock.mockReset().mockReturnValue({
+      schemaVersion: 1,
+      generatedAt: "2026-05-18T12:00:00.000Z",
+      status: "ready_for_public_analysis_beta",
+      publicAnalysisBetaAllowed: true,
+      trustedLearningClaimAllowed: false,
+      productionReleaseAllowed: false,
+      realTradeExecutionAllowed: false,
+      feedbackCaptureReady: true,
+      utcPolicy: {
+        clock: "UTC",
+        marketOverviewIntervalHours: 3,
+        hotspotIntervalHours: 3,
+      },
+      costPolicy: {
+        queuePublishExplicitOptIn: true,
+        maxVisitResidentJobs: 1,
+        maxVisitSymbolJobs: 3,
+      },
+      sourceStatuses: {
+        globalProgress: "ready_for_memory_learning_observe",
+        residentQueueCanary: "ready",
+        qualityGate: "healthy",
+        runtimeQualityGate: "ready_for_sparse_telemetry_observe",
+        memoryLearning: "warming",
+      },
+      blockingReasons: [],
+      watchItems: ["memory_loop_sample_size_caution"],
       actions: [],
     });
   });
@@ -2236,6 +2271,70 @@ describe("/api/watch/ops-health", () => {
     expect(payload.residentVisibility).toBeUndefined();
   });
 
+  it("returns optional public analysis beta gate without exposing nested inputs by default", async () => {
+    projectDecisionRecordToPublicEventMock.mockImplementation((record: { id: string }) => ({
+      id: `pm-decision:${record.id}`,
+      ts: Date.parse("2026-05-18T11:03:00.000Z"),
+      visibility: "public",
+      importance: "high",
+      sourceTrigger: "pm_decision",
+      evidenceIds: [],
+      locale: "zh_CN",
+      payload: {
+        kind: "pm_decision",
+        recordId: record.id,
+        symbol: record.id.includes("HOTSPOT") ? "HOTSPOT" : "MARKET",
+        candidateType: record.id.includes("HOTSPOT") ? "hotspot" : "market_overview",
+        candidateKey: record.id.includes("HOTSPOT")
+          ? "hotspot:utc:zh_CN:2026-05-18T09:market"
+          : "market_overview:utc:zh_CN:2026-05-18T09",
+      },
+    }));
+    readAllDecisionRecordsMock.mockResolvedValue([
+      { id: "pm:MARKET:1779102000000" },
+      { id: "pm:HOTSPOT:1779102000000" },
+    ]);
+
+    const response = await GET(
+      new Request("https://claw42.ai/api/watch/ops-health?locale=zh_CN&publicBeta=1", {
+        headers: { authorization: "Bearer ops-secret" },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(readPmDecisionJobsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readDecisionRunsMock).toHaveBeenCalledWith({ locale: "zh_CN", limit: 500 });
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(500, "zh_CN");
+    expect(buildDecisionOpsPublicAnalysisBetaGateMock).toHaveBeenCalledWith({
+      globalProgress: expect.objectContaining({ schemaVersion: 1 }),
+      residentQueueCanary: expect.objectContaining({ schemaVersion: 1 }),
+      qualityGate: expect.objectContaining({ schemaVersion: 1 }),
+      runtimeQualityGate: expect.objectContaining({ schemaVersion: 1 }),
+      memoryLearning: expect.objectContaining({ schemaVersion: 1 }),
+      feedbackCaptureReady: true,
+      costPolicy: {
+        queuePublishExplicitOptIn: true,
+        maxVisitResidentJobs: 1,
+        maxVisitSymbolJobs: 3,
+      },
+      now: Date.parse("2026-05-18T12:00:00.000Z"),
+    });
+    expect(payload.publicAnalysisBetaGate).toMatchObject({
+      schemaVersion: 1,
+      status: "ready_for_public_analysis_beta",
+      publicAnalysisBetaAllowed: true,
+      trustedLearningClaimAllowed: false,
+      productionReleaseAllowed: false,
+      realTradeExecutionAllowed: false,
+    });
+    expect(payload.globalProgress).toBeUndefined();
+    expect(payload.residentQueueCanary).toBeUndefined();
+    expect(payload.qualityGate).toBeUndefined();
+    expect(payload.runtimeQualityGate).toBeUndefined();
+    expect(payload.memoryLearning).toBeUndefined();
+  });
+
   it("returns optional global autonomy gates as a read-only rollup", async () => {
     vi.stubEnv("OPS_RESIDENT_PREWARM_EXECUTOR_ENABLED", "true");
     vi.stubEnv("OPS_RESIDENT_PREWARM_QUEUE_PUBLISH_ENABLED", "true");
@@ -2309,6 +2408,20 @@ describe("/api/watch/ops-health", () => {
       ],
       now: Date.parse("2026-05-18T12:00:00.000Z"),
     });
+    expect(buildDecisionOpsPublicAnalysisBetaGateMock).toHaveBeenCalledWith({
+      globalProgress: expect.objectContaining({ schemaVersion: 1 }),
+      residentQueueCanary: expect.objectContaining({ schemaVersion: 1 }),
+      qualityGate: expect.objectContaining({ schemaVersion: 1 }),
+      runtimeQualityGate: expect.objectContaining({ schemaVersion: 1 }),
+      memoryLearning: expect.objectContaining({ schemaVersion: 1 }),
+      feedbackCaptureReady: true,
+      costPolicy: {
+        queuePublishExplicitOptIn: true,
+        maxVisitResidentJobs: 1,
+        maxVisitSymbolJobs: 3,
+      },
+      now: Date.parse("2026-05-18T12:00:00.000Z"),
+    });
     expect(payload.globalAutonomy).toMatchObject({
       globalProgress: {
         schemaVersion: 1,
@@ -2354,6 +2467,12 @@ describe("/api/watch/ops-health", () => {
         productionReleaseAllowed: false,
         publicBehaviorChanged: false,
       },
+      publicAnalysisBetaGate: {
+        schemaVersion: 1,
+        publicAnalysisBetaAllowed: true,
+        productionReleaseAllowed: false,
+        realTradeExecutionAllowed: false,
+      },
     });
     expect(payload.globalProgress).toBeUndefined();
     expect(payload.globalPrewarmPlan).toBeUndefined();
@@ -2361,5 +2480,6 @@ describe("/api/watch/ops-health", () => {
     expect(payload.autonomousRemediation).toBeUndefined();
     expect(payload.roleDiversityGate).toBeUndefined();
     expect(payload.memoryProductizationGate).toBeUndefined();
+    expect(payload.publicAnalysisBetaGate).toBeUndefined();
   });
 });

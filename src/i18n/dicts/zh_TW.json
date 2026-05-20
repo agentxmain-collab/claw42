@@ -705,7 +705,12 @@
         "residentQueued": "大盤/熱點等待後台更新",
         "residentUpdateIssue": "後台更新異常",
         "residentCachedState": "全域分析快取",
-        "residentCacheFallback": "仍顯示快取資料"
+        "residentCacheFallback": "仍顯示快取資料",
+        "feedbackAriaLabel": "分析回饋",
+        "feedbackPrompt": "這條分析有幫助嗎",
+        "feedbackHelpful": "有幫助",
+        "feedbackNotHelpful": "沒幫助",
+        "feedbackThanks": "已記錄"
       },
       "placeholder": {
         "title": "跟单功能开发中",

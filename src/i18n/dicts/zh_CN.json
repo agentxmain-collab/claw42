@@ -705,7 +705,12 @@
         "residentQueued": "大盘/热点等待后台更新",
         "residentUpdateIssue": "后台更新异常",
         "residentCachedState": "全局分析缓存",
-        "residentCacheFallback": "仍显示缓存数据"
+        "residentCacheFallback": "仍显示缓存数据",
+        "feedbackAriaLabel": "分析反馈",
+        "feedbackPrompt": "这条分析有帮助吗",
+        "feedbackHelpful": "有帮助",
+        "feedbackNotHelpful": "没帮助",
+        "feedbackThanks": "已记录"
       },
       "placeholder": {
         "title": "跟单功能开发中",
