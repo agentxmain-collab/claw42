@@ -854,5 +854,12 @@
     "Hold": "احتفاظ",
     "Sell": "بيع",
     "StrongSell": "بيع قوي"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

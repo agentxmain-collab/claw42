@@ -854,5 +854,12 @@
     "Hold": "保有",
     "Sell": "売り",
     "StrongSell": "強い売り"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

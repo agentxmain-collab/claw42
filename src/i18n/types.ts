@@ -308,6 +308,13 @@ export interface Dict {
     switchLangToZh: string; // 当前英文时按钮显示
     agentLiveMenuItem: string;
   };
+  externalEntry: {
+    topNotice: {
+      title: string;
+      body: string;
+      action: string;
+    };
+  };
   hero: {
     title: string;
     subtitle: string;

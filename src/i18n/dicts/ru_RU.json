@@ -854,5 +854,12 @@
     "Hold": "Держать",
     "Sell": "Продажа",
     "StrongSell": "Сильная продажа"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

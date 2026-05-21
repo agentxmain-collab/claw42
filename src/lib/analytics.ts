@@ -51,6 +51,12 @@ export const ANALYTICS_EVENTS = [
   "coinw_order_submit_error",
   "coinw_gate_rollback",
   "trade_readiness_state_rendered",
+  "claw42_external_entry",
+  "claw42_landing_rendered",
+  "claw42_stage_viewed",
+  "claw42_card_expanded",
+  "claw42_dwell_check",
+  "claw42_session_end",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
@@ -66,12 +72,29 @@ interface AnalyticsPayload {
     viewport?: string;
     language?: string;
     utm?: AnalyticsProperties;
+    landing_id?: string | null;
+    from?: string;
+    sig_valid?: boolean;
   };
 }
 
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
 let posthogInited = false;
+let landingAnalyticsContext: Pick<
+  AnalyticsPayload["context"],
+  "landing_id" | "from" | "sig_valid"
+> = {};
+
+export function setAnalyticsLandingContext(
+  context: Pick<AnalyticsPayload["context"], "landing_id" | "from" | "sig_valid">,
+) {
+  landingAnalyticsContext = {
+    landing_id: context.landing_id ?? null,
+    from: context.from,
+    sig_valid: context.sig_valid,
+  };
+}
 
 function ensurePosthog() {
   if (posthogInited || typeof window === "undefined") return;
@@ -132,8 +155,15 @@ function buildPayload(
       viewport: `${window.innerWidth}x${window.innerHeight}`,
       language: navigator.language,
       utm: getUtmProperties(),
+      ...landingAnalyticsContext,
     },
   };
+}
+
+function landingContextProperties(): AnalyticsProperties {
+  return Object.fromEntries(
+    Object.entries(landingAnalyticsContext).filter(([, value]) => value !== undefined),
+  ) as AnalyticsProperties;
 }
 
 export function trackEvent(event: AnalyticsEventName, properties: AnalyticsProperties = {}) {
@@ -141,7 +171,7 @@ export function trackEvent(event: AnalyticsEventName, properties: AnalyticsPrope
 
   const body = JSON.stringify(buildPayload(event, properties));
   const endpoint = apiPath("/api/analytics");
-  capturePosthog(event, properties);
+  capturePosthog(event, { ...landingContextProperties(), ...properties });
 
   if (navigator.sendBeacon) {
     const blob = new Blob([body], { type: "application/json" });
