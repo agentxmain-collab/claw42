@@ -205,7 +205,7 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("去 CoinW 合约");
+    expect(html).toContain("去交易");
     expect(html).not.toContain("仅分析 / 不自动下单");
     expect(html).not.toContain("该币种暂不支持 CoinW 合约开单");
     expect(html).not.toContain("演示模式：当前不会真实下单");
@@ -384,7 +384,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(marketHtml).not.toContain("演示模式");
     expect(marketHtml).not.toContain("仅分析 / 不自动下单");
     expect(symbolHtml).not.toContain("演示模式");
-    expect(symbolHtml).toContain("去 CoinW 合约");
+    expect(symbolHtml).toContain("去交易");
   });
 
   test("renders one CoinW futures navigation action in the primary action slot", () => {
@@ -417,9 +417,9 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("去 CoinW 合约");
+    expect(html).toContain("去交易");
     expect(html).toContain('href="https://www.coinw.com/market/futures"');
-    expect(html.match(/去 CoinW 合约/g)).toHaveLength(2);
+    expect(html.match(/去交易/g)).toHaveLength(2);
     expect(html).not.toContain("仅分析 / 不自动下单");
   });
 
