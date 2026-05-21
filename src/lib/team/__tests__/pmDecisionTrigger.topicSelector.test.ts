@@ -456,7 +456,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     expect(input.recentMarketSignals.map((signal) => signal.symbol)).toEqual(["BILL"]);
   });
 
-  it("emits an audit event when recent-topic suppression leaves no candidates", async () => {
+  it("rotates back to a major candidate when recent-topic suppression removes the dynamic set", async () => {
     filterPublicTimelineEventsMock.mockReturnValue([
       {
         id: "event-btc",
@@ -534,13 +534,23 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
       onAudit: (event) => auditEvents.push(event),
     });
 
-    expect(result).toBeNull();
-    expect(runPmDecisionPipelineMock).not.toHaveBeenCalled();
+    expect(result).not.toBeNull();
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
+    expect(input.candidate).toMatchObject({
+      candidateType: "symbol",
+      symbol: "BTC",
+      candidateKey: "BTC",
+    });
     expect(auditEvents).toEqual([
       expect.objectContaining({
-        type: "selection_skipped",
-        reason: "no_candidates",
-        candidateCount: 0,
+        type: "candidate_considered",
+        symbol: "BTC",
+        hasTrigger: true,
+      }),
+      expect.objectContaining({
+        type: "candidate_generated",
+        symbol: "BTC",
       }),
     ]);
   });

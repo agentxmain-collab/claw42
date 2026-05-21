@@ -907,9 +907,15 @@ function hasPublicInformationCollectionRound(event: PmDecisionTimelineEvent) {
   });
 }
 
+function publicBetaCandidateEvent(event: PublicTimelineEvent): event is PmDecisionTimelineEvent {
+  if (event.payload.kind !== "pm_decision") return false;
+  return hasPublicInformationCollectionRound(event as PmDecisionTimelineEvent);
+}
+
 export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): DispatchTopic[] {
   const now = ctx.now ?? Date.now();
-  const rankedGroups = groupPublicTimelineEventsByTopic(ctx.events)
+  const displayableCandidateEvents = ctx.events.filter(publicBetaCandidateEvent);
+  const rankedGroups = groupPublicTimelineEventsByTopic(displayableCandidateEvents)
     .filter(displayablePublicBetaGroup)
     .map((group) => {
       const tradeDecision = renderableTradeDecision(group.latestDecision);

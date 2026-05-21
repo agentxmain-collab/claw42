@@ -327,7 +327,7 @@ describe("selectPmDecisionTopics", () => {
     });
 
     expect(topics.map((topic) => topic.symbol)).not.toContain("UNKNOWNCOIN");
-    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH", "SOL", "HYPE"]);
+    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH", "SOL"]);
   });
 
   it("anchors symbol-less market news to BTC instead of every pool candidate", () => {
@@ -357,11 +357,30 @@ describe("selectPmDecisionTopics", () => {
     expect(topics.find((topic) => topic.symbol === "SOL")?.scoreBreakdown.news).toBe(0);
   });
 
-  it("uses the fixed static universe as the final fallback when no pool, signal, or news symbol exists", () => {
+  it("uses the major rotation universe as the final fallback when no pool, signal, or news symbol exists", () => {
     const topics = selectPmDecisionTopics({ now });
 
-    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH", "SOL", "HYPE"]);
-    expect(topics.map((topic) => topic.scoreBreakdown.total)).toEqual([45.5, 45.5, 45.5, 45.5]);
+    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH", "SOL"]);
+    expect(topics.map((topic) => topic.scoreBreakdown.total)).toEqual([45.5, 45.5, 45.5]);
+  });
+
+  it("rotates major futures instead of forcing static long-tail symbols when recent symbols are suppressed", () => {
+    const topics = selectPmDecisionTopics({
+      pool: {
+        ...pool(),
+        trending: [],
+        opportunity: [],
+      },
+      recentTimelineEvents: [
+        recentPmDecision("BTC", now - 15 * 60_000),
+        recentPmDecision("ETH", now - 95 * 60_000),
+        recentPmDecision("SOL", now - 40 * 60_000),
+      ],
+      now,
+    });
+
+    expect(topics.map((topic) => topic.symbol)).toEqual(["ETH", "SOL", "BTC"]);
+    expect(topics.map((topic) => topic.symbol)).not.toContain("HYPE");
   });
 
   it("scores market cap independently from the other dimensions", () => {

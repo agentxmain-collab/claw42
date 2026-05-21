@@ -199,6 +199,86 @@ function withResolution(
 }
 
 describe("mapPublicTimelineEventsToTopics", () => {
+  it("keeps the latest displayable hotspot when a newer hotspot has no public collection voice", () => {
+    const older = pmDecision({
+      id: "event-hotspot-displayable",
+      ts: now - 10 * 60_000,
+      evidenceIds: [],
+    });
+    const newer = pmDecision({
+      id: "event-hotspot-not-displayable",
+      ts: now,
+      evidenceIds: [],
+    });
+    if (older.payload.kind !== "pm_decision" || newer.payload.kind !== "pm_decision") {
+      throw new Error("expected pm decision fixtures");
+    }
+
+    const topics = mapTopics({
+      events: [
+        {
+          ...older,
+          payload: {
+            ...older.payload,
+            recordId: "record-hotspot-displayable",
+            symbol: "HOTSPOT",
+            candidateType: "hotspot",
+            candidateKey: "hotspot:older",
+            displayTitle: "热点叙事追踪",
+            tradeDecision: null,
+            rounds: [
+              {
+                round: 1,
+                memberId: "news_analyst",
+                direction: "long",
+                confidence: 0.58,
+                rationale: "Round one public hotspot collection is ready.",
+                evidenceIds: [],
+              },
+            ],
+            rationaleByMember: {
+              news_analyst: "Round one public hotspot collection is ready.",
+            },
+          },
+        },
+        {
+          ...newer,
+          payload: {
+            ...newer.payload,
+            recordId: "record-hotspot-not-displayable",
+            symbol: "HOTSPOT",
+            candidateType: "hotspot",
+            candidateKey: "hotspot:newer",
+            displayTitle: "热点叙事追踪",
+            tradeDecision: null,
+            rounds: [
+              {
+                round: 2,
+                memberId: "bullish_researcher",
+                direction: "long",
+                confidence: 0.61,
+                rationale: "Round two debate should not publish before round one.",
+                evidenceIds: [],
+              },
+            ],
+            rationaleByMember: {
+              bullish_researcher: "Round two debate should not publish before round one.",
+            },
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topics).toHaveLength(1);
+    expect(topics[0]).toMatchObject({
+      id: "record-hotspot-displayable",
+      symbol: "HOTSPOT",
+      title: "热点叙事追踪",
+    });
+  });
+
   it("adapts a real pm_decision event into a v9 dispatch topic", () => {
     const [topic] = mapTopics({
       events: [pmDecision()],
