@@ -2,6 +2,7 @@ import {
   tradingReadinessStatesFromOAuth,
   type TradingReadinessState,
 } from "@/lib/coinw/tradeReadinessState";
+import { resolveCoinWTradeGate, type CoinWTradeGateReadiness } from "@/lib/coinw/tradeGate";
 
 export type CoinWFuturesOrderMode = "disabled" | "test" | "live";
 
@@ -10,6 +11,7 @@ export interface CoinWOAuthReadiness {
   testAccountConfigured: boolean;
   orderSubmissionMode: CoinWFuturesOrderMode;
   realSubmissionEnabled: boolean;
+  tradeGate: CoinWTradeGateReadiness;
   missingRequiredEnv: string[];
   blockingReasons: string[];
   readinessStates: TradingReadinessState[];
@@ -38,6 +40,7 @@ export function coinWOAuthReadiness(env: NodeJS.ProcessEnv = process.env): CoinW
   const missingOAuthEnv = OAUTH_ENV_KEYS.filter((key) => !hasEnv(key, env));
   const testAccountConfigured = hasEnv(TEST_ACCOUNT_ENV_KEY, env);
   const orderSubmissionMode = normalizeOrderMode(env.COINW_FUTURES_ORDER_MODE);
+  const tradeGate = resolveCoinWTradeGate({ env, orderSubmissionMode });
   const oauthConfigured = missingOAuthEnv.length === 0;
   const missingRequiredEnv = [
     ...missingOAuthEnv,
@@ -55,7 +58,8 @@ export function coinWOAuthReadiness(env: NodeJS.ProcessEnv = process.env): CoinW
     testAccountConfigured,
     orderSubmissionMode,
     realSubmissionEnabled:
-      oauthConfigured && testAccountConfigured && orderSubmissionMode === "test",
+      oauthConfigured && testAccountConfigured && tradeGate.hostedConfirmationEnabled,
+    tradeGate,
     missingRequiredEnv,
     blockingReasons,
     readinessStates: tradingReadinessStatesFromOAuth({

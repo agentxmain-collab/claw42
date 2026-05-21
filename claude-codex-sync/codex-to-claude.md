@@ -5657,3 +5657,34 @@ behavior, and live risk controls; it should stay behind a later explicit release
   login-KYC-risk sequence, error taxonomy / retry policy, and callback source-of-truth semantics.
 
 [DOC-HINT: Stage 3 implements Direction E primitives and keeps Direction B design-only; CoinW hosted-confirmation contract details remain external prerequisites before Gate 2.]
+
+# CoinW real trading readiness v1.2 Stage 4 Gate 1 report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+
+## Completed
+
+- Added `src/lib/coinw/tradeGate.ts` for Gate 1-4 normalization and safety checks.
+- Gate 1 is external-navigation-only:
+  - external navigation remains enabled
+  - hosted confirmation is disabled
+  - direct submit is disabled
+- Gate 2+ hosted confirmation requires `COINW_FUTURES_ORDER_MODE=test`; setting a gate alone cannot enable it.
+- `COINW_FUTURES_ORDER_MODE=live` remains blocked by the separate-release guard even with Gate 3/4.
+- Added rollback drill docs at `docs/coinw-gate-rollback-drill.md`.
+- Registered CoinW trade / handoff / rollback telemetry event names and wired v10 CoinW CTA click tracking.
+
+## Verification
+
+- `npx vitest run src/lib/coinw/__tests__/tradeGate.test.ts src/lib/coinw/__tests__/oauthReadiness.test.ts src/app/api/watch/follow-intents/status/route.test.ts src/app/api/watch/follow-intents/route.test.ts src/lib/__tests__/analyticsEvents.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: PASS, 30 tests.
+- `npm run typecheck`: PASS.
+
+## Boundary
+
+- No production deploy.
+- No Gate 2/3/4 activation.
+- No live submission unblock.
+- No user-facing copy / placement changes.
+
+[DOC-HINT: Gate 1 is now mechanically navigation-only; Gate 2 hosted confirmation requires explicit test mode plus trade gate, and live remains blocked by the separate-release guard.]

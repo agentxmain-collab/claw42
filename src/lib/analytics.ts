@@ -41,6 +41,16 @@ export const ANALYTICS_EVENTS = [
   "process_accordion_collapse",
   "process_accordion_expand",
   "pipeline_replay_trigger",
+  "coinw_trade_cta_click",
+  "coinw_intent_created",
+  "coinw_handoff_opened",
+  "coinw_handoff_callback_confirmed",
+  "coinw_handoff_callback_rejected",
+  "coinw_handoff_callback_expired",
+  "coinw_handoff_callback_cancelled",
+  "coinw_order_submit_error",
+  "coinw_gate_rollback",
+  "trade_readiness_state_rendered",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

@@ -455,6 +455,7 @@ function TopicStrategyV10({
       coinwPair: canRenderFollowTrade ? topic.execution?.coinwPair : null,
     });
   const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderFollowTrade);
+  const coinwLinkType = canRenderFollowTrade && topic.execution?.coinwPair ? "pair" : "generic";
 
   return (
     <div
@@ -499,7 +500,17 @@ function TopicStrategyV10({
             href={coinwFuturesUrl}
             target="_blank"
             rel="noreferrer"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              trackEvent("coinw_trade_cta_click", {
+                topicId: topic.id,
+                candidateType,
+                candidateKey: topic.candidateKey ?? null,
+                symbol: topic.symbol,
+                linkType: coinwLinkType,
+                executable: canRenderFollowTrade,
+              });
+            }}
           >
             {dict.market.coinwFuturesLink}
           </a>
