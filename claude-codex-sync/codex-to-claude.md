@@ -5694,6 +5694,8 @@ Branch: `feature/coinw-real-trading-readiness-v12`
 Codex time: 2026-05-21 CST
 Branch: `feature/coinw-real-trading-readiness-v12`
 Head after verification fix: `88928bdb9cda9c840e916a2a8941a50d3b2143c2`
+Final pushed head: `143739825fc0b6c232e443e1c8ec3d2483321826`
+PR: https://github.com/agentxmain-collab/claw42/pull/189
 
 ## Final implementation summary
 
@@ -5723,11 +5725,20 @@ Head after verification fix: `88928bdb9cda9c840e916a2a8941a50d3b2143c2`
 ## Deployment identity / preview status
 
 - GitHub identity is valid for `agentxmain-collab`; branch was pushed to `origin/feature/coinw-real-trading-readiness-v12`.
+- PR #189 was opened against `feature/coinw-contract-release`.
+- GitHub checks:
+  - `verify`: PASS.
+  - `deploy preview`: PASS.
+  - `Vercel`: PASS.
+- Vercel preview URLs from PR automation:
+  - GitHub action preview: https://claw42-site-93x29hd46-agentxmain-collabs-projects.vercel.app
+  - Vercel PR comment preview: https://claw42-site-git-feature-coin-096bf3-agentxmain-collabs-projects.vercel.app
+- `curl -I -L` on both preview URLs returns HTTP 401 Vercel SSO protection. The build is ready, but Dan/F will need an authorized Vercel session or a protection-bypass/share link generated from the correctly scoped Vercel account.
 - Vercel CLI identity is not aligned with the project registry in this shell:
   - requested project scope: `agentxmain-collabs-projects`
   - current CLI user scope available: `xxcryptoofficial-collabs-projects`
 - Because `.vercel/project.json` is absent in this clean worktree and the CLI scope is mismatched, Codex did not run `vercel link` or `npx vercel` from the worktree. This avoids the known failure mode of creating or binding the wrong Vercel project.
-- Preview should be obtained through the GitHub/Vercel integration for the pushed branch/PR, or Dan/F should switch the Vercel CLI identity/scope before any manual preview deploy.
+- Preview was obtained through the GitHub/Vercel integration; manual CLI deployment remains intentionally skipped until Vercel identity/scope is corrected.
 
 ## Boundary maintained
 
@@ -5738,4 +5749,4 @@ Head after verification fix: `88928bdb9cda9c840e916a2a8941a50d3b2143c2`
 - No secret values read or written.
 - No user-facing readiness copy or new placement chosen by Codex.
 
-[DOC-HINT: CoinW readiness v1.2 is locally verified and pushed as a feature branch; manual Vercel CLI preview is blocked by scope mismatch and should be resolved through GitHub preview or corrected Vercel identity.]
+[DOC-HINT: CoinW readiness v1.2 is locally verified, PR #189 is open, GitHub/Vercel preview checks pass, and preview URLs are SSO-protected; manual Vercel CLI deployment remains blocked by scope mismatch.]
