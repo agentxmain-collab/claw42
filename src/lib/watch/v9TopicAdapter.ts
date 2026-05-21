@@ -884,11 +884,27 @@ function compareRankedGroups(
 }
 
 function displayablePublicBetaGroup(group: DispatchTopicGroup) {
-  if (group.candidateType !== "symbol") return true;
   const latest = group.latestDecision;
   if (latest.payload.kind !== "pm_decision") return false;
+  if (!hasPublicInformationCollectionRound(latest)) return false;
+  if (group.candidateType !== "symbol") return true;
   if (typeof latest.payload.executable === "boolean") return latest.payload.executable;
   return resolveSymbolMapping(group.symbol).execution.executable;
+}
+
+function hasPublicInformationCollectionRound(event: PmDecisionTimelineEvent) {
+  const roundEntries = Array.isArray(event.payload.rounds) ? event.payload.rounds : [];
+  if (roundEntries.length === 0) return true;
+  return roundEntries.some((entry) => {
+    const memberId = memberForRoundEntry(entry);
+    return (
+      Boolean(memberId) &&
+      memberId !== null &&
+      stageForMember(memberId) === 1 &&
+      entry.round <= 1 &&
+      entry.rationale.trim().length > 0
+    );
+  });
 }
 
 export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): DispatchTopic[] {

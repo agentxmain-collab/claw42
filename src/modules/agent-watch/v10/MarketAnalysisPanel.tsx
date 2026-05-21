@@ -431,14 +431,11 @@ function TopicStrategyV10({
   const { strategy } = topic;
   const candidateType = topicCandidateType(topic);
   const canRenderFollowTrade = candidateType === "symbol" && topic.execution?.executable === true;
-  const nonFollowableCopy =
-    candidateType === "symbol" ? dict.market.watchOnlyCopy : dict.market.analysisOnlyCopy;
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
   const followStatus =
     topic.status === "pending"
       ? `${strategy.follow.watchCount} ${dict.market.watchReminder}`
       : `${strategy.follow.watchCount} ${dict.market.watchCount} · ${strategy.follow.followCount} ${dict.market.followed}`;
-  const followNoteId = `${topic.id}-follow-trade-disabled-note`;
   const coinwFuturesUrl =
     topic.execution?.tradeUrl ??
     buildCoinWFuturesTradeUrl({
@@ -479,23 +476,8 @@ function TopicStrategyV10({
       />
       <div className="strat-cta">
         <div className="cta-row">
-          {!canRenderFollowTrade ? (
-            <span className="watch-only-pill">{dict.market.watchOnlyLabel}</span>
-          ) : null}
-          {canRenderFollowTrade ? (
-            <button
-              className="cta-btn"
-              type="button"
-              disabled
-              title={dict.followTrade.disabled_tooltip}
-              aria-describedby={followNoteId}
-              onClick={() => onPlaceholder(topic, dict.followTrade.disabled_label, "primary")}
-            >
-              {dict.followTrade.disabled_label}
-            </button>
-          ) : null}
           <a
-            className="cta-btn secondary"
+            className="cta-btn"
             href={coinwFuturesUrl}
             target="_blank"
             rel="noreferrer"
@@ -511,11 +493,7 @@ function TopicStrategyV10({
             {strategy.follow.secondaryLabel}
           </button>
         </div>
-        <div className="cta-meta" id={followNoteId}>
-          {!canRenderFollowTrade
-            ? `${nonFollowableCopy} · ${followStatus}`
-            : `${dict.followTrade.safety_copy} · ${followStatus}`}
-        </div>
+        <div className="cta-meta">{followStatus}</div>
         <TopicFeedback topic={topic} dict={dict} value={feedbackValue} onFeedback={onFeedback} />
       </div>
     </div>

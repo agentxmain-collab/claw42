@@ -798,6 +798,14 @@ describe("mapPublicTimelineEventsToTopics", () => {
             rounds: [
               {
                 round: 1,
+                memberId: "chart_analyst",
+                direction: "long",
+                confidence: 0.6,
+                rationale: "Round one chart collection is ready.",
+                evidenceIds: [],
+              },
+              {
+                round: 1,
                 memberId: "research_lead",
                 direction: "long",
                 confidence: 0.62,
@@ -882,6 +890,14 @@ describe("mapPublicTimelineEventsToTopics", () => {
             rounds: [
               {
                 round: 1,
+                memberId: "chart_analyst",
+                direction: "short",
+                confidence: 0.6,
+                rationale: "Market overview chart collection is ready.",
+                evidenceIds: [],
+              },
+              {
+                round: 1,
                 memberId: "research_lead",
                 direction: "short",
                 confidence: 0.62,
@@ -957,6 +973,14 @@ describe("mapPublicTimelineEventsToTopics", () => {
             rounds: [
               {
                 round: 1,
+                memberId: "chart_analyst",
+                direction: "short",
+                confidence: 0.6,
+                rationale: "Market overview chart collection is ready.",
+                evidenceIds: [],
+              },
+              {
+                round: 1,
                 memberId: "research_lead",
                 direction: "short",
                 confidence: 0.62,
@@ -1020,7 +1044,10 @@ describe("mapPublicTimelineEventsToTopics", () => {
       "pending",
       "pending",
     ]);
-    expect(topic.messages.map((message) => message.sourceMemberId)).toEqual(["research_lead"]);
+    expect(topic.messages.map((message) => message.sourceMemberId)).toEqual([
+      "chart_analyst",
+      "research_lead",
+    ]);
   });
 
   it("groups multi-round decision messages by round label", () => {
@@ -1164,6 +1191,58 @@ describe("mapPublicTimelineEventsToTopics", () => {
         .map((message) => message.roundLabel)
         .filter(Boolean),
     ).not.toContain("第 2 轮 · 多轮辩论");
+  });
+
+  it("does not render a public card that starts with later-round analyst output", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+
+    const topics = mapTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            tradeDecision: null,
+            rationaleByMember: {},
+            rounds: [
+              {
+                round: 2,
+                memberId: "fundamental_analyst",
+                direction: "long",
+                confidence: 0.66,
+                rationale: "Round two fundamental refinement must not be the first public voice.",
+                evidenceIds: [],
+              },
+              {
+                round: 2,
+                memberId: "research_lead",
+                direction: "long",
+                confidence: 0.7,
+                rationale: "Round two synthesis must wait for collection context.",
+                evidenceIds: [],
+              },
+            ],
+            stageTrace: [
+              {
+                stageId: "analyst_inputs",
+                status: "done",
+                observedAt: new Date(now - 120_000).toISOString(),
+              },
+              {
+                stageId: "research_lead",
+                status: "in_progress",
+                observedAt: new Date(now - 60_000).toISOString(),
+              },
+            ],
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topics).toEqual([]);
   });
 
   it("keeps empty incomplete PM decisions pending instead of active", () => {

@@ -63,12 +63,17 @@ requireIncludes(
 requireIncludes(
   "src/modules/agent-watch/v10/MarketAnalysisPanel.tsx",
   "topic.execution?.executable === true",
-  "v10 follow trade must require explicit executable metadata",
+  "v10 CoinW pair deep link must require explicit executable metadata",
 );
 requireIncludes(
   "src/modules/agent-watch/v10/MarketAnalysisPanel.tsx",
-  "disabled",
-  "v10 primary follow action must stay disabled until real execution is separately approved",
+  "href={coinwFuturesUrl}",
+  "v10 primary action must navigate out to CoinW instead of submitting an internal order",
+);
+requireNotIncludes(
+  "src/modules/agent-watch/v10/MarketAnalysisPanel.tsx",
+  "dict.followTrade.disabled_label",
+  "v10 primary action must not render the deprecated disabled demo action",
 );
 
 requireIncludes(
