@@ -223,6 +223,72 @@ describe("mergePublicTimelineEvents", () => {
       ),
     ).toEqual(["pm:hotspot:latest"]);
   });
+
+  it("prefers the latest displayable hotspot when a newer hotspot has no public collection voice", () => {
+    const displayable = pmDecision({
+      recordId: "pm:hotspot:displayable",
+      symbol: "HOTSPOT",
+      ts: Date.parse("2026-05-20T04:47:00.000Z"),
+      candidateType: "hotspot",
+      candidateKey: "hotspot:utc:zh_CN:2026-05-20T03:market",
+      displayTitle: "热点叙事追踪",
+    });
+    const notDisplayable = pmDecision({
+      recordId: "pm:hotspot:not-displayable",
+      symbol: "HOTSPOT",
+      ts: Date.parse("2026-05-20T10:12:00.000Z"),
+      candidateType: "hotspot",
+      candidateKey: "hotspot:utc:zh_CN:2026-05-20T09:market",
+      displayTitle: "热点叙事追踪",
+    });
+    if (
+      displayable.payload.kind !== "pm_decision" ||
+      notDisplayable.payload.kind !== "pm_decision"
+    ) {
+      throw new Error("expected pm decision fixtures");
+    }
+
+    const merged = mergePublicTimelineEvents([
+      {
+        ...displayable,
+        payload: {
+          ...displayable.payload,
+          rounds: [
+            {
+              round: 1,
+              memberId: "news_analyst",
+              direction: "long",
+              confidence: 0.57,
+              rationale: "Public collection voice is ready.",
+              evidenceIds: [],
+            },
+          ],
+        },
+      },
+      {
+        ...notDisplayable,
+        payload: {
+          ...notDisplayable.payload,
+          rounds: [
+            {
+              round: 2,
+              memberId: "bullish_researcher",
+              direction: "long",
+              confidence: 0.63,
+              rationale: "Debate should not publish before collection.",
+              evidenceIds: [],
+            },
+          ],
+        },
+      },
+    ]);
+
+    expect(
+      merged.map((event) =>
+        event.payload.kind === "pm_decision" ? event.payload.recordId : event.id,
+      ),
+    ).toEqual(["pm:hotspot:displayable"]);
+  });
 });
 
 describe("compareDecisionCandidateOrder", () => {

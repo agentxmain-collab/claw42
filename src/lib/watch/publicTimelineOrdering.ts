@@ -1,4 +1,5 @@
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import { isPublicDisplayablePmDecisionEvent } from "@/lib/watch/publicPmDecisionDisplay";
 import {
   compareDecisionCandidateOrder,
   decisionCandidateDedupeKey,
@@ -71,7 +72,16 @@ export function mergePublicTimelineEvents(events: readonly PublicTimelineEvent[]
 
     const candidateKey = publicTimelinePmCandidateKey(event);
     if (candidateKey) {
-      if (byPmCandidate.has(candidateKey)) continue;
+      const existing = byPmCandidate.get(candidateKey);
+      if (existing) {
+        if (
+          !isPublicDisplayablePmDecisionEvent(existing) &&
+          isPublicDisplayablePmDecisionEvent(event)
+        ) {
+          byPmCandidate.set(candidateKey, event);
+        }
+        continue;
+      }
       byPmCandidate.set(candidateKey, event);
     } else {
       byEventId.set(event.id, event);

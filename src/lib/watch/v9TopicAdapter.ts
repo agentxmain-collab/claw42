@@ -43,6 +43,10 @@ import {
   PUBLIC_DECISION_STAGE_ORDER,
   publicDecisionVisibleStageLimit,
 } from "@/lib/watch/publicDecisionStageContract";
+import {
+  hasPublicInformationCollectionRound,
+  isPublicDisplayablePmDecisionEvent,
+} from "@/lib/watch/publicPmDecisionDisplay";
 import type {
   DispatchMessage,
   DispatchStageMarker,
@@ -892,29 +896,9 @@ function displayablePublicBetaGroup(group: DispatchTopicGroup) {
   return resolveSymbolMapping(group.symbol).execution.executable;
 }
 
-function hasPublicInformationCollectionRound(event: PmDecisionTimelineEvent) {
-  const roundEntries = Array.isArray(event.payload.rounds) ? event.payload.rounds : [];
-  if (roundEntries.length === 0) return true;
-  return roundEntries.some((entry) => {
-    const memberId = memberForRoundEntry(entry);
-    return (
-      Boolean(memberId) &&
-      memberId !== null &&
-      stageForMember(memberId) === 1 &&
-      entry.round <= 1 &&
-      entry.rationale.trim().length > 0
-    );
-  });
-}
-
-function publicBetaCandidateEvent(event: PublicTimelineEvent): event is PmDecisionTimelineEvent {
-  if (event.payload.kind !== "pm_decision") return false;
-  return hasPublicInformationCollectionRound(event as PmDecisionTimelineEvent);
-}
-
 export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): DispatchTopic[] {
   const now = ctx.now ?? Date.now();
-  const displayableCandidateEvents = ctx.events.filter(publicBetaCandidateEvent);
+  const displayableCandidateEvents = ctx.events.filter(isPublicDisplayablePmDecisionEvent);
   const rankedGroups = groupPublicTimelineEventsByTopic(displayableCandidateEvents)
     .filter(displayablePublicBetaGroup)
     .map((group) => {
