@@ -424,6 +424,52 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("仅分析 / 不自动下单");
   });
 
+  test("uses pair-specific CoinW links only for executable symbol topics", () => {
+    const previousTemplate = process.env.NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE;
+    process.env.NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE =
+      "https://www.coinw.com/futures/{pairCompactLower}";
+
+    try {
+      const html = renderToStaticMarkup(
+        <MarketAnalysisPanel
+          topics={[
+            topicFixture({
+              id: "market-daily",
+              candidateType: "market_overview",
+              candidateKey: "market_overview:daily:zh_CN:2026-05-17",
+              title: "今日大盘综述",
+              symbol: "MARKET",
+              score: 3,
+              lastUpdatedAt: 3,
+              executable: false,
+            }),
+            topicFixture({
+              id: "symbol-hype",
+              candidateType: "symbol",
+              candidateKey: "HYPE",
+              title: "HYPE 实时行情分析",
+              symbol: "HYPE",
+              score: 2,
+              lastUpdatedAt: 2,
+              executable: true,
+            }),
+          ]}
+          dict={dict}
+          onPlaceholder={() => undefined}
+        />,
+      );
+
+      expect(html).toContain('href="https://www.coinw.com/futures/hypeusdt"');
+      expect(html).toContain('href="https://www.coinw.com/market/futures"');
+    } finally {
+      if (previousTemplate === undefined) {
+        delete process.env.NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE;
+      } else {
+        process.env.NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE = previousTemplate;
+      }
+    }
+  });
+
   test("renders non-public trade readiness slots for all failure kinds", () => {
     const failureKinds: TradingReadinessFailureKind[] = [
       "analysis_data_degraded",

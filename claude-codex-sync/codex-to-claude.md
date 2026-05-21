@@ -5612,3 +5612,48 @@ contract while preserving Dan/legal control over visible language.
 - No production deploy.
 
 [DOC-HINT: Lane R now has typed trade readiness payloads and non-public UI slots; visible readiness copy remains Dan/legal-owned.]
+
+# CoinW real trading readiness v1.2 Stage 3 report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+
+## Completed
+
+- Verified T-1/T-2 external trading navigation:
+  - generic CoinW futures URL remains the fallback when no supported pair is present
+  - executable symbol cards can use `NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE` for pair-specific deep links
+  - non-symbol / watch-only cards never receive a pair-specific deep link
+- Added hosted-confirmation Direction E building blocks:
+  - signed order intent payload with HMAC-SHA256, `kid`, 128-bit nonce, `iat`, `exp`, and `payloadHash`
+  - signature verification with payload-hash and expiry checks
+  - replay nonce reservation with KV-backed storage when configured and memory fallback for tests
+  - audit row contract linking `intentId` / `recordId` / candidate metadata / pair / gate / mode / signature metadata / callback status
+  - callback route draft for `confirmed` / `submitted` / `rejected` / `expired` / `cancelled` / `failed`
+  - status route extension: readiness without `intentId`; hosted-confirmation audit status with `intentId`
+- Added CoinW platform contract checklist + 4 sandbox status fixtures. The receiving endpoint, payload pull/push model,
+  login-KYC-risk sequence, and error taxonomy remain explicitly `pending_coinw_contract`.
+- Kept Direction B as design-only. No token/session/order-submit pipeline was implemented.
+
+## First-hand judgement
+
+Direction E remains the correct first implementation path. It gives Claw42 signed intent generation,
+replay protection, callback/status, and auditability without crossing into direct API order submission.
+Direction B still requires token/session storage, server-side submit, status reconciliation, revoke/refresh
+behavior, and live risk controls; it should stay behind a later explicit release.
+
+## Verification
+
+- `npx vitest run src/lib/coinw/__tests__/futuresLinks.test.ts src/lib/coinw/__tests__/futuresOrderIntent.test.ts src/lib/coinw/__tests__/orderIntentSignature.test.ts src/lib/coinw/__tests__/orderIntentAuditStore.test.ts src/lib/coinw/__tests__/handoffContract.test.ts src/app/api/watch/follow-intents/route.test.ts src/app/api/watch/follow-intents/status/route.test.ts src/app/api/watch/follow-intents/callback/route.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: PASS, 39 tests.
+- `npm run typecheck`: PASS.
+
+## Boundary / external dependency
+
+- No direct CoinW API submit path.
+- No OAuth token/session persistence.
+- No live mode unblock.
+- No invented CoinW hosted-confirmation receiving endpoint.
+- CoinW must still confirm the 5 contract points before Gate 2: `kid` verification, payload pull/push,
+  login-KYC-risk sequence, error taxonomy / retry policy, and callback source-of-truth semantics.
+
+[DOC-HINT: Stage 3 implements Direction E primitives and keeps Direction B design-only; CoinW hosted-confirmation contract details remain external prerequisites before Gate 2.]
