@@ -6,8 +6,8 @@ import { coinWOAuthReadiness } from "@/lib/coinw/oauthReadiness";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET(request?: NextRequest) {
-  const intentId = request?.nextUrl.searchParams.get("intentId")?.trim();
+export async function GET(request: NextRequest) {
+  const intentId = request.nextUrl.searchParams.get("intentId")?.trim();
   if (intentId) {
     const audit = await readCoinWOrderIntentAudit(intentId);
     if (!audit) {

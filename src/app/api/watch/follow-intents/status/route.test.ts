@@ -30,7 +30,9 @@ describe("GET /api/watch/follow-intents/status", () => {
 
   it("returns a safe disabled readiness payload before external CoinW setup is complete", async () => {
     const { GET } = await import("./route");
-    const response = await GET();
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/watch/follow-intents/status"),
+    );
     const payload = await response.json();
 
     expect(response.status).toBe(200);
