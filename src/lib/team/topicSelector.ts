@@ -1,6 +1,8 @@
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import type { DecisionOutcome, StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
+import { socialSignalScore } from "@/lib/social/socialSignalNormalizer";
+import type { SocialSignalObservation } from "@/lib/social/socialSignalTypes";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import { PUBLIC_BETA_MAJOR_ROTATION_SYMBOLS } from "@/lib/watch/publicSymbolCoverage";
 import type { CoinPoolPayload, CoinTickerEntry, SignalRecord } from "@/modules/agent-watch/types";
@@ -9,6 +11,7 @@ type TopicReasonKind =
   | "marketCap"
   | "volume"
   | "news"
+  | "social"
   | "executable"
   | "market"
   | "momentum"
@@ -45,6 +48,7 @@ interface SelectPmDecisionTopicsInput {
   pool?: CoinPoolPayload;
   marketSignals?: SignalRecord[];
   newsEvidence?: NewsEvidence[];
+  socialSignals?: SocialSignalObservation[];
   recentDecisionRecords?: StrategyDecisionRecord[];
   recentTimelineEvents?: PublicTimelineEvent[];
   symbol?: string;
@@ -107,6 +111,7 @@ const PUBLIC_REASON_LABELS = {
   marketCap: "市值权重",
   volume: "24h成交量",
   news: "新闻热度",
+  social: "社交热度",
   executable: "可执行性",
   market: "市场信号",
   momentum: "24h波动",
@@ -118,6 +123,7 @@ const PUBLIC_REASON_ORDER: TopicReasonKind[] = [
   "marketCap",
   "volume",
   "news",
+  "social",
   "executable",
   "market",
   "momentum",
@@ -157,8 +163,12 @@ function orderedCandidateSymbols({
   pool,
   marketSignals,
   newsEvidence,
+  socialSignals,
   symbol,
-}: Pick<SelectPmDecisionTopicsInput, "pool" | "marketSignals" | "newsEvidence" | "symbol">) {
+}: Pick<
+  SelectPmDecisionTopicsInput,
+  "pool" | "marketSignals" | "newsEvidence" | "socialSignals" | "symbol"
+>) {
   if (symbol) {
     const normalized = normalizeSymbol(symbol);
     return normalized ? [normalized] : [];
@@ -167,6 +177,9 @@ function orderedCandidateSymbols({
   if (poolSymbols.length > 0) return poolSymbols;
   const fallbackSymbols = dedupeSymbols([
     ...(newsEvidence ?? []).flatMap((evidence) => evidence.symbol),
+    ...(socialSignals ?? [])
+      .filter((signal) => signal.status === "ok")
+      .map((signal) => signal.symbol ?? signal.candidateKey),
     ...(marketSignals ?? []).map((signal) => signal.symbol),
   ]);
   return fallbackSymbols.length > 0 ? fallbackSymbols.slice(0, 6) : [];
@@ -199,6 +212,14 @@ function evidenceMatchesSymbol(evidence: NewsEvidence, symbol: string) {
   const normalizedSymbol = normalizeSymbol(symbol);
   if (evidence.symbol.length === 0) return normalizedSymbol === MARKET_NEWS_ANCHOR_SYMBOL;
   return evidence.symbol.map(normalizeSymbol).includes(normalizedSymbol);
+}
+
+function socialSignalMatchesSymbol(signal: SocialSignalObservation, symbol: string) {
+  const normalizedSymbol = normalizeSymbol(symbol);
+  return (
+    normalizeSymbol(signal.symbol) === normalizedSymbol ||
+    normalizeSymbol(signal.candidateKey) === normalizedSymbol
+  );
 }
 
 function strongestNewsReason(evidences: NewsEvidence[]): TopicSelectionReason | null {
@@ -248,6 +269,22 @@ function newsHeatReason(evidences: NewsEvidence[], now: number): TopicSelectionR
     kind: "news",
     label: "7d news heat",
     detail: `7d ${recent.length}篇 / ${sources.size}源 / ${highImpactCount}高影响`,
+    score,
+  };
+}
+
+function socialHeatReason(signals: SocialSignalObservation[]): TopicSelectionReason | null {
+  const usableSignals = signals.filter((signal) => signal.status === "ok");
+  if (usableSignals.length === 0) return null;
+  const strongest = [...usableSignals].sort(
+    (left, right) => socialSignalScore(right) - socialSignalScore(left),
+  )[0];
+  const score = socialSignalScore(strongest);
+  if (score <= 0) return null;
+  return {
+    kind: "social",
+    label: "cryptopanic social heat",
+    detail: `24h ${strongest.mentionCount}条 / ${strongest.sourceCount}源 / engagement ${strongest.engagementScore}`,
     score,
   };
 }
@@ -403,6 +440,7 @@ function scoreBreakdown(reasons: TopicSelectionReason[]): TopicScoreBreakdown {
     marketCap: 0,
     volume: 0,
     news: 0,
+    social: 0,
     executable: 0,
     market: 0,
     momentum: 0,
@@ -421,13 +459,19 @@ function selectionCacheKey({
   pool,
   marketSignals,
   newsEvidence,
+  socialSignals,
   recentDecisionRecords,
   recentTimelineEvents,
   now,
 }: Required<
   Pick<
     SelectPmDecisionTopicsInput,
-    "marketSignals" | "newsEvidence" | "recentDecisionRecords" | "recentTimelineEvents" | "now"
+    | "marketSignals"
+    | "newsEvidence"
+    | "socialSignals"
+    | "recentDecisionRecords"
+    | "recentTimelineEvents"
+    | "now"
   >
 > &
   Pick<SelectPmDecisionTopicsInput, "pool">) {
@@ -453,6 +497,16 @@ function selectionCacheKey({
       evidence.sourceDomain ?? evidence.source,
       evidence.symbol.map(normalizeSymbol).sort().join(","),
     ]),
+    socialSignals: socialSignals.map((signal) => [
+      signal.provider,
+      signal.status,
+      normalizeSymbol(signal.symbol ?? signal.candidateKey),
+      signal.mentionCount,
+      signal.sentimentScore,
+      signal.engagementScore,
+      signal.sourceCount,
+      signal.reliability,
+    ]),
     recentDecisionRecords: recentDecisionRecords.map((record) => [
       record.id,
       memoryRecordSymbol(record),
@@ -471,6 +525,7 @@ function selectPmDecisionTopicsUncached({
   pool,
   marketSignals,
   newsEvidence,
+  socialSignals,
   recentDecisionRecords,
   recentTimelineEvents,
   symbol,
@@ -488,7 +543,13 @@ function selectPmDecisionTopicsUncached({
     const normalizedSymbol = normalizeSymbol(candidateSymbol);
     return executionForSymbol(normalizedSymbol, tickerBySymbol.get(normalizedSymbol)).executable;
   };
-  const orderedSymbols = orderedCandidateSymbols({ pool, marketSignals, newsEvidence, symbol });
+  const orderedSymbols = orderedCandidateSymbols({
+    pool,
+    marketSignals,
+    newsEvidence,
+    socialSignals,
+    symbol,
+  });
   const rawSymbols = orderedSymbols.filter(
     (candidateSymbol) =>
       symbolIsExecutable(candidateSymbol) &&
@@ -509,10 +570,14 @@ function selectPmDecisionTopicsUncached({
     const scopedEvidence = newsEvidence.filter((evidence) =>
       evidenceMatchesSymbol(evidence, normalizedSymbol),
     );
+    const scopedSocialSignals = socialSignals.filter((signal) =>
+      socialSignalMatchesSymbol(signal, normalizedSymbol),
+    );
     const reasons = [
       marketCapReason(ticker, entries),
       volumeReason(ticker, entries),
       newsHeatReason(scopedEvidence, now) ?? strongestNewsReason(scopedEvidence),
+      socialHeatReason(scopedSocialSignals),
       executableReason(normalizedSymbol, ticker),
       strongestSignalReason(scopedSignals),
       tickerReason(ticker),
@@ -551,6 +616,7 @@ export function selectPmDecisionTopics({
   pool,
   marketSignals = [],
   newsEvidence = [],
+  socialSignals = [],
   recentDecisionRecords = [],
   recentTimelineEvents = [],
   symbol,
@@ -561,6 +627,7 @@ export function selectPmDecisionTopics({
       pool,
       marketSignals,
       newsEvidence,
+      socialSignals,
       recentDecisionRecords,
       recentTimelineEvents,
       now,
@@ -571,6 +638,7 @@ export function selectPmDecisionTopics({
       pool,
       marketSignals,
       newsEvidence,
+      socialSignals,
       recentDecisionRecords,
       recentTimelineEvents,
       symbol,
@@ -587,6 +655,7 @@ export function selectPmDecisionTopics({
     pool,
     marketSignals,
     newsEvidence,
+    socialSignals,
     recentDecisionRecords,
     recentTimelineEvents,
     symbol,

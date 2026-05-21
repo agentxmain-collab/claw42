@@ -5473,3 +5473,97 @@ Branch: `feature/coinw-contract-release`
 - No real CoinW order submission.
 
 [DOC-HINT: Beta1 is now CoinW-futures-only for symbol cards; Beta2 has disabled order readiness and leverage-cap plumbing, with external OAuth/test-account/order semantics still required.]
+
+# CoinW real trading readiness v1.2 Stage 0 restart report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+Implementation base: `origin/feature/coinw-contract-release` =
+`7da829fc80d6298aac3ce69c5752afd2150d65e6`
+
+## T000a scaffold readiness
+
+Result: PASS. The v1.2 base correction is valid; the CoinW scaffold exists on
+`origin/feature/coinw-contract-release`, not on `origin/main`.
+
+| Capability                       | First-hand status                                                                                                  | Gap / boundary                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| `/api/watch/follow-intents`      | Present. POST parses body, rate-limits by IP, builds a CoinW futures order intent, and returns readiness metadata. | Fixed `mode: "disabled"` + `coinw_real_submission_not_enabled`; no token/session/order submit. |
+| `CoinWFuturesOrderMode`          | Present as `disabled                                                                                               | test                                                                                           | live`. | `live` still emits `live_order_submission_requires_separate_release`; must not bypass before Gate 3. |
+| `coinWOAuthReadiness()`          | Present. Reads OAuth env, test account env, and order mode.                                                        | Readiness only; no OAuth handshake and no token persistence.                                   |
+| `buildCoinWFuturesOrderIntent()` | Present. Generates `intentId`, `expiresAt`, `thirdOrderId`, and a draft `/v1/perpum/order` body.                   | Draft only; no signature, nonce, replay lock, callback, or audit store yet.                    |
+| futures instruments              | Present. Fetches `/v1/perpum/instruments`, caches 10 minutes, and falls back to static preview universe.           | Static fallback is safe for preview/analysis only, not proof of live tradability.              |
+| futures links                    | Present. Supports pair-specific template plus generic futures fallback.                                            | Generic fallback is navigation only; not an order confirmation route.                          |
+| beta leverage cap                | Present via `COINW_FUTURES_BETA_MAX_LEVERAGE`, default 3x.                                                         | Cap is only one safety guard, not complete risk control.                                       |
+
+## T000b / T000c
+
+Env owner is Dan per § 0.6 Q4. I will implement env names and readiness surfaces from the
+existing 12-item CoinW list without asking for secret values. Dan's 4 decisions are reflected:
+button routing by candidate state, CryptoPanic as Lane S provider, `SOCIAL_SCORE_CAP = 0.15`,
+and Dan as env/secret owner.
+
+## T000d E vs B engineering judgement
+
+Recommendation: **A always + E first for strategy-confirmed T-3; keep B as design-only until a
+separate live submission release.**
+
+- Direction E is the safer implementable next step because Claw42 can generate a signed order
+  intent and hand the final confirmation to CoinW-hosted login/KYC/risk controls. It still needs
+  CoinW contract details for the receiving endpoint, validation sequence, and callback/status
+  semantics, but the Claw42 side can build signature, nonce, replay lock, and audit persistence now.
+- Direction B is a larger trust boundary change. It requires OAuth token/session storage, server-side
+  order submit, status polling/webhook reconciliation, token revoke/refresh behavior, and production
+  risk controls. The current `oauthReadiness.ts` live block exists precisely to prevent this from
+  leaking into Gate 1/2.
+- Therefore Gate 1 should ship external navigation + pair deep links + disabled readiness; Gate 2
+  should target E sandbox/hosted confirmation once CoinW contract details are available; B should
+  remain T304a design-only until Dan/CoinW/legal explicitly authorize direct API submission.
+
+## OBJECT / drift note
+
+No blocking spec drift found after applying v1.2 § 0.7 as controlling. Historical audit-trail
+paragraphs in the spec still mention older `origin/main` verification, but they are in Round 1/2
+history sections and do not override § 0.6/§ 0.7 or § 2.1.
+
+[DOC-HINT: CoinW readiness v1.2 must implement from `origin/feature/coinw-contract-release`; Stage 0 recommends A always plus Direction E first, while Direction B remains design-only until a separate live submission release.]
+
+# CoinW real trading readiness v1.2 Stage 1 report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+
+## Completed
+
+- Added controlled social signal types, normalizer, in-memory cache helper, and CryptoPanic-only
+  adapter scaffold under `src/lib/social`.
+- Reintroduced `social` into topic selection as a real provider-backed scoring dimension.
+- `SOCIAL_SCORE_CAP` is fixed at `0.15` as Dan approved; implementation caps the contribution at
+  15 score points.
+- Wired CryptoPanic vote/currency observations from fetched news items into symbol selection in:
+  - `/api/watch/refresh`
+  - `triggerPmDecisionPipelineOnce`
+  - resident hotspot burst planning
+- Missing / stale / vote-less social data stays neutral and does not appear in public reason text.
+- Existing non-social ranking remains unchanged when no valid social provider data is present.
+
+## First-hand finding
+
+`NewsItem` does not preserve the upstream provider id. CryptoPanic's article source can be a media
+site rather than "CryptoPanic", so the safe boundary is the existing `votes` field: in this codebase
+only the CryptoPanic adapter emits `votes`. The normalizer therefore treats `votes + currencies` as
+the provider-backed social signal and does not infer social heat from normal news text.
+
+## Verification
+
+- `npx vitest run src/lib/social/__tests__/socialSignalNormalizer.test.ts src/lib/team/__tests__/topicSelector.test.ts`: PASS, 24 tests.
+- `npm run typecheck`: PASS.
+
+## Boundary
+
+- No new social provider beyond CryptoPanic.
+- No social score when CryptoPanic data is missing or stale.
+- No production deploy.
+- No secret values read or written.
+
+[DOC-HINT: Lane S social is now provider-backed through CryptoPanic votes; missing social data remains neutral and hidden from public reasons.]

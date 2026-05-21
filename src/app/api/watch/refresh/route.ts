@@ -4,6 +4,7 @@ import { getCoinPool } from "@/lib/marketDataCache";
 import { normalizeNewsItem } from "@/lib/news/normalizer";
 import { newsItemToEvidence } from "@/lib/news/newsEvidence";
 import { fetchNewsWithChain } from "@/lib/news/sourceChain";
+import { normalizeCryptoPanicSocialSignals } from "@/lib/social/socialSignalNormalizer";
 import { checkLock, releaseLock, tryAcquireLock } from "@/lib/storage/kv-lock";
 import { checkRateLimit } from "@/lib/storage/kv-rate-limiter";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
@@ -290,11 +291,13 @@ async function loadTriggerContext(locale: Locale, candidate: DecisionCandidate, 
     };
   }
   const newsEvidence = normalizedItems.map((item) => newsItemToEvidence(item));
+  const socialSignals = normalizeCryptoPanicSocialSignals(normalizedItems, now).observations;
   const marketSignals = marketSignalsFromPool(pool, now);
   const selectedTopic = selectPmDecisionTopics({
     pool,
     marketSignals,
     newsEvidence,
+    socialSignals,
     symbol: candidate.symbol,
     now,
   })[0];

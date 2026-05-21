@@ -1,5 +1,6 @@
 import { newsItemToEvidence } from "@/lib/news/newsEvidence";
 import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
+import { normalizeCryptoPanicSocialSignals } from "@/lib/social/socialSignalNormalizer";
 import { runPmDecisionPipeline } from "@/lib/team/pmDecisionPipeline";
 import {
   buildTopicSelectionEvidence,
@@ -210,6 +211,7 @@ export async function triggerPmDecisionPipelineOnce({
 }) {
   const normalizedLocale = normalizeWatchLocale(locale);
   const recentNewsEvidence = await evidenceFromNewsItems(newsItems);
+  const recentSocialSignals = normalizeCryptoPanicSocialSignals(newsItems, now).observations;
   const recentTimelineEvents = await recentPublicTimelineEvents(normalizedLocale);
   const recentDecisionMemory = await recentDecisionRecords(normalizedLocale);
   if (candidate) {
@@ -260,6 +262,7 @@ export async function triggerPmDecisionPipelineOnce({
     pool,
     marketSignals: marketSignalsFromPool(pool, now),
     newsEvidence: recentNewsEvidence,
+    socialSignals: recentSocialSignals,
     recentDecisionRecords: recentDecisionMemory,
     recentTimelineEvents,
     symbol,

@@ -5,6 +5,7 @@ import {
   selectPmDecisionTopics,
 } from "@/lib/team/topicSelector";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
+import type { SocialSignalObservation } from "@/lib/social/socialSignalTypes";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { CoinPoolPayload, SignalRecord } from "@/modules/agent-watch/types";
@@ -56,6 +57,23 @@ function evidence(overrides: Partial<NewsEvidence> = {}): NewsEvidence {
     symbol: ["ETH"],
     impactSeverity: "high",
     summary: "ETH ETF flows accelerate",
+    ...overrides,
+  };
+}
+
+function socialSignal(overrides: Partial<SocialSignalObservation> = {}): SocialSignalObservation {
+  return {
+    provider: "cryptopanic",
+    candidateKey: "HYPE",
+    symbol: "HYPE",
+    observedAt: new Date(now).toISOString(),
+    windowMs: 24 * 60 * 60_000,
+    status: "ok",
+    mentionCount: 6,
+    sentimentScore: 0.8,
+    engagementScore: 30,
+    sourceCount: 4,
+    reliability: 1,
     ...overrides,
   };
 }
@@ -120,6 +138,7 @@ describe("selectPmDecisionTopics", () => {
       marketCap: 15,
       volume: 12.5,
       news: 60,
+      social: 0,
       executable: 18,
       market: 40,
       momentum: 10.8,
@@ -127,7 +146,6 @@ describe("selectPmDecisionTopics", () => {
       memory: 0,
     });
     expect(topics[0].scoreBreakdown.total).toBeCloseTo(157.3);
-    expect(topics[0].scoreBreakdown).not.toHaveProperty("social");
     expect(topics[0].reasons).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ kind: "news", label: "7d news heat" }),
@@ -482,6 +500,45 @@ describe("selectPmDecisionTopics", () => {
       "ev_hype_old",
     ]);
     expect(buildTopicSelectionEvidence(topics[0], now).summary).toContain("7d 3篇 / 3源 / 1高影响");
+  });
+
+  it("adds social score only when provider-backed social data is ok", () => {
+    const topics = selectPmDecisionTopics({
+      socialSignals: [socialSignal()],
+      now,
+    });
+
+    expect(topics[0]).toMatchObject({
+      symbol: "HYPE",
+      scoreBreakdown: expect.objectContaining({
+        social: expect.any(Number),
+      }),
+    });
+    expect(topics[0].scoreBreakdown.social).toBeCloseTo(14.55);
+    expect(topics[0].scoreBreakdown.total).toBeCloseTo(60.05);
+    expect(buildTopicSelectionEvidence(topics[0], now).summary).toContain("社交热度");
+  });
+
+  it("keeps social missing states neutral and absent from public reasons", () => {
+    const topics = selectPmDecisionTopics({
+      newsEvidence: [evidence({ id: "ev_hype", symbol: ["HYPE"] })],
+      socialSignals: [
+        socialSignal({
+          status: "missing",
+          mentionCount: 0,
+          sentimentScore: 0,
+          engagementScore: 0,
+          sourceCount: 0,
+          reliability: 0,
+        }),
+      ],
+      now,
+    });
+
+    expect(topics[0].symbol).toBe("HYPE");
+    expect(topics[0].scoreBreakdown.social).toBe(0);
+    expect(topics[0].reasons.map((reason) => reason.kind)).not.toContain("social");
+    expect(buildTopicSelectionEvidence(topics[0], now).summary).not.toContain("社交热度");
   });
 
   it("keeps metadata-missing dimensions neutral and finite", () => {

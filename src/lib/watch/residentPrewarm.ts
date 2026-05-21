@@ -1,4 +1,5 @@
 import { newsItemToEvidence } from "@/lib/news/newsEvidence";
+import { normalizeCryptoPanicSocialSignals } from "@/lib/social/socialSignalNormalizer";
 import { marketSignalsFromPool } from "@/lib/team/pmDecisionTrigger";
 import { selectPmDecisionTopics } from "@/lib/team/topicSelector";
 import type { Locale } from "@/i18n/types";
@@ -139,11 +140,13 @@ function hotspotBurstCandidate({
   newsItems: NewsItem[];
 }) {
   const newsEvidence = newsItems.map((item) => newsItemToEvidence(item));
+  const socialSignals = normalizeCryptoPanicSocialSignals(newsItems, now).observations;
   const marketSignals = marketSignalsFromPool(pool, now);
   const topic = selectPmDecisionTopics({
     pool,
     marketSignals,
     newsEvidence,
+    socialSignals,
     now,
   })[0];
   if (!topic || topic.score < HOTSPOT_BURST_SCORE_THRESHOLD) return null;
