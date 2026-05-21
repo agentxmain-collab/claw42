@@ -5688,3 +5688,54 @@ Branch: `feature/coinw-real-trading-readiness-v12`
 - No user-facing copy / placement changes.
 
 [DOC-HINT: Gate 1 is now mechanically navigation-only; Gate 2 hosted confirmation requires explicit test mode plus trade gate, and live remains blocked by the separate-release guard.]
+
+# CoinW real trading readiness v1.2 full local verification report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+Head after verification fix: `88928bdb9cda9c840e916a2a8941a50d3b2143c2`
+
+## Final implementation summary
+
+- Stage 0: re-baselined on `origin/feature/coinw-contract-release` at `7da829fc80d6298aac3ce69c5752afd2150d65e6`; all 7 scaffold capabilities in spec § 2.1 were reachable on the feature branch.
+- Stage 1 / Lane S: reintroduced CryptoPanic-backed social scoring with normalized signals, cache, `social` reason contract, and `SOCIAL_SCORE_CAP = 0.15`.
+- Stage 2 / Lane R: added typed 6-class readiness state, API payload wiring, hidden UI slots, and 10-locale empty i18n placeholders.
+- Stage 3 / Lane T: kept T-1/T-2 external navigation, added Direction E hosted-confirmation primitives, kept Direction B design-only.
+- Stage 4 / Gate 1: added gate normalization, navigation-only Gate 1 behavior, telemetry names, CTA tracking, and rollback drill docs.
+- Final build fix: changed `GET /api/watch/follow-intents/status` to use the valid Next route signature and updated its unit test. This was caught by `next build` even though `tsc --noEmit` passed.
+
+## Full verification
+
+- `npm run format:check`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run test:watch-pipeline`: PASS, 104 files / 563 tests.
+- `npm run verify`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+- `npm run verify:chat-v3-final`: PASS, 50 synthetic threads.
+- `npm run verify:agent-ip`: PASS.
+- `npm run verify:news`: PASS; expected warnings remain for missing optional API env values / planned CoinW endpoint.
+- `npm run test:news`: PASS, 6 files / 25 tests.
+- `npm run verify:execution-safety`: PASS.
+- `npm run build`: PASS.
+
+## Deployment identity / preview status
+
+- GitHub identity is valid for `agentxmain-collab`; branch was pushed to `origin/feature/coinw-real-trading-readiness-v12`.
+- Vercel CLI identity is not aligned with the project registry in this shell:
+  - requested project scope: `agentxmain-collabs-projects`
+  - current CLI user scope available: `xxcryptoofficial-collabs-projects`
+- Because `.vercel/project.json` is absent in this clean worktree and the CLI scope is mismatched, Codex did not run `vercel link` or `npx vercel` from the worktree. This avoids the known failure mode of creating or binding the wrong Vercel project.
+- Preview should be obtained through the GitHub/Vercel integration for the pushed branch/PR, or Dan/F should switch the Vercel CLI identity/scope before any manual preview deploy.
+
+## Boundary maintained
+
+- No production deploy.
+- No feature -> main merge.
+- No Gate 2/3/4 activation.
+- No live submission unblock.
+- No secret values read or written.
+- No user-facing readiness copy or new placement chosen by Codex.
+
+[DOC-HINT: CoinW readiness v1.2 is locally verified and pushed as a feature branch; manual Vercel CLI preview is blocked by scope mismatch and should be resolved through GitHub preview or corrected Vercel identity.]
