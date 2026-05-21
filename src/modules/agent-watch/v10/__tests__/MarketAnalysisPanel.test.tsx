@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import zhCN from "@/i18n/dicts/zh_CN.json";
 import type { Dict } from "@/i18n/types";
+import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
 import type { DispatchTopic } from "../../v9/types";
 import { dispatchV10DemoTopics } from "../demoTopics";
@@ -421,6 +422,64 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain('href="https://www.coinw.com/market/futures"');
     expect(html.match(/去交易/g)).toHaveLength(2);
     expect(html).not.toContain("仅分析 / 不自动下单");
+  });
+
+  test("renders non-public trade readiness slots for all failure kinds", () => {
+    const failureKinds: TradingReadinessFailureKind[] = [
+      "analysis_data_degraded",
+      "instrument_unavailable",
+      "auth_account_not_ready",
+      "user_risk_confirmation_required",
+      "submission_mode_blocked",
+      "exchange_network_or_result_failed",
+    ];
+
+    for (const kind of failureKinds) {
+      const html = renderToStaticMarkup(
+        <MarketAnalysisPanel
+          topics={[
+            {
+              ...topicFixture({
+                id: `topic-${kind}`,
+                candidateType: "symbol",
+                candidateKey: "BILL",
+                title: "BILL 实时行情分析",
+                symbol: "BILL",
+                score: 1,
+                lastUpdatedAt: 1,
+                executable: false,
+              }),
+              execution: {
+                executable: false,
+                coinwPair: null,
+                watchOnly: true,
+                tradeReadiness: {
+                  stateVersion: 1,
+                  blocking: true,
+                  states: [
+                    {
+                      kind,
+                      severity: "blocked",
+                      blocking: true,
+                      retryable: false,
+                      source: "order_submission",
+                      code: `test_${kind}`,
+                      i18nKey: `agentWatch.tradeReadiness.states.${kind}`,
+                      observedAt: "2026-05-21T00:00:00.000Z",
+                    },
+                  ],
+                },
+              },
+            },
+          ]}
+          dict={dict}
+          onPlaceholder={() => undefined}
+        />,
+      );
+
+      expect(html).toContain(`data-trade-readiness-kind="${kind}"`);
+      expect(html).toContain('data-trade-readiness-slot="cta-disabled-reason"');
+    }
   });
 
   test("keeps collapse state attached to record id after reorder", () => {

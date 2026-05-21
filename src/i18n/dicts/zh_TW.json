@@ -801,6 +801,45 @@
     "admin": {
       "unauthorized": "管理員權杖無效",
       "idempotency_conflict": "該決策已有結果，不能重複人工關閉"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {

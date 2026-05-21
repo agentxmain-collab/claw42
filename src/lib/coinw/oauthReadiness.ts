@@ -1,3 +1,8 @@
+import {
+  tradingReadinessStatesFromOAuth,
+  type TradingReadinessState,
+} from "@/lib/coinw/tradeReadinessState";
+
 export type CoinWFuturesOrderMode = "disabled" | "test" | "live";
 
 export interface CoinWOAuthReadiness {
@@ -7,6 +12,7 @@ export interface CoinWOAuthReadiness {
   realSubmissionEnabled: boolean;
   missingRequiredEnv: string[];
   blockingReasons: string[];
+  readinessStates: TradingReadinessState[];
 }
 
 const OAUTH_ENV_KEYS = [
@@ -52,5 +58,12 @@ export function coinWOAuthReadiness(env: NodeJS.ProcessEnv = process.env): CoinW
       oauthConfigured && testAccountConfigured && orderSubmissionMode === "test",
     missingRequiredEnv,
     blockingReasons,
+    readinessStates: tradingReadinessStatesFromOAuth({
+      oauthConfigured,
+      testAccountConfigured,
+      orderSubmissionMode,
+      missingRequiredEnv,
+      blockingReasons,
+    }),
   };
 }

@@ -12,6 +12,10 @@ import {
   staticCoinWFuturesInstrumentSet,
 } from "@/lib/coinw/futuresInstruments";
 import { coinWOAuthReadiness } from "@/lib/coinw/oauthReadiness";
+import {
+  tradingReadinessPayload,
+  tradingReadinessStateFromIntentError,
+} from "@/lib/coinw/tradeReadinessState";
 import { checkRateLimit } from "@/lib/storage/kv-rate-limiter";
 
 export const dynamic = "force-dynamic";
@@ -118,7 +122,15 @@ export async function POST(request: NextRequest) {
     },
   );
   if (!rateLimit.allowed) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    return NextResponse.json(
+      {
+        error: "rate_limited",
+        tradeReadiness: tradingReadinessPayload([
+          tradingReadinessStateFromIntentError("rate_limited"),
+        ]),
+      },
+      { status: 429 },
+    );
   }
 
   try {
@@ -134,6 +146,7 @@ export async function POST(request: NextRequest) {
         mode: "disabled",
         reason: "coinw_real_submission_not_enabled",
         readiness,
+        tradeReadiness: tradingReadinessPayload(readiness.readinessStates),
         intent,
       },
       { headers: { "Cache-Control": "no-store" } },
@@ -141,7 +154,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const errorCode = error instanceof Error ? error.message : "invalid_follow_intent_request";
     return NextResponse.json(
-      { error: errorCode },
+      {
+        error: errorCode,
+        tradeReadiness: tradingReadinessPayload([tradingReadinessStateFromIntentError(errorCode)]),
+      },
       { status: errorStatus(errorCode), headers: { "Cache-Control": "no-store" } },
     );
   }

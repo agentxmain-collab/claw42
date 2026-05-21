@@ -801,6 +801,45 @@
     "admin": {
       "unauthorized": "Jeton administrateur invalide",
       "idempotency_conflict": "Cette décision a déjà un résultat et ne peut pas être clôturée manuellement de nouveau"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {

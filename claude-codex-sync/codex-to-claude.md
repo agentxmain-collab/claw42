@@ -5567,3 +5567,48 @@ the provider-backed social signal and does not infer social heat from normal new
 - No secret values read or written.
 
 [DOC-HINT: Lane S social is now provider-backed through CryptoPanic votes; missing social data remains neutral and hidden from public reasons.]
+
+# CoinW real trading readiness v1.2 Stage 2 report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+
+## Completed
+
+- Added the typed 6-class trading readiness contract in `src/lib/coinw/tradeReadinessState.ts`.
+- Mapped existing CoinW readiness into the contract:
+  - missing OAuth / test account → `auth_account_not_ready`
+  - disabled or blocked live mode → `submission_mode_blocked`
+  - unsupported futures instrument → `instrument_unavailable`
+  - user / order input issues → `user_risk_confirmation_required`
+  - rate limit / exchange result issues → `exchange_network_or_result_failed`
+- Added `tradeReadiness` payloads to:
+  - `GET /api/watch/follow-intents/status`
+  - `POST /api/watch/follow-intents`
+  - POST error responses including unsupported instrument and rate-limit cases
+- Added `agentWatch.tradeReadiness` mode/state slots across all 10 locale dicts. Values are empty
+  placeholders by design; Dan + legal still own final user-facing copy.
+- Wired non-public v9/v10 readiness slots through hidden data attributes on topic strategy cards.
+  This gives the UI a stable render target without changing visible wording or layout.
+
+## First-hand judgement
+
+The safe Stage 2 boundary is contract + hidden slots, not visible copy. The spec asks for UI
+transparent-layer slots but also forbids Codex from choosing final user-facing copy / placement.
+Using empty i18n slots and hidden `data-trade-readiness-*` attributes satisfies the engineering
+contract while preserving Dan/legal control over visible language.
+
+## Verification
+
+- `npx vitest run src/lib/coinw/__tests__/tradeReadinessState.test.ts src/lib/coinw/__tests__/oauthReadiness.test.ts src/app/api/watch/follow-intents/route.test.ts src/app/api/watch/follow-intents/status/route.test.ts src/i18n/__tests__/tradeReadinessDict.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx src/modules/agent-watch/__tests__/followTradeDisabled.test.tsx`: PASS, 31 tests.
+- `npm run typecheck`: PASS.
+
+## Boundary
+
+- No visible copy added.
+- No layout / CTA visual hierarchy changes.
+- No live order submission path.
+- No secret values read or written.
+- No production deploy.
+
+[DOC-HINT: Lane R now has typed trade readiness payloads and non-public UI slots; visible readiness copy remains Dan/legal-owned.]

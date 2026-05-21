@@ -1,4 +1,5 @@
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
+import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
 
 export type Locale =
   | "zh_CN"
@@ -192,6 +193,24 @@ export type DispatchV10FollowTradeDict = {
   mock_success: string;
   mock_fail: string;
   real_label_future: string;
+};
+
+export type TradeReadinessStateDict = Record<
+  TradingReadinessFailureKind,
+  {
+    label: string;
+    detail: string;
+    action: string;
+  }
+>;
+
+export type TradeReadinessDict = {
+  modes: {
+    disabled: string;
+    test: string;
+    live: string;
+  };
+  states: TradeReadinessStateDict;
 };
 
 export type DispatchV10Dict = {
@@ -417,6 +436,7 @@ export interface Dict {
       newContent: string;
       dismissAriaLabel: string;
     };
+    tradeReadiness: TradeReadinessDict;
     emptyHistory: string;
     loadingHistory: string;
     loadMore: string;

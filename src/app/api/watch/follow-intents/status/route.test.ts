@@ -28,6 +28,13 @@ describe("GET /api/watch/follow-intents/status", () => {
       realSubmissionEnabled: false,
       orderSubmissionMode: "disabled",
       oauthConfigured: false,
+      tradeReadiness: {
+        blocking: true,
+        states: expect.arrayContaining([
+          expect.objectContaining({ kind: "auth_account_not_ready" }),
+          expect.objectContaining({ kind: "submission_mode_blocked" }),
+        ]),
+      },
     });
     expect(JSON.stringify(payload)).not.toContain("super-secret-value");
   });

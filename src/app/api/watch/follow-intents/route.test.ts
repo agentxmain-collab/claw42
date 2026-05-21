@@ -41,6 +41,12 @@ describe("/api/watch/follow-intents", () => {
     expect(response.status).toBe(200);
     expect(body.mode).toBe("disabled");
     expect(body.reason).toBe("coinw_real_submission_not_enabled");
+    expect(body.tradeReadiness).toMatchObject({
+      blocking: true,
+      states: expect.arrayContaining([
+        expect.objectContaining({ kind: "submission_mode_blocked" }),
+      ]),
+    });
     expect(body.intent.source.source).toBe("claw42");
     expect(body.intent.coinwRequest.endpoint).toBe("/v1/perpum/order");
     expect(body.intent.coinwRequest.body).toMatchObject({
@@ -71,6 +77,10 @@ describe("/api/watch/follow-intents", () => {
 
     expect(response.status).toBe(400);
     expect(body.error).toBe("coinw_futures_symbol_not_supported");
+    expect(body.tradeReadiness.states[0]).toMatchObject({
+      kind: "instrument_unavailable",
+      source: "coinw_instrument",
+    });
   });
 
   it("rate limits intent creation by hashed IP bucket", async () => {
@@ -99,6 +109,10 @@ describe("/api/watch/follow-intents", () => {
 
     expect(response.status).toBe(429);
     expect(body.error).toBe("rate_limited");
+    expect(body.tradeReadiness.states[0]).toMatchObject({
+      kind: "exchange_network_or_result_failed",
+      retryable: true,
+    });
     expect(String(checkRateLimitMock.mock.calls[0]?.[0])).toMatch(
       /^watch-follow-intent:ip:[a-f0-9]{64}$/,
     );

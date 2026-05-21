@@ -127,6 +127,7 @@ describe("follow trade disabled safety state", () => {
     );
 
     expect(html).toContain("仅分析 / 不自动下单");
+    expect(html).toContain('data-trade-readiness-kind="submission_mode_blocked"');
     expect(html).not.toContain("演示模式：当前不会真实下单");
     expect(html).not.toContain('disabled=""');
   });

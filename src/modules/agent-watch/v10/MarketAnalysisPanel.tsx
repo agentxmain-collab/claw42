@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import type { DispatchV10Dict } from "@/i18n/types";
 import { trackEvent } from "@/lib/analytics";
 import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
+import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
 import {
   compareDecisionCandidateOrder,
   normalizeCandidateType,
@@ -135,6 +136,18 @@ function topicCandidateType(topic: DispatchTopic) {
 
 function topicCandidateClass(topic: DispatchTopic) {
   return CANDIDATE_CLASS[topicCandidateType(topic)];
+}
+
+function inferredTradeReadinessKind(
+  topic: DispatchTopic,
+  canRenderFollowTrade: boolean,
+): TradingReadinessFailureKind | null {
+  const explicitKind = topic.execution?.tradeReadiness?.states[0]?.kind;
+  if (explicitKind) return explicitKind;
+  if (canRenderFollowTrade) return null;
+  if (topic.execution?.watchOnlyReason) return "instrument_unavailable";
+  if (topicCandidateType(topic) !== "symbol") return "submission_mode_blocked";
+  return "submission_mode_blocked";
 }
 
 function topicOrderKey(topic: DispatchTopic) {
@@ -441,9 +454,14 @@ function TopicStrategyV10({
     buildCoinWFuturesTradeUrl({
       coinwPair: canRenderFollowTrade ? topic.execution?.coinwPair : null,
     });
+  const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderFollowTrade);
 
   return (
-    <div className={["topic-strategy", latest && "latest"].filter(Boolean).join(" ")}>
+    <div
+      className={["topic-strategy", latest && "latest"].filter(Boolean).join(" ")}
+      data-trade-readiness-slot={tradeReadinessKind ? "card-status" : undefined}
+      data-trade-readiness-kind={tradeReadinessKind ?? undefined}
+    >
       <div className="strat-head">
         <div className="row1">
           {latest ? (
@@ -493,6 +511,13 @@ function TopicStrategyV10({
             {strategy.follow.secondaryLabel}
           </button>
         </div>
+        {tradeReadinessKind ? (
+          <span
+            hidden
+            data-trade-readiness-slot="cta-disabled-reason"
+            data-trade-readiness-kind={tradeReadinessKind}
+          />
+        ) : null}
         <div className="cta-meta">{followStatus}</div>
         <TopicFeedback topic={topic} dict={dict} value={feedbackValue} onFeedback={onFeedback} />
       </div>

@@ -801,6 +801,45 @@
     "admin": {
       "unauthorized": "‹Invalid admin token›",
       "idempotency_conflict": "‹This decision already has an outcome and cannot be manually closed again›"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {
