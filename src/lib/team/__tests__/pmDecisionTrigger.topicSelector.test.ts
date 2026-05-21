@@ -420,6 +420,44 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     expect(tryAcquireLockMock).toHaveBeenCalledTimes(3);
   });
 
+  it("lets user visits rotate a quiet major when symbol coverage is still sparse", async () => {
+    const auditEvents: unknown[] = [];
+    const quietMajors = {
+      ...pool(),
+      majors: [
+        { symbol: "BTC", price: 101000, change24h: 0.2, category: "majors" },
+        { symbol: "ETH", price: 4200, change24h: 0.3, category: "majors" },
+        { symbol: "SOL", price: 220, change24h: 0.4, category: "majors" },
+      ],
+      trending: [],
+      opportunity: [],
+    } satisfies CoinPoolPayload;
+
+    await triggerPmDecisionPipelineOnce({
+      triggerSource: "user_visit_trigger",
+      pool: quietMajors,
+      newsItems: [],
+      locale: "zh_CN",
+      now,
+      onAudit: (event) => auditEvents.push(event),
+    });
+
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    expect(auditEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "candidate_considered",
+          symbol: "BTC",
+          hasTrigger: true,
+        }),
+        expect.objectContaining({
+          type: "candidate_generated",
+          symbol: "BTC",
+        }),
+      ]),
+    );
+  });
+
   it("lets scheduled batch processing reach opportunity symbols beyond the first six pool entries", async () => {
     const expandedPool = {
       ...pool(),

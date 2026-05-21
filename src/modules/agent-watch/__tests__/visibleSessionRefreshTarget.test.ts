@@ -96,13 +96,32 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     });
   });
 
-  test("refreshes latest executable symbol after resident cards exist", () => {
+  test("continues server-selected priority symbol refresh until symbol coverage is filled", () => {
+    expect(
+      resolveVisibleSessionRefreshTarget({
+        topics: [
+          { candidateType: "market_overview", symbol: "MARKET" },
+          { candidateType: "hotspot", symbol: "HOTSPOT" },
+          { candidateType: "symbol", symbol: "HYPE" },
+        ],
+        timelineLoaded: true,
+        locale: "zh_CN",
+      }),
+    ).toMatchObject({
+      symbol: "SYMBOL",
+      params: { candidateType: "symbol" },
+    });
+  });
+
+  test("refreshes latest executable symbol after symbol coverage is filled", () => {
     expect(
       resolveVisibleSessionRefreshTarget({
         topics: [
           { candidateType: "market_overview", symbol: "MARKET" },
           { candidateType: "hotspot", symbol: "HOTSPOT" },
           { candidateType: "symbol", symbol: "BTC" },
+          { candidateType: "symbol", symbol: "ETH" },
+          { candidateType: "symbol", symbol: "SOL" },
         ],
         timelineLoaded: true,
         locale: "zh_CN",

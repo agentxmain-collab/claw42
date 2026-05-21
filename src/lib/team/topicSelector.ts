@@ -2,6 +2,7 @@ import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import type { DecisionOutcome, StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import { PUBLIC_BETA_MAJOR_ROTATION_SYMBOLS } from "@/lib/watch/publicSymbolCoverage";
 import type { CoinPoolPayload, CoinTickerEntry, SignalRecord } from "@/modules/agent-watch/types";
 
 type TopicReasonKind =
@@ -57,7 +58,7 @@ const DECISION_MEMORY_WINDOW_MS = 48 * 60 * 60_000;
 const NEWS_HEAT_WINDOW_MS = 7 * 24 * 60 * 60_000;
 const TOPIC_SELECTION_CACHE_TTL_MS = 5 * 60_000;
 const SELECTOR_TOP_N = 12;
-const MAJOR_ROTATION_SYMBOLS = ["BTC", "ETH", "SOL"];
+const MAJOR_ROTATION_SYMBOLS = PUBLIC_BETA_MAJOR_ROTATION_SYMBOLS;
 
 const topicSelectionCache = new Map<
   string,

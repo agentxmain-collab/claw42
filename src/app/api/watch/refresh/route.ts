@@ -28,6 +28,10 @@ import {
   type DecisionFreshnessSnapshot,
 } from "@/lib/watch/decisionFreshness";
 import {
+  hasPublicBetaSymbolCoverage,
+  isPublicBetaMajorRotationSymbol,
+} from "@/lib/watch/publicSymbolCoverage";
+import {
   HOTSPOT_STORAGE_SYMBOL,
   MARKET_OVERVIEW_STORAGE_SYMBOL,
   hotspotDecisionCandidate,
@@ -218,24 +222,34 @@ function deriveAnySymbolDecisionFreshness({
   const candidates = [
     ...records.flatMap((record) => {
       if (normalizeCandidateType(record.candidate?.candidateType) !== "symbol") return [];
-      if (!isRealSymbolValue(record.symbol ?? record.tradeDecision?.symbol)) return [];
+      const symbol = normalizeRefreshSymbol(record.symbol ?? record.tradeDecision?.symbol);
+      if (!isRealSymbolValue(symbol)) return [];
       const createdAt = Date.parse(record.createdAt);
-      return Number.isFinite(createdAt) ? [{ ts: createdAt, source: "records" as const }] : [];
+      return Number.isFinite(createdAt)
+        ? [{ symbol: symbol as string, ts: createdAt, source: "records" as const }]
+        : [];
     }),
     ...timelineEvents.flatMap((event) => {
+      const symbol =
+        event.payload.kind === "pm_decision" ? normalizeRefreshSymbol(event.payload.symbol) : null;
       if (
         event.payload.kind !== "pm_decision" ||
         normalizeCandidateType(event.payload.candidateType) !== "symbol" ||
-        !isRealSymbolValue(event.payload.symbol)
+        !isRealSymbolValue(symbol)
       ) {
         return [];
       }
-      return Number.isFinite(event.ts) ? [{ ts: event.ts, source: "timeline" as const }] : [];
+      return Number.isFinite(event.ts)
+        ? [{ symbol: symbol as string, ts: event.ts, source: "timeline" as const }]
+        : [];
     }),
   ]
     .filter((candidate) => candidate.ts <= now + WATCH_DECISION_FUTURE_SKEW_MS)
     .sort((left, right) => right.ts - left.ts);
   const latest = candidates[0];
+  const freshSymbols = candidates
+    .filter((candidate) => now - candidate.ts < WATCH_DECISION_FRESHNESS_MS)
+    .map((candidate) => candidate.symbol);
 
   if (!latest) {
     return {
@@ -252,7 +266,7 @@ function deriveAnySymbolDecisionFreshness({
     lastDecisionAt: new Date(latest.ts).toISOString(),
     lastDecisionAtMs: latest.ts,
     refreshSource: latest.source,
-    isFresh: now - latest.ts < WATCH_DECISION_FRESHNESS_MS,
+    isFresh: hasPublicBetaSymbolCoverage(freshSymbols),
   };
 }
 
@@ -284,12 +298,16 @@ async function loadTriggerContext(locale: Locale, candidate: DecisionCandidate, 
     symbol: candidate.symbol,
     now,
   })[0];
-  const hasTrigger =
+  const hasStrongTrigger =
     selectedTopic?.reasons.some(
       (reason) =>
         (reason.kind === "market" && reason.score >= 40) ||
         (reason.kind === "news" && reason.score >= 60),
     ) ?? false;
+  const hasMajorRotationBaseline =
+    isAutoSymbolRefreshCandidate(candidate) &&
+    isPublicBetaMajorRotationSymbol(selectedTopic?.symbol);
+  const hasTrigger = hasStrongTrigger || hasMajorRotationBaseline;
 
   return {
     pool,
