@@ -1,7 +1,10 @@
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { buildDecisionOpsResidentPublicVisibility } from "@/lib/team/decisionOpsResidentPublicVisibility";
 import type { PmDecisionJobRecord } from "@/lib/watch/pmDecisionJobLedger";
-import { deriveResidentPrewarmStatus, type ResidentPrewarmKindStatus } from "@/lib/watch/residentPrewarmStatus";
+import {
+  deriveResidentPrewarmStatus,
+  type ResidentPrewarmKindStatus,
+} from "@/lib/watch/residentPrewarmStatus";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import { projectDecisionRecordToPublicEvent } from "@/lib/watch/publicTimelineProjection";
 import { mergePublicTimelineEvents } from "@/lib/watch/publicTimelineOrdering";

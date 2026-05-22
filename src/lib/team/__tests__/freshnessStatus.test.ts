@@ -11,9 +11,7 @@ describe("decision freshness status", () => {
     expect(calculateDecisionFreshnessStatus(now - 30 * 60_000, now)?.level).toBe("fresh");
     expect(calculateDecisionFreshnessStatus(now - 2 * 60 * 60_000, now)?.level).toBe("aging");
     expect(calculateDecisionFreshnessStatus(now - 7 * 60 * 60_000, now)?.level).toBe("stale");
-    expect(calculateDecisionFreshnessStatus(now - 25 * 60 * 60_000, now)?.level).toBe(
-      "expired",
-    );
+    expect(calculateDecisionFreshnessStatus(now - 25 * 60 * 60_000, now)?.level).toBe("expired");
   });
 
   it("blocks trade entry once the public decision is stale", () => {

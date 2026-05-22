@@ -1244,7 +1244,12 @@
 .dispatchConsoleV10 :global(.topic.freshness-stale .topic-strategy),
 .dispatchConsoleV10 :global(.topic.freshness-expired .topic-strategy) {
   border-color: rgb(255 255 255 / 18%);
-  background: linear-gradient(135deg, rgb(255 255 255 / 4%), rgb(255 255 255 / 1.5%) 62%, var(--card));
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 4%),
+    rgb(255 255 255 / 1.5%) 62%,
+    var(--card)
+  );
 }
 
 .dispatchConsoleV10 :global(.topic.latest::before) {
