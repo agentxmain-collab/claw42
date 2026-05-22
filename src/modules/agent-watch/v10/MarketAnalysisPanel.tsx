@@ -451,6 +451,7 @@ function TopicStrategyV10({
     readinessStates: topic.execution?.tradeReadiness?.states,
     freshness: topic.freshnessStatus,
   });
+  const renderBlockedTradeCTA = executableSymbol && !canRenderCoinWTrade;
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
   const followStatus =
     topic.status === "pending"
@@ -522,8 +523,16 @@ function TopicStrategyV10({
             >
               {dict.market.coinwFuturesLink}
             </a>
-          ) : (
+          ) : renderBlockedTradeCTA ? (
             <button className="cta-btn" type="button" disabled>
+              {dict.market.coinwFuturesLink}
+            </button>
+          ) : (
+            <button
+              className="cta-btn"
+              type="button"
+              onClick={() => onPlaceholder(topic, dict.market.coinwFuturesLink, "primary")}
+            >
               {dict.market.coinwFuturesLink}
             </button>
           )}
