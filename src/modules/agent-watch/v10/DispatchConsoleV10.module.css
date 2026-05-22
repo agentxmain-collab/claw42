@@ -1478,7 +1478,21 @@
 }
 
 .dispatchConsoleV10 :global(.topic-strategy.observation) {
-  grid-template-columns: 1.1fr minmax(280px, 2fr) auto;
+  grid-template-columns: minmax(170px, 0.78fr) minmax(0, 2.35fr) auto;
+  align-items: start;
+  overflow: visible;
+}
+
+.dispatchConsoleV10 :global(.topic-strategy.observation .observation-summary) {
+  min-width: 0;
+}
+
+.dispatchConsoleV10 :global(.topic-strategy.observation .observation-summary p) {
+  overflow-wrap: anywhere;
+}
+
+.dispatchConsoleV10 :global(.topic-strategy.observation .strat-cta) {
+  align-self: start;
 }
 
 .dispatchConsoleV10 :global(.topic-strategy.latest::before) {
@@ -1726,6 +1740,10 @@
   .dispatchConsoleV10 :global(.fagents-4),
   .dispatchConsoleV10 :global(.topic-strategy) {
     max-width: none;
+    grid-template-columns: 1fr;
+  }
+
+  .dispatchConsoleV10 :global(.topic-strategy.observation) {
     grid-template-columns: 1fr;
   }
 }

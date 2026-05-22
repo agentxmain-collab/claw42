@@ -340,9 +340,6 @@ function TopicHeadV10({
       <div className="topic-eyebrow" aria-live={topic.status === "active" ? "polite" : "off"}>
         <span className="live-tag">{liveLabel}</span>
         <TopicCandidateBadge topic={topic} dict={dict} />
-        <span className="topic-source">
-          · {topic.startedAt} · {topic.progress}
-        </span>
         {freshnessAge ? (
           <span className={["topic-age", staleAge && "stale"].filter(Boolean).join(" ")}>
             {freshnessAge}
