@@ -729,7 +729,9 @@
         "in_progress": "В процесі",
         "in_progressNote": "Етап записує часткове оновлення",
         "done": "Готово",
-        "memoryPending": "Розбір чекає запису результату"
+        "memoryPending": "Розбір чекає запису результату",
+        "stage2Observation": "Спостереження long/short",
+        "stage6TrackingPending": "Відстеження · запис очікується через {hours} год"
       },
       "topicRanking": {
         "explanation_template": "{symbol} має ранг #{rank}: {news_count} новин + {confidence}% впевненості",

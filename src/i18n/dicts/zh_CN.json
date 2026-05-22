@@ -729,7 +729,9 @@
         "in_progress": "进行中",
         "in_progressNote": "该阶段正在写入部分结果",
         "done": "已完成",
-        "memoryPending": "复盘等待结果回写"
+        "memoryPending": "复盘等待结果回写",
+        "stage2Observation": "多空观察",
+        "stage6TrackingPending": "跟踪中 · 预期 {hours} 小时后回写"
       },
       "topicRanking": {
         "explanation_template": "{symbol} 因 {news_count} 条新闻 + {confidence}% 置信度排第 {rank}",

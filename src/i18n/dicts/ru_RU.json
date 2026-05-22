@@ -729,7 +729,9 @@
         "in_progress": "В процессе",
         "in_progressNote": "Этап записывает частичное обновление",
         "done": "Готово",
-        "memoryPending": "Разбор ждет записи результата"
+        "memoryPending": "Разбор ждет записи результата",
+        "stage2Observation": "Наблюдение long/short",
+        "stage6TrackingPending": "Отслеживание · запись ожидается через {hours} ч"
       },
       "topicRanking": {
         "explanation_template": "{symbol} занимает #{rank}: {news_count} новостей + {confidence}% уверенности",

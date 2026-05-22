@@ -134,6 +134,8 @@ export type DispatchV10StageStatusDict = {
   in_progressNote: string;
   done: string;
   memoryPending: string;
+  stage2Observation: string;
+  stage6TrackingPending: string;
 };
 
 export type DispatchV10TopicRankingDict = {

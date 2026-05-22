@@ -729,7 +729,9 @@
         "in_progress": "In progress",
         "in_progressNote": "This stage is writing a partial update",
         "done": "Done",
-        "memoryPending": "Review waits for outcome writeback"
+        "memoryPending": "Review waits for outcome writeback",
+        "stage2Observation": "Long/short observation",
+        "stage6TrackingPending": "Tracking · expected writeback in {hours}h"
       },
       "topicRanking": {
         "explanation_template": "{symbol} ranks #{rank} from {news_count} news items + {confidence}% confidence",

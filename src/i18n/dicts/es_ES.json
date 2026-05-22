@@ -729,7 +729,9 @@
         "in_progress": "En curso",
         "in_progressNote": "Esta fase está escribiendo una actualización parcial",
         "done": "Completado",
-        "memoryPending": "La revisión espera el resultado"
+        "memoryPending": "La revisión espera el resultado",
+        "stage2Observation": "Observación largo/corto",
+        "stage6TrackingPending": "En seguimiento · retorno previsto en {hours} h"
       },
       "topicRanking": {
         "explanation_template": "{symbol} ocupa el #{rank} por {news_count} noticias + {confidence}% de confianza",

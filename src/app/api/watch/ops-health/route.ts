@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
+import { summarizeDecisionJudgeMetrics } from "@/lib/llm/decisionJudge";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { buildDecisionOpsAlertSnapshot } from "@/lib/team/decisionOpsAlertSnapshot";
 import { buildDecisionOpsCausalRunbook } from "@/lib/team/decisionOpsCausalRunbook";
@@ -197,6 +198,7 @@ export async function GET(request: Request) {
         })
       : null;
   const health = summarizeDecisionOpsHealth({ jobs, runs });
+  const judgeMetrics = summarizeDecisionJudgeMetrics(runs);
   const publicEvents =
     includeReconciliation ||
     includeFreshness ||
@@ -717,6 +719,13 @@ export async function GET(request: Request) {
       locale,
       health,
       queueReadiness,
+      judgeMetrics,
+      judge_pass_rate: judgeMetrics.judge_pass_rate,
+      judge_fail_reasons: judgeMetrics.judge_fail_reasons,
+      judge_unavailable_count: judgeMetrics.judge_unavailable_count,
+      judge_call_count: judgeMetrics.judge_call_count,
+      judge_estimated_input_tokens: judgeMetrics.judge_estimated_input_tokens,
+      judge_estimated_output_tokens: judgeMetrics.judge_estimated_output_tokens,
       ...(includeQueuePriority
         ? {
             queuePriority,

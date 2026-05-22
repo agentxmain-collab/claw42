@@ -729,7 +729,9 @@
         "in_progress": "قيد التنفيذ",
         "in_progressNote": "تكتب هذه المرحلة تحديثا جزئيا",
         "done": "مكتمل",
-        "memoryPending": "المراجعة تنتظر كتابة النتيجة"
+        "memoryPending": "المراجعة تنتظر كتابة النتيجة",
+        "stage2Observation": "مراقبة الشراء/البيع",
+        "stage6TrackingPending": "قيد التتبع · متوقع كتابة النتيجة خلال {hours} ساعة"
       },
       "topicRanking": {
         "explanation_template": "{symbol} في المرتبة #{rank} بسبب {news_count} أخبار + ثقة {confidence}%",
