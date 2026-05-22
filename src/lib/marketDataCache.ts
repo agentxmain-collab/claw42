@@ -3,6 +3,8 @@ import {
   filterCoinWFuturesPoolEntries,
   getCoinWFuturesInstrumentSet,
 } from "@/lib/coinw/futuresInstruments";
+import { selectDynamicTrendingEntries } from "@/lib/watch/dynamicTrending";
+import { evaluateMarketTriggers } from "@/lib/watch/marketTriggers";
 import type {
   CoinPoolPayload,
   CoinTickerEntry,
@@ -28,6 +30,7 @@ const TRENDING_CACHE_KEY = "coingecko:trending:v1";
 const OPPORTUNITY_CACHE_KEY = "coingecko:opportunity:v1";
 const TRENDING_TTL_MS = 5 * 60_000;
 const OPPORTUNITY_TTL_MS = 5 * 60_000;
+const COIN_POOL_SCAN_LIMIT = 8;
 const COINGECKO_URL =
   "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,tether&vs_currencies=usd&include_24hr_change=true";
 const COINGECKO_TRENDING_URL = "https://api.coingecko.com/api/v3/search/trending";
@@ -214,7 +217,7 @@ async function fetchTrendingPool(): Promise<CoinTickerEntry[]> {
       Boolean(item?.id && item.symbol),
     )
     .filter((item) => !POOL_EXCLUDED_SYMBOLS.has(item.symbol.toUpperCase()))
-    .slice(0, 3);
+    .slice(0, COIN_POOL_SCAN_LIMIT);
 
   if (topCoins.length === 0) return [];
 
@@ -255,7 +258,7 @@ async function fetchOpportunityPool(): Promise<CoinTickerEntry[]> {
     (a, b) =>
       Number(b.price_change_percentage_24h ?? 0) - Number(a.price_change_percentage_24h ?? 0),
   );
-  const candidates = [...sorted.slice(0, 2), ...sorted.slice(-1)];
+  const candidates = [...sorted.slice(0, COIN_POOL_SCAN_LIMIT), ...sorted.slice(-1)];
   const seen = new Set<string>();
 
   return candidates
@@ -275,7 +278,7 @@ async function fetchOpportunityPool(): Promise<CoinTickerEntry[]> {
       seen.add(item.symbol);
       return true;
     })
-    .slice(0, 3);
+    .slice(0, COIN_POOL_SCAN_LIMIT);
 }
 
 export async function getMarketTickers(): Promise<MarketTickerPayload> {
@@ -565,21 +568,45 @@ export async function getCoinPool(): Promise<CoinPoolPayload> {
     );
   }
 
+  const majors = filterCoinWFuturesPoolEntries(
+    await majorsFromTickers(analysisContext.tickers),
+    futuresInstrumentSet,
+  );
+  const trending =
+    trendingResult.status === "fulfilled"
+      ? filterCoinWFuturesPoolEntries(trendingResult.value, futuresInstrumentSet)
+      : [];
+  const opportunity =
+    opportunityResult.status === "fulfilled"
+      ? filterCoinWFuturesPoolEntries(opportunityResult.value, futuresInstrumentSet)
+      : [];
+  const triggers = evaluateMarketTriggers({
+    pool: {
+      ts: Date.now(),
+      tickers: analysisContext.tickers,
+      majors,
+      trending,
+      opportunity,
+      signals: analysisContext.coinw,
+      source: analysisContext.source,
+      isStale: analysisContext.isStale,
+      isFallback: analysisContext.isFallback,
+      error: analysisContext.error,
+    },
+  });
+  const dynamicTrending = selectDynamicTrendingEntries({
+    entries: [...trending, ...opportunity],
+    triggers,
+    futuresInstrumentSet,
+  });
+  const dynamicSymbols = new Set(dynamicTrending.map((item) => item.symbol));
+
   return {
     ts: Date.now(),
     tickers: analysisContext.tickers,
-    majors: filterCoinWFuturesPoolEntries(
-      await majorsFromTickers(analysisContext.tickers),
-      futuresInstrumentSet,
-    ),
-    trending:
-      trendingResult.status === "fulfilled"
-        ? filterCoinWFuturesPoolEntries(trendingResult.value, futuresInstrumentSet)
-        : [],
-    opportunity:
-      opportunityResult.status === "fulfilled"
-        ? filterCoinWFuturesPoolEntries(opportunityResult.value, futuresInstrumentSet)
-        : [],
+    majors,
+    trending: dynamicTrending,
+    opportunity: opportunity.filter((item) => !dynamicSymbols.has(item.symbol)),
     signals: analysisContext.coinw,
     source: analysisContext.source,
     isStale: analysisContext.isStale,
