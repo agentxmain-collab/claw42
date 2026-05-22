@@ -66,10 +66,13 @@ export function TopicStrategy({
       : `${strategy.follow.watchCount} 人在看 · ${strategy.follow.followCount} 已跟单`;
   const followNoteId = `${topic.id}-follow-trade-disabled-note`;
   const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderFollowTrade);
+  const isObservationMode = strategy.mode === "observation";
 
   return (
     <div
-      className={["topic-strategy", latest ? "latest" : ""].filter(Boolean).join(" ")}
+      className={["topic-strategy", latest ? "latest" : "", isObservationMode && "observation"]
+        .filter(Boolean)
+        .join(" ")}
       data-trade-readiness-slot={tradeReadinessKind ? "card-status" : undefined}
       data-trade-readiness-kind={tradeReadinessKind ?? undefined}
     >
@@ -90,9 +93,18 @@ export function TopicStrategy({
           ) : null}
         </div>
       </div>
-      <StrategyValue label="入场" value={strategy.entry} tone={muted} />
-      <StrategyValue label="止损" value={strategy.stopLoss} tone={muted ?? "warn"} />
-      <StrategyValue label="止盈" value={strategy.takeProfit} tone={muted ?? "lime"} />
+      {isObservationMode ? (
+        <div className="observation-summary">
+          <span className="lbl">观察结论</span>
+          <p>{strategy.observationSummary ?? strategy.meta}</p>
+        </div>
+      ) : (
+        <>
+          <StrategyValue label="入场" value={strategy.entry} tone={muted} />
+          <StrategyValue label="止损" value={strategy.stopLoss} tone={muted ?? "warn"} />
+          <StrategyValue label="止盈" value={strategy.takeProfit} tone={muted ?? "lime"} />
+        </>
+      )}
       <div className="strat-cta">
         <div className="cta-row">
           {watchOnly ? <span className="watch-only-pill">仅分析 / 不自动下单</span> : null}

@@ -87,6 +87,7 @@ export interface DispatchMessage {
 }
 
 export interface DispatchStrategy {
+  mode?: "trade" | "observation";
   action: "wait" | "long" | "short" | "pending";
   actionLabel: string;
   name: string;
@@ -99,6 +100,7 @@ export interface DispatchStrategy {
   entry: string;
   stopLoss: string;
   takeProfit: string;
+  observationSummary?: string;
   follow: {
     primaryLabel: string;
     primaryDisabled: boolean;

@@ -284,6 +284,20 @@ function TopicCandidateBadge({ topic, dict }: { topic: DispatchTopic; dict: Disp
   );
 }
 
+function isStaleOrExpired(topic: DispatchTopic) {
+  return topic.freshnessStatus?.level === "stale" || topic.freshnessStatus?.level === "expired";
+}
+
+function formatCardFreshnessAge(topic: DispatchTopic, dict: DispatchV10Dict) {
+  const ageMinutes = topic.freshnessStatus?.ageMinutes;
+  if (typeof ageMinutes !== "number") return null;
+  if (ageMinutes >= 60) {
+    const hours = Math.max(1, Math.floor(ageMinutes / 60));
+    return `${dict.market.staleAgePrefix} ${hours} 小时前`;
+  }
+  return `${dict.market.staleAgePrefix} ${ageMinutes} 分钟前`;
+}
+
 function TopicHeadV10({
   topic,
   bodyId,
@@ -304,6 +318,8 @@ function TopicHeadV10({
       : topic.status === "pending"
         ? dict.market.statusPending
         : dict.market.statusActive;
+  const freshnessAge = formatCardFreshnessAge(topic, dict);
+  const staleAge = isStaleOrExpired(topic);
 
   return (
     <div
@@ -327,6 +343,11 @@ function TopicHeadV10({
         <span className="topic-source">
           · {topic.startedAt} · {topic.progress}
         </span>
+        {freshnessAge ? (
+          <span className={["topic-age", staleAge && "stale"].filter(Boolean).join(" ")}>
+            {freshnessAge}
+          </span>
+        ) : null}
       </div>
       <h2 id={`${bodyId}-title`} className="topic-title">
         {topic.title}
@@ -444,6 +465,10 @@ function TopicStrategyV10({
 }) {
   const { strategy } = topic;
   const candidateType = topicCandidateType(topic);
+  const isObservationMode =
+    strategy.mode === "observation" ||
+    candidateType === "market_overview" ||
+    candidateType === "hotspot";
   const executableSymbol = candidateType === "symbol" && topic.execution?.executable === true;
   const canRenderCoinWTrade = canRenderTradeCTA({
     externalNavigationEnabled: true,
@@ -452,22 +477,27 @@ function TopicStrategyV10({
     freshness: topic.freshnessStatus,
   });
   const renderBlockedTradeCTA = executableSymbol && !canRenderCoinWTrade;
+  const renderStaleReason = renderBlockedTradeCTA && isStaleOrExpired(topic);
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
   const followStatus =
     topic.status === "pending"
       ? `${strategy.follow.watchCount} ${dict.market.watchReminder}`
       : `${strategy.follow.watchCount} ${dict.market.watchCount} · ${strategy.follow.followCount} ${dict.market.followed}`;
   const coinwFuturesUrl =
-    topic.execution?.tradeUrl ??
-    buildCoinWFuturesTradeUrl({
-      coinwPair: canRenderCoinWTrade ? topic.execution?.coinwPair : null,
-    });
+    isObservationMode || !canRenderCoinWTrade
+      ? buildCoinWFuturesTradeUrl({ coinwPair: null })
+      : (topic.execution?.tradeUrl ??
+        buildCoinWFuturesTradeUrl({
+          coinwPair: topic.execution?.coinwPair,
+        }));
   const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderCoinWTrade);
   const coinwLinkType = canRenderCoinWTrade && topic.execution?.coinwPair ? "pair" : "generic";
 
   return (
     <div
-      className={["topic-strategy", latest && "latest"].filter(Boolean).join(" ")}
+      className={["topic-strategy", latest && "latest", isObservationMode && "observation"]
+        .filter(Boolean)
+        .join(" ")}
       data-trade-readiness-slot={tradeReadinessKind ? "card-status" : undefined}
       data-trade-readiness-kind={tradeReadinessKind ?? undefined}
     >
@@ -490,20 +520,49 @@ function TopicStrategyV10({
           ) : null}
         </div>
       </div>
-      <StrategyValue label={dict.market.entry} value={strategy.entry} tone={muted} />
-      <StrategyValue
-        label={dict.market.stopLoss}
-        value={strategy.stopLoss}
-        tone={muted ?? "warn"}
-      />
-      <StrategyValue
-        label={dict.market.takeProfit}
-        value={strategy.takeProfit}
-        tone={muted ?? "lime"}
-      />
+      {isObservationMode ? (
+        <div className="observation-summary">
+          <span className="lbl">{dict.market.observationSummaryLabel}</span>
+          <p>{strategy.observationSummary ?? topic.explanation ?? strategy.meta}</p>
+        </div>
+      ) : (
+        <>
+          <StrategyValue label={dict.market.entry} value={strategy.entry} tone={muted} />
+          <StrategyValue
+            label={dict.market.stopLoss}
+            value={strategy.stopLoss}
+            tone={muted ?? "warn"}
+          />
+          <StrategyValue
+            label={dict.market.takeProfit}
+            value={strategy.takeProfit}
+            tone={muted ?? "lime"}
+          />
+        </>
+      )}
       <div className="strat-cta">
         <div className="cta-row">
-          {canRenderCoinWTrade ? (
+          {isObservationMode ? (
+            <a
+              className="cta-btn"
+              href={coinwFuturesUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(event) => {
+                event.stopPropagation();
+                trackEvent("coinw_trade_cta_click", {
+                  topicId: topic.id,
+                  candidateType,
+                  candidateKey: topic.candidateKey ?? null,
+                  symbol: topic.symbol,
+                  linkType: "generic",
+                  executable: false,
+                });
+              }}
+            >
+              {dict.market.coinwNavigate}
+            </a>
+          ) : canRenderCoinWTrade ? (
             <a
               className="cta-btn"
               href={coinwFuturesUrl}
@@ -543,6 +602,9 @@ function TopicStrategyV10({
           >
             {strategy.follow.secondaryLabel}
           </button>
+          {renderStaleReason ? (
+            <span className="cta-visible-reason">{dict.market.staleReason}</span>
+          ) : null}
         </div>
         {tradeReadinessKind ? (
           <span
@@ -551,7 +613,9 @@ function TopicStrategyV10({
             data-trade-readiness-kind={tradeReadinessKind}
           />
         ) : null}
-        <div className="cta-meta">{followStatus}</div>
+        <div className="cta-meta">
+          {isObservationMode ? dict.market.analysisOnlyCopy : followStatus}
+        </div>
         <TopicFeedback topic={topic} dict={dict} value={feedbackValue} onFeedback={onFeedback} />
       </div>
     </div>
@@ -598,7 +662,7 @@ function TopicCardV10({
         onToggle={onToggle}
         dict={dict}
       />
-      <TopicBody topic={topic} bodyId={bodyId} />
+      <TopicBody topic={topic} bodyId={bodyId} messageLabels={dict.message} />
       <TopicStrategyV10
         topic={topic}
         latest={latest}

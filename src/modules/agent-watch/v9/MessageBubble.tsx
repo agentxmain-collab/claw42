@@ -2,6 +2,18 @@ import React from "react";
 import { formatSafeContent } from "@/lib/watch/safeMessageFormatter";
 import type { DispatchAgentId, DispatchMessage } from "./types";
 
+export interface MessageBubbleLabels {
+  expand: string;
+  collapse: string;
+}
+
+const DEFAULT_MESSAGE_LABELS: MessageBubbleLabels = {
+  expand: "展开全文",
+  collapse: "收起",
+};
+
+const EXPANDABLE_CONTENT_LENGTH = 120;
+
 const AGENT_AVATAR: Record<DispatchAgentId, { label: string; className: string }> = {
   fundamental_analyst: { label: "F", className: "a-fund" },
   onchain_analyst: { label: "O", className: "a-sent" },
@@ -17,7 +29,14 @@ const AGENT_AVATAR: Record<DispatchAgentId, { label: string; className: string }
   memory_loop: { label: "∞", className: "a-mem" },
 };
 
-function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
+function MessageBubbleComponent({
+  message,
+  labels = DEFAULT_MESSAGE_LABELS,
+}: {
+  message: DispatchMessage;
+  labels?: MessageBubbleLabels;
+}) {
+  const [expanded, setExpanded] = React.useState(false);
   const avatar = AGENT_AVATAR[message.agentId];
   const formattedContent = React.useMemo(
     () => formatSafeContent(message.content),
@@ -34,6 +53,8 @@ function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
     typeof message.confidence === "number"
       ? Math.round(Math.max(0, Math.min(1, message.confidence)) * 100)
       : null;
+  const isExpandable = message.content.trim().length > EXPANDABLE_CONTENT_LENGTH;
+  const contentId = `${message.id}-content`;
 
   return (
     <div className="msg">
@@ -92,7 +113,25 @@ function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
               </div>
             ) : null}
             {hasDecisionLayer ? <div className="msg-divider" aria-hidden="true" /> : null}
-            <span>{formattedContent}</span>
+            <span
+              id={contentId}
+              className={["msg-content", isExpandable && !expanded && "collapsed"]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {formattedContent}
+            </span>
+            {isExpandable ? (
+              <button
+                className="msg-expand-toggle"
+                type="button"
+                aria-expanded={expanded}
+                aria-controls={contentId}
+                onClick={() => setExpanded((current) => !current)}
+              >
+                {expanded ? labels.collapse : labels.expand}
+              </button>
+            ) : null}
           </div>
         )}
       </div>

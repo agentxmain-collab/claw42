@@ -711,7 +711,11 @@
         "feedbackPrompt": "Этот анализ полезен?",
         "feedbackHelpful": "Полезен",
         "feedbackNotHelpful": "Не полезен",
-        "feedbackThanks": "Записано"
+        "feedbackThanks": "Записано",
+        "observationSummaryLabel": "__TBD__",
+        "coinwNavigate": "__TBD__",
+        "staleReason": "__TBD__",
+        "staleAgePrefix": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",
@@ -729,7 +733,8 @@
         "in_progress": "В процессе",
         "in_progressNote": "Этап записывает частичное обновление",
         "done": "Готово",
-        "memoryPending": "Разбор ждет записи результата"
+        "memoryPending": "Разбор ждет записи результата",
+        "observationOnly": "__TBD__"
       },
       "topicRanking": {
         "explanation_template": "{symbol} занимает #{rank}: {news_count} новостей + {confidence}% уверенности",
@@ -796,6 +801,10 @@
         "missing_onchain": "Onchain signal pending",
         "missing_fundamental": "Fundamental signal pending",
         "missing_market": "Market context pending"
+      },
+      "message": {
+        "expand": "__TBD__",
+        "collapse": "__TBD__"
       }
     },
     "admin": {

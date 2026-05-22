@@ -433,7 +433,13 @@ describe("mapPublicTimelineEventsToTopics", () => {
       executable: false,
       watchOnly: true,
     });
-    expect(topic.strategy.follow.primaryDisabled).toBe(true);
+    expect(topic.strategy).toMatchObject({
+      mode: "observation",
+      name: "观察结论",
+      follow: {
+        primaryDisabled: false,
+      },
+    });
   });
 
   it("ignores non pm_decision events", () => {
@@ -804,6 +810,22 @@ describe("mapPublicTimelineEventsToTopics", () => {
       "done",
       "done",
     ]);
+    expect(topic.stages[4]).toMatchObject({
+      label: "阶段 5 · 观察结论",
+      status: "done",
+      note: "观察结论已完成，不涉及具体交易",
+    });
+    expect(topic.stages[5]).toMatchObject({
+      label: "阶段 6 · 观察结论",
+      status: "done",
+      note: "观察结论已完成，不涉及具体交易",
+    });
+    expect(topic.strategy).toMatchObject({
+      mode: "observation",
+      name: "观察结论",
+      meta: "观察结论已完成，不涉及具体交易",
+      observationSummary: "今日大盘分析已完成。",
+    });
     expect(topic.messages.some((message) => message.typing)).toBe(false);
   });
 

@@ -711,7 +711,11 @@
         "feedbackPrompt": "Cette analyse est-elle utile ?",
         "feedbackHelpful": "Utile",
         "feedbackNotHelpful": "Pas utile",
-        "feedbackThanks": "Enregistré"
+        "feedbackThanks": "Enregistré",
+        "observationSummaryLabel": "__TBD__",
+        "coinwNavigate": "__TBD__",
+        "staleReason": "__TBD__",
+        "staleAgePrefix": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",
@@ -729,7 +733,8 @@
         "in_progress": "En cours",
         "in_progressNote": "Cette étape écrit une mise à jour partielle",
         "done": "Terminé",
-        "memoryPending": "La revue attend le retour du résultat"
+        "memoryPending": "La revue attend le retour du résultat",
+        "observationOnly": "__TBD__"
       },
       "topicRanking": {
         "explanation_template": "{symbol} est classé #{rank} grâce à {news_count} actus + {confidence}% de confiance",
@@ -796,6 +801,10 @@
         "missing_onchain": "Onchain signal pending",
         "missing_fundamental": "Fundamental signal pending",
         "missing_market": "Market context pending"
+      },
+      "message": {
+        "expand": "__TBD__",
+        "collapse": "__TBD__"
       }
     },
     "admin": {

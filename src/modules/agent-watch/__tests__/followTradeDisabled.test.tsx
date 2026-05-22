@@ -98,9 +98,10 @@ describe("follow trade disabled safety state", () => {
       />,
     );
 
-    expect(html).toContain("去交易");
+    expect(html).toContain("去 CoinW 看合约");
+    expect(html).toContain("公开分析和交易跳转");
+    expect(html).not.toContain("去交易");
     expect(html).not.toContain("仅分析 / 不自动下单");
-    expect(html).not.toContain("公开分析和交易跳转");
     expect(html).not.toContain("演示模式：当前不会真实下单");
     expect(html).not.toContain('disabled=""');
   });

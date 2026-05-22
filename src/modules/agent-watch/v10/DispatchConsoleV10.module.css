@@ -1477,6 +1477,10 @@
     box-shadow 0.18s;
 }
 
+.dispatchConsoleV10 :global(.topic-strategy.observation) {
+  grid-template-columns: 1.1fr minmax(280px, 2fr) auto;
+}
+
 .dispatchConsoleV10 :global(.topic-strategy.latest::before) {
   content: "";
   position: absolute;

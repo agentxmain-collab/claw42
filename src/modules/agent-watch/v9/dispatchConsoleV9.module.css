@@ -1105,6 +1105,30 @@
   color: var(--fg);
   font-weight: 700;
 }
+.root :global(.msg-content) {
+  display: block;
+}
+.root :global(.msg-content.collapsed) {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.root :global(.msg-expand-toggle) {
+  width: fit-content;
+  margin-top: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--lime);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+.root :global(.msg-expand-toggle:hover) {
+  color: var(--fg);
+}
 .root :global(.msg-quote) {
   background: rgba(255, 255, 255, 0.04);
   border-left: 2px solid var(--purple-2);
@@ -1284,6 +1308,9 @@
     border-color 0.18s cubic-bezier(0.2, 0.7, 0.3, 1),
     box-shadow 0.18s ease;
 }
+.root :global(.topic-strategy.observation) {
+  grid-template-columns: 1.1fr minmax(260px, 2fr) auto;
+}
 .root :global(.topic-strategy.latest::before) {
   content: "";
   position: absolute;
@@ -1429,6 +1456,26 @@
 .root :global(.strat-field .val.lime) {
   color: var(--lime);
 }
+.root :global(.observation-summary) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.root :global(.observation-summary .lbl) {
+  font-size: 10px;
+  color: var(--fg-3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+.root :global(.observation-summary p) {
+  margin: 0;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.55;
+}
 .root :global(.strat-cta) {
   display: flex;
   flex-direction: column;
@@ -1509,6 +1556,41 @@
 .root :global(.cta-meta b) {
   color: var(--warn);
   font-weight: 800;
+}
+.root :global(.cta-visible-reason) {
+  max-width: 220px;
+  color: #ffd369;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.root :global(.topic-age) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--fg-3);
+}
+.root :global(.topic-age::before) {
+  content: "·";
+  color: var(--fg-3);
+}
+.root :global(.topic-age.stale) {
+  color: #ffd369;
+  font-weight: 800;
+}
+.root :global(.topic-age.stale::after) {
+  content: "!";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(255, 211, 105, 0.16);
+  color: #ffd369;
+  font-size: 10px;
+  line-height: 1;
 }
 
 .root :global(.topic-ranking) {

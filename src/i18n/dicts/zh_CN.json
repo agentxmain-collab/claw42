@@ -711,7 +711,11 @@
         "feedbackPrompt": "这条分析有帮助吗",
         "feedbackHelpful": "有帮助",
         "feedbackNotHelpful": "没帮助",
-        "feedbackThanks": "已记录"
+        "feedbackThanks": "已记录",
+        "observationSummaryLabel": "观察结论",
+        "coinwNavigate": "去 CoinW 看合约",
+        "staleReason": "行情已过期，等待新分析后开放交易",
+        "staleAgePrefix": "分析于"
       },
       "placeholder": {
         "title": "跟单功能开发中",
@@ -729,7 +733,8 @@
         "in_progress": "进行中",
         "in_progressNote": "该阶段正在写入部分结果",
         "done": "已完成",
-        "memoryPending": "复盘等待结果回写"
+        "memoryPending": "复盘等待结果回写",
+        "observationOnly": "观察结论已完成，不涉及具体交易"
       },
       "topicRanking": {
         "explanation_template": "{symbol} 因 {news_count} 条新闻 + {confidence}% 置信度排第 {rank}",
@@ -796,6 +801,10 @@
         "missing_onchain": "链上信号待补充",
         "missing_fundamental": "基本面信号待补充",
         "missing_market": "市场背景待补充"
+      },
+      "message": {
+        "expand": "展开全文",
+        "collapse": "收起"
       }
     },
     "admin": {

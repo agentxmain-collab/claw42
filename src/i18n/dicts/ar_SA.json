@@ -711,7 +711,11 @@
         "feedbackPrompt": "هل كان هذا التحليل مفيدًا؟",
         "feedbackHelpful": "مفيد",
         "feedbackNotHelpful": "غير مفيد",
-        "feedbackThanks": "تم التسجيل"
+        "feedbackThanks": "تم التسجيل",
+        "observationSummaryLabel": "__TBD__",
+        "coinwNavigate": "__TBD__",
+        "staleReason": "__TBD__",
+        "staleAgePrefix": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",
@@ -729,7 +733,8 @@
         "in_progress": "قيد التنفيذ",
         "in_progressNote": "تكتب هذه المرحلة تحديثا جزئيا",
         "done": "مكتمل",
-        "memoryPending": "المراجعة تنتظر كتابة النتيجة"
+        "memoryPending": "المراجعة تنتظر كتابة النتيجة",
+        "observationOnly": "__TBD__"
       },
       "topicRanking": {
         "explanation_template": "{symbol} في المرتبة #{rank} بسبب {news_count} أخبار + ثقة {confidence}%",
@@ -796,6 +801,10 @@
         "missing_onchain": "Onchain signal pending",
         "missing_fundamental": "Fundamental signal pending",
         "missing_market": "Market context pending"
+      },
+      "message": {
+        "expand": "__TBD__",
+        "collapse": "__TBD__"
       }
     },
     "admin": {
