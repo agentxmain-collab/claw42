@@ -291,6 +291,48 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain('<span class="lbl">止盈</span>');
   });
 
+  test("uses fuller public rationale when observation summary is visibly incomplete", () => {
+    const fullObservation =
+      "团队形成一致看多共识，核心逻辑是恐慌贪婪指数28处于极度恐惧区间，历史上对应中期底部概率上升，同时 BTC 24h 仅小幅回落，风险资产反弹条件仍在。";
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "market-overview-fuller-observation",
+              candidateType: "market_overview",
+              candidateKey: "market_overview:daily:zh_CN:2026-05-22",
+              title: "今日大盘综述",
+              symbol: "MARKET",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: false,
+            }),
+            explanation: fullObservation,
+            messages: [],
+            strategy: {
+              ...dispatchV10DemoTopics[0]!.strategy,
+              mode: "observation",
+              ticker: "$MARKET",
+              name: "观察结论",
+              meta: "观察结论已完成，不涉及具体交易",
+              observationSummary:
+                "团队形成一致看多共识，核心逻辑是恐慌贪婪指数28处于极度恐惧区间，历史上对应中期底部，BTC 24h仅跌0.",
+              entry: "",
+              stopLoss: "",
+              takeProfit: "",
+            },
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain(fullObservation);
+    expect(html).not.toContain("BTC 24h仅跌0.");
+  });
+
   test("renders market and hotspot candidate badges with type-specific card classes", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel

@@ -42,6 +42,55 @@ function inferredTradeReadinessKind(
   return "submission_mode_blocked";
 }
 
+function looksTruncated(value: string | undefined) {
+  if (!value) return false;
+  return /(?:…|\.\.\.)\s*$/.test(value.trim());
+}
+
+function looksIncompleteSummary(value: string | undefined) {
+  if (!value) return false;
+  const text = value.trim();
+  return (
+    looksTruncated(text) ||
+    /(?:[0-9]+\.?|[A-Za-z]+|[，,、（(]|若|当|但|而|且|并|将|会|可|为|与|或|对|于)$/.test(text)
+  );
+}
+
+function normalizedLead(value: string) {
+  return value
+    .replace(/[，。,.；;：:\s]+$/g, "")
+    .replace(/\s+/g, "")
+    .slice(0, 24);
+}
+
+function fullerObservationCandidate(summary: string, candidates: string[]) {
+  const lead = normalizedLead(summary);
+  if (lead.length < 8) return null;
+  return candidates.find((candidate) => {
+    if (candidate.length <= summary.length + 40) return false;
+    return candidate.replace(/\s+/g, "").includes(lead);
+  });
+}
+
+function observationSummaryText(topic: DispatchTopic) {
+  const summary = topic.strategy.observationSummary?.trim();
+  const candidates = [
+    topic.explanation,
+    ...topic.messages.map((message) => message.detailedRationale ?? message.content),
+  ]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+  const sortedCandidates = [...candidates].sort((a, b) => b.length - a.length);
+
+  if (summary) {
+    if (!looksIncompleteSummary(summary)) return summary;
+    const fuller = fullerObservationCandidate(summary, sortedCandidates);
+    if (fuller) return fuller;
+  }
+
+  return sortedCandidates[0] ?? topic.strategy.meta;
+}
+
 export function TopicStrategy({
   topic,
   latest = false,
@@ -96,7 +145,7 @@ export function TopicStrategy({
       {isObservationMode ? (
         <div className="observation-summary">
           <span className="lbl">观察结论</span>
-          <p>{strategy.observationSummary ?? strategy.meta}</p>
+          <p>{observationSummaryText(topic)}</p>
         </div>
       ) : (
         <>

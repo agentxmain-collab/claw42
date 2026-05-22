@@ -14,6 +14,11 @@ const DEFAULT_MESSAGE_LABELS: MessageBubbleLabels = {
 
 const EXPANDABLE_CONTENT_LENGTH = 120;
 
+function looksTruncated(value: string | undefined) {
+  if (!value) return false;
+  return /(?:…|\.\.\.)\s*$/.test(value.trim());
+}
+
 const AGENT_AVATAR: Record<DispatchAgentId, { label: string; className: string }> = {
   fundamental_analyst: { label: "F", className: "a-fund" },
   onchain_analyst: { label: "O", className: "a-sent" },
@@ -46,8 +51,9 @@ function MessageBubbleComponent({
     () => formatSafeContent(message.oneLineSummary ?? ""),
     [message.oneLineSummary],
   );
+  const showSummary = Boolean(message.oneLineSummary && !looksTruncated(message.oneLineSummary));
   const hasDecisionLayer = Boolean(
-    message.direction || message.confidence !== undefined || message.oneLineSummary,
+    message.direction || message.confidence !== undefined || showSummary,
   );
   const confidencePct =
     typeof message.confidence === "number"
@@ -107,9 +113,7 @@ function MessageBubbleComponent({
                     <span className="role-viewpoint">{message.roleViewpoint}</span>
                   ) : null}
                 </div>
-                {message.oneLineSummary ? (
-                  <div className="msg-summary">{formattedSummary}</div>
-                ) : null}
+                {showSummary ? <div className="msg-summary">{formattedSummary}</div> : null}
               </div>
             ) : null}
             {hasDecisionLayer ? <div className="msg-divider" aria-hidden="true" /> : null}
