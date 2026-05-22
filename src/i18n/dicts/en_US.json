@@ -731,7 +731,8 @@
         "done": "Done",
         "memoryPending": "Review waits for outcome writeback",
         "stage2Observation": "Long/short observation",
-        "stage6TrackingPending": "Tracking · expected writeback in {hours}h"
+        "stage6TrackingPending": "Tracking · expected writeback in {hours}h",
+        "stage6TrackingOverdue": "Tracking overdue · {hours}h past target"
       },
       "topicRanking": {
         "explanation_template": "{symbol} ranks #{rank} from {news_count} news items + {confidence}% confidence",

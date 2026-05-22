@@ -731,7 +731,8 @@
         "done": "已完成",
         "memoryPending": "复盘等待结果回写",
         "stage2Observation": "多空观察",
-        "stage6TrackingPending": "跟踪中 · 预期 {hours} 小时后回写"
+        "stage6TrackingPending": "跟踪中 · 预期 {hours} 小时后回写",
+        "stage6TrackingOverdue": "跟踪超时 · 已超过预期 {hours} 小时"
       },
       "topicRanking": {
         "explanation_template": "{symbol} 因 {news_count} 条新闻 + {confidence}% 置信度排第 {rank}",

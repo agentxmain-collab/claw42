@@ -731,7 +731,8 @@
         "done": "完了",
         "memoryPending": "結果の書き戻し待ち",
         "stage2Observation": "ロング/ショート観察",
-        "stage6TrackingPending": "追跡中 · {hours}時間後に書き戻し予定"
+        "stage6TrackingPending": "追跡中 · {hours}時間後に書き戻し予定",
+        "stage6TrackingOverdue": "追跡期限超過 · 予定から{hours}時間経過"
       },
       "topicRanking": {
         "explanation_template": "{symbol} は {news_count} 件のニュース + {confidence}% の信頼度で第 {rank} 位",

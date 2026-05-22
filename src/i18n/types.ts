@@ -136,6 +136,7 @@ export type DispatchV10StageStatusDict = {
   memoryPending: string;
   stage2Observation: string;
   stage6TrackingPending: string;
+  stage6TrackingOverdue: string;
 };
 
 export type DispatchV10TopicRankingDict = {

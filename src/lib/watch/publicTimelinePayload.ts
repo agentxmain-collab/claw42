@@ -3,7 +3,7 @@ import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { readAllDecisionRecords, readDecisionRecords } from "@/lib/team/decisionRecordStore";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
-import { knownSymbolMappings } from "@/lib/team/symbolMapping";
+import { knownSymbolMappings, resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import { readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
 import {
   deriveResidentPrewarmStatus,
@@ -28,6 +28,7 @@ import {
 
 export const MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60;
 export const MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES = 72 * 60;
+export const PUBLIC_SYMBOL_FLOOR_TARGET = 3;
 
 const MAX_EVIDENCE_MAP_ITEMS = 120;
 
@@ -164,6 +165,56 @@ export function selectResidentFloorRecordEvents(
   return Array.from(byLane.values()).sort(comparePublicTimelineEvents);
 }
 
+function isExecutableSymbolEvent(event: PublicTimelineEvent) {
+  if (event.payload.kind !== "pm_decision") return false;
+  if (event.payload.candidateType !== "symbol" && event.payload.candidateType !== undefined) {
+    return false;
+  }
+  if (typeof event.payload.executable === "boolean") return event.payload.executable;
+  return resolveSymbolMapping(event.payload.symbol).execution.executable;
+}
+
+export function selectSymbolFloorRecordEvents(
+  events: PublicTimelineEvent[],
+  {
+    locale,
+    before,
+    since,
+    servedAt,
+    limit = PUBLIC_SYMBOL_FLOOR_TARGET,
+  }: {
+    locale: Locale;
+    before: number;
+    since?: number;
+    servedAt: number;
+    limit?: number;
+  },
+) {
+  const minTs = servedAt - MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES * 60_000;
+  const bySymbol = new Map<string, PublicTimelineEvent>();
+
+  for (const event of events) {
+    if (event.payload.kind !== "pm_decision") continue;
+    if (event.locale !== locale) continue;
+    if (event.ts >= before || event.ts < minTs) continue;
+    if (since !== undefined && event.ts <= since) continue;
+    if (!isExecutableSymbolEvent(event)) continue;
+
+    const symbol = event.payload.symbol.trim().replace(/^\$+/, "").toUpperCase();
+    if (!symbol || symbol === "UNKNOWN") continue;
+    const existing = bySymbol.get(symbol);
+    if (
+      !existing ||
+      event.ts > existing.ts ||
+      (event.ts === existing.ts && event.id < existing.id)
+    ) {
+      bySymbol.set(symbol, event);
+    }
+  }
+
+  return Array.from(bySymbol.values()).sort(comparePublicTimelineEvents).slice(0, limit);
+}
+
 function symbolsNeedingRecordHydration(events: PublicTimelineEvent[]) {
   return Array.from(
     new Set(
@@ -260,9 +311,17 @@ export async function buildWatchTimelinePayload({
     since,
     servedAt,
   });
+  const symbolFloorRecordEvents = selectSymbolFloorRecordEvents(allRecordEvents, {
+    locale,
+    before,
+    since,
+    servedAt,
+  });
   const events = mergeDecisionRecordBackfillEvents(
     projectedEvents.sort(comparePublicTimelineEvents),
-    [...recordEvents, ...residentFloorRecordEvents].sort(comparePublicTimelineEvents),
+    [...recordEvents, ...residentFloorRecordEvents, ...symbolFloorRecordEvents].sort(
+      comparePublicTimelineEvents,
+    ),
     limit,
   );
   const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(

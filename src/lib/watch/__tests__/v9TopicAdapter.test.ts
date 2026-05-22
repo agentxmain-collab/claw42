@@ -378,6 +378,72 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
   });
 
+  it("counts down pending memory-loop writeback from the decision age", () => {
+    const generatedAt = now - 17 * 60 * 60_000;
+    const event = pmDecision({
+      ts: generatedAt,
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-aged",
+        symbol: "BTC",
+        tradeDecision: {
+          ...tradeDecision,
+          generatedAt: new Date(generatedAt).toISOString(),
+        },
+        rationaleByMember: {
+          chart_analyst: "BTC is testing support.",
+        },
+        citationsByMember: {},
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.stages[5]).toMatchObject({
+      label: "阶段 6 · 复盘沉淀",
+      status: "pending",
+      note: "跟踪中 · 预期 7 小时后回写",
+    });
+    expect(topic.messages[0]?.dataAge).toBe("数据 17 小时前");
+  });
+
+  it("marks memory-loop writeback as overdue after the expected window", () => {
+    const generatedAt = now - 27 * 60 * 60_000;
+    const event = pmDecision({
+      ts: generatedAt,
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-overdue",
+        symbol: "BTC",
+        tradeDecision: {
+          ...tradeDecision,
+          generatedAt: new Date(generatedAt).toISOString(),
+        },
+        rationaleByMember: {
+          chart_analyst: "BTC is testing support.",
+        },
+        citationsByMember: {},
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.stages[5]).toMatchObject({
+      label: "阶段 6 · 复盘沉淀",
+      status: "pending",
+      note: "跟踪超时 · 已超过预期 3 小时",
+    });
+    expect(topic.messages[0]?.dataAge).toBe("数据 1 天前");
+  });
+
   it("drops non-CoinW futures symbol decisions from the public beta board", () => {
     const event = pmDecision({
       payload: {

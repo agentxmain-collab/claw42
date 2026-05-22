@@ -731,7 +731,8 @@
         "done": "Completado",
         "memoryPending": "La revisión espera el resultado",
         "stage2Observation": "Observación largo/corto",
-        "stage6TrackingPending": "En seguimiento · retorno previsto en {hours} h"
+        "stage6TrackingPending": "En seguimiento · retorno previsto en {hours} h",
+        "stage6TrackingOverdue": "Seguimiento vencido · {hours} h sobre el objetivo"
       },
       "topicRanking": {
         "explanation_template": "{symbol} ocupa el #{rank} por {news_count} noticias + {confidence}% de confianza",

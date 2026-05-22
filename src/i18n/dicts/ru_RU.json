@@ -731,7 +731,8 @@
         "done": "Готово",
         "memoryPending": "Разбор ждет записи результата",
         "stage2Observation": "Наблюдение long/short",
-        "stage6TrackingPending": "Отслеживание · запись ожидается через {hours} ч"
+        "stage6TrackingPending": "Отслеживание · запись ожидается через {hours} ч",
+        "stage6TrackingOverdue": "Отслеживание просрочено · на {hours} ч позже цели"
       },
       "topicRanking": {
         "explanation_template": "{symbol} занимает #{rank}: {news_count} новостей + {confidence}% уверенности",

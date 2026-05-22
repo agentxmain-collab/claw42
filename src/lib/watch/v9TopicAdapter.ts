@@ -161,7 +161,11 @@ function minutesBetween(start: number, end: number) {
 function formatDataAge(ts: number, now: number) {
   const seconds = Math.max(0, Math.round((now - ts) / 1000));
   if (seconds < 60) return `数据 ${seconds} 秒前`;
-  return `数据 ${Math.round(seconds / 60)} 分钟前`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `数据 ${minutes} 分钟前`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `数据 ${hours} 小时前`;
+  return `数据 ${Math.round(hours / 24)} 天前`;
 }
 
 function formatPrice(value: number) {
@@ -320,9 +324,29 @@ function stageTwoLabel(
   return hasLong && hasShort ? "多空辩论" : stageStatusDict.stage2Observation;
 }
 
-function stageSixTrackingPending(stageStatusDict: DispatchV10StageStatusDict) {
-  return replaceVars(stageStatusDict.stage6TrackingPending, {
-    hours: MEMORY_LOOP_EXPECTED_WRITEBACK_HOURS,
+function stageSixStartTs(event: PmDecisionTimelineEvent | undefined) {
+  const generatedAt = event ? renderableTradeDecision(event)?.generatedAt : undefined;
+  if (generatedAt) {
+    const parsed = Date.parse(generatedAt);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return event?.ts ?? Date.now();
+}
+
+function stageSixTrackingPending(
+  stageStatusDict: DispatchV10StageStatusDict,
+  event: PmDecisionTimelineEvent | undefined,
+  now: number,
+) {
+  const elapsedHours = Math.max(0, (now - stageSixStartTs(event)) / 3_600_000);
+  const remainingHours = MEMORY_LOOP_EXPECTED_WRITEBACK_HOURS - elapsedHours;
+  if (remainingHours > 0) {
+    return replaceVars(stageStatusDict.stage6TrackingPending, {
+      hours: Math.max(1, Math.ceil(remainingHours)),
+    });
+  }
+  return replaceVars(stageStatusDict.stage6TrackingOverdue, {
+    hours: Math.max(1, Math.ceil(Math.abs(remainingHours))),
   });
 }
 
@@ -368,6 +392,7 @@ function makeStages(
   hasResolution = false,
   hasMemoryLoop = false,
   stageStatusDict: DispatchV10StageStatusDict,
+  now: number,
   event?: PmDecisionTimelineEvent,
   analysisOnlyCandidate = false,
 ): DispatchStageMarker[] {
@@ -382,6 +407,7 @@ function makeStages(
       hasTradeDecision,
       analysisOnlyCandidate,
       event,
+      now,
     );
   }
 
@@ -411,7 +437,7 @@ function makeStages(
           id: stageId(topicId, 6),
           label: "阶段 6 · 复盘沉淀",
           status: "pending",
-          note: stageSixTrackingPending(stageStatusDict),
+          note: stageSixTrackingPending(stageStatusDict, event, now),
         },
   ];
 }
@@ -424,6 +450,7 @@ function makePartialStages(
   hasTradeDecision: boolean,
   analysisOnlyCandidate = false,
   event?: PmDecisionTimelineEvent,
+  now = Date.now(),
 ): DispatchStageMarker[] {
   const statuses = normalizePublicDecisionStageStatuses(trace, {
     hasRenderableTradeDecision: hasTradeDecision,
@@ -483,7 +510,7 @@ function makePartialStages(
           id: stageId(topicId, 6),
           label: "阶段 6 · 复盘沉淀",
           status: "pending",
-          note: stageSixTrackingPending(stageStatusDict),
+          note: stageSixTrackingPending(stageStatusDict, event, now),
         },
   ];
 }
@@ -1025,6 +1052,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         Boolean(latest.payload.resolution),
         hasMemoryLoop,
         ctx.stageStatusDict,
+        now,
         latest,
         isAnalysisOnlyEvent(latest),
       ),

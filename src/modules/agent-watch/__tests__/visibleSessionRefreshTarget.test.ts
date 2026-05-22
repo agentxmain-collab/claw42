@@ -132,12 +132,34 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     });
   });
 
-  test("repairs a missing market overview resident lane before refreshing the visible symbol", () => {
+  test("fills missing public symbol coverage before repairing resident lanes", () => {
     expect(
       resolveVisibleSessionRefreshTarget({
         topics: [
           { candidateType: "hotspot", symbol: "HOTSPOT" },
           { candidateType: "symbol", symbol: "HYPE" },
+        ],
+        residentStatus: residentStatus({
+          marketOverviewState: "empty",
+          hotspotState: "ready",
+        }),
+        timelineLoaded: true,
+        locale: "zh_CN",
+      }),
+    ).toMatchObject({
+      symbol: "SYMBOL",
+      params: { candidateType: "symbol" },
+    });
+  });
+
+  test("repairs resident lanes after public symbol coverage is filled", () => {
+    expect(
+      resolveVisibleSessionRefreshTarget({
+        topics: [
+          { candidateType: "hotspot", symbol: "HOTSPOT" },
+          { candidateType: "symbol", symbol: "BTC" },
+          { candidateType: "symbol", symbol: "ETH" },
+          { candidateType: "symbol", symbol: "SOL" },
         ],
         residentStatus: residentStatus({
           marketOverviewState: "empty",
