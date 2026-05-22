@@ -2,6 +2,7 @@ import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { DispatchV10FollowTradeDict } from "@/i18n/types";
 import type { TradingReadinessState } from "@/lib/coinw/tradeReadinessState";
+import type { DecisionFreshnessStatus } from "@/lib/team/freshnessStatus";
 import type { AnalystDataStatus, AnalystDirection } from "@/lib/team/strategyDecisionRecord";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
@@ -147,6 +148,7 @@ export interface DispatchTopic {
   displayTitle?: string;
   symbol: string;
   lastUpdatedAt?: number;
+  freshnessStatus?: DecisionFreshnessStatus;
   execution?: DispatchTopicExecutionMode;
   status: DispatchTopicStatus;
   title: string;

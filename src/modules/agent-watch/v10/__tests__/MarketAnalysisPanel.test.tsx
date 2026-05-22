@@ -212,6 +212,41 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("演示模式：当前不会真实下单");
   });
 
+  test("does not render a clickable trade entry for stale executable decisions", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "stale-btc",
+              candidateType: "symbol",
+              candidateKey: "BTC",
+              title: "BTC 实时行情分析",
+              symbol: "BTC",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            freshnessStatus: {
+              level: "stale",
+              observedAt: "2026-05-21T00:00:00.000Z",
+              ageMinutes: 500,
+              staleAfterMinutes: 360,
+              expiredAfterMinutes: 1440,
+            },
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("freshness-stale");
+    expect(html).toContain("disabled");
+    expect(html).not.toContain("coinw_trade_cta_click");
+    expect(html).not.toContain('target="_blank"');
+  });
+
   test("renders market and hotspot candidate badges with type-specific card classes", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
@@ -460,7 +495,8 @@ describe("MarketAnalysisPanel v10", () => {
       );
 
       expect(html).toContain('href="https://www.coinw.com/futures/hypeusdt"');
-      expect(html).toContain('href="https://www.coinw.com/market/futures"');
+      expect(html).not.toContain('href="https://www.coinw.com/market/futures"');
+      expect(html).toContain('data-trade-readiness-kind="instrument_unavailable"');
     } finally {
       if (previousTemplate === undefined) {
         delete process.env.NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE;

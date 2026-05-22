@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import type { DispatchV10Dict } from "@/i18n/types";
 import { trackEvent } from "@/lib/analytics";
 import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
+import { canRenderTradeCTA } from "@/lib/coinw/tradeGate";
 import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
 import {
   compareDecisionCandidateOrder,
@@ -443,7 +444,13 @@ function TopicStrategyV10({
 }) {
   const { strategy } = topic;
   const candidateType = topicCandidateType(topic);
-  const canRenderFollowTrade = candidateType === "symbol" && topic.execution?.executable === true;
+  const executableSymbol = candidateType === "symbol" && topic.execution?.executable === true;
+  const canRenderCoinWTrade = canRenderTradeCTA({
+    externalNavigationEnabled: true,
+    executable: executableSymbol,
+    readinessStates: topic.execution?.tradeReadiness?.states,
+    freshness: topic.freshnessStatus,
+  });
   const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
   const followStatus =
     topic.status === "pending"
@@ -452,10 +459,10 @@ function TopicStrategyV10({
   const coinwFuturesUrl =
     topic.execution?.tradeUrl ??
     buildCoinWFuturesTradeUrl({
-      coinwPair: canRenderFollowTrade ? topic.execution?.coinwPair : null,
+      coinwPair: canRenderCoinWTrade ? topic.execution?.coinwPair : null,
     });
-  const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderFollowTrade);
-  const coinwLinkType = canRenderFollowTrade && topic.execution?.coinwPair ? "pair" : "generic";
+  const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderCoinWTrade);
+  const coinwLinkType = canRenderCoinWTrade && topic.execution?.coinwPair ? "pair" : "generic";
 
   return (
     <div
@@ -495,25 +502,31 @@ function TopicStrategyV10({
       />
       <div className="strat-cta">
         <div className="cta-row">
-          <a
-            className="cta-btn"
-            href={coinwFuturesUrl}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(event) => {
-              event.stopPropagation();
-              trackEvent("coinw_trade_cta_click", {
-                topicId: topic.id,
-                candidateType,
-                candidateKey: topic.candidateKey ?? null,
-                symbol: topic.symbol,
-                linkType: coinwLinkType,
-                executable: canRenderFollowTrade,
-              });
-            }}
-          >
-            {dict.market.coinwFuturesLink}
-          </a>
+          {canRenderCoinWTrade ? (
+            <a
+              className="cta-btn"
+              href={coinwFuturesUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(event) => {
+                event.stopPropagation();
+                trackEvent("coinw_trade_cta_click", {
+                  topicId: topic.id,
+                  candidateType,
+                  candidateKey: topic.candidateKey ?? null,
+                  symbol: topic.symbol,
+                  linkType: coinwLinkType,
+                  executable: true,
+                });
+              }}
+            >
+              {dict.market.coinwFuturesLink}
+            </a>
+          ) : (
+            <button className="cta-btn" type="button" disabled>
+              {dict.market.coinwFuturesLink}
+            </button>
+          )}
           <button
             className="cta-btn secondary"
             type="button"
@@ -560,6 +573,7 @@ function TopicCardV10({
     "topic",
     topic.status,
     topicCandidateClass(topic),
+    topic.freshnessStatus && `freshness-${topic.freshnessStatus.level}`,
     latest && "latest",
     collapsed && "collapsed",
   ]

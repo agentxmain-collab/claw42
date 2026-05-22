@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canRenderTradeCTA,
   normalizeCoinWTradeGate,
   resolveCoinWTradeGate,
   rollbackCoinWTradeGate,
@@ -62,5 +63,40 @@ describe("CoinW trade gate", () => {
     expect(rollbackCoinWTradeGate("gate2")).toBe("gate1");
     expect(rollbackCoinWTradeGate("gate3")).toBe("gate2");
     expect(rollbackCoinWTradeGate("gate4")).toBe("gate3");
+  });
+
+  it("suppresses trade entry when a decision is stale even if the symbol is executable", () => {
+    expect(
+      canRenderTradeCTA({
+        externalNavigationEnabled: true,
+        executable: true,
+        freshness: {
+          level: "stale",
+          observedAt: "2026-05-21T00:00:00.000Z",
+          ageMinutes: 500,
+          staleAfterMinutes: 360,
+          expiredAfterMinutes: 1440,
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it("requires executable symbol, open navigation gate, and non-blocking readiness", () => {
+    expect(
+      canRenderTradeCTA({
+        externalNavigationEnabled: true,
+        executable: true,
+        readinessStates: [],
+        freshness: {
+          level: "fresh",
+          observedAt: "2026-05-22T00:00:00.000Z",
+          ageMinutes: 5,
+          staleAfterMinutes: 360,
+          expiredAfterMinutes: 1440,
+        },
+      }),
+    ).toBe(true);
+    expect(canRenderTradeCTA({ externalNavigationEnabled: false, executable: true })).toBe(false);
+    expect(canRenderTradeCTA({ externalNavigationEnabled: true, executable: false })).toBe(false);
   });
 });

@@ -941,6 +941,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       displayTitle: group.displayTitle,
       symbol: group.symbol,
       lastUpdatedAt: group.latestAt,
+      freshnessStatus: latest.payload.freshnessStatus,
       execution: {
         executable,
         coinwPair,

@@ -513,6 +513,10 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.candidateKey).toBe("BTC");
     expect(event.payload.displayTitle).toBe("BTC 实时行情分析");
     expect(event.payload.executable).toBe(true);
+    expect(event.payload.freshnessStatus).toMatchObject({
+      level: "fresh",
+      observedAt: decisionRecord.createdAt,
+    });
     expect(event.payload.rounds).toHaveLength(3);
     expectNoInternalTeamIds(event.payload);
   });
