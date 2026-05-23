@@ -29,6 +29,7 @@ export const maxDuration = 300;
 const STRATEGY_REPLAY_TRIGGER_LOCK_KEY = "cron:strategy-replay:trigger-now";
 const STRATEGY_REPLAY_TRIGGER_LOCK_MS = 5 * 60_000;
 const PM_RESOLUTION_RECORD_LIMIT = 100;
+const INLINE_PM_DECISION_JOB_LIMIT = 1;
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -132,37 +133,50 @@ export async function GET(request: NextRequest) {
   });
   const residentCandidates = residentPlan.candidates;
   const residentPrewarmResults = [];
+  const inlineDeferredCandidateKeys: string[] = [];
+  let inlinePmDecisionJobs = 0;
+  const inlineLimitReached = () => inlinePmDecisionJobs >= INLINE_PM_DECISION_JOB_LIMIT;
+  const trackInlineUsage = (result: Awaited<ReturnType<typeof dispatchPmDecisionJob>>) => {
+    if (result.queueResult.mode !== "queue") inlinePmDecisionJobs += 1;
+  };
   for (const candidate of residentCandidates) {
-    residentPrewarmResults.push(
-      await dispatchPmDecisionJob({
-        kind: "once",
-        triggerSource: "cron",
+    if (inlineLimitReached()) {
+      inlineDeferredCandidateKeys.push(candidate.candidateKey);
+      continue;
+    }
+    const result = await dispatchPmDecisionJob({
+      kind: "once",
+      triggerSource: "cron",
+      locale,
+      now,
+      candidate,
+      pool,
+      newsItems: normalizedItems,
+      partialStageUpdates: pmPartialStageUpdates,
+      useQueue: trigger !== "now",
+      onAudit: (event) => pmDecisionAudit.push(event),
+    });
+    residentPrewarmResults.push(result);
+    trackInlineUsage(result);
+  }
+
+  const batchResult = inlineLimitReached()
+    ? null
+    : await dispatchPmDecisionJob({
+        kind: trigger === "now" ? "once" : "batch",
+        triggerSource: trigger === "now" ? "user_visit_trigger" : "cron",
         locale,
         now,
-        candidate,
         pool,
         newsItems: normalizedItems,
         partialStageUpdates: pmPartialStageUpdates,
         useQueue: trigger !== "now",
         onAudit: (event) => pmDecisionAudit.push(event),
-      }),
-    );
-  }
-
-  const batchResult = await dispatchPmDecisionJob({
-    kind: trigger === "now" ? "once" : "batch",
-    triggerSource: trigger === "now" ? "user_visit_trigger" : "cron",
-    locale,
-    now,
-    pool,
-    newsItems: normalizedItems,
-    partialStageUpdates: pmPartialStageUpdates,
-    useQueue: trigger !== "now",
-    onAudit: (event) => pmDecisionAudit.push(event),
-  });
+      });
+  if (batchResult) trackInlineUsage(batchResult);
   const pmDecisionOutputs = [
     ...residentPrewarmResults.flatMap((result) => result.outputs),
-    ...batchResult.outputs,
+    ...(batchResult?.outputs ?? []),
   ];
   const providerTelemetry = summarizeProviderTelemetry({ since: now });
   await warnIfSingleProviderConcentration(providerTelemetry);
@@ -176,11 +190,17 @@ export async function GET(request: NextRequest) {
     pmDecisionGenerated: pmDecisionOutputs.length > 0,
     generatedPmDecisions: pmDecisionOutputs.length,
     pmPartialStageUpdates,
-    pmDecisionJobId: batchResult.job.id,
-    pmDecisionJobStatus: batchResult.jobResult?.job.status ?? batchResult.job.status,
-    pmDecisionQueueMode: batchResult.queueResult.mode,
+    pmDecisionJobId: batchResult?.job.id ?? null,
+    pmDecisionJobStatus: batchResult?.jobResult?.job.status ?? batchResult?.job.status ?? null,
+    pmDecisionQueueMode: batchResult?.queueResult.mode ?? "deferred_inline_limit",
     pmDecisionQueueMessageId:
-      batchResult.queueResult.mode === "queue" ? batchResult.queueResult.messageId : undefined,
+      batchResult?.queueResult.mode === "queue" ? batchResult.queueResult.messageId : undefined,
+    pmDecisionInlineLimit: {
+      limit: INLINE_PM_DECISION_JOB_LIMIT,
+      used: inlinePmDecisionJobs,
+      deferredResidentCandidateKeys: inlineDeferredCandidateKeys,
+      deferredBatch: batchResult === null,
+    },
     residentPrewarmCandidates: residentCandidates.map((candidate) => candidate.candidateKey),
     residentPrewarmFixedCadenceCandidates: residentPlan.fixedCadenceCandidateKeys,
     residentPrewarmBackfillCandidates: residentPlan.backfillCandidateKeys,

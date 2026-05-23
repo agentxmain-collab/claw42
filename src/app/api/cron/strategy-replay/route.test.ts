@@ -319,7 +319,7 @@ describe("/api/cron/strategy-replay", () => {
     expect(runPmDecisionJobMock).toHaveBeenCalledTimes(1);
   });
 
-  it("prewarms global resident market and hotspot candidates from scheduled cron", async () => {
+  it("caps inline resident prewarm work when queue mode is unavailable", async () => {
     const prewarmNow = Date.parse("2026-05-13T18:00:00.000Z");
     vi.setSystemTime(prewarmNow);
 
@@ -327,11 +327,17 @@ describe("/api/cron/strategy-replay", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(payload.residentPrewarmGenerated).toBe(2);
+    expect(payload.residentPrewarmGenerated).toBe(1);
     expect(payload.residentPrewarmCandidates).toEqual([
       "market_overview:utc:zh_CN:2026-05-13T18",
       "hotspot:utc:zh_CN:2026-05-13T18:market",
     ]);
+    expect(payload.pmDecisionInlineLimit).toEqual({
+      limit: 1,
+      used: 1,
+      deferredResidentCandidateKeys: ["hotspot:utc:zh_CN:2026-05-13T18:market"],
+      deferredBatch: true,
+    });
     expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "once",
@@ -344,25 +350,11 @@ describe("/api/cron/strategy-replay", () => {
         now: prewarmNow,
       }),
     );
-    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: "once",
-        triggerSource: "cron",
-        locale: "zh_CN",
-        candidate: expect.objectContaining({
-          candidateType: "hotspot",
-          candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
-        }),
-        now: prewarmNow,
-      }),
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ candidate: expect.objectContaining({ candidateType: "hotspot" }) }),
     );
-    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: "batch",
-        triggerSource: "cron",
-        locale: "zh_CN",
-        now: prewarmNow,
-      }),
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "batch" }),
     );
   });
 
