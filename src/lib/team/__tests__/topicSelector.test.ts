@@ -577,7 +577,9 @@ describe("selectPmDecisionTopics", () => {
     expect(selection.summary).toContain("市场信号");
     expect(selection.summary).toContain("24h -5.40%");
     expect(selection.summary).toContain("新闻热度、市场信号是主因");
-    expect(selection.summary).toContain("可执行性、市值权重提供辅助");
+    expect(selection.summary).not.toContain("可执行性");
+    expect(selection.summary).not.toContain("市值权重");
+    expect(selection.summary).not.toContain("候选池");
     expect(selection.summary).not.toContain("社交热度");
     expect(selection.summary.toLowerCase()).not.toContain("social");
     expect(selection.summary).not.toContain("high impact news");

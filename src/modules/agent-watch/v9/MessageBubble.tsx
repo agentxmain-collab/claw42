@@ -19,6 +19,36 @@ const AGENT_AVATAR: Record<DispatchAgentId, { label: string; className: string }
   memory_loop: { label: "∞", className: "a-mem" },
 };
 
+const COLLAPSED_SUMMARY_MAX_CHARS = 76;
+
+function compactCollapsedSummary(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length <= COLLAPSED_SUMMARY_MAX_CHARS) return normalized;
+
+  const firstSentenceEnd = normalized.search(/[。！？!?；;]/);
+  if (firstSentenceEnd > 0 && firstSentenceEnd + 1 <= COLLAPSED_SUMMARY_MAX_CHARS) {
+    return normalized.slice(0, firstSentenceEnd + 1).trim();
+  }
+
+  return normalized
+    .slice(0, COLLAPSED_SUMMARY_MAX_CHARS)
+    .replace(/[.。…，,、；;：:\s-]+$/g, "")
+    .trim();
+}
+
+function stripRepeatedSummaryPrefix(detail: string, summary: string) {
+  const cleanDetail = detail.trim();
+  const cleanSummary = summary.trim();
+  if (!cleanDetail || !cleanSummary) return cleanDetail;
+  if (cleanDetail === cleanSummary) return "";
+  if (!cleanDetail.startsWith(cleanSummary)) return cleanDetail;
+
+  return cleanDetail
+    .slice(cleanSummary.length)
+    .replace(/^[\s。；;，,、:：-]+/g, "")
+    .trim();
+}
+
 function MessageBubbleComponent({
   message,
   expandLabel = "展开全文",
@@ -30,20 +60,29 @@ function MessageBubbleComponent({
 }) {
   const avatar = AGENT_AVATAR[message.agentId];
   const [collapsed, setCollapsed] = React.useState(true);
+  const rawDetailText = message.content.trim();
+  const summaryText = message.oneLineSummary?.trim() ?? "";
+  const compactSummaryText = React.useMemo(
+    () => compactCollapsedSummary(summaryText || rawDetailText),
+    [rawDetailText, summaryText],
+  );
+  const dedupedDetailText = React.useMemo(
+    () => stripRepeatedSummaryPrefix(rawDetailText, summaryText),
+    [rawDetailText, summaryText],
+  );
+  const standaloneDetailText = dedupedDetailText || rawDetailText;
   const formattedContent = React.useMemo(
-    () => formatSafeContent(message.content),
-    [message.content],
+    () => formatSafeContent(standaloneDetailText),
+    [standaloneDetailText],
   );
   const formattedSummary = React.useMemo(
-    () => formatSafeContent(message.oneLineSummary ?? ""),
-    [message.oneLineSummary],
+    () => formatSafeContent(compactSummaryText),
+    [compactSummaryText],
   );
-  const detailText = message.content.trim();
-  const summaryText = message.oneLineSummary?.trim() ?? "";
   const hasDecisionLayer = Boolean(
     message.direction || message.confidence !== undefined || message.oneLineSummary,
   );
-  const hasExpandableDetail = Boolean(summaryText && detailText && detailText !== summaryText);
+  const hasExpandableDetail = Boolean(summaryText && dedupedDetailText);
   const expanded = hasExpandableDetail && !collapsed;
   const detailId = React.useMemo(
     () => `msg-detail-${message.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
@@ -135,7 +174,9 @@ function MessageBubbleComponent({
                 {expanded ? collapseLabel : expandLabel}
               </button>
             ) : null}
-            {!hasExpandableDetail ? <span className="msg-detail">{formattedContent}</span> : null}
+            {!hasExpandableDetail && !message.oneLineSummary ? (
+              <span className="msg-detail">{formattedContent}</span>
+            ) : null}
           </div>
         )}
       </div>

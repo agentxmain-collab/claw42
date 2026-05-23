@@ -129,6 +129,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     expect(selectionEvidence?.summary).toContain("本轮优先分析 ETH");
     expect(selectionEvidence?.summary).toContain("新闻热度、市场信号是主因");
     expect(selectionEvidence?.summary).toContain("24h -5.40%");
+    expect(selectionEvidence?.summary).not.toContain("依据：");
     expect(auditEvents).toEqual([
       expect.objectContaining({
         type: "candidate_considered",
@@ -169,6 +170,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
       evidence.id.startsWith("topic_selection:ETH:"),
     );
     expect(selectionEvidence?.summary).toContain("市场信号：ETH 24h -5.40%");
+    expect(selectionEvidence?.summary).not.toContain("候选池");
     expect(selectionEvidence?.summary).not.toContain("$eth");
     expect(selectionEvidence?.summary).not.toContain("$$");
   });
