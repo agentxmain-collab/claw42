@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, maxDuration } from "@/app/api/cron/strategy-replay/route";
 import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 import type { NewsItem } from "@/lib/types";
+import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 
 const normalizeNewsItemMock = vi.hoisted(() => vi.fn());
 const fetchNewsWithChainMock = vi.hoisted(() => vi.fn());
@@ -103,6 +104,61 @@ function pool(): CoinPoolPayload {
   };
 }
 
+function displayablePmTimelineEntry(
+  overrides: Partial<PublicTimelineEvent> = {},
+): PublicTimelineEvent {
+  const ts = now;
+  return {
+    id: "pm-decision:pm:BTC:test",
+    ts,
+    visibility: "public",
+    importance: "high",
+    sourceTrigger: "pm_decision",
+    evidenceIds: ["ev_1"],
+    locale: "zh_CN",
+    payload: {
+      kind: "pm_decision",
+      recordId: "pm:BTC:test",
+      symbol: "BTC",
+      candidateType: "symbol",
+      candidateKey: "BTC",
+      displayTitle: "BTC 实时行情分析",
+      executable: true,
+      tradeDecision: null,
+      rounds: [
+        {
+          round: 1,
+          memberId: "news_analyst",
+          rationale: "BTC information collection has public evidence and momentum context",
+        },
+      ],
+    },
+    ...overrides,
+  };
+}
+
+function hiddenPmTimelineEntry(): PublicTimelineEvent {
+  return displayablePmTimelineEntry({
+    payload: {
+      kind: "pm_decision",
+      recordId: "pm:BTC:hidden",
+      symbol: "BTC",
+      candidateType: "symbol",
+      candidateKey: "BTC",
+      displayTitle: "BTC 实时行情分析",
+      executable: true,
+      tradeDecision: null,
+      rounds: [
+        {
+          round: 2,
+          memberId: "bullish_researcher",
+          rationale: "BTC peer debate remains constructive",
+        },
+      ],
+    },
+  });
+}
+
 describe("/api/cron/strategy-replay", () => {
   it("declares enough runtime for inline PM generation when queue mode is disabled", () => {
     expect(maxDuration).toBeGreaterThanOrEqual(300);
@@ -180,7 +236,7 @@ describe("/api/cron/strategy-replay", () => {
         outputs: [
           {
             record: { id: "pm:BTC:test" },
-            publicTimelineEntry: {},
+            publicTimelineEntry: displayablePmTimelineEntry(),
             tradeDecision: {},
           },
         ],
@@ -293,7 +349,7 @@ describe("/api/cron/strategy-replay", () => {
       outputs: [
         {
           record: { id: "pm:BTC:cron" },
-          publicTimelineEntry: {},
+          publicTimelineEntry: displayablePmTimelineEntry(),
           tradeDecision: {},
         },
       ],
@@ -317,6 +373,28 @@ describe("/api/cron/strategy-replay", () => {
       }),
     );
     expect(runPmDecisionJobMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not report a generated PM decision when the output is not publicly displayable", async () => {
+    runPmDecisionJobMock.mockResolvedValueOnce({
+      job: { id: "pm-job:test", status: "succeeded" },
+      outputs: [
+        {
+          record: { id: "pm:BTC:hidden" },
+          publicTimelineEntry: hiddenPmTimelineEntry(),
+          tradeDecision: {},
+        },
+      ],
+      auditEvents: [],
+    });
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.pmDecisionGenerated).toBe(false);
+    expect(payload.generatedPmDecisions).toBe(0);
+    expect(payload.generatedHiddenPmDecisions).toBe(1);
   });
 
   it("caps inline resident prewarm work when queue mode is unavailable", async () => {
@@ -380,7 +458,26 @@ describe("/api/cron/strategy-replay", () => {
         outputs: [
           {
             record: { id: "pm:HOTSPOT:test" },
-            publicTimelineEntry: {},
+            publicTimelineEntry: displayablePmTimelineEntry({
+              id: "pm-decision:pm:HOTSPOT:test",
+              payload: {
+                kind: "pm_decision",
+                recordId: "pm:HOTSPOT:test",
+                symbol: "HOTSPOT",
+                candidateType: "hotspot",
+                candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
+                displayTitle: "热点叙事追踪",
+                executable: false,
+                tradeDecision: null,
+                rounds: [
+                  {
+                    round: 1,
+                    memberId: "news_analyst",
+                    rationale: "热点叙事具备公开信息收集发言",
+                  },
+                ],
+              },
+            }),
             tradeDecision: {},
           },
         ],

@@ -20,6 +20,7 @@ import { enqueuePmDecisionJob, readPmDecisionJobs } from "@/lib/watch/pmDecision
 import { residentPrewarmPlan } from "@/lib/watch/residentPrewarm";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
+import { isPublicDisplayablePmDecisionEvent } from "@/lib/watch/publicPmDecisionDisplay";
 import type { NewsItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -180,6 +181,8 @@ export async function GET(request: NextRequest) {
     ...residentPrewarmResults.flatMap((result) => result.outputs),
     ...(batchResult?.outputs ?? []),
   ];
+  const visiblePmDecisionOutputs = pmDecisionOutputs.filter(isPublicPmDecisionOutput);
+  const hiddenPmDecisionOutputs = pmDecisionOutputs.length - visiblePmDecisionOutputs.length;
   const providerTelemetry = summarizeProviderTelemetry({ since: now });
   await warnIfSingleProviderConcentration(providerTelemetry);
 
@@ -189,8 +192,9 @@ export async function GET(request: NextRequest) {
     fellBackFrom,
     generatedDebates: debates.length,
     locale,
-    pmDecisionGenerated: pmDecisionOutputs.length > 0,
-    generatedPmDecisions: pmDecisionOutputs.length,
+    pmDecisionGenerated: visiblePmDecisionOutputs.length > 0,
+    generatedPmDecisions: visiblePmDecisionOutputs.length,
+    generatedHiddenPmDecisions: hiddenPmDecisionOutputs,
     pmPartialStageUpdates,
     pmDecisionJobId: batchResult?.job.id ?? null,
     pmDecisionJobStatus: batchResult?.jobResult?.job.status ?? batchResult?.job.status ?? null,
@@ -214,7 +218,7 @@ export async function GET(request: NextRequest) {
     },
     residentPrewarmSla: residentPlan.residentStatus,
     residentPrewarmGenerated: residentPrewarmResults.reduce(
-      (total, result) => total + result.outputs.length,
+      (total, result) => total + result.outputs.filter(isPublicPmDecisionOutput).length,
       0,
     ),
     residentPrewarmQueued: residentPrewarmResults.filter(
@@ -285,6 +289,10 @@ async function dispatchPmDecisionJob({
 }
 
 type DispatchPmDecisionJobResult = Awaited<ReturnType<typeof dispatchPmDecisionJob>>;
+
+function isPublicPmDecisionOutput(output: DispatchPmDecisionJobResult["outputs"][number]) {
+  return isPublicDisplayablePmDecisionEvent(output.publicTimelineEntry);
+}
 
 function isLockedInlineSkip(result: DispatchPmDecisionJobResult) {
   if (result.outputs.length > 0) return false;

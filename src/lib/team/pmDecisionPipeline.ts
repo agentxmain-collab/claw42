@@ -165,6 +165,15 @@ const PIPELINE_INPUT_MEMBER_IDS: TeamMemberId[] = [...CORE_ANALYST_IDS, ...UPGRA
 
 const PROMPT_VERSION = "pm-decision-pipeline-v2";
 
+function hasPublicInformationCollectionRoundOutput(outputs: readonly MultiRoundAnalystOutput[]) {
+  return outputs.some(
+    (output) =>
+      output.round <= 1 &&
+      CORE_ANALYST_IDS.includes(output.memberId) &&
+      output.rationale.trim().length > 0,
+  );
+}
+
 function importanceRank(value: PublicTimelineImportance) {
   return { low: 0, medium: 1, high: 2, critical: 3 }[value];
 }
@@ -1542,7 +1551,7 @@ export async function runPmDecisionPipeline(
       });
       return null;
     }
-    if (!publicAnalystRoundOutputs.some((output) => output.round === 1)) {
+    if (!hasPublicInformationCollectionRoundOutput(publicAnalystRoundOutputs)) {
       await writeSkippedRun({
         skipReason: "no_public_analyst_stage_one_outputs",
         activeStage: "analyst_inputs",

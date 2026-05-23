@@ -738,6 +738,60 @@ describe("runPmDecisionPipeline", () => {
     );
   });
 
+  it("does not publish a public run when only non-information roles have public round one voice", async () => {
+    const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
+      void run;
+    });
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn();
+    const generateLeadOutput = vi.fn();
+    const informationCollectionMembers: TeamMemberId[] = [
+      "fundamental_analyst",
+      "news_analyst",
+      "chart_analyst",
+      "onchain_analyst",
+    ];
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async (memberId) => ({
+          ...analystOutput(memberId),
+          rationale: informationCollectionMembers.includes(memberId)
+            ? "等待后续数据更新再参与。"
+            : "BTC holds 76000 with constructive momentum after peer review",
+        })),
+        generateLeadOutput,
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord: vi.fn(async (record: StrategyDecisionRecord) => {
+          void record;
+        }),
+        upsertDecisionRun,
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(generateLeadOutput).not.toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+    expect(upsertDecisionRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: "skipped",
+        skipReason: "no_public_analyst_stage_one_outputs",
+        publicTimelineEventId: null,
+      }),
+    );
+  });
+
   it("normalizes input symbols before creating PM records", async () => {
     const recordStrategyDecisionRecord = vi.fn(async (record) => record);
     const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
