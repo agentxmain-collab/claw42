@@ -10,6 +10,11 @@ function countOccurrences(value: string, needle: string) {
   return value.split(needle).length - 1;
 }
 
+function firstSummarySpan(html: string) {
+  const summaryHtml = html.match(/<div class="msg-summary">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  return summaryHtml.match(/<span[^>]*>([\s\S]*?)<\/span>/)?.[1] ?? "";
+}
+
 describe("TopicBody", () => {
   test("hides unreached pending stages for an active in-progress topic", () => {
     const sourceTopic = dispatchTopics[0]!;
@@ -96,12 +101,50 @@ describe("TopicBody", () => {
     };
 
     const html = renderToStaticMarkup(<TopicBody topic={topic} bodyId="compact-summary-body" />);
-    const summaryHtml = html.match(/<div class="msg-summary">([\s\S]*?)<\/div>/)?.[1] ?? "";
+    const summaryHtml = firstSummarySpan(html);
 
     expect(summaryHtml).toContain("核心失效模式是BTC");
     expect(summaryHtml).not.toContain("当前NEAR");
     expect(html).toContain("展开全文");
     expect(html).toContain("完整内容包含完整判断与更多上下文");
+  });
+
+  test("forces expand control for a long oneLineSummary without punctuation even when content matches", () => {
+    const sourceTopic = dispatchTopics[0]!;
+    const longText =
+      "BTC 24小时下跌2.84%至75258美元，跌破76000心理支撑位，ETH、SOL、HYPE、ZEC全线放量下行，恐慌指数28处于极度恐惧区间但未完成反转确认";
+    const topic = {
+      ...sourceTopic,
+      id: "long-summary-no-punctuation-topic",
+      stages: [
+        {
+          id: "long-summary-no-punctuation-stage-1",
+          label: "阶段 2 · 多空辩论",
+          status: "done" as const,
+        },
+      ],
+      messages: [
+        {
+          ...sourceTopic.messages[0]!,
+          id: "long-summary-no-punctuation-message-1",
+          stageId: "long-summary-no-punctuation-stage-1",
+          oneLineSummary: longText,
+          content: longText,
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <TopicBody topic={topic} bodyId="long-summary-no-punctuation-body" />,
+    );
+    const summaryHtml = firstSummarySpan(html);
+
+    expect(summaryHtml).toContain("BTC 24小时下跌2.84%");
+    expect(summaryHtml).toContain("...");
+    expect(summaryHtml).not.toContain("但未完成反转确认");
+    expect(html).toContain("展开全文");
+    expect(html).toContain('id="msg-detail-long-summary-no-punctuation-message-1" hidden=""');
+    expect(html).toContain(longText);
   });
 
   test("does not render the same PM summary twice when summary and content match", () => {

@@ -19,34 +19,41 @@ const AGENT_AVATAR: Record<DispatchAgentId, { label: string; className: string }
   memory_loop: { label: "∞", className: "a-mem" },
 };
 
-const COLLAPSED_SUMMARY_MAX_CHARS = 76;
+const COLLAPSED_SUMMARY_MAX_CHARS = 60;
+
+function firstSentenceBoundary(value: string) {
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (!char || !"。！？!?；;.".includes(char)) continue;
+    if (char === "." && /\d/.test(value[index - 1] ?? "") && /\d/.test(value[index + 1] ?? "")) {
+      continue;
+    }
+    return index;
+  }
+
+  return -1;
+}
 
 function compactCollapsedSummary(value: string) {
   const normalized = value.replace(/\s+/g, " ").trim();
-  if (normalized.length <= COLLAPSED_SUMMARY_MAX_CHARS) return normalized;
-
-  const firstSentenceEnd = normalized.search(/[。！？!?；;]/);
-  if (firstSentenceEnd > 0 && firstSentenceEnd + 1 <= COLLAPSED_SUMMARY_MAX_CHARS) {
-    return normalized.slice(0, firstSentenceEnd + 1).trim();
+  if (normalized.length <= COLLAPSED_SUMMARY_MAX_CHARS) {
+    return { text: normalized, truncated: false };
   }
 
-  return normalized
+  const firstSentenceEnd = firstSentenceBoundary(normalized);
+  if (firstSentenceEnd > 0) {
+    const firstSentence = normalized.slice(0, firstSentenceEnd + 1).trim();
+    if (firstSentence.length <= COLLAPSED_SUMMARY_MAX_CHARS) {
+      return { text: firstSentence, truncated: firstSentence.length < normalized.length };
+    }
+  }
+
+  const text = normalized
     .slice(0, COLLAPSED_SUMMARY_MAX_CHARS)
     .replace(/[.。…，,、；;：:\s-]+$/g, "")
     .trim();
-}
 
-function stripRepeatedSummaryPrefix(detail: string, summary: string) {
-  const cleanDetail = detail.trim();
-  const cleanSummary = summary.trim();
-  if (!cleanDetail || !cleanSummary) return cleanDetail;
-  if (cleanDetail === cleanSummary) return "";
-  if (!cleanDetail.startsWith(cleanSummary)) return cleanDetail;
-
-  return cleanDetail
-    .slice(cleanSummary.length)
-    .replace(/^[\s。；;，,、:：-]+/g, "")
-    .trim();
+  return { text: `${text}...`, truncated: text.length < normalized.length };
 }
 
 function MessageBubbleComponent({
@@ -66,23 +73,23 @@ function MessageBubbleComponent({
     () => compactCollapsedSummary(summaryText || rawDetailText),
     [rawDetailText, summaryText],
   );
-  const dedupedDetailText = React.useMemo(
-    () => stripRepeatedSummaryPrefix(rawDetailText, summaryText),
-    [rawDetailText, summaryText],
-  );
-  const standaloneDetailText = dedupedDetailText || rawDetailText;
+  const standaloneDetailText = rawDetailText || summaryText;
   const formattedContent = React.useMemo(
     () => formatSafeContent(standaloneDetailText),
     [standaloneDetailText],
   );
   const formattedSummary = React.useMemo(
-    () => formatSafeContent(compactSummaryText),
-    [compactSummaryText],
+    () => formatSafeContent(compactSummaryText.text),
+    [compactSummaryText.text],
   );
   const hasDecisionLayer = Boolean(
     message.direction || message.confidence !== undefined || message.oneLineSummary,
   );
-  const hasExpandableDetail = Boolean(summaryText && dedupedDetailText);
+  const hasExpandableDetail = Boolean(
+    summaryText &&
+    standaloneDetailText &&
+    (compactSummaryText.truncated || standaloneDetailText !== summaryText),
+  );
   const expanded = hasExpandableDetail && !collapsed;
   const detailId = React.useMemo(
     () => `msg-detail-${message.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
