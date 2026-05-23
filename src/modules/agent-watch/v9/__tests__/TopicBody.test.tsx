@@ -86,4 +86,29 @@ describe("TopicBody", () => {
     expect(hiddenDetailRule).toBeGreaterThan(detailDisplayRule);
     expect(css.slice(hiddenDetailRule, hiddenDetailRule + 90)).toContain("display: none");
   });
+
+  test("keeps expanded detail at body text weight below candidate summary", () => {
+    const css = readFileSync(
+      path.join(process.cwd(), "src/modules/agent-watch/v9/dispatchConsoleV9.module.css"),
+      "utf8",
+    );
+
+    const triggerRule = css.slice(
+      css.indexOf(".root :global(.trigger-text) {"),
+      css.indexOf(".root :global(.topic-body) {"),
+    );
+    const summaryRule = css.slice(
+      css.indexOf(".root :global(.msg-summary) {"),
+      css.indexOf(".root :global(.msg-expand) {"),
+    );
+    const detailRule = css.slice(
+      css.indexOf(".root :global(.msg-detail) {"),
+      css.indexOf(".root :global(.msg-detail[hidden]) {"),
+    );
+
+    expect(triggerRule).toContain("font-size: 18px");
+    expect(summaryRule).toContain("font-size: 16px");
+    expect(detailRule).toContain("font-size: 13px");
+    expect(detailRule).toContain("font-weight: 400");
+  });
 });

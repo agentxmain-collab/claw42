@@ -1115,6 +1115,10 @@
 }
 .root :global(.msg-detail) {
   display: block;
+  color: var(--fg-2);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
 }
 .root :global(.msg-detail[hidden]) {
   display: none;
