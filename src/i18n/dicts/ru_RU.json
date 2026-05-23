@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "Развернуть текст",
+        "messageCollapse": "Свернуть",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [

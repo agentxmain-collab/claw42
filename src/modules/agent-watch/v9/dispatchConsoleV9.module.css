@@ -903,8 +903,10 @@
 }
 .root :global(.trigger) {
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  flex: 1 1 520px;
+  gap: 10px;
+  min-width: 0;
   font-size: 11px;
   color: var(--fg-3);
 }
@@ -921,9 +923,10 @@
   color: var(--lime);
 }
 .root :global(.trigger-text) {
-  color: var(--fg-3);
-  font-size: 11px;
-  line-height: 1.4;
+  color: var(--fg);
+  font-size: 18px;
+  font-weight: 760;
+  line-height: 1.45;
 }
 
 .root :global(.topic-body) {
@@ -1077,6 +1080,48 @@
   font-weight: 750;
   line-height: 1.45;
 }
+.root :global(.msg-expand) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-top: 2px;
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 0;
+  color: var(--lime);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.root :global(.msg-expand:hover) {
+  color: var(--fg);
+}
+.root :global(.msg-expand:focus-visible) {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+.root :global(.msg-expand-icon) {
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid currentColor;
+  transition: transform 0.16s ease;
+}
+.root :global(.msg-expand[aria-expanded="true"] .msg-expand-icon) {
+  transform: rotate(90deg);
+}
+.root :global(.msg-detail) {
+  display: block;
+}
+.root :global(.msg-detail.collapsed) {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
 .root :global(.data-status) {
   width: fit-content;
   padding: 4px 8px;
@@ -1125,6 +1170,15 @@
   color: var(--purple-2);
   font-weight: 700;
   margin-right: 6px;
+}
+
+@media (max-width: 720px) {
+  .root :global(.trigger) {
+    flex-basis: 100%;
+  }
+  .root :global(.trigger-text) {
+    font-size: 16px;
+  }
 }
 
 .root :global(.stage-marker) {

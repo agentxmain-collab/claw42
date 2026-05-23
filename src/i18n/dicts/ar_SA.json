@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "عرض النص الكامل",
+        "messageCollapse": "طي",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [

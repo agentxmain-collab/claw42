@@ -673,6 +673,8 @@
         "statusActive": "LIVE 辯論",
         "collapse": "收起",
         "expand": "展开",
+        "messageExpand": "展開全文",
+        "messageCollapse": "收起",
         "original": "原文 →",
         "progressAriaLabel": "决策流程进度",
         "progressLabels": [

@@ -43,4 +43,31 @@ describe("TopicBody", () => {
     expect(html).not.toContain("阶段 4 · 风险审查");
     expect(html).not.toContain("等待风险审查");
   });
+
+  test("collapses detailed agent rationale behind an accessible control", () => {
+    const sourceTopic = dispatchTopics[0]!;
+    const topic = {
+      ...sourceTopic,
+      id: "expandable-message-topic",
+      stages: [{ id: "expandable-stage-1", label: "阶段 1 · 信息收集", status: "done" as const }],
+      messages: [
+        {
+          ...sourceTopic.messages[0]!,
+          id: "expandable-message-1",
+          stageId: "expandable-stage-1",
+          oneLineSummary: "主结论只看这一行",
+          content: "这里是默认折叠的完整分析内容，但仍保留在 DOM 里。",
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(<TopicBody topic={topic} bodyId="expandable-body" />);
+
+    expect(html).toContain("主结论只看这一行");
+    expect(html).toContain("展开全文");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-controls="msg-detail-expandable-message-1"');
+    expect(html).toContain('class="msg-detail collapsed"');
+    expect(html).toContain("这里是默认折叠的完整分析内容，但仍保留在 DOM 里。");
+  });
 });

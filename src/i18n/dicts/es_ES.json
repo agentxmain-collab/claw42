@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "Ver texto completo",
+        "messageCollapse": "Contraer",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [

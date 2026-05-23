@@ -17,7 +17,17 @@ function StageMarker({ stage }: { stage: DispatchStageMarker }) {
   );
 }
 
-export function TopicBody({ topic, bodyId }: { topic: DispatchTopic; bodyId: string }) {
+export function TopicBody({
+  topic,
+  bodyId,
+  messageExpandLabel,
+  messageCollapseLabel,
+}: {
+  topic: DispatchTopic;
+  bodyId: string;
+  messageExpandLabel?: string;
+  messageCollapseLabel?: string;
+}) {
   const stageRows = topic.stages
     .map((stage) => ({
       stage,
@@ -40,7 +50,12 @@ export function TopicBody({ topic, bodyId }: { topic: DispatchTopic; bodyId: str
         <React.Fragment key={stage.id}>
           <StageMarker stage={stage} />
           {messages.map((message) => (
-            <MessageBubble message={message} key={message.id} />
+            <MessageBubble
+              message={message}
+              expandLabel={messageExpandLabel}
+              collapseLabel={messageCollapseLabel}
+              key={message.id}
+            />
           ))}
           {stage.note ? <div className="pending-stub">{stage.note}</div> : null}
         </React.Fragment>

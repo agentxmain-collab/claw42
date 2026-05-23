@@ -265,6 +265,8 @@ export type DispatchV10Dict = {
     statusActive: string;
     collapse: string;
     expand: string;
+    messageExpand: string;
+    messageCollapse: string;
     original: string;
     progressAriaLabel: string;
     progressLabels: string[];

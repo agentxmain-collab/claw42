@@ -154,18 +154,14 @@ function formatTime(ts: number) {
   }).format(new Date(ts));
 }
 
-function minutesBetween(start: number, end: number) {
-  return Math.max(0, Math.round((end - start) / 60_000));
-}
-
 function formatDataAge(ts: number, now: number) {
   const seconds = Math.max(0, Math.round((now - ts) / 1000));
-  if (seconds < 60) return `数据 ${seconds} 秒前`;
+  if (seconds < 60) return `${seconds} 秒前分析`;
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `数据 ${minutes} 分钟前`;
+  if (minutes < 60) return `${minutes} 分钟前分析`;
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `数据 ${hours} 小时前`;
-  return `数据 ${Math.round(hours / 24)} 天前`;
+  if (hours < 24) return `${hours} 小时前分析`;
+  return `${Math.round(hours / 24)} 天前分析`;
 }
 
 function formatPrice(value: number) {
@@ -927,7 +923,7 @@ function makeProgress(
   hasRationale: boolean,
   analysisOnlyComplete: boolean,
 ) {
-  if (analysisOnlyComplete) return `${minutesBetween(group.startedAt, now)} 分钟闭环`;
+  if (analysisOnlyComplete) return formatDataAge(group.latestAt, now);
   if (!hasRenderableTradeDecision) {
     const currentStage = currentStageFromTrace(group.latestDecision, hasRenderableTradeDecision);
     if (currentStage) {
@@ -939,7 +935,7 @@ function makeProgress(
     }
     return hasRationale ? fallbackCurrentStageProgress(group.latestDecision, now) : "暂无决策更新";
   }
-  return `${minutesBetween(group.startedAt, now)} 分钟闭环`;
+  return formatDataAge(group.latestAt, now);
 }
 
 function strategySortTime(group: DispatchTopicGroup) {

@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "全文を展開",
+        "messageCollapse": "閉じる",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [

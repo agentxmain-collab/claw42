@@ -17,8 +17,17 @@ const AGENT_AVATAR: Record<DispatchAgentId, { label: string; className: string }
   memory_loop: { label: "∞", className: "a-mem" },
 };
 
-function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
+function MessageBubbleComponent({
+  message,
+  expandLabel = "展开全文",
+  collapseLabel = "收起",
+}: {
+  message: DispatchMessage;
+  expandLabel?: string;
+  collapseLabel?: string;
+}) {
   const avatar = AGENT_AVATAR[message.agentId];
+  const [expanded, setExpanded] = React.useState(false);
   const formattedContent = React.useMemo(
     () => formatSafeContent(message.content),
     [message.content],
@@ -29,6 +38,11 @@ function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
   );
   const hasDecisionLayer = Boolean(
     message.direction || message.confidence !== undefined || message.oneLineSummary,
+  );
+  const hasExpandableDetail = Boolean(message.oneLineSummary && message.content.trim());
+  const detailId = React.useMemo(
+    () => `msg-detail-${message.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
+    [message.id],
   );
   const confidencePct =
     typeof message.confidence === "number"
@@ -91,8 +105,29 @@ function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
                 ) : null}
               </div>
             ) : null}
-            {hasDecisionLayer ? <div className="msg-divider" aria-hidden="true" /> : null}
-            <span>{formattedContent}</span>
+            {hasDecisionLayer && hasExpandableDetail ? (
+              <button
+                className="msg-expand"
+                type="button"
+                aria-expanded={expanded}
+                aria-controls={detailId}
+                onClick={() => setExpanded((value) => !value)}
+              >
+                <span className="msg-expand-icon" aria-hidden="true" />
+                {expanded ? collapseLabel : expandLabel}
+              </button>
+            ) : null}
+            {hasDecisionLayer && hasExpandableDetail && expanded ? (
+              <div className="msg-divider" aria-hidden="true" />
+            ) : null}
+            <span
+              id={hasExpandableDetail ? detailId : undefined}
+              className={["msg-detail", hasExpandableDetail && !expanded ? "collapsed" : ""]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {formattedContent}
+            </span>
           </div>
         )}
       </div>

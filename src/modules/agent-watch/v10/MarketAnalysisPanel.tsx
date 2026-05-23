@@ -575,7 +575,12 @@ function TopicCardV10({
         onToggle={onToggle}
         dict={dict}
       />
-      <TopicBody topic={topic} bodyId={bodyId} />
+      <TopicBody
+        topic={topic}
+        bodyId={bodyId}
+        messageExpandLabel={dict.market.messageExpand}
+        messageCollapseLabel={dict.market.messageCollapse}
+      />
       <TopicStrategyV10
         topic={topic}
         latest={latest}

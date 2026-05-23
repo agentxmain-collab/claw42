@@ -408,7 +408,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       status: "pending",
       note: "跟踪中 · 预期 7 小时后回写",
     });
-    expect(topic.messages[0]?.dataAge).toBe("数据 17 小时前");
+    expect(topic.messages[0]?.dataAge).toBe("17 小时前分析");
   });
 
   it("marks memory-loop writeback as overdue after the expected window", () => {
@@ -441,7 +441,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       status: "pending",
       note: "跟踪超时 · 已超过预期 3 小时",
     });
-    expect(topic.messages[0]?.dataAge).toBe("数据 1 天前");
+    expect(topic.messages[0]?.dataAge).toBe("1 天前分析");
   });
 
   it("drops non-CoinW futures symbol decisions from the public beta board", () => {
@@ -758,7 +758,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.status).toBe("active");
     expect(topic.title).toBe("BTC 实时行情分析");
     expect(topic.explanation).toBe("分析进行中");
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 0 秒前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 0 秒前分析");
     expect(topic.strategy).toMatchObject({
       action: "pending",
       actionLabel: "分析中",
@@ -863,7 +863,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("done");
-    expect(topic.progress).toBe("12 分钟闭环");
+    expect(topic.progress).toBe("12 分钟前分析");
     expect(topic.stages.slice(0, 4).map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -913,7 +913,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("active");
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 0 秒前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 0 秒前分析");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -1005,7 +1005,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("active");
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 1 分钟前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 1 分钟前分析");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -1088,7 +1088,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 1 分钟前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 1 分钟前分析");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -1181,7 +1181,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 1 分钟前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 1 分钟前分析");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -1662,7 +1662,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.status).toBe("active");
     expect(topic.title).toBe("BTC 实时行情分析");
     expect(topic.explanation).toBe("分析进行中");
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 0 秒前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 0 秒前分析");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
