@@ -854,5 +854,12 @@
     "Hold": "持有",
     "Sell": "卖出",
     "StrongSell": "强烈卖出"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

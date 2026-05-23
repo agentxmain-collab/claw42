@@ -17,7 +17,7 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/:path*",
+        source: "/((?!embed/copy-trading).*)",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
@@ -37,6 +37,30 @@ const nextConfig = {
               "font-src 'self' data:",
               "connect-src 'self' https://api.coingecko.com https://pro-api.coingecko.com https://api.alternative.me https://min-api.cryptocompare.com https://www.coindesk.com https://cointelegraph.com https://decrypt.co https://www.binance.com https://api.minimaxi.com https://api.deepseek.com https://api.anthropic.com https://app.posthog.com https://us.i.posthog.com https://eu.i.posthog.com https://cryptopanic.com https://api.qrserver.com https://qrserver.com",
               "frame-ancestors 'none'",
+            ].join("; "),
+          },
+        ],
+      },
+      {
+        source: "/embed/copy-trading",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https:",
+              "font-src 'self' data:",
+              "connect-src 'self'",
+              "frame-ancestors https://www.coinw.com https://*.coinw.com",
             ].join("; "),
           },
         ],

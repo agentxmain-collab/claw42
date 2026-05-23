@@ -18,4 +18,17 @@ describe("analytics event registry", () => {
       ]),
     );
   });
+
+  test("allows CoinW external-entry amend events", () => {
+    expect(ANALYTICS_EVENTS).toEqual(
+      expect.arrayContaining([
+        "claw42_external_entry",
+        "claw42_landing_rendered",
+        "claw42_stage_viewed",
+        "claw42_card_expanded",
+        "claw42_dwell_check",
+        "claw42_session_end",
+      ]),
+    );
+  });
 });

@@ -69,6 +69,10 @@ export async function POST(request: NextRequest) {
       referrer: typeof context.referrer === "string" ? context.referrer.slice(0, 240) : undefined,
       viewport: typeof context.viewport === "string" ? context.viewport.slice(0, 40) : undefined,
       language: typeof context.language === "string" ? context.language.slice(0, 40) : undefined,
+      landing_id:
+        typeof context.landing_id === "string" ? context.landing_id.slice(0, 80) : undefined,
+      from: typeof context.from === "string" ? context.from.slice(0, 100) : undefined,
+      sig_valid: typeof context.sig_valid === "boolean" ? context.sig_valid : undefined,
       device: getDeviceType(userAgent),
       utm: cleanProperties(context.utm),
       properties: cleanProperties(payload.properties),

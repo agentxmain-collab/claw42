@@ -854,5 +854,12 @@
     "Hold": "Mantener",
     "Sell": "Venta",
     "StrongSell": "Venta fuerte"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }
