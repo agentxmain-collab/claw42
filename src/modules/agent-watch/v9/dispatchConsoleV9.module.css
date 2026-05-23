@@ -1116,6 +1116,9 @@
 .root :global(.msg-detail) {
   display: block;
 }
+.root :global(.msg-detail[hidden]) {
+  display: none;
+}
 .root :global(.msg-detail.collapsed) {
   max-height: 0;
   overflow: hidden;

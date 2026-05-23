@@ -1,4 +1,6 @@
 import React from "react";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { dispatchTopics } from "../fixtureData";
@@ -69,5 +71,19 @@ describe("TopicBody", () => {
     expect(html).toContain('aria-controls="msg-detail-expandable-message-1"');
     expect(html).toContain('id="msg-detail-expandable-message-1" hidden="" class="msg-detail"');
     expect(html).toContain("这里是默认折叠的完整分析内容，但仍保留在 DOM 里。");
+  });
+
+  test("keeps collapsed detail visually hidden even though detail nodes are block-level", () => {
+    const css = readFileSync(
+      path.join(process.cwd(), "src/modules/agent-watch/v9/dispatchConsoleV9.module.css"),
+      "utf8",
+    );
+
+    const detailDisplayRule = css.indexOf(".root :global(.msg-detail) {");
+    const hiddenDetailRule = css.indexOf(".root :global(.msg-detail[hidden]) {");
+
+    expect(detailDisplayRule).toBeGreaterThanOrEqual(0);
+    expect(hiddenDetailRule).toBeGreaterThan(detailDisplayRule);
+    expect(css.slice(hiddenDetailRule, hiddenDetailRule + 90)).toContain("display: none");
   });
 });

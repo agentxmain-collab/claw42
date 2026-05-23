@@ -29,7 +29,7 @@ function MessageBubbleComponent({
   collapseLabel?: string;
 }) {
   const avatar = AGENT_AVATAR[message.agentId];
-  const [expanded, setExpanded] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(true);
   const formattedContent = React.useMemo(
     () => formatSafeContent(message.content),
     [message.content],
@@ -44,6 +44,7 @@ function MessageBubbleComponent({
     message.direction || message.confidence !== undefined || message.oneLineSummary,
   );
   const hasExpandableDetail = Boolean(summaryText && detailText && detailText !== summaryText);
+  const expanded = hasExpandableDetail && !collapsed;
   const detailId = React.useMemo(
     () => `msg-detail-${message.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
     [message.id],
@@ -125,10 +126,10 @@ function MessageBubbleComponent({
                 onKeyDown={(event) => {
                   if (event.key === "Escape" && expanded) {
                     event.preventDefault();
-                    setExpanded(false);
+                    setCollapsed(true);
                   }
                 }}
-                onClick={() => setExpanded((value) => !value)}
+                onClick={() => setCollapsed((value) => !value)}
               >
                 <span className="msg-expand-icon" aria-hidden="true" />
                 {expanded ? collapseLabel : expandLabel}
