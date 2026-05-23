@@ -711,7 +711,11 @@
         "feedbackPrompt": "この分析は役に立ちましたか",
         "feedbackHelpful": "役に立った",
         "feedbackNotHelpful": "役に立たない",
-        "feedbackThanks": "記録しました"
+        "feedbackThanks": "記録しました",
+        "observationSummaryLabel": "__TBD__",
+        "coinwNavigate": "__TBD__",
+        "staleReason": "__TBD__",
+        "staleAgePrefix": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",
@@ -729,7 +733,8 @@
         "in_progress": "進行中",
         "in_progressNote": "この段階は部分更新を書き込み中です",
         "done": "完了",
-        "memoryPending": "結果の書き戻し待ち"
+        "memoryPending": "結果の書き戻し待ち",
+        "observationOnly": "__TBD__"
       },
       "topicRanking": {
         "explanation_template": "{symbol} は {news_count} 件のニュース + {confidence}% の信頼度で第 {rank} 位",
@@ -796,6 +801,10 @@
         "missing_onchain": "オンチェーンシグナル待ち",
         "missing_fundamental": "ファンダメンタルシグナル待ち",
         "missing_market": "市場背景待ち"
+      },
+      "message": {
+        "expand": "__TBD__",
+        "collapse": "__TBD__"
       }
     },
     "admin": {

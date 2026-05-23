@@ -49,9 +49,6 @@ export function TopicHead({
       />
       <div className="topic-eyebrow" aria-live={topic.status === "active" ? "polite" : "off"}>
         <span className="live-tag">{liveLabel}</span>
-        <span className="topic-source">
-          · {topic.startedAt} 起 · {topic.progress}
-        </span>
       </div>
       <h2 id={`${bodyId}-title`} className="topic-title">
         {topic.title}

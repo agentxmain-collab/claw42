@@ -43,4 +43,35 @@ describe("TopicBody", () => {
     expect(html).not.toContain("阶段 4 · 风险审查");
     expect(html).not.toContain("等待风险审查");
   });
+
+  test("renders a long public rationale collapsed with the full text still present", () => {
+    const sourceTopic = dispatchTopics[0]!;
+    const longContent =
+      "这是一个很长的分析段落，用来验证角色发言默认折叠但完整文本仍然留在 DOM 中。".repeat(5);
+    const topic = {
+      ...sourceTopic,
+      id: "long-message-topic",
+      messages: [
+        {
+          ...sourceTopic.messages[0]!,
+          id: "long-message-1",
+          stageId: sourceTopic.stages[0]!.id,
+          content: longContent,
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <TopicBody
+        topic={topic}
+        bodyId="long-message-body"
+        messageLabels={{ expand: "展开全文", collapse: "收起" }}
+      />,
+    );
+
+    expect(html).toContain("msg-content collapsed");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("展开全文");
+    expect(html).toContain(longContent);
+  });
 });

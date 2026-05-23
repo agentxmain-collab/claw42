@@ -391,6 +391,19 @@ function makePartialStages(
   const researchStatus = statusFor("research_lead");
   const tradeStatus = statusFor("trade_decision");
   const riskStatus = statusFor("risk_lead");
+  const analysisObservationComplete =
+    analysisOnlyCandidate &&
+    analystStatus === "done" &&
+    researchStatus === "done" &&
+    tradeStatus === "done" &&
+    riskStatus === "done" &&
+    statusFor("public_timeline") === "done";
+  const observationStatus = (status: PartialTraceStatus): DispatchStageMarker["status"] =>
+    analysisObservationComplete ? mappedStatus(status) : "pending";
+  const observationNote = (status: PartialTraceStatus) =>
+    analysisObservationComplete && status === "done"
+      ? stageStatusDict.observationOnly
+      : noteFor(status);
 
   return [
     {
@@ -417,15 +430,29 @@ function makePartialStages(
       status: mappedStatus(riskStatus),
       note: noteFor(riskStatus),
     },
-    { id: stageId(topicId, 5), label: "阶段 5 · 最终决策", status: "pending" },
-    hasMemoryLoop
-      ? { id: stageId(topicId, 6), label: "阶段 6 · 复盘沉淀", status: "done" }
-      : {
+    analysisOnlyCandidate
+      ? {
+          id: stageId(topicId, 5),
+          label: "阶段 5 · 观察结论",
+          status: observationStatus(statusFor("record_write")),
+          note: observationNote(statusFor("record_write")),
+        }
+      : { id: stageId(topicId, 5), label: "阶段 5 · 最终决策", status: "pending" },
+    analysisOnlyCandidate
+      ? {
           id: stageId(topicId, 6),
-          label: "阶段 6 · 复盘沉淀",
-          status: "pending",
-          note: stageStatusDict.memoryPending,
-        },
+          label: "阶段 6 · 观察结论",
+          status: observationStatus(statusFor("public_timeline")),
+          note: observationNote(statusFor("public_timeline")),
+        }
+      : hasMemoryLoop
+        ? { id: stageId(topicId, 6), label: "阶段 6 · 复盘沉淀", status: "done" }
+        : {
+            id: stageId(topicId, 6),
+            label: "阶段 6 · 复盘沉淀",
+            status: "pending",
+            note: stageStatusDict.memoryPending,
+          },
   ];
 }
 
@@ -743,10 +770,44 @@ function makeStrategy(
   stats: FollowStatsSnapshot | undefined,
   hasRationale: boolean,
   executable: boolean,
+  analysisOnlyCandidate: boolean,
   analysisOnlyComplete: boolean,
+  observationSummaryLabel: string,
+  observationOnlyLabel: string,
 ): DispatchStrategy {
   const decision = renderableTradeDecision(group.latestDecision);
   const ticker = `$${group.symbol}`;
+
+  if (analysisOnlyCandidate) {
+    const actionLabel = analysisOnlyComplete ? "已完成" : hasRationale ? "分析中" : "等待中";
+    const summary =
+      group.latestDecision.payload.analysisSummary ||
+      (hasRationale ? "观察分析进行中" : "等待真实分析写入");
+
+    return {
+      mode: "observation",
+      action: "pending",
+      actionLabel,
+      name: observationSummaryLabel,
+      ticker,
+      meta: analysisOnlyComplete
+        ? observationOnlyLabel
+        : hasRationale
+          ? "观察分析进行中"
+          : "等待真实分析写入",
+      entry: "",
+      stopLoss: "",
+      takeProfit: "",
+      observationSummary: summary,
+      follow: {
+        primaryLabel: "去 CoinW 看合约",
+        primaryDisabled: false,
+        secondaryLabel: "提醒我",
+        watchCount: stats?.watchCount ?? 0,
+        followCount: stats?.followCount ?? 0,
+      },
+    };
+  }
 
   if (!decision) {
     const actionLabel = analysisOnlyComplete ? "已完成" : hasRationale ? "分析中" : "等待中";
@@ -924,6 +985,8 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
     const hasRationale = hasEventRationale(latest);
     const hasMemoryLoop = hasMemoryLoopRationale(latest);
     const analysisOnlyComplete = hasAnalysisOnlyCompletion(latest);
+    const analysisOnlyCandidate = isAnalysisOnlyEvent(latest);
+    const currentDict = dispatchDict(ctx.locale);
     const status =
       hasTradeDecision || analysisOnlyComplete ? "done" : hasRationale ? "active" : "pending";
     const symbolMapping = resolveSymbolMapping(group.symbol);
@@ -941,6 +1004,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       displayTitle: group.displayTitle,
       symbol: group.symbol,
       lastUpdatedAt: group.latestAt,
+      freshnessStatus: latest.payload.freshnessStatus,
       execution: {
         executable,
         coinwPair,
@@ -978,7 +1042,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         ctx.outcomeDict,
         ctx.stageStatusDict,
         latest,
-        isAnalysisOnlyEvent(latest),
+        analysisOnlyCandidate,
       ),
       messages: makeMessages(group, ctx.locale, now, hasRationale, ctx.outcomeDict, ctx.roundDict),
       strategy: makeStrategy(
@@ -986,7 +1050,10 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         ctx.followStatsByRecordId?.[recordId],
         hasRationale,
         executable,
+        analysisOnlyCandidate,
         analysisOnlyComplete,
+        currentDict.market.observationSummaryLabel,
+        currentDict.stageStatus.observationOnly,
       ),
       defaultCollapsed: index > 0,
     };

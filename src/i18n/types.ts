@@ -134,6 +134,12 @@ export type DispatchV10StageStatusDict = {
   in_progressNote: string;
   done: string;
   memoryPending: string;
+  observationOnly: string;
+};
+
+export type DispatchV10MessageDict = {
+  expand: string;
+  collapse: string;
 };
 
 export type DispatchV10TopicRankingDict = {
@@ -234,6 +240,7 @@ export type DispatchV10Dict = {
   outcome: DispatchV10OutcomeDict;
   round: DispatchV10RoundDict;
   stageStatus: DispatchV10StageStatusDict;
+  message: DispatchV10MessageDict;
   topicRanking: DispatchV10TopicRankingDict;
   direction: DispatchV10DirectionDict;
   roleViewpoint: DispatchV10RoleViewpointDict;
@@ -269,6 +276,10 @@ export type DispatchV10Dict = {
     entry: string;
     stopLoss: string;
     takeProfit: string;
+    observationSummaryLabel: string;
+    coinwNavigate: string;
+    staleReason: string;
+    staleAgePrefix: string;
     watchReminder: string;
     watchCount: string;
     followed: string;

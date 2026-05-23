@@ -50,6 +50,7 @@ const VISIBLE_SESSION_REFRESH_STARTED_RETRY_MS = 90_000;
 const VISIBLE_SESSION_MAX_RETRY_MS = 5 * 60_000;
 const AUTO_SYMBOL_REFRESH_CANDIDATE = "symbol";
 const AUTO_SYMBOL_REFRESH_SYMBOL = "SYMBOL";
+const HISTORY_WALL_ENABLED = process.env.NEXT_PUBLIC_HISTORY_WALL_ENABLED === "true";
 
 interface PublicTimelinePayload {
   events: PublicTimelineEvent[];
@@ -852,21 +853,23 @@ export function AgentWatchBoard({
         followTradeDict={followTradeDict}
         freshness={consoleFreshness}
       />
-      <HistoryWall
-        open={historyOpen}
-        symbols={historySymbols}
-        selectedSymbol={historySymbol}
-        locale={agentWatchLocale}
-        dict={historyDict}
-        items={historyItems}
-        hasMore={historyHasMore}
-        loading={historyLoading}
-        error={historyError}
-        onOpen={() => setHistoryOpen(true)}
-        onClose={() => setHistoryOpen(false)}
-        onMore={handleMoreHistory}
-        onSelectSymbol={handleSelectHistorySymbol}
-      />
+      {HISTORY_WALL_ENABLED ? (
+        <HistoryWall
+          open={historyOpen}
+          symbols={historySymbols}
+          selectedSymbol={historySymbol}
+          locale={agentWatchLocale}
+          dict={historyDict}
+          items={historyItems}
+          hasMore={historyHasMore}
+          loading={historyLoading}
+          error={historyError}
+          onOpen={() => setHistoryOpen(true)}
+          onClose={() => setHistoryOpen(false)}
+          onMore={handleMoreHistory}
+          onSelectSymbol={handleSelectHistorySymbol}
+        />
+      ) : null}
     </>
   );
 }
