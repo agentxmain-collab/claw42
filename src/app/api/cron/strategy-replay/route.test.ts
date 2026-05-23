@@ -259,6 +259,34 @@ describe("/api/cron/strategy-replay", () => {
     });
   });
 
+  it("does not let failed news debate orchestration block the PM update loop", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      tryOrchestrateNewsDebateMock.mockRejectedValueOnce(
+        new SyntaxError("Unterminated string in JSON"),
+      );
+
+      const response = await GET(
+        new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),
+      );
+      const payload = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(payload.pmDecisionGenerated).toBe(true);
+      expect(payload.generatedDebates).toBe(0);
+      expect(runPmDecisionJobMock).toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(
+        "[claw42] news debate orchestration skipped",
+        expect.objectContaining({
+          newsId: "news-1",
+          error: "Unterminated string in JSON",
+        }),
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   it("keeps audit and source-health details out of the scheduled cron response", async () => {
     runPmDecisionJobMock.mockResolvedValueOnce({
       job: { id: "pm-job:test", status: "succeeded" },

@@ -78,7 +78,15 @@ export async function GET(request: NextRequest) {
   for (const item of items) {
     const normalizedItem = await normalizeNewsItem(item, servedBy);
     normalizedItems.push(normalizedItem);
-    const debate = await tryOrchestrateNewsDebate(normalizedItem, now + debates.length * 1000);
+    let debate: Awaited<ReturnType<typeof tryOrchestrateNewsDebate>> = null;
+    try {
+      debate = await tryOrchestrateNewsDebate(normalizedItem, now + debates.length * 1000);
+    } catch (error) {
+      console.warn("[claw42] news debate orchestration skipped", {
+        newsId: normalizedItem.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     if (!debate) continue;
     debates.push(debate);
     if (debates.length >= 2) break;
