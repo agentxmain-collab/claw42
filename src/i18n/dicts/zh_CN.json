@@ -698,9 +698,10 @@
           "market_overview": "大盘",
           "hotspot": "热点"
         },
-        "watchOnlyLabel": "watch-only / 不可跟单",
-        "watchOnlyCopy": "该币种暂不支持 CoinW 跟单，仅展示观察分析。",
-        "analysisOnlyCopy": "该卡片仅用于观察分析，不提供跟单操作。",
+        "watchOnlyLabel": "仅分析 / 不自动下单",
+        "watchOnlyCopy": "该币种暂不支持 CoinW 合约开单，仅展示分析。",
+        "analysisOnlyCopy": "该卡片用于公开分析和交易跳转，不自动下单。",
+        "coinwFuturesLink": "去交易",
         "residentUpdating": "大盘/热点后台更新中",
         "residentQueued": "大盘/热点等待后台更新",
         "residentUpdateIssue": "后台更新异常",
@@ -800,6 +801,45 @@
     "admin": {
       "unauthorized": "管理员令牌无效",
       "idempotency_conflict": "该决策已有结果，不能重复人工关闭"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {

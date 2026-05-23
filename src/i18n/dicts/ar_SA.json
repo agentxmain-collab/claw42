@@ -698,9 +698,10 @@
           "market_overview": "السوق",
           "hotspot": "رائج"
         },
-        "watchOnlyLabel": "Watch only / غير قابل للنسخ",
-        "watchOnlyCopy": "هذا الرمز غير قابل للتنفيذ على CoinW بعد؛ يظهر التحليل للمراقبة فقط.",
-        "analysisOnlyCopy": "هذه البطاقة للمراقبة والتحليل فقط ولا تعرض إجراء متابعة.",
+        "watchOnlyLabel": "تحليل فقط / بلا أمر تلقائي",
+        "watchOnlyCopy": "لا يمكن فتح أمر عقود CoinW لهذا الرمز بعد؛ يتم عرض التحليل فقط.",
+        "analysisOnlyCopy": "تعرض هذه البطاقة تحليلا عاما ورابط تداول، ولا ترسل أمرا تلقائيا.",
+        "coinwFuturesLink": "فتح عقود CoinW",
         "residentUpdating": "تحديث السوق/الموضوعات في الخلفية جارٍ",
         "residentQueued": "تحديث السوق/الموضوعات في الخلفية بانتظار الدور",
         "residentUpdateIssue": "مشكلة في تحديث الخلفية",
@@ -800,6 +801,45 @@
     "admin": {
       "unauthorized": "رمز المدير غير صالح",
       "idempotency_conflict": "لهذا القرار نتيجة بالفعل ولا يمكن إغلاقه يدويًا مرة أخرى"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {

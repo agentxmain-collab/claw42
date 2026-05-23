@@ -1,6 +1,7 @@
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { DispatchV10FollowTradeDict } from "@/i18n/types";
+import type { TradingReadinessState } from "@/lib/coinw/tradeReadinessState";
 import type { AnalystDataStatus, AnalystDirection } from "@/lib/team/strategyDecisionRecord";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
@@ -110,8 +111,14 @@ export interface DispatchStrategy {
 export interface DispatchTopicExecutionMode {
   executable: boolean;
   coinwPair: string | null;
+  tradeUrl?: string;
   watchOnly: boolean;
   watchOnlyReason?: "not_listed_on_coinw" | "mapping_unknown";
+  tradeReadiness?: {
+    stateVersion: number;
+    blocking: boolean;
+    states: TradingReadinessState[];
+  };
 }
 
 export type DispatchFreshnessStatus =

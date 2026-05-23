@@ -22,7 +22,7 @@ describe("follow trade disabled safety state", () => {
     expect(html).toContain('disabled=""');
   });
 
-  test("renders disabled safety copy in the v10 market panel", () => {
+  test("renders CoinW navigation instead of a disabled demo action in the v10 market panel", () => {
     const executableSymbolTopics = dispatchV10DemoTopics.map((topic) => ({
       ...topic,
       candidateType: "symbol" as const,
@@ -41,13 +41,14 @@ describe("follow trade disabled safety state", () => {
       />,
     );
 
-    expect(html).toContain("演示模式");
-    expect(html).toContain("不真实下单 · 后续接入授权和风险确认");
-    expect(html).toContain('title="演示模式：当前不会真实下单"');
-    expect(html).toContain('disabled=""');
+    expect(html).toContain("去交易");
+    expect(html).not.toContain("演示模式");
+    expect(html).not.toContain("不真实下单 · 后续接入授权和风险确认");
+    expect(html).not.toContain('title="演示模式：当前不会真实下单"');
+    expect(html).not.toContain('disabled=""');
   });
 
-  test("does not render follow-trade affordance for watch-only topics", () => {
+  test("does not render follow-trade affordance for analysis-only topics", () => {
     const watchOnlyTopic = {
       ...dispatchV10DemoTopics[0]!,
       candidateType: "symbol",
@@ -69,8 +70,9 @@ describe("follow trade disabled safety state", () => {
       />,
     );
 
-    expect(html).toContain("watch-only / 不可跟单");
-    expect(html).toContain("该币种暂不支持 CoinW 跟单");
+    expect(html).toContain("去交易");
+    expect(html).not.toContain("仅分析 / 不自动下单");
+    expect(html).not.toContain("该币种暂不支持 CoinW 合约开单");
     expect(html).not.toContain("演示模式：当前不会真实下单");
     expect(html).not.toContain('disabled=""');
   });
@@ -96,8 +98,9 @@ describe("follow trade disabled safety state", () => {
       />,
     );
 
-    expect(html).toContain("watch-only / 不可跟单");
-    expect(html).toContain("该卡片仅用于观察分析，不提供跟单操作");
+    expect(html).toContain("去交易");
+    expect(html).not.toContain("仅分析 / 不自动下单");
+    expect(html).not.toContain("公开分析和交易跳转");
     expect(html).not.toContain("演示模式：当前不会真实下单");
     expect(html).not.toContain('disabled=""');
   });
@@ -123,7 +126,8 @@ describe("follow trade disabled safety state", () => {
       />,
     );
 
-    expect(html).toContain("watch-only / 不可跟单");
+    expect(html).toContain("仅分析 / 不自动下单");
+    expect(html).toContain('data-trade-readiness-kind="submission_mode_blocked"');
     expect(html).not.toContain("演示模式：当前不会真实下单");
     expect(html).not.toContain('disabled=""');
   });

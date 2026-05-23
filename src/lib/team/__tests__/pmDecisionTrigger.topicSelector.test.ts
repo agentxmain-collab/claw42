@@ -270,7 +270,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     tryAcquireLockMock.mockResolvedValue(null);
     const poolWithQuietCandidate = {
       ...pool(),
-      opportunity: [{ symbol: "XRP", price: 2.1, change24h: 0.2, category: "opportunity" }],
+      opportunity: [{ symbol: "BILL", price: 0.12, change24h: 0.2, category: "opportunity" }],
     } satisfies CoinPoolPayload;
 
     await triggerPmDecisionPipelineOnce({
@@ -297,7 +297,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
         }),
         expect.objectContaining({
           type: "candidate_skipped",
-          symbol: "XRP",
+          symbol: "BILL",
           reason: "no_trigger",
         }),
       ]),
@@ -409,7 +409,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
       expect.arrayContaining([
         expect.objectContaining({
           type: "candidate_cost_cap_applied",
-          candidateCount: 5,
+          candidateCount: 4,
           cappedTo: 3,
           maxResidentCandidates: 1,
           maxSymbolCandidates: 3,
@@ -418,6 +418,44 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     );
     expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(3);
     expect(tryAcquireLockMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("lets user visits rotate a quiet major when symbol coverage is still sparse", async () => {
+    const auditEvents: unknown[] = [];
+    const quietMajors = {
+      ...pool(),
+      majors: [
+        { symbol: "BTC", price: 101000, change24h: 0.2, category: "majors" },
+        { symbol: "ETH", price: 4200, change24h: 0.3, category: "majors" },
+        { symbol: "SOL", price: 220, change24h: 0.4, category: "majors" },
+      ],
+      trending: [],
+      opportunity: [],
+    } satisfies CoinPoolPayload;
+
+    await triggerPmDecisionPipelineOnce({
+      triggerSource: "user_visit_trigger",
+      pool: quietMajors,
+      newsItems: [],
+      locale: "zh_CN",
+      now,
+      onAudit: (event) => auditEvents.push(event),
+    });
+
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    expect(auditEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "candidate_considered",
+          symbol: "BTC",
+          hasTrigger: true,
+        }),
+        expect.objectContaining({
+          type: "candidate_generated",
+          symbol: "BTC",
+        }),
+      ]),
+    );
   });
 
   it("lets scheduled batch processing reach opportunity symbols beyond the first six pool entries", async () => {
@@ -439,7 +477,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
         { symbol: "HYPE", price: 34, change24h: 0.6, category: "trending" },
         { symbol: "ENA", price: 0.8, change24h: 0.7, category: "trending" },
       ],
-      opportunity: [{ symbol: "BLEND", price: 0.12, change24h: 18, category: "opportunity" }],
+      opportunity: [{ symbol: "BILL", price: 0.12, change24h: 18, category: "opportunity" }],
     } satisfies CoinPoolPayload;
 
     const outputs = await triggerPmDecisionPipelineBatch({
@@ -453,10 +491,10 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     expect(outputs).toHaveLength(1);
     expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
     const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
-    expect(input.recentMarketSignals.map((signal) => signal.symbol)).toEqual(["BLEND"]);
+    expect(input.recentMarketSignals.map((signal) => signal.symbol)).toEqual(["BILL"]);
   });
 
-  it("emits an audit event when recent-topic suppression leaves no candidates", async () => {
+  it("rotates back to a major candidate when recent-topic suppression removes the dynamic set", async () => {
     filterPublicTimelineEventsMock.mockReturnValue([
       {
         id: "event-btc",
@@ -506,6 +544,22 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
           rationaleByMember: {},
         },
       },
+      {
+        id: "event-hype",
+        ts: now - 20 * 60_000,
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: [],
+        locale: "zh_CN",
+        payload: {
+          kind: "pm_decision",
+          recordId: "record-hype",
+          symbol: "HYPE",
+          tradeDecision: null,
+          rationaleByMember: {},
+        },
+      },
     ]);
     const auditEvents: unknown[] = [];
 
@@ -518,13 +572,23 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
       onAudit: (event) => auditEvents.push(event),
     });
 
-    expect(result).toBeNull();
-    expect(runPmDecisionPipelineMock).not.toHaveBeenCalled();
+    expect(result).not.toBeNull();
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
+    expect(input.candidate).toMatchObject({
+      candidateType: "symbol",
+      symbol: "BTC",
+      candidateKey: "BTC",
+    });
     expect(auditEvents).toEqual([
       expect.objectContaining({
-        type: "selection_skipped",
-        reason: "no_candidates",
-        candidateCount: 0,
+        type: "candidate_considered",
+        symbol: "BTC",
+        hasTrigger: true,
+      }),
+      expect.objectContaining({
+        type: "candidate_generated",
+        symbol: "BTC",
       }),
     ]);
   });

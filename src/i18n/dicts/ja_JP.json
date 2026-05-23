@@ -698,9 +698,10 @@
           "market_overview": "市場",
           "hotspot": "注目"
         },
-        "watchOnlyLabel": "Watch only / フォロー不可",
-        "watchOnlyCopy": "この銘柄はまだ CoinW で実行できません。観察用の分析のみ表示します。",
-        "analysisOnlyCopy": "このカードは観察用の分析のみで、フォロー取引操作は表示しません。",
+        "watchOnlyLabel": "分析のみ / 自動注文なし",
+        "watchOnlyCopy": "この銘柄はまだ CoinW 先物注文に対応していません。分析のみ表示します。",
+        "analysisOnlyCopy": "このカードは公開分析と取引リンクを提供しますが、自動注文は行いません。",
+        "coinwFuturesLink": "CoinW 先物を開く",
         "residentUpdating": "市場/注目テーマをバックグラウンド更新中",
         "residentQueued": "市場/注目テーマの更新待機中",
         "residentUpdateIssue": "バックグラウンド更新に問題",
@@ -800,6 +801,45 @@
     "admin": {
       "unauthorized": "管理者トークンが無効です",
       "idempotency_conflict": "この決定はすでに結果があり、再度手動クローズできません"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {

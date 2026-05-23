@@ -63,12 +63,17 @@ requireIncludes(
 requireIncludes(
   "src/modules/agent-watch/v10/MarketAnalysisPanel.tsx",
   "topic.execution?.executable === true",
-  "v10 follow trade must require explicit executable metadata",
+  "v10 CoinW pair deep link must require explicit executable metadata",
 );
 requireIncludes(
   "src/modules/agent-watch/v10/MarketAnalysisPanel.tsx",
-  "disabled",
-  "v10 primary follow action must stay disabled until real execution is separately approved",
+  "href={coinwFuturesUrl}",
+  "v10 primary action must navigate out to CoinW instead of submitting an internal order",
+);
+requireNotIncludes(
+  "src/modules/agent-watch/v10/MarketAnalysisPanel.tsx",
+  "dict.followTrade.disabled_label",
+  "v10 primary action must not render the deprecated disabled demo action",
 );
 
 requireIncludes(
@@ -101,6 +106,22 @@ requireNotIncludes(
   "src/app/api/watch/follow-stats/route.ts",
   "submitOrder",
   "follow-stats route must not submit orders",
+);
+
+requireIncludes(
+  "src/app/api/watch/follow-intents/route.ts",
+  "coinw_real_submission_not_enabled",
+  "follow-intents route must default to disabled real submission",
+);
+requireNotIncludes(
+  "src/app/api/watch/follow-intents/route.ts",
+  "fetch(",
+  "follow-intents route must not submit directly to CoinW",
+);
+requireNotIncludes(
+  "src/app/api/watch/follow-intents/route.ts",
+  "/v1/perpum/order",
+  "follow-intents route must not embed a direct CoinW order submission",
 );
 
 const apiRouteFiles = listFiles("src/app/api").filter(

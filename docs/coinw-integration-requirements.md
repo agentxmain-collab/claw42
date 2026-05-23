@@ -296,3 +296,76 @@ Claw 42 需要这些数据在提交 CoinW 前校验交易确认卡。
 8. CoinW 内部工具是否可以筛选 Claw 42 来源订单？
 9. API 超时导致订单状态未知时，CoinW 推荐如何处理？
 10. 如 Claw 42 需要停止全部下单，CoinW 侧可提供哪些紧急控制？
+
+## 15. 2026-05-20 beta 接入收敛
+
+Dan 与 CoinW 侧沟通后的当前执行判断：
+
+- OAuth 已存在，Claw 42 继续按 OAuth + 服务端 API 调用设计。
+- 首版以合约为主；非 CoinW 合约支持币种不进入公开主分析列表，也不生成跟单入口。
+- 现货 / 合约权限、只读 / 交易权限可以拆分时必须拆分；首版只申请合约交易所需最小权限。
+- CoinW 可以提供测试账号，Claw 42 先用测试账号验证 TP / SL 与真实回执。
+- CoinW 可以提供稳定的合约跳转入口；在精确合约交易对 URL 未确认前，Claw 42 使用安全的合约市场落地页。
+- 当前官方合约下单接口支持 `thirdOrderId` 字段。Claw 42 先使用 `claw42_<intent_id>_<attempt>` 作为来源和重复提交保护标识。
+- `thirdOrderId` 重复提交的具体行为、价格 / 数量精度和最小下单量的最终字段来源，仍需 CoinW 侧确认。
+
+### API-first 与第三方应用代提交的区别
+
+这里的 API-first 不是让浏览器直接调用 CoinW 交易接口，也不是让用户手动粘贴 API key。
+
+Claw 42 的目标形态是：
+
+1. 用户在 CoinW OAuth 页面授权 Claw 42。
+2. Claw 42 后端保存受限 token 引用，不把 token 暴露给浏览器。
+3. 用户在 Claw 42 确认交易意图后，Claw 42 后端调用 CoinW API 提交订单。
+4. 订单最终状态、成交、持仓仍以 CoinW 返回为准。
+
+“第三方应用代提交”指的是第 3 步：Claw 42 作为用户授权过的第三方应用，用用户授权的交易 scope 在服务端提交订单。它和“API 调用”为同一条技术路径；区别只在授权方式和责任边界。OAuth 模式下，用户可以撤销 Claw 42 授权，Claw 42 也不需要用户提供个人 API key。
+
+### Claw 42 来源标识
+
+首版请求标识采用三层：
+
+- CoinW 请求字段：`thirdOrderId = claw42_<intent_id>_<attempt>`。
+- Claw 42 本地审计字段：`source = claw42`、`intentId`、`recordId`、`createdAt`。
+- 如 CoinW 后续支持额外来源字段，再补充 `source = claw42` / `agent_id` / `intent_id`。
+
+### 首版环境变量命名
+
+不在代码或文档中写入任何密钥值。当前只定义命名，等待测试账号和授权材料：
+
+```text
+COINW_FUTURES_API_BASE_URL
+NEXT_PUBLIC_COINW_FUTURES_URL
+NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE
+COINW_OAUTH_CLIENT_ID
+COINW_OAUTH_CLIENT_SECRET
+COINW_OAUTH_REDIRECT_URI
+COINW_OAUTH_AUTHORIZE_URL
+COINW_OAUTH_TOKEN_URL
+COINW_OAUTH_SCOPES
+COINW_FUTURES_TEST_ACCOUNT_ID
+COINW_FUTURES_ORDER_MODE
+COINW_FUTURES_BETA_MAX_LEVERAGE
+```
+
+### Beta1 / Beta2 当前边界
+
+- Beta1 公开分析只展示 CoinW 合约支持的币种分析卡；非 CoinW 合约币种直接不进入公开主列表。
+- 大盘和热点是全局分析卡，不对应单币开单，保留展示但只显示"仅分析 / 不自动下单"。
+- Beta2 当前只做到开单意图校验和准备状态检查，不提交真实订单。
+- `/api/watch/follow-intents/status` 只返回配置就绪状态，不返回任何密钥值。
+- `COINW_FUTURES_ORDER_MODE=live` 仍被阻断；真实提交需要单独 release 决策。
+
+### 还需 CoinW / 运维确认的上线项
+
+1. OAuth 授权页、token 接口、callback 白名单和 scope 名称。
+2. 测试账号、测试 OAuth app、测试交易权限。
+3. 精确合约交易对跳转 URL 模板。
+4. `thirdOrderId` 重复提交语义。
+5. TP / SL 是随单提交还是单独接口。
+6. 合约下单前是否必须设置杠杆、保证金模式、持仓模式。
+7. 精度、最小数量、最小名义金额、最大杠杆字段的最终来源。
+8. 订单状态查询和成交回执字段。
+9. OAuth token revoke / 过期 / refresh 行为。
+10. Rate limit、异常升级、紧急关闭 OAuth app 的运维流程。

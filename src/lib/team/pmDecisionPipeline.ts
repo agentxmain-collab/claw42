@@ -1510,6 +1510,7 @@ export async function runPmDecisionPipeline(
     const publicAnalystRoundOutputs = analystRoundOutputs.filter(
       (output) => !output.abstained && cleanPublicDecisionText(output.rationale, locale),
     );
+    latestAnalystRoundCount = publicAnalystRoundOutputs.length;
     const latestAnalystOutputs = latestAnalystRoundByMember(publicAnalystRoundOutputs);
     latestActiveMemberIds = activeInputMemberIds;
     latestAbstainedMemberIds = Array.from(
@@ -1520,10 +1521,16 @@ export async function runPmDecisionPipeline(
         ),
       ]),
     );
-    latestAnalystRoundCount = publicAnalystRoundOutputs.length;
     if (latestAnalystOutputs.length === 0) {
       await writeSkippedRun({
         skipReason: "no_public_analyst_outputs",
+        activeStage: "analyst_inputs",
+      });
+      return null;
+    }
+    if (!publicAnalystRoundOutputs.some((output) => output.round === 1)) {
+      await writeSkippedRun({
+        skipReason: "no_public_analyst_stage_one_outputs",
         activeStage: "analyst_inputs",
       });
       return null;

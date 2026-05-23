@@ -1,5 +1,6 @@
 import React from "react";
 import type { DispatchV10FollowTradeDict } from "@/i18n/types";
+import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
 import type { DispatchTopic, DispatchTopicAction } from "./types";
 
 const DEFAULT_FOLLOW_TRADE_DICT: DispatchV10FollowTradeDict = {
@@ -29,6 +30,18 @@ function StrategyValue({
   );
 }
 
+function inferredTradeReadinessKind(
+  topic: DispatchTopic,
+  canRenderFollowTrade: boolean,
+): TradingReadinessFailureKind | null {
+  const explicitKind = topic.execution?.tradeReadiness?.states[0]?.kind;
+  if (explicitKind) return explicitKind;
+  if (canRenderFollowTrade) return null;
+  if (topic.execution?.watchOnlyReason) return "instrument_unavailable";
+  if ((topic.candidateType ?? "symbol") !== "symbol") return "submission_mode_blocked";
+  return "submission_mode_blocked";
+}
+
 export function TopicStrategy({
   topic,
   latest = false,
@@ -52,9 +65,14 @@ export function TopicStrategy({
       ? `${strategy.follow.watchCount} 人订阅提醒`
       : `${strategy.follow.watchCount} 人在看 · ${strategy.follow.followCount} 已跟单`;
   const followNoteId = `${topic.id}-follow-trade-disabled-note`;
+  const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderFollowTrade);
 
   return (
-    <div className={["topic-strategy", latest ? "latest" : ""].filter(Boolean).join(" ")}>
+    <div
+      className={["topic-strategy", latest ? "latest" : ""].filter(Boolean).join(" ")}
+      data-trade-readiness-slot={tradeReadinessKind ? "card-status" : undefined}
+      data-trade-readiness-kind={tradeReadinessKind ?? undefined}
+    >
       <div className="strat-head">
         <div className="row1">
           {latest ? <span className="strategy-latest-badge">最新策略</span> : null}
@@ -77,7 +95,7 @@ export function TopicStrategy({
       <StrategyValue label="止盈" value={strategy.takeProfit} tone={muted ?? "lime"} />
       <div className="strat-cta">
         <div className="cta-row">
-          {watchOnly ? <span className="watch-only-pill">watch-only / 不可跟单</span> : null}
+          {watchOnly ? <span className="watch-only-pill">仅分析 / 不自动下单</span> : null}
           {canRenderFollowTrade ? (
             <button
               className="cta-btn"
@@ -98,9 +116,16 @@ export function TopicStrategy({
             {strategy.follow.secondaryLabel}
           </button>
         </div>
+        {tradeReadinessKind ? (
+          <span
+            hidden
+            data-trade-readiness-slot="cta-disabled-reason"
+            data-trade-readiness-kind={tradeReadinessKind}
+          />
+        ) : null}
         <div className="cta-meta" id={followNoteId}>
           {watchOnly
-            ? `该币种暂不支持 CoinW 跟单，仅展示观察分析。 · ${followStatus}`
+            ? `该卡片用于公开分析和交易跳转，不自动下单。 · ${followStatus}`
             : `${followTradeDict.safety_copy} · ${followStatus}`}
         </div>
       </div>

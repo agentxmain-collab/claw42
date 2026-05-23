@@ -33,6 +33,7 @@ import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { DecisionStageTraceId } from "@/lib/team/strategyDecisionRecord";
 import { publicTimelineEventStableId } from "@/lib/watch/publicTimelineOrdering";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
+import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
 import {
   mapPublicDecisionAgentToTeamMember,
   mapTeamMemberToPublicDecisionAgent,
@@ -42,6 +43,10 @@ import {
   PUBLIC_DECISION_STAGE_ORDER,
   publicDecisionVisibleStageLimit,
 } from "@/lib/watch/publicDecisionStageContract";
+import {
+  hasPublicInformationCollectionRound,
+  isPublicDisplayablePmDecisionEvent,
+} from "@/lib/watch/publicPmDecisionDisplay";
 import type {
   DispatchMessage,
   DispatchStageMarker,
@@ -882,9 +887,20 @@ function compareRankedGroups(
   );
 }
 
+function displayablePublicBetaGroup(group: DispatchTopicGroup) {
+  const latest = group.latestDecision;
+  if (latest.payload.kind !== "pm_decision") return false;
+  if (!hasPublicInformationCollectionRound(latest)) return false;
+  if (group.candidateType !== "symbol") return true;
+  if (typeof latest.payload.executable === "boolean") return latest.payload.executable;
+  return resolveSymbolMapping(group.symbol).execution.executable;
+}
+
 export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): DispatchTopic[] {
   const now = ctx.now ?? Date.now();
-  const rankedGroups = groupPublicTimelineEventsByTopic(ctx.events)
+  const displayableCandidateEvents = ctx.events.filter(isPublicDisplayablePmDecisionEvent);
+  const rankedGroups = groupPublicTimelineEventsByTopic(displayableCandidateEvents)
+    .filter(displayablePublicBetaGroup)
     .map((group) => {
       const tradeDecision = renderableTradeDecision(group.latestDecision);
       return {
@@ -916,6 +932,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       (typeof latest.payload.executable === "boolean"
         ? latest.payload.executable
         : symbolMapping.execution.executable);
+    const coinwPair = executable ? symbolMapping.execution.coinwPair : null;
 
     return {
       id: recordId,
@@ -926,7 +943,8 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       lastUpdatedAt: group.latestAt,
       execution: {
         executable,
-        coinwPair: executable ? symbolMapping.execution.coinwPair : null,
+        coinwPair,
+        tradeUrl: buildCoinWFuturesTradeUrl({ coinwPair }),
         watchOnly: !executable,
         watchOnlyReason: symbolMapping.execution.watchOnlyReason,
       },

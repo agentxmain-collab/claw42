@@ -698,9 +698,10 @@
           "market_overview": "Market",
           "hotspot": "Hotspot"
         },
-        "watchOnlyLabel": "Watch only / Not followable",
-        "watchOnlyCopy": "This symbol is not executable on CoinW yet; analysis is shown for observation only.",
-        "analysisOnlyCopy": "This card is observation-only and does not expose a follow-trade action.",
+        "watchOnlyLabel": "Analysis only / No auto-order",
+        "watchOnlyCopy": "This symbol cannot be opened as a CoinW futures order yet; analysis only.",
+        "analysisOnlyCopy": "This card supports public analysis and a trading link, but no automatic order.",
+        "coinwFuturesLink": "Open CoinW Futures",
         "residentUpdating": "Global market/topic update running",
         "residentQueued": "Global market/topic update queued",
         "residentUpdateIssue": "Background update issue",
@@ -800,6 +801,45 @@
     "admin": {
       "unauthorized": "Invalid admin token",
       "idempotency_conflict": "This decision already has an outcome and cannot be manually closed again"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {

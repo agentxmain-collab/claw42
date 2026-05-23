@@ -698,9 +698,10 @@
           "market_overview": "Mercado",
           "hotspot": "Tendencia"
         },
-        "watchOnlyLabel": "Watch only / Sin seguimiento",
-        "watchOnlyCopy": "Este símbolo aún no es ejecutable en CoinW; el análisis se muestra solo para observación.",
-        "analysisOnlyCopy": "Esta tarjeta es solo de observación y no muestra una acción de seguimiento.",
+        "watchOnlyLabel": "Solo análisis / sin orden automática",
+        "watchOnlyCopy": "Este símbolo aún no puede abrir una orden de futuros en CoinW; solo se muestra el análisis.",
+        "analysisOnlyCopy": "Esta tarjeta ofrece análisis público y enlace de trading, sin orden automática.",
+        "coinwFuturesLink": "Abrir futuros de CoinW",
         "residentUpdating": "Actualización global de mercado/temas en curso",
         "residentQueued": "Actualización global de mercado/temas en cola",
         "residentUpdateIssue": "Incidencia en la actualización en segundo plano",
@@ -800,6 +801,45 @@
     "admin": {
       "unauthorized": "Token de administrador inválido",
       "idempotency_conflict": "Esta decisión ya tiene resultado y no puede cerrarse manualmente de nuevo"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {

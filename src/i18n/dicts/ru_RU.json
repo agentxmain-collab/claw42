@@ -698,9 +698,10 @@
           "market_overview": "Рынок",
           "hotspot": "Тема"
         },
-        "watchOnlyLabel": "Watch only / Нельзя копировать",
-        "watchOnlyCopy": "Этот символ пока нельзя исполнять на CoinW; анализ показан только для наблюдения.",
-        "analysisOnlyCopy": "Эта карточка только для наблюдения и не показывает действие копирования.",
+        "watchOnlyLabel": "Только анализ / без автоордера",
+        "watchOnlyCopy": "По этому символу пока нельзя открыть фьючерсный ордер CoinW; показан только анализ.",
+        "analysisOnlyCopy": "Карточка дает публичный анализ и ссылку на торговлю, но не размещает ордер автоматически.",
+        "coinwFuturesLink": "Открыть фьючерсы CoinW",
         "residentUpdating": "Фоновое обновление рынка/тем выполняется",
         "residentQueued": "Обновление рынка/тем в очереди",
         "residentUpdateIssue": "Проблема фонового обновления",
@@ -800,6 +801,45 @@
     "admin": {
       "unauthorized": "Недействительный токен администратора",
       "idempotency_conflict": "У этого решения уже есть результат, его нельзя закрыть вручную повторно"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {

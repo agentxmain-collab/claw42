@@ -14,6 +14,11 @@ import {
   type FollowStatsSnapshot,
 } from "@/lib/watch/v9TopicAdapter";
 import { normalizeCandidateType } from "@/lib/watch/decisionCandidate";
+import {
+  hasPublicBetaSymbolCoverage,
+  publicBetaSymbolCoverage,
+  publicBetaSymbolCoverageKey,
+} from "@/lib/watch/publicSymbolCoverage";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { DecisionHistoryPayload } from "@/lib/watch/decisionHistory";
 import { DispatchConsoleV9 } from "./v9/DispatchConsoleV9";
@@ -168,17 +173,20 @@ export function resolveVisibleSessionRefreshTarget({
   const residentTarget = residentRefreshTarget({ residentStatus, locale });
   if (residentTarget) return residentTarget;
 
-  const latestRefreshSymbol =
-    topics.find((topic) => normalizeCandidateType(topic.candidateType) === "symbol")?.symbol ??
-    null;
-  if (!latestRefreshSymbol) {
+  const symbolCoverage = publicBetaSymbolCoverage(
+    topics
+      .filter((topic) => normalizeCandidateType(topic.candidateType) === "symbol")
+      .map((topic) => topic.symbol),
+  );
+  if (!hasPublicBetaSymbolCoverage(symbolCoverage)) {
     return {
-      sessionKey: `freshness-trigger-${locale}-${AUTO_SYMBOL_REFRESH_CANDIDATE}-auto`,
+      sessionKey: `freshness-trigger-${locale}-${AUTO_SYMBOL_REFRESH_CANDIDATE}-auto-${publicBetaSymbolCoverageKey(symbolCoverage)}`,
       symbol: AUTO_SYMBOL_REFRESH_SYMBOL,
       params: { candidateType: AUTO_SYMBOL_REFRESH_CANDIDATE },
     };
   }
 
+  const latestRefreshSymbol = symbolCoverage[0];
   return {
     sessionKey: `freshness-trigger-${locale}-symbol-${latestRefreshSymbol}`,
     symbol: latestRefreshSymbol,

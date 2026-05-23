@@ -5361,3 +5361,392 @@ Base: `origin/main` = `adfc67f69c83d3c2f88b327a84d6d047839c0127`
 - Full existing verification before PR/merge.
 
 [DOC-HINT: public analysis beta is preview-only, feedback-enabled, and explicitly separate from production release, trusted learning claims, and real trading.]
+
+# CoinW contract release integration pass
+
+Codex time: 2026-05-20 22:43 CST
+Branch: `feature/coinw-contract-release`
+Base: `origin/main` = `1ad6407f7c0931993908601319ff0a2a8bb6cb2d`
+
+## Product outcome
+
+- Public symbol analysis is now CoinW-futures-first: automatic symbol candidates are filtered by
+  the CoinW futures instrument universe before entering the public main board.
+- Non-CoinW futures symbols are dropped instead of becoming watch-only cards.
+- `BILL` is now treated as CoinW futures executable. `VVV` / `IRYS` remain non-executable and are
+  used in safety tests.
+- Public analysis cards now expose a CoinW futures navigation link. Until CoinW confirms the exact
+  pair URL template, the link falls back to the safe futures market entry.
+- Added a disabled-by-default follow-intent backend entry. It validates a CoinW futures order draft,
+  creates a `claw42_...` `thirdOrderId`, and returns the intent for confirmation/testing. It does
+  not call CoinW or submit an order.
+
+## CoinW open confirmations
+
+- Confirm `thirdOrderId` duplicate behavior.
+- Confirm precision / minimum order fields as final source of truth.
+- Confirm exact futures pair deep-link template.
+- Confirm test account credentials and OAuth app scope names.
+- Confirm whether CoinW supports an additional internal source field beyond `thirdOrderId`.
+
+## Verification
+
+- `npm run verify`: PASS.
+- `npm run build`: PASS after clearing the temp worktree `.next` cache; first run hit a transient
+  Next cache/path `/_document` error, second clean run passed.
+- `npm run verify:metrics`: PASS, 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+- Targeted CoinW / watch tests: PASS, 78 tests.
+
+## Boundary
+
+- No production deploy.
+- No Vercel CLI deploy.
+- No CoinW secrets read or written.
+- Real CoinW submission remains disabled until test account + idempotency + precision rules are
+  confirmed.
+
+[DOC-HINT: CoinW futures beta now has futures-only candidate filtering, CoinW navigation, and a disabled follow-intent contract with `thirdOrderId` source marking.]
+
+# CoinW contract release beta1 closeout + beta2 foundation
+
+Codex time: 2026-05-20 23:50 CST
+Branch: `feature/coinw-contract-release`
+
+## Beta1 completed
+
+- Public symbol analysis is now limited to confirmed CoinW futures instruments.
+- Unsupported symbol PM records are filtered out at public timeline projection and v9 topic mapping.
+- Market overview and hotspot analysis remain visible as global analysis cards.
+- Analysis-only cards no longer use watch-only wording. Public copy now says "仅分析 / 不自动下单"
+  and does not imply manual or automatic order execution.
+- Follow-trade affordance remains strictly gated: only symbol cards with `executable=true` can render
+  the disabled beta order affordance.
+- Existing UTC global prewarm policy remains in place for market/hotspot freshness.
+
+## Beta2 implemented now
+
+- Added OAuth/test-account/order-mode readiness checks without exposing secret values.
+- Added `/api/watch/follow-intents/status` so the UI or operator layer can see whether real order
+  prerequisites are configured.
+- Added beta leverage cap support through `COINW_FUTURES_BETA_MAX_LEVERAGE`, defaulting to 3x.
+- Follow-intent validation now includes readiness metadata while still returning `mode=disabled`.
+- `COINW_FUTURES_ORDER_MODE=live` remains blocked until a separate release decision.
+
+## External info still needed
+
+1. OAuth authorize URL, token URL, callback registration, and exact scope names.
+2. Confirmation that first release can use futures-trade-only scope with no withdrawal capability.
+3. Test OAuth app and test futures account.
+4. Stable pair-specific CoinW futures deep-link template.
+5. `thirdOrderId` duplicate retry behavior.
+6. TP / SL submission model: same order request or separate endpoints.
+7. Precision, min quantity, min notional, and max leverage source fields.
+8. Whether margin mode, position mode, or leverage must be set before order placement.
+9. Order status query and receipt fields for accepted / filled / rejected states.
+10. OAuth revoke / token expiry / refresh / optional webhook behavior.
+11. Rate limits for OAuth and futures order APIs.
+12. Emergency OAuth app disable and single-user token revoke process.
+
+## Verification
+
+- Targeted CoinW / watch / UI tests: PASS, 91 tests.
+- `npm run format:check`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run test:watch-pipeline`: PASS, 104 files / 549 tests.
+- `npm run test:news`: PASS, 6 files / 25 tests.
+- `npm run verify:agent-ip`: PASS.
+- `npm run verify:news`: PASS.
+- `npm run verify:chat-v3-final`: PASS, 50 synthetic threads.
+- `npm run verify:execution-safety`: PASS.
+- `npm run verify:metrics`: PASS, 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+- `npm run build`: PASS.
+- `npm run verify`: PASS.
+
+## Boundary
+
+- No production deploy.
+- No Vercel CLI deploy.
+- No CoinW secrets read or written.
+- No real CoinW order submission.
+
+[DOC-HINT: Beta1 is now CoinW-futures-only for symbol cards; Beta2 has disabled order readiness and leverage-cap plumbing, with external OAuth/test-account/order semantics still required.]
+
+# CoinW real trading readiness v1.2 Stage 0 restart report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+Implementation base: `origin/feature/coinw-contract-release` =
+`7da829fc80d6298aac3ce69c5752afd2150d65e6`
+
+## T000a scaffold readiness
+
+Result: PASS. The v1.2 base correction is valid; the CoinW scaffold exists on
+`origin/feature/coinw-contract-release`, not on `origin/main`.
+
+| Capability                       | First-hand status                                                                                                  | Gap / boundary                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| `/api/watch/follow-intents`      | Present. POST parses body, rate-limits by IP, builds a CoinW futures order intent, and returns readiness metadata. | Fixed `mode: "disabled"` + `coinw_real_submission_not_enabled`; no token/session/order submit. |
+| `CoinWFuturesOrderMode`          | Present as `disabled                                                                                               | test                                                                                           | live`. | `live` still emits `live_order_submission_requires_separate_release`; must not bypass before Gate 3. |
+| `coinWOAuthReadiness()`          | Present. Reads OAuth env, test account env, and order mode.                                                        | Readiness only; no OAuth handshake and no token persistence.                                   |
+| `buildCoinWFuturesOrderIntent()` | Present. Generates `intentId`, `expiresAt`, `thirdOrderId`, and a draft `/v1/perpum/order` body.                   | Draft only; no signature, nonce, replay lock, callback, or audit store yet.                    |
+| futures instruments              | Present. Fetches `/v1/perpum/instruments`, caches 10 minutes, and falls back to static preview universe.           | Static fallback is safe for preview/analysis only, not proof of live tradability.              |
+| futures links                    | Present. Supports pair-specific template plus generic futures fallback.                                            | Generic fallback is navigation only; not an order confirmation route.                          |
+| beta leverage cap                | Present via `COINW_FUTURES_BETA_MAX_LEVERAGE`, default 3x.                                                         | Cap is only one safety guard, not complete risk control.                                       |
+
+## T000b / T000c
+
+Env owner is Dan per § 0.6 Q4. I will implement env names and readiness surfaces from the
+existing 12-item CoinW list without asking for secret values. Dan's 4 decisions are reflected:
+button routing by candidate state, CryptoPanic as Lane S provider, `SOCIAL_SCORE_CAP = 0.15`,
+and Dan as env/secret owner.
+
+## T000d E vs B engineering judgement
+
+Recommendation: **A always + E first for strategy-confirmed T-3; keep B as design-only until a
+separate live submission release.**
+
+- Direction E is the safer implementable next step because Claw42 can generate a signed order
+  intent and hand the final confirmation to CoinW-hosted login/KYC/risk controls. It still needs
+  CoinW contract details for the receiving endpoint, validation sequence, and callback/status
+  semantics, but the Claw42 side can build signature, nonce, replay lock, and audit persistence now.
+- Direction B is a larger trust boundary change. It requires OAuth token/session storage, server-side
+  order submit, status polling/webhook reconciliation, token revoke/refresh behavior, and production
+  risk controls. The current `oauthReadiness.ts` live block exists precisely to prevent this from
+  leaking into Gate 1/2.
+- Therefore Gate 1 should ship external navigation + pair deep links + disabled readiness; Gate 2
+  should target E sandbox/hosted confirmation once CoinW contract details are available; B should
+  remain T304a design-only until Dan/CoinW/legal explicitly authorize direct API submission.
+
+## OBJECT / drift note
+
+No blocking spec drift found after applying v1.2 § 0.7 as controlling. Historical audit-trail
+paragraphs in the spec still mention older `origin/main` verification, but they are in Round 1/2
+history sections and do not override § 0.6/§ 0.7 or § 2.1.
+
+[DOC-HINT: CoinW readiness v1.2 must implement from `origin/feature/coinw-contract-release`; Stage 0 recommends A always plus Direction E first, while Direction B remains design-only until a separate live submission release.]
+
+# CoinW real trading readiness v1.2 Stage 1 report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+
+## Completed
+
+- Added controlled social signal types, normalizer, in-memory cache helper, and CryptoPanic-only
+  adapter scaffold under `src/lib/social`.
+- Reintroduced `social` into topic selection as a real provider-backed scoring dimension.
+- `SOCIAL_SCORE_CAP` is fixed at `0.15` as Dan approved; implementation caps the contribution at
+  15 score points.
+- Wired CryptoPanic vote/currency observations from fetched news items into symbol selection in:
+  - `/api/watch/refresh`
+  - `triggerPmDecisionPipelineOnce`
+  - resident hotspot burst planning
+- Missing / stale / vote-less social data stays neutral and does not appear in public reason text.
+- Existing non-social ranking remains unchanged when no valid social provider data is present.
+
+## First-hand finding
+
+`NewsItem` does not preserve the upstream provider id. CryptoPanic's article source can be a media
+site rather than "CryptoPanic", so the safe boundary is the existing `votes` field: in this codebase
+only the CryptoPanic adapter emits `votes`. The normalizer therefore treats `votes + currencies` as
+the provider-backed social signal and does not infer social heat from normal news text.
+
+## Verification
+
+- `npx vitest run src/lib/social/__tests__/socialSignalNormalizer.test.ts src/lib/team/__tests__/topicSelector.test.ts`: PASS, 24 tests.
+- `npm run typecheck`: PASS.
+
+## Boundary
+
+- No new social provider beyond CryptoPanic.
+- No social score when CryptoPanic data is missing or stale.
+- No production deploy.
+- No secret values read or written.
+
+[DOC-HINT: Lane S social is now provider-backed through CryptoPanic votes; missing social data remains neutral and hidden from public reasons.]
+
+# CoinW real trading readiness v1.2 Stage 2 report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+
+## Completed
+
+- Added the typed 6-class trading readiness contract in `src/lib/coinw/tradeReadinessState.ts`.
+- Mapped existing CoinW readiness into the contract:
+  - missing OAuth / test account → `auth_account_not_ready`
+  - disabled or blocked live mode → `submission_mode_blocked`
+  - unsupported futures instrument → `instrument_unavailable`
+  - user / order input issues → `user_risk_confirmation_required`
+  - rate limit / exchange result issues → `exchange_network_or_result_failed`
+- Added `tradeReadiness` payloads to:
+  - `GET /api/watch/follow-intents/status`
+  - `POST /api/watch/follow-intents`
+  - POST error responses including unsupported instrument and rate-limit cases
+- Added `agentWatch.tradeReadiness` mode/state slots across all 10 locale dicts. Values are empty
+  placeholders by design; Dan + legal still own final user-facing copy.
+- Wired non-public v9/v10 readiness slots through hidden data attributes on topic strategy cards.
+  This gives the UI a stable render target without changing visible wording or layout.
+
+## First-hand judgement
+
+The safe Stage 2 boundary is contract + hidden slots, not visible copy. The spec asks for UI
+transparent-layer slots but also forbids Codex from choosing final user-facing copy / placement.
+Using empty i18n slots and hidden `data-trade-readiness-*` attributes satisfies the engineering
+contract while preserving Dan/legal control over visible language.
+
+## Verification
+
+- `npx vitest run src/lib/coinw/__tests__/tradeReadinessState.test.ts src/lib/coinw/__tests__/oauthReadiness.test.ts src/app/api/watch/follow-intents/route.test.ts src/app/api/watch/follow-intents/status/route.test.ts src/i18n/__tests__/tradeReadinessDict.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx src/modules/agent-watch/__tests__/followTradeDisabled.test.tsx`: PASS, 31 tests.
+- `npm run typecheck`: PASS.
+
+## Boundary
+
+- No visible copy added.
+- No layout / CTA visual hierarchy changes.
+- No live order submission path.
+- No secret values read or written.
+- No production deploy.
+
+[DOC-HINT: Lane R now has typed trade readiness payloads and non-public UI slots; visible readiness copy remains Dan/legal-owned.]
+
+# CoinW real trading readiness v1.2 Stage 3 report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+
+## Completed
+
+- Verified T-1/T-2 external trading navigation:
+  - generic CoinW futures URL remains the fallback when no supported pair is present
+  - executable symbol cards can use `NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE` for pair-specific deep links
+  - non-symbol / watch-only cards never receive a pair-specific deep link
+- Added hosted-confirmation Direction E building blocks:
+  - signed order intent payload with HMAC-SHA256, `kid`, 128-bit nonce, `iat`, `exp`, and `payloadHash`
+  - signature verification with payload-hash and expiry checks
+  - replay nonce reservation with KV-backed storage when configured and memory fallback for tests
+  - audit row contract linking `intentId` / `recordId` / candidate metadata / pair / gate / mode / signature metadata / callback status
+  - callback route draft for `confirmed` / `submitted` / `rejected` / `expired` / `cancelled` / `failed`
+  - status route extension: readiness without `intentId`; hosted-confirmation audit status with `intentId`
+- Added CoinW platform contract checklist + 4 sandbox status fixtures. The receiving endpoint, payload pull/push model,
+  login-KYC-risk sequence, and error taxonomy remain explicitly `pending_coinw_contract`.
+- Kept Direction B as design-only. No token/session/order-submit pipeline was implemented.
+
+## First-hand judgement
+
+Direction E remains the correct first implementation path. It gives Claw42 signed intent generation,
+replay protection, callback/status, and auditability without crossing into direct API order submission.
+Direction B still requires token/session storage, server-side submit, status reconciliation, revoke/refresh
+behavior, and live risk controls; it should stay behind a later explicit release.
+
+## Verification
+
+- `npx vitest run src/lib/coinw/__tests__/futuresLinks.test.ts src/lib/coinw/__tests__/futuresOrderIntent.test.ts src/lib/coinw/__tests__/orderIntentSignature.test.ts src/lib/coinw/__tests__/orderIntentAuditStore.test.ts src/lib/coinw/__tests__/handoffContract.test.ts src/app/api/watch/follow-intents/route.test.ts src/app/api/watch/follow-intents/status/route.test.ts src/app/api/watch/follow-intents/callback/route.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: PASS, 39 tests.
+- `npm run typecheck`: PASS.
+
+## Boundary / external dependency
+
+- No direct CoinW API submit path.
+- No OAuth token/session persistence.
+- No live mode unblock.
+- No invented CoinW hosted-confirmation receiving endpoint.
+- CoinW must still confirm the 5 contract points before Gate 2: `kid` verification, payload pull/push,
+  login-KYC-risk sequence, error taxonomy / retry policy, and callback source-of-truth semantics.
+
+[DOC-HINT: Stage 3 implements Direction E primitives and keeps Direction B design-only; CoinW hosted-confirmation contract details remain external prerequisites before Gate 2.]
+
+# CoinW real trading readiness v1.2 Stage 4 Gate 1 report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+
+## Completed
+
+- Added `src/lib/coinw/tradeGate.ts` for Gate 1-4 normalization and safety checks.
+- Gate 1 is external-navigation-only:
+  - external navigation remains enabled
+  - hosted confirmation is disabled
+  - direct submit is disabled
+- Gate 2+ hosted confirmation requires `COINW_FUTURES_ORDER_MODE=test`; setting a gate alone cannot enable it.
+- `COINW_FUTURES_ORDER_MODE=live` remains blocked by the separate-release guard even with Gate 3/4.
+- Added rollback drill docs at `docs/coinw-gate-rollback-drill.md`.
+- Registered CoinW trade / handoff / rollback telemetry event names and wired v10 CoinW CTA click tracking.
+
+## Verification
+
+- `npx vitest run src/lib/coinw/__tests__/tradeGate.test.ts src/lib/coinw/__tests__/oauthReadiness.test.ts src/app/api/watch/follow-intents/status/route.test.ts src/app/api/watch/follow-intents/route.test.ts src/lib/__tests__/analyticsEvents.test.ts src/modules/agent-watch/v10/__tests__/MarketAnalysisPanel.test.tsx`: PASS, 30 tests.
+- `npm run typecheck`: PASS.
+
+## Boundary
+
+- No production deploy.
+- No Gate 2/3/4 activation.
+- No live submission unblock.
+- No user-facing copy / placement changes.
+
+[DOC-HINT: Gate 1 is now mechanically navigation-only; Gate 2 hosted confirmation requires explicit test mode plus trade gate, and live remains blocked by the separate-release guard.]
+
+# CoinW real trading readiness v1.2 full local verification report
+
+Codex time: 2026-05-21 CST
+Branch: `feature/coinw-real-trading-readiness-v12`
+Head after verification fix: `88928bdb9cda9c840e916a2a8941a50d3b2143c2`
+Final pushed head: `143739825fc0b6c232e443e1c8ec3d2483321826`
+PR: https://github.com/agentxmain-collab/claw42/pull/189
+
+## Final implementation summary
+
+- Stage 0: re-baselined on `origin/feature/coinw-contract-release` at `7da829fc80d6298aac3ce69c5752afd2150d65e6`; all 7 scaffold capabilities in spec § 2.1 were reachable on the feature branch.
+- Stage 1 / Lane S: reintroduced CryptoPanic-backed social scoring with normalized signals, cache, `social` reason contract, and `SOCIAL_SCORE_CAP = 0.15`.
+- Stage 2 / Lane R: added typed 6-class readiness state, API payload wiring, hidden UI slots, and 10-locale empty i18n placeholders.
+- Stage 3 / Lane T: kept T-1/T-2 external navigation, added Direction E hosted-confirmation primitives, kept Direction B design-only.
+- Stage 4 / Gate 1: added gate normalization, navigation-only Gate 1 behavior, telemetry names, CTA tracking, and rollback drill docs.
+- Final build fix: changed `GET /api/watch/follow-intents/status` to use the valid Next route signature and updated its unit test. This was caught by `next build` even though `tsc --noEmit` passed.
+
+## Full verification
+
+- `npm run format:check`: PASS.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run test:watch-pipeline`: PASS, 104 files / 563 tests.
+- `npm run verify`: PASS.
+- `npm run verify:metrics`: PASS, 2 files / 5 tests.
+- `npm run verify:a11y`: PASS, 0 axe violations on checked routes.
+- `npm run verify:chat-v3-final`: PASS, 50 synthetic threads.
+- `npm run verify:agent-ip`: PASS.
+- `npm run verify:news`: PASS; expected warnings remain for missing optional API env values / planned CoinW endpoint.
+- `npm run test:news`: PASS, 6 files / 25 tests.
+- `npm run verify:execution-safety`: PASS.
+- `npm run build`: PASS.
+
+## Deployment identity / preview status
+
+- GitHub identity is valid for `agentxmain-collab`; branch was pushed to `origin/feature/coinw-real-trading-readiness-v12`.
+- PR #189 was opened against `feature/coinw-contract-release`.
+- GitHub checks:
+  - `verify`: PASS.
+  - `deploy preview`: PASS.
+  - `Vercel`: PASS.
+- Vercel preview URLs from PR automation:
+  - GitHub action preview: https://claw42-site-93x29hd46-agentxmain-collabs-projects.vercel.app
+  - Vercel PR comment preview: https://claw42-site-git-feature-coin-096bf3-agentxmain-collabs-projects.vercel.app
+- `curl -I -L` on both preview URLs returns HTTP 401 Vercel SSO protection. The build is ready, but Dan/F will need an authorized Vercel session or a protection-bypass/share link generated from the correctly scoped Vercel account.
+- Vercel CLI identity is not aligned with the project registry in this shell:
+  - requested project scope: `agentxmain-collabs-projects`
+  - current CLI user scope available: `xxcryptoofficial-collabs-projects`
+- Because `.vercel/project.json` is absent in this clean worktree and the CLI scope is mismatched, Codex did not run `vercel link` or `npx vercel` from the worktree. This avoids the known failure mode of creating or binding the wrong Vercel project.
+- Preview was obtained through the GitHub/Vercel integration; manual CLI deployment remains intentionally skipped until Vercel identity/scope is corrected.
+
+## Boundary maintained
+
+- No production deploy.
+- No feature -> main merge.
+- No Gate 2/3/4 activation.
+- No live submission unblock.
+- No secret values read or written.
+- No user-facing readiness copy or new placement chosen by Codex.
+
+[DOC-HINT: CoinW readiness v1.2 is locally verified, PR #189 is open, GitHub/Vercel preview checks pass, and preview URLs are SSO-protected; manual Vercel CLI deployment remains blocked by scope mismatch.]
