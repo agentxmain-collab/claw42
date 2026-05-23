@@ -96,7 +96,7 @@ function MessageBubbleComponent({
   );
   const hasExpandableDetail = Boolean(
     standaloneDetailText &&
-      (compactSummaryText.truncated || (summaryText && standaloneDetailText !== summaryText)),
+    (compactSummaryText.truncated || (summaryText && standaloneDetailText !== summaryText)),
   );
   const expanded = hasExpandableDetail && !collapsed;
   const detailId = React.useMemo(
