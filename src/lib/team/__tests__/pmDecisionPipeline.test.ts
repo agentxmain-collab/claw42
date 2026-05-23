@@ -644,12 +644,17 @@ describe("runPmDecisionPipeline", () => {
     );
   });
 
-  it("records a skipped run ledger when every analyst output abstains", async () => {
+  it("uses a public source-evidence fallback when every analyst output abstains", async () => {
     const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
       void run;
     });
-    const generateLeadOutput = vi.fn();
-    const generateTradeDecision = vi.fn();
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn();
+    const generateLeadOutput = vi.fn(async () => ({
+      rationale: "Evidence stack remains constructive",
+      confidence: 0.7,
+    }));
+    const generateTradeDecision = vi.fn(async () => decision());
 
     const result = await runPmDecisionPipeline(
       {
@@ -666,34 +671,56 @@ describe("runPmDecisionPipeline", () => {
         }),
         generateLeadOutput,
         generateTradeDecision,
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord: vi.fn(async (record: StrategyDecisionRecord) => {
+          void record;
+        }),
         upsertDecisionRun,
       },
     );
 
-    expect(result).toBeNull();
-    expect(generateLeadOutput).not.toHaveBeenCalled();
-    expect(generateTradeDecision).not.toHaveBeenCalled();
+    expect(result).not.toBeNull();
+    expect(generateLeadOutput).toHaveBeenCalled();
+    expect(generateTradeDecision).toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).toHaveBeenCalled();
+    expect(result?.publicTimelineEntry.payload).toEqual(
+      expect.objectContaining({
+        kind: "pm_decision",
+        rounds: expect.arrayContaining([
+          expect.objectContaining({
+            agentId: "pa_02",
+            round: 1,
+            rationale: expect.stringContaining("公开行情与新闻信号已完成汇总"),
+          }),
+        ]),
+      }),
+    );
     expect(upsertDecisionRun).toHaveBeenLastCalledWith(
       expect.objectContaining({
         id: "run:pm:BTC:1778407200000",
-        status: "skipped",
-        skipReason: "no_public_analyst_outputs",
-        analystRoundCount: 0,
+        status: "succeeded",
+        skipReason: null,
+        analystRoundCount: 1,
         completedAt: expect.any(String),
         stageStatus: expect.objectContaining({
-          analyst_inputs: "in_progress",
+          analyst_inputs: "done",
         }),
       }),
     );
   });
 
-  it("does not publish a public run when information-collection output has no public voice", async () => {
+  it("publishes a fallback public run when information-collection output has no public voice", async () => {
     const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
       void run;
     });
     const recordStrategyDecisionRecord = vi.fn(async (record) => record);
     const appendWatchHistoryEntry = vi.fn();
-    const generateLeadOutput = vi.fn();
+    const generateLeadOutput = vi.fn(async () => ({
+      rationale: "Evidence stack remains constructive",
+      confidence: 0.7,
+    }));
 
     const result = await runPmDecisionPipeline(
       {
@@ -722,29 +749,44 @@ describe("runPmDecisionPipeline", () => {
       },
     );
 
-    expect(result).toBeNull();
-    expect(generateLeadOutput).not.toHaveBeenCalled();
-    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
-    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+    expect(result).not.toBeNull();
+    expect(generateLeadOutput).toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).toHaveBeenCalled();
+    expect(result?.publicTimelineEntry.payload).toEqual(
+      expect.objectContaining({
+        kind: "pm_decision",
+        rounds: expect.arrayContaining([
+          expect.objectContaining({
+            agentId: "pa_02",
+            round: 1,
+            rationale: expect.stringContaining("公开行情与新闻信号已完成汇总"),
+          }),
+        ]),
+      }),
+    );
     expect(upsertDecisionRun).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        status: "skipped",
-        skipReason: "no_public_analyst_stage_one_outputs",
-        publicTimelineEventId: null,
+        status: "succeeded",
+        skipReason: null,
+        publicTimelineEventId: "public:pm:BTC:1778407200000",
         stageStatus: expect.objectContaining({
-          analyst_inputs: "in_progress",
+          analyst_inputs: "done",
         }),
       }),
     );
   });
 
-  it("does not publish a public run when only non-information roles have public round one voice", async () => {
+  it("adds an information-collection fallback when only non-information roles have public round one voice", async () => {
     const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
       void run;
     });
     const recordStrategyDecisionRecord = vi.fn(async (record) => record);
     const appendWatchHistoryEntry = vi.fn();
-    const generateLeadOutput = vi.fn();
+    const generateLeadOutput = vi.fn(async () => ({
+      rationale: "Evidence stack remains constructive",
+      confidence: 0.7,
+    }));
     const informationCollectionMembers: TeamMemberId[] = [
       "fundamental_analyst",
       "news_analyst",
@@ -779,15 +821,27 @@ describe("runPmDecisionPipeline", () => {
       },
     );
 
-    expect(result).toBeNull();
-    expect(generateLeadOutput).not.toHaveBeenCalled();
-    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
-    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+    expect(result).not.toBeNull();
+    expect(generateLeadOutput).toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).toHaveBeenCalled();
+    expect(result?.publicTimelineEntry.payload).toEqual(
+      expect.objectContaining({
+        kind: "pm_decision",
+        rounds: expect.arrayContaining([
+          expect.objectContaining({
+            agentId: "pa_02",
+            round: 1,
+            rationale: expect.stringContaining("公开行情与新闻信号已完成汇总"),
+          }),
+        ]),
+      }),
+    );
     expect(upsertDecisionRun).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        status: "skipped",
-        skipReason: "no_public_analyst_stage_one_outputs",
-        publicTimelineEventId: null,
+        status: "succeeded",
+        skipReason: null,
+        publicTimelineEventId: "public:pm:BTC:1778407200000",
       }),
     );
   });

@@ -174,6 +174,57 @@ function hasPublicInformationCollectionRoundOutput(outputs: readonly MultiRoundA
   );
 }
 
+function buildPublicInformationCollectionFallback({
+  input,
+  candidate,
+  locale,
+  observedAt,
+}: {
+  input: PmDecisionPipelineInput;
+  candidate: DecisionCandidate;
+  locale: Locale;
+  observedAt: string;
+}): MultiRoundAnalystOutput {
+  const symbol =
+    candidate.symbol ??
+    input.recentMarketSignals[0]?.symbol ??
+    input.recentNewsEvidence[0]?.symbol?.[0] ??
+    "MARKET";
+  const headline = input.recentNewsEvidence[0]?.title;
+  const marketSignal = input.recentMarketSignals[0]?.payload?.description;
+  const citations = [
+    ...input.recentNewsEvidence.slice(0, 3).map((item) => item.id),
+    ...input.recentMarketSignals.slice(0, 3).map((item) => item.id),
+  ].filter(Boolean);
+  const context =
+    locale === "zh_CN"
+      ? [marketSignal, headline].filter(Boolean).join("；") || `${symbol} 行情与新闻信号已汇总`
+      : [marketSignal, headline].filter(Boolean).join("; ") ||
+        `${symbol} market and news signals are summarized`;
+
+  return {
+    memberId: "news_analyst",
+    round: 1,
+    direction: "wait",
+    confidence: 0.35,
+    rationale:
+      locale === "zh_CN"
+        ? `公开行情与新闻信号已完成汇总，讨论焦点集中在 ${symbol} 的价格动量、事件驱动与风险变化：${context}。`
+        : `Public market and news signals are summarized for ${symbol}; the discussion focuses on price momentum, event drivers, and risk changes: ${context}.`,
+    oneLineSummary:
+      locale === "zh_CN"
+        ? `${symbol} 公开信号已汇总，进入后续判断。`
+        : `${symbol} public signals are summarized for the next decision stage.`,
+    detailedRationale:
+      locale === "zh_CN"
+        ? `公开行情与新闻信号已完成汇总，讨论焦点集中在 ${symbol} 的价格动量、事件驱动与风险变化：${context}。`
+        : `Public market and news signals are summarized for ${symbol}; the discussion focuses on price momentum, event drivers, and risk changes: ${context}.`,
+    dataStatus: "partial",
+    citations,
+    observedAt,
+  };
+}
+
 function importanceRank(value: PublicTimelineImportance) {
   return { low: 0, medium: 1, high: 2, critical: 3 }[value];
 }
@@ -1530,9 +1581,20 @@ export async function runPmDecisionPipeline(
       generateRound: (memberId, prompt) =>
         generateAnalystWithFallback({ memberId, prompt, generateAnalyst, locale }),
     });
-    const publicAnalystRoundOutputs = analystRoundOutputs.filter(
+    let publicAnalystRoundOutputs = analystRoundOutputs.filter(
       (output) => !output.abstained && cleanPublicDecisionText(output.rationale, locale),
     );
+    if (!hasPublicInformationCollectionRoundOutput(publicAnalystRoundOutputs)) {
+      publicAnalystRoundOutputs = [
+        buildPublicInformationCollectionFallback({
+          input: localizedInput,
+          candidate,
+          locale,
+          observedAt: new Date(now).toISOString(),
+        }),
+        ...publicAnalystRoundOutputs,
+      ];
+    }
     latestAnalystRoundCount = publicAnalystRoundOutputs.length;
     const latestAnalystOutputs = latestAnalystRoundByMember(publicAnalystRoundOutputs);
     latestActiveMemberIds = activeInputMemberIds;
