@@ -130,6 +130,20 @@ const PUBLIC_REASON_ORDER: TopicReasonKind[] = [
   "pool",
   "memory",
 ];
+const PUBLIC_DRIVER_REASON_KINDS = new Set<TopicReasonKind>([
+  "news",
+  "social",
+  "market",
+  "momentum",
+  "memory",
+]);
+const PUBLIC_EVIDENCE_REASON_KINDS = new Set<TopicReasonKind>([
+  "news",
+  "social",
+  "market",
+  "momentum",
+  "memory",
+]);
 const MARKET_NEWS_ANCHOR_SYMBOL = "BTC";
 
 export function clearTopicSelectionCacheForTests() {
@@ -672,9 +686,9 @@ function formatReasonLabelList(kinds: TopicReasonKind[]) {
 }
 
 function formatPublicDriverSummary(breakdown: TopicScoreBreakdown) {
-  const positiveDrivers = PUBLIC_REASON_ORDER.filter((kind) => breakdown[kind] > 0).sort(
-    (left, right) => breakdown[right] - breakdown[left],
-  );
+  const positiveDrivers = PUBLIC_REASON_ORDER.filter(
+    (kind) => PUBLIC_DRIVER_REASON_KINDS.has(kind) && breakdown[kind] > 0,
+  ).sort((left, right) => breakdown[right] - breakdown[left]);
   const constraintDrivers = PUBLIC_REASON_ORDER.filter((kind) => breakdown[kind] < 0).sort(
     (left, right) => breakdown[left] - breakdown[right],
   );
@@ -690,19 +704,36 @@ function formatPublicDriverSummary(breakdown: TopicScoreBreakdown) {
   return parts.join("；");
 }
 
+function formatPublicEvidenceSummary(reasons: TopicSelectionReason[]) {
+  const publicSignals = reasons
+    .filter((reason) => PUBLIC_EVIDENCE_REASON_KINDS.has(reason.kind))
+    .sort((left, right) => {
+      const leftOrder = PUBLIC_REASON_ORDER.indexOf(left.kind);
+      const rightOrder = PUBLIC_REASON_ORDER.indexOf(right.kind);
+      if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+      return right.score - left.score;
+    });
+  const constraints = publicSignals.filter((reason) => reason.score < 0).slice(0, 1);
+  const positiveSignals = publicSignals.filter((reason) => reason.score >= 0).slice(0, 3);
+  const publicReasons = [...positiveSignals, ...constraints];
+
+  return publicReasons.map(formatPublicReason).join("；");
+}
+
 export function buildTopicSelectionEvidence(
   topic: PmDecisionTopicCandidate,
   now = Date.now(),
 ): NewsEvidence {
   const timestamp = new Date(now).toISOString();
-  const reasonText =
-    topic.reasons.length > 0
-      ? topic.reasons.map(formatPublicReason).join("；")
-      : "默认高流动性观察标的";
   const driverText = formatPublicDriverSummary(topic.scoreBreakdown);
-  const summary = driverText
-    ? `本轮优先分析 ${topic.symbol}：${driverText}。依据：${reasonText}。`
-    : `本轮优先分析 ${topic.symbol}：${reasonText}。`;
+  const evidenceText = formatPublicEvidenceSummary(topic.reasons);
+  const summaryParts = [driverText, evidenceText ? `观察信号：${evidenceText}` : null].filter(
+    Boolean,
+  );
+  const summary =
+    summaryParts.length > 0
+      ? `本轮优先分析 ${topic.symbol}：${summaryParts.join("。")}。`
+      : `本轮优先分析 ${topic.symbol}：进入观察名单。`;
 
   return {
     id: `topic_selection:${topic.symbol}:${now}`,

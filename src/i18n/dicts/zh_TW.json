@@ -673,6 +673,8 @@
         "statusActive": "LIVE 辯論",
         "collapse": "收起",
         "expand": "展开",
+        "messageExpand": "展開全文",
+        "messageCollapse": "收起",
         "original": "原文 →",
         "progressAriaLabel": "决策流程进度",
         "progressLabels": [
@@ -734,7 +736,10 @@
         "in_progressNote": "該階段正在寫入部分結果",
         "done": "已完成",
         "memoryPending": "復盤等待結果回寫",
-        "observationOnly": "__TBD__"
+        "observationOnly": "__TBD__",
+        "stage2Observation": "多空觀察",
+        "stage6TrackingPending": "追蹤中 · 預期 {hours} 小時後回寫",
+        "stage6TrackingOverdue": "追蹤逾時 · 已超過預期 {hours} 小時"
       },
       "topicRanking": {
         "explanation_template": "{symbol} 因 {news_count} 條新聞 + {confidence}% 置信度排第 {rank}",

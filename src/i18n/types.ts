@@ -135,6 +135,9 @@ export type DispatchV10StageStatusDict = {
   done: string;
   memoryPending: string;
   observationOnly: string;
+  stage2Observation: string;
+  stage6TrackingPending: string;
+  stage6TrackingOverdue: string;
 };
 
 export type DispatchV10MessageDict = {
@@ -269,6 +272,8 @@ export type DispatchV10Dict = {
     statusActive: string;
     collapse: string;
     expand: string;
+    messageExpand: string;
+    messageCollapse: string;
     original: string;
     progressAriaLabel: string;
     progressLabels: string[];

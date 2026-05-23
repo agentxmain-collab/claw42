@@ -29,8 +29,8 @@ export interface MonthlyUsage {
 }
 
 function getMonthlyBudgetUsd() {
-  const value = Number.parseFloat(process.env.LLM_MONTHLY_BUDGET_USD || "200");
-  return Number.isFinite(value) && value > 0 ? value : 200;
+  const value = Number.parseFloat(process.env.LLM_MONTHLY_BUDGET_USD || "800");
+  return Number.isFinite(value) && value > 0 ? value : 800;
 }
 
 function getAlarmThreshold() {

@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "Развернуть текст",
+        "messageCollapse": "Свернуть",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [
@@ -734,7 +736,10 @@
         "in_progressNote": "Этап записывает частичное обновление",
         "done": "Готово",
         "memoryPending": "Разбор ждет записи результата",
-        "observationOnly": "__TBD__"
+        "observationOnly": "__TBD__",
+        "stage2Observation": "Наблюдение long/short",
+        "stage6TrackingPending": "Отслеживание · запись ожидается через {hours} ч",
+        "stage6TrackingOverdue": "Отслеживание просрочено · на {hours} ч позже цели"
       },
       "topicRanking": {
         "explanation_template": "{symbol} занимает #{rank}: {news_count} новостей + {confidence}% уверенности",

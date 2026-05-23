@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   __llmProviderTestUtils,
   callWithChain,
@@ -19,6 +19,8 @@ const ORIGINAL_ENV = { ...process.env };
 function resetEnv() {
   process.env = { ...ORIGINAL_ENV };
   delete process.env.DEEPSEEK_API_KEY;
+  delete process.env.DEEPSEEK_MODEL;
+  delete process.env.DEEPSEEK_FALLBACK_MODEL;
   delete process.env.MINIMAX_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
   delete process.env.OPENAI_API_KEY;
@@ -38,6 +40,7 @@ describe("LLM provider core", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     process.env = { ...ORIGINAL_ENV };
   });
 
@@ -126,5 +129,70 @@ describe("LLM provider core", () => {
     expect(await getProvider("deepseek-chat").isHealthy()).toBe(false);
     process.env.DEEPSEEK_API_KEY = "test-key";
     expect(await getProvider("deepseek-chat").isHealthy()).toBe(true);
+  });
+
+  it("uses DeepSeek V4 Pro model and pricing by default", async () => {
+    process.env.DEEPSEEK_API_KEY = "test-key";
+    let requestBody: unknown;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        requestBody = JSON.parse(String(init?.body ?? "{}"));
+        return new Response(
+          JSON.stringify({
+            choices: [{ message: { content: "market check" } }],
+            usage: { prompt_tokens: 1_000_000, completion_tokens: 1_000_000 },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    const provider = getProvider("deepseek-chat");
+    const output = await provider.generate({ prompt: "hello", taskTag: "test:deepseek" });
+    const estimate = provider.estimateCost({
+      prompt: "x".repeat(3_999_999),
+      maxTokens: 1_000_000,
+      taskTag: "test:deepseek-cost",
+    });
+
+    expect(provider.displayName).toBe("DeepSeek V4 Pro");
+    expect(requestBody).toMatchObject({ model: "deepseek-v4-pro" });
+    expect(output.provider).toBe("deepseek-chat");
+    expect(estimate).toEqual({ inputUsd: 0.435, outputUsd: 0.87 });
+  });
+
+  it("falls back from DeepSeek V4 Pro to V4 Flash on transient model failure", async () => {
+    process.env.DEEPSEEK_API_KEY = "test-key";
+    const requestModels: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        const requestBody = JSON.parse(String(init?.body ?? "{}")) as { model?: string };
+        requestModels.push(String(requestBody.model));
+        if (requestBody.model === "deepseek-v4-pro") {
+          return new Response(JSON.stringify({ error: "temporary unavailable" }), {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        return new Response(
+          JSON.stringify({
+            choices: [{ message: { content: "flash fallback" } }],
+            usage: { prompt_tokens: 10, completion_tokens: 5 },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    const output = await getProvider("deepseek-chat").generate({
+      prompt: "hello",
+      taskTag: "test:deepseek-fallback",
+    });
+
+    expect(requestModels).toEqual(["deepseek-v4-pro", "deepseek-v4-flash"]);
+    expect(output.text).toBe("flash fallback");
+    expect(output.provider).toBe("deepseek-chat");
   });
 });

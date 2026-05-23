@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "Expand full text",
+        "messageCollapse": "Collapse",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [
@@ -734,7 +736,10 @@
         "in_progressNote": "This stage is writing a partial update",
         "done": "Done",
         "memoryPending": "Review waits for outcome writeback",
-        "observationOnly": "__TBD__"
+        "observationOnly": "__TBD__",
+        "stage2Observation": "Long/short observation",
+        "stage6TrackingPending": "Tracking · expected writeback in {hours}h",
+        "stage6TrackingOverdue": "Tracking overdue · {hours}h past target"
       },
       "topicRanking": {
         "explanation_template": "{symbol} ranks #{rank} from {news_count} news items + {confidence}% confidence",

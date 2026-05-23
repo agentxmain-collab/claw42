@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "عرض النص الكامل",
+        "messageCollapse": "طي",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [
@@ -734,7 +736,10 @@
         "in_progressNote": "تكتب هذه المرحلة تحديثا جزئيا",
         "done": "مكتمل",
         "memoryPending": "المراجعة تنتظر كتابة النتيجة",
-        "observationOnly": "__TBD__"
+        "observationOnly": "__TBD__",
+        "stage2Observation": "مراقبة الشراء/البيع",
+        "stage6TrackingPending": "قيد التتبع · متوقع كتابة النتيجة خلال {hours} ساعة",
+        "stage6TrackingOverdue": "تأخر التتبع · تجاوز الهدف بـ {hours} ساعة"
       },
       "topicRanking": {
         "explanation_template": "{symbol} في المرتبة #{rank} بسبب {news_count} أخبار + ثقة {confidence}%",

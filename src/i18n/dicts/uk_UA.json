@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "Розгорнути текст",
+        "messageCollapse": "Згорнути",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [
@@ -734,7 +736,10 @@
         "in_progressNote": "Етап записує часткове оновлення",
         "done": "Готово",
         "memoryPending": "Розбір чекає запису результату",
-        "observationOnly": "__TBD__"
+        "observationOnly": "__TBD__",
+        "stage2Observation": "Спостереження long/short",
+        "stage6TrackingPending": "Відстеження · запис очікується через {hours} год",
+        "stage6TrackingOverdue": "Відстеження прострочено · на {hours} год понад ціль"
       },
       "topicRanking": {
         "explanation_template": "{symbol} має ранг #{rank}: {news_count} новин + {confidence}% впевненості",

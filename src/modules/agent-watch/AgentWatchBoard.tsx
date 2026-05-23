@@ -171,9 +171,6 @@ export function resolveVisibleSessionRefreshTarget({
 }): VisibleSessionRefreshTarget | null {
   if (!timelineLoaded) return null;
 
-  const residentTarget = residentRefreshTarget({ residentStatus, locale });
-  if (residentTarget) return residentTarget;
-
   const symbolCoverage = publicBetaSymbolCoverage(
     topics
       .filter((topic) => normalizeCandidateType(topic.candidateType) === "symbol")
@@ -186,6 +183,9 @@ export function resolveVisibleSessionRefreshTarget({
       params: { candidateType: AUTO_SYMBOL_REFRESH_CANDIDATE },
     };
   }
+
+  const residentTarget = residentRefreshTarget({ residentStatus, locale });
+  if (residentTarget) return residentTarget;
 
   const latestRefreshSymbol = symbolCoverage[0];
   return {

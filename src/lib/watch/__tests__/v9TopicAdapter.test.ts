@@ -323,7 +323,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.stages[5]).toMatchObject({
       label: "阶段 6 · 复盘沉淀",
       status: "pending",
-      note: "暂无复盘沉淀，等待结果回写",
+      note: "跟踪中 · 预期 24 小时后回写",
     });
     expect(topic.title).not.toContain("live market check");
     expect(topic.stages[5]?.note).not.toContain("TODO");
@@ -374,8 +374,74 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.stages[5]).toMatchObject({
       label: "阶段 6 · 复盘沉淀",
       status: "pending",
-      note: "No review memory yet; awaiting outcome writeback.",
+      note: "Tracking · expected writeback in 24h",
     });
+  });
+
+  it("counts down pending memory-loop writeback from the decision age", () => {
+    const generatedAt = now - 17 * 60 * 60_000;
+    const event = pmDecision({
+      ts: generatedAt,
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-aged",
+        symbol: "BTC",
+        tradeDecision: {
+          ...tradeDecision,
+          generatedAt: new Date(generatedAt).toISOString(),
+        },
+        rationaleByMember: {
+          chart_analyst: "BTC is testing support.",
+        },
+        citationsByMember: {},
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.stages[5]).toMatchObject({
+      label: "阶段 6 · 复盘沉淀",
+      status: "pending",
+      note: "跟踪中 · 预期 7 小时后回写",
+    });
+    expect(topic.messages[0]?.dataAge).toBe("17 小时前分析");
+  });
+
+  it("marks memory-loop writeback as overdue after the expected window", () => {
+    const generatedAt = now - 27 * 60 * 60_000;
+    const event = pmDecision({
+      ts: generatedAt,
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-overdue",
+        symbol: "BTC",
+        tradeDecision: {
+          ...tradeDecision,
+          generatedAt: new Date(generatedAt).toISOString(),
+        },
+        rationaleByMember: {
+          chart_analyst: "BTC is testing support.",
+        },
+        citationsByMember: {},
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.stages[5]).toMatchObject({
+      label: "阶段 6 · 复盘沉淀",
+      status: "pending",
+      note: "跟踪超时 · 已超过预期 3 小时",
+    });
+    expect(topic.messages[0]?.dataAge).toBe("1 天前分析");
   });
 
   it("drops non-CoinW futures symbol decisions from the public beta board", () => {
@@ -698,7 +764,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.status).toBe("active");
     expect(topic.title).toBe("BTC 实时行情分析");
     expect(topic.explanation).toBe("分析进行中");
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 0 秒前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 0 秒前分析");
     expect(topic.strategy).toMatchObject({
       action: "pending",
       actionLabel: "分析中",
@@ -803,7 +869,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("done");
-    expect(topic.progress).toBe("12 分钟闭环");
+    expect(topic.progress).toBe("12 分钟前分析");
     expect(topic.stages.slice(0, 4).map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -869,7 +935,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("active");
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 0 秒前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 0 秒前分析");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -961,7 +1027,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
 
     expect(topic.status).toBe("active");
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 1 分钟前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 1 分钟前分析");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -1044,7 +1110,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 1 分钟前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 1 分钟前分析");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -1137,7 +1203,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 1 分钟前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 1 分钟前分析");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",
@@ -1201,24 +1267,22 @@ describe("mapPublicTimelineEventsToTopics", () => {
 
     expect(topic.status).toBe("done");
     expect(topic.messages.map((message) => message.roundLabel).filter(Boolean)).toEqual([
-      "Round 1 · multi-round debate",
       "Round 2 · multi-round debate",
     ]);
     expect(topic.messages.map((message) => message.content)).toEqual(
-      expect.arrayContaining(["Round one detailed chart view.", "Round two refined chart view."]),
+      expect.arrayContaining(["Round two refined chart view.", "Round two synthesis."]),
     );
     expect(topic.messages[0]).toMatchObject({
       sourceMemberId: "chart_analyst",
       direction: "short",
       directionLabel: "SHORT",
-      confidence: 0.6,
-      oneLineSummary: "Chart pressure is building.",
-      dataStatusLabel: "Data available",
+      confidence: 0.7,
+      oneLineSummary: undefined,
       roleViewpoint: "Technical / TA view",
     });
   });
 
-  it("keeps second-round analyst refinements inside the debate stage instead of stage one", () => {
+  it("keeps signal-source refinements inside information collection instead of debate", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
 
@@ -1252,7 +1316,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
                 memberId: "fundamental_analyst",
                 direction: "short",
                 confidence: 0.66,
-                rationale: "Round two fundamental refinement belongs to debate, not collection.",
+                rationale: "Round two fundamental refinement belongs to collection, not debate.",
                 evidenceIds: [],
               },
             ],
@@ -1284,15 +1348,199 @@ describe("mapPublicTimelineEventsToTopics", () => {
     );
 
     expect(fundamentalRoundTwo).toMatchObject({
-      stageId: stageTwoId,
-      roundLabel: "第 2 轮 · 多轮辩论",
+      stageId: stageOneId,
+      roundLabel: undefined,
     });
     expect(
       topic.messages
-        .filter((message) => message.stageId === stageOneId)
+        .filter((message) => message.stageId === stageTwoId)
         .map((message) => message.roundLabel)
         .filter(Boolean),
-    ).not.toContain("第 2 轮 · 多轮辩论");
+    ).toEqual(["第 1 轮 · 多轮辩论"]);
+  });
+
+  it("keeps only the latest message per member within the same visible stage", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+
+    const [topic] = mapTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            tradeDecision: null,
+            rationaleByMember: {},
+            rounds: [
+              {
+                round: 1,
+                memberId: "chart_analyst",
+                direction: "long",
+                confidence: 0.55,
+                rationale: "Round one collection remains visible.",
+                evidenceIds: [],
+              },
+              {
+                round: 1,
+                memberId: "research_lead",
+                direction: "long",
+                confidence: 0.6,
+                rationale: "Older synthesis should be hidden.",
+                detailedRationale: "Older synthesis should be hidden.",
+                evidenceIds: [],
+              },
+              {
+                round: 2,
+                memberId: "research_lead",
+                direction: "long",
+                confidence: 0.7,
+                rationale: "Latest synthesis should remain visible.",
+                detailedRationale: "Latest synthesis should remain visible with more detail.",
+                evidenceIds: [],
+              },
+            ],
+            stageTrace: [
+              {
+                stageId: "analyst_inputs",
+                status: "done",
+                observedAt: new Date(now - 120_000).toISOString(),
+              },
+              {
+                stageId: "research_lead",
+                status: "in_progress",
+                observedAt: new Date(now - 60_000).toISOString(),
+              },
+            ],
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    const researchMessages = topic.messages.filter(
+      (message) => message.sourceMemberId === "research_lead",
+    );
+
+    expect(researchMessages).toHaveLength(1);
+    expect(researchMessages[0]?.content).toBe(
+      "Latest synthesis should remain visible with more detail.",
+    );
+    expect(topic.messages.map((message) => message.content)).not.toContain(
+      "Older synthesis should be hidden.",
+    );
+  });
+
+  it("labels one-sided stage two output as observation instead of debate", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+
+    const [topic] = mapTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            tradeDecision: null,
+            rationaleByMember: {},
+            rounds: [
+              {
+                round: 1,
+                memberId: "chart_analyst",
+                direction: "long",
+                confidence: 0.55,
+                rationale: "Collection view.",
+                evidenceIds: [],
+              },
+              {
+                round: 1,
+                memberId: "bullish_researcher",
+                direction: "long",
+                confidence: 0.6,
+                rationale: "Only one side is available.",
+                evidenceIds: [],
+              },
+            ],
+            stageTrace: [
+              {
+                stageId: "analyst_inputs",
+                status: "done",
+                observedAt: new Date(now - 120_000).toISOString(),
+              },
+              {
+                stageId: "research_lead",
+                status: "done",
+                observedAt: new Date(now - 60_000).toISOString(),
+              },
+            ],
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.stages[1]?.label).toBe("阶段 2 · 多空观察");
+  });
+
+  it("keeps the debate label when stage two has both long and short voices", () => {
+    const event = pmDecision();
+    if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
+
+    const [topic] = mapTopics({
+      events: [
+        {
+          ...event,
+          payload: {
+            ...event.payload,
+            tradeDecision: null,
+            rationaleByMember: {},
+            rounds: [
+              {
+                round: 1,
+                memberId: "chart_analyst",
+                direction: "long",
+                confidence: 0.55,
+                rationale: "Collection view.",
+                evidenceIds: [],
+              },
+              {
+                round: 1,
+                memberId: "bullish_researcher",
+                direction: "long",
+                confidence: 0.6,
+                rationale: "Bullish side.",
+                evidenceIds: [],
+              },
+              {
+                round: 1,
+                memberId: "bearish_researcher",
+                direction: "short",
+                confidence: 0.61,
+                rationale: "Bearish side.",
+                evidenceIds: [],
+              },
+            ],
+            stageTrace: [
+              {
+                stageId: "analyst_inputs",
+                status: "done",
+                observedAt: new Date(now - 120_000).toISOString(),
+              },
+              {
+                stageId: "research_lead",
+                status: "done",
+                observedAt: new Date(now - 60_000).toISOString(),
+              },
+            ],
+          },
+        },
+      ],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.stages[1]?.label).toBe("阶段 2 · 多空辩论");
   });
 
   it("does not render a public card that starts with later-round analyst output", () => {
@@ -1434,7 +1682,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.status).toBe("active");
     expect(topic.title).toBe("BTC 实时行情分析");
     expect(topic.explanation).toBe("分析进行中");
-    expect(topic.progress).toBe("当前进行到阶段 3 · 数据 0 秒前");
+    expect(topic.progress).toBe("当前进行到阶段 3 · 0 秒前分析");
     expect(topic.stages.map((stage) => stage.status)).toEqual([
       "done",
       "done",

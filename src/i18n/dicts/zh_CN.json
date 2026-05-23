@@ -673,6 +673,8 @@
         "statusActive": "LIVE 辩论",
         "collapse": "收起",
         "expand": "展开",
+        "messageExpand": "展开全文",
+        "messageCollapse": "收起",
         "original": "原文 →",
         "progressAriaLabel": "决策流程进度",
         "progressLabels": [
@@ -734,7 +736,10 @@
         "in_progressNote": "该阶段正在写入部分结果",
         "done": "已完成",
         "memoryPending": "复盘等待结果回写",
-        "observationOnly": "观察结论已完成，不涉及具体交易"
+        "observationOnly": "观察结论已完成，不涉及具体交易",
+        "stage2Observation": "多空观察",
+        "stage6TrackingPending": "跟踪中 · 预期 {hours} 小时后回写",
+        "stage6TrackingOverdue": "跟踪超时 · 已超过预期 {hours} 小时"
       },
       "topicRanking": {
         "explanation_template": "{symbol} 因 {news_count} 条新闻 + {confidence}% 置信度排第 {rank}",

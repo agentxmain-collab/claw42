@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "Afficher le texte complet",
+        "messageCollapse": "Replier",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [
@@ -734,7 +736,10 @@
         "in_progressNote": "Cette étape écrit une mise à jour partielle",
         "done": "Terminé",
         "memoryPending": "La revue attend le retour du résultat",
-        "observationOnly": "__TBD__"
+        "observationOnly": "__TBD__",
+        "stage2Observation": "Observation long/short",
+        "stage6TrackingPending": "Suivi en cours · retour attendu dans {hours} h",
+        "stage6TrackingOverdue": "Suivi en retard · {hours} h apres la cible"
       },
       "topicRanking": {
         "explanation_template": "{symbol} est classé #{rank} grâce à {news_count} actus + {confidence}% de confiance",

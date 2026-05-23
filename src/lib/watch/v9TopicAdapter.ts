@@ -118,9 +118,29 @@ const ROLE_VIEWPOINT_KEY: Record<TeamMemberId, DispatchV10AgentRoleId> = {
   memory_loop: "memoryLoop",
 };
 
+const ROLE_TO_VISIBLE_STAGE: Record<TeamMemberId, 1 | 2 | 3 | 4 | 5 | 6> = {
+  fundamental_analyst: 1,
+  news_analyst: 1,
+  chart_analyst: 1,
+  onchain_analyst: 1,
+  research_lead: 2,
+  bullish_researcher: 2,
+  bearish_researcher: 2,
+  trader: 3,
+  risk_lead: 4,
+  aggressive_reviewer: 4,
+  neutral_reviewer: 4,
+  conservative_reviewer: 4,
+  pm: 5,
+  memory_loop: 6,
+};
+
 type PartialTraceStatus = NonNullable<
   PmDecisionTimelineEvent["payload"]["stageTrace"]
 >[number]["status"];
+type PublicRoundEntry = NonNullable<PmDecisionPayload["rounds"]>[number];
+
+const MEMORY_LOOP_EXPECTED_WRITEBACK_HOURS = 24;
 
 function dispatchDict(locale: Locale) {
   return DISPATCH_DICTS[locale] ?? DISPATCH_DICTS.zh_CN;
@@ -151,14 +171,14 @@ function formatTime(ts: number) {
   }).format(new Date(ts));
 }
 
-function minutesBetween(start: number, end: number) {
-  return Math.max(0, Math.round((end - start) / 60_000));
-}
-
 function formatDataAge(ts: number, now: number) {
   const seconds = Math.max(0, Math.round((now - ts) / 1000));
-  if (seconds < 60) return `数据 ${seconds} 秒前`;
-  return `数据 ${Math.round(seconds / 60)} 分钟前`;
+  if (seconds < 60) return `${seconds} 秒前分析`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} 分钟前分析`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} 小时前分析`;
+  return `${Math.round(hours / 24)} 天前分析`;
 }
 
 function formatPrice(value: number) {
@@ -274,36 +294,87 @@ function stageId(topicId: string, stage: number) {
 }
 
 function stageForMember(memberId: TeamMemberId) {
-  if (
-    memberId === "fundamental_analyst" ||
-    memberId === "news_analyst" ||
-    memberId === "chart_analyst" ||
-    memberId === "onchain_analyst"
-  ) {
-    return 1;
-  }
-  if (memberId === "research_lead") return 2;
-  if (memberId === "bullish_researcher" || memberId === "bearish_researcher") return 2;
-  if (memberId === "trader") return 3;
-  if (memberId === "risk_lead") return 4;
-  if (
-    memberId === "aggressive_reviewer" ||
-    memberId === "neutral_reviewer" ||
-    memberId === "conservative_reviewer"
-  ) {
-    return 4;
-  }
-  if (memberId === "memory_loop") return 6;
-  return 5;
+  return ROLE_TO_VISIBLE_STAGE[memberId];
 }
 
-function stageForRoundEntry(
-  entry: NonNullable<PmDecisionPayload["rounds"]>[number],
-  memberId: TeamMemberId,
+function stageForRoundEntry(entry: PublicRoundEntry, memberId: TeamMemberId) {
+  return stageForMember(memberId);
+}
+
+function stageTwoLabel(
+  event: PmDecisionTimelineEvent | undefined,
+  stageStatusDict: DispatchV10StageStatusDict,
 ) {
-  const baseStage = stageForMember(memberId);
-  if (baseStage === 1 && entry.round > 1) return 2;
-  return baseStage;
+  if (!event) return "多空辩论";
+  const stageTwoEntries = (event.payload.rounds ?? []).filter((entry) => {
+    const memberId = memberForRoundEntry(entry);
+    return Boolean(memberId && stageForRoundEntry(entry, memberId) === 2);
+  });
+  const hasLong = stageTwoEntries.some((entry) => entry.direction === "long");
+  const hasShort = stageTwoEntries.some((entry) => entry.direction === "short");
+  return hasLong && hasShort ? "多空辩论" : stageStatusDict.stage2Observation;
+}
+
+function stageSixStartTs(event: PmDecisionTimelineEvent | undefined) {
+  const generatedAt = event ? renderableTradeDecision(event)?.generatedAt : undefined;
+  if (generatedAt) {
+    const parsed = Date.parse(generatedAt);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return event?.ts ?? Date.now();
+}
+
+function stageSixTrackingPending(
+  stageStatusDict: DispatchV10StageStatusDict,
+  event: PmDecisionTimelineEvent | undefined,
+  now: number,
+) {
+  const elapsedHours = Math.max(0, (now - stageSixStartTs(event)) / 3_600_000);
+  const remainingHours = MEMORY_LOOP_EXPECTED_WRITEBACK_HOURS - elapsedHours;
+  if (remainingHours > 0) {
+    return replaceVars(stageStatusDict.stage6TrackingPending, {
+      hours: Math.max(1, Math.ceil(remainingHours)),
+    });
+  }
+  return replaceVars(stageStatusDict.stage6TrackingOverdue, {
+    hours: Math.max(1, Math.ceil(Math.abs(remainingHours))),
+  });
+}
+
+function roundEntryContentLength(entry: PublicRoundEntry) {
+  return (entry.detailedRationale?.trim() || entry.rationale.trim()).length;
+}
+
+function selectVisibleRoundEntries(roundEntries: readonly PublicRoundEntry[]) {
+  const selected = new Map<
+    string,
+    { entry: PublicRoundEntry; memberId: TeamMemberId; stage: number }
+  >();
+
+  for (const entry of roundEntries) {
+    const memberId = memberForRoundEntry(entry);
+    if (!memberId || !entry.rationale.trim()) continue;
+    const stage = stageForRoundEntry(entry, memberId);
+    const key = `${memberId}:stage-${stage}`;
+    const current = selected.get(key);
+    if (
+      !current ||
+      entry.round > current.entry.round ||
+      (entry.round === current.entry.round &&
+        roundEntryContentLength(entry) > roundEntryContentLength(current.entry))
+    ) {
+      selected.set(key, { entry, memberId, stage });
+    }
+  }
+
+  return Array.from(selected.values()).sort((a, b) => {
+    return (
+      a.stage - b.stage ||
+      a.entry.round - b.entry.round ||
+      TEAM_MESSAGE_ORDER.indexOf(a.memberId) - TEAM_MESSAGE_ORDER.indexOf(b.memberId) ||
+      roundEntryContentLength(b.entry) - roundEntryContentLength(a.entry)
+    );
+  });
 }
 
 function makeStages(
@@ -311,12 +382,13 @@ function makeStages(
   hasTradeDecision: boolean,
   hasResolution = false,
   hasMemoryLoop = false,
-  outcomeDict: DispatchV10OutcomeDict,
   stageStatusDict: DispatchV10StageStatusDict,
+  now: number,
   event?: PmDecisionTimelineEvent,
   analysisOnlyCandidate = false,
 ): DispatchStageMarker[] {
   const trace = event?.payload.stageTrace;
+  const stageTwoName = stageTwoLabel(event, stageStatusDict);
   if (!hasTradeDecision && trace?.length) {
     return makePartialStages(
       topicId,
@@ -325,13 +397,15 @@ function makeStages(
       hasResolution || hasMemoryLoop,
       hasTradeDecision,
       analysisOnlyCandidate,
+      event,
+      now,
     );
   }
 
   if (!hasTradeDecision) {
     return [
       { id: stageId(topicId, 1), label: "阶段 1 · 信息收集", status: "done" },
-      { id: stageId(topicId, 2), label: "阶段 2 · 多空辩论", status: "done" },
+      { id: stageId(topicId, 2), label: `阶段 2 · ${stageTwoName}`, status: "done" },
       { id: stageId(topicId, 3), label: "阶段 3 · 交易方案 · 进行中", status: "active" },
       {
         id: stageId(topicId, 4),
@@ -344,7 +418,7 @@ function makeStages(
 
   return [
     { id: stageId(topicId, 1), label: "阶段 1 · 信息收集", status: "done" },
-    { id: stageId(topicId, 2), label: "阶段 2 · 多空辩论", status: "done" },
+    { id: stageId(topicId, 2), label: `阶段 2 · ${stageTwoName}`, status: "done" },
     { id: stageId(topicId, 3), label: "阶段 3 · 交易方案", status: "done" },
     { id: stageId(topicId, 4), label: "阶段 4 · 风险审查", status: "done" },
     { id: stageId(topicId, 5), label: "阶段 5 · 最终决策", status: "final" },
@@ -354,7 +428,7 @@ function makeStages(
           id: stageId(topicId, 6),
           label: "阶段 6 · 复盘沉淀",
           status: "pending",
-          note: outcomeDict.pending,
+          note: stageSixTrackingPending(stageStatusDict, event, now),
         },
   ];
 }
@@ -366,6 +440,8 @@ function makePartialStages(
   hasMemoryLoop: boolean,
   hasTradeDecision: boolean,
   analysisOnlyCandidate = false,
+  event?: PmDecisionTimelineEvent,
+  now = Date.now(),
 ): DispatchStageMarker[] {
   const statuses = normalizePublicDecisionStageStatuses(trace, {
     hasRenderableTradeDecision: hasTradeDecision,
@@ -391,6 +467,7 @@ function makePartialStages(
   const researchStatus = statusFor("research_lead");
   const tradeStatus = statusFor("trade_decision");
   const riskStatus = statusFor("risk_lead");
+  const stageTwoName = stageTwoLabel(event, stageStatusDict);
   const analysisObservationComplete =
     analysisOnlyCandidate &&
     analystStatus === "done" &&
@@ -414,7 +491,7 @@ function makePartialStages(
     },
     {
       id: stageId(topicId, 2),
-      label: labelWithStatus(2, "多空辩论", researchStatus),
+      label: labelWithStatus(2, stageTwoName, researchStatus),
       status: mappedStatus(researchStatus),
       note: noteFor(researchStatus),
     },
@@ -451,7 +528,7 @@ function makePartialStages(
             id: stageId(topicId, 6),
             label: "阶段 6 · 复盘沉淀",
             status: "pending",
-            note: stageStatusDict.memoryPending,
+            note: stageSixTrackingPending(stageStatusDict, event, now),
           },
   ];
 }
@@ -537,52 +614,43 @@ function makeRationaleMessages({
   roundDict: DispatchV10RoundDict;
 }) {
   const directionHint = renderableTradeDecision(event)?.direction;
-  const roundEntries = Array.isArray(event.payload.rounds) ? event.payload.rounds : [];
+  const roundEntries: PublicRoundEntry[] = event.payload.rounds ?? [];
   if (roundEntries.length > 0) {
     const maxRound = Math.max(1, ...roundEntries.map((entry) => entry.round));
-    return Array.from(new Set(roundEntries.map((entry) => entry.round)))
-      .sort((a, b) => a - b)
-      .flatMap((round): DispatchMessage[] => {
-        let roundLabelUsed = false;
-        return TEAM_MESSAGE_ORDER.flatMap((memberId): DispatchMessage[] => {
-          const entry = roundEntries.find(
-            (candidate) => candidate.round === round && memberForRoundEntry(candidate) === memberId,
-          );
-          if (!entry) return [];
-          const rationale = entry.rationale.trim();
-          if (!rationale) return [];
-          const agentId = mapTeamMemberToDispatchAgent(memberId, directionHint);
-          const stage = stageForRoundEntry(entry, memberId);
-          const roundLabel = roundLabelUsed
+    const usedRoundLabels = new Set<number>();
+    return selectVisibleRoundEntries(roundEntries).map(
+      ({ entry, memberId, stage }): DispatchMessage => {
+        const agentId = mapTeamMemberToDispatchAgent(memberId, directionHint);
+        const rationale = entry.rationale.trim();
+        const roundLabel =
+          stage <= 1 || usedRoundLabels.has(entry.round)
             ? undefined
-            : formatRoundLabel(round, maxRound, roundDict);
-          roundLabelUsed = true;
-          return [
-            {
-              id: `${event.payload.recordId}-${memberId}-round-${round}`,
-              stageId: stageId(topicId, stage),
-              agentId,
-              sourceMemberId: memberId,
-              agentName: getDispatchAgentDisplayName(agentId, locale, memberId),
-              time: formatTime(event.ts),
-              dataAge: formatDataAge(event.ts, now),
-              roundLabel,
-              mentions: [],
-              content: entry?.detailedRationale?.trim() || rationale,
-              direction: entry?.direction,
-              directionLabel: entry?.direction
-                ? dispatchDict(locale).direction[entry.direction]
-                : undefined,
-              confidence: entry?.confidence,
-              oneLineSummary: entry?.oneLineSummary,
-              detailedRationale: entry?.detailedRationale,
-              dataStatus: entry?.dataStatus,
-              dataStatusLabel: dataGapLabel(memberId, entry?.dataStatus, locale),
-              roleViewpoint: dispatchDict(locale).roleViewpoint[ROLE_VIEWPOINT_KEY[memberId]],
-            },
-          ];
-        });
-      });
+            : formatRoundLabel(entry.round, maxRound, roundDict);
+        if (roundLabel) usedRoundLabels.add(entry.round);
+        return {
+          id: `${event.payload.recordId}-${memberId}-round-${entry.round}-stage-${stage}`,
+          stageId: stageId(topicId, stage),
+          agentId,
+          sourceMemberId: memberId,
+          agentName: getDispatchAgentDisplayName(agentId, locale, memberId),
+          time: formatTime(event.ts),
+          dataAge: formatDataAge(event.ts, now),
+          roundLabel,
+          mentions: [],
+          content: entry.detailedRationale?.trim() || rationale,
+          direction: entry.direction,
+          directionLabel: entry.direction
+            ? dispatchDict(locale).direction[entry.direction]
+            : undefined,
+          confidence: entry.confidence,
+          oneLineSummary: entry.oneLineSummary,
+          detailedRationale: entry.detailedRationale,
+          dataStatus: entry.dataStatus,
+          dataStatusLabel: dataGapLabel(memberId, entry.dataStatus, locale),
+          roleViewpoint: dispatchDict(locale).roleViewpoint[ROLE_VIEWPOINT_KEY[memberId]],
+        };
+      },
+    );
   }
 
   return TEAM_MESSAGE_ORDER.flatMap((memberId): DispatchMessage[] => {
@@ -912,7 +980,7 @@ function makeProgress(
   hasRationale: boolean,
   analysisOnlyComplete: boolean,
 ) {
-  if (analysisOnlyComplete) return `${minutesBetween(group.startedAt, now)} 分钟闭环`;
+  if (analysisOnlyComplete) return formatDataAge(group.latestAt, now);
   if (!hasRenderableTradeDecision) {
     const currentStage = currentStageFromTrace(group.latestDecision, hasRenderableTradeDecision);
     if (currentStage) {
@@ -924,7 +992,7 @@ function makeProgress(
     }
     return hasRationale ? fallbackCurrentStageProgress(group.latestDecision, now) : "暂无决策更新";
   }
-  return `${minutesBetween(group.startedAt, now)} 分钟闭环`;
+  return formatDataAge(group.latestAt, now);
 }
 
 function strategySortTime(group: DispatchTopicGroup) {
@@ -1039,8 +1107,8 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
         hasTradeDecision,
         Boolean(latest.payload.resolution),
         hasMemoryLoop,
-        ctx.outcomeDict,
         ctx.stageStatusDict,
+        now,
         latest,
         analysisOnlyCandidate,
       ),
