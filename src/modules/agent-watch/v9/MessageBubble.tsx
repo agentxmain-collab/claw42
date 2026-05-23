@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { formatSafeContent } from "@/lib/watch/safeMessageFormatter";
 import type { DispatchAgentId, DispatchMessage } from "./types";
@@ -36,10 +38,12 @@ function MessageBubbleComponent({
     () => formatSafeContent(message.oneLineSummary ?? ""),
     [message.oneLineSummary],
   );
+  const detailText = message.content.trim();
+  const summaryText = message.oneLineSummary?.trim() ?? "";
   const hasDecisionLayer = Boolean(
     message.direction || message.confidence !== undefined || message.oneLineSummary,
   );
-  const hasExpandableDetail = Boolean(message.oneLineSummary && message.content.trim());
+  const hasExpandableDetail = Boolean(summaryText && detailText && detailText !== summaryText);
   const detailId = React.useMemo(
     () => `msg-detail-${message.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
     [message.id],
@@ -101,7 +105,14 @@ function MessageBubbleComponent({
                   ) : null}
                 </div>
                 {message.oneLineSummary ? (
-                  <div className="msg-summary">{formattedSummary}</div>
+                  <div className="msg-summary">
+                    <span hidden={expanded && hasExpandableDetail}>{formattedSummary}</span>
+                    {hasExpandableDetail ? (
+                      <span id={detailId} hidden={!expanded} className="msg-detail">
+                        {formattedContent}
+                      </span>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             ) : null}
@@ -123,17 +134,7 @@ function MessageBubbleComponent({
                 {expanded ? collapseLabel : expandLabel}
               </button>
             ) : null}
-            {hasDecisionLayer && hasExpandableDetail && expanded ? (
-              <div className="msg-divider" aria-hidden="true" />
-            ) : null}
-            <span
-              id={hasExpandableDetail ? detailId : undefined}
-              className={["msg-detail", hasExpandableDetail && !expanded ? "collapsed" : ""]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              {formattedContent}
-            </span>
+            {!hasExpandableDetail ? <span className="msg-detail">{formattedContent}</span> : null}
           </div>
         )}
       </div>

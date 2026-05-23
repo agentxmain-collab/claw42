@@ -118,6 +118,23 @@ const ROLE_VIEWPOINT_KEY: Record<TeamMemberId, DispatchV10AgentRoleId> = {
   memory_loop: "memoryLoop",
 };
 
+const ROLE_TO_VISIBLE_STAGE: Record<TeamMemberId, 1 | 2 | 3 | 4 | 5 | 6> = {
+  fundamental_analyst: 1,
+  news_analyst: 1,
+  chart_analyst: 1,
+  onchain_analyst: 1,
+  research_lead: 2,
+  bullish_researcher: 2,
+  bearish_researcher: 2,
+  trader: 3,
+  risk_lead: 4,
+  aggressive_reviewer: 4,
+  neutral_reviewer: 4,
+  conservative_reviewer: 4,
+  pm: 5,
+  memory_loop: 6,
+};
+
 type PartialTraceStatus = NonNullable<
   PmDecisionTimelineEvent["payload"]["stageTrace"]
 >[number]["status"];
@@ -277,33 +294,11 @@ function stageId(topicId: string, stage: number) {
 }
 
 function stageForMember(memberId: TeamMemberId) {
-  if (
-    memberId === "fundamental_analyst" ||
-    memberId === "news_analyst" ||
-    memberId === "chart_analyst" ||
-    memberId === "onchain_analyst"
-  ) {
-    return 1;
-  }
-  if (memberId === "research_lead") return 2;
-  if (memberId === "bullish_researcher" || memberId === "bearish_researcher") return 2;
-  if (memberId === "trader") return 3;
-  if (memberId === "risk_lead") return 4;
-  if (
-    memberId === "aggressive_reviewer" ||
-    memberId === "neutral_reviewer" ||
-    memberId === "conservative_reviewer"
-  ) {
-    return 4;
-  }
-  if (memberId === "memory_loop") return 6;
-  return 5;
+  return ROLE_TO_VISIBLE_STAGE[memberId];
 }
 
 function stageForRoundEntry(entry: PublicRoundEntry, memberId: TeamMemberId) {
-  const baseStage = stageForMember(memberId);
-  if (baseStage === 1 && entry.round > 1) return 2;
-  return baseStage;
+  return stageForMember(memberId);
 }
 
 function stageTwoLabel(
@@ -600,10 +595,11 @@ function makeRationaleMessages({
       ({ entry, memberId, stage }): DispatchMessage => {
         const agentId = mapTeamMemberToDispatchAgent(memberId, directionHint);
         const rationale = entry.rationale.trim();
-        const roundLabel = usedRoundLabels.has(entry.round)
-          ? undefined
-          : formatRoundLabel(entry.round, maxRound, roundDict);
-        usedRoundLabels.add(entry.round);
+        const roundLabel =
+          stage <= 1 || usedRoundLabels.has(entry.round)
+            ? undefined
+            : formatRoundLabel(entry.round, maxRound, roundDict);
+        if (roundLabel) usedRoundLabels.add(entry.round);
         return {
           id: `${event.payload.recordId}-${memberId}-round-${entry.round}-stage-${stage}`,
           stageId: stageId(topicId, stage),

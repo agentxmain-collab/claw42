@@ -67,7 +67,7 @@ describe("TopicBody", () => {
     expect(html).toContain("展开全文");
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-controls="msg-detail-expandable-message-1"');
-    expect(html).toContain('class="msg-detail collapsed"');
+    expect(html).toContain('id="msg-detail-expandable-message-1" hidden="" class="msg-detail"');
     expect(html).toContain("这里是默认折叠的完整分析内容，但仍保留在 DOM 里。");
   });
 });

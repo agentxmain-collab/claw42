@@ -1245,24 +1245,22 @@ describe("mapPublicTimelineEventsToTopics", () => {
 
     expect(topic.status).toBe("done");
     expect(topic.messages.map((message) => message.roundLabel).filter(Boolean)).toEqual([
-      "Round 1 · multi-round debate",
       "Round 2 · multi-round debate",
     ]);
     expect(topic.messages.map((message) => message.content)).toEqual(
-      expect.arrayContaining(["Round one detailed chart view.", "Round two refined chart view."]),
+      expect.arrayContaining(["Round two refined chart view.", "Round two synthesis."]),
     );
     expect(topic.messages[0]).toMatchObject({
       sourceMemberId: "chart_analyst",
       direction: "short",
       directionLabel: "SHORT",
-      confidence: 0.6,
-      oneLineSummary: "Chart pressure is building.",
-      dataStatusLabel: "Data available",
+      confidence: 0.7,
+      oneLineSummary: undefined,
       roleViewpoint: "Technical / TA view",
     });
   });
 
-  it("keeps second-round analyst refinements inside the debate stage instead of stage one", () => {
+  it("keeps signal-source refinements inside information collection instead of debate", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
 
@@ -1296,7 +1294,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
                 memberId: "fundamental_analyst",
                 direction: "short",
                 confidence: 0.66,
-                rationale: "Round two fundamental refinement belongs to debate, not collection.",
+                rationale: "Round two fundamental refinement belongs to collection, not debate.",
                 evidenceIds: [],
               },
             ],
@@ -1328,15 +1326,15 @@ describe("mapPublicTimelineEventsToTopics", () => {
     );
 
     expect(fundamentalRoundTwo).toMatchObject({
-      stageId: stageTwoId,
-      roundLabel: "第 2 轮 · 多轮辩论",
+      stageId: stageOneId,
+      roundLabel: undefined,
     });
     expect(
       topic.messages
-        .filter((message) => message.stageId === stageOneId)
+        .filter((message) => message.stageId === stageTwoId)
         .map((message) => message.roundLabel)
         .filter(Boolean),
-    ).not.toContain("第 2 轮 · 多轮辩论");
+    ).toEqual(["第 1 轮 · 多轮辩论"]);
   });
 
   it("keeps only the latest message per member within the same visible stage", () => {
