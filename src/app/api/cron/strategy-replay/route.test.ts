@@ -358,6 +358,67 @@ describe("/api/cron/strategy-replay", () => {
     );
   });
 
+  it("does not spend the inline cap on resident candidates skipped by an existing lock", async () => {
+    const prewarmNow = Date.parse("2026-05-13T18:00:00.000Z");
+    vi.setSystemTime(prewarmNow);
+    runPmDecisionJobMock
+      .mockResolvedValueOnce({
+        job: { id: "pm-job:market-locked", status: "succeeded" },
+        outputs: [],
+        auditEvents: [
+          {
+            type: "candidate_skipped",
+            triggerSource: "cron",
+            locale: "zh_CN",
+            symbol: "market_overview:utc:zh_CN:2026-05-13T18",
+            reason: "locked",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        job: { id: "pm-job:hotspot-generated", status: "succeeded" },
+        outputs: [
+          {
+            record: { id: "pm:HOTSPOT:test" },
+            publicTimelineEntry: {},
+            tradeDecision: {},
+          },
+        ],
+        auditEvents: [],
+      });
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.residentPrewarmGenerated).toBe(1);
+    expect(payload.pmDecisionInlineLimit).toEqual({
+      limit: 1,
+      used: 1,
+      deferredResidentCandidateKeys: [],
+      deferredBatch: true,
+    });
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        candidate: expect.objectContaining({
+          candidateType: "market_overview",
+        }),
+      }),
+    );
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        candidate: expect.objectContaining({
+          candidateType: "hotspot",
+        }),
+      }),
+    );
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "batch" }),
+    );
+  });
+
   it("backfills due failed resident prewarm jobs outside the fixed UTC cadence window", async () => {
     const retryNow = Date.parse("2026-05-13T20:10:00.000Z");
     vi.setSystemTime(retryNow);

@@ -136,8 +136,10 @@ export async function GET(request: NextRequest) {
   const inlineDeferredCandidateKeys: string[] = [];
   let inlinePmDecisionJobs = 0;
   const inlineLimitReached = () => inlinePmDecisionJobs >= INLINE_PM_DECISION_JOB_LIMIT;
-  const trackInlineUsage = (result: Awaited<ReturnType<typeof dispatchPmDecisionJob>>) => {
-    if (result.queueResult.mode !== "queue") inlinePmDecisionJobs += 1;
+  const trackInlineUsage = (result: DispatchPmDecisionJobResult) => {
+    if (result.queueResult.mode !== "queue" && !isLockedInlineSkip(result)) {
+      inlinePmDecisionJobs += 1;
+    }
   };
   for (const candidate of residentCandidates) {
     if (inlineLimitReached()) {
@@ -280,6 +282,16 @@ async function dispatchPmDecisionJob({
     jobResult,
     outputs: jobResult?.outputs ?? [],
   };
+}
+
+type DispatchPmDecisionJobResult = Awaited<ReturnType<typeof dispatchPmDecisionJob>>;
+
+function isLockedInlineSkip(result: DispatchPmDecisionJobResult) {
+  if (result.outputs.length > 0) return false;
+  const auditEvents = result.jobResult?.auditEvents ?? [];
+  return auditEvents.some(
+    (event) => event.type === "candidate_skipped" && event.reason === "locked",
+  );
 }
 
 async function resolveOpenPmDecisions(
