@@ -14,6 +14,11 @@ import {
   type FollowStatsSnapshot,
 } from "@/lib/watch/v9TopicAdapter";
 import { normalizeCandidateType } from "@/lib/watch/decisionCandidate";
+import {
+  hasPublicBetaSymbolCoverage,
+  publicBetaSymbolCoverage,
+  publicBetaSymbolCoverageKey,
+} from "@/lib/watch/publicSymbolCoverage";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { DecisionHistoryPayload } from "@/lib/watch/decisionHistory";
 import { DispatchConsoleV9 } from "./v9/DispatchConsoleV9";
@@ -45,6 +50,7 @@ const VISIBLE_SESSION_REFRESH_STARTED_RETRY_MS = 90_000;
 const VISIBLE_SESSION_MAX_RETRY_MS = 5 * 60_000;
 const AUTO_SYMBOL_REFRESH_CANDIDATE = "symbol";
 const AUTO_SYMBOL_REFRESH_SYMBOL = "SYMBOL";
+const HISTORY_WALL_ENABLED = process.env.NEXT_PUBLIC_HISTORY_WALL_ENABLED === "true";
 
 interface PublicTimelinePayload {
   events: PublicTimelineEvent[];
@@ -165,20 +171,23 @@ export function resolveVisibleSessionRefreshTarget({
 }): VisibleSessionRefreshTarget | null {
   if (!timelineLoaded) return null;
 
-  const residentTarget = residentRefreshTarget({ residentStatus, locale });
-  if (residentTarget) return residentTarget;
-
-  const latestRefreshSymbol =
-    topics.find((topic) => normalizeCandidateType(topic.candidateType) === "symbol")?.symbol ??
-    null;
-  if (!latestRefreshSymbol) {
+  const symbolCoverage = publicBetaSymbolCoverage(
+    topics
+      .filter((topic) => normalizeCandidateType(topic.candidateType) === "symbol")
+      .map((topic) => topic.symbol),
+  );
+  if (!hasPublicBetaSymbolCoverage(symbolCoverage)) {
     return {
-      sessionKey: `freshness-trigger-${locale}-${AUTO_SYMBOL_REFRESH_CANDIDATE}-auto`,
+      sessionKey: `freshness-trigger-${locale}-${AUTO_SYMBOL_REFRESH_CANDIDATE}-auto-${publicBetaSymbolCoverageKey(symbolCoverage)}`,
       symbol: AUTO_SYMBOL_REFRESH_SYMBOL,
       params: { candidateType: AUTO_SYMBOL_REFRESH_CANDIDATE },
     };
   }
 
+  const residentTarget = residentRefreshTarget({ residentStatus, locale });
+  if (residentTarget) return residentTarget;
+
+  const latestRefreshSymbol = symbolCoverage[0];
   return {
     sessionKey: `freshness-trigger-${locale}-symbol-${latestRefreshSymbol}`,
     symbol: latestRefreshSymbol,
@@ -844,21 +853,23 @@ export function AgentWatchBoard({
         followTradeDict={followTradeDict}
         freshness={consoleFreshness}
       />
-      <HistoryWall
-        open={historyOpen}
-        symbols={historySymbols}
-        selectedSymbol={historySymbol}
-        locale={agentWatchLocale}
-        dict={historyDict}
-        items={historyItems}
-        hasMore={historyHasMore}
-        loading={historyLoading}
-        error={historyError}
-        onOpen={() => setHistoryOpen(true)}
-        onClose={() => setHistoryOpen(false)}
-        onMore={handleMoreHistory}
-        onSelectSymbol={handleSelectHistorySymbol}
-      />
+      {HISTORY_WALL_ENABLED ? (
+        <HistoryWall
+          open={historyOpen}
+          symbols={historySymbols}
+          selectedSymbol={historySymbol}
+          locale={agentWatchLocale}
+          dict={historyDict}
+          items={historyItems}
+          hasMore={historyHasMore}
+          loading={historyLoading}
+          error={historyError}
+          onOpen={() => setHistoryOpen(true)}
+          onClose={() => setHistoryOpen(false)}
+          onMore={handleMoreHistory}
+          onSelectSymbol={handleSelectHistorySymbol}
+        />
+      ) : null}
     </>
   );
 }

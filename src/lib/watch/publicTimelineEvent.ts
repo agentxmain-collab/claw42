@@ -9,6 +9,7 @@ import type {
 } from "@/lib/team/strategyDecisionRecord";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { Locale } from "@/i18n/types";
+import type { DecisionFreshnessStatus } from "@/lib/team/freshnessStatus";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
 import type { PublicDecisionAgentId } from "@/lib/watch/publicDecisionAgents";
 import type { MarketDataSource } from "@/modules/agent-watch/types";
@@ -71,6 +72,8 @@ export type PublicTimelinePayload =
       displayTitle?: string;
       /** Whether this record can be used for follow-trade actions. Missing means legacy payload. */
       executable?: boolean;
+      /** Public freshness guard for rendering and trade CTA safety. */
+      freshnessStatus?: DecisionFreshnessStatus;
       /** Analysis-only resident candidates can publish a summary without a trade card. */
       analysisSummary?: string;
       tradeDecision?: PublicTradeDecision | null;

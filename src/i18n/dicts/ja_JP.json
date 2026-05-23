@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "全文を展開",
+        "messageCollapse": "閉じる",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [
@@ -698,9 +700,10 @@
           "market_overview": "市場",
           "hotspot": "注目"
         },
-        "watchOnlyLabel": "Watch only / フォロー不可",
-        "watchOnlyCopy": "この銘柄はまだ CoinW で実行できません。観察用の分析のみ表示します。",
-        "analysisOnlyCopy": "このカードは観察用の分析のみで、フォロー取引操作は表示しません。",
+        "watchOnlyLabel": "分析のみ / 自動注文なし",
+        "watchOnlyCopy": "この銘柄はまだ CoinW 先物注文に対応していません。分析のみ表示します。",
+        "analysisOnlyCopy": "このカードは公開分析と取引リンクを提供しますが、自動注文は行いません。",
+        "coinwFuturesLink": "CoinW 先物を開く",
         "residentUpdating": "市場/注目テーマをバックグラウンド更新中",
         "residentQueued": "市場/注目テーマの更新待機中",
         "residentUpdateIssue": "バックグラウンド更新に問題",
@@ -710,7 +713,11 @@
         "feedbackPrompt": "この分析は役に立ちましたか",
         "feedbackHelpful": "役に立った",
         "feedbackNotHelpful": "役に立たない",
-        "feedbackThanks": "記録しました"
+        "feedbackThanks": "記録しました",
+        "observationSummaryLabel": "__TBD__",
+        "coinwNavigate": "__TBD__",
+        "staleReason": "__TBD__",
+        "staleAgePrefix": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",
@@ -728,7 +735,11 @@
         "in_progress": "進行中",
         "in_progressNote": "この段階は部分更新を書き込み中です",
         "done": "完了",
-        "memoryPending": "結果の書き戻し待ち"
+        "memoryPending": "結果の書き戻し待ち",
+        "observationOnly": "__TBD__",
+        "stage2Observation": "ロング/ショート観察",
+        "stage6TrackingPending": "追跡中 · {hours}時間後に書き戻し予定",
+        "stage6TrackingOverdue": "追跡期限超過 · 予定から{hours}時間経過"
       },
       "topicRanking": {
         "explanation_template": "{symbol} は {news_count} 件のニュース + {confidence}% の信頼度で第 {rank} 位",
@@ -795,11 +806,54 @@
         "missing_onchain": "オンチェーンシグナル待ち",
         "missing_fundamental": "ファンダメンタルシグナル待ち",
         "missing_market": "市場背景待ち"
+      },
+      "message": {
+        "expand": "__TBD__",
+        "collapse": "__TBD__"
       }
     },
     "admin": {
       "unauthorized": "管理者トークンが無効です",
       "idempotency_conflict": "この決定はすでに結果があり、再度手動クローズできません"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {
@@ -814,5 +868,12 @@
     "Hold": "保有",
     "Sell": "売り",
     "StrongSell": "強い売り"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

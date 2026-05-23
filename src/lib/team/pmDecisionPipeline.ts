@@ -1,6 +1,11 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { generateText } from "@/lib/llm/generateText";
+import {
+  recordDecisionJudgeMetric,
+  runDecisionJudge,
+  type DecisionJudgeResult,
+} from "@/lib/llm/decisionJudge";
 import { mapTeamProviderToProviderId } from "@/lib/llm/providers";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
@@ -121,6 +126,7 @@ interface PipelineDeps {
   generateTradeDecision?: typeof generateTradeDecision;
   recordStrategyDecisionRecord?: typeof recordStrategyDecisionRecord;
   updateDecisionRecord?: (record: StrategyDecisionRecord) => Promise<void>;
+  runDecisionJudge?: typeof runDecisionJudge;
   writeDecisionStagePartial?: typeof writeDecisionStagePartial;
   appendWatchHistoryEntry?: typeof appendWatchHistoryEntry;
   loadPromptDoc?: (memberId: TeamMemberId) => Promise<string>;
@@ -1297,6 +1303,10 @@ function buildDecisionRun({
   };
 }
 
+function isBlockingJudgeFailure(judge: DecisionJudgeResult) {
+  return judge.verdict === "fail" && Boolean(judge.fail_reason) && judge.confidence >= 0.5;
+}
+
 function evidenceIdsForPartial(
   input: PmDecisionPipelineInput,
   analystRoundOutputs: readonly MultiRoundAnalystOutput[],
@@ -1384,12 +1394,14 @@ export async function runPmDecisionPipeline(
     failedStage,
     decisionRecordId = null,
     quality,
+    error = null,
   }: {
     skipReason: string;
     activeStage?: DecisionStageTraceId;
     failedStage?: DecisionStageTraceId;
     decisionRecordId?: string | null;
     quality?: DecisionQualityReport;
+    error?: string | null;
   }) {
     await writeRun(
       buildDecisionRun({
@@ -1409,6 +1421,7 @@ export async function runPmDecisionPipeline(
         abstainedMemberIds: latestAbstainedMemberIds,
         decisionRecordId,
         quality,
+        error,
         skipReason,
       }),
     );
@@ -1468,6 +1481,7 @@ export async function runPmDecisionPipeline(
   const tradeGenerator = deps.generateTradeDecision ?? generateTradeDecision;
   const recordWriter = deps.recordStrategyDecisionRecord ?? recordStrategyDecisionRecord;
   const recordUpdater = deps.updateDecisionRecord ?? upsertDecisionRecord;
+  const decisionJudge = deps.runDecisionJudge ?? runDecisionJudge;
   const partialStageWriter = deps.writeDecisionStagePartial ?? writeDecisionStagePartial;
   const watchWriter = deps.appendWatchHistoryEntry ?? appendWatchHistoryEntry;
   let partialHistoryPublished = false;
@@ -1510,6 +1524,7 @@ export async function runPmDecisionPipeline(
     const publicAnalystRoundOutputs = analystRoundOutputs.filter(
       (output) => !output.abstained && cleanPublicDecisionText(output.rationale, locale),
     );
+    latestAnalystRoundCount = publicAnalystRoundOutputs.length;
     const latestAnalystOutputs = latestAnalystRoundByMember(publicAnalystRoundOutputs);
     latestActiveMemberIds = activeInputMemberIds;
     latestAbstainedMemberIds = Array.from(
@@ -1520,10 +1535,16 @@ export async function runPmDecisionPipeline(
         ),
       ]),
     );
-    latestAnalystRoundCount = publicAnalystRoundOutputs.length;
     if (latestAnalystOutputs.length === 0) {
       await writeSkippedRun({
         skipReason: "no_public_analyst_outputs",
+        activeStage: "analyst_inputs",
+      });
+      return null;
+    }
+    if (!publicAnalystRoundOutputs.some((output) => output.round === 1)) {
+      await writeSkippedRun({
+        skipReason: "no_public_analyst_stage_one_outputs",
         activeStage: "analyst_inputs",
       });
       return null;
@@ -1708,6 +1729,16 @@ export async function runPmDecisionPipeline(
       evidencePack,
       abstainedInputMemberIds: latestAbstainedMemberIds,
     });
+    const judge = await decisionJudge(record);
+    recordDecisionJudgeMetric(judge);
+    if (isBlockingJudgeFailure(judge)) {
+      await writeSkippedRun({
+        skipReason: "llm_judge_fail",
+        failedStage: "record_write",
+        error: `judge_fail_reason:${judge.fail_reason}; detail:${judge.fail_detail ?? ""}`,
+      });
+      return null;
+    }
     startStage(stageAudit, "record_write");
     const recordWriteObservedAt = new Date(Date.now()).toISOString();
     const recordForStorage = withStageTraceStatus(

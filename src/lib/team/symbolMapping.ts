@@ -56,11 +56,7 @@ const KNOWN_SYMBOL_MAPPINGS: Record<string, SymbolMapping> = {
     coinwPair: "BILL_USDT",
     coingeckoId: "bill",
     chain: null,
-    execution: {
-      executable: false,
-      coinwPair: null,
-      watchOnlyReason: "not_listed_on_coinw",
-    },
+    execution: { executable: true, coinwPair: "BILL_USDT" },
     fallback: { onchainMissing: true, fundamentalMissing: true },
   },
   IRYS: {

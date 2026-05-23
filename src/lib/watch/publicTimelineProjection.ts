@@ -8,6 +8,7 @@ import type {
 import { PUBLIC_IMPORTANCE_ORDER } from "@/lib/watch/publicTimelineEvent";
 import type { Locale } from "@/i18n/types";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
+import { calculateDecisionFreshnessStatus } from "@/lib/team/freshnessStatus";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import { isTeamMemberId, type TeamMemberId } from "@/lib/team/teamRegistry";
 import {
@@ -252,12 +253,17 @@ function pmDecisionPayload(
     symbolFromRecordId(recordId) ??
     "UNKNOWN";
   const analysisSummary = cleanPublicAnalysisSummary(indexedRecord?.analysisSummary);
+  const candidateMeta = candidateMetaForRecord(indexedRecord, symbol);
+  const executable = executableForRecord(indexedRecord, symbol);
+  if (candidateMeta.candidateType === "symbol" && !executable) return null;
+
   return {
     kind: "pm_decision",
     recordId,
     symbol,
-    ...candidateMetaForRecord(indexedRecord, symbol),
-    executable: executableForRecord(indexedRecord, symbol),
+    ...candidateMeta,
+    executable,
+    freshnessStatus: calculateDecisionFreshnessStatus(entry.ts) ?? undefined,
     ...(analysisSummary ? { analysisSummary } : {}),
     tradeDecision,
     rationaleByAgent: derived.rationaleByAgent,
@@ -285,12 +291,17 @@ export function projectDecisionRecordToPublicEvent(
     symbolFromRecordId(record.id) ??
     "UNKNOWN";
   const analysisSummary = cleanPublicAnalysisSummary(record.analysisSummary, record.locale);
+  const candidateMeta = candidateMetaForRecord(record, symbol);
+  const executable = executableForRecord(record, symbol);
+  if (candidateMeta.candidateType === "symbol" && !executable) return null;
+
   const payload: PublicTimelineEvent["payload"] = {
     kind: "pm_decision",
     recordId: record.id,
     symbol,
-    ...candidateMetaForRecord(record, symbol),
-    executable: executableForRecord(record, symbol),
+    ...candidateMeta,
+    executable,
+    freshnessStatus: calculateDecisionFreshnessStatus(record.createdAt) ?? undefined,
     ...(analysisSummary ? { analysisSummary } : {}),
     tradeDecision,
     rationaleByAgent: derived.rationaleByAgent,

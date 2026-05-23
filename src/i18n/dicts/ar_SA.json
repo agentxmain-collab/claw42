@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "عرض النص الكامل",
+        "messageCollapse": "طي",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [
@@ -698,9 +700,10 @@
           "market_overview": "السوق",
           "hotspot": "رائج"
         },
-        "watchOnlyLabel": "Watch only / غير قابل للنسخ",
-        "watchOnlyCopy": "هذا الرمز غير قابل للتنفيذ على CoinW بعد؛ يظهر التحليل للمراقبة فقط.",
-        "analysisOnlyCopy": "هذه البطاقة للمراقبة والتحليل فقط ولا تعرض إجراء متابعة.",
+        "watchOnlyLabel": "تحليل فقط / بلا أمر تلقائي",
+        "watchOnlyCopy": "لا يمكن فتح أمر عقود CoinW لهذا الرمز بعد؛ يتم عرض التحليل فقط.",
+        "analysisOnlyCopy": "تعرض هذه البطاقة تحليلا عاما ورابط تداول، ولا ترسل أمرا تلقائيا.",
+        "coinwFuturesLink": "فتح عقود CoinW",
         "residentUpdating": "تحديث السوق/الموضوعات في الخلفية جارٍ",
         "residentQueued": "تحديث السوق/الموضوعات في الخلفية بانتظار الدور",
         "residentUpdateIssue": "مشكلة في تحديث الخلفية",
@@ -710,7 +713,11 @@
         "feedbackPrompt": "هل كان هذا التحليل مفيدًا؟",
         "feedbackHelpful": "مفيد",
         "feedbackNotHelpful": "غير مفيد",
-        "feedbackThanks": "تم التسجيل"
+        "feedbackThanks": "تم التسجيل",
+        "observationSummaryLabel": "__TBD__",
+        "coinwNavigate": "__TBD__",
+        "staleReason": "__TBD__",
+        "staleAgePrefix": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",
@@ -728,7 +735,11 @@
         "in_progress": "قيد التنفيذ",
         "in_progressNote": "تكتب هذه المرحلة تحديثا جزئيا",
         "done": "مكتمل",
-        "memoryPending": "المراجعة تنتظر كتابة النتيجة"
+        "memoryPending": "المراجعة تنتظر كتابة النتيجة",
+        "observationOnly": "__TBD__",
+        "stage2Observation": "مراقبة الشراء/البيع",
+        "stage6TrackingPending": "قيد التتبع · متوقع كتابة النتيجة خلال {hours} ساعة",
+        "stage6TrackingOverdue": "تأخر التتبع · تجاوز الهدف بـ {hours} ساعة"
       },
       "topicRanking": {
         "explanation_template": "{symbol} في المرتبة #{rank} بسبب {news_count} أخبار + ثقة {confidence}%",
@@ -795,11 +806,54 @@
         "missing_onchain": "Onchain signal pending",
         "missing_fundamental": "Fundamental signal pending",
         "missing_market": "Market context pending"
+      },
+      "message": {
+        "expand": "__TBD__",
+        "collapse": "__TBD__"
       }
     },
     "admin": {
       "unauthorized": "رمز المدير غير صالح",
       "idempotency_conflict": "لهذا القرار نتيجة بالفعل ولا يمكن إغلاقه يدويًا مرة أخرى"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {
@@ -814,5 +868,12 @@
     "Hold": "احتفاظ",
     "Sell": "بيع",
     "StrongSell": "بيع قوي"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

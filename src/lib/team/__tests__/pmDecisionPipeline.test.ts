@@ -8,6 +8,7 @@ import type { DecisionRunRecord } from "@/lib/team/decisionRunLedger";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { SignalRecord } from "@/modules/agent-watch/types";
 import type { EvidenceContextPack } from "@/lib/team/evidenceDispatcher";
+import type { DecisionJudgeResult } from "@/lib/llm/decisionJudge";
 import { marketOverviewCandidate } from "@/lib/watch/residentCandidate";
 
 const now = Date.UTC(2026, 4, 10, 10, 0, 0);
@@ -475,6 +476,104 @@ describe("runPmDecisionPipeline", () => {
     expect(writtenEntry.meta?.locale).toBe("zh_CN");
   });
 
+  it("skips before recordWriter when LLM judge fails", async () => {
+    const judgeFailure: DecisionJudgeResult = {
+      verdict: "fail",
+      fail_reason: "semantic_duplicate",
+      fail_detail: "same thesis repeated across roles",
+      confidence: 0.82,
+      status: "ok",
+      callCount: 1,
+      inputTokenEstimate: 100,
+      outputTokenEstimate: 20,
+    };
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn();
+    const updateDecisionRecord = vi.fn();
+    const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
+      void run;
+    });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Evidence stack remains constructive",
+          confidence: 0.7,
+        })),
+        generateTradeDecision: vi.fn(async () => decision()),
+        runDecisionJudge: vi.fn(async () => judgeFailure),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord,
+        upsertDecisionRun,
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+    expect(updateDecisionRecord).not.toHaveBeenCalled();
+    expect(upsertDecisionRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: "skipped",
+        skipReason: "llm_judge_fail",
+        error: expect.stringContaining("judge_fail_reason:semantic_duplicate"),
+        stageStatus: expect.objectContaining({
+          record_write: "failed",
+        }),
+      }),
+    );
+  });
+
+  it("continues to recordWriter when LLM judge passes", async () => {
+    const judgePass: DecisionJudgeResult = {
+      verdict: "pass",
+      fail_reason: null,
+      fail_detail: null,
+      confidence: 0.78,
+      status: "ok",
+      callCount: 1,
+      inputTokenEstimate: 100,
+      outputTokenEstimate: 20,
+    };
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Evidence stack remains constructive",
+          confidence: 0.7,
+        })),
+        generateTradeDecision: vi.fn(async () => decision()),
+        runDecisionJudge: vi.fn(async () => judgePass),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry: vi.fn(),
+        updateDecisionRecord: vi.fn(),
+      },
+    );
+
+    expect(result?.record.id).toBe("pm:BTC:1778407200000");
+    expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
+  });
+
   it("records a private run ledger through success", async () => {
     const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
       void run;
@@ -581,6 +680,57 @@ describe("runPmDecisionPipeline", () => {
         skipReason: "no_public_analyst_outputs",
         analystRoundCount: 0,
         completedAt: expect.any(String),
+        stageStatus: expect.objectContaining({
+          analyst_inputs: "in_progress",
+        }),
+      }),
+    );
+  });
+
+  it("does not publish a public run when information-collection output has no public voice", async () => {
+    const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
+      void run;
+    });
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn();
+    const generateLeadOutput = vi.fn();
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async (memberId, prompt) => ({
+          ...analystOutput(memberId),
+          rationale: prompt.includes("Round 1")
+            ? "等待后续数据更新再参与。"
+            : "BTC holds 76000 with constructive momentum after peer review",
+        })),
+        generateLeadOutput,
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord: vi.fn(async (record: StrategyDecisionRecord) => {
+          void record;
+        }),
+        upsertDecisionRun,
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(generateLeadOutput).not.toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+    expect(upsertDecisionRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: "skipped",
+        skipReason: "no_public_analyst_stage_one_outputs",
+        publicTimelineEventId: null,
         stageStatus: expect.objectContaining({
           analyst_inputs: "in_progress",
         }),

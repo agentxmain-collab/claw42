@@ -1,5 +1,5 @@
 import React from "react";
-import { MessageBubble } from "./MessageBubble";
+import { MessageBubble, type MessageBubbleLabels } from "./MessageBubble";
 import type { DispatchStageMarker, DispatchTopic } from "./types";
 
 function StageMarker({ stage }: { stage: DispatchStageMarker }) {
@@ -17,7 +17,15 @@ function StageMarker({ stage }: { stage: DispatchStageMarker }) {
   );
 }
 
-export function TopicBody({ topic, bodyId }: { topic: DispatchTopic; bodyId: string }) {
+export function TopicBody({
+  topic,
+  bodyId,
+  messageLabels,
+}: {
+  topic: DispatchTopic;
+  bodyId: string;
+  messageLabels?: MessageBubbleLabels;
+}) {
   const stageRows = topic.stages
     .map((stage) => ({
       stage,
@@ -40,7 +48,7 @@ export function TopicBody({ topic, bodyId }: { topic: DispatchTopic; bodyId: str
         <React.Fragment key={stage.id}>
           <StageMarker stage={stage} />
           {messages.map((message) => (
-            <MessageBubble message={message} key={message.id} />
+            <MessageBubble message={message} labels={messageLabels} key={message.id} />
           ))}
           {stage.note ? <div className="pending-stub">{stage.note}</div> : null}
         </React.Fragment>

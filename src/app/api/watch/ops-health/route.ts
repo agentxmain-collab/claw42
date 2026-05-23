@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
+import { summarizeDecisionJudgeMetrics } from "@/lib/llm/decisionJudge";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
 import { buildDecisionOpsAlertSnapshot } from "@/lib/team/decisionOpsAlertSnapshot";
 import { buildDecisionOpsCausalRunbook } from "@/lib/team/decisionOpsCausalRunbook";
 import { buildDecisionOpsChainRunbook } from "@/lib/team/decisionOpsChainRunbook";
 import { buildDecisionOpsCronAudit } from "@/lib/team/decisionOpsCronAudit";
+import { buildPublicDashboardHealth } from "@/lib/team/decisionOpsDashboardHealth";
 import { buildDecisionOpsDeepDiagnostics } from "@/lib/team/decisionOpsDeepDiagnostics";
 import { buildDecisionOpsFreshness } from "@/lib/team/decisionOpsFreshness";
 import { buildDecisionOpsAutonomousRemediation } from "@/lib/team/decisionOpsAutonomousRemediation";
@@ -97,6 +99,7 @@ export async function GET(request: Request) {
   const includeSparseReleaseGate = url.searchParams.get("sparseReleaseGate") === "1";
   const includeResidentCoverage = url.searchParams.get("residentCoverage") === "1";
   const includeResidentVisibility = url.searchParams.get("residentVisibility") === "1";
+  const includeDashboardHealth = url.searchParams.get("dashboardHealth") === "1";
   const includeRuntimeStabilityGate = url.searchParams.get("runtimeStabilityGate") === "1";
   const includeModelQualityEvidence = url.searchParams.get("modelQualityEvidence") === "1";
   const includeRuntimeQualityGate = url.searchParams.get("runtimeQualityGate") === "1";
@@ -168,6 +171,7 @@ export async function GET(request: Request) {
     includeOpsSummary ||
     includeResidentCoverage ||
     includeResidentVisibility ||
+    includeDashboardHealth ||
     includeRuntimeStabilityGate ||
     includeModelQualityEvidence ||
     includeRuntimeQualityGate ||
@@ -197,6 +201,7 @@ export async function GET(request: Request) {
         })
       : null;
   const health = summarizeDecisionOpsHealth({ jobs, runs });
+  const judgeMetrics = summarizeDecisionJudgeMetrics(runs);
   const publicEvents =
     includeReconciliation ||
     includeFreshness ||
@@ -208,6 +213,7 @@ export async function GET(request: Request) {
     includeStability ||
     includeOutputStability ||
     includeResidentVisibility ||
+    includeDashboardHealth ||
     includeRuntimeStabilityGate ||
     includeRuntimeQualityGate ||
     needsGlobalProgress ||
@@ -417,6 +423,13 @@ export async function GET(request: Request) {
           residentStatus: residentPrewarm,
         })
       : null;
+  const dashboardHealth = includeDashboardHealth
+    ? buildPublicDashboardHealth({
+        records: decisionRecords,
+        jobs,
+        now,
+      })
+    : null;
   const runtimeStabilityGate =
     (includeRuntimeStabilityGate || includeRuntimeQualityGate) &&
     residentCoverage &&
@@ -717,6 +730,13 @@ export async function GET(request: Request) {
       locale,
       health,
       queueReadiness,
+      judgeMetrics,
+      judge_pass_rate: judgeMetrics.judge_pass_rate,
+      judge_fail_reasons: judgeMetrics.judge_fail_reasons,
+      judge_unavailable_count: judgeMetrics.judge_unavailable_count,
+      judge_call_count: judgeMetrics.judge_call_count,
+      judge_estimated_input_tokens: judgeMetrics.judge_estimated_input_tokens,
+      judge_estimated_output_tokens: judgeMetrics.judge_estimated_output_tokens,
       ...(includeQueuePriority
         ? {
             queuePriority,
@@ -862,6 +882,11 @@ export async function GET(request: Request) {
       ...(includeResidentVisibility
         ? {
             residentVisibility,
+          }
+        : {}),
+      ...(includeDashboardHealth
+        ? {
+            dashboardHealth,
           }
         : {}),
       ...(includeResidentQueueCanary

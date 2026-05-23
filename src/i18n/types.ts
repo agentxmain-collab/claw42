@@ -1,4 +1,5 @@
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
+import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
 
 export type Locale =
   | "zh_CN"
@@ -133,6 +134,15 @@ export type DispatchV10StageStatusDict = {
   in_progressNote: string;
   done: string;
   memoryPending: string;
+  observationOnly: string;
+  stage2Observation: string;
+  stage6TrackingPending: string;
+  stage6TrackingOverdue: string;
+};
+
+export type DispatchV10MessageDict = {
+  expand: string;
+  collapse: string;
 };
 
 export type DispatchV10TopicRankingDict = {
@@ -194,6 +204,24 @@ export type DispatchV10FollowTradeDict = {
   real_label_future: string;
 };
 
+export type TradeReadinessStateDict = Record<
+  TradingReadinessFailureKind,
+  {
+    label: string;
+    detail: string;
+    action: string;
+  }
+>;
+
+export type TradeReadinessDict = {
+  modes: {
+    disabled: string;
+    test: string;
+    live: string;
+  };
+  states: TradeReadinessStateDict;
+};
+
 export type DispatchV10Dict = {
   ariaLabel: string;
   hero: {
@@ -215,6 +243,7 @@ export type DispatchV10Dict = {
   outcome: DispatchV10OutcomeDict;
   round: DispatchV10RoundDict;
   stageStatus: DispatchV10StageStatusDict;
+  message: DispatchV10MessageDict;
   topicRanking: DispatchV10TopicRankingDict;
   direction: DispatchV10DirectionDict;
   roleViewpoint: DispatchV10RoleViewpointDict;
@@ -243,6 +272,8 @@ export type DispatchV10Dict = {
     statusActive: string;
     collapse: string;
     expand: string;
+    messageExpand: string;
+    messageCollapse: string;
     original: string;
     progressAriaLabel: string;
     progressLabels: string[];
@@ -250,6 +281,10 @@ export type DispatchV10Dict = {
     entry: string;
     stopLoss: string;
     takeProfit: string;
+    observationSummaryLabel: string;
+    coinwNavigate: string;
+    staleReason: string;
+    staleAgePrefix: string;
     watchReminder: string;
     watchCount: string;
     followed: string;
@@ -269,6 +304,7 @@ export type DispatchV10Dict = {
     watchOnlyLabel: string;
     watchOnlyCopy: string;
     analysisOnlyCopy: string;
+    coinwFuturesLink: string;
     feedbackAriaLabel: string;
     feedbackPrompt: string;
     feedbackHelpful: string;
@@ -287,6 +323,13 @@ export interface Dict {
     switchLangToEn: string; // 当前中文时按钮显示
     switchLangToZh: string; // 当前英文时按钮显示
     agentLiveMenuItem: string;
+  };
+  externalEntry: {
+    topNotice: {
+      title: string;
+      body: string;
+      action: string;
+    };
   };
   hero: {
     title: string;
@@ -416,6 +459,7 @@ export interface Dict {
       newContent: string;
       dismissAriaLabel: string;
     };
+    tradeReadiness: TradeReadinessDict;
     emptyHistory: string;
     loadingHistory: string;
     loadMore: string;

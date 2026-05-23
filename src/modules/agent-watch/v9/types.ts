@@ -1,6 +1,8 @@
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { DispatchV10FollowTradeDict } from "@/i18n/types";
+import type { TradingReadinessState } from "@/lib/coinw/tradeReadinessState";
+import type { DecisionFreshnessStatus } from "@/lib/team/freshnessStatus";
 import type { AnalystDataStatus, AnalystDirection } from "@/lib/team/strategyDecisionRecord";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
@@ -85,6 +87,7 @@ export interface DispatchMessage {
 }
 
 export interface DispatchStrategy {
+  mode?: "trade" | "observation";
   action: "wait" | "long" | "short" | "pending";
   actionLabel: string;
   name: string;
@@ -97,6 +100,7 @@ export interface DispatchStrategy {
   entry: string;
   stopLoss: string;
   takeProfit: string;
+  observationSummary?: string;
   follow: {
     primaryLabel: string;
     primaryDisabled: boolean;
@@ -110,8 +114,14 @@ export interface DispatchStrategy {
 export interface DispatchTopicExecutionMode {
   executable: boolean;
   coinwPair: string | null;
+  tradeUrl?: string;
   watchOnly: boolean;
   watchOnlyReason?: "not_listed_on_coinw" | "mapping_unknown";
+  tradeReadiness?: {
+    stateVersion: number;
+    blocking: boolean;
+    states: TradingReadinessState[];
+  };
 }
 
 export type DispatchFreshnessStatus =
@@ -140,6 +150,7 @@ export interface DispatchTopic {
   displayTitle?: string;
   symbol: string;
   lastUpdatedAt?: number;
+  freshnessStatus?: DecisionFreshnessStatus;
   execution?: DispatchTopicExecutionMode;
   status: DispatchTopicStatus;
   title: string;

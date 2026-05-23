@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "Afficher le texte complet",
+        "messageCollapse": "Replier",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [
@@ -698,9 +700,10 @@
           "market_overview": "Marché",
           "hotspot": "Tendance"
         },
-        "watchOnlyLabel": "Watch only / Suivi impossible",
-        "watchOnlyCopy": "Ce symbole n'est pas encore exécutable sur CoinW ; l'analyse est affichée uniquement pour observation.",
-        "analysisOnlyCopy": "Cette carte est uniquement destinée à l'observation et n'affiche aucune action de suivi.",
+        "watchOnlyLabel": "Analyse seule / pas d'ordre auto",
+        "watchOnlyCopy": "Ce symbole ne peut pas encore ouvrir un ordre futures CoinW ; seule l'analyse est affichée.",
+        "analysisOnlyCopy": "Cette carte fournit une analyse publique et un lien de trading, sans ordre automatique.",
+        "coinwFuturesLink": "Ouvrir CoinW Futures",
         "residentUpdating": "Mise à jour marché/thèmes en arrière-plan",
         "residentQueued": "Mise à jour marché/thèmes en attente",
         "residentUpdateIssue": "Incident de mise à jour en arrière-plan",
@@ -710,7 +713,11 @@
         "feedbackPrompt": "Cette analyse est-elle utile ?",
         "feedbackHelpful": "Utile",
         "feedbackNotHelpful": "Pas utile",
-        "feedbackThanks": "Enregistré"
+        "feedbackThanks": "Enregistré",
+        "observationSummaryLabel": "__TBD__",
+        "coinwNavigate": "__TBD__",
+        "staleReason": "__TBD__",
+        "staleAgePrefix": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",
@@ -728,7 +735,11 @@
         "in_progress": "En cours",
         "in_progressNote": "Cette étape écrit une mise à jour partielle",
         "done": "Terminé",
-        "memoryPending": "La revue attend le retour du résultat"
+        "memoryPending": "La revue attend le retour du résultat",
+        "observationOnly": "__TBD__",
+        "stage2Observation": "Observation long/short",
+        "stage6TrackingPending": "Suivi en cours · retour attendu dans {hours} h",
+        "stage6TrackingOverdue": "Suivi en retard · {hours} h apres la cible"
       },
       "topicRanking": {
         "explanation_template": "{symbol} est classé #{rank} grâce à {news_count} actus + {confidence}% de confiance",
@@ -795,11 +806,54 @@
         "missing_onchain": "Onchain signal pending",
         "missing_fundamental": "Fundamental signal pending",
         "missing_market": "Market context pending"
+      },
+      "message": {
+        "expand": "__TBD__",
+        "collapse": "__TBD__"
       }
     },
     "admin": {
       "unauthorized": "Jeton administrateur invalide",
       "idempotency_conflict": "Cette décision a déjà un résultat et ne peut pas être clôturée manuellement de nouveau"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {
@@ -814,5 +868,12 @@
     "Hold": "Conserver",
     "Sell": "Vente",
     "StrongSell": "Vente forte"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

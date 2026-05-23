@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "Развернуть текст",
+        "messageCollapse": "Свернуть",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [
@@ -698,9 +700,10 @@
           "market_overview": "Рынок",
           "hotspot": "Тема"
         },
-        "watchOnlyLabel": "Watch only / Нельзя копировать",
-        "watchOnlyCopy": "Этот символ пока нельзя исполнять на CoinW; анализ показан только для наблюдения.",
-        "analysisOnlyCopy": "Эта карточка только для наблюдения и не показывает действие копирования.",
+        "watchOnlyLabel": "Только анализ / без автоордера",
+        "watchOnlyCopy": "По этому символу пока нельзя открыть фьючерсный ордер CoinW; показан только анализ.",
+        "analysisOnlyCopy": "Карточка дает публичный анализ и ссылку на торговлю, но не размещает ордер автоматически.",
+        "coinwFuturesLink": "Открыть фьючерсы CoinW",
         "residentUpdating": "Фоновое обновление рынка/тем выполняется",
         "residentQueued": "Обновление рынка/тем в очереди",
         "residentUpdateIssue": "Проблема фонового обновления",
@@ -710,7 +713,11 @@
         "feedbackPrompt": "Этот анализ полезен?",
         "feedbackHelpful": "Полезен",
         "feedbackNotHelpful": "Не полезен",
-        "feedbackThanks": "Записано"
+        "feedbackThanks": "Записано",
+        "observationSummaryLabel": "__TBD__",
+        "coinwNavigate": "__TBD__",
+        "staleReason": "__TBD__",
+        "staleAgePrefix": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",
@@ -728,7 +735,11 @@
         "in_progress": "В процессе",
         "in_progressNote": "Этап записывает частичное обновление",
         "done": "Готово",
-        "memoryPending": "Разбор ждет записи результата"
+        "memoryPending": "Разбор ждет записи результата",
+        "observationOnly": "__TBD__",
+        "stage2Observation": "Наблюдение long/short",
+        "stage6TrackingPending": "Отслеживание · запись ожидается через {hours} ч",
+        "stage6TrackingOverdue": "Отслеживание просрочено · на {hours} ч позже цели"
       },
       "topicRanking": {
         "explanation_template": "{symbol} занимает #{rank}: {news_count} новостей + {confidence}% уверенности",
@@ -795,11 +806,54 @@
         "missing_onchain": "Onchain signal pending",
         "missing_fundamental": "Fundamental signal pending",
         "missing_market": "Market context pending"
+      },
+      "message": {
+        "expand": "__TBD__",
+        "collapse": "__TBD__"
       }
     },
     "admin": {
       "unauthorized": "Недействительный токен администратора",
       "idempotency_conflict": "У этого решения уже есть результат, его нельзя закрыть вручную повторно"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {
@@ -814,5 +868,12 @@
     "Hold": "Держать",
     "Sell": "Продажа",
     "StrongSell": "Сильная продажа"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

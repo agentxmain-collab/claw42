@@ -1,6 +1,18 @@
+"use client";
+
 import React from "react";
 import { formatSafeContent } from "@/lib/watch/safeMessageFormatter";
 import type { DispatchAgentId, DispatchMessage } from "./types";
+
+export interface MessageBubbleLabels {
+  expand: string;
+  collapse: string;
+}
+
+const DEFAULT_MESSAGE_LABELS: MessageBubbleLabels = {
+  expand: "展开全文",
+  collapse: "收起",
+};
 
 const AGENT_AVATAR: Record<DispatchAgentId, { label: string; className: string }> = {
   fundamental_analyst: { label: "F", className: "a-fund" },
@@ -17,18 +29,79 @@ const AGENT_AVATAR: Record<DispatchAgentId, { label: string; className: string }
   memory_loop: { label: "∞", className: "a-mem" },
 };
 
-function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
+const COLLAPSED_SUMMARY_MAX_CHARS = 60;
+
+function firstSentenceBoundary(value: string) {
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (!char || !"。！？!?；;.".includes(char)) continue;
+    if (char === "." && /\d/.test(value[index - 1] ?? "") && /\d/.test(value[index + 1] ?? "")) {
+      continue;
+    }
+    return index;
+  }
+
+  return -1;
+}
+
+function compactCollapsedSummary(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length <= COLLAPSED_SUMMARY_MAX_CHARS) {
+    return { text: normalized, truncated: false };
+  }
+
+  const firstSentenceEnd = firstSentenceBoundary(normalized);
+  if (firstSentenceEnd > 0) {
+    const firstSentence = normalized.slice(0, firstSentenceEnd + 1).trim();
+    if (firstSentence.length <= COLLAPSED_SUMMARY_MAX_CHARS) {
+      return { text: firstSentence, truncated: firstSentence.length < normalized.length };
+    }
+  }
+
+  const text = normalized
+    .slice(0, COLLAPSED_SUMMARY_MAX_CHARS)
+    .replace(/[.。…，,、；;：:\s-]+$/g, "")
+    .trim();
+
+  return { text: `${text}...`, truncated: text.length < normalized.length };
+}
+
+function MessageBubbleComponent({
+  message,
+  labels = DEFAULT_MESSAGE_LABELS,
+}: {
+  message: DispatchMessage;
+  labels?: MessageBubbleLabels;
+}) {
   const avatar = AGENT_AVATAR[message.agentId];
+  const [collapsed, setCollapsed] = React.useState(true);
+  const rawDetailText = message.content.trim();
+  const summaryText = message.oneLineSummary?.trim() ?? "";
+  const compactSummaryText = React.useMemo(
+    () => compactCollapsedSummary(summaryText || rawDetailText),
+    [rawDetailText, summaryText],
+  );
+  const standaloneDetailText = rawDetailText || summaryText;
+  const shouldCompactRawDetail = Boolean(!summaryText && compactSummaryText.truncated);
   const formattedContent = React.useMemo(
-    () => formatSafeContent(message.content),
-    [message.content],
+    () => formatSafeContent(standaloneDetailText),
+    [standaloneDetailText],
   );
   const formattedSummary = React.useMemo(
-    () => formatSafeContent(message.oneLineSummary ?? ""),
-    [message.oneLineSummary],
+    () => formatSafeContent(compactSummaryText.text),
+    [compactSummaryText.text],
   );
   const hasDecisionLayer = Boolean(
-    message.direction || message.confidence !== undefined || message.oneLineSummary,
+    message.direction || message.confidence !== undefined || summaryText || shouldCompactRawDetail,
+  );
+  const hasExpandableDetail = Boolean(
+    standaloneDetailText &&
+    (compactSummaryText.truncated || (summaryText && standaloneDetailText !== summaryText)),
+  );
+  const expanded = hasExpandableDetail && !collapsed;
+  const detailId = React.useMemo(
+    () => `msg-detail-${message.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
+    [message.id],
   );
   const confidencePct =
     typeof message.confidence === "number"
@@ -86,13 +159,39 @@ function MessageBubbleComponent({ message }: { message: DispatchMessage }) {
                     <span className="role-viewpoint">{message.roleViewpoint}</span>
                   ) : null}
                 </div>
-                {message.oneLineSummary ? (
-                  <div className="msg-summary">{formattedSummary}</div>
+                {summaryText || shouldCompactRawDetail ? (
+                  <div className="msg-summary">
+                    <span hidden={expanded && hasExpandableDetail}>{formattedSummary}</span>
+                    {hasExpandableDetail ? (
+                      <span id={detailId} hidden={!expanded} className="msg-detail">
+                        {formattedContent}
+                      </span>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             ) : null}
-            {hasDecisionLayer ? <div className="msg-divider" aria-hidden="true" /> : null}
-            <span>{formattedContent}</span>
+            {hasDecisionLayer && hasExpandableDetail ? (
+              <button
+                className="msg-expand"
+                type="button"
+                aria-expanded={expanded}
+                aria-controls={detailId}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && expanded) {
+                    event.preventDefault();
+                    setCollapsed(true);
+                  }
+                }}
+                onClick={() => setCollapsed((value) => !value)}
+              >
+                <span className="msg-expand-icon" aria-hidden="true" />
+                {expanded ? labels.collapse : labels.expand}
+              </button>
+            ) : null}
+            {!hasExpandableDetail && !summaryText && !shouldCompactRawDetail ? (
+              <span className="msg-detail">{formattedContent}</span>
+            ) : null}
           </div>
         )}
       </div>

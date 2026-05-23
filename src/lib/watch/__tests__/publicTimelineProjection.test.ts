@@ -412,30 +412,30 @@ describe("publicTimelineProjection", () => {
     ]);
   });
 
-  it("keeps watch-only PM records public and marks them non-executable", () => {
-    const billRecord: StrategyDecisionRecord = {
+  it("drops non-CoinW futures symbol PM records from the public beta timeline", () => {
+    const irysRecord: StrategyDecisionRecord = {
       ...decisionRecord,
-      id: "record-bill",
-      symbol: "BILL",
+      id: "record-irys",
+      symbol: "IRYS",
       tradeDecision: {
         ...tradeDecision,
-        id: "trade-bill",
-        symbol: "BILL",
+        id: "trade-irys",
+        symbol: "IRYS",
         direction: "wait",
       },
     };
     const entry: StreamEntry = {
       kind: "chat_thread",
-      id: "thread-bill",
+      id: "thread-irys",
       ts: now,
       thread: {
-        id: "thread-bill",
+        id: "thread-irys",
         seed: {
-          id: "seed-bill",
+          id: "seed-irys",
           type: "market",
           title: "Market",
           description: "Market",
-          symbols: ["BILL"],
+          symbols: ["IRYS"],
           sentiment: "neutral",
           createdAt: now,
         },
@@ -450,30 +450,28 @@ describe("publicTimelineProjection", () => {
         sourceTrigger: "pm_decision",
         evidenceIds: [],
         locale: "zh_CN",
-        recordId: "record-bill",
-        tradeDecision: billRecord.tradeDecision,
+        recordId: "record-irys",
+        tradeDecision: irysRecord.tradeDecision,
       },
     };
 
     const event = projectStreamEntryToPublic(entry, {
       mode: "public",
-      decisionRecordsById: new Map([[billRecord.id, billRecord]]),
+      decisionRecordsById: new Map([[irysRecord.id, irysRecord]]),
     });
 
-    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
-    expect(event.payload.symbol).toBe("BILL");
-    expect(event.payload.executable).toBe(false);
+    expect(event).toBeNull();
   });
 
-  it("falls back to PM record id symbol when history lacks record hydration", () => {
+  it("does not publish non-CoinW symbol fallbacks when history lacks record hydration", () => {
     const entry: StreamEntry = {
       kind: "chat_thread",
-      id: "thread-bill",
+      id: "thread-irys",
       ts: now,
       thread: {
-        id: "thread-bill",
+        id: "thread-irys",
         seed: {
-          id: "seed-bill",
+          id: "seed-irys",
           type: "market",
           title: "Market",
           description: "Market",
@@ -490,9 +488,9 @@ describe("publicTimelineProjection", () => {
         visibility: "public",
         importance: "high",
         sourceTrigger: "pm_decision",
-        evidenceIds: ["topic_selection:BILL:1"],
+        evidenceIds: ["topic_selection:IRYS:1"],
         locale: "zh_CN",
-        recordId: "pm:BILL:1778902920550",
+        recordId: "pm:IRYS:1778902920550",
       },
     };
 
@@ -501,9 +499,7 @@ describe("publicTimelineProjection", () => {
       decisionRecordsById: new Map(),
     });
 
-    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
-    expect(event.payload.symbol).toBe("BILL");
-    expect(event.payload.executable).toBe(false);
+    expect(event).toBeNull();
   });
 
   it("can project a PM decision directly from a strategy record", () => {
@@ -517,6 +513,10 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.candidateKey).toBe("BTC");
     expect(event.payload.displayTitle).toBe("BTC 实时行情分析");
     expect(event.payload.executable).toBe(true);
+    expect(event.payload.freshnessStatus).toMatchObject({
+      level: "fresh",
+      observedAt: decisionRecord.createdAt,
+    });
     expect(event.payload.rounds).toHaveLength(3);
     expectNoInternalTeamIds(event.payload);
   });

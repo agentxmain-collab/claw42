@@ -673,6 +673,8 @@
         "statusActive": "LIVE 辯論",
         "collapse": "收起",
         "expand": "展开",
+        "messageExpand": "展開全文",
+        "messageCollapse": "收起",
         "original": "原文 →",
         "progressAriaLabel": "决策流程进度",
         "progressLabels": [
@@ -698,9 +700,10 @@
           "market_overview": "大盤",
           "hotspot": "熱點"
         },
-        "watchOnlyLabel": "watch-only / 不可跟單",
-        "watchOnlyCopy": "該幣種暫不支援 CoinW 跟單，僅展示觀察分析。",
-        "analysisOnlyCopy": "該卡片僅用於觀察分析，不提供跟單操作。",
+        "watchOnlyLabel": "僅分析 / 不自動下單",
+        "watchOnlyCopy": "該幣種暫不支援 CoinW 合約下單，僅展示分析。",
+        "analysisOnlyCopy": "該卡片用於公開分析和交易跳轉，不自動下單。",
+        "coinwFuturesLink": "去 CoinW 合約",
         "residentUpdating": "大盤/熱點後台更新中",
         "residentQueued": "大盤/熱點等待後台更新",
         "residentUpdateIssue": "後台更新異常",
@@ -710,7 +713,11 @@
         "feedbackPrompt": "這條分析有幫助嗎",
         "feedbackHelpful": "有幫助",
         "feedbackNotHelpful": "沒幫助",
-        "feedbackThanks": "已記錄"
+        "feedbackThanks": "已記錄",
+        "observationSummaryLabel": "__TBD__",
+        "coinwNavigate": "__TBD__",
+        "staleReason": "__TBD__",
+        "staleAgePrefix": "__TBD__"
       },
       "placeholder": {
         "title": "跟单功能开发中",
@@ -728,7 +735,11 @@
         "in_progress": "進行中",
         "in_progressNote": "該階段正在寫入部分結果",
         "done": "已完成",
-        "memoryPending": "復盤等待結果回寫"
+        "memoryPending": "復盤等待結果回寫",
+        "observationOnly": "__TBD__",
+        "stage2Observation": "多空觀察",
+        "stage6TrackingPending": "追蹤中 · 預期 {hours} 小時後回寫",
+        "stage6TrackingOverdue": "追蹤逾時 · 已超過預期 {hours} 小時"
       },
       "topicRanking": {
         "explanation_template": "{symbol} 因 {news_count} 條新聞 + {confidence}% 置信度排第 {rank}",
@@ -795,11 +806,54 @@
         "missing_onchain": "鏈上信號待補充",
         "missing_fundamental": "基本面信號待補充",
         "missing_market": "市場背景待補充"
+      },
+      "message": {
+        "expand": "__TBD__",
+        "collapse": "__TBD__"
       }
     },
     "admin": {
       "unauthorized": "管理員權杖無效",
       "idempotency_conflict": "該決策已有結果，不能重複人工關閉"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {
@@ -814,5 +868,12 @@
     "Hold": "持有",
     "Sell": "賣出",
     "StrongSell": "強烈賣出"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

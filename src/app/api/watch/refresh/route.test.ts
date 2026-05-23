@@ -108,12 +108,12 @@ function autoSymbolRequest() {
   );
 }
 
-function record(createdAt: string): StrategyDecisionRecord {
+function record(createdAt: string, symbol = "BTC"): StrategyDecisionRecord {
   return {
-    id: "record-btc",
+    id: `record-${symbol.toLowerCase()}`,
     schemaVersion: 2,
     recordSource: "paper",
-    symbol: "BTC",
+    symbol,
     locale: "zh_CN",
     decisionOwnerId: "pm",
     contributorIds: ["pm"],
@@ -432,6 +432,42 @@ describe("/api/watch/refresh", () => {
 
     expect(payload.status).toBe("stale");
     expect(payload.refreshStarted).toBe(true);
+    expect(waitUntilMock).toHaveBeenCalledOnce();
+  });
+
+  it("does not treat one recent symbol as sufficient auto symbol coverage", async () => {
+    readAllDecisionRecordsMock.mockImplementation(async () => {
+      callOrder.push("freshness:records");
+      return [record(new Date(now - 5 * 60_000).toISOString(), "HYPE")];
+    });
+
+    const response = await POST(autoSymbolRequest());
+    const payload = await response.json();
+
+    expect(payload).toMatchObject({
+      status: "stale",
+      refreshStarted: true,
+      symbol: "SYMBOL",
+    });
+    expect(waitUntilMock).toHaveBeenCalledOnce();
+  });
+
+  it("allows automatic major rotation to run without an alert-level trigger", async () => {
+    selectPmDecisionTopicsMock.mockReturnValueOnce([
+      {
+        symbol: "BTC",
+        reasons: [{ kind: "pool", score: 1 }],
+      },
+    ]);
+
+    const response = await POST(autoSymbolRequest());
+    const payload = await response.json();
+
+    expect(payload).toMatchObject({
+      status: "stale",
+      refreshStarted: true,
+      symbol: "SYMBOL",
+    });
     expect(waitUntilMock).toHaveBeenCalledOnce();
   });
 });

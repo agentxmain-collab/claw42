@@ -4,12 +4,14 @@ import {
   MAX_PUBLIC_TIMELINE_WINDOW_MINUTES,
   resolvePublicTimelineRecordCutoff,
   selectResidentFloorRecordEvents,
+  selectSymbolFloorRecordEvents,
 } from "@/lib/watch/publicTimelinePayload";
 
 function pmEvent(
   id: string,
   ts: number,
   candidateType: "symbol" | "market_overview" | "hotspot",
+  symbol = "BTC",
 ): PublicTimelineEvent {
   return {
     id,
@@ -27,7 +29,7 @@ function pmEvent(
           ? "MARKET"
           : candidateType === "hotspot"
             ? "HOTSPOT"
-            : "BTC",
+            : symbol,
       candidateType,
       candidateKey: `${candidateType}:zh_CN:${id}`,
       displayTitle: id,
@@ -73,5 +75,33 @@ describe("publicTimelinePayload", () => {
         servedAt,
       }).map((event) => event.id),
     ).toEqual(["market-latest", "hotspot-latest"]);
+  });
+
+  it("keeps up to three stale-but-real executable symbol records as a public floor", () => {
+    const servedAt = Date.UTC(2026, 4, 18, 12, 0, 0);
+    const before = servedAt + 1;
+    const events = [
+      pmEvent("btc-old", servedAt - 34 * 60 * 60_000, "symbol", "BTC"),
+      pmEvent("btc-latest", servedAt - 30 * 60 * 60_000, "symbol", "BTC"),
+      pmEvent("eth-latest", servedAt - 28 * 60 * 60_000, "symbol", "ETH"),
+      pmEvent("sol-latest", servedAt - 26 * 60 * 60_000, "symbol", "SOL"),
+      pmEvent("btc-too-old", servedAt - 80 * 60 * 60_000, "symbol", "BTC"),
+      {
+        ...pmEvent("irys-watch-only", servedAt - 24 * 60 * 60_000, "symbol", "IRYS"),
+        payload: {
+          ...(pmEvent("irys-watch-only", servedAt - 24 * 60 * 60_000, "symbol", "IRYS")
+            .payload as Extract<PublicTimelineEvent["payload"], { kind: "pm_decision" }>),
+          executable: false,
+        },
+      },
+    ];
+
+    expect(
+      selectSymbolFloorRecordEvents(events, {
+        locale: "zh_CN",
+        before,
+        servedAt,
+      }).map((event) => event.id),
+    ).toEqual(["sol-latest", "eth-latest", "btc-latest"]);
   });
 });

@@ -673,6 +673,8 @@
         "statusActive": "LIVE 辩论",
         "collapse": "收起",
         "expand": "展开",
+        "messageExpand": "展开全文",
+        "messageCollapse": "收起",
         "original": "原文 →",
         "progressAriaLabel": "决策流程进度",
         "progressLabels": [
@@ -698,9 +700,10 @@
           "market_overview": "大盘",
           "hotspot": "热点"
         },
-        "watchOnlyLabel": "watch-only / 不可跟单",
-        "watchOnlyCopy": "该币种暂不支持 CoinW 跟单，仅展示观察分析。",
-        "analysisOnlyCopy": "该卡片仅用于观察分析，不提供跟单操作。",
+        "watchOnlyLabel": "仅分析 / 不自动下单",
+        "watchOnlyCopy": "该币种暂不支持 CoinW 合约开单，仅展示分析。",
+        "analysisOnlyCopy": "该卡片用于公开分析和交易跳转，不自动下单。",
+        "coinwFuturesLink": "去交易",
         "residentUpdating": "大盘/热点后台更新中",
         "residentQueued": "大盘/热点等待后台更新",
         "residentUpdateIssue": "后台更新异常",
@@ -710,7 +713,11 @@
         "feedbackPrompt": "这条分析有帮助吗",
         "feedbackHelpful": "有帮助",
         "feedbackNotHelpful": "没帮助",
-        "feedbackThanks": "已记录"
+        "feedbackThanks": "已记录",
+        "observationSummaryLabel": "观察结论",
+        "coinwNavigate": "去 CoinW 看合约",
+        "staleReason": "行情已过期，等待新分析后开放交易",
+        "staleAgePrefix": "分析于"
       },
       "placeholder": {
         "title": "跟单功能开发中",
@@ -728,7 +735,11 @@
         "in_progress": "进行中",
         "in_progressNote": "该阶段正在写入部分结果",
         "done": "已完成",
-        "memoryPending": "复盘等待结果回写"
+        "memoryPending": "复盘等待结果回写",
+        "observationOnly": "观察结论已完成，不涉及具体交易",
+        "stage2Observation": "多空观察",
+        "stage6TrackingPending": "跟踪中 · 预期 {hours} 小时后回写",
+        "stage6TrackingOverdue": "跟踪超时 · 已超过预期 {hours} 小时"
       },
       "topicRanking": {
         "explanation_template": "{symbol} 因 {news_count} 条新闻 + {confidence}% 置信度排第 {rank}",
@@ -795,11 +806,54 @@
         "missing_onchain": "链上信号待补充",
         "missing_fundamental": "基本面信号待补充",
         "missing_market": "市场背景待补充"
+      },
+      "message": {
+        "expand": "展开全文",
+        "collapse": "收起"
       }
     },
     "admin": {
       "unauthorized": "管理员令牌无效",
       "idempotency_conflict": "该决策已有结果，不能重复人工关闭"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {
@@ -814,5 +868,12 @@
     "Hold": "持有",
     "Sell": "卖出",
     "StrongSell": "强烈卖出"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

@@ -36,5 +36,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next|api|images|fonts|.*\\..*).*)"],
+  matcher: ["/((?!_next|api|embed|images|fonts|.*\\..*).*)"],
 };

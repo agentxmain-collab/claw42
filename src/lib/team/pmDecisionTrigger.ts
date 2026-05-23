@@ -1,5 +1,6 @@
 import { newsItemToEvidence } from "@/lib/news/newsEvidence";
 import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
+import { normalizeCryptoPanicSocialSignals } from "@/lib/social/socialSignalNormalizer";
 import { runPmDecisionPipeline } from "@/lib/team/pmDecisionPipeline";
 import {
   buildTopicSelectionEvidence,
@@ -15,6 +16,7 @@ import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import { normalizePipelineSymbol, symbolDecisionCandidate } from "@/lib/watch/residentCandidate";
 import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
+import { isPublicBetaMajorRotationSymbol } from "@/lib/watch/publicSymbolCoverage";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { CoinPoolPayload, CoinTickerEntry, SignalRecord } from "@/modules/agent-watch/types";
 import type { NewsItem } from "@/lib/types";
@@ -209,6 +211,7 @@ export async function triggerPmDecisionPipelineOnce({
 }) {
   const normalizedLocale = normalizeWatchLocale(locale);
   const recentNewsEvidence = await evidenceFromNewsItems(newsItems);
+  const recentSocialSignals = normalizeCryptoPanicSocialSignals(newsItems, now).observations;
   const recentTimelineEvents = await recentPublicTimelineEvents(normalizedLocale);
   const recentDecisionMemory = await recentDecisionRecords(normalizedLocale);
   if (candidate) {
@@ -259,6 +262,7 @@ export async function triggerPmDecisionPipelineOnce({
     pool,
     marketSignals: marketSignalsFromPool(pool, now),
     newsEvidence: recentNewsEvidence,
+    socialSignals: recentSocialSignals,
     recentDecisionRecords: recentDecisionMemory,
     recentTimelineEvents,
     symbol,
@@ -307,9 +311,14 @@ export async function triggerPmDecisionPipelineOnce({
     const scopedNewsEvidence = recentNewsEvidence.filter((evidence) =>
       evidenceMatchesCandidateSymbol(evidence, candidate),
     );
-    const hasTrigger =
+    const hasSignalTrigger =
       recentMarketSignals.some((signal) => signal.severity === "alert") ||
       scopedNewsEvidence.some((evidence) => evidence.impactSeverity === "high");
+    const hasMajorRotationBaseline =
+      !symbol &&
+      triggerSource === "user_visit_trigger" &&
+      isPublicBetaMajorRotationSymbol(candidate);
+    const hasTrigger = hasSignalTrigger || hasMajorRotationBaseline;
     onAudit?.({
       type: "candidate_considered",
       triggerSource,

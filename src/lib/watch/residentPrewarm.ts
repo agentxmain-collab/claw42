@@ -1,6 +1,8 @@
 import { newsItemToEvidence } from "@/lib/news/newsEvidence";
+import { normalizeCryptoPanicSocialSignals } from "@/lib/social/socialSignalNormalizer";
 import { marketSignalsFromPool } from "@/lib/team/pmDecisionTrigger";
 import { selectPmDecisionTopics } from "@/lib/team/topicSelector";
+import { evaluateMarketTriggers, type MarketTrigger } from "@/lib/watch/marketTriggers";
 import type { Locale } from "@/i18n/types";
 import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 import type { NewsItem } from "@/lib/types";
@@ -31,6 +33,7 @@ export interface ResidentPrewarmPlan {
   burstScore: number | null;
   burstThreshold: number;
   backfillCandidateKeys: string[];
+  marketTriggers: MarketTrigger[];
   residentStatus: ResidentPrewarmStatus;
 }
 
@@ -102,6 +105,12 @@ export function residentPrewarmPlan({
   });
   const fixedKeys = new Set(fixedCadenceCandidates.map((candidate) => candidate.candidateKey));
   const burst = baselineCandidates.find((candidate) => !fixedKeys.has(candidate.candidateKey));
+  const marketTriggers = evaluateMarketTriggers({
+    pool,
+    newsItems,
+    now,
+    includeFallbackCron: true,
+  });
   const residentStatus = deriveResidentPrewarmStatus({ records, jobs, now });
   const baselineKeys = new Set(baselineCandidates.map((candidate) => candidate.candidateKey));
   const backfillCandidates = [
@@ -123,6 +132,7 @@ export function residentPrewarmPlan({
     burstScore: burst?.score ?? null,
     burstThreshold: HOTSPOT_BURST_SCORE_THRESHOLD,
     backfillCandidateKeys: backfillCandidates.map((candidate) => candidate.candidateKey),
+    marketTriggers,
     residentStatus,
   };
 }
@@ -139,11 +149,13 @@ function hotspotBurstCandidate({
   newsItems: NewsItem[];
 }) {
   const newsEvidence = newsItems.map((item) => newsItemToEvidence(item));
+  const socialSignals = normalizeCryptoPanicSocialSignals(newsItems, now).observations;
   const marketSignals = marketSignalsFromPool(pool, now);
   const topic = selectPmDecisionTopics({
     pool,
     marketSignals,
     newsEvidence,
+    socialSignals,
     now,
   })[0];
   if (!topic || topic.score < HOTSPOT_BURST_SCORE_THRESHOLD) return null;

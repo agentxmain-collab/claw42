@@ -673,6 +673,8 @@
         "statusActive": "LIVE Debate",
         "collapse": "Collapse",
         "expand": "Expand",
+        "messageExpand": "Розгорнути текст",
+        "messageCollapse": "Згорнути",
         "original": "Source →",
         "progressAriaLabel": "Decision progress",
         "progressLabels": [
@@ -698,9 +700,10 @@
           "market_overview": "Ринок",
           "hotspot": "Тема"
         },
-        "watchOnlyLabel": "Watch only / Не для копіювання",
-        "watchOnlyCopy": "Цей символ поки не можна виконати на CoinW; аналіз показано лише для спостереження.",
-        "analysisOnlyCopy": "Ця картка лише для спостереження й не показує дію копіювання.",
+        "watchOnlyLabel": "Лише аналіз / без автоордера",
+        "watchOnlyCopy": "Для цього символу поки не можна відкрити ф'ючерсний ордер CoinW; показано лише аналіз.",
+        "analysisOnlyCopy": "Картка дає публічний аналіз і посилання на торгівлю, але не створює ордер автоматично.",
+        "coinwFuturesLink": "Відкрити ф'ючерси CoinW",
         "residentUpdating": "Фонове оновлення ринку/тем виконується",
         "residentQueued": "Оновлення ринку/тем у черзі",
         "residentUpdateIssue": "Проблема фонового оновлення",
@@ -710,7 +713,11 @@
         "feedbackPrompt": "Цей аналіз корисний?",
         "feedbackHelpful": "Корисний",
         "feedbackNotHelpful": "Не корисний",
-        "feedbackThanks": "Записано"
+        "feedbackThanks": "Записано",
+        "observationSummaryLabel": "__TBD__",
+        "coinwNavigate": "__TBD__",
+        "staleReason": "__TBD__",
+        "staleAgePrefix": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",
@@ -728,7 +735,11 @@
         "in_progress": "В процесі",
         "in_progressNote": "Етап записує часткове оновлення",
         "done": "Готово",
-        "memoryPending": "Розбір чекає запису результату"
+        "memoryPending": "Розбір чекає запису результату",
+        "observationOnly": "__TBD__",
+        "stage2Observation": "Спостереження long/short",
+        "stage6TrackingPending": "Відстеження · запис очікується через {hours} год",
+        "stage6TrackingOverdue": "Відстеження прострочено · на {hours} год понад ціль"
       },
       "topicRanking": {
         "explanation_template": "{symbol} має ранг #{rank}: {news_count} новин + {confidence}% впевненості",
@@ -795,11 +806,54 @@
         "missing_onchain": "Onchain signal pending",
         "missing_fundamental": "Fundamental signal pending",
         "missing_market": "Market context pending"
+      },
+      "message": {
+        "expand": "__TBD__",
+        "collapse": "__TBD__"
       }
     },
     "admin": {
       "unauthorized": "Недійсний токен адміністратора",
       "idempotency_conflict": "Це рішення вже має результат і не може бути повторно закрите вручну"
+    },
+    "tradeReadiness": {
+      "modes": {
+        "disabled": "",
+        "test": "",
+        "live": ""
+      },
+      "states": {
+        "analysis_data_degraded": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "instrument_unavailable": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "auth_account_not_ready": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "user_risk_confirmation_required": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "submission_mode_blocked": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        },
+        "exchange_network_or_result_failed": {
+          "label": "",
+          "detail": "",
+          "action": ""
+        }
+      }
     }
   },
   "coinModal": {
@@ -814,5 +868,12 @@
     "Hold": "Утримувати",
     "Sell": "Продаж",
     "StrongSell": "Сильний продаж"
+  },
+  "externalEntry": {
+    "topNotice": {
+      "title": "",
+      "body": "",
+      "action": ""
+    }
   }
 }

@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import zhCN from "@/i18n/dicts/zh_CN.json";
 import type { Dict } from "@/i18n/types";
+import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
 import type { DispatchTopic } from "../../v9/types";
 import { dispatchV10DemoTopics } from "../demoTopics";
@@ -185,7 +186,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("分析于 600 分钟前");
   });
 
-  test("renders an explicit non-followable badge for watch-only topics", () => {
+  test("renders an explicit analysis-only badge for non-followable topics", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
@@ -205,9 +206,131 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("watch-only / 不可跟单");
-    expect(html).toContain("该币种暂不支持 CoinW 跟单");
+    expect(html).toContain("去交易");
+    expect(html).not.toContain("仅分析 / 不自动下单");
+    expect(html).not.toContain("该币种暂不支持 CoinW 合约开单");
     expect(html).not.toContain("演示模式：当前不会真实下单");
+  });
+
+  test("does not render a clickable trade entry for stale executable decisions", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "stale-btc",
+              candidateType: "symbol",
+              candidateKey: "BTC",
+              title: "BTC 实时行情分析",
+              symbol: "BTC",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            freshnessStatus: {
+              level: "stale",
+              observedAt: "2026-05-21T00:00:00.000Z",
+              ageMinutes: 500,
+              staleAfterMinutes: 360,
+              expiredAfterMinutes: 1440,
+            },
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("freshness-stale");
+    expect(html).toContain("disabled");
+    expect(html).toContain("行情已过期，等待新分析后开放交易");
+    expect(html).toContain("分析于 8 小时前");
+    expect(html).not.toContain("coinw_trade_cta_click");
+    expect(html).not.toContain('target="_blank"');
+  });
+
+  test("renders analysis-only market cards as observation summaries with generic CoinW navigation", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "market-overview-observation",
+              candidateType: "market_overview",
+              candidateKey: "market_overview:daily:zh_CN:2026-05-22",
+              title: "今日大盘综述",
+              symbol: "MARKET",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: false,
+            }),
+            strategy: {
+              ...dispatchV10DemoTopics[0]!.strategy,
+              mode: "observation",
+              ticker: "$MARKET",
+              name: "观察结论",
+              meta: "观察结论已完成，不涉及具体交易",
+              observationSummary: "市场维持震荡，资金仍围绕 BTC 与主流资产轮动。",
+              entry: "",
+              stopLoss: "",
+              takeProfit: "",
+            },
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("观察结论");
+    expect(html).toContain("市场维持震荡");
+    expect(html).toContain("去 CoinW 看合约");
+    expect(html).toContain('href="https://www.coinw.com/market/futures"');
+    expect(html).not.toContain('<span class="lbl">入场</span>');
+    expect(html).not.toContain('<span class="lbl">止损</span>');
+    expect(html).not.toContain('<span class="lbl">止盈</span>');
+  });
+
+  test("uses fuller public rationale when observation summary is visibly incomplete", () => {
+    const fullObservation =
+      "团队形成一致看多共识，核心逻辑是恐慌贪婪指数28处于极度恐惧区间，历史上对应中期底部概率上升，同时 BTC 24h 仅小幅回落，风险资产反弹条件仍在。";
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "market-overview-fuller-observation",
+              candidateType: "market_overview",
+              candidateKey: "market_overview:daily:zh_CN:2026-05-22",
+              title: "今日大盘综述",
+              symbol: "MARKET",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: false,
+            }),
+            explanation: fullObservation,
+            messages: [],
+            strategy: {
+              ...dispatchV10DemoTopics[0]!.strategy,
+              mode: "observation",
+              ticker: "$MARKET",
+              name: "观察结论",
+              meta: "观察结论已完成，不涉及具体交易",
+              observationSummary:
+                "团队形成一致看多共识，核心逻辑是恐慌贪婪指数28处于极度恐惧区间，历史上对应中期底部，BTC 24h仅跌0.",
+              entry: "",
+              stopLoss: "",
+              takeProfit: "",
+            },
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain(fullObservation);
+    expect(html).not.toContain("BTC 24h仅跌0.");
   });
 
   test("renders market and hotspot candidate badges with type-specific card classes", () => {
@@ -381,9 +504,152 @@ describe("MarketAnalysisPanel v10", () => {
     );
 
     expect(marketHtml).not.toContain("演示模式");
-    expect(marketHtml).toContain("watch-only / 不可跟单");
-    expect(marketHtml).toContain("仅用于观察分析");
-    expect(symbolHtml).toContain("演示模式");
+    expect(marketHtml).not.toContain("仅分析 / 不自动下单");
+    expect(symbolHtml).not.toContain("演示模式");
+    expect(symbolHtml).toContain("去交易");
+  });
+
+  test("renders one CoinW futures navigation action in the primary action slot", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          topicFixture({
+            id: "market-daily",
+            candidateType: "market_overview",
+            candidateKey: "market_overview:daily:zh_CN:2026-05-17",
+            title: "今日大盘综述",
+            symbol: "MARKET",
+            score: 3,
+            lastUpdatedAt: 3,
+            executable: false,
+          }),
+          topicFixture({
+            id: "symbol-hype",
+            candidateType: "symbol",
+            candidateKey: "HYPE",
+            title: "HYPE 实时行情分析",
+            symbol: "HYPE",
+            score: 2,
+            lastUpdatedAt: 2,
+            executable: true,
+          }),
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("去交易");
+    expect(html).toContain("去 CoinW 看合约");
+    expect(html).toContain('href="https://www.coinw.com/market/futures"');
+    expect(html.match(/去交易/g)).toHaveLength(1);
+    expect(html.match(/去 CoinW 看合约/g)).toHaveLength(1);
+    expect(html).not.toContain("仅分析 / 不自动下单");
+  });
+
+  test("uses pair-specific CoinW links only for executable symbol topics", () => {
+    const previousTemplate = process.env.NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE;
+    process.env.NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE =
+      "https://www.coinw.com/futures/{pairCompactLower}";
+
+    try {
+      const html = renderToStaticMarkup(
+        <MarketAnalysisPanel
+          topics={[
+            topicFixture({
+              id: "market-daily",
+              candidateType: "market_overview",
+              candidateKey: "market_overview:daily:zh_CN:2026-05-17",
+              title: "今日大盘综述",
+              symbol: "MARKET",
+              score: 3,
+              lastUpdatedAt: 3,
+              executable: false,
+            }),
+            topicFixture({
+              id: "symbol-hype",
+              candidateType: "symbol",
+              candidateKey: "HYPE",
+              title: "HYPE 实时行情分析",
+              symbol: "HYPE",
+              score: 2,
+              lastUpdatedAt: 2,
+              executable: true,
+            }),
+          ]}
+          dict={dict}
+          onPlaceholder={() => undefined}
+        />,
+      );
+
+      expect(html).toContain('href="https://www.coinw.com/futures/hypeusdt"');
+      expect(html).toContain('href="https://www.coinw.com/market/futures"');
+      expect(html).toContain('data-trade-readiness-kind="instrument_unavailable"');
+    } finally {
+      if (previousTemplate === undefined) {
+        delete process.env.NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE;
+      } else {
+        process.env.NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE = previousTemplate;
+      }
+    }
+  });
+
+  test("renders non-public trade readiness slots for all failure kinds", () => {
+    const failureKinds: TradingReadinessFailureKind[] = [
+      "analysis_data_degraded",
+      "instrument_unavailable",
+      "auth_account_not_ready",
+      "user_risk_confirmation_required",
+      "submission_mode_blocked",
+      "exchange_network_or_result_failed",
+    ];
+
+    for (const kind of failureKinds) {
+      const html = renderToStaticMarkup(
+        <MarketAnalysisPanel
+          topics={[
+            {
+              ...topicFixture({
+                id: `topic-${kind}`,
+                candidateType: "symbol",
+                candidateKey: "BILL",
+                title: "BILL 实时行情分析",
+                symbol: "BILL",
+                score: 1,
+                lastUpdatedAt: 1,
+                executable: false,
+              }),
+              execution: {
+                executable: false,
+                coinwPair: null,
+                watchOnly: true,
+                tradeReadiness: {
+                  stateVersion: 1,
+                  blocking: true,
+                  states: [
+                    {
+                      kind,
+                      severity: "blocked",
+                      blocking: true,
+                      retryable: false,
+                      source: "order_submission",
+                      code: `test_${kind}`,
+                      i18nKey: `agentWatch.tradeReadiness.states.${kind}`,
+                      observedAt: "2026-05-21T00:00:00.000Z",
+                    },
+                  ],
+                },
+              },
+            },
+          ]}
+          dict={dict}
+          onPlaceholder={() => undefined}
+        />,
+      );
+
+      expect(html).toContain(`data-trade-readiness-kind="${kind}"`);
+      expect(html).toContain('data-trade-readiness-slot="cta-disabled-reason"');
+    }
   });
 
   test("keeps collapse state attached to record id after reorder", () => {
