@@ -16,12 +16,23 @@ const INPUT_USD_PER_MILLION = 0.435;
 const OUTPUT_USD_PER_MILLION = 0.87;
 const DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-pro";
 const DEFAULT_DEEPSEEK_FALLBACK_MODEL = "deepseek-v4-flash";
+const DEFAULT_DEEPSEEK_COMPAT_MODEL = "deepseek-chat";
+
+function pushUniqueModel(models: string[], model: string | undefined) {
+  if (model && !models.includes(model)) models.push(model);
+}
 
 function resolveDeepSeekModels() {
   const primary = process.env.DEEPSEEK_MODEL || DEFAULT_DEEPSEEK_MODEL;
   const fallback = process.env.DEEPSEEK_FALLBACK_MODEL || DEFAULT_DEEPSEEK_FALLBACK_MODEL;
-  if (primary !== DEFAULT_DEEPSEEK_MODEL || fallback === primary) return [primary];
-  return [primary, fallback];
+  const compat = process.env.DEEPSEEK_COMPAT_MODEL || DEFAULT_DEEPSEEK_COMPAT_MODEL;
+  const models: string[] = [];
+  pushUniqueModel(models, primary);
+  if (primary === DEFAULT_DEEPSEEK_MODEL) {
+    pushUniqueModel(models, fallback);
+  }
+  pushUniqueModel(models, compat);
+  return models;
 }
 
 function shouldTryFallback(status: number) {
@@ -61,6 +72,11 @@ export const deepseekChatProvider: LLMProvider = {
 
       if (!response.ok) {
         lastError = new Error(`deepseek-chat ${model} ${response.status}`);
+        console.warn("[claw42] DeepSeek model failed", {
+          taskTag: input.taskTag,
+          model,
+          error: lastError.message,
+        });
         if (shouldTryFallback(response.status)) continue;
         throw lastError;
       }
@@ -69,6 +85,11 @@ export const deepseekChatProvider: LLMProvider = {
       const text = data.choices?.[0]?.message?.content?.trim();
       if (!text) {
         lastError = new Error(`deepseek-chat ${model} empty response`);
+        console.warn("[claw42] DeepSeek model failed", {
+          taskTag: input.taskTag,
+          model,
+          error: lastError.message,
+        });
         continue;
       }
 

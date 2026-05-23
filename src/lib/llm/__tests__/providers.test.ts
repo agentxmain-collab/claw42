@@ -195,4 +195,41 @@ describe("LLM provider core", () => {
     expect(output.text).toBe("flash fallback");
     expect(output.provider).toBe("deepseek-chat");
   });
+
+  it("falls back to the stable DeepSeek chat model when V4 models return empty content", async () => {
+    process.env.DEEPSEEK_API_KEY = "test-key";
+    const requestModels: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        const requestBody = JSON.parse(String(init?.body ?? "{}")) as { model?: string };
+        requestModels.push(String(requestBody.model));
+        if (requestBody.model === "deepseek-chat") {
+          return new Response(
+            JSON.stringify({
+              choices: [{ message: { content: "stable fallback" } }],
+              usage: { prompt_tokens: 10, completion_tokens: 5 },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        return new Response(
+          JSON.stringify({
+            choices: [{ message: { content: "" } }],
+            usage: { prompt_tokens: 10, completion_tokens: 0 },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    const output = await getProvider("deepseek-chat").generate({
+      prompt: "hello",
+      taskTag: "test:deepseek-stable-fallback",
+    });
+
+    expect(requestModels).toEqual(["deepseek-v4-pro", "deepseek-v4-flash", "deepseek-chat"]);
+    expect(output.text).toBe("stable fallback");
+    expect(output.provider).toBe("deepseek-chat");
+  });
 });
