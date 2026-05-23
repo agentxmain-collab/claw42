@@ -24,6 +24,7 @@ import type { NewsItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 const STRATEGY_REPLAY_TRIGGER_LOCK_KEY = "cron:strategy-replay:trigger-now";
 const STRATEGY_REPLAY_TRIGGER_LOCK_MS = 5 * 60_000;

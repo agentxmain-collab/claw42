@@ -48,6 +48,7 @@ import type { NewsItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 interface WatchRefreshPayload {
   status: WatchRefreshStatus;

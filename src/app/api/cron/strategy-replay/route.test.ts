@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "@/app/api/cron/strategy-replay/route";
+import { GET, maxDuration } from "@/app/api/cron/strategy-replay/route";
 import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 import type { NewsItem } from "@/lib/types";
 
@@ -104,6 +104,10 @@ function pool(): CoinPoolPayload {
 }
 
 describe("/api/cron/strategy-replay", () => {
+  it("declares enough runtime for inline PM generation when queue mode is disabled", () => {
+    expect(maxDuration).toBeGreaterThanOrEqual(300);
+  });
+
   beforeEach(() => {
     vi.setSystemTime(now);
     normalizeNewsItemMock.mockReset();
