@@ -111,6 +111,12 @@ function MessageBubbleComponent({
                 type="button"
                 aria-expanded={expanded}
                 aria-controls={detailId}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && expanded) {
+                    event.preventDefault();
+                    setExpanded(false);
+                  }
+                }}
                 onClick={() => setExpanded((value) => !value)}
               >
                 <span className="msg-expand-icon" aria-hidden="true" />
