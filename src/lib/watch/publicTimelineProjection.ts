@@ -76,6 +76,10 @@ function hasPublishableStageTrace(record: StrategyDecisionRecord | null | undefi
   return hasCompletePublicDecisionStageTrace(record?.stageTrace);
 }
 
+function hasHydratedPublishableStageTrace(record: StrategyDecisionRecord | null | undefined) {
+  return Boolean(record?.stageTrace?.length) && hasPublishableStageTrace(record);
+}
+
 function inferredMeta(entry: StreamEntry): WatchEntryMeta {
   if (entry.meta) return normalizeMeta(entry.meta);
 
@@ -243,12 +247,17 @@ function pmDecisionPayload(
   entry: StreamEntry,
   meta: WatchEntryMeta,
   decisionRecord?: StrategyDecisionRecord,
+  options: { requireHydratedRecord?: boolean } = {},
 ): PublicTimelineEvent["payload"] | null {
   if (entry.kind !== "chat_thread") return null;
   const recordId = meta.recordId ?? entry.thread.strategy?.id ?? null;
   if (!recordId) return null;
   const indexedRecord = decisionRecord?.id === recordId ? decisionRecord : null;
-  if (!hasPublishableStageTrace(indexedRecord)) return null;
+  if (options.requireHydratedRecord) {
+    if (!hasHydratedPublishableStageTrace(indexedRecord)) return null;
+  } else if (!hasPublishableStageTrace(indexedRecord)) {
+    return null;
+  }
   const derived = publicDecisionProcessFromRecord(indexedRecord);
   const tradeDecision = normalizePublicTradeDecision(
     indexedRecord?.tradeDecision ?? meta.tradeDecision ?? null,
@@ -572,6 +581,7 @@ export function projectStreamEntryToPublic(
       entry,
       meta,
       recordId ? options.decisionRecordsById?.get(recordId) : undefined,
+      { requireHydratedRecord: Boolean(options.decisionRecordsById) },
     );
   }
 

@@ -85,6 +85,14 @@ const decisionRecord: StrategyDecisionRecord = {
   promptVersion: "test",
   modelProvider: "stub",
   legacyFactionId: null,
+  stageTrace: [
+    {
+      stageId: "analyst_inputs",
+      label: "Analyst input generation",
+      status: "done",
+      observedAt: new Date(now).toISOString(),
+    },
+  ],
 };
 
 function focusEntry(overrides: Partial<StreamEntry> = {}): StreamEntry {
@@ -491,6 +499,45 @@ describe("publicTimelineProjection", () => {
         evidenceIds: ["topic_selection:IRYS:1"],
         locale: "zh_CN",
         recordId: "pm:IRYS:1778902920550",
+      },
+    };
+
+    const event = projectStreamEntryToPublic(entry, {
+      mode: "public",
+      decisionRecordsById: new Map(),
+    });
+
+    expect(event).toBeNull();
+  });
+
+  it("does not publish executable symbol PM history when record hydration is missing", () => {
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-btc-missing-record",
+      ts: now,
+      thread: {
+        id: "thread-btc-missing-record",
+        seed: {
+          id: "seed-btc",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["BTC"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: ["topic_selection:BTC:1"],
+        locale: "zh_CN",
+        recordId: "pm:BTC:1779601515817",
       },
     };
 

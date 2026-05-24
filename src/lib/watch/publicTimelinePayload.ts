@@ -280,6 +280,7 @@ export async function buildWatchTimelinePayload({
     mode: "public",
     importanceThreshold: "high",
     locale,
+    decisionRecordsById,
   });
   const targetedRecords = stagingFixture
     ? []
