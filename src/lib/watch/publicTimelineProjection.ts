@@ -23,6 +23,7 @@ import {
   cleanPublicDecisionText,
   containsPublicContentLeak,
 } from "@/lib/watch/publicContentGuardrails";
+import { hasCompletePublicDecisionStageTrace } from "@/lib/watch/publicPmDecisionDisplay";
 import {
   mapTeamMemberToPublicDecisionAgent,
   type PublicDecisionAgentId,
@@ -69,6 +70,14 @@ export function publicStageTraceFromRecord(
 
 function isAnalysisOnlyRecord(record: StrategyDecisionRecord | null) {
   return normalizeCandidateType(record?.candidate?.candidateType) !== "symbol";
+}
+
+function hasPublishableStageTrace(record: StrategyDecisionRecord | null | undefined) {
+  return hasCompletePublicDecisionStageTrace(record?.stageTrace);
+}
+
+function hasHydratedPublishableStageTrace(record: StrategyDecisionRecord | null | undefined) {
+  return Boolean(record?.stageTrace?.length) && hasPublishableStageTrace(record);
 }
 
 function inferredMeta(entry: StreamEntry): WatchEntryMeta {
@@ -238,11 +247,17 @@ function pmDecisionPayload(
   entry: StreamEntry,
   meta: WatchEntryMeta,
   decisionRecord?: StrategyDecisionRecord,
+  options: { requireHydratedRecord?: boolean } = {},
 ): PublicTimelineEvent["payload"] | null {
   if (entry.kind !== "chat_thread") return null;
   const recordId = meta.recordId ?? entry.thread.strategy?.id ?? null;
   if (!recordId) return null;
   const indexedRecord = decisionRecord?.id === recordId ? decisionRecord : null;
+  if (options.requireHydratedRecord) {
+    if (!hasHydratedPublishableStageTrace(indexedRecord)) return null;
+  } else if (!hasPublishableStageTrace(indexedRecord)) {
+    return null;
+  }
   const derived = publicDecisionProcessFromRecord(indexedRecord);
   const tradeDecision = normalizePublicTradeDecision(
     indexedRecord?.tradeDecision ?? meta.tradeDecision ?? null,
@@ -282,6 +297,7 @@ export function projectDecisionRecordToPublicEvent(
 ): PublicTimelineEvent | null {
   const ts = Date.parse(record.createdAt);
   if (!Number.isFinite(ts)) return null;
+  if (!hasPublishableStageTrace(record)) return null;
 
   const derived = publicDecisionProcessFromRecord(record);
   const tradeDecision = normalizePublicTradeDecision(record.tradeDecision);
@@ -565,6 +581,7 @@ export function projectStreamEntryToPublic(
       entry,
       meta,
       recordId ? options.decisionRecordsById?.get(recordId) : undefined,
+      { requireHydratedRecord: Boolean(options.decisionRecordsById) },
     );
   }
 

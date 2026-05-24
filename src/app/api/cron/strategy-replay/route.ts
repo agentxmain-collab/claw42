@@ -7,7 +7,12 @@ import { getCoinPool } from "@/lib/marketDataCache";
 import { adjustDebtFromReplays } from "@/lib/agentRelationship";
 import { evaluateStrategy, recordStrategyReplay } from "@/lib/strategyHistory";
 import { tryAcquireLock } from "@/lib/storage/kv-lock";
-import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import {
+  getDecisionRecordStoreDiagnostics,
+  getLastDecisionRecordWriteDiagnostics,
+  readAllDecisionRecords,
+} from "@/lib/team/decisionRecordStore";
+import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
 import { resolveDecisionRecordFromPrice } from "@/lib/team/decisionResolution";
 import {
   summarizeProviderTelemetry,
@@ -20,14 +25,17 @@ import { enqueuePmDecisionJob, readPmDecisionJobs } from "@/lib/watch/pmDecision
 import { residentPrewarmPlan } from "@/lib/watch/residentPrewarm";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
+import { isPublicDisplayablePmDecisionEvent } from "@/lib/watch/publicPmDecisionDisplay";
 import type { NewsItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 const STRATEGY_REPLAY_TRIGGER_LOCK_KEY = "cron:strategy-replay:trigger-now";
 const STRATEGY_REPLAY_TRIGGER_LOCK_MS = 5 * 60_000;
 const PM_RESOLUTION_RECORD_LIMIT = 100;
+const INLINE_PM_DECISION_JOB_LIMIT = 1;
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -77,7 +85,15 @@ export async function GET(request: NextRequest) {
   for (const item of items) {
     const normalizedItem = await normalizeNewsItem(item, servedBy);
     normalizedItems.push(normalizedItem);
-    const debate = await tryOrchestrateNewsDebate(normalizedItem, now + debates.length * 1000);
+    let debate: Awaited<ReturnType<typeof tryOrchestrateNewsDebate>> = null;
+    try {
+      debate = await tryOrchestrateNewsDebate(normalizedItem, now + debates.length * 1000);
+    } catch (error) {
+      console.warn("[claw42] news debate orchestration skipped", {
+        newsId: normalizedItem.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     if (!debate) continue;
     debates.push(debate);
     if (debates.length >= 2) break;
@@ -123,40 +139,63 @@ export async function GET(request: NextRequest) {
   });
   const residentCandidates = residentPlan.candidates;
   const residentPrewarmResults = [];
+  const inlineDeferredCandidateKeys: string[] = [];
+  let inlinePmDecisionJobs = 0;
+  const inlineLimitReached = () => inlinePmDecisionJobs >= INLINE_PM_DECISION_JOB_LIMIT;
+  const trackInlineUsage = (result: DispatchPmDecisionJobResult) => {
+    if (shouldSpendInlineSlot(result)) {
+      inlinePmDecisionJobs += 1;
+    }
+  };
   for (const candidate of residentCandidates) {
-    residentPrewarmResults.push(
-      await dispatchPmDecisionJob({
-        kind: "once",
-        triggerSource: "cron",
+    if (inlineLimitReached()) {
+      inlineDeferredCandidateKeys.push(candidate.candidateKey);
+      continue;
+    }
+    const result = await dispatchPmDecisionJob({
+      kind: "once",
+      triggerSource: "cron",
+      locale,
+      now,
+      candidate,
+      pool,
+      newsItems: normalizedItems,
+      partialStageUpdates: pmPartialStageUpdates,
+      useQueue: trigger !== "now",
+      onAudit: (event) => pmDecisionAudit.push(event),
+    });
+    residentPrewarmResults.push(result);
+    trackInlineUsage(result);
+  }
+
+  const batchResult = inlineLimitReached()
+    ? null
+    : await dispatchPmDecisionJob({
+        kind: trigger === "now" ? "once" : "batch",
+        triggerSource: trigger === "now" ? "user_visit_trigger" : "cron",
         locale,
         now,
-        candidate,
         pool,
         newsItems: normalizedItems,
         partialStageUpdates: pmPartialStageUpdates,
         useQueue: trigger !== "now",
         onAudit: (event) => pmDecisionAudit.push(event),
-      }),
-    );
-  }
-
-  const batchResult = await dispatchPmDecisionJob({
-    kind: trigger === "now" ? "once" : "batch",
-    triggerSource: trigger === "now" ? "user_visit_trigger" : "cron",
-    locale,
-    now,
-    pool,
-    newsItems: normalizedItems,
-    partialStageUpdates: pmPartialStageUpdates,
-    useQueue: trigger !== "now",
-    onAudit: (event) => pmDecisionAudit.push(event),
-  });
+      });
+  if (batchResult) trackInlineUsage(batchResult);
   const pmDecisionOutputs = [
     ...residentPrewarmResults.flatMap((result) => result.outputs),
-    ...batchResult.outputs,
+    ...(batchResult?.outputs ?? []),
   ];
+  const visiblePmDecisionOutputs = pmDecisionOutputs.filter(isPublicPmDecisionOutput);
+  const hiddenPmDecisionOutputs = pmDecisionOutputs.length - visiblePmDecisionOutputs.length;
   const providerTelemetry = summarizeProviderTelemetry({ since: now });
   await warnIfSingleProviderConcentration(providerTelemetry);
+  const decisionRecordDiagnostics = await buildCronDecisionRecordDiagnostics(
+    locale,
+    pmDecisionOutputs,
+  );
+  const decisionRunDiagnostics =
+    trigger === "now" ? await buildCronDecisionRunDiagnostics(locale) : undefined;
 
   return NextResponse.json({
     ok: true,
@@ -164,14 +203,21 @@ export async function GET(request: NextRequest) {
     fellBackFrom,
     generatedDebates: debates.length,
     locale,
-    pmDecisionGenerated: pmDecisionOutputs.length > 0,
-    generatedPmDecisions: pmDecisionOutputs.length,
+    pmDecisionGenerated: visiblePmDecisionOutputs.length > 0,
+    generatedPmDecisions: visiblePmDecisionOutputs.length,
+    generatedHiddenPmDecisions: hiddenPmDecisionOutputs,
     pmPartialStageUpdates,
-    pmDecisionJobId: batchResult.job.id,
-    pmDecisionJobStatus: batchResult.jobResult?.job.status ?? batchResult.job.status,
-    pmDecisionQueueMode: batchResult.queueResult.mode,
+    pmDecisionJobId: batchResult?.job.id ?? null,
+    pmDecisionJobStatus: batchResult?.jobResult?.job.status ?? batchResult?.job.status ?? null,
+    pmDecisionQueueMode: batchResult?.queueResult.mode ?? "deferred_inline_limit",
     pmDecisionQueueMessageId:
-      batchResult.queueResult.mode === "queue" ? batchResult.queueResult.messageId : undefined,
+      batchResult?.queueResult.mode === "queue" ? batchResult.queueResult.messageId : undefined,
+    pmDecisionInlineLimit: {
+      limit: INLINE_PM_DECISION_JOB_LIMIT,
+      used: inlinePmDecisionJobs,
+      deferredResidentCandidateKeys: inlineDeferredCandidateKeys,
+      deferredBatch: batchResult === null,
+    },
     residentPrewarmCandidates: residentCandidates.map((candidate) => candidate.candidateKey),
     residentPrewarmFixedCadenceCandidates: residentPlan.fixedCadenceCandidateKeys,
     residentPrewarmBackfillCandidates: residentPlan.backfillCandidateKeys,
@@ -183,7 +229,7 @@ export async function GET(request: NextRequest) {
     },
     residentPrewarmSla: residentPlan.residentStatus,
     residentPrewarmGenerated: residentPrewarmResults.reduce(
-      (total, result) => total + result.outputs.length,
+      (total, result) => total + result.outputs.filter(isPublicPmDecisionOutput).length,
       0,
     ),
     residentPrewarmQueued: residentPrewarmResults.filter(
@@ -193,12 +239,89 @@ export async function GET(request: NextRequest) {
     pmDecisionAudit: trigger === "now" ? pmDecisionAudit : undefined,
     providerTelemetry: trigger === "now" ? providerTelemetry : undefined,
     newsSourceHealth: trigger === "now" ? getNewsSourceHealthSnapshot() : undefined,
+    decisionRecordDiagnostics,
+    decisionRunDiagnostics,
     resolvedPmDecisions,
     replayed: replayed.length,
     trigger,
     triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,
     servedAt: now,
   });
+}
+
+async function buildCronDecisionRunDiagnostics(locale: ReturnType<typeof localeFromRequestUrl>) {
+  try {
+    const runs = await readDecisionRuns({ locale, limit: 8 });
+    return runs.map((run) => ({
+      id: run.id,
+      status: run.status,
+      triggerSource: run.triggerSource,
+      candidateType: run.candidate?.candidateType ?? null,
+      candidateKey: run.candidate?.candidateKey ?? null,
+      symbol: run.symbol,
+      startedAt: run.startedAt,
+      completedAt: run.completedAt,
+      skipReason: run.skipReason ?? null,
+      error: redactDecisionRunError(run.error),
+      stageStatus: run.stageStatus,
+      analystRoundCount: run.analystRoundCount,
+      decisionRecordId: run.decisionRecordId ?? null,
+      publicTimelineEventId: run.publicTimelineEventId ?? null,
+      quality: run.quality
+        ? {
+            score: run.quality.score,
+            publishable: run.quality.publishable,
+            warnings: run.quality.warnings,
+            blockingWarnings: run.quality.blockingWarnings,
+          }
+        : null,
+    }));
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function redactDecisionRunError(error: string | null | undefined) {
+  if (!error) return null;
+  return error
+    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [redacted]")
+    .replace(/sk-[A-Za-z0-9_-]{12,}/gi, "sk-[redacted]")
+    .replace(/([?&](?:api[_-]?key|token|secret)=)[^&\s]+/gi, "$1[redacted]")
+    .replace(/\b((?:api[_-]?key|token|secret)=)[^\s&]+/gi, "$1[redacted]")
+    .slice(0, 320);
+}
+
+async function buildCronDecisionRecordDiagnostics(
+  locale: ReturnType<typeof localeFromRequestUrl>,
+  outputs: DispatchPmDecisionJobResult["outputs"],
+) {
+  try {
+    const recordIds = outputs.map((output) => output.record.id).filter(Boolean);
+    const symbols = outputs
+      .flatMap((output) => [
+        output.record.symbol,
+        output.publicTimelineEntry.payload.kind === "pm_decision"
+          ? output.publicTimelineEntry.payload.symbol
+          : null,
+      ])
+      .filter((symbol): symbol is string => typeof symbol === "string" && symbol.length > 0);
+    return {
+      ...(await getDecisionRecordStoreDiagnostics({
+        locale,
+        symbols,
+        recordIds,
+        limit: 20,
+      })),
+      decisionRecordWriteResult: getLastDecisionRecordWriteDiagnostics(),
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+      decisionRecordWriteResult: getLastDecisionRecordWriteDiagnostics(),
+    };
+  }
 }
 
 async function dispatchPmDecisionJob({
@@ -251,6 +374,26 @@ async function dispatchPmDecisionJob({
     jobResult,
     outputs: jobResult?.outputs ?? [],
   };
+}
+
+type DispatchPmDecisionJobResult = Awaited<ReturnType<typeof dispatchPmDecisionJob>>;
+
+function isPublicPmDecisionOutput(output: DispatchPmDecisionJobResult["outputs"][number]) {
+  return isPublicDisplayablePmDecisionEvent(output.publicTimelineEntry);
+}
+
+function isLockedInlineSkip(result: DispatchPmDecisionJobResult) {
+  if (result.outputs.length > 0) return false;
+  const auditEvents = result.jobResult?.auditEvents ?? [];
+  return auditEvents.some(
+    (event) => event.type === "candidate_skipped" && event.reason === "locked",
+  );
+}
+
+function shouldSpendInlineSlot(result: DispatchPmDecisionJobResult) {
+  if (result.queueResult.mode === "queue") return false;
+  if (isLockedInlineSkip(result)) return false;
+  return result.outputs.length > 0;
 }
 
 async function resolveOpenPmDecisions(

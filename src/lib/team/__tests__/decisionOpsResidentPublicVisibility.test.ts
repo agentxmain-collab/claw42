@@ -75,6 +75,89 @@ describe("buildDecisionOpsResidentPublicVisibility", () => {
       blockingReasons: ["resident_market_overview_not_visible"],
     });
   });
+
+  it("does not count resident cards that lack a public information-collection voice", () => {
+    const report = buildDecisionOpsResidentPublicVisibility({
+      publicEvents: [
+        pmEvent({
+          recordId: "market-1",
+          candidateType: "market_overview",
+          candidateKey: "market_overview:utc:zh_CN:2026-05-19T09",
+          symbol: "MARKET",
+          ts: now,
+          rounds: [
+            {
+              round: 2,
+              memberId: "bullish_researcher",
+              rationale: "BTC momentum remains constructive after peer debate",
+            },
+          ],
+        }),
+        pmEvent({
+          recordId: "hotspot-1",
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:2026-05-19T09:market",
+          symbol: "HOTSPOT",
+          ts: now - 60_000,
+        }),
+      ],
+      now,
+    });
+
+    expect(report).toMatchObject({
+      status: "critical",
+      allResidentCardsVisible: false,
+      counts: {
+        marketOverview: 0,
+        hotspot: 1,
+      },
+      missingResidentTypes: ["market_overview"],
+    });
+  });
+
+  it("does not count resident cards with incomplete public stage trace", () => {
+    const report = buildDecisionOpsResidentPublicVisibility({
+      publicEvents: [
+        pmEvent({
+          recordId: "market-partial",
+          candidateType: "market_overview",
+          candidateKey: "market_overview:utc:zh_CN:2026-05-19T09",
+          symbol: "MARKET",
+          ts: now,
+          stageTrace: [
+            {
+              stageId: "analyst_inputs",
+              status: "done",
+              observedAt: new Date(now - 120_000).toISOString(),
+            },
+            {
+              stageId: "research_lead",
+              status: "in_progress",
+              observedAt: new Date(now - 60_000).toISOString(),
+            },
+          ],
+        }),
+        pmEvent({
+          recordId: "hotspot-1",
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:2026-05-19T09:market",
+          symbol: "HOTSPOT",
+          ts: now - 60_000,
+        }),
+      ],
+      now,
+    });
+
+    expect(report).toMatchObject({
+      status: "critical",
+      allResidentCardsVisible: false,
+      counts: {
+        marketOverview: 0,
+        hotspot: 1,
+      },
+      missingResidentTypes: ["market_overview"],
+    });
+  });
 });
 
 function pmEvent({
@@ -83,12 +166,16 @@ function pmEvent({
   candidateKey,
   symbol,
   ts,
+  rounds,
+  stageTrace,
 }: {
   recordId: string;
   candidateType: "market_overview" | "hotspot" | "symbol";
   candidateKey: string;
   symbol: string;
   ts: number;
+  rounds?: NonNullable<Extract<PublicTimelineEvent["payload"], { kind: "pm_decision" }>["rounds"]>;
+  stageTrace?: Extract<PublicTimelineEvent["payload"], { kind: "pm_decision" }>["stageTrace"];
 }): PublicTimelineEvent {
   return {
     id: `pm-decision:${recordId}`,
@@ -107,7 +194,8 @@ function pmEvent({
       displayTitle: `${symbol} analysis`,
       executable: candidateType === "symbol",
       tradeDecision: null,
-      stageTrace: [
+      rounds,
+      stageTrace: stageTrace ?? [
         {
           stageId: "analyst_inputs",
           status: "done",

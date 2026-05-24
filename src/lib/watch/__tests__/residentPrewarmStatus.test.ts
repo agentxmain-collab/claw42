@@ -8,6 +8,7 @@ const now = Date.parse("2026-05-19T12:00:00.000Z");
 function record(
   candidateType: "market_overview" | "hotspot",
   createdAt: string,
+  overrides: Partial<StrategyDecisionRecord> = {},
 ): StrategyDecisionRecord {
   return {
     id: `pm:${candidateType}:${createdAt}`,
@@ -35,6 +36,7 @@ function record(
     resolvedOutcome: null,
     promptVersion: "test",
     modelProvider: "test",
+    ...overrides,
   };
 }
 
@@ -155,5 +157,43 @@ describe("deriveResidentPrewarmStatus", () => {
       slaState: "healthy",
       ageMs: 1.5 * 60 * 60_000,
     });
+  });
+
+  it("does not treat partial stage records as successful resident prewarm output", () => {
+    const status = deriveResidentPrewarmStatus({
+      records: [
+        record("hotspot", "2026-05-19T11:30:00.000Z", {
+          stageTrace: [
+            {
+              stageId: "analyst_inputs",
+              label: "Analyst inputs",
+              status: "done",
+              observedAt: "2026-05-19T11:30:00.000Z",
+            },
+            {
+              stageId: "research_lead",
+              label: "Research lead",
+              status: "in_progress",
+              observedAt: "2026-05-19T11:31:00.000Z",
+            },
+            {
+              stageId: "record_write",
+              label: "Record write",
+              status: "pending",
+              observedAt: "2026-05-19T11:32:00.000Z",
+            },
+          ],
+        }),
+      ],
+      jobs: [],
+      now,
+    });
+
+    expect(status.hotspot).toMatchObject({
+      state: "empty",
+      lastSucceededAt: null,
+      slaState: "critical",
+    });
+    expect(status.latestSucceededAt).toBeNull();
   });
 });

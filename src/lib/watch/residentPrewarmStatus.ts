@@ -75,6 +75,7 @@ function deriveKindStatus(
 ): ResidentPrewarmKindStatus {
   const latestRecord = records
     .filter((record) => normalizeCandidateType(record.candidate?.candidateType) === kind)
+    .filter(hasCompleteDecisionStageTrace)
     .map((record) => ({
       candidateKey: record.candidate?.candidateKey ?? null,
       ts: Date.parse(record.createdAt),
@@ -137,6 +138,11 @@ function deriveKindStatus(
     jobId: latestJob?.id ?? null,
     candidateKey: latestJob?.candidate?.candidateKey ?? latestRecord?.candidateKey ?? null,
   };
+}
+
+function hasCompleteDecisionStageTrace(record: StrategyDecisionRecord) {
+  if (!record.stageTrace?.length) return true;
+  return record.stageTrace.every((stage) => stage.status === "done");
 }
 
 function overallState(statuses: readonly ResidentPrewarmKindStatus[]): ResidentPrewarmOverallState {

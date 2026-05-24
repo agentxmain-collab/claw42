@@ -5,6 +5,7 @@ import {
   buildWatchTimelinePayload,
   MAX_PUBLIC_TIMELINE_WINDOW_MINUTES,
 } from "@/lib/watch/publicTimelinePayload";
+import { getDecisionRecordStoreDiagnostics } from "@/lib/team/decisionRecordStore";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -51,15 +52,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "invalid query" }, { status: 400 });
   }
 
-  return NextResponse.json(
-    await buildWatchTimelinePayload({
-      mode,
-      locale,
-      before,
-      since,
-      limit,
-      windowMinutes,
-    }),
-    { headers: { "Cache-Control": "no-store" } },
-  );
+  const payload = await buildWatchTimelinePayload({
+    mode,
+    locale,
+    before,
+    since,
+    limit,
+    windowMinutes,
+  });
+  const includeStorageDiagnostics = url.searchParams.get("diagnostics") === "storage";
+  const body = includeStorageDiagnostics
+    ? {
+        ...payload,
+        decisionRecordDiagnostics: await getDecisionRecordStoreDiagnostics({
+          locale,
+          limit: 20,
+        }).catch((error) => ({
+          error: error instanceof Error ? error.message : String(error),
+        })),
+      }
+    : payload;
+
+  return NextResponse.json(body, { headers: { "Cache-Control": "no-store" } });
 }

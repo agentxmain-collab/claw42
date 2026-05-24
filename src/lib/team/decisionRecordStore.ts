@@ -22,51 +22,197 @@ const KV_LINE_CAP = 1_000;
 const memoryRecords = new Map<string, StrategyDecisionRecord[]>();
 let warnedAboutMemoryFallback = false;
 
+export type DecisionRecordStorageMode = "persistent" | "ephemeral" | "memory";
+
+export interface DecisionRecordWriteDiagnostics {
+  operation: "append" | "upsert";
+  storageMode: DecisionRecordStorageMode;
+  configuredStorageMode: Exclude<DecisionRecordStorageMode, "memory">;
+  locale: Locale;
+  symbol: string;
+  recordId: string;
+  kvKeyPrefix: string;
+  kvSymbolKey: string;
+  kvSymbolIndexKey: string;
+  lpushResult?: unknown;
+  ltrimResult?: unknown;
+  saddResult?: unknown;
+  lremAttemptCount?: number;
+  lremResultCount?: number;
+  localResult?: "ok";
+  fallbackReason?: string;
+}
+
+export interface DecisionRecordStoreDiagnostics {
+  storageMode: DecisionRecordStorageMode;
+  configuredStorageMode: Exclude<DecisionRecordStorageMode, "memory">;
+  useKvEnvActualValue: string;
+  kvConfigured: boolean;
+  kvKeyPrefix: string;
+  kvSymbolIndexKey: string;
+  legacyKvSymbolIndexKey: string;
+  deploymentId: string | null;
+  gitSha: string | null;
+  lastWrite: DecisionRecordWriteDiagnostics | null;
+  decisionRecordReadResult: {
+    locale: Locale;
+    symbolsChecked: string[];
+    recordCount: number;
+    firstRecordCreatedAt: string | null;
+    requestedRecordIdsPresent: string[];
+    kvReadResults?: Array<{
+      symbol: string;
+      key: string;
+      recordCount: number;
+      firstRecordCreatedAt: string | null;
+      requestedRecordIdsPresent: string[];
+    }>;
+    fallbackReason?: string;
+  };
+}
+
+let lastDecisionRecordWriteDiagnostics: DecisionRecordWriteDiagnostics | null = null;
+
 export async function appendDecisionRecord(record: StrategyDecisionRecord): Promise<void> {
   const normalizedRecord = normalizeRecord(record);
+  const key = kvSymbolKey(normalizedRecord.locale, normalizedRecord.symbol);
+  const indexKey = kvSymbolIndexKey(normalizedRecord.locale);
   if (hasKvConfig()) {
     try {
       const client = kv as KvListClient;
-      await client.lpush(
-        kvSymbolKey(normalizedRecord.locale, normalizedRecord.symbol),
-        JSON.stringify(normalizedRecord),
-      );
-      await client.ltrim(
-        kvSymbolKey(normalizedRecord.locale, normalizedRecord.symbol),
-        0,
-        KV_LINE_CAP - 1,
-      );
-      await client.sadd(kvSymbolIndexKey(normalizedRecord.locale), normalizedRecord.symbol);
+      const lpushResult = await client.lpush(key, JSON.stringify(normalizedRecord));
+      const ltrimResult = await client.ltrim(key, 0, KV_LINE_CAP - 1);
+      const saddResult = await client.sadd(indexKey, normalizedRecord.symbol);
+      rememberDecisionRecordWrite({
+        operation: "append",
+        storageMode: "persistent",
+        configuredStorageMode: "persistent",
+        locale: normalizedRecord.locale,
+        symbol: normalizedRecord.symbol,
+        recordId: normalizedRecord.id,
+        kvKeyPrefix: KV_PREFIX,
+        kvSymbolKey: key,
+        kvSymbolIndexKey: indexKey,
+        lpushResult: safeStorageResult(lpushResult),
+        ltrimResult: safeStorageResult(ltrimResult),
+        saddResult: safeStorageResult(saddResult),
+      });
       return;
-    } catch {
+    } catch (error) {
       appendMemoryRecord(normalizedRecord);
+      rememberDecisionRecordWrite({
+        operation: "append",
+        storageMode: "memory",
+        configuredStorageMode: "persistent",
+        locale: normalizedRecord.locale,
+        symbol: normalizedRecord.symbol,
+        recordId: normalizedRecord.id,
+        kvKeyPrefix: KV_PREFIX,
+        kvSymbolKey: key,
+        kvSymbolIndexKey: indexKey,
+        fallbackReason: safeErrorMessage(error),
+      });
       return;
     }
   }
 
   try {
     await appendLocalRecord(normalizedRecord);
-  } catch {
+    rememberDecisionRecordWrite({
+      operation: "append",
+      storageMode: "ephemeral",
+      configuredStorageMode: "ephemeral",
+      locale: normalizedRecord.locale,
+      symbol: normalizedRecord.symbol,
+      recordId: normalizedRecord.id,
+      kvKeyPrefix: KV_PREFIX,
+      kvSymbolKey: key,
+      kvSymbolIndexKey: indexKey,
+      localResult: "ok",
+    });
+  } catch (error) {
     appendMemoryRecord(normalizedRecord);
+    rememberDecisionRecordWrite({
+      operation: "append",
+      storageMode: "memory",
+      configuredStorageMode: "ephemeral",
+      locale: normalizedRecord.locale,
+      symbol: normalizedRecord.symbol,
+      recordId: normalizedRecord.id,
+      kvKeyPrefix: KV_PREFIX,
+      kvSymbolKey: key,
+      kvSymbolIndexKey: indexKey,
+      fallbackReason: safeErrorMessage(error),
+    });
   }
 }
 
 export async function upsertDecisionRecord(record: StrategyDecisionRecord): Promise<void> {
   const normalizedRecord = normalizeRecord(record);
+  const key = kvSymbolKey(normalizedRecord.locale, normalizedRecord.symbol);
+  const indexKey = kvSymbolIndexKey(normalizedRecord.locale);
   if (hasKvConfig()) {
     try {
-      await upsertKvRecord(normalizedRecord);
+      const result = await upsertKvRecord(normalizedRecord);
+      rememberDecisionRecordWrite({
+        operation: "upsert",
+        storageMode: "persistent",
+        configuredStorageMode: "persistent",
+        locale: normalizedRecord.locale,
+        symbol: normalizedRecord.symbol,
+        recordId: normalizedRecord.id,
+        kvKeyPrefix: KV_PREFIX,
+        kvSymbolKey: key,
+        kvSymbolIndexKey: indexKey,
+        ...result,
+      });
       return;
-    } catch {
+    } catch (error) {
       upsertMemoryRecord(normalizedRecord);
+      rememberDecisionRecordWrite({
+        operation: "upsert",
+        storageMode: "memory",
+        configuredStorageMode: "persistent",
+        locale: normalizedRecord.locale,
+        symbol: normalizedRecord.symbol,
+        recordId: normalizedRecord.id,
+        kvKeyPrefix: KV_PREFIX,
+        kvSymbolKey: key,
+        kvSymbolIndexKey: indexKey,
+        fallbackReason: safeErrorMessage(error),
+      });
       return;
     }
   }
 
   try {
     await upsertLocalRecord(normalizedRecord);
-  } catch {
+    rememberDecisionRecordWrite({
+      operation: "upsert",
+      storageMode: "ephemeral",
+      configuredStorageMode: "ephemeral",
+      locale: normalizedRecord.locale,
+      symbol: normalizedRecord.symbol,
+      recordId: normalizedRecord.id,
+      kvKeyPrefix: KV_PREFIX,
+      kvSymbolKey: key,
+      kvSymbolIndexKey: indexKey,
+      localResult: "ok",
+    });
+  } catch (error) {
     upsertMemoryRecord(normalizedRecord);
+    rememberDecisionRecordWrite({
+      operation: "upsert",
+      storageMode: "memory",
+      configuredStorageMode: "ephemeral",
+      locale: normalizedRecord.locale,
+      symbol: normalizedRecord.symbol,
+      recordId: normalizedRecord.id,
+      kvKeyPrefix: KV_PREFIX,
+      kvSymbolKey: key,
+      kvSymbolIndexKey: indexKey,
+      fallbackReason: safeErrorMessage(error),
+    });
   }
 }
 
@@ -149,6 +295,105 @@ export async function readAllDecisionRecords(
   }
 }
 
+export async function getDecisionRecordStoreDiagnostics({
+  locale = LEGACY_WATCH_LOCALE,
+  symbols = [],
+  recordIds = [],
+  limit = 20,
+}: {
+  locale?: Locale;
+  symbols?: string[];
+  recordIds?: string[];
+  limit?: number;
+} = {}): Promise<DecisionRecordStoreDiagnostics> {
+  const normalizedLocale = normalizeWatchLocale(locale);
+  const normalizedSymbols = Array.from(new Set(symbols.map(normalizeSymbol).filter(Boolean)));
+  const requestedRecordIds = new Set(recordIds.filter(Boolean));
+  const kvConfigured = hasKvConfig();
+  const configuredStorageMode: Exclude<DecisionRecordStorageMode, "memory"> = kvConfigured
+    ? "persistent"
+    : "ephemeral";
+  const base = {
+    configuredStorageMode,
+    useKvEnvActualValue: stringifyEnvValue(process.env.USE_PERSISTENT_KV),
+    kvConfigured,
+    kvKeyPrefix: KV_PREFIX,
+    kvSymbolIndexKey: kvSymbolIndexKey(normalizedLocale),
+    legacyKvSymbolIndexKey: LEGACY_KV_SYMBOL_INDEX_KEY,
+    deploymentId: process.env.VERCEL_DEPLOYMENT_ID ?? null,
+    gitSha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+    lastWrite: lastDecisionRecordWriteDiagnostics,
+  };
+
+  if (kvConfigured) {
+    try {
+      const client = kv as KvListClient;
+      const indexedSymbols = (await client.smembers(kvSymbolIndexKey(normalizedLocale)))
+        .map((symbol) => (typeof symbol === "string" ? normalizeSymbol(symbol) : null))
+        .filter((symbol): symbol is string => Boolean(symbol));
+      const symbolsChecked = normalizedSymbols.length > 0 ? normalizedSymbols : indexedSymbols;
+      const kvReadResults = await Promise.all(
+        symbolsChecked.slice(0, Math.max(1, Math.min(limit, 20))).map(async (symbol) => {
+          const key = kvSymbolKey(normalizedLocale, symbol);
+          const values = await client.lrange(key, 0, Math.max(1, Math.min(limit, 50)) - 1);
+          const records = values.map(parseRecord).filter(isStrategyDecisionRecord);
+          return readResultForRecords(symbol, key, records, requestedRecordIds);
+        }),
+      );
+      const records = kvReadResults.flatMap((result) =>
+        result.requestedRecordIdsPresent.length > 0 ? result.requestedRecordIdsPresent : [],
+      );
+      const recordCount = kvReadResults.reduce((total, result) => total + result.recordCount, 0);
+      const firstRecordCreatedAt =
+        kvReadResults
+          .map((result) => result.firstRecordCreatedAt)
+          .filter((value): value is string => Boolean(value))
+          .sort((a, b) => Date.parse(b) - Date.parse(a))[0] ?? null;
+      return {
+        ...base,
+        storageMode: "persistent",
+        decisionRecordReadResult: {
+          locale: normalizedLocale,
+          symbolsChecked,
+          recordCount,
+          firstRecordCreatedAt,
+          requestedRecordIdsPresent: Array.from(new Set(records)),
+          kvReadResults,
+        },
+      };
+    } catch (error) {
+      const records = await readAllMemoryRecords(normalizedLocale, limit);
+      return {
+        ...base,
+        storageMode: "memory",
+        decisionRecordReadResult: readAggregateResult(
+          records,
+          normalizedLocale,
+          normalizedSymbols,
+          requestedRecordIds,
+          safeErrorMessage(error),
+        ),
+      };
+    }
+  }
+
+  const records = await readAllDecisionRecords(limit, normalizedLocale);
+  return {
+    ...base,
+    storageMode: lastDecisionRecordWriteDiagnostics?.storageMode ?? "ephemeral",
+    decisionRecordReadResult: readAggregateResult(
+      records,
+      normalizedLocale,
+      normalizedSymbols,
+      requestedRecordIds,
+    ),
+  };
+}
+
+export function getLastDecisionRecordWriteDiagnostics() {
+  return lastDecisionRecordWriteDiagnostics;
+}
+
 function normalizeRecord(record: StrategyDecisionRecord): StrategyDecisionRecord {
   return {
     ...record,
@@ -161,16 +406,23 @@ async function upsertKvRecord(record: StrategyDecisionRecord) {
   const client = kv as KvListClient;
   const key = kvSymbolKey(record.locale, record.symbol);
   const values = await client.lrange(key, 0, KV_LINE_CAP - 1);
-  await Promise.all(
+  const lremResults = await Promise.all(
     values
       .filter((value) => rawRecordId(value) === record.id)
       .map((value) =>
         client.lrem(key, 0, typeof value === "string" ? value : JSON.stringify(value)),
       ),
   );
-  await client.lpush(key, JSON.stringify(record));
-  await client.ltrim(key, 0, KV_LINE_CAP - 1);
-  await client.sadd(kvSymbolIndexKey(record.locale), record.symbol);
+  const lpushResult = await client.lpush(key, JSON.stringify(record));
+  const ltrimResult = await client.ltrim(key, 0, KV_LINE_CAP - 1);
+  const saddResult = await client.sadd(kvSymbolIndexKey(record.locale), record.symbol);
+  return {
+    lremAttemptCount: lremResults.length,
+    lremResultCount: lremResults.filter((result) => Number(result) > 0).length,
+    lpushResult: safeStorageResult(lpushResult),
+    ltrimResult: safeStorageResult(ltrimResult),
+    saddResult: safeStorageResult(saddResult),
+  };
 }
 
 async function appendLocalRecord(record: StrategyDecisionRecord) {
@@ -304,6 +556,74 @@ function hasKvConfig() {
   );
 }
 
+function rememberDecisionRecordWrite(diagnostics: DecisionRecordWriteDiagnostics) {
+  lastDecisionRecordWriteDiagnostics = diagnostics;
+}
+
+function stringifyEnvValue(value: string | undefined) {
+  return JSON.stringify(value) ?? "undefined";
+}
+
+function safeStorageResult(value: unknown) {
+  if (
+    value === null ||
+    value === undefined ||
+    typeof value === "number" ||
+    typeof value === "string" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+  return Object.prototype.toString.call(value);
+}
+
+function safeErrorMessage(error: unknown) {
+  const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  return message
+    .replace(/https?:\/\/\S+/g, "[url]")
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/g, "Bearer [redacted]")
+    .replace(/token=[A-Za-z0-9._-]+/gi, "token=[redacted]");
+}
+
+function readResultForRecords(
+  symbol: string,
+  key: string,
+  records: StrategyDecisionRecord[],
+  requestedRecordIds: ReadonlySet<string>,
+) {
+  return {
+    symbol,
+    key,
+    recordCount: records.length,
+    firstRecordCreatedAt: records[0]?.createdAt ?? null,
+    requestedRecordIdsPresent: records
+      .map((record) => record.id)
+      .filter((id) => requestedRecordIds.has(id)),
+  };
+}
+
+function readAggregateResult(
+  records: StrategyDecisionRecord[],
+  locale: Locale,
+  symbolsChecked: string[],
+  requestedRecordIds: ReadonlySet<string>,
+  fallbackReason?: string,
+): DecisionRecordStoreDiagnostics["decisionRecordReadResult"] {
+  const filtered = symbolsChecked.length
+    ? records.filter((record) => symbolsChecked.includes(normalizeSymbol(record.symbol)))
+    : records;
+  return {
+    locale,
+    symbolsChecked,
+    recordCount: filtered.length,
+    firstRecordCreatedAt: filtered[0]?.createdAt ?? null,
+    requestedRecordIdsPresent: filtered
+      .map((record) => record.id)
+      .filter((id) => requestedRecordIds.has(id)),
+    ...(fallbackReason ? { fallbackReason } : {}),
+  };
+}
+
 function kvSymbolIndexKey(locale: Locale) {
   return `${KV_PREFIX}${normalizeWatchLocale(locale)}:symbols`;
 }
@@ -362,6 +682,7 @@ export const __decisionRecordStoreTestUtils = {
   clearMemoryRecords() {
     memoryRecords.clear();
     warnedAboutMemoryFallback = false;
+    lastDecisionRecordWriteDiagnostics = null;
   },
   memoryRecords,
 };

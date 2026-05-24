@@ -644,12 +644,17 @@ describe("runPmDecisionPipeline", () => {
     );
   });
 
-  it("records a skipped run ledger when every analyst output abstains", async () => {
+  it("uses a public source-evidence fallback when every analyst output abstains", async () => {
     const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
       void run;
     });
-    const generateLeadOutput = vi.fn();
-    const generateTradeDecision = vi.fn();
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn();
+    const generateLeadOutput = vi.fn(async () => ({
+      rationale: "Evidence stack remains constructive",
+      confidence: 0.7,
+    }));
+    const generateTradeDecision = vi.fn(async () => decision());
 
     const result = await runPmDecisionPipeline(
       {
@@ -666,34 +671,56 @@ describe("runPmDecisionPipeline", () => {
         }),
         generateLeadOutput,
         generateTradeDecision,
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord: vi.fn(async (record: StrategyDecisionRecord) => {
+          void record;
+        }),
         upsertDecisionRun,
       },
     );
 
-    expect(result).toBeNull();
-    expect(generateLeadOutput).not.toHaveBeenCalled();
-    expect(generateTradeDecision).not.toHaveBeenCalled();
+    expect(result).not.toBeNull();
+    expect(generateLeadOutput).toHaveBeenCalled();
+    expect(generateTradeDecision).toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).toHaveBeenCalled();
+    expect(result?.publicTimelineEntry.payload).toEqual(
+      expect.objectContaining({
+        kind: "pm_decision",
+        rounds: expect.arrayContaining([
+          expect.objectContaining({
+            agentId: "pa_02",
+            round: 1,
+            rationale: expect.stringContaining("公开行情与新闻信号已完成汇总"),
+          }),
+        ]),
+      }),
+    );
     expect(upsertDecisionRun).toHaveBeenLastCalledWith(
       expect.objectContaining({
         id: "run:pm:BTC:1778407200000",
-        status: "skipped",
-        skipReason: "no_public_analyst_outputs",
-        analystRoundCount: 0,
+        status: "succeeded",
+        skipReason: null,
+        analystRoundCount: 1,
         completedAt: expect.any(String),
         stageStatus: expect.objectContaining({
-          analyst_inputs: "in_progress",
+          analyst_inputs: "done",
         }),
       }),
     );
   });
 
-  it("does not publish a public run when information-collection output has no public voice", async () => {
+  it("publishes a fallback public run when information-collection output has no public voice", async () => {
     const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
       void run;
     });
     const recordStrategyDecisionRecord = vi.fn(async (record) => record);
     const appendWatchHistoryEntry = vi.fn();
-    const generateLeadOutput = vi.fn();
+    const generateLeadOutput = vi.fn(async () => ({
+      rationale: "Evidence stack remains constructive",
+      confidence: 0.7,
+    }));
 
     const result = await runPmDecisionPipeline(
       {
@@ -722,18 +749,99 @@ describe("runPmDecisionPipeline", () => {
       },
     );
 
-    expect(result).toBeNull();
-    expect(generateLeadOutput).not.toHaveBeenCalled();
-    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
-    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+    expect(result).not.toBeNull();
+    expect(generateLeadOutput).toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).toHaveBeenCalled();
+    expect(result?.publicTimelineEntry.payload).toEqual(
+      expect.objectContaining({
+        kind: "pm_decision",
+        rounds: expect.arrayContaining([
+          expect.objectContaining({
+            agentId: "pa_02",
+            round: 1,
+            rationale: expect.stringContaining("公开行情与新闻信号已完成汇总"),
+          }),
+        ]),
+      }),
+    );
     expect(upsertDecisionRun).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        status: "skipped",
-        skipReason: "no_public_analyst_stage_one_outputs",
-        publicTimelineEventId: null,
+        status: "succeeded",
+        skipReason: null,
+        publicTimelineEventId: "public:pm:BTC:1778407200000",
         stageStatus: expect.objectContaining({
-          analyst_inputs: "in_progress",
+          analyst_inputs: "done",
         }),
+      }),
+    );
+  });
+
+  it("adds an information-collection fallback when only non-information roles have public round one voice", async () => {
+    const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
+      void run;
+    });
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn();
+    const generateLeadOutput = vi.fn(async () => ({
+      rationale: "Evidence stack remains constructive",
+      confidence: 0.7,
+    }));
+    const informationCollectionMembers: TeamMemberId[] = [
+      "fundamental_analyst",
+      "news_analyst",
+      "chart_analyst",
+      "onchain_analyst",
+    ];
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async (memberId) => ({
+          ...analystOutput(memberId),
+          rationale: informationCollectionMembers.includes(memberId)
+            ? "等待后续数据更新再参与。"
+            : "BTC holds 76000 with constructive momentum after peer review",
+        })),
+        generateLeadOutput,
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord: vi.fn(async (record: StrategyDecisionRecord) => {
+          void record;
+        }),
+        upsertDecisionRun,
+      },
+    );
+
+    expect(result).not.toBeNull();
+    expect(generateLeadOutput).toHaveBeenCalled();
+    expect(recordStrategyDecisionRecord).toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).toHaveBeenCalled();
+    expect(result?.publicTimelineEntry.payload).toEqual(
+      expect.objectContaining({
+        kind: "pm_decision",
+        rounds: expect.arrayContaining([
+          expect.objectContaining({
+            agentId: "pa_02",
+            round: 1,
+            rationale: expect.stringContaining("公开行情与新闻信号已完成汇总"),
+          }),
+        ]),
+      }),
+    );
+    expect(upsertDecisionRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: "succeeded",
+        skipReason: null,
+        publicTimelineEventId: "public:pm:BTC:1778407200000",
       }),
     );
   });
@@ -920,6 +1028,159 @@ describe("runPmDecisionPipeline", () => {
     });
     expect(generateTradeDecision).not.toHaveBeenCalled();
     expect(recordStrategyDecisionRecord).toHaveBeenCalledWith(expect.any(Object), 0);
+  });
+
+  it("recovers a resident candidate when a lead LLM output is malformed", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+    const updateDecisionRecord = vi.fn(async (record: StrategyDecisionRecord) => {
+      void record;
+    });
+    const generateLeadOutput = vi.fn(async (memberId: TeamMemberId) => {
+      if (memberId === "research_lead") {
+        throw new Error("Unterminated string in JSON at position 180");
+      }
+      return {
+        rationale: "Risk review keeps the observation balanced around public signals",
+        confidence: 0.61,
+      };
+    });
+    const candidate = marketOverviewCandidate({ locale: "zh_CN", now });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        candidate,
+        recentMarketSignals: [signal(), signal({ symbol: "ETH", payload: { change24h: 3.2 } })],
+        recentNewsEvidence: [evidence({ symbol: [] })],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack("MARKET"),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput,
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord,
+      },
+    );
+
+    expect(result?.record.candidate?.candidateType).toBe("market_overview");
+    expect(result?.record.tradeDecision).toBeNull();
+    expect(
+      result?.record.analystInputs.find((input) => input.memberId === "research_lead"),
+    ).toMatchObject({
+      memberId: "research_lead",
+      direction: "neutral",
+    });
+    expect(result?.record.analysisSummary).toBeTruthy();
+    expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
+    expect(appendWatchHistoryEntry).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses a distinct resident lead fallback instead of repeating analyst summaries", async () => {
+    const repeatedAnalystLine = "BTC 公开信号已汇总，进入后续判断。";
+    const judgePass: DecisionJudgeResult = {
+      verdict: "pass",
+      fail_reason: null,
+      fail_detail: null,
+      confidence: 0.86,
+      status: "ok",
+      callCount: 1,
+      inputTokenEstimate: 100,
+      outputTokenEstimate: 20,
+    };
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+    const updateDecisionRecord = vi.fn(async (record: StrategyDecisionRecord) => {
+      void record;
+    });
+    const candidate = marketOverviewCandidate({ locale: "zh_CN", now });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        candidate,
+        recentMarketSignals: [signal(), signal({ symbol: "ETH", payload: { change24h: 3.2 } })],
+        recentNewsEvidence: [evidence({ symbol: [] })],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack("MARKET"),
+        generateAnalystOutput: vi.fn(async (memberId) => ({
+          ...analystOutput(memberId),
+          rationale: repeatedAnalystLine,
+          oneLineSummary: repeatedAnalystLine,
+        })),
+        generateLeadOutput: vi.fn(async (memberId: TeamMemberId) => {
+          if (memberId === "research_lead") {
+            throw new Error("Unterminated string in JSON at position 180");
+          }
+          return {
+            rationale: "风险审查围绕波动、关键价位和情绪反转独立完成。",
+            confidence: 0.61,
+          };
+        }),
+        generateTradeDecision: vi.fn(async () => decision()),
+        runDecisionJudge: vi.fn(async () => judgePass),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord,
+      },
+    );
+
+    const researchLead = result?.record.analystInputs.find(
+      (input) => input.memberId === "research_lead",
+    );
+    expect(researchLead?.rationale).toBeTruthy();
+    expect(researchLead?.rationale).not.toBe(repeatedAnalystLine);
+    expect(researchLead?.oneLineSummary).not.toBe(repeatedAnalystLine);
+    expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps symbol candidates strict when a lead LLM output is malformed", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async (memberId: TeamMemberId) => {
+          if (memberId === "research_lead") {
+            throw new Error("LLM output is not valid JSON");
+          }
+          return {
+            rationale: "Risk review keeps the symbol setup balanced",
+            confidence: 0.61,
+          };
+        }),
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord: vi.fn(),
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
   });
 
   it("blocks public timeline publishing when the persisted record fails the quality gate", async () => {

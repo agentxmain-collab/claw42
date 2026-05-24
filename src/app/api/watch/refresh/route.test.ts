@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { WATCH_REFRESH_STATUSES } from "@/lib/watch/refreshStatus";
-import { POST } from "./route";
+import { maxDuration, POST } from "./route";
 
 const waitUntilMock = vi.hoisted(() => vi.fn());
 const checkRateLimitMock = vi.hoisted(() => vi.fn());
@@ -130,6 +130,10 @@ function record(createdAt: string, symbol = "BTC"): StrategyDecisionRecord {
 }
 
 describe("/api/watch/refresh", () => {
+  it("declares enough runtime for waitUntil fallback PM generation", () => {
+    expect(maxDuration).toBeGreaterThanOrEqual(300);
+  });
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(now);

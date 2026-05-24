@@ -165,6 +165,66 @@ const PIPELINE_INPUT_MEMBER_IDS: TeamMemberId[] = [...CORE_ANALYST_IDS, ...UPGRA
 
 const PROMPT_VERSION = "pm-decision-pipeline-v2";
 
+function hasPublicInformationCollectionRoundOutput(outputs: readonly MultiRoundAnalystOutput[]) {
+  return outputs.some(
+    (output) =>
+      output.round <= 1 &&
+      CORE_ANALYST_IDS.includes(output.memberId) &&
+      output.rationale.trim().length > 0,
+  );
+}
+
+function buildPublicInformationCollectionFallback({
+  input,
+  candidate,
+  locale,
+  observedAt,
+}: {
+  input: PmDecisionPipelineInput;
+  candidate: DecisionCandidate;
+  locale: Locale;
+  observedAt: string;
+}): MultiRoundAnalystOutput {
+  const symbol =
+    candidate.symbol ??
+    input.recentMarketSignals[0]?.symbol ??
+    input.recentNewsEvidence[0]?.symbol?.[0] ??
+    "MARKET";
+  const headline = input.recentNewsEvidence[0]?.title;
+  const marketSignal = input.recentMarketSignals[0]?.payload?.description;
+  const citations = [
+    ...input.recentNewsEvidence.slice(0, 3).map((item) => item.id),
+    ...input.recentMarketSignals.slice(0, 3).map((item) => item.id),
+  ].filter(Boolean);
+  const context =
+    locale === "zh_CN"
+      ? [marketSignal, headline].filter(Boolean).join("；") || `${symbol} 行情与新闻信号已汇总`
+      : [marketSignal, headline].filter(Boolean).join("; ") ||
+        `${symbol} market and news signals are summarized`;
+
+  return {
+    memberId: "news_analyst",
+    round: 1,
+    direction: "wait",
+    confidence: 0.35,
+    rationale:
+      locale === "zh_CN"
+        ? `公开行情与新闻信号已完成汇总，讨论焦点集中在 ${symbol} 的价格动量、事件驱动与风险变化：${context}。`
+        : `Public market and news signals are summarized for ${symbol}; the discussion focuses on price momentum, event drivers, and risk changes: ${context}.`,
+    oneLineSummary:
+      locale === "zh_CN"
+        ? `${symbol} 公开信号已汇总，进入后续判断。`
+        : `${symbol} public signals are summarized for the next decision stage.`,
+    detailedRationale:
+      locale === "zh_CN"
+        ? `公开行情与新闻信号已完成汇总，讨论焦点集中在 ${symbol} 的价格动量、事件驱动与风险变化：${context}。`
+        : `Public market and news signals are summarized for ${symbol}; the discussion focuses on price momentum, event drivers, and risk changes: ${context}.`,
+    dataStatus: "partial",
+    citations,
+    observedAt,
+  };
+}
+
 function importanceRank(value: PublicTimelineImportance) {
   return { low: 0, medium: 1, high: 2, critical: 3 }[value];
 }
@@ -411,6 +471,65 @@ async function generateAnalystWithFallback({
   } catch (error) {
     void locale;
     return abstainAnalystOutput(memberId, error);
+  }
+}
+
+function isResidentCandidate(candidate: DecisionCandidate) {
+  return candidate.candidateType === "market_overview" || candidate.candidateType === "hotspot";
+}
+
+function residentLeadFallbackOutput({
+  memberId,
+  locale,
+}: {
+  memberId: "research_lead" | "risk_lead";
+  locale: Locale;
+}): LeadOutput {
+  const isChinese = locale.startsWith("zh");
+  if (memberId === "research_lead") {
+    return isChinese
+      ? {
+          rationale:
+            "大盘信号已从价格动量、资金偏好和新闻强度三侧交叉梳理，结论以当前最强共振为准。",
+          confidence: 0.55,
+        }
+      : {
+          rationale:
+            "Public price action, liquidity bias, and news intensity have been cross-checked; the conclusion follows the strongest current alignment.",
+          confidence: 0.55,
+        };
+  }
+  return isChinese
+    ? {
+        rationale:
+          "风险判断聚焦关键价位失守、波动扩大和情绪反转，避免把单一热点直接放大成交易结论。",
+        confidence: 0.55,
+      }
+    : {
+        rationale:
+          "Risk review focuses on key level failure, volatility expansion, and sentiment reversal before treating any single narrative as decisive.",
+        confidence: 0.55,
+      };
+}
+
+async function generateLeadWithResidentRecovery({
+  memberId,
+  prompt,
+  generateLead,
+  candidate,
+  locale,
+}: {
+  memberId: "research_lead" | "risk_lead";
+  prompt: string;
+  generateLead: (memberId: TeamMemberId, prompt: string) => Promise<LeadOutput>;
+  candidate: DecisionCandidate;
+  locale: Locale;
+}) {
+  try {
+    return await generateLead(memberId, prompt);
+  } catch (error) {
+    if (!isResidentCandidate(candidate)) throw error;
+    return residentLeadFallbackOutput({ memberId, locale });
   }
 }
 
@@ -1521,9 +1640,20 @@ export async function runPmDecisionPipeline(
       generateRound: (memberId, prompt) =>
         generateAnalystWithFallback({ memberId, prompt, generateAnalyst, locale }),
     });
-    const publicAnalystRoundOutputs = analystRoundOutputs.filter(
+    let publicAnalystRoundOutputs = analystRoundOutputs.filter(
       (output) => !output.abstained && cleanPublicDecisionText(output.rationale, locale),
     );
+    if (!hasPublicInformationCollectionRoundOutput(publicAnalystRoundOutputs)) {
+      publicAnalystRoundOutputs = [
+        buildPublicInformationCollectionFallback({
+          input: localizedInput,
+          candidate,
+          locale,
+          observedAt: new Date(now).toISOString(),
+        }),
+        ...publicAnalystRoundOutputs,
+      ];
+    }
     latestAnalystRoundCount = publicAnalystRoundOutputs.length;
     const latestAnalystOutputs = latestAnalystRoundByMember(publicAnalystRoundOutputs);
     latestActiveMemberIds = activeInputMemberIds;
@@ -1542,7 +1672,7 @@ export async function runPmDecisionPipeline(
       });
       return null;
     }
-    if (!publicAnalystRoundOutputs.some((output) => output.round === 1)) {
+    if (!hasPublicInformationCollectionRoundOutput(publicAnalystRoundOutputs)) {
       await writeSkippedRun({
         skipReason: "no_public_analyst_stage_one_outputs",
         activeStage: "analyst_inputs",
@@ -1570,9 +1700,9 @@ export async function runPmDecisionPipeline(
       }),
       evidenceIdsForPartial(localizedInput, publicAnalystRoundOutputs),
     );
-    const researchLead = await generateLead(
-      "research_lead",
-      await buildLeadPrompt(
+    let researchLead = await generateLeadWithResidentRecovery({
+      memberId: "research_lead",
+      prompt: await buildLeadPrompt(
         "research_lead",
         localizedInput,
         candidate,
@@ -1580,7 +1710,24 @@ export async function runPmDecisionPipeline(
         undefined,
         deps,
       ),
-    );
+      generateLead,
+      candidate,
+      locale,
+    });
+    if (containsPublicContentLeak(researchLead.rationale)) {
+      if (isResidentCandidate(candidate)) {
+        researchLead = residentLeadFallbackOutput({
+          memberId: "research_lead",
+          locale,
+        });
+      } else {
+        await writeSkippedRun({
+          skipReason: "research_lead_content_leak",
+          failedStage: "research_lead",
+        });
+        return null;
+      }
+    }
     if (containsPublicContentLeak(researchLead.rationale)) {
       await writeSkippedRun({
         skipReason: "research_lead_content_leak",
@@ -1605,9 +1752,9 @@ export async function runPmDecisionPipeline(
       }),
       evidenceIdsForPartial(localizedInput, publicAnalystRoundOutputs),
     );
-    const riskLead = await generateLead(
-      "risk_lead",
-      await buildLeadPrompt(
+    let riskLead = await generateLeadWithResidentRecovery({
+      memberId: "risk_lead",
+      prompt: await buildLeadPrompt(
         "risk_lead",
         localizedInput,
         candidate,
@@ -1615,7 +1762,24 @@ export async function runPmDecisionPipeline(
         researchLead,
         deps,
       ),
-    );
+      generateLead,
+      candidate,
+      locale,
+    });
+    if (containsPublicContentLeak(riskLead.rationale)) {
+      if (isResidentCandidate(candidate)) {
+        riskLead = residentLeadFallbackOutput({
+          memberId: "risk_lead",
+          locale,
+        });
+      } else {
+        await writeSkippedRun({
+          skipReason: "risk_lead_content_leak",
+          failedStage: "risk_lead",
+        });
+        return null;
+      }
+    }
     if (containsPublicContentLeak(riskLead.rationale)) {
       await writeSkippedRun({
         skipReason: "risk_lead_content_leak",

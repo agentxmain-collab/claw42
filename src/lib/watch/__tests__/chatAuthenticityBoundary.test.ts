@@ -207,6 +207,14 @@ const historyDecisionRecord: StrategyDecisionRecord = {
   promptVersion: "test",
   modelProvider: "stub",
   legacyFactionId: null,
+  stageTrace: [
+    {
+      stageId: "analyst_inputs",
+      label: "Analyst input generation",
+      status: "done",
+      observedAt: new Date(rawPublicEntry.ts).toISOString(),
+    },
+  ],
 };
 
 function pmHistoryEntry(tradeDecision: TradeDecision): StreamEntry {

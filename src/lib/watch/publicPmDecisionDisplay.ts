@@ -53,6 +53,13 @@ export function hasPublicInformationCollectionRound(event: PmDecisionTimelineEve
   });
 }
 
+export function hasCompletePublicDecisionStageTrace(
+  trace: PmDecisionTimelineEvent["payload"]["stageTrace"] | undefined,
+) {
+  if (!trace?.length) return true;
+  return trace.every((entry) => entry.status === "done");
+}
+
 export function isPublicDisplayablePmDecisionEvent(
   event: PublicTimelineEvent,
 ): event is PmDecisionTimelineEvent {

@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "@/app/api/cron/strategy-replay/route";
+import { GET, maxDuration } from "@/app/api/cron/strategy-replay/route";
 import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 import type { NewsItem } from "@/lib/types";
+import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 
 const normalizeNewsItemMock = vi.hoisted(() => vi.fn());
 const fetchNewsWithChainMock = vi.hoisted(() => vi.fn());
@@ -13,9 +14,12 @@ const adjustDebtFromReplaysMock = vi.hoisted(() => vi.fn());
 const tryAcquireLockMock = vi.hoisted(() => vi.fn());
 const enqueuePmDecisionJobMock = vi.hoisted(() => vi.fn());
 const readPmDecisionJobsMock = vi.hoisted(() => vi.fn());
+const readDecisionRunsMock = vi.hoisted(() => vi.fn());
 const publishPmDecisionJobToQueueMock = vi.hoisted(() => vi.fn());
 const runPmDecisionJobMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
+const getDecisionRecordStoreDiagnosticsMock = vi.hoisted(() => vi.fn());
+const getLastDecisionRecordWriteDiagnosticsMock = vi.hoisted(() => vi.fn());
 const resolveDecisionRecordFromPriceMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/news/normalizer", () => ({
@@ -53,6 +57,10 @@ vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
 }));
 
+vi.mock("@/lib/team/decisionRunLedger", () => ({
+  readDecisionRuns: readDecisionRunsMock,
+}));
+
 vi.mock("@/lib/team/pmDecisionJobQueue", () => ({
   publishPmDecisionJobToQueue: publishPmDecisionJobToQueueMock,
 }));
@@ -62,6 +70,8 @@ vi.mock("@/lib/team/pmDecisionJobRunner", () => ({
 }));
 
 vi.mock("@/lib/team/decisionRecordStore", () => ({
+  getDecisionRecordStoreDiagnostics: getDecisionRecordStoreDiagnosticsMock,
+  getLastDecisionRecordWriteDiagnostics: getLastDecisionRecordWriteDiagnosticsMock,
   readAllDecisionRecords: readAllDecisionRecordsMock,
 }));
 
@@ -103,7 +113,66 @@ function pool(): CoinPoolPayload {
   };
 }
 
+function displayablePmTimelineEntry(
+  overrides: Partial<PublicTimelineEvent> = {},
+): PublicTimelineEvent {
+  const ts = now;
+  return {
+    id: "pm-decision:pm:BTC:test",
+    ts,
+    visibility: "public",
+    importance: "high",
+    sourceTrigger: "pm_decision",
+    evidenceIds: ["ev_1"],
+    locale: "zh_CN",
+    payload: {
+      kind: "pm_decision",
+      recordId: "pm:BTC:test",
+      symbol: "BTC",
+      candidateType: "symbol",
+      candidateKey: "BTC",
+      displayTitle: "BTC 实时行情分析",
+      executable: true,
+      tradeDecision: null,
+      rounds: [
+        {
+          round: 1,
+          memberId: "news_analyst",
+          rationale: "BTC information collection has public evidence and momentum context",
+        },
+      ],
+    },
+    ...overrides,
+  };
+}
+
+function hiddenPmTimelineEntry(): PublicTimelineEvent {
+  return displayablePmTimelineEntry({
+    payload: {
+      kind: "pm_decision",
+      recordId: "pm:BTC:hidden",
+      symbol: "BTC",
+      candidateType: "symbol",
+      candidateKey: "BTC",
+      displayTitle: "BTC 实时行情分析",
+      executable: true,
+      tradeDecision: null,
+      rounds: [
+        {
+          round: 2,
+          memberId: "bullish_researcher",
+          rationale: "BTC peer debate remains constructive",
+        },
+      ],
+    },
+  });
+}
+
 describe("/api/cron/strategy-replay", () => {
+  it("declares enough runtime for inline PM generation when queue mode is disabled", () => {
+    expect(maxDuration).toBeGreaterThanOrEqual(300);
+  });
+
   beforeEach(() => {
     vi.setSystemTime(now);
     normalizeNewsItemMock.mockReset();
@@ -115,9 +184,12 @@ describe("/api/cron/strategy-replay", () => {
     tryAcquireLockMock.mockReset();
     enqueuePmDecisionJobMock.mockReset();
     readPmDecisionJobsMock.mockReset();
+    readDecisionRunsMock.mockReset();
     publishPmDecisionJobToQueueMock.mockReset();
     runPmDecisionJobMock.mockReset();
     readAllDecisionRecordsMock.mockReset();
+    getDecisionRecordStoreDiagnosticsMock.mockReset();
+    getLastDecisionRecordWriteDiagnosticsMock.mockReset();
     resolveDecisionRecordFromPriceMock.mockReset();
 
     fetchNewsWithChainMock.mockResolvedValue({
@@ -158,6 +230,64 @@ describe("/api/cron/strategy-replay", () => {
       auditEventCount: 0,
     }));
     readPmDecisionJobsMock.mockResolvedValue([]);
+    readDecisionRunsMock.mockResolvedValue([
+      {
+        id: "run:pm:BTC:test",
+        status: "succeeded",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        candidate: { candidateType: "symbol", candidateKey: "BTC", displayTitle: "BTC" },
+        symbol: "BTC",
+        startedAt: "2026-05-13T20:00:00.000Z",
+        completedAt: "2026-05-13T20:01:00.000Z",
+        stageStatus: { information_collection: "succeeded" },
+        analystRoundCount: 1,
+        skipReason: null,
+        error: null,
+        decisionRecordId: "pm:BTC:test",
+        publicTimelineEventId: "pm-decision:pm:BTC:test",
+        quality: {
+          schemaVersion: 1,
+          score: 90,
+          publishable: true,
+          warnings: [],
+          blockingWarnings: [],
+        },
+      },
+    ]);
+    getDecisionRecordStoreDiagnosticsMock.mockResolvedValue({
+      storageMode: "persistent",
+      configuredStorageMode: "persistent",
+      useKvEnvActualValue: '"true"',
+      kvConfigured: true,
+      kvKeyPrefix: "claw42:strategy:records:v1:",
+      kvSymbolIndexKey: "claw42:strategy:records:v1:zh_CN:symbols",
+      legacyKvSymbolIndexKey: "decision-record:v1:symbols",
+      deploymentId: "dpl_test",
+      gitSha: "sha_test",
+      lastWrite: null,
+      decisionRecordReadResult: {
+        locale: "zh_CN",
+        symbolsChecked: ["BTC"],
+        recordCount: 1,
+        firstRecordCreatedAt: "2026-05-13T20:00:00.000Z",
+        requestedRecordIdsPresent: ["pm:BTC:test"],
+      },
+    });
+    getLastDecisionRecordWriteDiagnosticsMock.mockReturnValue({
+      operation: "append",
+      storageMode: "persistent",
+      configuredStorageMode: "persistent",
+      locale: "zh_CN",
+      symbol: "BTC",
+      recordId: "pm:BTC:test",
+      kvKeyPrefix: "claw42:strategy:records:v1:",
+      kvSymbolKey: "claw42:strategy:records:v1:zh_CN:BTC",
+      kvSymbolIndexKey: "claw42:strategy:records:v1:zh_CN:symbols",
+      lpushResult: 1,
+      ltrimResult: "OK",
+      saddResult: 1,
+    });
     publishPmDecisionJobToQueueMock.mockResolvedValue({ mode: "disabled" });
     runPmDecisionJobMock.mockImplementation(async (job, context) => {
       context.onAudit?.({
@@ -176,7 +306,7 @@ describe("/api/cron/strategy-replay", () => {
         outputs: [
           {
             record: { id: "pm:BTC:test" },
-            publicTimelineEntry: {},
+            publicTimelineEntry: displayablePmTimelineEntry(),
             tradeDecision: {},
           },
         ],
@@ -241,6 +371,37 @@ describe("/api/cron/strategy-replay", () => {
         }),
       ]),
     );
+    expect(payload.decisionRecordDiagnostics).toMatchObject({
+      storageMode: "persistent",
+      useKvEnvActualValue: '"true"',
+      kvKeyPrefix: "claw42:strategy:records:v1:",
+      decisionRecordWriteResult: expect.objectContaining({
+        storageMode: "persistent",
+        recordId: "pm:BTC:test",
+      }),
+      decisionRecordReadResult: expect.objectContaining({
+        recordCount: 1,
+        requestedRecordIdsPresent: ["pm:BTC:test"],
+      }),
+    });
+    expect(payload.decisionRunDiagnostics).toEqual([
+      expect.objectContaining({
+        status: "succeeded",
+        candidateType: "symbol",
+        decisionRecordId: "pm:BTC:test",
+        publicTimelineEventId: "pm-decision:pm:BTC:test",
+        error: null,
+        stageStatus: { information_collection: "succeeded" },
+        analystRoundCount: 1,
+        quality: expect.objectContaining({ publishable: true }),
+      }),
+    ]);
+    expect(getDecisionRecordStoreDiagnosticsMock).toHaveBeenCalledWith({
+      locale: "zh_CN",
+      symbols: ["BTC"],
+      recordIds: ["pm:BTC:test"],
+      limit: 20,
+    });
     expect(payload.resolvedPmDecisions).toBe(1);
     expect(resolveDecisionRecordFromPriceMock).toHaveBeenCalledWith(
       expect.objectContaining({ id: "pm:BTC:open" }),
@@ -255,13 +416,82 @@ describe("/api/cron/strategy-replay", () => {
     });
   });
 
+  it("redacts failed PM run errors in trigger=now diagnostics", async () => {
+    readDecisionRunsMock.mockResolvedValueOnce([
+      {
+        id: "run:pm:HOTSPOT:test",
+        status: "failed",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        candidate: {
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:test",
+          displayTitle: "热点叙事追踪",
+        },
+        symbol: "HOTSPOT",
+        startedAt: "2026-05-13T20:00:00.000Z",
+        completedAt: "2026-05-13T20:01:00.000Z",
+        stageStatus: { information_collection: "failed" },
+        analystRoundCount: 0,
+        skipReason: null,
+        error: "provider failed with Bearer secret-token and api_key=secret-value",
+        decisionRecordId: null,
+        publicTimelineEventId: null,
+        quality: null,
+      },
+    ]);
+
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),
+    );
+    const payload = await response.json();
+
+    expect(payload.decisionRunDiagnostics).toEqual([
+      expect.objectContaining({
+        status: "failed",
+        candidateType: "hotspot",
+        error: "provider failed with Bearer [redacted] and api_key=[redacted]",
+        stageStatus: { information_collection: "failed" },
+        analystRoundCount: 0,
+      }),
+    ]);
+  });
+
+  it("does not let failed news debate orchestration block the PM update loop", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      tryOrchestrateNewsDebateMock.mockRejectedValueOnce(
+        new SyntaxError("Unterminated string in JSON"),
+      );
+
+      const response = await GET(
+        new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),
+      );
+      const payload = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(payload.pmDecisionGenerated).toBe(true);
+      expect(payload.generatedDebates).toBe(0);
+      expect(runPmDecisionJobMock).toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(
+        "[claw42] news debate orchestration skipped",
+        expect.objectContaining({
+          newsId: "news-1",
+          error: "Unterminated string in JSON",
+        }),
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   it("keeps audit and source-health details out of the scheduled cron response", async () => {
     runPmDecisionJobMock.mockResolvedValueOnce({
       job: { id: "pm-job:test", status: "succeeded" },
       outputs: [
         {
           record: { id: "pm:BTC:cron" },
-          publicTimelineEntry: {},
+          publicTimelineEntry: displayablePmTimelineEntry(),
           tradeDecision: {},
         },
       ],
@@ -287,7 +517,29 @@ describe("/api/cron/strategy-replay", () => {
     expect(runPmDecisionJobMock).toHaveBeenCalledTimes(1);
   });
 
-  it("prewarms global resident market and hotspot candidates from scheduled cron", async () => {
+  it("does not report a generated PM decision when the output is not publicly displayable", async () => {
+    runPmDecisionJobMock.mockResolvedValueOnce({
+      job: { id: "pm-job:test", status: "succeeded" },
+      outputs: [
+        {
+          record: { id: "pm:BTC:hidden" },
+          publicTimelineEntry: hiddenPmTimelineEntry(),
+          tradeDecision: {},
+        },
+      ],
+      auditEvents: [],
+    });
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.pmDecisionGenerated).toBe(false);
+    expect(payload.generatedPmDecisions).toBe(0);
+    expect(payload.generatedHiddenPmDecisions).toBe(1);
+  });
+
+  it("caps inline resident prewarm work when queue mode is unavailable", async () => {
     const prewarmNow = Date.parse("2026-05-13T18:00:00.000Z");
     vi.setSystemTime(prewarmNow);
 
@@ -295,11 +547,17 @@ describe("/api/cron/strategy-replay", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(payload.residentPrewarmGenerated).toBe(2);
+    expect(payload.residentPrewarmGenerated).toBe(1);
     expect(payload.residentPrewarmCandidates).toEqual([
       "market_overview:utc:zh_CN:2026-05-13T18",
       "hotspot:utc:zh_CN:2026-05-13T18:market",
     ]);
+    expect(payload.pmDecisionInlineLimit).toEqual({
+      limit: 1,
+      used: 1,
+      deferredResidentCandidateKeys: ["hotspot:utc:zh_CN:2026-05-13T18:market"],
+      deferredBatch: true,
+    });
     expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "once",
@@ -312,25 +570,163 @@ describe("/api/cron/strategy-replay", () => {
         now: prewarmNow,
       }),
     );
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ candidate: expect.objectContaining({ candidateType: "hotspot" }) }),
+    );
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "batch" }),
+    );
+  });
+
+  it("does not spend the inline cap on resident candidates skipped by an existing lock", async () => {
+    const prewarmNow = Date.parse("2026-05-13T18:00:00.000Z");
+    vi.setSystemTime(prewarmNow);
+    runPmDecisionJobMock
+      .mockResolvedValueOnce({
+        job: { id: "pm-job:market-locked", status: "succeeded" },
+        outputs: [],
+        auditEvents: [
+          {
+            type: "candidate_skipped",
+            triggerSource: "cron",
+            locale: "zh_CN",
+            symbol: "market_overview:utc:zh_CN:2026-05-13T18",
+            reason: "locked",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        job: { id: "pm-job:hotspot-generated", status: "succeeded" },
+        outputs: [
+          {
+            record: { id: "pm:HOTSPOT:test" },
+            publicTimelineEntry: displayablePmTimelineEntry({
+              id: "pm-decision:pm:HOTSPOT:test",
+              payload: {
+                kind: "pm_decision",
+                recordId: "pm:HOTSPOT:test",
+                symbol: "HOTSPOT",
+                candidateType: "hotspot",
+                candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
+                displayTitle: "热点叙事追踪",
+                executable: false,
+                tradeDecision: null,
+                rounds: [
+                  {
+                    round: 1,
+                    memberId: "news_analyst",
+                    rationale: "热点叙事具备公开信息收集发言",
+                  },
+                ],
+              },
+            }),
+            tradeDecision: {},
+          },
+        ],
+        auditEvents: [],
+      });
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.residentPrewarmGenerated).toBe(1);
+    expect(payload.pmDecisionInlineLimit).toEqual({
+      limit: 1,
+      used: 1,
+      deferredResidentCandidateKeys: [],
+      deferredBatch: true,
+    });
     expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "once",
-        triggerSource: "cron",
-        locale: "zh_CN",
         candidate: expect.objectContaining({
-          candidateType: "hotspot",
-          candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
+          candidateType: "market_overview",
         }),
-        now: prewarmNow,
       }),
     );
     expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        kind: "batch",
-        triggerSource: "cron",
-        locale: "zh_CN",
-        now: prewarmNow,
+        kind: "once",
+        candidate: expect.objectContaining({
+          candidateType: "hotspot",
+        }),
       }),
+    );
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "batch" }),
+    );
+  });
+
+  it("does not spend the inline cap on resident candidates that produce no output", async () => {
+    const prewarmNow = Date.parse("2026-05-13T18:00:00.000Z");
+    vi.setSystemTime(prewarmNow);
+    runPmDecisionJobMock
+      .mockResolvedValueOnce({
+        job: { id: "pm-job:market-skipped", status: "succeeded" },
+        outputs: [],
+        auditEvents: [],
+      })
+      .mockResolvedValueOnce({
+        job: { id: "pm-job:hotspot-generated", status: "succeeded" },
+        outputs: [
+          {
+            record: { id: "pm:HOTSPOT:test" },
+            publicTimelineEntry: displayablePmTimelineEntry({
+              id: "pm-decision:pm:HOTSPOT:test",
+              payload: {
+                kind: "pm_decision",
+                recordId: "pm:HOTSPOT:test",
+                symbol: "HOTSPOT",
+                candidateType: "hotspot",
+                candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
+                displayTitle: "热点叙事追踪",
+                executable: false,
+                tradeDecision: null,
+                rounds: [
+                  {
+                    round: 1,
+                    memberId: "news_analyst",
+                    rationale: "热点叙事具备公开信息收集发言",
+                  },
+                ],
+              },
+            }),
+            tradeDecision: {},
+          },
+        ],
+        auditEvents: [],
+      });
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.residentPrewarmGenerated).toBe(1);
+    expect(payload.pmDecisionInlineLimit).toEqual({
+      limit: 1,
+      used: 1,
+      deferredResidentCandidateKeys: [],
+      deferredBatch: true,
+    });
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        candidate: expect.objectContaining({
+          candidateType: "market_overview",
+        }),
+      }),
+    );
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        candidate: expect.objectContaining({
+          candidateType: "hotspot",
+        }),
+      }),
+    );
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "batch" }),
     );
   });
 

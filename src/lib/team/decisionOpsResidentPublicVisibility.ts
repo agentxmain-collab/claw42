@@ -1,4 +1,8 @@
 import { normalizeCandidateType, type CandidateType } from "@/lib/watch/decisionCandidate";
+import {
+  hasCompletePublicDecisionStageTrace,
+  isPublicDisplayablePmDecisionEvent,
+} from "@/lib/watch/publicPmDecisionDisplay";
 import type { PublicTimelineEvent, PublicTimelinePayload } from "@/lib/watch/publicTimelineEvent";
 
 export type DecisionOpsResidentPublicVisibilityStatus = "ready" | "critical";
@@ -74,7 +78,10 @@ export function buildDecisionOpsResidentPublicVisibility({
 }
 
 function isPublicPmEvent(event: PublicTimelineEvent): event is PublicPmDecisionEvent {
-  return event.payload.kind === "pm_decision";
+  return (
+    isPublicDisplayablePmDecisionEvent(event) &&
+    hasCompletePublicDecisionStageTrace(event.payload.stageTrace)
+  );
 }
 
 function countByType(events: readonly PublicPmDecisionEvent[]) {
