@@ -620,4 +620,24 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     expect(input.recentMarketSignals.map((signal) => signal.symbol)).toEqual(["BTC", "ETH", "SOL"]);
     expect(input.recentNewsEvidence).toHaveLength(1);
   });
+
+  it("lets admin backfill bypass the resident candidate lock explicitly", async () => {
+    const candidate = marketOverviewCandidate({ locale: "zh_CN", now });
+    tryAcquireLockMock.mockResolvedValue(null);
+
+    await triggerPmDecisionPipelineOnce({
+      triggerSource: "cron",
+      pool: pool(),
+      newsItems: [newsItem({ currencies: [] })],
+      locale: "zh_CN",
+      candidate,
+      now,
+      bypassLock: true,
+    });
+
+    expect(tryAcquireLockMock).not.toHaveBeenCalled();
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
+    expect(input.candidate).toEqual(candidate);
+  });
 });

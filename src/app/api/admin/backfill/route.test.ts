@@ -139,6 +139,7 @@ describe("/api/admin/backfill", () => {
         triggerSource: "cron",
         locale: "en_US",
         partialStageUpdates: true,
+        bypassLock: true,
         pool: expect.objectContaining({ source: "coinw-kline" }),
         newsItems: [expect.objectContaining({ id: "news-1" })],
         candidate: expect.objectContaining({

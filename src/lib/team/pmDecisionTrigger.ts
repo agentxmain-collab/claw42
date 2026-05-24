@@ -197,6 +197,7 @@ export async function triggerPmDecisionPipelineOnce({
   candidate,
   now = Date.now(),
   partialStageUpdates = true,
+  bypassLock = false,
   onAudit,
 }: {
   triggerSource: "cron" | "user_visit_trigger";
@@ -207,6 +208,7 @@ export async function triggerPmDecisionPipelineOnce({
   candidate?: DecisionCandidate;
   now?: number;
   partialStageUpdates?: boolean;
+  bypassLock?: boolean;
   onAudit?: PmDecisionTriggerAuditSink;
 }) {
   const normalizedLocale = normalizeWatchLocale(locale);
@@ -219,14 +221,13 @@ export async function triggerPmDecisionPipelineOnce({
     const scopedNewsEvidence = recentNewsEvidence.filter((evidence) =>
       evidenceMatchesCandidate(evidence, candidate),
     );
-    const lock = await tryAcquireLock(
-      `watch:pm-decision:${normalizedLocale}:${candidate.candidateKey}`,
-      {
+    if (
+      !bypassLock &&
+      !(await tryAcquireLock(`watch:pm-decision:${normalizedLocale}:${candidate.candidateKey}`, {
         ttlMs: PM_DECISION_SYMBOL_LOCK_MS,
         waitMs: 0,
-      },
-    );
-    if (!lock) {
+      }))
+    ) {
       onAudit?.({
         type: "candidate_skipped",
         triggerSource,

@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
     newsItems,
     candidate,
     partialStageUpdates: true,
+    bypassLock: true,
   });
 
   if (!result) {
