@@ -558,6 +558,17 @@ describe("/api/cron/strategy-replay", () => {
       deferredResidentCandidateKeys: ["hotspot:utc:zh_CN:2026-05-13T18:market"],
       deferredBatch: true,
     });
+    expect(payload.residentPrewarmAttempts).toEqual([
+      expect.objectContaining({
+        candidateType: "market_overview",
+        candidateKey: "market_overview:utc:zh_CN:2026-05-13T18",
+        locale: "zh_CN",
+        why: "fixed_cadence",
+        outputCount: 1,
+        spentInlineSlot: true,
+        lockedSkip: false,
+      }),
+    ]);
     expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "once",
@@ -658,7 +669,7 @@ describe("/api/cron/strategy-replay", () => {
     );
   });
 
-  it("does not spend the inline cap on resident candidates that produce no output", async () => {
+  it("spends the inline cap on an attempted resident candidate that produces no output", async () => {
     const prewarmNow = Date.parse("2026-05-13T18:00:00.000Z");
     vi.setSystemTime(prewarmNow);
     runPmDecisionJobMock
@@ -702,13 +713,24 @@ describe("/api/cron/strategy-replay", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(payload.residentPrewarmGenerated).toBe(1);
+    expect(payload.residentPrewarmGenerated).toBe(0);
     expect(payload.pmDecisionInlineLimit).toEqual({
       limit: 1,
       used: 1,
-      deferredResidentCandidateKeys: [],
+      deferredResidentCandidateKeys: ["hotspot:utc:zh_CN:2026-05-13T18:market"],
       deferredBatch: true,
     });
+    expect(payload.residentPrewarmAttempts).toEqual([
+      expect.objectContaining({
+        candidateType: "market_overview",
+        candidateKey: "market_overview:utc:zh_CN:2026-05-13T18",
+        locale: "zh_CN",
+        why: "fixed_cadence",
+        outputCount: 0,
+        spentInlineSlot: true,
+        lockedSkip: false,
+      }),
+    ]);
     expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "once",
@@ -717,7 +739,7 @@ describe("/api/cron/strategy-replay", () => {
         }),
       }),
     );
-    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "once",
         candidate: expect.objectContaining({

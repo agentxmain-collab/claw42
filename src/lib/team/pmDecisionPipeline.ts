@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { generateText } from "@/lib/llm/generateText";
+import { parseJsonObjectWithRepair } from "@/lib/llm/jsonRepair";
 import {
   recordDecisionJudgeMetric,
   runDecisionJudge,
@@ -349,12 +350,7 @@ function buildPublicRewriteRetryInstruction() {
 }
 
 function parseObject(text: string): Record<string, unknown> {
-  const source = text.trim().match(/\{[\s\S]*\}/)?.[0] ?? text.trim();
-  const parsed = JSON.parse(source) as unknown;
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("LLM output must be a JSON object");
-  }
-  return parsed as Record<string, unknown>;
+  return parseJsonObjectWithRepair(text);
 }
 
 function ensureLocaleText(locale: Locale, fields: string[], label: string) {

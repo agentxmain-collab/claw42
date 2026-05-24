@@ -219,6 +219,9 @@ export async function GET(request: NextRequest) {
       deferredBatch: batchResult === null,
     },
     residentPrewarmCandidates: residentCandidates.map((candidate) => candidate.candidateKey),
+    residentPrewarmAttempts: residentPrewarmResults.map((result) =>
+      residentPrewarmAttemptTelemetry(result, residentPlan, locale),
+    ),
     residentPrewarmFixedCadenceCandidates: residentPlan.fixedCadenceCandidateKeys,
     residentPrewarmBackfillCandidates: residentPlan.backfillCandidateKeys,
     residentPrewarmBurst: {
@@ -393,7 +396,35 @@ function isLockedInlineSkip(result: DispatchPmDecisionJobResult) {
 function shouldSpendInlineSlot(result: DispatchPmDecisionJobResult) {
   if (result.queueResult.mode === "queue") return false;
   if (isLockedInlineSkip(result)) return false;
-  return result.outputs.length > 0;
+  return result.outputs.length > 0 || Boolean(result.job.candidate);
+}
+
+function residentPrewarmAttemptTelemetry(
+  result: DispatchPmDecisionJobResult,
+  plan: ReturnType<typeof residentPrewarmPlan>,
+  locale: ReturnType<typeof localeFromRequestUrl>,
+) {
+  const candidate = result.job.candidate;
+  return {
+    locale,
+    candidateType: candidate?.candidateType ?? null,
+    candidateKey: candidate?.candidateKey ?? null,
+    why: candidate ? residentPrewarmWhy(candidate, plan) : "unknown",
+    outputCount: result.outputs.length,
+    queueMode: result.queueResult.mode,
+    spentInlineSlot: shouldSpendInlineSlot(result),
+    lockedSkip: isLockedInlineSkip(result),
+  };
+}
+
+function residentPrewarmWhy(
+  candidate: NonNullable<DispatchPmDecisionJobResult["job"]["candidate"]>,
+  plan: ReturnType<typeof residentPrewarmPlan>,
+) {
+  if (plan.fixedCadenceCandidateKeys.includes(candidate.candidateKey)) return "fixed_cadence";
+  if (plan.backfillCandidateKeys.includes(candidate.candidateKey)) return "sla_backfill";
+  if (plan.burstCandidateKey === candidate.candidateKey) return "burst";
+  return "resident_prewarm";
 }
 
 async function resolveOpenPmDecisions(
