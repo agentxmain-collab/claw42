@@ -12,6 +12,7 @@ import {
   getLastDecisionRecordWriteDiagnostics,
   readAllDecisionRecords,
 } from "@/lib/team/decisionRecordStore";
+import { readDecisionRuns } from "@/lib/team/decisionRunLedger";
 import { resolveDecisionRecordFromPrice } from "@/lib/team/decisionResolution";
 import {
   summarizeProviderTelemetry,
@@ -193,6 +194,8 @@ export async function GET(request: NextRequest) {
     locale,
     pmDecisionOutputs,
   );
+  const decisionRunDiagnostics =
+    trigger === "now" ? await buildCronDecisionRunDiagnostics(locale) : undefined;
 
   return NextResponse.json({
     ok: true,
@@ -237,12 +240,44 @@ export async function GET(request: NextRequest) {
     providerTelemetry: trigger === "now" ? providerTelemetry : undefined,
     newsSourceHealth: trigger === "now" ? getNewsSourceHealthSnapshot() : undefined,
     decisionRecordDiagnostics,
+    decisionRunDiagnostics,
     resolvedPmDecisions,
     replayed: replayed.length,
     trigger,
     triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,
     servedAt: now,
   });
+}
+
+async function buildCronDecisionRunDiagnostics(locale: ReturnType<typeof localeFromRequestUrl>) {
+  try {
+    const runs = await readDecisionRuns({ locale, limit: 8 });
+    return runs.map((run) => ({
+      id: run.id,
+      status: run.status,
+      triggerSource: run.triggerSource,
+      candidateType: run.candidate?.candidateType ?? null,
+      candidateKey: run.candidate?.candidateKey ?? null,
+      symbol: run.symbol,
+      startedAt: run.startedAt,
+      completedAt: run.completedAt,
+      skipReason: run.skipReason ?? null,
+      decisionRecordId: run.decisionRecordId ?? null,
+      publicTimelineEventId: run.publicTimelineEventId ?? null,
+      quality: run.quality
+        ? {
+            score: run.quality.score,
+            publishable: run.quality.publishable,
+            warnings: run.quality.warnings,
+            blockingWarnings: run.quality.blockingWarnings,
+          }
+        : null,
+    }));
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 async function buildCronDecisionRecordDiagnostics(

@@ -14,6 +14,7 @@ const adjustDebtFromReplaysMock = vi.hoisted(() => vi.fn());
 const tryAcquireLockMock = vi.hoisted(() => vi.fn());
 const enqueuePmDecisionJobMock = vi.hoisted(() => vi.fn());
 const readPmDecisionJobsMock = vi.hoisted(() => vi.fn());
+const readDecisionRunsMock = vi.hoisted(() => vi.fn());
 const publishPmDecisionJobToQueueMock = vi.hoisted(() => vi.fn());
 const runPmDecisionJobMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
@@ -54,6 +55,10 @@ vi.mock("@/lib/storage/kv-lock", () => ({
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   enqueuePmDecisionJob: enqueuePmDecisionJobMock,
   readPmDecisionJobs: readPmDecisionJobsMock,
+}));
+
+vi.mock("@/lib/team/decisionRunLedger", () => ({
+  readDecisionRuns: readDecisionRunsMock,
 }));
 
 vi.mock("@/lib/team/pmDecisionJobQueue", () => ({
@@ -179,6 +184,7 @@ describe("/api/cron/strategy-replay", () => {
     tryAcquireLockMock.mockReset();
     enqueuePmDecisionJobMock.mockReset();
     readPmDecisionJobsMock.mockReset();
+    readDecisionRunsMock.mockReset();
     publishPmDecisionJobToQueueMock.mockReset();
     runPmDecisionJobMock.mockReset();
     readAllDecisionRecordsMock.mockReset();
@@ -224,6 +230,28 @@ describe("/api/cron/strategy-replay", () => {
       auditEventCount: 0,
     }));
     readPmDecisionJobsMock.mockResolvedValue([]);
+    readDecisionRunsMock.mockResolvedValue([
+      {
+        id: "run:pm:BTC:test",
+        status: "succeeded",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        candidate: { candidateType: "symbol", candidateKey: "BTC", displayTitle: "BTC" },
+        symbol: "BTC",
+        startedAt: "2026-05-13T20:00:00.000Z",
+        completedAt: "2026-05-13T20:01:00.000Z",
+        skipReason: null,
+        decisionRecordId: "pm:BTC:test",
+        publicTimelineEventId: "pm-decision:pm:BTC:test",
+        quality: {
+          schemaVersion: 1,
+          score: 90,
+          publishable: true,
+          warnings: [],
+          blockingWarnings: [],
+        },
+      },
+    ]);
     getDecisionRecordStoreDiagnosticsMock.mockResolvedValue({
       storageMode: "persistent",
       configuredStorageMode: "persistent",
@@ -353,6 +381,15 @@ describe("/api/cron/strategy-replay", () => {
         requestedRecordIdsPresent: ["pm:BTC:test"],
       }),
     });
+    expect(payload.decisionRunDiagnostics).toEqual([
+      expect.objectContaining({
+        status: "succeeded",
+        candidateType: "symbol",
+        decisionRecordId: "pm:BTC:test",
+        publicTimelineEventId: "pm-decision:pm:BTC:test",
+        quality: expect.objectContaining({ publishable: true }),
+      }),
+    ]);
     expect(getDecisionRecordStoreDiagnosticsMock).toHaveBeenCalledWith({
       locale: "zh_CN",
       symbols: ["BTC"],
