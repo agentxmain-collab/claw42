@@ -424,7 +424,12 @@
             "value": "∞",
             "label": "Memory"
           }
-        ]
+        ],
+        "readoutLabels": {
+          "id": "ID",
+          "role": "ROLE",
+          "stat": "STAT"
+        }
       },
       "tabs": {
         "flow": "Process",
@@ -656,7 +661,8 @@
         ],
         "footerStrong": "Every step has an owner",
         "footerText": "Every disagreement is recorded · every result is reviewed",
-        "footerCta": "View live AI team work →"
+        "footerCta": "View live AI team work →",
+        "vsLabel": "VS"
       },
       "market": {
         "ariaLabel": "AI team workspace",

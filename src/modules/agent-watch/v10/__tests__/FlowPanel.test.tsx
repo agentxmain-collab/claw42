@@ -16,6 +16,8 @@ describe("FlowPanel v10", () => {
     expect(html).toContain("交易策略总监");
     expect(html).toContain("首席投资官");
     expect(html).toContain("策略复盘主管");
+    expect(html).toContain("memory_loop.svg");
+    expect(html).toContain('class="vs"');
     expect(html).toContain("查看实时 AI 团队工作");
   });
 });

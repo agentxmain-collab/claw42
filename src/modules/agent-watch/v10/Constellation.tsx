@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useRef } from "react";
+import Image from "next/image";
 import type { DispatchV10Dict } from "@/i18n/types";
-import { heroAgents } from "./staticContent";
+import { coreRobotAvatarSrc, heroAgents } from "./staticContent";
 import { AgentNode } from "./AgentNode";
 import { useConstellationFocus } from "./useConstellationFocus";
 import { useReducedMotion } from "./useReducedMotion";
@@ -98,16 +99,36 @@ export function Constellation({ dict, active }: { dict: DispatchV10Dict; active:
             <span className="d1 ring" />
             <span className="d2 ring" />
             <div className="head">
+              <Image
+                className="core-avatar"
+                src={coreRobotAvatarSrc}
+                alt=""
+                aria-hidden="true"
+                decoding="async"
+                fill
+                sizes="140px"
+                unoptimized
+              />
               <div className="face">
                 <span className="eye" />
                 <span className="eye right" />
               </div>
             </div>
+            <span className="core-indicator">
+              <span />
+              <span />
+              <span />
+            </span>
             <div className="podium" />
           </div>
 
           {heroAgents.map((agent) => (
-            <AgentNode agent={agent} role={dict.roles[agent.id]} key={agent.id} />
+            <AgentNode
+              agent={agent}
+              role={dict.roles[agent.id]}
+              readoutLabels={dict.hero.readoutLabels}
+              key={agent.id}
+            />
           ))}
         </div>
       </div>

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-line · 14 symbol-eye variants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Noto+Sans+SC:wght@500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0817;--panel:#150f2e;--panel-2:#1d1640;
+    --fg:#fff;--fg-2:#a89dc8;--fg-3:#7e729f;
+    --line:rgba(255,255,255,0.08);--lime:#d1ff55;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse 80% 60% at 50% 0%, #2a1d54 0%, #1a1530 50%, #0a0817 100%);
+    color:var(--fg);
+    font-family:"Manrope","Noto Sans SC",system-ui,sans-serif;
+    min-height:100vh;padding:48px 32px 80px;
+  }
+  .shell{max-width:1480px;margin:0 auto;}
+
+  .doc-header{margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;}
+  .doc-header h1{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .doc-header .sub{color:var(--fg-2);font-size:13.5px;line-height:1.6;max-width:780px;margin:0;}
+  .doc-meta{display:flex;gap:12px;flex-wrap:wrap;}
+  .doc-meta-cell{background:var(--panel);border:1px solid var(--line);padding:10px 14px;border-radius:10px;}
+  .doc-meta-cell .k{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;color:var(--fg-3);text-transform:uppercase;font-weight:600;}
+  .doc-meta-cell .v{font-size:13px;font-weight:700;margin-top:3px;}
+  .doc-meta-cell .v.lime{color:var(--lime);}
+
+  .group{margin-bottom:36px;}
+  .group-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .group-head .num{
+    width:28px;height:28px;border-radius:7px;background:var(--panel-2);
+    display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:12px;color:var(--lime);
+    border:1px solid rgba(255,255,255,0.14);
+  }
+  .group-head h3{font-size:15px;font-weight:800;letter-spacing:-0.01em;margin:0;}
+  .group-head .gs{color:var(--fg-3);font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;margin-left:4px;font-weight:600;}
+
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  @media (max-width:1300px){.grid{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:960px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:520px){.grid{grid-template-columns:1fr;}}
+
+  .v-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;}
+  .v-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .v-id{font-family:var(--mono);font-size:9px;color:var(--fg-3);letter-spacing:0.08em;text-transform:uppercase;font-weight:600;display:block;}
+  .v-name{font-size:14px;font-weight:800;letter-spacing:-0.01em;margin:2px 0 0;}
+  .v-role{font-family:var(--mono);font-size:9px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px;font-weight:600;}
+  .v-badge{font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:0.1em;padding:3px 7px;border-radius:5px;white-space:nowrap;}
+  .v-stage{aspect-ratio:1;background:radial-gradient(ellipse 60% 70% at 50% 52%, #1c1248, #0e0826 60%, #050310 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.04);position:relative;overflow:hidden;}
+  .v-stage .scale{transform:scale(0.74);transform-origin:center center;}
+  .v-spec{font-family:var(--mono);font-size:10px;color:var(--fg-3);line-height:1.6;letter-spacing:0.02em;}
+  .v-spec b{color:var(--fg-2);font-weight:600;}
+
+  /* accents */
+  .a-fund{--accent:#6ba3d4;--accent-rgb:107,163,212;}
+  .a-news{--accent:#e89464;--accent-rgb:232,148,100;}
+  .a-chart{--accent:#d4b482;--accent-rgb:212,180,130;}
+  .a-onchain{--accent:#7dc488;--accent-rgb:125,196,136;}
+  .a-rlead{--accent:#b59ee0;--accent-rgb:181,158,224;}
+  .a-rklead{--accent:#d47a92;--accent-rgb:212,122,146;}
+  .a-pm{--accent:#d1ff55;--accent-rgb:209,255,85;}
+  .a-bull{--accent:#6dd49a;--accent-rgb:109,212,154;}
+  .a-bear{--accent:#e87a76;--accent-rgb:232,122,118;}
+  .a-trade{--accent:#6dc4d4;--accent-rgb:109,196,212;}
+  .a-aggr{--accent:#e89464;--accent-rgb:232,148,100;}
+  .a-neut{--accent:#a8a8b8;--accent-rgb:168,168,184;}
+  .a-cons{--accent:#7aa8d4;--accent-rgb:122,168,212;}
+  .a-mem{--accent:#9d8ed4;--accent-rgb:157,142,212;}
+
+  .v-badge.a-fund{background:rgba(107,163,212,0.18);color:#6ba3d4;}
+  .v-badge.a-news{background:rgba(232,148,100,0.18);color:#e89464;}
+  .v-badge.a-chart{background:rgba(212,180,130,0.18);color:#d4b482;}
+  .v-badge.a-onchain{background:rgba(125,196,136,0.18);color:#7dc488;}
+  .v-badge.a-rlead{background:rgba(181,158,224,0.18);color:#b59ee0;}
+  .v-badge.a-rklead{background:rgba(212,122,146,0.18);color:#d47a92;}
+  .v-badge.a-pm{background:rgba(209,255,85,0.18);color:#d1ff55;}
+  .v-badge.a-bull{background:rgba(109,212,154,0.18);color:#6dd49a;}
+  .v-badge.a-bear{background:rgba(232,122,118,0.18);color:#e87a76;}
+  .v-badge.a-trade{background:rgba(109,196,212,0.18);color:#6dc4d4;}
+  .v-badge.a-aggr{background:rgba(232,148,100,0.18);color:#e89464;}
+  .v-badge.a-neut{background:rgba(168,168,184,0.2);color:#c6c6d8;}
+  .v-badge.a-cons{background:rgba(122,168,212,0.18);color:#7aa8d4;}
+  .v-badge.a-mem{background:rgba(157,142,212,0.18);color:#9d8ed4;}
+
+  /* ─── canonical core ─── */
+  @keyframes eyeBlink{0%,92%,100%{transform:scaleY(1);}94%,96%{transform:scaleY(0.1);}}
+  @keyframes ringExpand{0%{opacity:0.7;transform:translate(-50%,-50%) scale(0.65);}100%{opacity:0;transform:translate(-50%,-50%) scale(2.4);}}
+  @keyframes coreFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+  @keyframes radarPing{0%{transform:scale(0.4);opacity:1;}100%{transform:scale(1.6);opacity:0;}}
+  @keyframes spinSlow{to{transform:rotate(360deg);}}
+  @keyframes flicker{0%,100%{opacity:1;}50%{opacity:0.55;}}
+
+  .core{position:relative;animation:coreFloat 5.4s ease-in-out infinite;}
+  .core .head{
+    width:200px;height:148px;border-radius:54px;
+    background:linear-gradient(180deg,#4a2f8c 0%,#2d1664 60%,#170a3f 100%);
+    border:2.5px solid rgba(var(--accent-rgb,209,255,85),0.6);
+    position:relative;
+    box-shadow:
+      0 0 60px rgba(var(--accent-rgb,209,255,85),0.32),
+      0 0 92px rgba(124,92,255,0.55),
+      0 28px 72px rgba(82,39,255,0.5),
+      inset 0 6px 0 rgba(255,255,255,0.18),
+      inset 0 -14px 28px rgba(82,39,255,0.35);
+  }
+  .core .head .ear{position:absolute;top:50%;transform:translateY(-50%);width:6px;height:42px;background:linear-gradient(180deg,#5a3aa8,#2d1664);border:1px solid rgba(var(--accent-rgb,209,255,85),0.45);z-index:-1;}
+  .core .head .ear::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:2.5px;height:16px;border-radius:1.5px;background:var(--accent);box-shadow:0 0 5px var(--accent);}
+  .core .head .ear.l{left:-7px;border-radius:8px 0 0 8px;border-right:none;}
+  .core .head .ear.r{right:-7px;border-radius:0 8px 8px 0;border-left:none;}
+  .core .head .foot{position:absolute;bottom:-7px;width:28px;height:14px;border-radius:0 0 14px 14px;background:linear-gradient(180deg,#3a2275,#1c0e4a);border:1.5px solid rgba(var(--accent-rgb,209,255,85),0.5);border-top:none;z-index:-1;}
+  .core .head .foot.l{left:44px;}
+  .core .head .foot.r{right:44px;}
+  .core .face{position:absolute;inset:14px;border-radius:42px;background:radial-gradient(ellipse at 50% 50%,#060a1c,#02030a 75%);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;gap:48px;overflow:hidden;box-shadow:inset 0 4px 12px rgba(0,0,0,0.5);}
+  .core .face::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(255,255,255,0.04) 3px,rgba(255,255,255,0.04) 4px);pointer-events:none;}
+  .core .podium{position:absolute;left:50%;bottom:-58px;transform:translateX(-50%);width:240px;height:46px;border-radius:50%;background:radial-gradient(ellipse at 50% 30%,rgba(124,92,255,0.78),rgba(124,92,255,0.08) 70%);filter:blur(0.4px);z-index:-1;}
+  .core .podium::before,.core .podium::after{content:"";position:absolute;left:50%;transform:translateX(-50%);border-radius:50%;}
+  .core .podium::before{width:216px;height:36px;top:8px;border:1px solid rgba(var(--accent-rgb,209,255,85),0.4);}
+  .core .podium::after{width:150px;height:22px;top:18px;border:1px solid rgba(124,92,255,0.6);}
+  .core .ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:200px;height:200px;border-radius:50%;border:1px solid rgba(var(--accent-rgb,209,255,85),0.36);animation:ringExpand 4s ease-out infinite;pointer-events:none;}
+  .core .ring.d1{animation-delay:1.3s;border-color:rgba(124,92,255,0.4);}
+  .core .ring.d2{animation-delay:2.6s;border-color:rgba(var(--accent-rgb,209,255,85),0.28);}
+
+  /* ━━━━━ Per-role symbol-eyes ━━━━━ */
+
+  /* shared blink wrapper */
+  .sym{animation:eyeBlink 4.6s ease-in-out infinite;}
+  .sym.right{animation-delay:0.05s;}
+  .sym svg{
+    width:32px;height:32px;display:block;
+    color:var(--accent);
+    filter:drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 14px rgba(var(--accent-rgb),0.5));
+  }
+  .sym svg.small{width:26px;height:26px;}
+  .sym svg.tall{width:24px;height:36px;}
+  .sym svg.wide{width:38px;height:24px;}
+
+  /* CHART · K-line candle (custom div, kept from batch 1) */
+  .a-chart .candle{width:20px;height:36px;position:relative;animation:eyeBlink 4.6s ease-in-out infinite;}
+  .a-chart .candle.right{animation-delay:0.05s;}
+  .a-chart .candle .wick{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);width:2px;background:var(--accent);box-shadow:0 0 6px var(--accent);}
+  .a-chart .candle .body{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:14px;height:20px;border-radius:2px;background:var(--accent);box-shadow:0 0 14px var(--accent),0 0 28px rgba(var(--accent-rgb),0.5);}
+  .a-chart .candle.right .body{top:4px;height:18px;}
+
+  /* BULL · ^ steep caret (kept, raised) */
+  .a-bull .face{align-items:flex-start;padding-top:30px;}
+  .a-bull .caret{width:30px;height:28px;position:relative;animation:eyeBlink 4.6s ease-in-out infinite;}
+  .a-bull .caret.right{animation-delay:0.05s;}
+  .a-bull .caret::before,.a-bull .caret::after{content:"";position:absolute;top:50%;width:18px;height:5px;border-radius:3px;background:var(--accent);box-shadow:0 0 10px var(--accent),0 0 20px rgba(var(--accent-rgb),0.5);}
+  .a-bull .caret::before{left:-1px;transform-origin:right center;transform:translateY(-50%) rotate(-55deg);}
+  .a-bull .caret::after{right:-1px;transform-origin:left center;transform:translateY(-50%) rotate(55deg);}
+
+  /* BEAR · v caret */
+  .a-bear .face{align-items:flex-end;padding-bottom:30px;}
+  .a-bear .caret{width:30px;height:28px;position:relative;animation:eyeBlink 4.6s ease-in-out infinite;}
+  .a-bear .caret.right{animation-delay:0.05s;}
+  .a-bear .caret::before,.a-bear .caret::after{content:"";position:absolute;top:50%;width:18px;height:5px;border-radius:3px;background:var(--accent);box-shadow:0 0 10px var(--accent),0 0 20px rgba(var(--accent-rgb),0.5);}
+  .a-bear .caret::before{left:-1px;transform-origin:right center;transform:translateY(-50%) rotate(40deg);}
+  .a-bear .caret::after{right:-1px;transform-origin:left center;transform:translateY(-50%) rotate(-40deg);}
+
+  /* ONCHAIN · multi-node chain */
+  .symbol-chain-multi{width:140px;height:28px;position:relative;color:var(--accent);filter:drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 14px rgba(var(--accent-rgb),0.5));animation:eyeBlink 4.6s ease-in-out infinite;}
+  .symbol-chain-multi .node{position:absolute;top:50%;transform:translateY(-50%);width:22px;height:22px;border:3px solid currentColor;border-radius:7px;background:rgba(13,8,32,0.4);}
+  .symbol-chain-multi .node.n1{left:0;}
+  .symbol-chain-multi .node.n2{left:40px;}
+  .symbol-chain-multi .node.n3{left:80px;}
+  .symbol-chain-multi .node.n4{left:120px;}
+  .symbol-chain-multi .link{position:absolute;top:50%;transform:translateY(-50%);height:3px;background:currentColor;box-shadow:0 0 4px currentColor;border-radius:1.5px;}
+  .symbol-chain-multi .link.l1{left:22px;width:18px;}
+  .symbol-chain-multi .link.l2{left:62px;width:18px;}
+  .symbol-chain-multi .link.l3{left:102px;width:18px;}
+
+  /* NEWS · radar ping */
+  .symbol-radar{width:40px;height:40px;position:relative;display:grid;place-items:center;color:var(--accent);filter:drop-shadow(0 0 6px var(--accent));}
+  .symbol-radar.right .ping{animation-delay:1s;}
+  .symbol-radar::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor;animation:eyeBlink 4.6s ease-in-out infinite;}
+  .symbol-radar::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid currentColor;opacity:0.45;}
+  .symbol-radar .ping{position:absolute;inset:0;border-radius:50%;border:2px solid currentColor;animation:radarPing 2.2s ease-out infinite;}
+  .symbol-radar .ping.p2{animation-delay:0.8s;}
+
+  /* PM · ★ star eyes */
+  .a-pm .head{border-width:3.5px;box-shadow:0 0 80px rgba(209,255,85,0.5),0 0 100px rgba(124,92,255,0.55),0 28px 72px rgba(82,39,255,0.5),inset 0 6px 0 rgba(255,255,255,0.22),inset 0 -14px 28px rgba(82,39,255,0.35);}
+
+  /* CONS · 🛡 shield -- subtle padlock cue (small ring on top) */
+
+  .footer-note{margin-top:24px;padding:20px;background:linear-gradient(135deg,rgba(209,255,85,0.06),rgba(82,39,255,0.04));border:1px solid rgba(209,255,85,0.18);border-radius:14px;color:var(--fg-2);font-size:12.5px;line-height:1.7;}
+  .footer-note b{color:#fff;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="doc-header">
+    <div>
+      <h1>14 角色 · symbol-eye 全套</h1>
+      <p class="sub">每个角色的双眼即"职能符号"。3 个已确认（fund $ / news radar / onchain chain）保留；新增其余 11 个继续遵循 canonical head + 符号化眼睛思路。</p>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-meta-cell"><div class="k">Variants</div><div class="v lime">14 / 14</div></div>
+      <div class="doc-meta-cell"><div class="k">Status</div><div class="v">Symbol-eye draft</div></div>
+    </div>
+  </header>
+
+  <!-- ANALYSTS (4) -->
+  <section class="group">
+    <div class="group-head"><div class="num">1</div><h3>Analysts</h3><span class="gs">数据收集层 · 4 角色</span></div>
+    <div class="grid">
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">01 · fundamental_analyst</span><h3 class="v-name">基本面研究员</h3><div class="v-role">FUND · $</div></div><span class="v-badge a-fund">$</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-fund">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym"><svg viewBox="0 0 32 36"><path d="M16 2 L16 34 M22 9 Q 22 4 16 4 Q 8 4 8 11 Q 8 17 16 18 Q 24 19 24 25 Q 24 32 16 32 Q 10 32 10 27" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span class="sym right"><svg viewBox="0 0 32 36"><path d="M16 2 L16 34 M22 9 Q 22 4 16 4 Q 8 4 8 11 Q 8 17 16 18 Q 24 19 24 25 Q 24 32 16 32 Q 10 32 10 27" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> $ · 双 $ 眼 · 财务/价值</div>
+      </article>
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">02 · news_analyst</span><h3 class="v-name">宏观新闻员</h3><div class="v-role">NEWS · ((●))</div></div><span class="v-badge a-news">N</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-news">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <div class="symbol-radar"><span class="ping"></span><span class="ping p2"></span></div>
+              <div class="symbol-radar right"><span class="ping"></span><span class="ping p2"></span></div>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> ((●)) · 雷达 ping 扩散</div>
+      </article>
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">03 · chart_analyst</span><h3 class="v-name">图表分析员</h3><div class="v-role">CHART · K</div></div><span class="v-badge a-chart">K</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-chart">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <div class="candle"><span class="wick"></span><span class="body"></span></div>
+              <div class="candle right"><span class="wick"></span><span class="body"></span></div>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> K 线烛形 · 2 根</div>
+      </article>
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">04 · onchain_analyst</span><h3 class="v-name">链上数据员</h3><div class="v-role">ONCHAIN · ⛓</div></div><span class="v-badge a-onchain">O</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-onchain">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face" style="gap:0;">
+              <div class="symbol-chain-multi">
+                <span class="node n1"></span><span class="link l1"></span>
+                <span class="node n2"></span><span class="link l2"></span>
+                <span class="node n3"></span><span class="link l3"></span>
+                <span class="node n4"></span>
+              </div>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> 多节链 · 4 节点 + 3 连接</div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- LEADS (2) -->
+  <section class="group">
+    <div class="group-head"><div class="num">2</div><h3>Leads</h3><span class="gs">研究主管 + 风险主管 · 2 角色</span></div>
+    <div class="grid">
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">05 · research_lead</span><h3 class="v-name">研究主管</h3><div class="v-role">RES LEAD · ▦</div></div><span class="v-badge a-rlead">RL</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-rlead">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym"><svg viewBox="0 0 36 32"><circle cx="14" cy="14" r="9" fill="none" stroke="currentColor" stroke-width="3"/><line x1="22" y1="22" x2="32" y2="30" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg></span>
+              <span class="sym right"><svg viewBox="0 0 36 32"><circle cx="14" cy="14" r="9" fill="none" stroke="currentColor" stroke-width="3"/><line x1="22" y1="22" x2="32" y2="30" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> 🔍 放大镜 · 研究 / 审查</div>
+      </article>
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">06 · risk_lead</span><h3 class="v-name">风险主管</h3><div class="v-role">RISK LEAD · △!</div></div><span class="v-badge a-rklead">RK</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-rklead">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym"><svg viewBox="0 0 32 32"><path d="M16 4 L29 27 L3 27 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><line x1="16" y1="13" x2="16" y2="20" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="24" r="1.5" fill="currentColor"/></svg></span>
+              <span class="sym right"><svg viewBox="0 0 32 32"><path d="M16 4 L29 27 L3 27 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><line x1="16" y1="13" x2="16" y2="20" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="24" r="1.5" fill="currentColor"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> ⚠ 警示三角 + 感叹</div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- PM -->
+  <section class="group">
+    <div class="group-head"><div class="num">3</div><h3>Portfolio Manager</h3><span class="gs">最终决策 · 1 角色 · 三状态表情（批准 / 警示 / 否决）</span></div>
+    <div class="grid">
+      <article class="v-card" style="background:linear-gradient(180deg,rgba(109,212,154,0.05),var(--panel));border-color:rgba(109,212,154,0.22);">
+        <div class="v-head"><div><span class="v-id">07 · pm · approve</span><h3 class="v-name">投资经理 · 批准</h3><div class="v-role">PM · ✓</div></div><span class="v-badge" style="background:rgba(109,212,154,0.18);color:#6dd49a;">✓</span></div>
+        <div class="v-stage"><div class="scale"><div class="core" style="--accent:#6dd49a;--accent-rgb:109,212,154;">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head" style="border-width:3.5px;">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym"><svg viewBox="0 0 32 32"><path d="M5 17 L13 25 L27 9" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span class="sym right"><svg viewBox="0 0 32 32"><path d="M5 17 L13 25 L27 9" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>State</b> approve · 决策通过<br/><b>Symbol</b> ✓ 绿色勾</div>
+      </article>
+
+      <article class="v-card" style="background:linear-gradient(180deg,rgba(254,213,0,0.05),var(--panel));border-color:rgba(254,213,0,0.22);">
+        <div class="v-head"><div><span class="v-id">07 · pm · caution</span><h3 class="v-name">投资经理 · 警示</h3><div class="v-role">PM · !</div></div><span class="v-badge" style="background:rgba(254,213,0,0.18);color:#fed500;">!</span></div>
+        <div class="v-stage"><div class="scale"><div class="core" style="--accent:#fed500;--accent-rgb:254,213,0;">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head" style="border-width:3.5px;">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym"><svg viewBox="0 0 12 32"><rect x="3" y="4" width="6" height="16" rx="3" fill="currentColor"/><circle cx="6" cy="26" r="3" fill="currentColor"/></svg></span>
+              <span class="sym right"><svg viewBox="0 0 12 32"><rect x="3" y="4" width="6" height="16" rx="3" fill="currentColor"/><circle cx="6" cy="26" r="3" fill="currentColor"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>State</b> caution · 中性 / 待定<br/><b>Symbol</b> ! 黄色感叹号</div>
+      </article>
+
+      <article class="v-card" style="background:linear-gradient(180deg,rgba(232,122,118,0.05),var(--panel));border-color:rgba(232,122,118,0.22);">
+        <div class="v-head"><div><span class="v-id">07 · pm · reject</span><h3 class="v-name">投资经理 · 否决</h3><div class="v-role">PM · ✗</div></div><span class="v-badge" style="background:rgba(232,122,118,0.18);color:#e87a76;">✗</span></div>
+        <div class="v-stage"><div class="scale"><div class="core" style="--accent:#e87a76;--accent-rgb:232,122,118;">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head" style="border-width:3.5px;">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym"><svg viewBox="0 0 32 32"><path d="M7 7 L25 25 M25 7 L7 25" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></span>
+              <span class="sym right"><svg viewBox="0 0 32 32"><path d="M7 7 L25 25 M25 7 L7 25" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>State</b> reject · 决策否决<br/><b>Symbol</b> ✗ 红色叉</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- STRATEGISTS -->
+  <section class="group">
+    <div class="group-head"><div class="num">4</div><h3>Strategists</h3><span class="gs">多头 / 空头 / 交易员 · 3 角色</span></div>
+    <div class="grid">
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">08 · bullish_researcher</span><h3 class="v-name">多头研究员</h3><div class="v-role">BULL · ↑</div></div><span class="v-badge a-bull">↑</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-bull">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <div class="caret"></div><div class="caret right"></div>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> ^ 上扬人字 · 高位</div>
+      </article>
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">09 · bearish_researcher</span><h3 class="v-name">空头研究员</h3><div class="v-role">BEAR · ↓</div></div><span class="v-badge a-bear">↓</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-bear">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <div class="caret"></div><div class="caret right"></div>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> v 下垂 · 低位</div>
+      </article>
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">10 · trader</span><h3 class="v-name">交易员</h3><div class="v-role">TRADER · ⇄</div></div><span class="v-badge a-trade">⇄</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-trade">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym"><svg viewBox="0 0 36 32"><path d="M4 10 L28 10 M22 5 L28 10 L22 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 22 L8 22 M14 17 L8 22 L14 27" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span class="sym right"><svg viewBox="0 0 36 32"><path d="M4 10 L28 10 M22 5 L28 10 L22 15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 22 L8 22 M14 17 L8 22 L14 27" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> ⇄ 双向箭头 · 买卖</div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- REVIEWERS -->
+  <section class="group">
+    <div class="group-head"><div class="num">5</div><h3>Reviewers</h3><span class="gs">进攻 / 中性 / 保守 · 3 角色</span></div>
+    <div class="grid">
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">11 · aggressive_reviewer</span><h3 class="v-name">进攻审视员</h3><div class="v-role">AGGR · ⚡</div></div><span class="v-badge a-aggr">⚡</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-aggr">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym" style="animation:flicker 1.4s ease-in-out infinite;"><svg viewBox="0 0 24 36"><path d="M14 2 L4 20 L11 20 L8 34 L20 14 L13 14 L16 2 Z" fill="currentColor"/></svg></span>
+              <span class="sym right" style="animation:flicker 1.4s ease-in-out infinite;animation-delay:0.2s;"><svg viewBox="0 0 24 36"><path d="M14 2 L4 20 L11 20 L8 34 L20 14 L13 14 L16 2 Z" fill="currentColor"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> ⚡ 闪电 · 突进 · 闪烁</div>
+      </article>
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">12 · neutral_reviewer</span><h3 class="v-name">中性审视员</h3><div class="v-role">NEUTRAL · =</div></div><span class="v-badge a-neut">=</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-neut">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym"><svg viewBox="0 0 32 32"><line x1="4" y1="12" x2="28" y2="12" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><line x1="4" y1="20" x2="28" y2="20" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span>
+              <span class="sym right"><svg viewBox="0 0 32 32"><line x1="4" y1="12" x2="28" y2="12" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><line x1="4" y1="20" x2="28" y2="20" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> = 双横线 · 平衡 · 中立</div>
+      </article>
+
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">13 · conservative_reviewer</span><h3 class="v-name">保守审视员</h3><div class="v-role">CONS · ▽</div></div><span class="v-badge a-cons">C</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-cons">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym"><svg viewBox="0 0 32 32"><path d="M16 4 Q 6 4 6 14 L 6 20 Q 6 27 16 30 Q 26 27 26 20 L 26 14 Q 26 4 16 4 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg></span>
+              <span class="sym right"><svg viewBox="0 0 32 32"><path d="M16 4 Q 6 4 6 14 L 6 20 Q 6 27 16 30 Q 26 27 26 20 L 26 14 Q 26 4 16 4 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> 🛡 盾形 · 防御</div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- MEMORY -->
+  <section class="group">
+    <div class="group-head"><div class="num">6</div><h3>Memory Loop</h3><span class="gs">系统级长期记忆 · 1 角色</span></div>
+    <div class="grid">
+      <article class="v-card" style="background:linear-gradient(180deg,rgba(157,142,212,0.05),var(--panel));">
+        <div class="v-head"><div><span class="v-id">14 · memory_loop</span><h3 class="v-name">记忆回路</h3><div class="v-role">MEMORY · ⟲</div></div><span class="v-badge a-mem">⟲</span></div>
+        <div class="v-stage"><div class="scale"><div class="core a-mem">
+          <span class="ring"></span><span class="ring d1"></span><span class="ring d2"></span>
+          <div class="head">
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face">
+              <span class="sym" style="animation:spinSlow 8s linear infinite;"><svg viewBox="0 0 32 32"><path d="M28 16 A12 12 0 1 1 16 4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M22 4 L28 4 L28 10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span class="sym right" style="animation:spinSlow 8s linear infinite reverse;"><svg viewBox="0 0 32 32"><path d="M28 16 A12 12 0 1 1 16 4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M22 4 L28 4 L28 10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            </div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div><div class="podium"></div>
+        </div></div></div>
+        <div class="v-spec"><b>Symbol</b> ⟲ 循环箭头 · 旋转</div>
+      </article>
+    </div>
+  </section>
+
+  <section class="footer-note">
+    <p><b>14 个 variant 全部用"符号即眼睛"完成。</b>请审：</p>
+    <p style="margin-top:8px;">
+    · Analysts: <b>$ / radar / K / 链节</b><br/>
+    · Leads: <b>田字 4 窗 / ⚠</b><br/>
+    · PM: <b>★</b>（加粗描边）<br/>
+    · Strategists: <b>^ / v / ⇄</b><br/>
+    · Reviewers: <b>⚡ / = / 🛡</b><br/>
+    · Memory: <b>⟲</b>（旋转）</p>
+    <p style="margin-top:14px;">哪些需要换符号 / 调粗细 / 改颜色？哪个角色觉得指向最不清晰？</p>
+  </section>
+
+</div>
+</body>
+</html>

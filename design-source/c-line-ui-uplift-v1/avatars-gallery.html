@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-line · SVG avatars gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Noto+Sans+SC:wght@500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0817;--panel:#150f2e;--panel-2:#1d1640;
+    --fg:#fff;--fg-2:#a89dc8;--fg-3:#7e729f;
+    --line:rgba(255,255,255,0.08);--lime:#d1ff55;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse 80% 60% at 50% 0%, #2a1d54 0%, #1a1530 50%, #0a0817 100%);
+    color:var(--fg);
+    font-family:"Manrope","Noto Sans SC",system-ui,sans-serif;
+    min-height:100vh;padding:48px 32px 80px;
+  }
+  .shell{max-width:1480px;margin:0 auto;}
+
+  .doc-header{margin-bottom:32px;display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;}
+  .doc-header h1{font-size:30px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .doc-header .sub{color:var(--fg-2);font-size:13.5px;line-height:1.6;max-width:760px;margin:0;}
+  .doc-meta{display:flex;gap:12px;flex-wrap:wrap;}
+  .doc-meta-cell{background:var(--panel);border:1px solid var(--line);padding:10px 14px;border-radius:10px;}
+  .doc-meta-cell .k{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;color:var(--fg-3);text-transform:uppercase;font-weight:600;}
+  .doc-meta-cell .v{font-size:13px;font-weight:700;margin-top:3px;}
+  .doc-meta-cell .v.lime{color:var(--lime);}
+
+  .group{margin-bottom:36px;}
+  .group-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .group-head .num{
+    width:28px;height:28px;border-radius:7px;background:var(--panel-2);
+    display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:12px;color:var(--lime);
+    border:1px solid rgba(255,255,255,0.14);
+  }
+  .group-head h3{font-size:15px;font-weight:800;margin:0;}
+  .group-head .gs{color:var(--fg-3);font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;margin-left:4px;font-weight:600;}
+
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  @media (max-width:1300px){.grid{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:960px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:520px){.grid{grid-template-columns:1fr;}}
+
+  .v-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;}
+  .v-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .v-id{font-family:var(--mono);font-size:9px;color:var(--fg-3);letter-spacing:0.08em;text-transform:uppercase;font-weight:600;display:block;}
+  .v-name{font-size:14px;font-weight:800;margin:2px 0 0;}
+  .v-role{font-family:var(--mono);font-size:9px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px;font-weight:600;}
+  .v-stage{aspect-ratio:1.1;background:radial-gradient(ellipse 60% 70% at 50% 52%, #1c1248, #0e0826 60%, #050310 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.04);position:relative;overflow:hidden;padding:12px;}
+  .v-stage img{width:88%;height:88%;display:block;object-fit:contain;}
+  .v-spec{font-family:var(--mono);font-size:10px;color:var(--fg-3);line-height:1.6;}
+  .v-spec b{color:var(--fg-2);font-weight:600;}
+
+  .footer-note{margin-top:24px;padding:20px;background:linear-gradient(135deg,rgba(209,255,85,0.06),rgba(82,39,255,0.04));border:1px solid rgba(209,255,85,0.18);border-radius:14px;color:var(--fg-2);font-size:12.5px;line-height:1.7;}
+  .footer-note b{color:#fff;}
+  .footer-note code{font-family:var(--mono);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:11.5px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="doc-header">
+    <div>
+      <h1>SVG avatars · 入库预览</h1>
+      <p class="sub">14 角色 + PM 3 状态 = 16 个独立 SVG 文件，已写入 <code style="font-family:var(--mono);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;">claw42/design-source/c-line-ui-uplift-v1/avatars/</code>，按 actual id 命名。每个 SVG 自包含、220×190 viewBox、纯 vector、可直接被 dispatch SVG 体系 import。</p>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-meta-cell"><div class="k">Files</div><div class="v lime">16 SVG</div></div>
+      <div class="doc-meta-cell"><div class="k">ViewBox</div><div class="v">220 × 190</div></div>
+      <div class="doc-meta-cell"><div class="k">Status</div><div class="v">Inventoried</div></div>
+    </div>
+  </header>
+
+  <!-- ANALYSTS -->
+  <section class="group">
+    <div class="group-head"><div class="num">1</div><h3>Analysts</h3><span class="gs">数据收集层 · 4 角色</span></div>
+    <div class="grid">
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">01 · fundamental_analyst</span><h3 class="v-name">基本面研究员</h3><div class="v-role">FUND · $</div></div></div>
+        <div class="v-stage"><img src="avatars/fundamental_analyst.svg" alt="fund"/></div>
+        <div class="v-spec"><b>Accent</b> #6ba3d4 · <b>Symbol</b> $</div>
+      </article>
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">02 · news_analyst</span><h3 class="v-name">宏观新闻员</h3><div class="v-role">NEWS · ((●))</div></div></div>
+        <div class="v-stage"><img src="avatars/news_analyst.svg" alt="news"/></div>
+        <div class="v-spec"><b>Accent</b> #e89464 · <b>Symbol</b> radar ping</div>
+      </article>
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">03 · chart_analyst</span><h3 class="v-name">图表分析员</h3><div class="v-role">CHART · K</div></div></div>
+        <div class="v-stage"><img src="avatars/chart_analyst.svg" alt="chart"/></div>
+        <div class="v-spec"><b>Accent</b> #d4b482 · <b>Symbol</b> K 线</div>
+      </article>
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">04 · onchain_analyst</span><h3 class="v-name">链上数据员</h3><div class="v-role">ONCHAIN · ⛓</div></div></div>
+        <div class="v-stage"><img src="avatars/onchain_analyst.svg" alt="onchain"/></div>
+        <div class="v-spec"><b>Accent</b> #7dc488 · <b>Symbol</b> 多节链</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- LEADS -->
+  <section class="group">
+    <div class="group-head"><div class="num">2</div><h3>Leads</h3><span class="gs">研究主管 + 风险主管</span></div>
+    <div class="grid">
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">05 · research_lead</span><h3 class="v-name">研究主管</h3><div class="v-role">RES LEAD · 🔍</div></div></div>
+        <div class="v-stage"><img src="avatars/research_lead.svg" alt="rlead"/></div>
+        <div class="v-spec"><b>Accent</b> #b59ee0 · <b>Symbol</b> 放大镜</div>
+      </article>
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">06 · risk_lead</span><h3 class="v-name">风险主管</h3><div class="v-role">RISK · ⚠</div></div></div>
+        <div class="v-stage"><img src="avatars/risk_lead.svg" alt="rklead"/></div>
+        <div class="v-spec"><b>Accent</b> #d47a92 · <b>Symbol</b> 警示三角</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- PM 3 STATES -->
+  <section class="group">
+    <div class="group-head"><div class="num">3</div><h3>Portfolio Manager</h3><span class="gs">07 · pm · 3 状态（批准 / 警示 / 否决）</span></div>
+    <div class="grid">
+      <article class="v-card" style="background:linear-gradient(180deg,rgba(109,212,154,0.05),var(--panel));border-color:rgba(109,212,154,0.22);">
+        <div class="v-head"><div><span class="v-id">07a · pm-approve</span><h3 class="v-name">投资经理 · 批准</h3><div class="v-role">PM · ✓</div></div></div>
+        <div class="v-stage"><img src="avatars/pm-approve.svg" alt="pm-approve"/></div>
+        <div class="v-spec"><b>Accent</b> #6dd49a · <b>Symbol</b> ✓</div>
+      </article>
+      <article class="v-card" style="background:linear-gradient(180deg,rgba(254,213,0,0.05),var(--panel));border-color:rgba(254,213,0,0.22);">
+        <div class="v-head"><div><span class="v-id">07b · pm-caution</span><h3 class="v-name">投资经理 · 警示</h3><div class="v-role">PM · !</div></div></div>
+        <div class="v-stage"><img src="avatars/pm-caution.svg" alt="pm-caution"/></div>
+        <div class="v-spec"><b>Accent</b> #fed500 · <b>Symbol</b> !</div>
+      </article>
+      <article class="v-card" style="background:linear-gradient(180deg,rgba(232,122,118,0.05),var(--panel));border-color:rgba(232,122,118,0.22);">
+        <div class="v-head"><div><span class="v-id">07c · pm-reject</span><h3 class="v-name">投资经理 · 否决</h3><div class="v-role">PM · ✗</div></div></div>
+        <div class="v-stage"><img src="avatars/pm-reject.svg" alt="pm-reject"/></div>
+        <div class="v-spec"><b>Accent</b> #e87a76 · <b>Symbol</b> ✗</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- STRATEGISTS -->
+  <section class="group">
+    <div class="group-head"><div class="num">4</div><h3>Strategists</h3><span class="gs">多头 / 空头 / 交易员</span></div>
+    <div class="grid">
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">08 · bullish_researcher</span><h3 class="v-name">多头研究员</h3><div class="v-role">BULL · ↑</div></div></div>
+        <div class="v-stage"><img src="avatars/bullish_researcher.svg" alt="bull"/></div>
+        <div class="v-spec"><b>Accent</b> #6dd49a · <b>Symbol</b> ^</div>
+      </article>
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">09 · bearish_researcher</span><h3 class="v-name">空头研究员</h3><div class="v-role">BEAR · ↓</div></div></div>
+        <div class="v-stage"><img src="avatars/bearish_researcher.svg" alt="bear"/></div>
+        <div class="v-spec"><b>Accent</b> #e87a76 · <b>Symbol</b> v</div>
+      </article>
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">10 · trader</span><h3 class="v-name">交易员</h3><div class="v-role">TRADER · ⇄</div></div></div>
+        <div class="v-stage"><img src="avatars/trader.svg" alt="trade"/></div>
+        <div class="v-spec"><b>Accent</b> #6dc4d4 · <b>Symbol</b> ⇄</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- REVIEWERS -->
+  <section class="group">
+    <div class="group-head"><div class="num">5</div><h3>Reviewers</h3><span class="gs">进攻 / 中性 / 保守</span></div>
+    <div class="grid">
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">11 · aggressive_reviewer</span><h3 class="v-name">进攻审视员</h3><div class="v-role">AGGR · ⚡</div></div></div>
+        <div class="v-stage"><img src="avatars/aggressive_reviewer.svg" alt="aggr"/></div>
+        <div class="v-spec"><b>Accent</b> #e89464 · <b>Symbol</b> ⚡</div>
+      </article>
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">12 · neutral_reviewer</span><h3 class="v-name">中性审视员</h3><div class="v-role">NEUT · =</div></div></div>
+        <div class="v-stage"><img src="avatars/neutral_reviewer.svg" alt="neut"/></div>
+        <div class="v-spec"><b>Accent</b> #a8a8b8 · <b>Symbol</b> =</div>
+      </article>
+      <article class="v-card">
+        <div class="v-head"><div><span class="v-id">13 · conservative_reviewer</span><h3 class="v-name">保守审视员</h3><div class="v-role">CONS · 🛡</div></div></div>
+        <div class="v-stage"><img src="avatars/conservative_reviewer.svg" alt="cons"/></div>
+        <div class="v-spec"><b>Accent</b> #7aa8d4 · <b>Symbol</b> 🛡</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- MEMORY -->
+  <section class="group">
+    <div class="group-head"><div class="num">6</div><h3>Memory Loop</h3><span class="gs">系统级长期记忆</span></div>
+    <div class="grid">
+      <article class="v-card" style="background:linear-gradient(180deg,rgba(157,142,212,0.05),var(--panel));">
+        <div class="v-head"><div><span class="v-id">14 · memory_loop</span><h3 class="v-name">记忆回路</h3><div class="v-role">MEMORY · ⟲</div></div></div>
+        <div class="v-stage"><img src="avatars/memory_loop.svg" alt="mem"/></div>
+        <div class="v-spec"><b>Accent</b> #9d8ed4 · <b>Symbol</b> ⟲</div>
+      </article>
+    </div>
+  </section>
+
+  <section class="footer-note">
+    <p><b>已落地 16 个 SVG 文件 + 1 个 README.md。</b> 请审 SVG 渲染是否一致（注意：SVG 是静态版本，不含动画；HTML 预览的 ping/blink/spin 在 SVG 内通过 SMIL <code>&lt;animate&gt;</code> 保留了 radar 雷达的动画，其他需要前端补 CSS）。</p>
+    <p style="margin-top:14px;"><b>下一步</b>：进入 ② Hero/Flow CSS 体系决策（A 保留 CSS variant / B 换 SVG，推荐 + 理由）。</p>
+  </section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>bot-avatar-v1 · canonical base</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Noto+Sans+SC:wght@500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0817;
+    --panel:#150f2e;
+    --panel-2:#1d1640;
+    --fg:#fff;
+    --fg-2:#a89dc8;
+    --fg-3:#7e729f;
+    --line:rgba(255,255,255,0.08);
+    --line-2:rgba(255,255,255,0.14);
+    --lime:#d1ff55;
+    --purple:#5227ff;
+    --purple-2:#7c5cff;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse 80% 60% at 50% 0%, #2a1d54 0%, #1a1530 50%, #0a0817 100%);
+    color:var(--fg);
+    font-family:"Manrope","Noto Sans SC",system-ui,sans-serif;
+    min-height:100vh;
+    padding:48px 32px 80px;
+  }
+  .shell{max-width:1360px;margin:0 auto;}
+
+  .doc-header{margin-bottom:36px;display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;}
+  .doc-header h1{font-size:30px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .doc-header .sub{color:var(--fg-2);font-size:13.5px;line-height:1.6;max-width:680px;margin:0;}
+  .doc-meta{display:flex;gap:12px;flex-wrap:wrap;}
+  .doc-meta-cell{
+    background:var(--panel);border:1px solid var(--line);
+    padding:10px 14px;border-radius:10px;
+  }
+  .doc-meta-cell .k{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;color:var(--fg-3);text-transform:uppercase;font-weight:600;}
+  .doc-meta-cell .v{font-size:13px;font-weight:700;margin-top:3px;}
+  .doc-meta-cell .v.lime{color:var(--lime);}
+
+  /* hero stage */
+  .hero{
+    background:radial-gradient(ellipse 60% 70% at 50% 50%, rgba(82,39,255,0.16), transparent 70%);
+    border:1px solid var(--line);
+    border-radius:24px;
+    padding:48px;
+    margin-bottom:32px;
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:48px;
+    align-items:center;
+  }
+  @media (max-width:920px){.hero{grid-template-columns:1fr;}}
+
+  .hero-stage{
+    width:520px;height:520px;
+    background:radial-gradient(ellipse 60% 70% at 50% 52%, #1c1248, #0e0826 60%, #050310 100%);
+    border-radius:20px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid rgba(209,255,85,0.08);
+    position:relative;overflow:hidden;
+  }
+  @media (max-width:920px){.hero-stage{width:100%;max-width:520px;height:auto;aspect-ratio:1;margin:0 auto;}}
+
+  /* ── CANONICAL CORE ROBOT (V10 base, no antenna, landscape body) ── */
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;}
+  .core .head{
+    width:200px;height:148px;border-radius:54px;
+    background:linear-gradient(180deg, #4a2f8c 0%, #2d1664 60%, #170a3f 100%);
+    border:2.5px solid rgba(209,255,85,0.55);
+    position:relative;
+    box-shadow:
+      0 0 60px rgba(209,255,85,0.32),
+      0 0 92px rgba(124,92,255,0.55),
+      0 28px 72px rgba(82,39,255,0.5),
+      inset 0 6px 0 rgba(255,255,255,0.18),
+      inset 0 -14px 28px rgba(82,39,255,0.35);
+  }
+  /* tiny side ears (smaller, outer rounded only) */
+  .core .head .ear{
+    position:absolute;top:50%;transform:translateY(-50%);
+    width:6px;height:42px;
+    background:linear-gradient(180deg, #5a3aa8, #2d1664);
+    border:1px solid rgba(209,255,85,0.42);
+    z-index:-1;
+  }
+  .core .head .ear::after{
+    content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:2.5px;height:16px;border-radius:1.5px;
+    background:#7ee0ff;
+    box-shadow:0 0 5px #7ee0ff;
+  }
+  .core .head .ear.l{left:-7px;border-radius:8px 0 0 8px;border-right:none;}
+  .core .head .ear.r{right:-7px;border-radius:0 8px 8px 0;border-left:none;}
+  /* tiny feet (small arcs peeking from BEHIND the body) */
+  .core .head .foot{
+    position:absolute;bottom:-7px;width:28px;height:14px;
+    border-radius:0 0 14px 14px;
+    background:linear-gradient(180deg,#3a2275,#1c0e4a);
+    border:1.5px solid rgba(209,255,85,0.45);
+    border-top:none;
+    z-index:-1;
+  }
+  .core .head .foot.l{left:44px;}
+  .core .head .foot.r{right:44px;}
+  /* enlarged face screen — even inset on all 4 sides */
+  .core .face{
+    position:absolute;inset:14px 14px;border-radius:42px;
+    background:radial-gradient(ellipse at 50% 50%, #060a1c, #02030a 75%);
+    border:1px solid rgba(255,255,255,0.08);
+    display:flex;align-items:center;justify-content:center;gap:48px;
+    overflow:hidden;
+    box-shadow:inset 0 4px 12px rgba(0,0,0,0.5);
+  }
+  .core .face::before{
+    content:"";position:absolute;inset:0;
+    background:repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 4px);
+    pointer-events:none;
+  }
+  .core .eye{
+    width:20px;height:26px;border-radius:10px;
+    background:#7ee0ff;
+    box-shadow:0 0 18px #7ee0ff, 0 0 36px rgba(126,224,255,0.55);
+    animation:eyeBlink 4.6s ease-in-out infinite;
+  }
+  .core .eye.right{animation-delay:0.05s;}
+  @keyframes eyeBlink{0%,92%,100%{transform:scaleY(1);}94%,96%{transform:scaleY(0.1);}}
+  .core .podium{
+    position:absolute;left:50%;bottom:-58px;transform:translateX(-50%);
+    width:240px;height:46px;border-radius:50%;
+    background:radial-gradient(ellipse at 50% 30%, rgba(124,92,255,0.78), rgba(124,92,255,0.08) 70%);
+    filter:blur(0.4px);z-index:-1;
+  }
+  .core .podium::before,.core .podium::after{
+    content:"";position:absolute;left:50%;transform:translateX(-50%);border-radius:50%;
+  }
+  .core .podium::before{width:216px;height:36px;top:8px;border:1px solid rgba(209,255,85,0.36);}
+  .core .podium::after{width:150px;height:22px;top:18px;border:1px solid rgba(124,92,255,0.6);}
+
+  /* core breathing aura — multi-ring */
+  .core .ring{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:200px;height:200px;border-radius:50%;
+    border:1px solid rgba(209,255,85,0.34);
+    animation:ringExpand 4s ease-out infinite;
+    pointer-events:none;
+  }
+  .core .ring.d1{animation-delay:1.3s;border-color:rgba(124,92,255,0.4);}
+  .core .ring.d2{animation-delay:2.6s;border-color:rgba(209,255,85,0.26);}
+  @keyframes ringExpand{
+    0%{opacity:0.7;transform:translate(-50%,-50%) scale(0.65);}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(2.4);}
+  }
+  .core{animation:coreFloat 5.4s ease-in-out infinite;}
+  @keyframes coreFloat{0%,100%{transform:translate(-50%,-50%) translateY(0);}50%{transform:translate(-50%,-50%) translateY(-8px);}}
+
+  /* ──────────────────────────────────────────────────────────── */
+
+  .hero-info h2{font-size:22px;font-weight:800;letter-spacing:-0.02em;margin:0 0 6px;}
+  .hero-info .canon-id{
+    font-family:var(--mono);font-size:11px;color:var(--lime);
+    letter-spacing:0.14em;text-transform:uppercase;font-weight:700;margin-bottom:16px;
+  }
+  .hero-info p{color:var(--fg-2);font-size:13.5px;line-height:1.7;margin:0 0 20px;}
+  .hero-info .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px;}
+  .tag{
+    font-family:var(--mono);font-size:10px;font-weight:600;padding:4px 8px;border-radius:5px;
+    background:rgba(255,255,255,0.06);color:var(--fg-2);letter-spacing:0.06em;
+  }
+
+  /* SIZES row */
+  .sizes-section{margin-bottom:32px;}
+  .sec-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .sec-head .num{
+    width:28px;height:28px;border-radius:7px;background:var(--panel-2);
+    display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:12px;color:var(--lime);
+    border:1px solid var(--line-2);
+  }
+  .sec-head h3{font-size:15px;font-weight:800;letter-spacing:-0.01em;margin:0;}
+  .sec-head .sub{color:var(--fg-3);font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;margin-left:4px;font-weight:600;}
+
+  .sizes-row{
+    display:flex;gap:32px;flex-wrap:wrap;align-items:flex-end;justify-content:flex-start;
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:32px 24px;
+  }
+  .sz-cell{display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .sz-stage{
+    background:radial-gradient(ellipse at 50% 50%, #1c1248, #0a0617);
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--line);
+    position:relative;overflow:hidden;
+  }
+  .sz-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-3);font-weight:600;}
+
+  /* size-specific core scaling (uniform scale of full structure) */
+  .sz-stage .core{position:relative;left:auto;top:auto;transform:none;animation:none;}
+  .sz-stage .core .head{margin:0 auto;}
+  .sz-stage.s-1 { width:280px;height:280px; } .sz-stage.s-1 .core { transform:scale(1); }
+  .sz-stage.s-2 { width:200px;height:200px; } .sz-stage.s-2 .core { transform:scale(0.7); }
+  .sz-stage.s-3 { width:140px;height:140px; } .sz-stage.s-3 .core { transform:scale(0.5); }
+  .sz-stage.s-4 { width:92px;height:92px; } .sz-stage.s-4 .core { transform:scale(0.32); }
+
+  /* SPEC + RULES */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:32px;}
+  @media (max-width:760px){.grid-2{grid-template-columns:1fr;}}
+  .spec-card{
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:24px;
+  }
+  .spec-card h4{font-size:13px;font-weight:800;letter-spacing:-0.005em;margin:0 0 16px;}
+  .spec-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12px;}
+  .spec-row:last-child{border-bottom:none;}
+  .spec-row .k{font-family:var(--mono);font-size:10.5px;color:var(--fg-3);letter-spacing:0.06em;font-weight:600;}
+  .spec-row .v{font-family:var(--mono);font-size:10.5px;color:var(--fg-2);font-weight:600;display:flex;align-items:center;gap:6px;}
+  .swatch{width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,0.18);display:inline-block;}
+
+  .rules-list{padding:0;margin:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
+  .rules-list li{font-size:12.5px;color:var(--fg-2);line-height:1.55;display:flex;gap:8px;}
+  .rules-list li .pip{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;padding:2px 6px;border-radius:4px;height:fit-content;flex-shrink:0;}
+  .rules-list li.allow .pip{background:rgba(209,255,85,0.15);color:var(--lime);}
+  .rules-list li.deny .pip{background:rgba(232,122,118,0.15);color:#f0a6a2;}
+
+  .next-steps{
+    margin-top:24px;padding:24px;
+    background:linear-gradient(135deg, rgba(209,255,85,0.06), rgba(82,39,255,0.04));
+    border:1px solid rgba(209,255,85,0.18);border-radius:14px;
+  }
+  .next-steps h4{font-size:14px;font-weight:800;margin:0 0 12px;letter-spacing:-0.01em;}
+  .next-steps p{color:var(--fg-2);font-size:12.5px;line-height:1.7;margin:0;}
+  .next-steps b{color:#fff;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="doc-header">
+    <div>
+      <h1>bot-avatar-v1 · canonical base</h1>
+      <p class="sub">从 <code style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:12px;">standalone HTML</code> 中提取的原始 V10 core 机器人样式。这是真正的 canonical。</p>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-meta-cell"><div class="k">Source</div><div class="v">v10 hero · .core</div></div>
+      <div class="doc-meta-cell"><div class="k">Tech</div><div class="v">CSS only · no SVG</div></div>
+      <div class="doc-meta-cell"><div class="k">Status</div><div class="v lime">CANONICAL</div></div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-stage">
+      <div class="core">
+        <span class="ring"></span>
+        <span class="ring d1"></span>
+        <span class="ring d2"></span>
+        <div class="head">
+          <span class="ear l"></span>
+          <span class="ear r"></span>
+          <div class="face">
+            <span class="eye"></span>
+            <span class="eye right"></span>
+          </div>
+          <span class="foot l"></span>
+          <span class="foot r"></span>
+        </div>
+        <div class="podium"></div>
+      </div>
+    </div>
+
+    <div class="hero-info">
+      <div class="canon-id">bot-avatar-v1 · core</div>
+      <h2>Claw 42 dispatch core robot</h2>
+      <p>圆角紫色机壳 + 荧光黄发光天线 + 加大深色面屏 + 双 cyan 椭圆眼。三层呼吸光环 + 投影底座 + 整体浮动动画。无 mouth / 无侧舱 / 无脚（保持上半身浮空形象）。</p>
+      <div class="tags">
+        <span class="tag">140 × 124 px</span>
+        <span class="tag">CSS only</span>
+        <span class="tag">Lime antenna pulse</span>
+        <span class="tag">Cyan eyes blink</span>
+        <span class="tag">3-ring breathing</span>
+        <span class="tag">Float bob</span>
+        <span class="tag">Podium glow</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIZES -->
+  <section class="sizes-section">
+    <div class="sec-head">
+      <div class="num">1</div>
+      <h3>尺寸预览</h3>
+      <span class="sub">small UI sizes · 验证细节在各尺寸下的可读性</span>
+    </div>
+    <div class="sizes-row">
+      <div class="sz-cell">
+        <div class="sz-stage s-1">
+          <div class="core"><div class="head"><span class="ear l"></span><span class="ear r"></span><div class="face"><span class="eye"></span><span class="eye right"></span></div><span class="foot l"></span><span class="foot r"></span></div></div>
+        </div>
+        <div class="sz-lbl">100%</div>
+      </div>
+      <div class="sz-cell">
+        <div class="sz-stage s-2">
+          <div class="core"><div class="head"><span class="ear l"></span><span class="ear r"></span><div class="face"><span class="eye"></span><span class="eye right"></span></div><span class="foot l"></span><span class="foot r"></span></div></div>
+        </div>
+        <div class="sz-lbl">70%</div>
+      </div>
+      <div class="sz-cell">
+        <div class="sz-stage s-3">
+          <div class="core"><div class="head"><span class="ear l"></span><span class="ear r"></span><div class="face"><span class="eye"></span><span class="eye right"></span></div><span class="foot l"></span><span class="foot r"></span></div></div>
+        </div>
+        <div class="sz-lbl">50%</div>
+      </div>
+      <div class="sz-cell">
+        <div class="sz-stage s-4">
+          <div class="core"><div class="head"><span class="ear l"></span><span class="ear r"></span><div class="face"><span class="eye"></span><span class="eye right"></span></div><span class="foot l"></span><span class="foot r"></span></div></div>
+        </div>
+        <div class="sz-lbl">32%</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- spec + rules -->
+  <div class="grid-2">
+    <div class="spec-card">
+      <h4>视觉规格</h4>
+      <div class="spec-row"><span class="k">Shell purple</span><span class="v"><span class="swatch" style="background:linear-gradient(180deg,#3a2575,#150a35)"></span>#3a2575 → #150a35</span></div>
+      <div class="spec-row"><span class="k">Shell border</span><span class="v"><span class="swatch" style="background:#d1ff55"></span>lime · op 0.4 · 2px</span></div>
+      <div class="spec-row"><span class="k">Antenna dot</span><span class="v"><span class="swatch" style="background:#d1ff55"></span>11×11 · pulse 1.6s</span></div>
+      <div class="spec-row"><span class="k">Face</span><span class="v"><span class="swatch" style="background:#060a1c"></span>#060a1c → #02030a</span></div>
+      <div class="spec-row"><span class="k">Eyes cyan</span><span class="v"><span class="swatch" style="background:#7ee0ff"></span>18×22 · blink 4.6s</span></div>
+      <div class="spec-row"><span class="k">Outer glow</span><span class="v">92px lime + 72px purple</span></div>
+      <div class="spec-row"><span class="k">Float bob</span><span class="v">−8 px · 5.4s</span></div>
+    </div>
+
+    <div class="spec-card">
+      <h4>派生授权规则</h4>
+      <ul class="rules-list">
+        <li class="allow"><span class="pip">ALLOW</span><span>Role/state 色彩 variant（保持紫机壳 / lime accent / cyan 眼基调可识别）</span></li>
+        <li class="allow"><span class="pip">ALLOW</span><span>眼睛形状 / 表情 variant（idle / thinking / warning / success / offline）</span></li>
+        <li class="allow"><span class="pip">ALLOW</span><span>面屏内部图形（K 线 / hex / 箭头 等角色标记）</span></li>
+        <li class="allow"><span class="pip">ALLOW</span><span>外部 state badge / 角标</span></li>
+        <li class="deny"><span class="pip">DENY</span><span>移除 antenna（V10 核心识别元素）</span></li>
+        <li class="deny"><span class="pip">DENY</span><span>替换为 3D 主页 mascot 风格</span></li>
+        <li class="deny"><span class="pip">DENY</span><span>改变整体上半身浮空形象（加大块脚 / 加身体）</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <section class="next-steps">
+    <h4>下一步</h4>
+    <p><b>确认</b>：上面 hero 区的 canonical 是不是你要的版本？（紫圆角机壳 / lime 天线 / cyan 眼 / 三层呼吸光环 / podium 底座）<br/>
+    <b>确认后</b>：以这个 .core 为基线，按 teamRegistry.ts 顺序一个一个出 14 角色 variant。每个保持 head 轮廓 / 天线 / 三环光晕 / podium 不变，仅通过 <code style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;">面屏内表情 + 眼形 + accent 色</code> 三件套做差异。</p>
+  </section>
+
+</div>
+</body>
+</html>

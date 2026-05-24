@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>claw42 工作流 · How it works</title>
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#1a1a1a;
+    --card:#262626;
+    --soft:rgba(255,255,255,0.05);
+    --hair:rgba(255,255,255,0.08);
+    --hair-2:rgba(255,255,255,0.14);
+    --text:#ffffff;
+    --text-2:#a6a6a6;
+    --text-3:#737373;
+    --brand:#5227ff;
+    --brand-2:#6c4fff;
+    --lime:#d1ff55;
+    --green:#14a739;
+    --red:#e95032;
+    --amber:#fed500;
+    --r-card:16px;
+    --r-panel:24px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:"Satoshi","Noto Sans SC","PingFang SC",-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    font-size:14px;line-height:1.5;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--brand);color:#fff;}
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+
+  .page{
+    height:100vh;
+    display:grid;
+    grid-template-rows:auto auto 1fr auto;
+    max-width:1440px;margin:0 auto;
+    padding:0 36px;
+    overflow:hidden;
+  }
+  @media (max-height:640px),(max-width:860px){
+    .page{height:auto;overflow:visible;}
+  }
+
+  /* nav */
+  nav.top{
+    display:flex;align-items:center;justify-content:space-between;
+    height:54px;
+    border-bottom:1px solid var(--hair);
+  }
+  .brand-mark{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-0.01em;font-size:14px;}
+  .brand-mark .dot{width:9px;height:9px;border-radius:2px;background:var(--brand);}
+  .brand-mark .crumb{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--text-3);margin-left:8px;font-weight:500;white-space:nowrap;}
+  nav.top .links{display:flex;gap:22px;align-items:center;font-size:13px;color:var(--text-2);}
+  nav.top .links a:hover{color:var(--text);}
+  .pill{
+    padding:7px 14px;border:1px solid var(--hair-2);border-radius:999px;
+    font-size:12px;color:var(--text);transition:border-color .15s;display:inline-flex;align-items:center;gap:6px;
+  }
+  .pill:hover{border-color:var(--brand-2);}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(20,167,57,0.18);animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.45;}}
+
+  /* header / intro */
+  header.intro{
+    padding:22px 0 22px;
+    display:grid;grid-template-columns:1.4fr auto;gap:36px;align-items:center;
+    border-bottom:1px solid var(--hair);
+  }
+  .eyebrow{
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-3);
+    margin-bottom:10px;
+  }
+  .eyebrow .sep{color:var(--hair-2);margin:0 8px;}
+  .eyebrow .accent{color:var(--lime);}
+  .claim{
+    font-size:21px;line-height:1.4;letter-spacing:-0.008em;color:var(--text);
+    max-width:880px;
+    font-weight:500;
+    margin:0;
+  }
+  .claim em{font-style:normal;color:var(--lime);font-weight:700;}
+  .claim b{color:var(--text);font-weight:700;}
+  .header-stats{
+    display:flex;gap:22px;color:var(--text-2);font-size:12px;
+  }
+  .header-stats .s{display:flex;flex-direction:column;gap:5px;text-align:right;font-family:"JetBrains Mono",monospace;letter-spacing:0.04em;}
+  .header-stats .s b{font-family:"Satoshi",sans-serif;font-size:26px;font-weight:700;color:var(--text);letter-spacing:-0.02em;line-height:1;}
+  .header-stats .s.lime b{color:var(--lime);}
+  .header-stats .s small{color:var(--text-3);font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;}
+
+  /* main flow strip */
+  main.flow{
+    padding:18px 0;
+    display:flex;align-items:stretch;justify-content:center;
+    min-height:0;
+    overflow:hidden;
+  }
+  .stages{
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(11,minmax(0,1fr));
+    gap:0;
+    align-items:stretch;
+  }
+  .stages > .stage{
+    grid-column:span 2;
+    display:flex;flex-direction:column;
+  }
+  .stages > .arrow{
+    grid-column:span 1;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text-3);
+    position:relative;
+  }
+  /* card */
+  .stage-card{
+    background:var(--card);
+    border:1px solid var(--hair);
+    border-radius:var(--r-card);
+    padding:18px 16px 16px;
+    height:100%;
+    display:flex;flex-direction:column;gap:10px;
+    transition:border-color .15s, transform .15s;
+    position:relative;
+  }
+  .stage-card:hover{border-color:var(--brand-2);}
+  .stage-card .hdr{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+  .stage-card .num{
+    font-family:"Satoshi",sans-serif;font-weight:900;
+    font-size:34px;letter-spacing:-0.04em;color:var(--text);line-height:0.9;
+  }
+  .stage-card .count{
+    font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--text-3);
+    letter-spacing:0.08em;text-align:right;
+  }
+  .stage-card .count b{color:var(--lime);font-weight:600;font-family:"Satoshi",sans-serif;font-size:15px;letter-spacing:-0.02em;}
+  .stage-card .count .lbl{display:block;margin-top:2px;}
+  .stage-card .name{
+    font-size:14.5px;font-weight:700;letter-spacing:-0.008em;line-height:1.25;color:var(--text);
+    border-top:1px solid var(--hair);padding-top:10px;
+  }
+  .stage-card .desc{
+    font-size:12px;color:var(--text-2);line-height:1.55;flex:1;
+  }
+  .stage-card .agents{
+    display:flex;flex-wrap:wrap;gap:4px;margin-top:auto;padding-top:6px;
+  }
+  .stage-card .agents span{
+    font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--text-2);
+    padding:3px 7px;border:1px solid var(--hair-2);border-radius:5px;
+    background:rgba(255,255,255,0.02);
+    letter-spacing:0.02em;line-height:1.4;
+  }
+  .stage-card .agents span.debate{border-color:rgba(209,255,85,0.4);color:var(--lime);}
+  .stage-card .out{
+    font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--text-3);
+    letter-spacing:0.06em;border-top:1px dashed var(--hair);padding-top:6px;
+  }
+  .stage-card .out b{color:var(--text-2);}
+  .stage-card.persist{border-style:dashed;border-color:rgba(209,255,85,0.35);}
+  .stage-card.persist .num{color:var(--lime);}
+  .stage-card.pm{border-color:rgba(209,255,85,0.5);}
+  .stage-card.pm .num{color:var(--lime);}
+
+  /* arrow svg */
+  .arr-svg{width:100%;height:24px;display:block;}
+  .arr-svg path{stroke:#6c4fff;}
+  .arrow .label{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:0.1em;
+    color:var(--text-3);text-transform:uppercase;
+    background:var(--bg);padding:0 4px;
+    white-space:nowrap;
+  }
+  .arrow.memory .arr-svg path{stroke:#d1ff55;stroke-dasharray:4 4;}
+  .arrow.memory .label{color:var(--lime);}
+
+  /* footer */
+  footer.cta{
+    padding:14px 0 16px;
+    border-top:1px solid var(--hair);
+    display:flex;align-items:center;justify-content:space-between;gap:22px;flex-wrap:wrap;
+  }
+  .cta-why{
+    display:flex;gap:22px;align-items:center;color:var(--text-2);font-size:12.5px;flex-wrap:wrap;
+  }
+  .cta-why .w{display:flex;align-items:center;gap:8px;}
+  .cta-why .w .mk{
+    width:18px;height:18px;border-radius:5px;border:1px solid var(--hair-2);
+    display:grid;place-items:center;color:var(--lime);font-size:11px;font-family:"JetBrains Mono",monospace;
+  }
+  .cta-actions{display:flex;gap:10px;align-items:center;}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    padding:10px 16px;border-radius:10px;font-size:12.5px;font-weight:600;letter-spacing:-0.003em;
+    transition:background .15s,border-color .15s;
+  }
+  .btn.primary{background:var(--brand-2);color:#fff;}
+  .btn.primary:hover{background:var(--brand);}
+  .btn.ghost{border:1px solid var(--hair-2);color:var(--text);}
+  .btn.ghost:hover{border-color:var(--brand-2);}
+  .btn .arr{transition:transform .15s;}
+  .btn:hover .arr{transform:translateX(3px);}
+  .cta-note{
+    font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--text-3);
+    letter-spacing:0.04em;border-left:2px solid var(--lime);padding-left:10px;line-height:1.5;
+  }
+
+  /* responsive */
+  @media (max-width:1200px){
+    .stages{grid-template-columns:repeat(6,1fr);gap:8px;}
+    .stages > .stage{grid-column:span 1;}
+    .stages > .arrow{display:none;}
+    .stage-card .num{font-size:26px;}
+  }
+  @media (max-width:860px){
+    .page{padding:0 18px;}
+    header.intro{grid-template-columns:1fr;}
+    .stages{grid-template-columns:repeat(2,1fr);}
+    .claim{font-size:17px;}
+    footer.cta{flex-direction:column;align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <nav class="top">
+    <div class="brand-mark">
+      <span class="dot"></span>
+      <span>claw42</span>
+      <span class="crumb mono">/ how-it-works</span>
+    </div>
+    <div class="links">
+      <a href="#stages">流程</a>
+      <a class="pill" href="#cta"><span class="live-dot"></span> 实时调度台 ↗</a>
+    </div>
+  </nav>
+
+  <header class="intro">
+    <div>
+      <div class="eyebrow">
+        <span>workflow</span><span class="sep">/</span>
+        <span>11 agents · 6 stages</span><span class="sep">/</span>
+        <span class="accent">multi-round debate · persistent memory</span>
+      </div>
+      <p class="claim">
+        一笔交易决策，不是一个 AI 拍脑袋——是 <em>11 个角色 · 6 阶段</em> 协同产出。
+        每一步都有专人、每一次分歧被记录、每一笔结果都回灌下一轮。
+      </p>
+    </div>
+    <div class="header-stats">
+      <div class="s"><b>11</b><small>agents</small></div>
+      <div class="s lime"><b>6</b><small>stages</small></div>
+      <div class="s"><b>2×</b><small>debate</small></div>
+      <div class="s lime"><b>∞</b><small>memory</small></div>
+    </div>
+  </header>
+
+  <main class="flow" id="stages">
+    <div class="stages">
+      <!-- 01 -->
+      <div class="stage">
+        <div class="stage-card">
+          <div class="hdr">
+            <span class="num">01</span>
+            <span class="count"><b>4</b><span class="lbl">并行 · parallel</span></span>
+          </div>
+          <div class="name">信息收集 · 分析师</div>
+          <div class="desc">4 名分析师并行采集 4 类信号，各出独立简报。只看清楚，不出意见。</div>
+          <div class="agents"><span>基本面</span><span>情绪</span><span>新闻</span><span>技术</span></div>
+          <div class="out"><b>OUT</b> · 4 份分析师简报</div>
+        </div>
+      </div>
+
+      <div class="arrow">
+        <span class="label">flow</span>
+        <svg class="arr-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <path d="M2,12 L92,12" fill="none" stroke-width="1.4" />
+          <path d="M88,7 L96,12 L88,17" fill="none" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- 02 -->
+      <div class="stage">
+        <div class="stage-card">
+          <div class="hdr">
+            <span class="num">02</span>
+            <span class="count"><b>2</b><span class="lbl">多轮 · debate</span></span>
+          </div>
+          <div class="name">多空辩论 · 研究员</div>
+          <div class="desc">看多 / 看空各持一端，按回合立论与反驳，压力测试到只剩最强论据。</div>
+          <div class="agents"><span class="debate">看多</span><span class="debate">看空</span></div>
+          <div class="out"><b>OUT</b> · 辩论纪要</div>
+        </div>
+      </div>
+
+      <div class="arrow">
+        <span class="label">flow</span>
+        <svg class="arr-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <path d="M2,12 L92,12" fill="none" stroke-width="1.4" />
+          <path d="M88,7 L96,12 L88,17" fill="none" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- 03 -->
+      <div class="stage">
+        <div class="stage-card">
+          <div class="hdr">
+            <span class="num">03</span>
+            <span class="count"><b>1</b><span class="lbl">综合 · synthesize</span></span>
+          </div>
+          <div class="name">交易方案 · 交易员</div>
+          <div class="desc">综合简报与辩论纪要，给出方向、入场、仓位、止损的可执行方案。</div>
+          <div class="agents"><span>交易员</span></div>
+          <div class="out"><b>OUT</b> · proposal v1</div>
+        </div>
+      </div>
+
+      <div class="arrow">
+        <span class="label">flow</span>
+        <svg class="arr-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <path d="M2,12 L92,12" fill="none" stroke-width="1.4" />
+          <path d="M88,7 L96,12 L88,17" fill="none" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- 04 -->
+      <div class="stage">
+        <div class="stage-card">
+          <div class="hdr">
+            <span class="num">04</span>
+            <span class="count"><b>3</b><span class="lbl">多轮 · debate</span></span>
+          </div>
+          <div class="name">风险审查 · 三派系</div>
+          <div class="desc">激进 / 中立 / 保守三角度审查波动、流动性、相关性，辩论后修订方案。</div>
+          <div class="agents"><span class="debate">激进</span><span class="debate">中立</span><span class="debate">保守</span></div>
+          <div class="out"><b>OUT</b> · proposal v2</div>
+        </div>
+      </div>
+
+      <div class="arrow">
+        <span class="label">flow</span>
+        <svg class="arr-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <path d="M2,12 L92,12" fill="none" stroke-width="1.4" />
+          <path d="M88,7 L96,12 L88,17" fill="none" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- 05 -->
+      <div class="stage">
+        <div class="stage-card pm">
+          <div class="hdr">
+            <span class="num">05</span>
+            <span class="count"><b>1</b><span class="lbl">终审 · final</span></span>
+          </div>
+          <div class="name">最终决策 · 组合经理</div>
+          <div class="desc">从全组合角度二元裁决：批准送执行；拒绝直接落档进入复盘库。</div>
+          <div class="agents"><span>组合经理</span></div>
+          <div class="out"><b>OUT</b> · approve / reject</div>
+        </div>
+      </div>
+
+      <div class="arrow memory">
+        <span class="label">memory loop</span>
+        <svg class="arr-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+          <path d="M2,12 L92,12" fill="none" stroke-width="1.4" />
+          <path d="M88,7 L96,12 L88,17" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="0"/>
+        </svg>
+      </div>
+
+      <!-- 06 -->
+      <div class="stage">
+        <div class="stage-card persist">
+          <div class="hdr">
+            <span class="num">06</span>
+            <span class="count"><b>∞</b><span class="lbl">持久化 · layer</span></span>
+          </div>
+          <div class="name">复盘沉淀 · 记忆回路</div>
+          <div class="desc">决策档案全量落盘；同标的历史与跨标的教训自动回灌每一个 agent。</div>
+          <div class="agents"><span>cross-run</span><span>reflection</span></div>
+          <div class="out"><b>BACK →</b> 注入 01–05</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="cta" id="cta">
+    <div class="cta-why">
+      <div class="w"><div class="mk">✓</div>每一步都有专人</div>
+      <div class="w"><div class="mk">✓</div>每一次分歧被记录</div>
+      <div class="w"><div class="mk">✓</div>每一笔结果被复盘</div>
+      <div class="cta-note">完整架构正在分阶段上线</div>
+    </div>
+    <div class="cta-actions">
+      <a class="btn ghost" href="#stages">角色名册</a>
+      <a class="btn primary" href="#"><span class="live-dot" style="background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,0.25);"></span> 查看实时 AI 团队工作 <span class="arr">→</span></a>
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>

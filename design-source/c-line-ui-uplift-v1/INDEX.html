@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-line UI uplift v1 · 总览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800;900&family=Noto+Sans+SC:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0817;
+    --panel:#150f2e;
+    --panel-2:#1d1640;
+    --fg:#fff;
+    --fg-2:#a89dc8;
+    --fg-3:#7e729f;
+    --line:rgba(255,255,255,0.08);
+    --line-2:rgba(255,255,255,0.14);
+    --lime:#d1ff55;
+    --purple:#5227ff;
+    --purple-2:#7c5cff;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse 80% 60% at 50% 0%, #2a1d54 0%, #1a1530 50%, #0a0817 100%);
+    color:var(--fg);
+    font-family:"Manrope","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    min-height:100vh;
+  }
+
+  /* === LAYOUT === */
+  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+  @media (max-width:960px){.app{grid-template-columns:1fr;}}
+
+  /* sidebar */
+  aside.sidebar{
+    position:sticky;top:0;height:100vh;
+    background:rgba(13,8,32,0.7);
+    border-right:1px solid var(--line);
+    padding:32px 22px;
+    display:flex;flex-direction:column;gap:12px;
+    overflow-y:auto;
+    backdrop-filter:blur(12px);
+  }
+  @media (max-width:960px){aside.sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);}}
+
+  .brand{margin-bottom:14px;}
+  .brand .title{font-size:15px;font-weight:800;letter-spacing:-0.005em;}
+  .brand .sub{font-family:var(--mono);font-size:10px;color:var(--lime);letter-spacing:0.14em;text-transform:uppercase;font-weight:700;margin-top:3px;}
+
+  .nav-grp{margin-top:14px;}
+  .nav-grp-title{font-family:var(--mono);font-size:9px;color:var(--fg-3);letter-spacing:0.18em;text-transform:uppercase;font-weight:700;margin-bottom:8px;padding-left:6px;}
+  .nav-link{
+    display:flex;align-items:center;gap:10px;
+    padding:7px 10px;border-radius:7px;
+    font-size:12.5px;color:var(--fg-2);font-weight:600;
+    text-decoration:none;
+    transition:background .15s, color .15s, transform .12s;
+  }
+  .nav-link:hover{background:rgba(209,255,85,0.06);color:#fff;transform:translateX(2px);}
+  .nav-link .num{
+    font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:0.06em;
+    color:var(--lime);min-width:24px;
+  }
+
+  /* main */
+  main.content{padding:48px 36px 80px;max-width:1240px;width:100%;}
+
+  /* doc header */
+  .doc-head{margin-bottom:36px;display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;}
+  .doc-head h1{font-size:32px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .doc-head .sub{color:var(--fg-2);font-size:14px;line-height:1.65;max-width:760px;margin:0;}
+  .doc-meta{display:flex;gap:10px;flex-wrap:wrap;}
+  .doc-meta-cell{background:var(--panel);border:1px solid var(--line);padding:10px 14px;border-radius:10px;}
+  .doc-meta-cell .k{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;color:var(--fg-3);text-transform:uppercase;font-weight:700;}
+  .doc-meta-cell .v{font-size:13px;font-weight:700;margin-top:3px;}
+  .doc-meta-cell .v.lime{color:var(--lime);}
+  .doc-meta-cell .v.warn{color:#fed500;}
+
+  /* section card */
+  .section{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+    margin-bottom:28px;
+    overflow:hidden;
+    scroll-margin-top:24px;
+  }
+  .section.lead{border-color:rgba(209,255,85,0.24);}
+
+  .sec-head{
+    padding:24px 28px;
+    display:flex;align-items:center;gap:18px;justify-content:space-between;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(135deg, rgba(82,39,255,0.06), transparent);
+    flex-wrap:wrap;
+  }
+  .sec-head-left{display:flex;align-items:center;gap:18px;flex:1;min-width:0;}
+  .sec-num{
+    width:42px;height:42px;border-radius:10px;background:var(--panel-2);
+    display:grid;place-items:center;font-family:var(--mono);font-weight:800;font-size:16px;color:var(--lime);
+    border:1px solid var(--line-2);flex-shrink:0;
+  }
+  .sec-head h2{font-size:18px;font-weight:800;letter-spacing:-0.01em;margin:0;}
+  .sec-head .sec-tag{font-family:var(--mono);font-size:10px;color:var(--fg-3);letter-spacing:0.14em;text-transform:uppercase;font-weight:600;margin-top:3px;}
+  .sec-head-right{display:flex;gap:8px;flex-shrink:0;}
+  .sec-btn{
+    padding:6px 12px;border-radius:7px;
+    background:rgba(255,255,255,0.06);border:1px solid var(--line);
+    color:var(--fg-2);font-size:11px;font-weight:700;text-decoration:none;
+    font-family:var(--mono);letter-spacing:0.06em;
+    transition:background .15s, color .15s;
+  }
+  .sec-btn:hover{background:rgba(209,255,85,0.12);color:var(--lime);border-color:rgba(209,255,85,0.3);}
+  .sec-btn.lime{background:rgba(209,255,85,0.14);color:var(--lime);border-color:rgba(209,255,85,0.32);}
+  .sec-btn.lime:hover{background:rgba(209,255,85,0.2);}
+
+  .sec-desc{padding:0 28px 18px;color:var(--fg-2);font-size:13.5px;line-height:1.7;}
+  .sec-desc b{color:#fff;font-weight:700;}
+  .sec-desc code{font-family:var(--mono);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:12px;}
+
+  /* preview frame */
+  .preview-frame{
+    background:#000;
+    border-top:1px solid var(--line);
+    position:relative;
+    overflow:hidden;
+  }
+  .preview-frame iframe{
+    width:100%;border:0;display:block;
+    background:#0a0817;
+  }
+
+  /* preview meta footer */
+  .preview-meta{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:10px 28px;border-top:1px dashed var(--line);
+    font-family:var(--mono);font-size:10.5px;color:var(--fg-3);letter-spacing:0.08em;
+  }
+  .preview-meta .path{color:var(--fg-2);font-weight:600;}
+  .preview-meta .lbl{color:var(--lime);font-weight:700;letter-spacing:0.14em;text-transform:uppercase;}
+
+  /* stage row (6 stage previews stacked) */
+  .stages-wrap{padding:24px 28px;display:flex;flex-direction:column;gap:24px;}
+  .stage-block{
+    background:rgba(13,8,32,0.4);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  .stage-block-head{
+    padding:12px 18px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--line);
+    background:rgba(82,39,255,0.04);
+  }
+  .stage-block-head .left{display:flex;align-items:center;gap:12px;}
+  .stage-block-head .num{
+    width:28px;height:28px;border-radius:7px;background:var(--panel-2);
+    display:grid;place-items:center;font-family:var(--mono);font-weight:800;font-size:13px;color:var(--lime);
+    border:1px solid var(--line-2);
+  }
+  .stage-block-head .title{font-size:14px;font-weight:800;}
+  .stage-block-head .tag{font-family:var(--mono);font-size:9.5px;color:var(--fg-3);letter-spacing:0.14em;text-transform:uppercase;margin-top:2px;font-weight:600;}
+  .stage-block iframe{width:100%;border:0;display:block;background:#000;}
+
+  /* status banner */
+  .status-banner{
+    margin-bottom:28px;padding:18px 22px;
+    background:linear-gradient(135deg, rgba(209,255,85,0.06), rgba(82,39,255,0.04));
+    border:1px solid rgba(209,255,85,0.2);border-radius:14px;
+    color:var(--fg-2);font-size:13px;line-height:1.7;
+  }
+  .status-banner b{color:#fff;font-weight:700;}
+  .status-banner code{font-family:var(--mono);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:12px;}
+
+  /* deliverable list inside section ⑤ */
+  .pending-card{
+    padding:24px 28px;display:flex;gap:16px;align-items:flex-start;
+    background:rgba(254,213,0,0.04);border-top:1px solid rgba(254,213,0,0.18);
+  }
+  .pending-card .badge{
+    font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;
+    padding:5px 9px;border-radius:5px;background:rgba(254,213,0,0.16);color:#fed500;flex-shrink:0;
+  }
+  .pending-card .body{flex:1;color:var(--fg-2);font-size:12.5px;line-height:1.7;}
+  .pending-card .body b{color:#fff;font-weight:700;}
+
+  /* footer */
+  .footer{margin-top:36px;padding-top:24px;border-top:1px dashed var(--line);color:var(--fg-3);font-size:11.5px;line-height:1.7;font-family:var(--mono);text-align:center;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══════ SIDEBAR ═══════ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="title">C-line UI uplift</div>
+      <div class="sub">v1 · Design source</div>
+    </div>
+
+    <div class="nav-grp">
+      <div class="nav-grp-title">Base</div>
+      <a class="nav-link" href="#canonical"><span class="num">0</span>Canonical 基础</a>
+    </div>
+
+    <div class="nav-grp">
+      <div class="nav-grp-title">① Avatars</div>
+      <a class="nav-link" href="#variants"><span class="num">①a</span>14 角色 symbol-eye</a>
+      <a class="nav-link" href="#gallery"><span class="num">①b</span>SVG 入库 gallery</a>
+    </div>
+
+    <div class="nav-grp">
+      <div class="nav-grp-title">② Architecture</div>
+      <a class="nav-link" href="#decision"><span class="num">②</span>CSS-vs-SVG 决策</a>
+    </div>
+
+    <div class="nav-grp">
+      <div class="nav-grp-title">③ Hero</div>
+      <a class="nav-link" href="#hero"><span class="num">③</span>聚焦 / 三点 / 表情 / 信息栏</a>
+    </div>
+
+    <div class="nav-grp">
+      <div class="nav-grp-title">④ Flow</div>
+      <a class="nav-link" href="#stages"><span class="num">④</span>6 板块动效</a>
+    </div>
+
+    <div class="nav-grp">
+      <div class="nav-grp-title">⑤ Pending</div>
+      <a class="nav-link" href="#market-hero"><span class="num">⑤</span>行情 hero（待 Codex）</a>
+    </div>
+  </aside>
+
+  <!-- ═══════ MAIN ═══════ -->
+  <main class="content">
+
+    <header class="doc-head">
+      <div>
+        <h1>C-line UI uplift · v1 · 设计交付</h1>
+        <p class="sub">基于 <code style="font-family:var(--mono);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;">bot-avatar-v1</code> (PR #110) 的 C-line UI 优化设计稿。本页是所有交付物的总览索引，每节都嵌入了 live 预览 iframe。</p>
+      </div>
+      <div class="doc-meta">
+        <div class="doc-meta-cell"><div class="k">Folder</div><div class="v">c-line-ui-uplift-v1</div></div>
+        <div class="doc-meta-cell"><div class="k">Status</div><div class="v lime">4 / 5 done</div></div>
+        <div class="doc-meta-cell"><div class="k">Pending</div><div class="v warn">market hero</div></div>
+      </div>
+    </header>
+
+    <div class="status-banner">
+      <b>交付清单</b>：① 14 角色 variant ✓ · ② CSS/SVG 体系决策 ✓ · ③ Hero 4 细节 ✓ · ④ 6 板块动效 ✓ · ⑤ 行情分析 hero 改造（待 Codex 调研报告）。<br/>
+      所有文件路径基于 <code>claw42/design-source/c-line-ui-uplift-v1/</code>。
+    </div>
+
+    <!-- ═══════ 0 · CANONICAL ═══════ -->
+    <section class="section" id="canonical">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">0</div>
+          <div>
+            <h2>Canonical 基础机器人</h2>
+            <div class="sec-tag">canonical-base.html · 不可改基线</div>
+          </div>
+        </div>
+        <div class="sec-head-right">
+          <a class="sec-btn" href="canonical-base.html" target="_blank">独立打开 ↗</a>
+        </div>
+      </div>
+      <div class="sec-desc">
+        基础造型：紫圆角机壳 · 小耳朵向内弧度 · 圆弧小脚（藏在身后）· 加大面屏 · cyan 椭圆眼。<b>不可改</b>，所有 14 角色 variant 在此基础上做差异。
+      </div>
+      <div class="preview-frame">
+        <iframe src="canonical-base.html" style="height:1100px;" loading="lazy"></iframe>
+      </div>
+      <div class="preview-meta">
+        <span class="lbl">Preview</span>
+        <span class="path">canonical-base.html</span>
+      </div>
+    </section>
+
+    <!-- ═══════ ①a · 14 VARIANTS ═══════ -->
+    <section class="section" id="variants">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">①a</div>
+          <div>
+            <h2>14 角色 + 3 PM 状态 · symbol-eye 全套</h2>
+            <div class="sec-tag">14-symbol-eyes.html · 动态预览</div>
+          </div>
+        </div>
+        <div class="sec-head-right">
+          <a class="sec-btn" href="14-symbol-eyes.html" target="_blank">独立打开 ↗</a>
+        </div>
+      </div>
+      <div class="sec-desc">
+        每个角色的双眼即"职能符号"。按 teamRegistry.ts ID 顺序分 6 组：Analysts (4) · Leads (2) · PM (3 状态) · Strategists (3) · Reviewers (3) · Memory (1)。
+      </div>
+      <div class="preview-frame">
+        <iframe src="14-symbol-eyes.html" style="height:1600px;" loading="lazy"></iframe>
+      </div>
+      <div class="preview-meta">
+        <span class="lbl">Preview</span>
+        <span class="path">14-symbol-eyes.html</span>
+      </div>
+    </section>
+
+    <!-- ═══════ ①b · SVG GALLERY ═══════ -->
+    <section class="section" id="gallery">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">①b</div>
+          <div>
+            <h2>SVG 入库 gallery · 16 个独立文件</h2>
+            <div class="sec-tag">avatars-gallery.html · 静态预览</div>
+          </div>
+        </div>
+        <div class="sec-head-right">
+          <a class="sec-btn" href="avatars-gallery.html" target="_blank">独立打开 ↗</a>
+          <a class="sec-btn" href="README.md" target="_blank">README ↗</a>
+        </div>
+      </div>
+      <div class="sec-desc">
+        14 角色 + 3 PM 状态 = <b>16 个独立 SVG</b> 已落地到 <code>avatars/</code>，按 actual id 命名（<code>fundamental_analyst.svg</code> / <code>pm-approve.svg</code> 等），220×190 viewBox，可直接 import。
+      </div>
+      <div class="preview-frame">
+        <iframe src="avatars-gallery.html" style="height:1400px;" loading="lazy"></iframe>
+      </div>
+      <div class="preview-meta">
+        <span class="lbl">Preview</span>
+        <span class="path">avatars-gallery.html · avatars/*.svg (16 files)</span>
+      </div>
+    </section>
+
+    <!-- ═══════ ② · CSS-vs-SVG ═══════ -->
+    <section class="section" id="decision">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">②</div>
+          <div>
+            <h2>Hero / Flow CSS-vs-SVG 体系决策</h2>
+            <div class="sec-tag">02-css-vs-svg-decision.html</div>
+          </div>
+        </div>
+        <div class="sec-head-right">
+          <a class="sec-btn" href="02-css-vs-svg-decision.html" target="_blank">独立打开 ↗</a>
+        </div>
+      </div>
+      <div class="sec-desc">
+        三方案对比 (A 全 CSS / B 全 SVG / <b>C 混合 · 推荐</b>) + 8 维度对比表 + 落地架构伪代码 + 前端工作量估算（≈ 1 day）。
+      </div>
+      <div class="preview-frame">
+        <iframe src="02-css-vs-svg-decision.html" style="height:1700px;" loading="lazy"></iframe>
+      </div>
+      <div class="preview-meta">
+        <span class="lbl">Preview</span>
+        <span class="path">02-css-vs-svg-decision.html</span>
+      </div>
+    </section>
+
+    <!-- ═══════ ③ · HERO DETAILS ═══════ -->
+    <section class="section" id="hero">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">③</div>
+          <div>
+            <h2>Hero 视觉 4 细节</h2>
+            <div class="sec-tag">03-hero-details.html · 聚焦框 / 三点 / 表情切换 / 信息栏</div>
+          </div>
+        </div>
+        <div class="sec-head-right">
+          <a class="sec-btn" href="03-hero-details.html" target="_blank">独立打开 ↗</a>
+        </div>
+      </div>
+      <div class="sec-desc">
+        4 项规格 + key frames：① 聚焦指示框（hover 触发） · ② 说话三点（无箭头胶囊气泡） · ③ idle → talking 表情切换 · ④ <b>可扩展信息栏</b>（3 档信息密度 · 插槽化 schema）。
+      </div>
+      <div class="preview-frame">
+        <iframe src="03-hero-details.html" style="height:2400px;" loading="lazy"></iframe>
+      </div>
+      <div class="preview-meta">
+        <span class="lbl">Preview</span>
+        <span class="path">03-hero-details.html</span>
+      </div>
+    </section>
+
+    <!-- ═══════ ④ · 6 STAGES ═══════ -->
+    <section class="section lead" id="stages">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">④</div>
+          <div>
+            <h2>6 板块动效编排</h2>
+            <div class="sec-tag">04-step-anims/stage-{1-6}.html · 每板块独立文件</div>
+          </div>
+        </div>
+      </div>
+      <div class="sec-desc">
+        每板块板式保留原稿（提取自 standalone），<b>仅 overlay 动效</b>。每个板块的动效完全不同 — 通过不同的"流程语义"传达不同阶段的行为感。
+      </div>
+
+      <div class="stages-wrap">
+
+        <div class="stage-block">
+          <div class="stage-block-head">
+            <div class="left">
+              <div class="num">1</div>
+              <div>
+                <div class="title">信息收集 · 并行采集</div>
+                <div class="tag">4 BOT BORDERS → BIG FRAME → 输出 LIME · 循环 4.8s</div>
+              </div>
+            </div>
+            <a class="sec-btn" href="04-step-anims/stage-1.html" target="_blank">↗ 打开</a>
+          </div>
+          <iframe src="04-step-anims/stage-1.html" style="height:680px;" loading="lazy"></iframe>
+        </div>
+
+        <div class="stage-block">
+          <div class="stage-block-head">
+            <div class="left">
+              <div class="num">2</div>
+              <div>
+                <div class="title">多空辩论 · 对抗性电流</div>
+                <div class="tag">BULL ARC + BEAR ARC → 3 ROUNDS BADGE · 循环 4.4s</div>
+              </div>
+            </div>
+            <a class="sec-btn" href="04-step-anims/stage-2.html" target="_blank">↗ 打开</a>
+          </div>
+          <iframe src="04-step-anims/stage-2.html" style="height:680px;" loading="lazy"></iframe>
+        </div>
+
+        <div class="stage-block">
+          <div class="stage-block-head">
+            <div class="left">
+              <div class="num">3</div>
+              <div>
+                <div class="title">交易方案 · 组装输出</div>
+                <div class="tag">SCAN BAND + 4 FIELDS POP (方向/时机/仓位/止损) · 循环 5.6s</div>
+              </div>
+            </div>
+            <a class="sec-btn" href="04-step-anims/stage-3.html" target="_blank">↗ 打开</a>
+          </div>
+          <iframe src="04-step-anims/stage-3.html" style="height:680px;" loading="lazy"></iframe>
+        </div>
+
+        <div class="stage-block">
+          <div class="stage-block-head">
+            <div class="left">
+              <div class="num">4</div>
+              <div>
+                <div class="title">风险审查 · 三派独立扫描</div>
+                <div class="tag">三色 SCAN + RISK GAUGE + VERDICT CHIP + LIME 共识 · 循环 5.4s</div>
+              </div>
+            </div>
+            <a class="sec-btn" href="04-step-anims/stage-4.html" target="_blank">↗ 打开</a>
+          </div>
+          <iframe src="04-step-anims/stage-4.html" style="height:720px;" loading="lazy"></iframe>
+        </div>
+
+        <div class="stage-block">
+          <div class="stage-block-head">
+            <div class="left">
+              <div class="num">5</div>
+              <div>
+                <div class="title">最终决策 · 信号汇集 + 裁决</div>
+                <div class="tag">4 SIGNAL FLY-IN + PM SCAN + APPROVE 大徽章 BURST · 循环 6.4s</div>
+              </div>
+            </div>
+            <a class="sec-btn" href="04-step-anims/stage-5.html" target="_blank">↗ 打开</a>
+          </div>
+          <iframe src="04-step-anims/stage-5.html" style="height:720px;" loading="lazy"></iframe>
+        </div>
+
+        <div class="stage-block">
+          <div class="stage-block-head">
+            <div class="left">
+              <div class="num">6</div>
+              <div>
+                <div class="title">复盘沉淀 · 归档 + 反哺</div>
+                <div class="tag">⟲ ROTATE + MEMORY STORE 数据流 + FEEDS → STAGE 1 · 循环 6.0s</div>
+              </div>
+            </div>
+            <a class="sec-btn" href="04-step-anims/stage-6.html" target="_blank">↗ 打开</a>
+          </div>
+          <iframe src="04-step-anims/stage-6.html" style="height:720px;" loading="lazy"></iframe>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════ ⑤ · MARKET HERO (PENDING) ═══════ -->
+    <section class="section" id="market-hero">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">⑤</div>
+          <div>
+            <h2>行情分析 hero 改造方案</h2>
+            <div class="sec-tag">PENDING · 待 Codex 调研报告</div>
+          </div>
+        </div>
+      </div>
+      <div class="pending-card">
+        <span class="badge">PENDING</span>
+        <div class="body">
+          <b>待办</b>：以"流程介绍 hero"为基础，给出行情分析 hero 的改造路径（哪些保留 / 哪些移植）。<br/>
+          <b>前置依赖</b>：Codex 调研报告（约 1 day），列出两个 hero 当前差异 → Claude Design 再细化改造方案。<br/>
+          <b>已就绪的基础设施</b>：③ Hero 4 细节（聚焦框 / 三点 / 表情 / 信息栏）已可直接复用到行情 hero · Codex 报告补充流程 hero 细节后即可启动。
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      claw42 / c-line-ui-uplift-v1 · design source · ready for F + Codex handoff
+    </div>
+
+  </main>
+
+</div>
+</body>
+</html>

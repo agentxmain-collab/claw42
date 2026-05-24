@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-line · 板块 1 信息收集 · 动效 v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800;900&family=Noto+Sans+SC:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#000; --card:#171717;
+    --line:rgba(255,255,255,0.08); --line-2:rgba(255,255,255,0.14);
+    --fg:#fff; --fg-2:#a6a6a6; --fg-3:#949494;
+    --purple:#5227ff; --purple-2:#7c5cff;
+    --lime:#d1ff55; --err:#e95032; --ok:#14a739; --warn:#fed500;
+    --radius-card:16px; --radius-panel:24px;
+    --font-display:"Manrope","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-display);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;padding:48px 32px 80px;}
+  .console{max-width:1240px;margin:0 auto;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  .doc-head{margin-bottom:32px;}
+  .doc-head h1{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .doc-head .sub{color:var(--fg-2);font-size:13.5px;line-height:1.65;max-width:760px;margin:0;}
+  .doc-head b{color:#fff;font-weight:700;}
+
+  /* canonical flow stage CSS (extracted from standalone) */
+  .flow-stages-v4{display:flex;flex-direction:column;gap:16px;}
+  .fstage4{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius-panel);padding:22px 26px;
+    display:flex;flex-direction:row;gap:26px;align-items:stretch;
+    position:relative;overflow:visible;
+  }
+  .fstage4-side{flex:0 0 220px;display:flex;flex-direction:column;gap:12px;padding-right:22px;border-right:1px solid var(--line);position:relative;}
+  .fstage4-side::after{
+    content:attr(data-num);position:absolute;left:-14px;top:50%;
+    transform:translateY(-50%) rotate(-6deg);
+    font-family:var(--font-display);font-weight:900;font-size:200px;line-height:0.85;
+    letter-spacing:-0.06em;color:transparent;
+    -webkit-text-stroke:1.2px rgba(124,92,255,0.34);
+    pointer-events:none;user-select:none;z-index:0;
+  }
+  .fstage4 .fs4-head,.fstage4 .fs4-cnt,.fstage4 .fs4-side-chip{position:relative;z-index:2;}
+  .fs4-head{display:flex;align-items:baseline;gap:14px;}
+  .fs4-num{font-size:34px;font-weight:900;color:var(--fg);line-height:1;letter-spacing:-0.03em;}
+  .fs4-meta{display:flex;flex-direction:column;gap:3px;}
+  .fs4-name{font-size:17px;font-weight:800;line-height:1.2;margin:0;}
+  .fs4-tag{font-size:10px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;font-family:var(--font-mono);}
+  .fs4-cnt{font-size:13px;color:var(--fg);padding:7px 14px;background:rgba(255,255,255,0.06);border:1px solid transparent;border-radius:999px;font-weight:700;align-self:flex-start;}
+  .fs4-side-chip{margin-top:auto;padding:6px 12px;background:rgba(255,255,255,0.05);border:1px solid transparent;border-radius:8px;font-size:10px;color:var(--fg);letter-spacing:0.06em;text-transform:uppercase;font-weight:600;align-self:flex-start;font-family:var(--font-mono);}
+  .fstage4-body{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;position:relative;}
+  .fagents{display:grid;gap:10px;}
+  .fagents-4{grid-template-columns:repeat(4,1fr);}
+  .fagent{background:rgba(255,255,255,0.025);border:1px solid var(--line);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:6px;min-height:72px;position:relative;transition:border-color .4s,box-shadow .4s;}
+  .fagent-head{display:flex;align-items:center;gap:10px;}
+  .fagent-avatar{
+    width:30px;height:30px;border-radius:8px;flex-shrink:0;position:relative;
+    box-shadow:0 4px 12px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.16);
+    border:1px solid rgba(255,255,255,0.14);font-size:0 !important;
+  }
+  .fagent-avatar::before{
+    content:"";position:absolute;inset:5px 3px;border-radius:5px;
+    background:
+      radial-gradient(circle 1.5px at 30% 50%, var(--eye, #7ee0ff) 0 1.5px, transparent 2.1px),
+      radial-gradient(circle 1.5px at 70% 50%, var(--eye, #7ee0ff) 0 1.5px, transparent 2.1px),
+      radial-gradient(ellipse at 50% 65%, #06091a, #02030a 78%);
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .fagent-avatar::after{
+    content:"";position:absolute;left:50%;top:-5px;transform:translateX(-50%);
+    width:1.5px;height:5px;background:rgba(255,255,255,0.5);
+    box-shadow:0 -3px 0 -0.5px var(--lime);
+  }
+  .fagent-avatar.a-fund{background:#2a3145;--eye:#a3bbe8;}
+  .fagent-avatar.a-sent{background:#3a2a45;--eye:#dcb0eb;}
+  .fagent-avatar.a-news{background:#2a3a2a;--eye:#9fd99f;}
+  .fagent-avatar.a-tech{background:#45402a;--eye:#e6c993;}
+  .fagent-info{flex:1;min-width:0;}
+  .fagent-name{font-size:12.5px;font-weight:800;line-height:1.2;}
+  .fagent-role{font-size:9px;color:var(--fg-3);margin-top:2px;letter-spacing:0.06em;font-family:var(--font-mono);}
+  .fagent-desc{font-size:11px;color:var(--fg-2);line-height:1.5;}
+  .fstage4-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px;margin-top:auto;position:relative;transition:border-color .4s,box-shadow .4s,background .4s;}
+  .fsd-col{display:flex;flex-direction:column;gap:4px;position:relative;}
+  .fsd-label{color:var(--fg-3);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;font-family:var(--font-mono);transition:color .4s;}
+  .fsd-value{color:var(--fg-2);font-size:12px;line-height:1.45;transition:color .4s;}
+
+  /* ── typing dots — anchored to the avatar (above the bot's head) ── */
+  .fagent-avatar .typing-dots{
+    position:absolute;left:50%;bottom:calc(100% + 4px);
+    transform:translateX(-50%);
+    background:rgba(13,8,32,0.92);border:1px solid rgba(255,255,255,0.16);
+    padding:2.5px 6px;border-radius:6px;display:flex;gap:2.5px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    z-index:3;
+  }
+  .fagent-avatar .typing-dots i{width:3px;height:3px;border-radius:50%;background:var(--eye,#7ee0ff);box-shadow:0 0 3px var(--eye,#7ee0ff);opacity:0.55;}
+  .fagent.bot1 .typing-dots{animation:dots1 1.8s ease-in-out infinite;}
+  .fagent.bot2 .typing-dots{animation:dots2 2.4s ease-in-out infinite 0.4s;}
+  .fagent.bot3 .typing-dots{animation:dots3 1.4s ease-in-out infinite 0.9s;}
+  .fagent.bot4 .typing-dots{animation:dots4 2.1s ease-in-out infinite 0.2s;}
+  @keyframes dots1{0%,100%{opacity:0.5;}50%{opacity:1;}}
+  @keyframes dots2{0%,100%{opacity:0.55;}38%{opacity:1;}72%{opacity:0.6;}}
+  @keyframes dots3{0%,100%{opacity:0.4;}55%{opacity:1;}}
+  @keyframes dots4{0%,100%{opacity:0.5;}45%{opacity:1;}82%{opacity:0.85;}}
+
+  /* ── Light-only sequence (no SVG curves) ──
+     4.8s loop total:
+     0.0 → 0.4 → 0.8 → 1.2s: 4 bot cards border glow lime (stagger)
+     2.0s: bottom big frame (detail) border + bg lime glow
+     2.6s: output column text turns lime
+     3.7s → 4.8s: all decay back to idle
+  ──────────────────────────────────────────── */
+  .fagent.bot1{animation:cardGlow 4.8s ease-in-out infinite 0.0s;}
+  .fagent.bot2{animation:cardGlow 4.8s ease-in-out infinite 0.4s;}
+  .fagent.bot3{animation:cardGlow 4.8s ease-in-out infinite 0.8s;}
+  .fagent.bot4{animation:cardGlow 4.8s ease-in-out infinite 1.2s;}
+  @keyframes cardGlow{
+    0%, 8%, 40%, 100%{border-color:var(--line);box-shadow:none;}
+    14%, 28%{border-color:rgba(209,255,85,0.6);box-shadow:0 0 0 1px rgba(209,255,85,0.32), 0 0 26px rgba(209,255,85,0.18);}
+  }
+
+  .fstage4-detail{animation:frameGlow 4.8s ease-in-out infinite 2.0s;}
+  @keyframes frameGlow{
+    0%, 36%, 100%{border-color:var(--line);box-shadow:none;background:rgba(255,255,255,0.02);}
+    50%, 78%{border-color:rgba(209,255,85,0.5);box-shadow:0 0 0 1px rgba(209,255,85,0.28), 0 0 28px rgba(209,255,85,0.16);background:rgba(209,255,85,0.04);}
+  }
+
+  .fsd-col.is-target .fsd-value,
+  .fsd-col.is-target .fsd-label{animation:textLime 4.8s ease-in-out infinite 2.6s;}
+  @keyframes textLime{
+    0%, 50%, 100%{color:inherit;}
+    65%, 88%{color:var(--lime);}
+  }
+
+  /* inter-stage connector (dashed) */
+  .to-next{position:relative;height:36px;margin:-2px 0 4px;padding-left:120px;display:flex;align-items:center;}
+  .to-next svg{display:block;width:32px;height:100%;}
+  .to-next svg path{stroke:var(--lime);stroke-width:1.4;fill:none;stroke-dasharray:4 6;animation:dashFlow 1.6s linear infinite;}
+  @keyframes dashFlow{to{stroke-dashoffset:-50;}}
+  .to-next .label{margin-left:12px;font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;}
+  .to-next .label .arrow{color:var(--lime);margin:0 4px;}
+
+  /* spec note */
+  .spec-note{
+    margin-top:24px;padding:18px 22px;
+    background:linear-gradient(135deg,rgba(209,255,85,0.05),rgba(82,39,255,0.02));
+    border:1px solid rgba(209,255,85,0.18);border-radius:14px;
+    color:var(--fg-2);font-size:12.5px;line-height:1.7;
+  }
+  .spec-note h3{color:#fff;font-size:13.5px;font-weight:800;margin:0 0 10px;}
+  .spec-note ul{margin:4px 0 4px 18px;padding:0;}
+  .spec-note ul li{margin-bottom:5px;}
+  .spec-note b{color:#fff;font-weight:700;}
+  .spec-note code{font-family:var(--font-mono);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:11.5px;}
+</style>
+</head>
+<body>
+<div class="console">
+
+  <div class="doc-head">
+    <h1>板块 1 · 信息收集 · 动效 v3</h1>
+    <p class="sub">板式 100% 不变。<b>纯光效</b>（无曲线、无 SVG 流光）。序列：<b>4 个 bot 卡片 border 依次亮</b>（0 / 0.4 / 0.8 / 1.2s · lime stagger）→ <b>下方大框</b>（输入·流程·输出）border + 背景亮起（2.0s）→ <b>输出</b> 列文字变 lime（2.6s）。整个循环 4.8s。</p>
+  </div>
+
+  <div class="flow-stages-v4">
+    <article class="fstage4">
+      <div class="fstage4-side" data-num="1">
+        <div class="fs4-head"><span class="fs4-num">1</span><div class="fs4-meta"><h2 class="fs4-name">信息收集</h2><div class="fs4-tag">ANALYSTS</div></div></div>
+        <span class="fs4-cnt">并行采集</span>
+        <span class="fs4-side-chip">独立简报 · 不互相干扰</span>
+      </div>
+      <div class="fstage4-body">
+        <div class="fagents fagents-4">
+          <div class="fagent bot1">
+            <div class="fagent-head">
+              <div class="fagent-avatar a-fund"><div class="typing-dots"><i></i><i></i><i></i></div>F</div>
+              <div class="fagent-info"><div class="fagent-name">基本面研究主管</div><div class="fagent-role">Fundamentals</div></div>
+            </div>
+            <div class="fagent-desc">财务 / 内在价值 / red flags</div>
+          </div>
+          <div class="fagent bot2">
+            <div class="fagent-head">
+              <div class="fagent-avatar a-sent"><div class="typing-dots"><i></i><i></i><i></i></div>O</div>
+              <div class="fagent-info"><div class="fagent-name">链上数据分析主管</div><div class="fagent-role">On-chain</div></div>
+            </div>
+            <div class="fagent-desc">地址行为 / 资金流 / 链上活跃度</div>
+          </div>
+          <div class="fagent bot3">
+            <div class="fagent-head">
+              <div class="fagent-avatar a-news"><div class="typing-dots"><i></i><i></i><i></i></div>N</div>
+              <div class="fagent-info"><div class="fagent-name">宏观情报分析师</div><div class="fagent-role">News</div></div>
+            </div>
+            <div class="fagent-desc">全球新闻 / 宏观 / 事件</div>
+          </div>
+          <div class="fagent bot4">
+            <div class="fagent-head">
+              <div class="fagent-avatar a-tech"><div class="typing-dots"><i></i><i></i><i></i></div>T</div>
+              <div class="fagent-info"><div class="fagent-name">技术策略主管</div><div class="fagent-role">Technical</div></div>
+            </div>
+            <div class="fagent-desc">MACD / RSI / 价格模式</div>
+          </div>
+        </div>
+
+        <div class="fstage4-detail">
+          <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">4 类原始信号源</span></div>
+          <div class="fsd-col"><span class="fsd-label">流程</span><span class="fsd-value">4 位研究角色并行 / 互不干扰</span></div>
+          <div class="fsd-col is-target"><span class="fsd-label">输出</span><span class="fsd-value">4 份独立简报 + 证据链</span></div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="to-next">
+    <svg viewBox="0 0 32 36"><path d="M 16 2 L 16 34"/></svg>
+    <span class="label">汇聚信息 <span class="arrow">→</span> 多空辩论（板块 2）</span>
+  </div>
+
+  <section class="spec-note">
+    <h3>动效序列（循环 4.8s · 纯光效 · 无曲线）</h3>
+    <ul>
+      <li><b>0.0 → 1.5s</b> · 四个 bot 卡片 border 依次亮 lime（stagger 0.4s），每张亮 ~0.7s 后自然衰减</li>
+      <li><b>2.0 → 3.7s</b> · 下方大框（输入 / 流程 / 输出 meta）border + 背景 lime 渐亮</li>
+      <li><b>2.6 → 4.2s</b> · <code>输出</code> 列的 label 与 value 文字变 lime</li>
+      <li><b>3.7 → 4.8s</b> · 所有光效衰减回 idle · 进入下一循环</li>
+    </ul>
+    <p style="margin-top:10px;">4 个 bot 头顶三点 idle 异步呼吸不变（1.8 / 2.4 / 1.4 / 2.1s · 各自 accent 色）。</p>
+  </section>
+
+</div>
+</body>
+</html>

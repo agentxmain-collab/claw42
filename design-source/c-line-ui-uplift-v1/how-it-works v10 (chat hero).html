@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claw42 · 流程介绍 + Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800;900&family=Noto+Sans+SC:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ========================================================================
+     CLAW42 — workflow intro page · v10 (+ Hero chat)
+     Token + class names mirror dispatchConsoleV9 module for visual continuity.
+     ======================================================================== */
+  :root{
+    --bg:#000000;
+    --bg-2:#0a0a0a;
+    --card:#171717;
+    --card-2:#1f1f1f;
+    --line:rgba(255,255,255,0.08);
+    --line-2:rgba(255,255,255,0.14);
+    --fg:#ffffff;
+    --fg-2:#a6a6a6;
+    --fg-3:#949494;
+    --purple:#5227ff;
+    --purple-2:#7c5cff;
+    --lime:#d1ff55;
+    --err:#e95032;
+    --ok:#14a739;
+    --warn:#fed500;
+    --radius-card:16px;
+    --radius-panel:24px;
+    --content-max:1240px;
+    --font-display:"Manrope","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);color:var(--fg);
+    font-family:var(--font-display);
+    font-size:14px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;overflow-x:hidden;
+  }
+  ::selection{background:var(--purple);color:#fff;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit;}
+  .mono{font-family:var(--font-mono);}
+
+  /* ── top nav (mirrors claw42 home nav) ──────────────────────────────── */
+  nav.topnav{
+    position:fixed;left:0;right:0;top:0;z-index:80;
+    height:72px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    background:rgba(0,0,0,0.8);
+    backdrop-filter:blur(12px);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 32px;
+  }
+  .nav-logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-0.01em;font-size:18px;}
+  .nav-logo .robot{
+    width:34px;height:34px;border-radius:9px;
+    background:linear-gradient(135deg,#5227ff,#7c5cff);
+    display:grid;place-items:center;font-size:18px;
+    color:#fff;flex-shrink:0;
+    box-shadow:0 4px 16px rgba(82,39,255,0.32);
+  }
+  .nav-logo .wordmark{font-family:var(--font-display);letter-spacing:-0.02em;}
+  .nav-logo .wordmark .num{color:var(--purple-2);}
+  .nav-right{display:flex;align-items:center;gap:12px;}
+  .nav-btn{
+    height:44px;padding:0 16px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:13.5px;font-weight:600;
+    background:rgba(255,255,255,0.08);
+    border:1px solid transparent;
+    transition:background .15s,color .15s;
+  }
+  .nav-btn:hover{background:rgba(255,255,255,0.15);}
+  .nav-btn.active{color:#fff;}
+  .nav-btn .green-dot{
+    width:8px;height:8px;border-radius:50%;background:var(--ok);
+    box-shadow:0 0 0 3px rgba(20,167,57,0.2);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  .nav-btn.lang{border:1px solid rgba(255,255,255,0.12);padding-right:32px;position:relative;}
+  .nav-btn.lang svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:rgba(255,255,255,0.7);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  /* ── background gradients ──────────────────────────────────────────── */
+  main{
+    position:relative;
+    padding-top:72px;
+    min-height:100vh;
+    overflow:hidden;
+  }
+  main::before, main::after{content:"";position:absolute;inset:0;pointer-events:none;}
+  main::before{background:radial-gradient(ellipse 120% 60% at 50% 0%, rgba(124,92,255,0.16) 0%, transparent 60%);}
+  main::after{background:radial-gradient(ellipse 80% 40% at 50% 30%, rgba(58,123,255,0.06) 0%, transparent 70%);}
+
+  .console{
+    position:relative;z-index:1;
+    max-width:var(--content-max);
+    margin:0 auto;
+    padding:0 48px;
+  }
+
+  /* ── page header (eyebrow + title + meta + tabs) ───────────────────── */
+  .dispatch-page-header{padding:36px 0 28px;}
+  .dispatch-page-title-row{
+    display:flex;justify-content:space-between;align-items:flex-end;gap:32px;
+    padding-bottom:18px;
+  }
+  .dispatch-page-copy{flex:1;min-width:0;}
+  .eyebrow{
+    font-size:11px;color:var(--fg-2);letter-spacing:0.16em;
+    text-transform:uppercase;margin-bottom:10px;
+    font-family:var(--font-mono);
+  }
+  .dispatch-page-header .title{
+    font-size:30px;font-weight:900;line-height:1.18;
+    margin:0 0 12px;letter-spacing:-0.005em;
+  }
+  .dispatch-page-header .title .accent{color:var(--lime);}
+  .dispatch-page-header .subtitle{
+    font-size:13.5px;color:var(--fg-2);line-height:1.6;max-width:720px;
+  }
+  .meta-row{display:flex;gap:28px;align-items:baseline;flex-shrink:0;}
+  .meta-chip{display:flex;flex-direction:column;align-items:flex-start;gap:3px;}
+  .meta-num{font-size:24px;font-weight:900;color:var(--lime);letter-spacing:-0.02em;line-height:1;}
+  .meta-lbl{font-size:9px;color:var(--fg-2);letter-spacing:0.14em;text-transform:uppercase;font-family:var(--font-mono);}
+
+  .topbar-tabs{
+    display:flex;gap:4px;padding:4px;
+    background:rgba(255,255,255,0.04);border-radius:12px;width:fit-content;
+  }
+  .ttab{
+    padding:8px 18px;font-size:12px;font-weight:700;color:var(--fg-2);
+    border-radius:9px;display:inline-flex;align-items:center;gap:8px;
+    transition:color .2s,background .2s,box-shadow .2s;letter-spacing:0.01em;
+  }
+  .ttab.active{background:var(--card);color:var(--fg);box-shadow:inset 0 0 0 1px rgba(209,255,85,0.5);}
+  .ttab:hover{color:var(--fg);background:rgba(255,255,255,0.08);}
+  .ttab .badge{
+    padding:2px 7px;background:var(--lime);color:#1a1a1a;border-radius:5px;
+    font-size:9px;letter-spacing:0.05em;font-weight:800;
+  }
+
+  /* ── v-flow container ─────────────────────────────────────────────── */
+  .v-flow{padding-bottom:60px;}
+
+  /* ── HERO · robot chat ────────────────────────────────────────────── */
+  .hero-chat{
+    background:linear-gradient(180deg, rgba(82,39,255,0.06), transparent 38%), var(--card);
+    border:1px solid rgba(124,92,255,0.22);
+    border-radius:var(--radius-panel);
+    margin-bottom:24px;
+    overflow:hidden;
+    position:relative;
+  }
+  .hero-chat::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg, transparent, rgba(209,255,85,0.42), rgba(124,92,255,0.42), transparent);
+    pointer-events:none;
+  }
+  .hero-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 24px;
+    background:rgba(82,39,255,0.05);
+    border-bottom:1px solid var(--line-2);
+    gap:18px;flex-wrap:wrap;
+  }
+  .hero-head-left{display:flex;align-items:center;gap:14px;min-width:0;}
+  .hero-icon{
+    width:38px;height:38px;border-radius:11px;
+    background:linear-gradient(135deg, var(--purple), var(--purple-2));
+    display:grid;place-items:center;color:#fff;
+    font-size:17px;font-weight:900;flex-shrink:0;
+    box-shadow:0 4px 16px rgba(82,39,255,0.32);
+  }
+  .hero-titlewrap{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .hero-title{font-size:15px;font-weight:800;letter-spacing:-0.005em;display:flex;align-items:center;gap:10px;}
+  .hero-title .live-tag{
+    display:inline-flex;align-items:center;gap:6px;
+    color:#ff8b80;font-size:10.5px;font-weight:700;letter-spacing:0.06em;
+    text-transform:uppercase;font-family:var(--font-mono);
+  }
+  .hero-title .live-tag::before{
+    content:"";width:6px;height:6px;border-radius:50%;background:var(--err);
+    animation:pulse 1.4s ease-in-out infinite;
+  }
+  .hero-sub{
+    font-size:11.5px;color:var(--fg-3);font-family:var(--font-mono);letter-spacing:0.04em;
+    display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+  }
+  .hero-sub .dot-sep{color:var(--line-2);}
+  .hero-head-right{display:flex;align-items:center;gap:18px;flex-shrink:0;flex-wrap:wrap;}
+  .hero-stat{display:flex;align-items:baseline;gap:6px;font-size:11px;color:var(--fg-3);letter-spacing:0.04em;font-family:var(--font-mono);}
+  .hero-stat b{color:var(--fg);font-weight:800;font-size:13px;}
+  .hero-stat.lime b{color:var(--lime);}
+  .hero-divider{width:1px;height:14px;background:var(--line-2);}
+  .hero-cta{
+    padding:8px 14px;border-radius:9px;
+    background:rgba(209,255,85,0.12);
+    border:1px solid rgba(209,255,85,0.32);
+    color:var(--lime);font-size:12px;font-weight:700;
+    display:inline-flex;align-items:center;gap:7px;
+    transition:background .15s,border-color .15s;
+  }
+  .hero-cta:hover{background:rgba(209,255,85,0.2);border-color:rgba(209,255,85,0.55);}
+
+  /* hero body */
+  .hero-body{
+    padding:20px 24px 22px;
+    background:rgba(0,0,0,0.18);
+    display:grid;
+    grid-template-columns:1fr 280px;
+    gap:24px;
+    align-items:start;
+  }
+  .hero-conv{
+    display:flex;flex-direction:column;gap:14px;
+    min-width:0;
+  }
+
+  /* stage marker (carry-over from main page) */
+  .stage-marker{
+    display:flex;align-items:center;gap:10px;
+    padding:4px 0;
+  }
+  .stage-marker .line{flex:1;height:1px;background:var(--line);transition:background .24s;}
+  .stage-marker .badge{
+    padding:5px 11px;border-radius:999px;font-size:10px;font-weight:700;
+    letter-spacing:0.06em;white-space:nowrap;text-transform:uppercase;font-family:var(--font-mono);
+    background:rgba(255,255,255,0.035);color:var(--fg-3);
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  .stage-marker.done .line{background:rgba(20,167,57,0.16);}
+  .stage-marker.done .badge{background:rgba(20,167,57,0.06);color:rgba(170,220,185,0.84);border-color:rgba(20,167,57,0.2);}
+  .stage-marker.done .badge::before{content:"✓ ";color:var(--ok);font-weight:900;}
+  .stage-marker.active .line{background:linear-gradient(90deg, transparent, rgba(209,255,85,0.42), transparent);}
+  .stage-marker.active .badge{
+    background:rgba(209,255,85,0.16);color:var(--lime);border-color:rgba(209,255,85,0.46);
+    box-shadow:0 0 18px rgba(209,255,85,0.16);
+    animation:breath 2.4s ease-in-out infinite;
+  }
+  .stage-marker.active .badge .dot{
+    width:6px;height:6px;border-radius:50%;background:var(--lime);
+    display:inline-block;margin-right:6px;vertical-align:middle;
+    animation:pulse 1.2s ease-in-out infinite;
+  }
+  .stage-marker.pending .line{background:rgba(255,255,255,0.06);}
+  .stage-marker.pending .badge{background:rgba(255,255,255,0.025);color:var(--fg-3);border:1px dashed rgba(255,255,255,0.14);}
+  @keyframes breath{
+    0%,100%{box-shadow:0 0 14px rgba(209,255,85,0.12);border-color:rgba(209,255,85,0.36);}
+    50%{box-shadow:0 0 24px rgba(209,255,85,0.22);border-color:rgba(209,255,85,0.6);}
+  }
+
+  /* msg */
+  .msg{display:flex;gap:12px;align-items:flex-start;}
+  .msg-avatar{
+    width:32px;height:32px;border-radius:9px;
+    display:grid;place-items:center;
+    font-size:13px;font-weight:800;flex-shrink:0;
+  }
+  .a-fund{background:#2a3145;color:#8aa2d4;}
+  .a-sent{background:#3a2a45;color:#c89dd4;}
+  .a-news{background:#2a3a2a;color:#92c692;}
+  .a-tech{background:#45402a;color:#d4b482;}
+  .a-bull{background:#2a4533;color:#7ad19a;}
+  .a-bear{background:#452a2a;color:#d48a7a;}
+  .a-trade{background:#2a2a45;color:#9aa0d4;}
+  .a-aggr{background:#45382a;color:#d49872;}
+  .a-neut{background:#38383a;color:#b6b6b6;}
+  .a-cons{background:#2a3a45;color:#7ab2d4;}
+  .a-pm{background:rgba(209,255,85,0.16);color:var(--lime);}
+  .a-mem{background:rgba(82,39,255,0.22);color:var(--purple-2);}
+
+  .msg-body{flex:1;min-width:0;}
+  .msg-meta{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;flex-wrap:wrap;}
+  .msg-name{font-size:12px;font-weight:800;color:var(--fg);letter-spacing:-0.005em;}
+  .msg-role{font-size:10px;color:var(--fg-3);font-family:var(--font-mono);letter-spacing:0.04em;}
+  .msg-time{font-size:10px;color:var(--fg-3);font-family:var(--font-mono);}
+  .msg-time::before{content:"·";margin-right:6px;color:var(--fg-3);}
+  .msg-bubble{
+    background:rgba(255,255,255,0.035);
+    border:1px solid var(--line);
+    border-radius:14px;border-top-left-radius:4px;
+    padding:10px 14px;font-size:13px;color:var(--fg-2);line-height:1.6;
+  }
+  .msg-bubble b{color:var(--fg);font-weight:700;}
+  .msg-bubble code{
+    font-family:var(--font-mono);font-size:12px;
+    background:rgba(124,92,255,0.16);color:var(--purple-2);
+    padding:1px 6px;border-radius:5px;
+  }
+  .msg-quote{
+    background:rgba(255,255,255,0.03);
+    border-left:2px solid var(--purple-2);
+    border-radius:4px;padding:7px 10px;
+    font-size:11.5px;color:var(--fg-3);
+    margin-bottom:8px;line-height:1.5;
+  }
+  .msg-quote::before{content:"↳ ";color:var(--purple-2);font-weight:700;margin-right:4px;}
+  .msg-quote .q-name{color:var(--purple-2);font-weight:700;margin-right:6px;}
+
+  .typing{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:10px 14px;background:rgba(82,39,255,0.1);
+    border-radius:14px;border-top-left-radius:4px;
+    width:fit-content;
+  }
+  .typing .d{width:6px;height:6px;border-radius:50%;background:var(--purple-2);animation:typing 1.4s ease-in-out infinite;}
+  .typing .d:nth-child(2){animation-delay:0.2s;}
+  .typing .d:nth-child(3){animation-delay:0.4s;}
+  @keyframes typing{0%,80%,100%{opacity:0.25;transform:translateY(0);}40%{opacity:1;transform:translateY(-3px);}}
+
+  /* hero right side: roster */
+  .hero-roster{
+    background:rgba(255,255,255,0.025);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    display:flex;flex-direction:column;gap:10px;
+    align-self:stretch;
+  }
+  .hero-roster-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding-bottom:8px;border-bottom:1px solid var(--line);
+  }
+  .hero-roster-head .ttl{font-size:11px;color:var(--fg-3);font-family:var(--font-mono);letter-spacing:0.1em;text-transform:uppercase;font-weight:700;}
+  .hero-roster-head .num{font-size:13px;font-weight:800;color:var(--lime);font-family:var(--font-mono);}
+  .roster-grid{
+    display:grid;grid-template-columns:repeat(2,1fr);gap:6px;
+  }
+  .roster-cell{
+    display:flex;align-items:center;gap:8px;
+    padding:6px 8px;border-radius:8px;
+    background:rgba(255,255,255,0.018);
+    border:1px solid transparent;
+    transition:background .15s,border-color .15s;
+  }
+  .roster-cell:hover{background:rgba(255,255,255,0.05);border-color:rgba(124,92,255,0.32);}
+  .roster-cell .av{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:10px;font-weight:800;flex-shrink:0;}
+  .roster-cell .nm{font-size:10.5px;color:var(--fg-2);font-weight:600;line-height:1.2;letter-spacing:-0.005em;}
+  .roster-cell .st{
+    width:6px;height:6px;border-radius:50%;background:var(--fg-3);margin-left:auto;flex-shrink:0;
+  }
+  .roster-cell.busy .st{background:var(--lime);animation:pulse 1.6s ease-in-out infinite;box-shadow:0 0 0 3px rgba(209,255,85,0.16);}
+  .roster-cell.idle .st{background:var(--ok);}
+  .roster-cell.queued .st{background:var(--warn);}
+
+  .hero-foot{
+    padding:10px 24px 14px;
+    background:rgba(0,0,0,0.32);
+    border-top:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+    font-size:11px;color:var(--fg-3);font-family:var(--font-mono);letter-spacing:0.06em;
+  }
+  .hero-foot .arrow{color:var(--lime);}
+  .hero-foot .keys{display:flex;align-items:center;gap:10px;}
+  .hero-foot .keys b{color:var(--fg-2);font-weight:700;}
+
+  /* ── flow stages (6 cards) ───────────────────────────────────────── */
+  .flow-stages-v4{display:flex;flex-direction:column;gap:16px;}
+  .fstage4{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius-panel);
+    padding:22px 26px;
+    display:flex;flex-direction:row;gap:26px;align-items:stretch;
+    position:relative;overflow:hidden;
+    transition:border-color .35s,box-shadow .35s,transform .35s cubic-bezier(.2,.7,.3,1);
+  }
+  .fstage4:hover{
+    border-color:rgba(82,39,255,0.48);
+    box-shadow:0 18px 54px rgba(0,0,0,0.24);
+    transform:translateY(-1px);
+  }
+  .fstage4.debate{border-color:rgba(82,39,255,0.3);}
+  .fstage4.final{
+    border-color:rgba(209,255,85,0.4);
+    background:linear-gradient(90deg, rgba(209,255,85,0.04), transparent 40%), var(--card);
+  }
+  .fstage4.final:hover{border-color:rgba(209,255,85,0.58);}
+  .fstage4.memory{
+    border-style:dashed;
+    border-color:rgba(255,255,255,0.18);
+    background:rgba(82,39,255,0.04);
+  }
+  .fstage4.memory:hover{border-color:rgba(82,39,255,0.44);}
+
+  .fstage4-side{
+    flex:0 0 220px;
+    display:flex;flex-direction:column;gap:12px;
+    padding-right:22px;border-right:1px solid var(--line);
+  }
+  .fs4-head{display:flex;align-items:baseline;gap:14px;}
+  .fs4-num{
+    font-size:34px;font-weight:900;color:var(--fg);
+    line-height:1;letter-spacing:-0.03em;
+  }
+  .fs4-meta{display:flex;flex-direction:column;gap:3px;}
+  .fs4-name{font-size:17px;font-weight:800;line-height:1.2;letter-spacing:-0.005em;margin:0;}
+  .fs4-tag{font-size:10px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;font-family:var(--font-mono);}
+  .fs4-cnt{
+    font-size:13px;color:var(--fg);letter-spacing:0.02em;
+    padding:7px 14px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid transparent;
+    border-radius:999px;font-weight:700;align-self:flex-start;
+    transition:background .2s,border-color .2s,color .2s;
+  }
+  .fstage4:hover .fs4-cnt{background:rgba(82,39,255,0.16);border-color:rgba(82,39,255,0.28);color:var(--purple-2);}
+  .fstage4.final:hover .fs4-cnt{background:rgba(209,255,85,0.16);border-color:rgba(209,255,85,0.34);color:var(--lime);}
+  .fs4-side-chip{
+    margin-top:auto;
+    padding:6px 12px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid transparent;border-radius:8px;
+    font-size:10px;color:var(--fg);letter-spacing:0.06em;
+    text-transform:uppercase;font-weight:600;align-self:flex-start;
+    font-family:var(--font-mono);
+    transition:background .2s,border-color .2s,color .2s;
+  }
+  .fstage4:hover .fs4-side-chip{background:rgba(82,39,255,0.16);border-color:rgba(82,39,255,0.26);color:var(--purple-2);}
+  .fstage4.final:hover .fs4-side-chip{background:rgba(209,255,85,0.14);border-color:rgba(209,255,85,0.3);color:var(--lime);}
+
+  .fstage4-body{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;}
+  .fagents{display:grid;gap:10px;}
+  .fagents-1{grid-template-columns:320px;}
+  .fagents-2{grid-template-columns:repeat(2,320px);}
+  .fagents-3{grid-template-columns:repeat(3,1fr);max-width:820px;}
+  .fagents-4{grid-template-columns:repeat(4,1fr);}
+
+  .fagent{
+    background:rgba(255,255,255,0.025);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:11px 12px;
+    display:flex;flex-direction:column;gap:6px;
+    min-height:72px;
+    transition:border-color .25s,background .25s,box-shadow .25s,transform .25s cubic-bezier(.2,.7,.3,1);
+  }
+  .fagent:hover{
+    border-color:rgba(82,39,255,0.42);
+    background:rgba(82,39,255,0.075);
+    box-shadow:0 10px 28px rgba(0,0,0,0.18);
+    transform:translateY(-1px);
+  }
+  .fstage4.final .fagent:hover{border-color:rgba(209,255,85,0.42);background:rgba(209,255,85,0.075);}
+  .fagent-head{display:flex;align-items:center;gap:10px;}
+  .fagent-avatar{
+    width:30px;height:30px;border-radius:8px;
+    display:grid;place-items:center;
+    font-size:13px;font-weight:800;flex-shrink:0;
+    transition:box-shadow .25s;
+  }
+  .fagent:hover .fagent-avatar{box-shadow:0 0 18px rgba(82,39,255,0.22);}
+  .fstage4.final .fagent:hover .fagent-avatar{box-shadow:0 0 18px rgba(209,255,85,0.22);}
+  .fagent-info{flex:1;min-width:0;}
+  .fagent-name{font-size:12.5px;font-weight:800;line-height:1.2;letter-spacing:-0.005em;}
+  .fagent-role{font-size:9px;color:var(--fg-3);margin-top:2px;letter-spacing:0.06em;font-family:var(--font-mono);}
+  .fagent-desc{font-size:11px;color:var(--fg-2);line-height:1.5;}
+
+  .fstage4-detail{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+    padding:14px 16px;
+    background:rgba(255,255,255,0.02);
+    border:1px solid var(--line);border-radius:12px;
+    margin-top:auto;
+    transition:border-color .25s,background .25s,box-shadow .25s;
+  }
+  .fstage4-detail:hover{border-color:rgba(82,39,255,0.34);background:rgba(82,39,255,0.055);box-shadow:0 10px 28px rgba(0,0,0,0.14);}
+  .fstage4.final .fstage4-detail:hover{border-color:rgba(209,255,85,0.34);background:rgba(209,255,85,0.055);}
+  .fsd-col{display:flex;flex-direction:column;gap:4px;}
+  .fsd-label{color:var(--fg-3);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;font-family:var(--font-mono);}
+  .fsd-value{color:var(--fg-2);font-size:12px;line-height:1.45;}
+
+  /* ── footer CTA ───────────────────────────────────────────────────── */
+  .flow-footer-cta{
+    margin-top:32px;
+    display:flex;justify-content:space-between;align-items:center;gap:16px;
+    padding-top:20px;border-top:1px solid var(--line);flex-wrap:wrap;
+  }
+  .flow-footer-note{font-size:12.5px;color:var(--fg-3);}
+  .flow-footer-note b{color:var(--fg-2);font-weight:600;}
+  .switch-to-debate{
+    padding:12px 22px;
+    background:var(--lime);color:#1a1a1a;
+    border-radius:12px;font-size:13px;font-weight:800;
+    display:inline-flex;align-items:center;gap:8px;
+    transition:transform .15s,box-shadow .15s;
+  }
+  .switch-to-debate:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(209,255,85,0.32);}
+  .switch-to-debate .arr{transition:transform .15s;}
+  .switch-to-debate:hover .arr{transform:translateX(3px);}
+
+  /* ── responsive ───────────────────────────────────────────────────── */
+  @media (max-width:1100px){
+    .hero-body{grid-template-columns:1fr;}
+    .hero-roster{order:-1;}
+    .roster-grid{grid-template-columns:repeat(3,1fr);}
+  }
+  @media (max-width:880px){
+    .console{padding:0 20px;}
+    .dispatch-page-title-row{flex-direction:column;align-items:flex-start;}
+    .meta-row{align-self:flex-start;}
+    .fstage4{flex-direction:column;gap:16px;}
+    .fstage4-side{flex:none;padding:0 0 14px;border-right:0;border-bottom:1px solid var(--line);}
+    .fagents-2,.fagents-3,.fagents-4{grid-template-columns:1fr;}
+    .fagents-1,.fagents-2{grid-template-columns:1fr;max-width:none;}
+    .roster-grid{grid-template-columns:repeat(2,1fr);}
+    .fstage4-detail{grid-template-columns:1fr;}
+    nav.topnav{padding:0 18px;}
+    .nav-btn.active span:not(.green-dot){display:none;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ── TOP NAV ──────────────────────────────────────────────────────── -->
+<nav class="topnav">
+  <a href="/" class="nav-logo">
+    <span class="robot" aria-hidden="true">
+      <!-- minimal robot glyph -->
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <rect x="4" y="7" width="16" height="12" rx="3" stroke="#fff" stroke-width="1.8"/>
+        <circle cx="9" cy="13" r="1.4" fill="#d1ff55"/>
+        <circle cx="15" cy="13" r="1.4" fill="#d1ff55"/>
+        <path d="M12 4v3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="12" cy="3" r="1.2" fill="#d1ff55"/>
+      </svg>
+    </span>
+    <span class="wordmark">claw<span class="num">42</span></span>
+  </a>
+  <div class="nav-right">
+    <a href="#" class="nav-btn active" aria-current="page">
+      <span class="green-dot"></span>
+      <span>实时分析</span>
+    </a>
+    <button class="nav-btn lang" type="button">
+      <span>简体中文</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+</nav>
+
+<main>
+  <section class="console" aria-label="Claw42 dispatch console">
+
+    <!-- ── PAGE HEADER ─────────────────────────────────────────────── -->
+    <header class="dispatch-page-header">
+      <div class="dispatch-page-title-row">
+        <div class="dispatch-page-copy">
+          <div class="eyebrow">CLAW 42 · DISPATCH CONSOLE</div>
+          <h1 class="title">一笔交易决策 · <span class="accent">11 个角色 · 6 个阶段</span> 协同产出</h1>
+          <p class="subtitle">不是一个 AI 拍脑袋。每一步都有专人，每一次分歧被记录，每一笔结果都回灌下一轮。</p>
+        </div>
+        <div class="meta-row" aria-label="Dispatch process summary">
+          <div class="meta-chip"><span class="meta-num">11</span><span class="meta-lbl">Agents</span></div>
+          <div class="meta-chip"><span class="meta-num">6</span><span class="meta-lbl">Stages</span></div>
+          <div class="meta-chip"><span class="meta-num">2×</span><span class="meta-lbl">Debate</span></div>
+          <div class="meta-chip"><span class="meta-num">∞</span><span class="meta-lbl">Memory</span></div>
+        </div>
+      </div>
+      <div class="topbar-tabs" role="tablist">
+        <button class="ttab active" type="button" role="tab" aria-selected="true">流程介绍</button>
+        <button class="ttab" type="button" role="tab" aria-selected="false">行情分析 <span class="badge">LIVE</span></button>
+      </div>
+    </header>
+
+    <!-- ── V-FLOW ──────────────────────────────────────────────────── -->
+    <div class="v-flow">
+
+      <!-- ── HERO · ROBOT CHAT ─────────────────────────────────────── -->
+      <section class="hero-chat" aria-label="AI team chat preview">
+        <div class="hero-head">
+          <div class="hero-head-left">
+            <div class="hero-icon">42</div>
+            <div class="hero-titlewrap">
+              <div class="hero-title">
+                AI 团队正在开会
+                <span class="live-tag">live</span>
+              </div>
+              <div class="hero-sub">
+                <span>BTC / USDT · 4H</span>
+                <span class="dot-sep">·</span>
+                <span>会议 #4218</span>
+                <span class="dot-sep">·</span>
+                <span>2026-05-13 09:14:22 UTC</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-head-right">
+            <div class="hero-stat lime"><b>4 / 6</b><span>当前阶段</span></div>
+            <div class="hero-divider"></div>
+            <div class="hero-stat"><b>11 / 11</b><span>角色在线</span></div>
+            <div class="hero-divider"></div>
+            <a href="#" class="hero-cta">查看完整会议 <span>→</span></a>
+          </div>
+        </div>
+
+        <div class="hero-body">
+          <!-- conversation -->
+          <div class="hero-conv">
+
+            <div class="stage-marker done">
+              <span class="line"></span>
+              <span class="badge">01 · 信息收集 · 4 份简报</span>
+              <span class="line"></span>
+            </div>
+
+            <div class="msg">
+              <div class="msg-avatar a-fund">F</div>
+              <div class="msg-body">
+                <div class="msg-meta">
+                  <span class="msg-name">基本面研究主管</span>
+                  <span class="msg-role">Fundamentals</span>
+                  <span class="msg-time">09:08:11</span>
+                </div>
+                <div class="msg-bubble">
+                  ETF 净流入连续 <b>3 周转正</b>，机构持仓占比 <code>17.4%</code> 创新高。无重大解锁事件在 14 天窗口内。<b>基本面对多头有利。</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="stage-marker done">
+              <span class="line"></span>
+              <span class="badge">02 · 多空辩论 · 3 轮</span>
+              <span class="line"></span>
+            </div>
+
+            <div class="msg">
+              <div class="msg-avatar a-bull">↑</div>
+              <div class="msg-body">
+                <div class="msg-meta">
+                  <span class="msg-name">多头策略师</span>
+                  <span class="msg-role">Bullish · R3</span>
+                  <span class="msg-time">09:11:42</span>
+                </div>
+                <div class="msg-bubble">
+                  4H 双底形态 + ETF 资金面 + 链上活跃地址 +12% → 风险/回报 <b>2.4 : 1</b>，应入场。
+                </div>
+              </div>
+            </div>
+
+            <div class="msg">
+              <div class="msg-avatar a-bear">↓</div>
+              <div class="msg-body">
+                <div class="msg-meta">
+                  <span class="msg-name">空头策略师</span>
+                  <span class="msg-role">Bearish · R3</span>
+                  <span class="msg-time">09:12:19</span>
+                </div>
+                <div class="msg-quote">
+                  <span class="q-name">多头策略师</span>4H 双底 + 链上活跃 +12%
+                </div>
+                <div class="msg-bubble">
+                  双底成交量 <b>背离</b>，颈线下沿挂单容易被插针扫损。建议等待回踩确认，否则进场点偏弱。
+                </div>
+              </div>
+            </div>
+
+            <div class="stage-marker active">
+              <span class="line"></span>
+              <span class="badge"><span class="dot"></span>03 · 交易方案 · 综合输出</span>
+              <span class="line"></span>
+            </div>
+
+            <div class="msg">
+              <div class="msg-avatar a-trade">$</div>
+              <div class="msg-body">
+                <div class="msg-meta">
+                  <span class="msg-name">交易策略总监</span>
+                  <span class="msg-role">Trader</span>
+                  <span class="msg-time">09:14:02</span>
+                </div>
+                <div class="msg-bubble">
+                  采纳空头侧的回踩确认意见。方向 <b>LONG</b>，分批入场 <code>30% / 30% / 40%</code>，仓位 12%，止损 <code>-4.8%</code> 设在颈线下方。<b>提交风控审查…</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="msg">
+              <div class="msg-avatar a-aggr">A</div>
+              <div class="msg-body">
+                <div class="msg-meta">
+                  <span class="msg-name">收益进攻官</span>
+                  <span class="msg-role">Aggressive</span>
+                </div>
+                <div class="typing" aria-label="typing">
+                  <span class="d"></span><span class="d"></span><span class="d"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="stage-marker pending">
+              <span class="line"></span>
+              <span class="badge">04 · 风险审查 → 05 · 终审 → 06 · 复盘</span>
+              <span class="line"></span>
+            </div>
+
+          </div>
+
+          <!-- roster -->
+          <aside class="hero-roster">
+            <div class="hero-roster-head">
+              <span class="ttl">今日值班 · roster</span>
+              <span class="num">11/11</span>
+            </div>
+            <div class="roster-grid">
+              <div class="roster-cell idle"><span class="av a-fund">F</span><span class="nm">基本面</span><span class="st"></span></div>
+              <div class="roster-cell idle"><span class="av a-sent">O</span><span class="nm">链上</span><span class="st"></span></div>
+              <div class="roster-cell idle"><span class="av a-news">N</span><span class="nm">宏观</span><span class="st"></span></div>
+              <div class="roster-cell idle"><span class="av a-tech">T</span><span class="nm">技术</span><span class="st"></span></div>
+              <div class="roster-cell idle"><span class="av a-bull">↑</span><span class="nm">多头</span><span class="st"></span></div>
+              <div class="roster-cell idle"><span class="av a-bear">↓</span><span class="nm">空头</span><span class="st"></span></div>
+              <div class="roster-cell busy"><span class="av a-trade">$</span><span class="nm">交易</span><span class="st"></span></div>
+              <div class="roster-cell busy"><span class="av a-aggr">A</span><span class="nm">激进</span><span class="st"></span></div>
+              <div class="roster-cell queued"><span class="av a-neut">N</span><span class="nm">中立</span><span class="st"></span></div>
+              <div class="roster-cell queued"><span class="av a-cons">C</span><span class="nm">保守</span><span class="st"></span></div>
+              <div class="roster-cell queued"><span class="av a-pm">PM</span><span class="nm">首席</span><span class="st"></span></div>
+            </div>
+            <div style="display:flex;gap:10px;font-size:9.5px;color:var(--fg-3);letter-spacing:0.06em;text-transform:uppercase;font-family:var(--font-mono);padding-top:8px;border-top:1px solid var(--line);">
+              <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--lime);"></span>working</span>
+              <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--warn);"></span>queued</span>
+              <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok);"></span>idle</span>
+            </div>
+          </aside>
+        </div>
+
+        <div class="hero-foot">
+          <div class="keys">
+            <span><b>实时观看：</b>每个角色的论据、回合、引用关系都可下钻</span>
+          </div>
+          <div><span class="arrow">↓</span> 下方为完整 6 阶段流程说明</div>
+        </div>
+      </section>
+
+      <!-- ── 6 STAGE CARDS (unchanged structure) ─────────────────────── -->
+      <div class="flow-stages-v4">
+
+        <!-- 01 -->
+        <article class="fstage4" aria-labelledby="flow-stage-1">
+          <div class="fstage4-side">
+            <div class="fs4-head">
+              <span class="fs4-num">1</span>
+              <div class="fs4-meta">
+                <h2 id="flow-stage-1" class="fs4-name">信息收集</h2>
+                <div class="fs4-tag">ANALYSTS</div>
+              </div>
+            </div>
+            <span class="fs4-cnt">并行采集</span>
+            <span class="fs4-side-chip">独立简报 · 不互相干扰</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-4">
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-fund">F</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">基本面研究主管</div>
+                    <div class="fagent-role">Fundamentals</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">财务 / 内在价值 / red flags</div>
+              </div>
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-sent">O</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">链上数据分析主管</div>
+                    <div class="fagent-role">On-chain</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">地址行为 / 资金流 / 链上活跃度</div>
+              </div>
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-news">N</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">宏观情报分析师</div>
+                    <div class="fagent-role">News</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">全球新闻 / 宏观 / 事件</div>
+              </div>
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-tech">T</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">技术策略主管</div>
+                    <div class="fagent-role">Technical</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">MACD / RSI / 价格模式</div>
+              </div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">4 类原始信号源</span></div>
+              <div class="fsd-col"><span class="fsd-label">流程</span><span class="fsd-value">4 位研究角色并行 / 互不干扰</span></div>
+              <div class="fsd-col"><span class="fsd-label">输出</span><span class="fsd-value">4 份独立简报 + 证据链</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 02 -->
+        <article class="fstage4 debate" aria-labelledby="flow-stage-2">
+          <div class="fstage4-side">
+            <div class="fs4-head">
+              <span class="fs4-num">2</span>
+              <div class="fs4-meta">
+                <h2 id="flow-stage-2" class="fs4-name">多空辩论</h2>
+                <div class="fs4-tag">RESEARCHERS</div>
+              </div>
+            </div>
+            <span class="fs4-cnt">多轮辩论</span>
+            <span class="fs4-side-chip">多轮 debate · 拿出最强论据</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-2">
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-bull">↑</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">多头策略师</div>
+                    <div class="fagent-role">Bullish</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">立论看多 / 守住牛市观点</div>
+              </div>
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-bear">↓</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">空头策略师</div>
+                    <div class="fagent-role">Bearish</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">立论看空 / 守住熊市观点</div>
+              </div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">4 份研究简报</span></div>
+              <div class="fsd-col"><span class="fsd-label">流程</span><span class="fsd-value">多轮立论 / 反驳 / 压力测试</span></div>
+              <div class="fsd-col"><span class="fsd-label">输出</span><span class="fsd-value">辩论纪要 + 双方核心证据</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 03 -->
+        <article class="fstage4" aria-labelledby="flow-stage-3">
+          <div class="fstage4-side">
+            <div class="fs4-head">
+              <span class="fs4-num">3</span>
+              <div class="fs4-meta">
+                <h2 id="flow-stage-3" class="fs4-name">交易方案</h2>
+                <div class="fs4-tag">TRADER</div>
+              </div>
+            </div>
+            <span class="fs4-cnt">综合输出</span>
+            <span class="fs4-side-chip">方向 · 时机 · 仓位 · 止损</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-1">
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-trade">$</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">交易策略总监</div>
+                    <div class="fagent-role">Trader</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">综合简报 + 辩论 → 可执行方案</div>
+              </div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">4 简报 + 多空辩论纪要</span></div>
+              <div class="fsd-col"><span class="fsd-label">决策</span><span class="fsd-value">方向 / 时机 / 仓位 / 止损</span></div>
+              <div class="fsd-col"><span class="fsd-label">边界</span><span class="fsd-value">失效条件 + 风险线</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 04 -->
+        <article class="fstage4 debate" aria-labelledby="flow-stage-4">
+          <div class="fstage4-side">
+            <div class="fs4-head">
+              <span class="fs4-num">4</span>
+              <div class="fs4-meta">
+                <h2 id="flow-stage-4" class="fs4-name">风险审查</h2>
+                <div class="fs4-tag">RISK REVIEW</div>
+              </div>
+            </div>
+            <span class="fs4-cnt">三派审查</span>
+            <span class="fs4-side-chip">波动 · 流动性 · 相关性</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-3">
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-aggr">A</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">收益进攻官</div>
+                    <div class="fagent-role">Aggressive</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">高仓位 / 追求最大收益</div>
+              </div>
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-neut">N</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">组合平衡官</div>
+                    <div class="fagent-role">Neutral</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">平衡仓位 / 风险均衡</div>
+              </div>
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-cons">C</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">风险防御官</div>
+                    <div class="fagent-role">Conservative</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">低仓位 / 守住下行风险</div>
+              </div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">维度</span><span class="fsd-value">波动性 / 流动性 / 相关性</span></div>
+              <div class="fsd-col"><span class="fsd-label">流程</span><span class="fsd-value">三派多轮辩论 / 修订方案</span></div>
+              <div class="fsd-col"><span class="fsd-label">输出</span><span class="fsd-value">含风险边界的最终建议</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 05 -->
+        <article class="fstage4 final" aria-labelledby="flow-stage-5">
+          <div class="fstage4-side">
+            <div class="fs4-head">
+              <span class="fs4-num">5</span>
+              <div class="fs4-meta">
+                <h2 id="flow-stage-5" class="fs4-name">最终决策</h2>
+                <div class="fs4-tag">PORTFOLIO MANAGER</div>
+              </div>
+            </div>
+            <span class="fs4-cnt">终审裁决</span>
+            <span class="fs4-side-chip">批准送执行 · 拒绝落档</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-1">
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-pm">PM</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">首席投资官</div>
+                    <div class="fagent-role">Portfolio Manager</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">全组合视角 · 二元裁决</div>
+              </div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">视角</span><span class="fsd-value">全组合 + 风险预算 + 相关性</span></div>
+              <div class="fsd-col"><span class="fsd-label">批准</span><span class="fsd-value">送交易所执行</span></div>
+              <div class="fsd-col"><span class="fsd-label">拒绝</span><span class="fsd-value">落档进入复盘库</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 06 -->
+        <article class="fstage4 memory" aria-labelledby="flow-stage-6">
+          <div class="fstage4-side">
+            <div class="fs4-head">
+              <span class="fs4-num">6</span>
+              <div class="fs4-meta">
+                <h2 id="flow-stage-6" class="fs4-name">复盘沉淀</h2>
+                <div class="fs4-tag">MEMORY LOOP</div>
+              </div>
+            </div>
+            <span class="fs4-cnt">持续沉淀</span>
+            <span class="fs4-side-chip">cross-run · reflection</span>
+          </div>
+          <div class="fstage4-body">
+            <div class="fagents fagents-1">
+              <div class="fagent">
+                <div class="fagent-head">
+                  <div class="fagent-avatar a-mem">∞</div>
+                  <div class="fagent-info">
+                    <div class="fagent-name">策略复盘主管</div>
+                    <div class="fagent-role">Reflection</div>
+                  </div>
+                </div>
+                <div class="fagent-desc">每次决策都让系统更聪明</div>
+              </div>
+            </div>
+            <div class="fstage4-detail">
+              <div class="fsd-col"><span class="fsd-label">落盘</span><span class="fsd-value">决策档案全量存档</span></div>
+              <div class="fsd-col"><span class="fsd-label">回灌</span><span class="fsd-value">历史经验注入下次 prompt</span></div>
+              <div class="fsd-col"><span class="fsd-label">复利</span><span class="fsd-value">跨标的教训 / 越跑越懂</span></div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- footer CTA -->
+      <div class="flow-footer-cta">
+        <div class="flow-footer-note"><b>每一步都有专人</b> · 每一次分歧被记录 · 每一笔结果被复盘</div>
+        <button class="switch-to-debate" type="button">查看实时 AI 团队工作 <span class="arr">→</span></button>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-line · 板块 6 复盘沉淀 · 动效</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800;900&family=Noto+Sans+SC:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#000; --card:#171717;
+    --line:rgba(255,255,255,0.08); --line-2:rgba(255,255,255,0.14);
+    --fg:#fff; --fg-2:#a6a6a6; --fg-3:#949494;
+    --purple:#5227ff; --purple-2:#7c5cff;
+    --lime:#d1ff55; --err:#e95032; --ok:#14a739; --warn:#fed500;
+    --mem:#a99aff;
+    --radius-card:16px; --radius-panel:24px;
+    --font-display:"Manrope","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-display);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;padding:48px 32px 80px;}
+  .console{max-width:1240px;margin:0 auto;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  .doc-head{margin-bottom:32px;}
+  .doc-head h1{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .doc-head .sub{color:var(--fg-2);font-size:13.5px;line-height:1.65;max-width:760px;margin:0;}
+  .doc-head b{color:#fff;font-weight:700;}
+
+  /* canonical · memory variant (dashed border) */
+  .flow-stages-v4{display:flex;flex-direction:column;gap:16px;}
+  .fstage4{
+    background:rgba(82,39,255,0.04);
+    border:1px dashed rgba(255,255,255,0.18);
+    border-radius:var(--radius-panel);padding:22px 26px;
+    display:flex;flex-direction:row;gap:26px;align-items:stretch;
+    position:relative;overflow:visible;
+  }
+  .fstage4-side{flex:0 0 220px;display:flex;flex-direction:column;gap:12px;padding-right:22px;border-right:1px solid var(--line);position:relative;}
+  .fstage4-side::after{
+    content:attr(data-num);position:absolute;left:-14px;top:50%;
+    transform:translateY(-50%) rotate(-6deg);
+    font-family:var(--font-display);font-weight:900;font-size:200px;line-height:0.85;
+    letter-spacing:-0.06em;color:transparent;
+    -webkit-text-stroke:1.2px rgba(124,92,255,0.34);
+    pointer-events:none;user-select:none;z-index:0;
+  }
+  .fstage4 .fs4-head,.fstage4 .fs4-cnt,.fstage4 .fs4-side-chip{position:relative;z-index:2;}
+  .fs4-head{display:flex;align-items:baseline;gap:14px;}
+  .fs4-num{font-size:34px;font-weight:900;color:var(--fg);line-height:1;letter-spacing:-0.03em;}
+  .fs4-meta{display:flex;flex-direction:column;gap:3px;}
+  .fs4-name{font-size:17px;font-weight:800;line-height:1.2;margin:0;}
+  .fs4-tag{font-size:10px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;font-family:var(--font-mono);}
+  .fs4-cnt{font-size:13px;color:var(--fg);padding:7px 14px;background:rgba(82,39,255,0.16);border:1px solid rgba(124,92,255,0.32);border-radius:999px;font-weight:700;align-self:flex-start;color:var(--purple-2);}
+  .fs4-side-chip{margin-top:auto;padding:6px 12px;background:rgba(255,255,255,0.05);border:1px solid transparent;border-radius:8px;font-size:10px;color:var(--fg);letter-spacing:0.06em;text-transform:uppercase;font-weight:600;align-self:flex-start;font-family:var(--font-mono);}
+  .fstage4-body{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;position:relative;}
+
+  /* mem row */
+  .mem-row{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:stretch;}
+  .fagent{background:rgba(255,255,255,0.025);border:1px solid var(--line);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:8px;min-height:96px;position:relative;overflow:hidden;transition:border-color .4s,box-shadow .4s,background .4s;}
+  .fagent-head{display:flex;align-items:center;gap:10px;position:relative;z-index:2;}
+  .fagent-avatar{
+    width:30px;height:30px;border-radius:8px;flex-shrink:0;position:relative;
+    box-shadow:0 4px 12px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.16);
+    border:1px solid rgba(255,255,255,0.14);font-size:0 !important;
+  }
+  .fagent-avatar::before{
+    content:"";position:absolute;inset:5px 3px;border-radius:5px;
+    background:
+      radial-gradient(circle 1.5px at 30% 50%, var(--eye) 0 1.5px, transparent 2.1px),
+      radial-gradient(circle 1.5px at 70% 50%, var(--eye) 0 1.5px, transparent 2.1px),
+      radial-gradient(ellipse at 50% 65%, #06091a, #02030a 78%);
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .fagent-avatar::after{
+    content:"";position:absolute;left:50%;top:-5px;transform:translateX(-50%);
+    width:1.5px;height:5px;background:rgba(255,255,255,0.5);
+    box-shadow:0 -3px 0 -0.5px var(--lime);
+  }
+  .fagent-avatar.a-mem{background:rgba(82,39,255,0.22);--eye:var(--mem);}
+  .fagent-info{flex:1;min-width:0;}
+  .fagent-name{font-size:12.5px;font-weight:800;line-height:1.2;}
+  .fagent-role{font-size:9px;color:var(--fg-3);margin-top:2px;letter-spacing:0.06em;font-family:var(--font-mono);}
+  .fagent-desc{font-size:11px;color:var(--fg-2);line-height:1.5;position:relative;z-index:2;}
+
+  /* typing dots */
+  .fagent-avatar .typing-dots{
+    position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);
+    background:rgba(13,8,32,0.92);border:1px solid rgba(255,255,255,0.16);
+    padding:2.5px 6px;border-radius:6px;display:flex;gap:2.5px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);z-index:3;
+  }
+  .fagent-avatar .typing-dots i{width:3px;height:3px;border-radius:50%;background:var(--eye);box-shadow:0 0 3px var(--eye);}
+
+  /* output meta */
+  .fstage4-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px;margin-top:auto;position:relative;transition:border-color .4s,box-shadow .4s,background .4s;}
+  .fsd-col{display:flex;flex-direction:column;gap:4px;position:relative;}
+  .fsd-label{color:var(--fg-3);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;font-family:var(--font-mono);transition:color .4s;}
+  .fsd-value{color:var(--fg-2);font-size:12px;line-height:1.45;transition:color .4s;}
+
+  /* ════════════════════════════════════════════════════════════════
+     STAGE 6 · 沉淀归档动效 · 循环 6.0s
+     "决策入库 → 旋转归档 → 反哺下一轮"
+
+     0.0 → 0.5s · memory 卡 紫色 border dashed → solid 渐亮（接收决策）
+     0.4 → 1.6s · 卡内 ⟲ 旋转图标 顺时针 1 周（归档动作）
+     1.0 → 1.6s · 右侧 ARCHIVE FEED 顶部 pop 出新条目（本轮决策）
+     1.6 → 3.6s · 历史条目向下推动（顺序更新）
+     3.8 → 4.6s · 底部 "FEEDS → STAGE 1" 循环箭头 dashFlow 流动
+     4.2 → 5.2s · 下方大框 + 输出 lime 亮起
+     5.2 → 6.0s · 衰减回 idle
+   ════════════════════════════════════════════════════════════════ */
+
+  .fagent.mem{animation:memGlow 6.0s ease-in-out infinite;}
+  @keyframes memGlow{
+    0%, 6%, 88%, 100%{border-color:var(--line);box-shadow:none;background:rgba(255,255,255,0.025);}
+    10%, 78%{border-color:rgba(169,154,255,0.55);box-shadow:0 0 0 1px rgba(169,154,255,0.28), 0 0 24px rgba(169,154,255,0.18);background:rgba(169,154,255,0.04);}
+  }
+
+  /* rotating ⟲ icon inside memory card */
+  .mem-archive-icon{
+    position:absolute;right:14px;top:38px;
+    width:36px;height:36px;border-radius:50%;
+    border:1.5px solid rgba(169,154,255,0.45);
+    display:grid;place-items:center;
+    background:radial-gradient(circle, rgba(169,154,255,0.12), transparent 70%);
+    z-index:2;
+  }
+  .mem-archive-icon svg{width:20px;height:20px;animation:rotateArchive 6.0s ease-in-out infinite;}
+  .mem-archive-icon svg path{fill:none;stroke:var(--mem);stroke-width:2.2;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(169,154,255,0.55));}
+  @keyframes rotateArchive{
+    0%, 4%, 78%, 100%{transform:rotate(0);}
+    7%{transform:rotate(20deg);}
+    27%{transform:rotate(380deg);}
+    32%, 78%{transform:rotate(360deg);}
+  }
+  /* ring pulse during archive moment */
+  .mem-archive-icon::before{
+    content:"";position:absolute;inset:-4px;border-radius:50%;
+    border:1.5px solid rgba(169,154,255,0.55);opacity:0;
+    animation:archivePing 6.0s ease-out infinite;
+  }
+  @keyframes archivePing{
+    0%, 18%, 78%, 100%{opacity:0;transform:scale(0.8);}
+    22%{opacity:0.85;transform:scale(0.8);}
+    32%{opacity:0;transform:scale(1.6);}
+  }
+
+  /* ARCHIVE FEED · right side */
+  .archive-feed{
+    background:rgba(13,8,32,0.5);
+    border:1px solid rgba(169,154,255,0.18);
+    border-radius:12px;
+    padding:10px 14px;
+    display:flex;flex-direction:column;gap:4px;
+    position:relative;
+    animation:archiveFrame 6.0s ease-in-out infinite;
+  }
+  @keyframes archiveFrame{
+    0%, 8%, 88%, 100%{border-color:rgba(169,154,255,0.18);box-shadow:none;}
+    18%, 78%{border-color:rgba(169,154,255,0.5);box-shadow:0 0 0 1px rgba(169,154,255,0.22), 0 0 22px rgba(169,154,255,0.16);}
+  }
+  .archive-head{
+    display:flex;align-items:center;justify-content:space-between;
+    font-family:var(--font-mono);font-size:9px;color:var(--fg-3);
+    letter-spacing:0.14em;text-transform:uppercase;font-weight:700;
+    padding-bottom:4px;border-bottom:1px dashed rgba(255,255,255,0.08);margin-bottom:2px;
+  }
+  .archive-head .live{display:inline-flex;align-items:center;gap:5px;color:var(--mem);}
+  .archive-head .live::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--mem);box-shadow:0 0 4px var(--mem);animation:pulse 1.4s ease-in-out infinite;}
+  .archive-head .counter{color:#fff;font-weight:800;}
+  .archive-head .counter b{color:var(--mem);}
+
+  /* memory shelves — abstract horizontal bars (no concrete text) */
+  .mem-stack{display:flex;flex-direction:column;gap:5px;position:relative;}
+  .mem-bar{
+    position:relative;height:8px;width:100%;
+    background:rgba(255,255,255,0.03);border-radius:3px;
+    overflow:hidden;
+  }
+  .mem-bar::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;
+    width:var(--w, 60%);border-radius:3px;
+    background:linear-gradient(90deg,
+      rgba(124,92,255,0.18) 0%,
+      rgba(169,154,255,0.7) 35%,
+      rgba(220,200,255,0.85) 50%,
+      rgba(169,154,255,0.7) 65%,
+      rgba(124,92,255,0.18) 100%);
+    background-size:240% 100%;
+    box-shadow:inset 0 0 0 0.5px rgba(169,154,255,0.32);
+    animation:flowBar var(--flow, 2.4s) linear infinite;
+  }
+  @keyframes flowBar{
+    0%{background-position:120% 0;}
+    100%{background-position:-120% 0;}
+  }
+  .mem-bar.w1{--w:78%;--flow:2.6s;}
+  .mem-bar.w2{--w:54%;--flow:3.4s;animation-delay:0.4s;}
+  .mem-bar.w3{--w:91%;--flow:2.2s;animation-delay:0.8s;}
+  .mem-bar.w4{--w:42%;--flow:3.0s;animation-delay:0.2s;}
+  .mem-bar.w5{--w:86%;--flow:2.8s;animation-delay:0.6s;}
+  .mem-bar.w6{--w:64%;--flow:3.2s;animation-delay:1.0s;}
+  .mem-bar.w7{--w:38%;--flow:2.4s;animation-delay:0.3s;}
+  .mem-bar.w8{--w:72%;--flow:2.9s;animation-delay:0.7s;}
+  /* subtle vertical breathing on the bars themselves (asynchronous) */
+  .mem-bar.w1{animation:barBreath1 3.8s ease-in-out infinite;}
+  .mem-bar.w2{animation:barBreath2 4.4s ease-in-out infinite 0.5s;}
+  .mem-bar.w3{animation:barBreath3 3.4s ease-in-out infinite 1.0s;}
+  .mem-bar.w4{animation:barBreath4 4.0s ease-in-out infinite 0.7s;}
+  .mem-bar.w5{animation:barBreath5 3.6s ease-in-out infinite 1.4s;}
+  .mem-bar.w6{animation:barBreath6 4.2s ease-in-out infinite 0.2s;}
+  .mem-bar.w7{animation:barBreath7 3.8s ease-in-out infinite 1.2s;}
+  .mem-bar.w8{animation:barBreath8 4.0s ease-in-out infinite 0.9s;}
+  @keyframes barBreath1{0%,100%{opacity:0.72;}50%{opacity:1;}}
+  @keyframes barBreath2{0%,100%{opacity:0.62;}50%{opacity:0.95;}}
+  @keyframes barBreath3{0%,100%{opacity:0.78;}50%{opacity:1;}}
+  @keyframes barBreath4{0%,100%{opacity:0.55;}50%{opacity:0.88;}}
+  @keyframes barBreath5{0%,100%{opacity:0.72;}50%{opacity:1;}}
+  @keyframes barBreath6{0%,100%{opacity:0.6;}50%{opacity:0.92;}}
+  @keyframes barBreath7{0%,100%{opacity:0.5;}50%{opacity:0.85;}}
+  @keyframes barBreath8{0%,100%{opacity:0.68;}50%{opacity:0.98;}}
+
+  /* waterfall: stronger top-to-bottom cascading shimmer */
+  .mem-stack::before{
+    content:"";position:absolute;left:0;right:0;top:-30px;height:36px;
+    background:linear-gradient(180deg, transparent, rgba(209,255,85,0.18) 40%, rgba(169,154,255,0.32) 55%, transparent 100%);
+    pointer-events:none;
+    animation:waterfall 2.8s linear infinite;
+    filter:blur(0.5px);
+  }
+  @keyframes waterfall{
+    0%{transform:translateY(0);opacity:0;}
+    8%{opacity:1;}
+    88%{opacity:1;}
+    100%{transform:translateY(160px);opacity:0;}
+  }
+
+  /* new entry: lime highlight + slide-in pop */
+  .mem-bar.new{
+    height:10px;
+    background:rgba(209,255,85,0.08);
+    border:1px solid rgba(209,255,85,0.32);
+    opacity:0;transform:translateY(-8px);
+    animation:newBar 6.0s ease-out infinite;
+  }
+  .mem-bar.new::before{
+    width:var(--w, 88%);
+    background:linear-gradient(90deg, rgba(209,255,85,0.6), rgba(255,255,255,0.4));
+    box-shadow:0 0 10px rgba(209,255,85,0.4);
+  }
+  @keyframes newBar{
+    0%, 14%, 92%, 100%{opacity:0;transform:translateY(-8px) scaleX(0.6);transform-origin:left center;}
+    20%, 86%{opacity:1;transform:translateY(0) scaleX(1);}
+  }
+
+  /* data-flow shimmer band moving down the stack (kept, plus the .mem-stack::before waterfall above) */
+  .mem-stack::after{
+    content:"";position:absolute;left:0;right:0;top:-10px;height:20px;
+    background:linear-gradient(180deg, transparent, rgba(169,154,255,0.16), transparent);
+    pointer-events:none;
+    animation:shimmerDown 3.2s ease-in-out infinite;
+  }
+  @keyframes shimmerDown{
+    0%{transform:translateY(0);opacity:0;}
+    20%{opacity:1;}
+    80%{opacity:1;}
+    100%{transform:translateY(140px);opacity:0;}
+  }
+
+  /* feedback loop indicator — placed inside PM-style memory card */
+  .fagent.mem .feedback-loop{
+    margin-top:auto;padding:6px 10px;
+    background:rgba(209,255,85,0.05);border:1px solid rgba(209,255,85,0.22);
+    border-radius:7px;
+    display:flex;align-items:center;justify-content:space-between;
+    font-family:var(--font-mono);font-size:9px;color:var(--fg-3);
+    letter-spacing:0.12em;text-transform:uppercase;font-weight:700;
+    position:relative;z-index:2;
+    opacity:0;transform:translateY(4px);
+    animation:feedReveal 6.0s ease-out infinite;
+  }
+  .fagent.mem .feedback-loop .label{display:inline-flex;align-items:center;gap:5px;color:var(--lime);}
+  .fagent.mem .feedback-loop .arrow{flex:1;margin:0 10px;height:1px;background:linear-gradient(90deg, transparent, var(--lime), transparent);position:relative;overflow:hidden;}
+  .fagent.mem .feedback-loop .arrow::after{
+    content:"";position:absolute;left:0;top:0;width:24px;height:1px;
+    background:linear-gradient(90deg, transparent, var(--lime), transparent);
+    animation:flowAcross 2.2s linear infinite;
+  }
+  .fagent.mem .feedback-loop .target{color:var(--lime);font-weight:800;}
+  @keyframes feedReveal{
+    0%, 42%, 92%, 100%{opacity:0;transform:translateY(4px);}
+    48%, 86%{opacity:1;transform:translateY(0);}
+  }
+  @keyframes flowAcross{0%{transform:translateX(-100%);}100%{transform:translateX(900%);}}
+
+  /* output frame */
+  .fstage4-detail{animation:frameGlow 6.0s ease-in-out infinite;}
+  @keyframes frameGlow{
+    0%, 64%, 100%{border-color:var(--line);box-shadow:none;background:rgba(255,255,255,0.02);}
+    72%, 86%{border-color:rgba(209,255,85,0.5);box-shadow:0 0 0 1px rgba(209,255,85,0.28), 0 0 28px rgba(209,255,85,0.16);background:rgba(209,255,85,0.04);}
+  }
+  .fsd-col.is-target .fsd-value,
+  .fsd-col.is-target .fsd-label{animation:textLime 6.0s ease-in-out infinite;}
+  @keyframes textLime{
+    0%, 68%, 100%{color:inherit;}
+    76%, 88%{color:var(--lime);}
+  }
+
+  .fagent.mem .typing-dots{animation:dotsMem 6.0s ease-in-out infinite;}
+  @keyframes dotsMem{0%,6%,80%,100%{opacity:0.45;}10%,74%{opacity:1;}}
+
+  /* inter-stage connector (loop back to top) */
+  .to-next{position:relative;height:36px;margin:-2px 0 4px;padding-left:120px;display:flex;align-items:center;}
+  .to-next svg{display:block;width:32px;height:100%;}
+  .to-next svg path{stroke:var(--lime);stroke-width:1.4;fill:none;stroke-dasharray:4 6;animation:dashFlow 1.6s linear infinite;}
+  @keyframes dashFlow{to{stroke-dashoffset:-50;}}
+  .to-next .label{margin-left:12px;font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;}
+  .to-next .label .arrow{color:var(--lime);margin:0 4px;}
+
+  .spec-note{
+    margin-top:24px;padding:18px 22px;
+    background:linear-gradient(135deg,rgba(209,255,85,0.05),rgba(82,39,255,0.02));
+    border:1px solid rgba(209,255,85,0.18);border-radius:14px;
+    color:var(--fg-2);font-size:12.5px;line-height:1.7;
+  }
+  .spec-note h3{color:#fff;font-size:13.5px;font-weight:800;margin:0 0 10px;}
+  .spec-note ul{margin:4px 0 4px 18px;padding:0;}
+  .spec-note ul li{margin-bottom:5px;}
+  .spec-note b{color:#fff;font-weight:700;}
+  .spec-note code{font-family:var(--font-mono);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:11.5px;}
+</style>
+</head>
+<body>
+<div class="console">
+
+  <div class="doc-head">
+    <h1>板块 6 · 复盘沉淀 · 动效</h1>
+    <p class="sub">板式不变（memory 变体 · 虚线外框 · 紫色 tinted）。左侧 memory bot 卡 + 右侧 <b>归档信息流</b>。<b>决策入库 → 旋转归档 → 反哺下一轮</b>：① memory 卡 紫色 border 渐亮 + ⟲ 图标旋转 1 周 → ② 右侧 ARCHIVE FEED 顶部 pop 出新条目（本轮决策） → ③ 底部 FEEDS → STAGE 1 循环箭头 flow → ④ 下方大框 + 输出 lime 亮起。循环 6.0s。</p>
+  </div>
+
+  <div class="flow-stages-v4">
+    <article class="fstage4">
+      <div class="fstage4-side" data-num="6">
+        <div class="fs4-head"><span class="fs4-num">6</span><div class="fs4-meta"><h2 class="fs4-name">复盘沉淀</h2><div class="fs4-tag">MEMORY LOOP</div></div></div>
+        <span class="fs4-cnt">持续沉淀</span>
+        <span class="fs4-side-chip">归档 · 反哺 · 长期记忆</span>
+      </div>
+      <div class="fstage4-body">
+
+        <div class="mem-row">
+          <div class="fagent mem">
+            <div class="fagent-head">
+              <div class="fagent-avatar a-mem"><div class="typing-dots"><i></i><i></i><i></i></div>⟲</div>
+              <div class="fagent-info"><div class="fagent-name">记忆回路 · MEM</div><div class="fagent-role">Memory · ⟲</div></div>
+            </div>
+            <div class="fagent-desc">归档本轮决策 + 复盘结果 → 喂养下一轮辩论</div>
+            <div class="feedback-loop">
+              <span class="label">FEEDS</span>
+              <span class="arrow"></span>
+              <span class="target">→ STAGE 1</span>
+            </div>
+            <div class="mem-archive-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M 20 12 A 8 8 0 1 1 12 4"/>
+                <path d="M 16 4 L 20 4 L 20 8"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- archive feed (abstract data-stream) -->
+          <div class="archive-feed">
+            <div class="archive-head">
+              <span class="live">MEMORY STORE</span>
+              <span class="counter">TOTAL <b>2,847</b></span>
+            </div>
+            <div class="mem-stack">
+              <div class="mem-bar new"></div>
+              <div class="mem-bar w1"></div>
+              <div class="mem-bar w2"></div>
+              <div class="mem-bar w3"></div>
+              <div class="mem-bar w4"></div>
+              <div class="mem-bar w5"></div>
+              <div class="mem-bar w6"></div>
+              <div class="mem-bar w7"></div>
+              <div class="mem-bar w8"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fstage4-detail">
+          <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">本轮完整决策 + 执行结果</span></div>
+          <div class="fsd-col"><span class="fsd-label">流程</span><span class="fsd-value">⟲ 旋转归档 · 虚线 frame 双闪</span></div>
+          <div class="fsd-col is-target"><span class="fsd-label">输出</span><span class="fsd-value">长期记忆条目 · 下轮可调用</span></div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="to-next">
+    <svg viewBox="0 0 32 36"><path d="M 16 2 L 16 34"/></svg>
+    <span class="label">归档完成 <span class="arrow">↻</span> 循环回 信息收集（板块 1）</span>
+  </div>
+
+  <section class="spec-note">
+    <h3>动效序列（循环 6.0s · 入库 + 归档 + 反哺）</h3>
+    <ul>
+      <li><b>0.0 → 0.6s</b> · memory 卡 border dashed → 实色紫渐亮（接收 PM 决策）</li>
+      <li><b>0.4 → 1.9s</b> · memory 卡右侧 <b>⟲ 图标顺时针旋转 1 周</b> + 外层 ping 环扩散（归档动作）</li>
+      <li><b>1.2 → 1.7s</b> · 右侧 ARCHIVE FEED 顶部 <b>新条目从顶部 slide-in + 紫色高亮</b>（本轮决策入库）</li>
+      <li><b>4.0 → 5.3s</b> · 底部 <b>FEEDS → STAGE 1</b> 循环箭头流动（反哺到下一轮）</li>
+      <li><b>4.3 → 5.3s</b> · 下方大框 + 输出文字 lime 亮起</li>
+      <li><b>5.3 → 6.0s</b> · 衰减回 idle 进入下一循环</li>
+    </ul>
+    <p style="margin-top:10px;"><b>差异化</b>：与前 5 板块不同的是 — 这里强调 <b>"循环归宿"</b>：⟲ 旋转动作 + ARCHIVE FEED 列表 + 底部 <code>FEEDS → STAGE 1</code> 反哺指示，三件套传达"长期记忆 / 喂养下一轮"语义。底部循环箭头是整个流程的"回环"视觉。</p>
+  </section>
+
+</div>
+</body>
+</html>

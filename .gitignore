@@ -22,6 +22,12 @@
 .DS_Store
 *.pem
 
+# design-source archival exclusions
+/design-source/c-line-ui-uplift-v1/42temp/
+/design-source/c-line-ui-uplift-v1/uploads/
+/design-source/c-line-ui-uplift-v1/screenshots/
+/design-source/c-line-ui-uplift-v1/claw42 How it works (standalone).html
+
 # debug
 npm-debug.log*
 yarn-debug.log*

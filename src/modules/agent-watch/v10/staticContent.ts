@@ -140,6 +140,25 @@ export const avatarLabelByRole: Record<DispatchV10AgentRoleId, string> = {
   memoryLoop: "∞",
 };
 
+const AVATAR_BASE_PATH = "/agent-watch/c-line-ui-uplift-v1/avatars";
+
+export const avatarSrcByRole: Record<DispatchV10AgentRoleId, string> = {
+  fundamental: `${AVATAR_BASE_PATH}/fundamental_analyst.svg`,
+  onchain: `${AVATAR_BASE_PATH}/onchain_analyst.svg`,
+  news: `${AVATAR_BASE_PATH}/news_analyst.svg`,
+  technical: `${AVATAR_BASE_PATH}/chart_analyst.svg`,
+  bullish: `${AVATAR_BASE_PATH}/bullish_researcher.svg`,
+  bearish: `${AVATAR_BASE_PATH}/bearish_researcher.svg`,
+  trader: `${AVATAR_BASE_PATH}/trader.svg`,
+  aggressive: `${AVATAR_BASE_PATH}/aggressive_reviewer.svg`,
+  neutral: `${AVATAR_BASE_PATH}/neutral_reviewer.svg`,
+  conservative: `${AVATAR_BASE_PATH}/conservative_reviewer.svg`,
+  portfolioManager: `${AVATAR_BASE_PATH}/pm-approve.svg`,
+  memoryLoop: `${AVATAR_BASE_PATH}/memory_loop.svg`,
+};
+
+export const coreRobotAvatarSrc = `${AVATAR_BASE_PATH}/bot-base.svg`;
+
 export const v9AgentToV10Role: Record<DispatchAgentId, DispatchV10AgentRoleId> = {
   fundamental_analyst: "fundamental",
   onchain_analyst: "onchain",

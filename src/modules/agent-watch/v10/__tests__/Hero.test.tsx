@@ -19,6 +19,8 @@ describe("Hero v10", () => {
     expect(html).toContain("流程介绍");
     expect(html).toContain("行情分析");
     expect((html.match(/class="anode/g) ?? []).length).toBe(11);
+    expect((html.match(/class="avatar-svg"/g) ?? []).length).toBeGreaterThanOrEqual(11);
+    expect(html).toContain("/agent-watch/c-line-ui-uplift-v1/avatars/pm-approve.svg");
     expect(html).toContain("首席投资官");
   });
 });

@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-line · 6 步流程板块动效</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Noto+Sans+SC:wght@500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0817;--panel:#150f2e;--panel-2:#1d1640;
+    --fg:#fff;--fg-2:#a89dc8;--fg-3:#7e729f;
+    --line:rgba(255,255,255,0.08);--line-2:rgba(255,255,255,0.14);
+    --lime:#d1ff55;--ok:#6dd49a;--err:#e87a76;--warn:#fed500;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:radial-gradient(ellipse 80% 60% at 50% 0%, #2a1d54 0%, #1a1530 50%, #0a0817 100%);color:var(--fg);font-family:"Manrope","Noto Sans SC",system-ui,sans-serif;min-height:100vh;padding:48px 32px 80px;}
+  .shell{max-width:1320px;margin:0 auto;}
+  h1{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .sub{color:var(--fg-2);font-size:14px;line-height:1.65;max-width:760px;margin:0 0 32px;}
+
+  .step-doc{margin-bottom:32px;}
+  .step-doc.lead{background:linear-gradient(135deg,rgba(209,255,85,0.04),transparent);}
+
+  /* flow panel · matches reference screenshot structure */
+  .panel{
+    background:rgba(20,12,42,0.5);border:1px solid var(--line);border-radius:18px;
+    padding:24px;margin-bottom:14px;
+    display:grid;grid-template-columns:200px 1fr;gap:24px;
+    align-items:start;
+    position:relative;
+  }
+  @media (max-width:880px){.panel{grid-template-columns:1fr;}}
+  .panel.active{border-color:rgba(209,255,85,0.32);box-shadow:0 0 32px rgba(209,255,85,0.12);}
+  .panel::before{
+    /* big watermark number */
+    content:attr(data-n);position:absolute;left:80px;top:50%;transform:translateY(-50%);
+    font-family:var(--mono);font-size:120px;font-weight:800;color:rgba(255,255,255,0.025);
+    pointer-events:none;letter-spacing:-0.04em;
+  }
+  .p-left{display:flex;flex-direction:column;gap:14px;position:relative;z-index:2;}
+  .p-num-title{display:flex;align-items:center;gap:14px;}
+  .p-num{font-family:var(--mono);font-size:32px;font-weight:800;color:#fff;letter-spacing:-0.04em;}
+  .p-title{font-size:17px;font-weight:800;letter-spacing:-0.01em;margin:0;}
+  .p-tag{font-family:var(--mono);font-size:9.5px;color:var(--fg-3);letter-spacing:0.14em;text-transform:uppercase;font-weight:600;margin-top:2px;display:block;}
+  .p-state{display:inline-block;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid var(--line);font-size:12.5px;color:#fff;font-weight:700;width:fit-content;}
+  .p-chip{display:inline-block;padding:5px 10px;border-radius:6px;background:rgba(209,255,85,0.08);border:1px solid rgba(209,255,85,0.22);font-size:11px;font-family:var(--mono);color:var(--lime);font-weight:600;letter-spacing:0.04em;width:fit-content;}
+
+  .p-right{position:relative;z-index:2;}
+  .agents-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+  .agents-row.x2{grid-template-columns:repeat(2,1fr);}
+  .agents-row.x3{grid-template-columns:repeat(3,1fr);}
+  .agents-row.x1{grid-template-columns:1fr;max-width:50%;}
+
+  .agent-card{
+    background:rgba(255,255,255,0.018);border:1px solid var(--line);border-radius:11px;
+    padding:12px;display:flex;flex-direction:column;gap:8px;
+  }
+  .agent-head{display:flex;align-items:center;gap:8px;}
+  .agent-info{flex:1;}
+  .agent-name{font-size:12.5px;font-weight:800;line-height:1.1;}
+  .agent-role-line{font-family:var(--mono);font-size:9px;color:var(--fg-3);margin-top:2px;letter-spacing:0.08em;font-weight:600;text-transform:uppercase;}
+  .agent-desc{font-size:11px;color:var(--fg-3);line-height:1.5;}
+
+  .meta-row{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+    padding-top:14px;border-top:1px solid var(--line);
+  }
+  .meta-row.x2{grid-template-columns:repeat(2,1fr);}
+  .meta-cell .k{font-family:var(--mono);font-size:9.5px;color:var(--fg-3);letter-spacing:0.14em;text-transform:uppercase;font-weight:600;margin-bottom:4px;}
+  .meta-cell .v{font-size:12.5px;color:#fff;line-height:1.5;}
+
+  /* mini bot avatar inside agent cards */
+  @keyframes blink{0%,92%,100%{transform:scaleY(1);}94%,96%{transform:scaleY(0.1);}}
+  @keyframes dotsBreath{0%,100%{opacity:0.35;}50%{opacity:1;}}
+  @keyframes dotsFast{0%,100%{opacity:0.35;}50%{opacity:1;}}
+  .mini-bot{
+    --accent:#d1ff55;--accent-rgb:209,255,85;
+    position:relative;flex-shrink:0;
+  }
+  .mini-bot .h{
+    width:32px;height:24px;border-radius:9px;
+    background:linear-gradient(180deg,#4a2f8c 0%,#2d1664 60%,#170a3f 100%);
+    border:1.4px solid rgba(var(--accent-rgb),0.6);
+    position:relative;
+    box-shadow:0 0 10px rgba(var(--accent-rgb),0.32),0 0 20px rgba(124,92,255,0.3);
+  }
+  .mini-bot .h::before,.mini-bot .h::after{
+    content:"";position:absolute;top:50%;transform:translateY(-50%);
+    width:2px;height:7px;background:#5a3aa8;border:0.8px solid rgba(var(--accent-rgb),0.45);
+  }
+  .mini-bot .h::before{left:-2px;border-radius:2px 0 0 2px;border-right:none;}
+  .mini-bot .h::after{right:-2px;border-radius:0 2px 2px 0;border-left:none;}
+  .mini-bot .f{
+    position:absolute;inset:3px;border-radius:6px;background:#050a18;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+  }
+  .mini-bot .e{width:3.5px;height:6px;border-radius:2px;background:var(--accent);box-shadow:0 0 4px var(--accent);animation:blink 4.6s ease-in-out infinite;}
+
+  /* talk-dots above mini-bot (typing indicator) */
+  .talk-dots{
+    position:absolute;left:50%;top:-10px;transform:translate(-50%,-100%);
+    background:rgba(13,8,32,0.92);
+    border:1px solid rgba(var(--accent-rgb),0.65);
+    padding:3px 6px;border-radius:8px;
+    display:flex;gap:2px;
+    box-shadow:0 0 8px rgba(var(--accent-rgb),0.3);
+    animation:dotsBreath 1.6s ease-in-out infinite;
+  }
+  .talk-dots i{
+    width:3px;height:3px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 3px var(--accent);
+  }
+  /* when actively talking (burst state) → all dots faster but still synchronous */
+  .talk-dots.active{animation:dotsFast 0.8s ease-in-out infinite;}
+
+  /* accent variants for mini bots */
+  .b-fund{--accent:#6ba3d4;--accent-rgb:107,163,212;}
+  .b-news{--accent:#e89464;--accent-rgb:232,148,100;}
+  .b-chart{--accent:#d4b482;--accent-rgb:212,180,130;}
+  .b-onchain{--accent:#7dc488;--accent-rgb:125,196,136;}
+  .b-bull{--accent:#6dd49a;--accent-rgb:109,212,154;}
+  .b-bear{--accent:#e87a76;--accent-rgb:232,122,118;}
+  .b-trade{--accent:#6dc4d4;--accent-rgb:109,196,212;}
+  .b-aggr{--accent:#e89464;--accent-rgb:232,148,100;}
+  .b-neut{--accent:#a8a8b8;--accent-rgb:168,168,184;}
+  .b-cons{--accent:#7aa8d4;--accent-rgb:122,168,212;}
+  .b-pm{--accent:#d1ff55;--accent-rgb:209,255,85;}
+  .b-mem{--accent:#9d8ed4;--accent-rgb:157,142,212;}
+
+  /* timing-card on right side */
+  .timing-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+    font-family:var(--mono);font-size:11.5px;color:var(--fg-2);line-height:1.7;
+  }
+  .timing-card h3{font-size:13px;font-weight:800;color:#fff;margin:0 0 12px;font-family:"Manrope",sans-serif;}
+  .t-row{display:flex;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line);}
+  .t-row:last-child{border-bottom:none;}
+  .t-row .t-time{color:var(--lime);font-weight:700;flex:0 0 80px;}
+  .t-row .t-evt{color:var(--fg-2);}
+  .t-row .t-evt b{color:#fff;font-weight:700;}
+
+  .doc-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start;}
+  @media (max-width:1100px){.doc-row{grid-template-columns:1fr;}}
+
+  /* overall gantt */
+  .gantt{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;margin-top:18px;}
+  .gantt h3{font-size:14px;font-weight:800;margin:0 0 14px;}
+  .g-rows{display:flex;flex-direction:column;gap:6px;}
+  .g-row{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;}
+  .g-row .g-lbl{flex:0 0 130px;color:#fff;font-weight:700;}
+  .g-row .g-bar{flex:1;height:24px;background:rgba(255,255,255,0.04);border-radius:6px;position:relative;overflow:hidden;}
+  .g-row .g-fill{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding:0 8px;font-weight:700;font-size:10px;letter-spacing:0.06em;border-radius:6px;}
+  .g-row .g-time{flex:0 0 70px;color:var(--fg-3);font-weight:600;text-align:right;}
+
+  /* connector dot between panels */
+  .connector{display:flex;justify-content:center;margin:-6px 0 6px;position:relative;height:14px;}
+  .connector::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime);}
+
+  /* sub-section heading */
+  .doc-sub-head{display:flex;align-items:center;gap:10px;margin:14px 0 10px;}
+  .doc-sub-head h4{font-size:13px;font-weight:800;margin:0;}
+  .doc-sub-head .num{width:22px;height:22px;border-radius:6px;background:var(--panel-2);display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:11px;color:var(--lime);border:1px solid var(--line);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <h1>④ 流程 6 步板块动效</h1>
+  <p class="sub">
+    每步是一个 <b>流程板块</b>（标号 + 标题 + 角色 + 代理卡片组 + 输入/流程/输出 meta 行），动效定义板块如何进场、内部 agent 怎么激活、说话三点何时出现。说话三点已改为 <b>三点整体同步慢呼吸 (1.6s)</b>，burst 状态加速到 0.8s，不再 stagger。
+  </p>
+
+  <!-- ═══════ STEP 1 · 信息收集 ═══════ -->
+  <section class="step-doc">
+    <div class="panel active" data-n="1">
+      <div class="p-left">
+        <div class="p-num-title">
+          <span class="p-num">1</span>
+          <div><h3 class="p-title">信息收集</h3><span class="p-tag">ANALYSTS</span></div>
+        </div>
+        <span class="p-state">并行采集</span>
+        <span class="p-chip">独立简报 · 不互相干扰</span>
+      </div>
+      <div class="p-right">
+        <div class="agents-row">
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-fund">
+                <div class="talk-dots"><i></i><i></i><i></i></div>
+                <div class="h"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">基本面研究主管</div><div class="agent-role-line">Fundamentals</div></div>
+            </div>
+            <div class="agent-desc">财务 / 内在价值 / red flags</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-onchain">
+                <div class="talk-dots"><i></i><i></i><i></i></div>
+                <div class="h"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">链上数据分析主管</div><div class="agent-role-line">On-chain</div></div>
+            </div>
+            <div class="agent-desc">地址行为 / 资金流 / 链上活跃度</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-news">
+                <div class="talk-dots"><i></i><i></i><i></i></div>
+                <div class="h"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">宏观情报分析师</div><div class="agent-role-line">News</div></div>
+            </div>
+            <div class="agent-desc">全球新闻 / 宏观 / 事件</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-chart">
+                <div class="talk-dots"><i></i><i></i><i></i></div>
+                <div class="h"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">技术策略主管</div><div class="agent-role-line">Technical</div></div>
+            </div>
+            <div class="agent-desc">MACD / RSI / 价格模式</div>
+          </div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-cell"><div class="k">输入</div><div class="v">4 类原始信号源</div></div>
+          <div class="meta-cell"><div class="k">流程</div><div class="v">4 位研究角色并行 / 互不干扰</div></div>
+          <div class="meta-cell"><div class="k">输出</div><div class="v">4 份独立简报 + 证据链</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-row">
+      <div class="timing-card">
+        <h3>动效编排 · 板块 1</h3>
+        <div class="t-row"><span class="t-time">0.00s</span><span class="t-evt"><b>板块卡</b> fade + slide up 12px · 0.4s ease-out</span></div>
+        <div class="t-row"><span class="t-time">0.20s</span><span class="t-evt"><b>左栏</b> (标题+state+chip) 同 fade in</span></div>
+        <div class="t-row"><span class="t-time">0.35s</span><span class="t-evt"><b>4 张 agent card</b> 同时 fade in · 不 stagger（并行采集语义）</span></div>
+        <div class="t-row"><span class="t-time">0.60s</span><span class="t-evt"><b>4 个 mini-bot</b> 同时亮起 · 描边 glow ramp 0.4s</span></div>
+        <div class="t-row"><span class="t-time">0.80s</span><span class="t-evt"><b>4 个 talk-dots</b> 同时出现 · 1.6s 同步慢呼吸 loop</span></div>
+        <div class="t-row"><span class="t-time">1.20s</span><span class="t-evt"><b>meta-row</b> 输入→流程→输出 stagger 0.15s 顺序 fade</span></div>
+        <div class="t-row"><span class="t-time">2.40s</span><span class="t-evt">板块保持 idle · 三点慢呼吸继续</span></div>
+        <div class="t-row"><span class="t-time">3.20s</span><span class="t-evt">→ 衔接 板块 2</span></div>
+      </div>
+      <div class="timing-card">
+        <h3>语义要点</h3>
+        <div style="font-family:Manrope,sans-serif;font-size:12.5px;color:var(--fg-2);line-height:1.7;">
+          · <b style="color:#fff;">"并行采集"</b> — 4 个 agent 同时出现 + 同时说话，强调"无主从"<br/>
+          · 三点全部同步慢呼吸 (1.6s)，传达"在思考/在听"，不 stagger<br/>
+          · 板块进场用 slide up，让用户视觉锚定到下一阶段
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+
+  <!-- ═══════ STEP 2 · 多空辩论 ═══════ -->
+  <section class="step-doc">
+    <div class="panel" data-n="2">
+      <div class="p-left">
+        <div class="p-num-title">
+          <span class="p-num">2</span>
+          <div><h3 class="p-title">多空辩论</h3><span class="p-tag">RESEARCHERS</span></div>
+        </div>
+        <span class="p-state">多轮辩论</span>
+        <span class="p-chip">多轮 DEBATE · 拿出最强论据</span>
+      </div>
+      <div class="p-right">
+        <div class="agents-row x2">
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-bull">
+                <div class="talk-dots active"><i></i><i></i><i></i></div>
+                <div class="h"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">多头研究总监</div><div class="agent-role-line">Bullish</div></div>
+            </div>
+            <div class="agent-desc">上行 thesis / 多头证据 / 失效条件</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-bear">
+                <div class="talk-dots"><i></i><i></i><i></i></div>
+                <div class="h"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">空头研究总监</div><div class="agent-role-line">Bearish</div></div>
+            </div>
+            <div class="agent-desc">下行 thesis / 反转风险 / 不交易理由</div>
+          </div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-cell"><div class="k">输入</div><div class="v">4 份研究简报</div></div>
+          <div class="meta-cell"><div class="k">流程</div><div class="v">多轮立论 / 反驳 / 压力测试</div></div>
+          <div class="meta-cell"><div class="k">输出</div><div class="v">辩论纪要 + 双方核心证据</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-row">
+      <div class="timing-card">
+        <h3>动效编排 · 板块 2</h3>
+        <div class="t-row"><span class="t-time">0.00s</span><span class="t-evt"><b>板块卡</b> fade + slide</span></div>
+        <div class="t-row"><span class="t-time">0.30s</span><span class="t-evt"><b>bull + bear card</b> 同时 fade in (面对面)</span></div>
+        <div class="t-row"><span class="t-time">0.50s</span><span class="t-evt"><b>bull.dots</b> active 状态 (0.8s 快呼吸) · 持续 1.2s</span></div>
+        <div class="t-row"><span class="t-time">1.70s</span><span class="t-evt"><b>bull.dots</b> → idle 慢呼吸 · <b>bear.dots</b> 切到 active</span></div>
+        <div class="t-row"><span class="t-time">2.90s</span><span class="t-evt"><b>bear</b> → idle · 回到 <b>bull</b> active</span></div>
+        <div class="t-row"><span class="t-time">4.10s</span><span class="t-evt">第 3 轮：bear active (再 1.2s)</span></div>
+        <div class="t-row"><span class="t-time">5.30s</span><span class="t-evt">辩论收尾 · 双方 dots → idle</span></div>
+        <div class="t-row"><span class="t-time">5.60s</span><span class="t-evt"><b>meta-row</b> 输入→流程→输出 stagger fade</span></div>
+        <div class="t-row"><span class="t-time">6.40s</span><span class="t-evt">→ 衔接 板块 3</span></div>
+      </div>
+      <div class="timing-card">
+        <h3>语义要点</h3>
+        <div style="font-family:Manrope,sans-serif;font-size:12.5px;color:var(--fg-2);line-height:1.7;">
+          · <b style="color:#fff;">"交替说话"</b> — bull / bear 轮流 active，强调拉锯<br/>
+          · active = 0.8s 快呼吸，idle = 1.6s 慢呼吸，同时存在但视觉重点切换<br/>
+          · 共 3 个回合，节奏紧凑表现"多轮"
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+
+  <!-- ═══════ STEP 3 · 交易方案 ═══════ -->
+  <section class="step-doc">
+    <div class="panel" data-n="3">
+      <div class="p-left">
+        <div class="p-num-title">
+          <span class="p-num">3</span>
+          <div><h3 class="p-title">交易方案</h3><span class="p-tag">TRADER</span></div>
+        </div>
+        <span class="p-state">综合输出</span>
+        <span class="p-chip">方向 · 时机 · 仓位 · 止损</span>
+      </div>
+      <div class="p-right">
+        <div class="agents-row x1">
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-trade">
+                <div class="talk-dots active"><i></i><i></i><i></i></div>
+                <div class="h"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">交易策略总监</div><div class="agent-role-line">Trader</div></div>
+            </div>
+            <div class="agent-desc">综合简报 + 辩论 → 可执行方案</div>
+          </div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-cell"><div class="k">输入</div><div class="v">4 简报 + 多空辩论纪要</div></div>
+          <div class="meta-cell"><div class="k">决策</div><div class="v">方向 / 时机 / 仓位 / 止损</div></div>
+          <div class="meta-cell"><div class="k">边界</div><div class="v">失效条件 + 风险线</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-row">
+      <div class="timing-card">
+        <h3>动效编排 · 板块 3</h3>
+        <div class="t-row"><span class="t-time">0.00s</span><span class="t-evt"><b>板块卡</b> fade + slide</span></div>
+        <div class="t-row"><span class="t-time">0.30s</span><span class="t-evt"><b>trader card</b> fade in (单卡 · 居左)</span></div>
+        <div class="t-row"><span class="t-time">0.50s</span><span class="t-evt"><b>trader.dots</b> active · 0.8s 快呼吸（"思考输出中"）</span></div>
+        <div class="t-row"><span class="t-time">0.50-2.5s</span><span class="t-evt"><b>face scan band</b> 自上而下 · 0.8s loop · 共 2 圈</span></div>
+        <div class="t-row"><span class="t-time">2.50s</span><span class="t-evt"><b>meta-row</b> 输入→决策→边界 stagger fade（每项 0.18s）</span></div>
+        <div class="t-row"><span class="t-time">3.30s</span><span class="t-evt"><b>trader.dots</b> → idle 慢呼吸</span></div>
+        <div class="t-row"><span class="t-time">3.60s</span><span class="t-evt">→ 衔接 板块 4</span></div>
+      </div>
+      <div class="timing-card">
+        <h3>语义要点</h3>
+        <div style="font-family:Manrope,sans-serif;font-size:12.5px;color:var(--fg-2);line-height:1.7;">
+          · 单 agent 居左 + 大量留白，<b style="color:#fff;">突出"独自综合"的角色权重</b><br/>
+          · face scan band 制造"算法处理"质感<br/>
+          · meta-row 三项 stagger 出现 — 决策的"出炉感"
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+
+  <!-- ═══════ STEP 4 · 风险审查 ═══════ -->
+  <section class="step-doc">
+    <div class="panel" data-n="4">
+      <div class="p-left">
+        <div class="p-num-title">
+          <span class="p-num">4</span>
+          <div><h3 class="p-title">风险审查</h3><span class="p-tag">RISK REVIEW</span></div>
+        </div>
+        <span class="p-state">三派审查</span>
+        <span class="p-chip">波动 · 流动性 · 相关性</span>
+      </div>
+      <div class="p-right">
+        <div class="agents-row x3">
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-aggr">
+                <div class="talk-dots"><i></i><i></i><i></i></div>
+                <div class="h"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">收益进攻总监</div><div class="agent-role-line">Aggressive</div></div>
+            </div>
+            <div class="agent-desc">高仓位 / 机会成本 / 进攻节奏</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-neut">
+                <div class="talk-dots"><i></i><i></i><i></i></div>
+                <div class="h"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">组合平衡总监</div><div class="agent-role-line">Neutral</div></div>
+            </div>
+            <div class="agent-desc">仓位平衡 / 风险均衡 / 等待条件</div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-cons">
+                <div class="talk-dots"><i></i><i></i><i></i></div>
+                <div class="h"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">风险防御总监</div><div class="agent-role-line">Conservative</div></div>
+            </div>
+            <div class="agent-desc">低仓位 / 止损纪律 / 下行保护</div>
+          </div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-cell"><div class="k">维度</div><div class="v">波动性 / 流动性 / 相关性</div></div>
+          <div class="meta-cell"><div class="k">流程</div><div class="v">三派多轮辩论 / 修订方案</div></div>
+          <div class="meta-cell"><div class="k">输出</div><div class="v">含风险边界的最终建议</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-row">
+      <div class="timing-card">
+        <h3>动效编排 · 板块 4</h3>
+        <div class="t-row"><span class="t-time">0.00s</span><span class="t-evt"><b>板块卡</b> fade + slide</span></div>
+        <div class="t-row"><span class="t-time">0.30s</span><span class="t-evt"><b>3 张 reviewer card</b> stagger fade · 0.12s 间隔（左→中→右）</span></div>
+        <div class="t-row"><span class="t-time">0.80s</span><span class="t-evt"><b>3 个 dots</b> 同时进入慢呼吸（idle 状态）</span></div>
+        <div class="t-row"><span class="t-time">1.20s</span><span class="t-evt"><b>aggr.dots</b> active 0.6s</span></div>
+        <div class="t-row"><span class="t-time">1.80s</span><span class="t-evt"><b>neut.dots</b> active 0.6s</span></div>
+        <div class="t-row"><span class="t-time">2.40s</span><span class="t-evt"><b>cons.dots</b> active 0.6s</span></div>
+        <div class="t-row"><span class="t-time">3.00s</span><span class="t-evt">三轮 round 2 · 同样轮替（共 2 round）</span></div>
+        <div class="t-row"><span class="t-time">4.80s</span><span class="t-evt"><b>meta-row</b> stagger fade</span></div>
+        <div class="t-row"><span class="t-time">5.60s</span><span class="t-evt">→ 衔接 板块 5</span></div>
+      </div>
+      <div class="timing-card">
+        <h3>语义要点</h3>
+        <div style="font-family:Manrope,sans-serif;font-size:12.5px;color:var(--fg-2);line-height:1.7;">
+          · <b style="color:#fff;">三派轮替</b> — aggr→neut→cons 顺序 active，"环形辩论"<br/>
+          · 卡片 stagger 进场（不同于 step 1 的并行）暗示"主次差异"<br/>
+          · 2 round 强化"反复磨合"
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+
+  <!-- ═══════ STEP 5 · 决策 (PM) ═══════ -->
+  <section class="step-doc lead">
+    <div class="panel" data-n="5" style="border-color:rgba(209,255,85,0.35);">
+      <div class="p-left">
+        <div class="p-num-title">
+          <span class="p-num">5</span>
+          <div><h3 class="p-title">决策</h3><span class="p-tag">PORTFOLIO MGR</span></div>
+        </div>
+        <span class="p-state">最终决策</span>
+        <span class="p-chip">approve · caution · reject 三态</span>
+      </div>
+      <div class="p-right">
+        <div class="agents-row x1">
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-pm">
+                <div class="talk-dots active"><i></i><i></i><i></i></div>
+                <div class="h" style="border-width:2px;"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">投资经理 · PM</div><div class="agent-role-line">Portfolio Manager</div></div>
+            </div>
+            <div class="agent-desc">综合三派审查 → approve / caution / reject</div>
+          </div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-cell"><div class="k">输入</div><div class="v">交易方案 + 三派审查纪要</div></div>
+          <div class="meta-cell"><div class="k">决策</div><div class="v">✓ 批准 / ! 警示 / ✗ 否决</div></div>
+          <div class="meta-cell"><div class="k">输出</div><div class="v">最终决策 + 执行边界</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-row">
+      <div class="timing-card">
+        <h3>动效编排 · 板块 5</h3>
+        <div class="t-row"><span class="t-time">0.00s</span><span class="t-evt"><b>板块卡</b> fade + slide · 描边 lime 强化</span></div>
+        <div class="t-row"><span class="t-time">0.30s</span><span class="t-evt"><b>PM card</b> fade in · 加粗 stroke pulse</span></div>
+        <div class="t-row"><span class="t-time">0.50s</span><span class="t-evt"><b>PM.dots</b> active (0.8s 快呼吸 · "思考中")</span></div>
+        <div class="t-row"><span class="t-time">1.50s</span><span class="t-evt"><b>PM.eyes</b> 符号切换为 ✓ / ! / ✗（按决策分支）+ accent burst</span></div>
+        <div class="t-row"><span class="t-time">1.50s</span><span class="t-evt"><b>panel border</b> accent 颜色同步切到 绿/黄/红</span></div>
+        <div class="t-row"><span class="t-time">2.30s</span><span class="t-evt"><b>meta-row</b> stagger fade</span></div>
+        <div class="t-row"><span class="t-time">3.10s</span><span class="t-evt"><b>PM.dots</b> → idle 慢呼吸</span></div>
+        <div class="t-row"><span class="t-time">3.40s</span><span class="t-evt">→ 衔接 板块 6 (仅 ✓) / 直接结束 (! / ✗)</span></div>
+      </div>
+      <div class="timing-card">
+        <h3>语义要点</h3>
+        <div style="font-family:Manrope,sans-serif;font-size:12.5px;color:var(--fg-2);line-height:1.7;">
+          · <b style="color:#fff;">★ 高亮板块</b> — 整个 panel 用 lime 描边强调决策权重<br/>
+          · 三状态切换是关键 keyframe：符号眼 + accent burst + panel border 同步变色<br/>
+          · 之后下游分支：✓ → step 6 · ! / ✗ → 结束
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+
+  <!-- ═══════ STEP 6 · 跟单归档 ═══════ -->
+  <section class="step-doc">
+    <div class="panel" data-n="6">
+      <div class="p-left">
+        <div class="p-num-title">
+          <span class="p-num">6</span>
+          <div><h3 class="p-title">跟单归档</h3><span class="p-tag">MEMORY LOOP</span></div>
+        </div>
+        <span class="p-state">长期记忆</span>
+        <span class="p-chip">本轮结果 · 入库 · 喂养下一轮</span>
+      </div>
+      <div class="p-right">
+        <div class="agents-row x1">
+          <div class="agent-card">
+            <div class="agent-head">
+              <div class="mini-bot b-mem">
+                <div class="talk-dots"><i></i><i></i><i></i></div>
+                <div class="h" style="border-style:dashed;"><div class="f"><span class="e"></span><span class="e"></span></div></div>
+              </div>
+              <div class="agent-info"><div class="agent-name">记忆回路</div><div class="agent-role-line">Memory · ⟲</div></div>
+            </div>
+            <div class="agent-desc">归档决策结果 · 喂养下一轮辩论</div>
+          </div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-cell"><div class="k">输入</div><div class="v">本轮完整决策 + 执行结果</div></div>
+          <div class="meta-cell"><div class="k">流程</div><div class="v">⟲ 旋转归档 · 虚线 frame 双闪</div></div>
+          <div class="meta-cell"><div class="k">输出</div><div class="v">长期记忆条目 · 下轮可调用</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-row">
+      <div class="timing-card">
+        <h3>动效编排 · 板块 6</h3>
+        <div class="t-row"><span class="t-time">0.00s</span><span class="t-evt"><b>板块卡</b> fade + slide</span></div>
+        <div class="t-row"><span class="t-time">0.30s</span><span class="t-evt"><b>memory card</b> fade in</span></div>
+        <div class="t-row"><span class="t-time">0.50s</span><span class="t-evt"><b>memory.dots</b> 慢呼吸 · 不进 active（"安静归档"）</span></div>
+        <div class="t-row"><span class="t-time">0.50s</span><span class="t-evt"><b>memory.eyes</b> ⟲ 符号开始旋转 (1.2s · 1 周)</span></div>
+        <div class="t-row"><span class="t-time">1.70s</span><span class="t-evt"><b>head 虚线边框</b> 闪 2 次（"已存"）</span></div>
+        <div class="t-row"><span class="t-time">2.20s</span><span class="t-evt"><b>meta-row</b> stagger fade</span></div>
+        <div class="t-row"><span class="t-time">3.00s</span><span class="t-evt">板块保持 idle · 循环回 step 1 / 终止</span></div>
+      </div>
+      <div class="timing-card">
+        <h3>语义要点</h3>
+        <div style="font-family:Manrope,sans-serif;font-size:12.5px;color:var(--fg-2);line-height:1.7;">
+          · <b style="color:#fff;">虚线 frame</b> — 区分系统级 vs 实体 agent<br/>
+          · ⟲ 旋转是核心动作 · 1 周表示"已归档一次"<br/>
+          · dots 不进 active —"静默归档"
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OVERALL GANTT -->
+  <section class="gantt">
+    <h3>★ 6 板块整体时序甘特</h3>
+    <div class="g-rows">
+      <div class="g-row"><span class="g-lbl">1 · 信息收集</span><div class="g-bar"><div class="g-fill" style="left:0%;width:14%;background:var(--lime);color:#1a1338;">3.2s</div></div><span class="g-time">0 → 3.2s</span></div>
+      <div class="g-row"><span class="g-lbl">2 · 多空辩论</span><div class="g-bar"><div class="g-fill" style="left:14%;width:28%;background:#e87a76;color:#fff;">6.4s</div></div><span class="g-time">3.2 → 9.6s</span></div>
+      <div class="g-row"><span class="g-lbl">3 · 交易方案</span><div class="g-bar"><div class="g-fill" style="left:42%;width:16%;background:#6dc4d4;color:#1a1338;">3.6s</div></div><span class="g-time">9.6 → 13.2s</span></div>
+      <div class="g-row"><span class="g-lbl">4 · 风险审查</span><div class="g-bar"><div class="g-fill" style="left:58%;width:25%;background:#9d8ed4;color:#fff;">5.6s</div></div><span class="g-time">13.2 → 18.8s</span></div>
+      <div class="g-row"><span class="g-lbl">5 · 决策 (PM)</span><div class="g-bar"><div class="g-fill" style="left:83%;width:15%;background:var(--lime);color:#1a1338;">3.4s</div></div><span class="g-time">18.8 → 22.2s</span></div>
+      <div class="g-row"><span class="g-lbl">6 · 跟单归档</span><div class="g-bar"><div class="g-fill" style="left:98%;width:2%;background:#6dd49a;color:#1a1338;"></div></div><span class="g-time">22.2 → 25.2s</span></div>
+    </div>
+    <p style="margin-top:14px;color:var(--fg-2);font-size:12.5px;line-height:1.7;">
+      <b>总时长</b> ≈ 25s（autoplay 全程），可循环。<br/>
+      <b>分支</b>：Step 5 caution/reject 跳过 Step 6 直接结束。<br/>
+      <b>触发模式</b>：autoplay (hero 默认) / scroll-tied (滚动锚点驱动各板块进入视口时触发) / hover-replay。<br/>
+      <b>说话三点</b>：idle = 1.6s 同步慢呼吸（不 stagger），active = 0.8s 同步快呼吸。
+    </p>
+  </section>
+
+</div>
+</body>
+</html>

@@ -424,7 +424,12 @@
             "value": "∞",
             "label": "Memory"
           }
-        ]
+        ],
+        "readoutLabels": {
+          "id": "المعرّف",
+          "role": "الدور",
+          "stat": "الحالة"
+        }
       },
       "tabs": {
         "flow": "Process",
@@ -656,7 +661,8 @@
         ],
         "footerStrong": "Every step has an owner",
         "footerText": "Every disagreement is recorded · every result is reviewed",
-        "footerCta": "View live AI team work →"
+        "footerCta": "View live AI team work →",
+        "vsLabel": "ضد"
       },
       "market": {
         "ariaLabel": "AI team workspace",

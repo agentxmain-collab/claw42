@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-line · 板块 5 最终决策 · 动效</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800;900&family=Noto+Sans+SC:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#000; --card:#171717;
+    --line:rgba(255,255,255,0.08); --line-2:rgba(255,255,255,0.14);
+    --fg:#fff; --fg-2:#a6a6a6; --fg-3:#949494;
+    --purple:#5227ff; --purple-2:#7c5cff;
+    --lime:#d1ff55; --err:#e95032; --ok:#14a739; --warn:#fed500;
+    --approve:#6dd49a;
+    --radius-card:16px; --radius-panel:24px;
+    --font-display:"Manrope","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-display);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;padding:48px 32px 80px;}
+  .console{max-width:1240px;margin:0 auto;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  .doc-head{margin-bottom:32px;}
+  .doc-head h1{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .doc-head .sub{color:var(--fg-2);font-size:13.5px;line-height:1.65;max-width:760px;margin:0;}
+  .doc-head b{color:#fff;font-weight:700;}
+
+  /* canonical flow stage CSS · final variant (lime tinted) */
+  .flow-stages-v4{display:flex;flex-direction:column;gap:16px;}
+  .fstage4{
+    background:linear-gradient(90deg, rgba(209,255,85,0.04), transparent 40%), var(--card);
+    border:1px solid rgba(209,255,85,0.4);
+    border-radius:var(--radius-panel);padding:22px 26px;
+    display:flex;flex-direction:row;gap:26px;align-items:stretch;
+    position:relative;overflow:visible;
+  }
+  .fstage4-side{flex:0 0 220px;display:flex;flex-direction:column;gap:12px;padding-right:22px;border-right:1px solid var(--line);position:relative;}
+  .fstage4-side::after{
+    content:attr(data-num);position:absolute;left:-14px;top:50%;
+    transform:translateY(-50%) rotate(-6deg);
+    font-family:var(--font-display);font-weight:900;font-size:200px;line-height:0.85;
+    letter-spacing:-0.06em;color:transparent;
+    -webkit-text-stroke:1.2px rgba(209,255,85,0.28);
+    pointer-events:none;user-select:none;z-index:0;
+  }
+  .fstage4 .fs4-head,.fstage4 .fs4-cnt,.fstage4 .fs4-side-chip{position:relative;z-index:2;}
+  .fs4-head{display:flex;align-items:baseline;gap:14px;}
+  .fs4-num{font-size:34px;font-weight:900;color:var(--fg);line-height:1;letter-spacing:-0.03em;}
+  .fs4-meta{display:flex;flex-direction:column;gap:3px;}
+  .fs4-name{font-size:17px;font-weight:800;line-height:1.2;margin:0;}
+  .fs4-tag{font-size:10px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;font-family:var(--font-mono);}
+  .fs4-cnt{font-size:13px;color:var(--fg);padding:7px 14px;background:rgba(209,255,85,0.12);border:1px solid rgba(209,255,85,0.32);border-radius:999px;font-weight:700;align-self:flex-start;color:var(--lime);}
+  .fs4-side-chip{margin-top:auto;padding:6px 12px;background:rgba(255,255,255,0.05);border:1px solid transparent;border-radius:8px;font-size:10px;color:var(--fg);letter-spacing:0.06em;text-transform:uppercase;font-weight:600;align-self:flex-start;font-family:var(--font-mono);}
+  .fstage4-body{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;position:relative;}
+
+  /* PM row: 1 fagent + decision dashboard */
+  .pm-row{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:stretch;}
+  .fagent{background:rgba(255,255,255,0.025);border:1px solid var(--line);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:6px;min-height:96px;position:relative;overflow:hidden;transition:border-color .4s,box-shadow .4s,background .4s;}
+  .fagent-head{display:flex;align-items:center;gap:10px;position:relative;z-index:2;}
+  .fagent-avatar{
+    width:30px;height:30px;border-radius:8px;flex-shrink:0;position:relative;
+    box-shadow:0 4px 12px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.16);
+    border:1px solid rgba(255,255,255,0.14);font-size:0 !important;
+  }
+  .fagent-avatar::before{
+    content:"";position:absolute;inset:5px 3px;border-radius:5px;
+    background:
+      radial-gradient(circle 1.5px at 30% 50%, var(--eye) 0 1.5px, transparent 2.1px),
+      radial-gradient(circle 1.5px at 70% 50%, var(--eye) 0 1.5px, transparent 2.1px),
+      radial-gradient(ellipse at 50% 65%, #06091a, #02030a 78%);
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .fagent-avatar::after{
+    content:"";position:absolute;left:50%;top:-5px;transform:translateX(-50%);
+    width:1.5px;height:5px;background:rgba(255,255,255,0.5);
+    box-shadow:0 -3px 0 -0.5px var(--lime);
+  }
+  .fagent-avatar.a-pm{background:rgba(209,255,85,0.16);--eye:var(--lime);}
+  .fagent-info{flex:1;min-width:0;}
+  .fagent-name{font-size:12.5px;font-weight:800;line-height:1.2;}
+  .fagent-role{font-size:9px;color:var(--fg-3);margin-top:2px;letter-spacing:0.06em;font-family:var(--font-mono);}
+  .fagent-desc{font-size:11px;color:var(--fg-2);line-height:1.5;position:relative;z-index:2;}
+
+  /* typing dots */
+  .fagent-avatar .typing-dots{
+    position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);
+    background:rgba(13,8,32,0.92);border:1px solid rgba(255,255,255,0.16);
+    padding:2.5px 6px;border-radius:6px;display:flex;gap:2.5px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);z-index:3;
+  }
+  .fagent-avatar .typing-dots i{width:3px;height:3px;border-radius:50%;background:var(--eye);box-shadow:0 0 3px var(--eye);}
+
+  /* output meta */
+  .fstage4-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px;margin-top:auto;position:relative;transition:border-color .4s,box-shadow .4s,background .4s;}
+  .fsd-col{display:flex;flex-direction:column;gap:4px;position:relative;}
+  .fsd-label{color:var(--fg-3);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;font-family:var(--font-mono);transition:color .4s;}
+  .fsd-value{color:var(--fg-2);font-size:12px;line-height:1.45;transition:color .4s;}
+
+  /* ════════════════════════════════════════════════════════════════
+     STAGE 5 · 终审决策动效 · 循环 6.4s
+     "信号汇集 → 加权分析 → 裁决揭示"
+
+     0.0 → 0.4s · PM 卡 lime border 加粗强亮（首次接管）
+     0.4 / 0.8 / 1.2 / 1.6s · 右侧 dashboard 4 行 input 信号依次 fly-in (从右滑入 + fade)
+     2.2 → 3.4s · ANALYZING phase：PM 卡 scan band + dashboard 中央 weight bar 来回扫
+     3.6s · VERDICT reveal：右侧底部大 ✓ APPROVE 徽章 scale-pop + lime 爆光
+     4.2 → 5.2s · 下方大框 + 输出文字 lime 亮起
+     5.2 → 6.4s · 衰减回 idle
+   ════════════════════════════════════════════════════════════════ */
+
+  .fagent.pm{
+    background:rgba(209,255,85,0.025);
+    animation:pmGlow 6.4s ease-in-out infinite;
+  }
+  @keyframes pmGlow{
+    0%, 4%, 88%, 100%{border-color:var(--line);box-shadow:none;}
+    8%, 78%{border-color:rgba(209,255,85,0.65);box-shadow:0 0 0 1.5px rgba(209,255,85,0.32), 0 0 32px rgba(209,255,85,0.2);}
+    52%, 60%{border-color:rgba(209,255,85,0.85);box-shadow:0 0 0 2px rgba(209,255,85,0.45), 0 0 40px rgba(209,255,85,0.3);}
+  }
+  .fagent.pm::after{
+    content:"";position:absolute;left:8px;right:8px;top:42%;height:36px;
+    transform:translateY(-50%);
+    background:linear-gradient(90deg, transparent, rgba(209,255,85,0.18), rgba(255,255,255,0.36), rgba(209,255,85,0.18), transparent);
+    border-radius:8px;pointer-events:none;opacity:0;
+    animation:pmScan 6.4s ease-in-out infinite;
+  }
+  @keyframes pmScan{
+    0%, 32%, 60%, 100%{opacity:0;transform:translateY(-50%) translateX(-100%);}
+    40%{opacity:0.9;transform:translateY(-50%) translateX(-30%);}
+    50%{opacity:0.9;transform:translateY(-50%) translateX(30%);}
+    58%{opacity:0;transform:translateY(-50%) translateX(120%);}
+  }
+
+  /* DASHBOARD · right side */
+  .dashboard{
+    background:rgba(13,8,32,0.5);
+    border:1px solid rgba(209,255,85,0.18);
+    border-radius:12px;
+    padding:10px 14px;
+    display:flex;flex-direction:column;gap:4px;
+    position:relative;overflow:hidden;
+    animation:dashFrame 6.4s ease-in-out infinite;
+  }
+  @keyframes dashFrame{
+    0%, 8%, 88%, 100%{border-color:rgba(209,255,85,0.18);box-shadow:none;}
+    18%, 76%{border-color:rgba(209,255,85,0.45);box-shadow:0 0 0 1px rgba(209,255,85,0.22), 0 0 22px rgba(209,255,85,0.16);}
+  }
+
+  .dashboard-head{
+    display:flex;align-items:center;justify-content:space-between;
+    font-family:var(--font-mono);font-size:9px;color:var(--fg-3);
+    letter-spacing:0.14em;text-transform:uppercase;font-weight:700;
+    padding-bottom:4px;border-bottom:1px dashed rgba(255,255,255,0.08);
+  }
+  .dashboard-head .live{display:inline-flex;align-items:center;gap:5px;color:var(--lime);}
+  .dashboard-head .live::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--lime);box-shadow:0 0 4px var(--lime);animation:pulse 1.4s ease-in-out infinite;}
+  .dashboard-head .phase{color:var(--lime);font-weight:800;animation:phaseSwap 6.4s steps(1,end) infinite;}
+  @keyframes phaseSwap{
+    0%, 30%{content:"COLLECTING";}
+    /* CSS content swap via pseudo is complex; using text via JS would be cleaner — here we keep text static */
+  }
+
+  /* dashboard rows · 4 input signals fly in */
+  .dash-row{
+    display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:8px;
+    padding:2px 0;
+    opacity:0;transform:translateX(20px);
+  }
+  .dash-row .src{
+    font-family:var(--font-mono);font-size:9px;color:var(--fg-3);font-weight:700;
+    text-align:center;
+  }
+  .dash-row .lbl{font-size:10.5px;color:var(--fg-2);font-weight:600;line-height:1.3;}
+  .dash-row .lbl b{color:#fff;font-weight:800;}
+  .dash-row .val{font-family:var(--font-mono);font-size:10px;font-weight:800;color:var(--lime);letter-spacing:0.04em;}
+  .dash-row .val.mid{color:var(--warn);}
+  .dash-row.s1{animation:rowFly1 6.4s ease-out infinite;}
+  .dash-row.s2{animation:rowFly2 6.4s ease-out infinite;}
+  .dash-row.s3{animation:rowFly3 6.4s ease-out infinite;}
+  .dash-row.s4{animation:rowFly4 6.4s ease-out infinite;}
+  @keyframes rowFly1{0%, 4%, 90%, 100%{opacity:0;transform:translateX(20px);}10%, 84%{opacity:1;transform:translateX(0);}}
+  @keyframes rowFly2{0%, 10%, 90%, 100%{opacity:0;transform:translateX(20px);}16%, 84%{opacity:1;transform:translateX(0);}}
+  @keyframes rowFly3{0%, 16%, 90%, 100%{opacity:0;transform:translateX(20px);}22%, 84%{opacity:1;transform:translateX(0);}}
+  @keyframes rowFly4{0%, 22%, 90%, 100%{opacity:0;transform:translateX(20px);}28%, 84%{opacity:1;transform:translateX(0);}}
+
+  /* VERDICT BADGE — compact pill */
+  .verdict-big{
+    margin-top:4px;padding:7px 12px;border-radius:8px;
+    background:linear-gradient(135deg, rgba(109,212,154,0.15), rgba(209,255,85,0.08));
+    border:1px solid rgba(109,212,154,0.5);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    box-shadow:0 0 18px rgba(109,212,154,0.2);
+    position:relative;
+    opacity:0;transform:scale(0.85);
+    animation:verdictReveal 6.4s ease-out infinite;
+  }
+  .verdict-big .v-icon{
+    width:24px;height:24px;border-radius:6px;
+    background:rgba(109,212,154,0.2);border:1px solid rgba(109,212,154,0.6);
+    display:grid;place-items:center;
+    font-size:14px;font-weight:900;color:var(--approve);
+    box-shadow:0 0 10px rgba(109,212,154,0.4);flex-shrink:0;
+  }
+  .verdict-big .v-body{flex:1;min-width:0;}
+  .verdict-big .v-state{
+    font-family:var(--font-mono);font-size:9px;font-weight:800;letter-spacing:0.18em;
+    color:var(--approve);text-transform:uppercase;line-height:1;
+  }
+  .verdict-big .v-name{font-size:11.5px;font-weight:800;color:#fff;letter-spacing:-0.005em;margin-top:2px;line-height:1.2;}
+  .verdict-big .v-conf{
+    font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--approve);
+    text-align:right;flex-shrink:0;
+  }
+  @keyframes verdictReveal{
+    0%, 50%, 92%, 100%{opacity:0;transform:scale(0.85);}
+    56%{opacity:1;transform:scale(1.08);}
+    62%, 86%{opacity:1;transform:scale(1);}
+  }
+
+  /* burst rings behind verdict */
+  .verdict-big::before, .verdict-big::after{
+    content:"";position:absolute;left:24px;top:50%;transform:translate(-50%,-50%);
+    width:34px;height:34px;border-radius:50%;
+    border:1.2px solid rgba(109,212,154,0.6);pointer-events:none;opacity:0;
+  }
+  .verdict-big::before{animation:vBurst 6.4s ease-out infinite;}
+  .verdict-big::after{animation:vBurst 6.4s ease-out infinite 0.18s;}
+  @keyframes vBurst{
+    0%, 50%, 70%, 100%{opacity:0;transform:translate(-50%,-50%) scale(0.5);}
+    55%{opacity:0.9;transform:translate(-50%,-50%) scale(0.5);}
+    68%{opacity:0;transform:translate(-50%,-50%) scale(2.4);}
+  }
+
+  /* bottom output frame lights up after verdict */
+  .fstage4-detail{animation:frameGlow 6.4s ease-in-out infinite;}
+  @keyframes frameGlow{
+    0%, 68%, 100%{border-color:var(--line);box-shadow:none;background:rgba(255,255,255,0.02);}
+    76%, 90%{border-color:rgba(209,255,85,0.55);box-shadow:0 0 0 1px rgba(209,255,85,0.3), 0 0 30px rgba(209,255,85,0.2);background:rgba(209,255,85,0.05);}
+  }
+  .fsd-col.is-target .fsd-value,
+  .fsd-col.is-target .fsd-label{animation:textLime 6.4s ease-in-out infinite;}
+  @keyframes textLime{
+    0%, 72%, 100%{color:inherit;}
+    80%, 92%{color:var(--lime);}
+  }
+
+  .fagent.pm .typing-dots{animation:dotsPm 6.4s ease-in-out infinite;}
+  @keyframes dotsPm{0%,4%,88%,100%{opacity:0.45;}10%,82%{opacity:1;}}
+
+  /* PM card internal stats + recent state strip (fills the empty body) */
+  .pm-stats{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+    padding:6px 8px;background:rgba(13,8,32,0.4);border:1px dashed rgba(209,255,85,0.18);border-radius:7px;
+    position:relative;z-index:2;
+  }
+  .pm-stat{display:flex;flex-direction:column;gap:1px;align-items:flex-start;}
+  .pm-stat .sk{font-family:var(--font-mono);font-size:8.5px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;font-weight:700;line-height:1;}
+  .pm-stat .sv{font-family:var(--font-mono);font-size:12px;font-weight:800;color:#fff;letter-spacing:0.02em;line-height:1.2;margin-top:2px;}
+  .pm-stat .sv.lime{color:var(--lime);}
+  .pm-state-track{
+    display:flex;align-items:center;gap:4px;padding-top:4px;border-top:1px dashed rgba(255,255,255,0.06);
+    position:relative;z-index:2;
+  }
+  .pm-state-track::before{
+    content:"7D";font-family:var(--font-mono);font-size:8.5px;color:var(--fg-3);font-weight:700;letter-spacing:0.1em;margin-right:4px;
+  }
+  .st-dot{width:11px;height:5px;border-radius:1.5px;display:inline-block;}
+  .st-dot.st-approve{background:rgba(109,212,154,0.55);box-shadow:0 0 4px rgba(109,212,154,0.4);}
+  .st-dot.st-caution{background:rgba(254,213,0,0.55);box-shadow:0 0 4px rgba(254,213,0,0.4);}
+  .st-dot.st-reject{background:rgba(232,122,118,0.55);box-shadow:0 0 4px rgba(232,122,118,0.4);}
+  .st-dot.st-now{animation:nowPulse 1.4s ease-in-out infinite;outline:1px solid rgba(209,255,85,0.6);outline-offset:1.5px;}
+  @keyframes nowPulse{0%,100%{opacity:1;}50%{opacity:0.55;}}
+
+  /* inter-stage connector */
+  .to-next{position:relative;height:36px;margin:-2px 0 4px;padding-left:120px;display:flex;align-items:center;}
+  .to-next svg{display:block;width:32px;height:100%;}
+  .to-next svg path{stroke:var(--lime);stroke-width:1.4;fill:none;stroke-dasharray:4 6;animation:dashFlow 1.6s linear infinite;}
+  @keyframes dashFlow{to{stroke-dashoffset:-50;}}
+  .to-next .label{margin-left:12px;font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;}
+  .to-next .label .arrow{color:var(--lime);margin:0 4px;}
+
+  .spec-note{
+    margin-top:24px;padding:18px 22px;
+    background:linear-gradient(135deg,rgba(209,255,85,0.05),rgba(82,39,255,0.02));
+    border:1px solid rgba(209,255,85,0.18);border-radius:14px;
+    color:var(--fg-2);font-size:12.5px;line-height:1.7;
+  }
+  .spec-note h3{color:#fff;font-size:13.5px;font-weight:800;margin:0 0 10px;}
+  .spec-note ul{margin:4px 0 4px 18px;padding:0;}
+  .spec-note ul li{margin-bottom:5px;}
+  .spec-note b{color:#fff;font-weight:700;}
+  .spec-note code{font-family:var(--font-mono);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:11.5px;}
+</style>
+</head>
+<body>
+<div class="console">
+
+  <div class="doc-head">
+    <h1>板块 5 · 最终决策 · 动效</h1>
+    <p class="sub">板式不变（与 final 变体一致 · lime tinted）。左侧 PM 单卡 + 右侧 <b>决策仪表盘</b>。<b>信号汇集 → 加权分析 → 裁决揭示</b>：① 前 4 板块输出依次从右滑入 dashboard 列表 → ② PM 卡片 scan band 横扫（加权分析中）+ 卡片 border 加粗 lime 渐亮 → ③ 底部 ✓ APPROVE 大徽章 scale-pop + 双层 burst ring 扩散 → ④ 下方大框 + 输出 lime 亮起。循环 6.4s。</p>
+  </div>
+
+  <div class="flow-stages-v4">
+    <article class="fstage4">
+      <div class="fstage4-side" data-num="5">
+        <div class="fs4-head"><span class="fs4-num">5</span><div class="fs4-meta"><h2 class="fs4-name">最终决策</h2><div class="fs4-tag">PORTFOLIO MANAGER</div></div></div>
+        <span class="fs4-cnt">终审裁决</span>
+        <span class="fs4-side-chip">approve · caution · reject 三态</span>
+      </div>
+      <div class="fstage4-body">
+
+        <div class="pm-row">
+          <div class="fagent pm">
+            <div class="fagent-head">
+              <div class="fagent-avatar a-pm"><div class="typing-dots"><i></i><i></i><i></i></div>★</div>
+              <div class="fagent-info"><div class="fagent-name">投资经理 · PM</div><div class="fagent-role">Portfolio Manager</div></div>
+            </div>
+            <div class="fagent-desc">综合 4 板块输出 + 三派风险审查 → 最终裁决</div>
+            <div class="verdict-big">
+              <div class="v-icon">✓</div>
+              <div class="v-body">
+                <div class="v-state">APPROVE</div>
+                <div class="v-name">最终决策 · 批准执行</div>
+              </div>
+              <div class="v-conf">CONF 82%</div>
+            </div>
+          </div>
+
+          <!-- decision dashboard · right side -->
+          <div class="dashboard">
+            <div class="dashboard-head">
+              <span class="live">ANALYZING</span>
+              <span class="phase">4 / 4 SIGNALS</span>
+            </div>
+
+            <div class="dash-row s1">
+              <span class="src">①</span>
+              <span class="lbl">信息收集 · <b>4 简报就绪</b></span>
+              <span class="val">✓ OK</span>
+            </div>
+            <div class="dash-row s2">
+              <span class="src">②</span>
+              <span class="lbl">多空辩论 · <b>偏多 / 3 rounds</b></span>
+              <span class="val">↑ BULL</span>
+            </div>
+            <div class="dash-row s3">
+              <span class="src">③</span>
+              <span class="lbl">交易方案 · <b>LONG · 35% · -7%</b></span>
+              <span class="val">✓ OK</span>
+            </div>
+            <div class="dash-row s4">
+              <span class="src">④</span>
+              <span class="lbl">风险审查 · <b>+5% / = / −10%</b></span>
+              <span class="val mid">⚖ MIXED</span>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="fstage4-detail">
+          <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">交易方案 + 风险审查纪要</span></div>
+          <div class="fsd-col"><span class="fsd-label">决策</span><span class="fsd-value">✓ 批准 / ! 警示 / ✗ 否决</span></div>
+          <div class="fsd-col is-target"><span class="fsd-label">输出</span><span class="fsd-value">最终决策 + 执行边界</span></div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="to-next">
+    <svg viewBox="0 0 32 36"><path d="M 16 2 L 16 34"/></svg>
+    <span class="label">最终决策 <span class="arrow">→</span> 复盘沉淀（板块 6）</span>
+  </div>
+
+  <section class="spec-note">
+    <h3>动效序列（循环 6.4s · 信号汇集 → 加权 → 裁决）</h3>
+    <ul>
+      <li><b>0.0 → 0.5s</b> · PM 卡 lime border 加粗强亮（首次接管，呼应 final 变体描边权重）</li>
+      <li><b>0.6 / 1.0 / 1.4 / 1.8s</b> · 右侧 dashboard <b>4 行信号依次从右滑入</b>（前 4 板块输出汇集到 PM）</li>
+      <li><b>2.5 → 3.7s</b> · PM 卡 scan band 横扫（加权分析中）+ dashboard 整体 border lime 渐亮</li>
+      <li><b>3.6s</b> · 底部 <b>✓ APPROVE 大徽章</b> scale-pop 揭示 + <b>双层 burst ring</b> 从图标位置向外扩散（决策落地）</li>
+      <li><b>4.8 → 5.7s</b> · 下方大框 + 输出文字 lime 亮起（最终决策 + 执行边界）</li>
+      <li><b>5.7 → 6.4s</b> · 衰减回 idle</li>
+    </ul>
+    <p style="margin-top:10px;"><b>关键差异化</b>：与板块 3 的 trader 不同 — 这里 dashboard 是 <b>"输入汇集 + 加权 + 裁决"</b> 三段式，最强收束是 <b>verdict 大徽章的 scale-pop + burst ring</b>，决策权重感最重。<br/><b>三态切换</b>：当前演示 APPROVE（绿）；caution 时徽章变 #fed500 + ! 图标；reject 时变 #e87a76 + ✗ 图标，dashboard border 同步换色。</p>
+  </section>
+
+</div>
+</body>
+</html>
