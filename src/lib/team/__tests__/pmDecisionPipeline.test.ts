@@ -1082,6 +1082,69 @@ describe("runPmDecisionPipeline", () => {
     expect(appendWatchHistoryEntry).toHaveBeenCalledTimes(1);
   });
 
+  it("uses a distinct resident lead fallback instead of repeating analyst summaries", async () => {
+    const repeatedAnalystLine = "BTC 公开信号已汇总，进入后续判断。";
+    const judgePass: DecisionJudgeResult = {
+      verdict: "pass",
+      fail_reason: null,
+      fail_detail: null,
+      confidence: 0.86,
+      status: "ok",
+      callCount: 1,
+      inputTokenEstimate: 100,
+      outputTokenEstimate: 20,
+    };
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+    const updateDecisionRecord = vi.fn(async (record: StrategyDecisionRecord) => {
+      void record;
+    });
+    const candidate = marketOverviewCandidate({ locale: "zh_CN", now });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        candidate,
+        recentMarketSignals: [signal(), signal({ symbol: "ETH", payload: { change24h: 3.2 } })],
+        recentNewsEvidence: [evidence({ symbol: [] })],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack("MARKET"),
+        generateAnalystOutput: vi.fn(async (memberId) => ({
+          ...analystOutput(memberId),
+          rationale: repeatedAnalystLine,
+          oneLineSummary: repeatedAnalystLine,
+        })),
+        generateLeadOutput: vi.fn(async (memberId: TeamMemberId) => {
+          if (memberId === "research_lead") {
+            throw new Error("Unterminated string in JSON at position 180");
+          }
+          return {
+            rationale: "风险审查围绕波动、关键价位和情绪反转独立完成。",
+            confidence: 0.61,
+          };
+        }),
+        generateTradeDecision: vi.fn(async () => decision()),
+        runDecisionJudge: vi.fn(async () => judgePass),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord,
+      },
+    );
+
+    const researchLead = result?.record.analystInputs.find(
+      (input) => input.memberId === "research_lead",
+    );
+    expect(researchLead?.rationale).toBeTruthy();
+    expect(researchLead?.rationale).not.toBe(repeatedAnalystLine);
+    expect(researchLead?.oneLineSummary).not.toBe(repeatedAnalystLine);
+    expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps symbol candidates strict when a lead LLM output is malformed", async () => {
     const recordStrategyDecisionRecord = vi.fn(async (record) => record);
     const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {

@@ -658,6 +658,78 @@ describe("/api/cron/strategy-replay", () => {
     );
   });
 
+  it("does not spend the inline cap on resident candidates that produce no output", async () => {
+    const prewarmNow = Date.parse("2026-05-13T18:00:00.000Z");
+    vi.setSystemTime(prewarmNow);
+    runPmDecisionJobMock
+      .mockResolvedValueOnce({
+        job: { id: "pm-job:market-skipped", status: "succeeded" },
+        outputs: [],
+        auditEvents: [],
+      })
+      .mockResolvedValueOnce({
+        job: { id: "pm-job:hotspot-generated", status: "succeeded" },
+        outputs: [
+          {
+            record: { id: "pm:HOTSPOT:test" },
+            publicTimelineEntry: displayablePmTimelineEntry({
+              id: "pm-decision:pm:HOTSPOT:test",
+              payload: {
+                kind: "pm_decision",
+                recordId: "pm:HOTSPOT:test",
+                symbol: "HOTSPOT",
+                candidateType: "hotspot",
+                candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
+                displayTitle: "热点叙事追踪",
+                executable: false,
+                tradeDecision: null,
+                rounds: [
+                  {
+                    round: 1,
+                    memberId: "news_analyst",
+                    rationale: "热点叙事具备公开信息收集发言",
+                  },
+                ],
+              },
+            }),
+            tradeDecision: {},
+          },
+        ],
+        auditEvents: [],
+      });
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.residentPrewarmGenerated).toBe(1);
+    expect(payload.pmDecisionInlineLimit).toEqual({
+      limit: 1,
+      used: 1,
+      deferredResidentCandidateKeys: [],
+      deferredBatch: true,
+    });
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        candidate: expect.objectContaining({
+          candidateType: "market_overview",
+        }),
+      }),
+    );
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        candidate: expect.objectContaining({
+          candidateType: "hotspot",
+        }),
+      }),
+    );
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "batch" }),
+    );
+  });
+
   it("backfills due failed resident prewarm jobs outside the fixed UTC cadence window", async () => {
     const retryNow = Date.parse("2026-05-13T20:10:00.000Z");
     vi.setSystemTime(retryNow);

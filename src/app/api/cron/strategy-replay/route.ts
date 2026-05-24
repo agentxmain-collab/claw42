@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
   let inlinePmDecisionJobs = 0;
   const inlineLimitReached = () => inlinePmDecisionJobs >= INLINE_PM_DECISION_JOB_LIMIT;
   const trackInlineUsage = (result: DispatchPmDecisionJobResult) => {
-    if (result.queueResult.mode !== "queue" && !isLockedInlineSkip(result)) {
+    if (shouldSpendInlineSlot(result)) {
       inlinePmDecisionJobs += 1;
     }
   };
@@ -388,6 +388,12 @@ function isLockedInlineSkip(result: DispatchPmDecisionJobResult) {
   return auditEvents.some(
     (event) => event.type === "candidate_skipped" && event.reason === "locked",
   );
+}
+
+function shouldSpendInlineSlot(result: DispatchPmDecisionJobResult) {
+  if (result.queueResult.mode === "queue") return false;
+  if (isLockedInlineSkip(result)) return false;
+  return result.outputs.length > 0;
 }
 
 async function resolveOpenPmDecisions(

@@ -480,30 +480,34 @@ function isResidentCandidate(candidate: DecisionCandidate) {
 
 function residentLeadFallbackOutput({
   memberId,
-  analystOutputs,
   locale,
 }: {
   memberId: "research_lead" | "risk_lead";
-  analystOutputs: readonly AnalystOutput[];
   locale: Locale;
 }): LeadOutput {
-  const safeAnalystText = analystOutputs
-    .map((output) => cleanPublicDecisionText(output.oneLineSummary ?? output.rationale, locale))
-    .find((value): value is string => Boolean(value));
-  if (safeAnalystText) {
-    return {
-      rationale: safeAnalystText,
-      confidence: 0.55,
-    };
+  const isChinese = locale.startsWith("zh");
+  if (memberId === "research_lead") {
+    return isChinese
+      ? {
+          rationale:
+            "大盘信号已从价格动量、资金偏好和新闻强度三侧交叉梳理，结论以当前最强共振为准。",
+          confidence: 0.55,
+        }
+      : {
+          rationale:
+            "Public price action, liquidity bias, and news intensity have been cross-checked; the conclusion follows the strongest current alignment.",
+          confidence: 0.55,
+        };
   }
-  return memberId === "research_lead"
+  return isChinese
     ? {
         rationale:
-          "公开行情、新闻和价格信号已经完成汇总，当前重点是动量延续、关键价位和资金情绪的同步程度。",
+          "风险判断聚焦关键价位失守、波动扩大和情绪反转，避免把单一热点直接放大成交易结论。",
         confidence: 0.55,
       }
     : {
-        rationale: "风险侧以波动扩大、关键价位失守和情绪反转作为主要约束，当前结论保持审慎。",
+        rationale:
+          "Risk review focuses on key level failure, volatility expansion, and sentiment reversal before treating any single narrative as decisive.",
         confidence: 0.55,
       };
 }
@@ -513,21 +517,19 @@ async function generateLeadWithResidentRecovery({
   prompt,
   generateLead,
   candidate,
-  analystOutputs,
   locale,
 }: {
   memberId: "research_lead" | "risk_lead";
   prompt: string;
   generateLead: (memberId: TeamMemberId, prompt: string) => Promise<LeadOutput>;
   candidate: DecisionCandidate;
-  analystOutputs: readonly AnalystOutput[];
   locale: Locale;
 }) {
   try {
     return await generateLead(memberId, prompt);
   } catch (error) {
     if (!isResidentCandidate(candidate)) throw error;
-    return residentLeadFallbackOutput({ memberId, analystOutputs, locale });
+    return residentLeadFallbackOutput({ memberId, locale });
   }
 }
 
@@ -1710,14 +1712,12 @@ export async function runPmDecisionPipeline(
       ),
       generateLead,
       candidate,
-      analystOutputs: latestAnalystOutputs,
       locale,
     });
     if (containsPublicContentLeak(researchLead.rationale)) {
       if (isResidentCandidate(candidate)) {
         researchLead = residentLeadFallbackOutput({
           memberId: "research_lead",
-          analystOutputs: latestAnalystOutputs,
           locale,
         });
       } else {
@@ -1764,14 +1764,12 @@ export async function runPmDecisionPipeline(
       ),
       generateLead,
       candidate,
-      analystOutputs: latestAnalystOutputs,
       locale,
     });
     if (containsPublicContentLeak(riskLead.rationale)) {
       if (isResidentCandidate(candidate)) {
         riskLead = residentLeadFallbackOutput({
           memberId: "risk_lead",
-          analystOutputs: latestAnalystOutputs,
           locale,
         });
       } else {
