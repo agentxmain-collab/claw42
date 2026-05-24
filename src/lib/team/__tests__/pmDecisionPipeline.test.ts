@@ -1030,6 +1030,96 @@ describe("runPmDecisionPipeline", () => {
     expect(recordStrategyDecisionRecord).toHaveBeenCalledWith(expect.any(Object), 0);
   });
 
+  it("recovers a resident candidate when a lead LLM output is malformed", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+    const updateDecisionRecord = vi.fn(async (record: StrategyDecisionRecord) => {
+      void record;
+    });
+    const generateLeadOutput = vi.fn(async (memberId: TeamMemberId) => {
+      if (memberId === "research_lead") {
+        throw new Error("Unterminated string in JSON at position 180");
+      }
+      return {
+        rationale: "Risk review keeps the observation balanced around public signals",
+        confidence: 0.61,
+      };
+    });
+    const candidate = marketOverviewCandidate({ locale: "zh_CN", now });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        candidate,
+        recentMarketSignals: [signal(), signal({ symbol: "ETH", payload: { change24h: 3.2 } })],
+        recentNewsEvidence: [evidence({ symbol: [] })],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack("MARKET"),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput,
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord,
+      },
+    );
+
+    expect(result?.record.candidate?.candidateType).toBe("market_overview");
+    expect(result?.record.tradeDecision).toBeNull();
+    expect(
+      result?.record.analystInputs.find((input) => input.memberId === "research_lead"),
+    ).toMatchObject({
+      memberId: "research_lead",
+      direction: "neutral",
+    });
+    expect(result?.record.analysisSummary).toBeTruthy();
+    expect(recordStrategyDecisionRecord).toHaveBeenCalledTimes(1);
+    expect(appendWatchHistoryEntry).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps symbol candidates strict when a lead LLM output is malformed", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn(async (entry: unknown) => {
+      void entry;
+    });
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async (memberId: TeamMemberId) => {
+          if (memberId === "research_lead") {
+            throw new Error("LLM output is not valid JSON");
+          }
+          return {
+            rationale: "Risk review keeps the symbol setup balanced",
+            confidence: 0.61,
+          };
+        }),
+        generateTradeDecision: vi.fn(async () => decision()),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord: vi.fn(),
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+  });
+
   it("blocks public timeline publishing when the persisted record fails the quality gate", async () => {
     const upsertDecisionRun = vi.fn(async (run: DecisionRunRecord) => {
       void run;

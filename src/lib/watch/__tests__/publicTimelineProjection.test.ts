@@ -521,6 +521,47 @@ describe("publicTimelineProjection", () => {
     expectNoInternalTeamIds(event.payload);
   });
 
+  it("does not project partial PM stage records into the public timeline", () => {
+    const partialRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-partial-stage",
+      stageTrace: [
+        {
+          stageId: "analyst_inputs",
+          label: "Analyst input generation",
+          status: "done",
+          observedAt: new Date(now - 180_000).toISOString(),
+        },
+        {
+          stageId: "research_lead",
+          label: "Research synthesis",
+          status: "in_progress",
+          observedAt: new Date(now - 120_000).toISOString(),
+        },
+        {
+          stageId: "risk_lead",
+          label: "Risk review",
+          status: "pending",
+          observedAt: new Date(now - 60_000).toISOString(),
+        },
+        {
+          stageId: "record_write",
+          label: "Record write",
+          status: "pending",
+          observedAt: new Date(now).toISOString(),
+        },
+        {
+          stageId: "public_timeline",
+          label: "Public timeline",
+          status: "pending",
+          observedAt: new Date(now).toISOString(),
+        },
+      ],
+    };
+
+    expect(projectDecisionRecordToPublicEvent(partialRecord)).toBeNull();
+  });
+
   it("projects explicit non-symbol decision candidate metadata without dropping the record", () => {
     const marketRecord: StrategyDecisionRecord = {
       ...decisionRecord,
@@ -1061,11 +1102,78 @@ describe("publicTimelineProjection", () => {
     expect(JSON.stringify(event.payload.stageTrace)).not.toContain("private-prompt");
   });
 
-  it("normalizes internal stage trace order before public exposure", () => {
+  it("does not project partial stream PM records into the public timeline", () => {
+    const entry: StreamEntry = {
+      kind: "chat_thread",
+      id: "thread-partial-stage",
+      ts: now,
+      thread: {
+        id: "thread-partial-stage",
+        seed: {
+          id: "seed",
+          type: "market",
+          title: "Market",
+          description: "Market",
+          symbols: ["BTC"],
+          sentiment: "neutral",
+          createdAt: now,
+        },
+        messages: [],
+        strategy: null,
+        status: "completed",
+        createdAt: now,
+      },
+      meta: {
+        visibility: "public",
+        importance: "high",
+        sourceTrigger: "pm_decision",
+        evidenceIds: ["ev_1"],
+        locale: "zh_CN",
+        recordId: "record-1",
+        tradeDecision,
+      },
+    };
+    const partialRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      stageTrace: [
+        {
+          stageId: "analyst_inputs",
+          label: "Analyst input generation",
+          status: "done",
+          observedAt: new Date(now - 120_000).toISOString(),
+        },
+        {
+          stageId: "research_lead",
+          label: "Research synthesis",
+          status: "in_progress",
+          observedAt: new Date(now - 60_000).toISOString(),
+        },
+      ],
+    };
+
+    expect(
+      projectStreamEntryToPublic(entry, {
+        mode: "public",
+        decisionRecordsById: new Map([[partialRecord.id, partialRecord]]),
+      }),
+    ).toBeNull();
+  });
+
+  it("normalizes completed internal stage trace before public exposure", () => {
     const recordWithTrace: StrategyDecisionRecord = {
       ...decisionRecord,
       id: "record-internal-order",
+      symbol: "MARKET",
       tradeDecision: null,
+      candidate: {
+        candidateType: "market_overview",
+        candidateKey: "market_overview:daily:zh_CN:2026-05-24",
+        displayTitle: "今日大盘综述",
+        executable: false,
+        cadence: "daily",
+        score: 100,
+        reasons: [],
+      },
       stageTrace: [
         {
           stageId: "analyst_inputs",
@@ -1082,12 +1190,24 @@ describe("publicTimelineProjection", () => {
         {
           stageId: "risk_lead",
           label: "Risk review",
-          status: "in_progress",
+          status: "done",
           observedAt: new Date(now - 60_000).toISOString(),
         },
         {
           stageId: "trade_decision",
           label: "Trade plan",
+          status: "done",
+          observedAt: new Date(now).toISOString(),
+        },
+        {
+          stageId: "record_write",
+          label: "Record write",
+          status: "done",
+          observedAt: new Date(now).toISOString(),
+        },
+        {
+          stageId: "public_timeline",
+          label: "Public timeline",
           status: "done",
           observedAt: new Date(now).toISOString(),
         },
@@ -1101,8 +1221,10 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.stageTrace?.map((entry) => `${entry.stageId}:${entry.status}`)).toEqual([
       "analyst_inputs:done",
       "research_lead:done",
-      "risk_lead:pending",
-      "trade_decision:in_progress",
+      "risk_lead:done",
+      "trade_decision:done",
+      "record_write:done",
+      "public_timeline:done",
     ]);
   });
 

@@ -114,6 +114,50 @@ describe("buildDecisionOpsResidentPublicVisibility", () => {
       missingResidentTypes: ["market_overview"],
     });
   });
+
+  it("does not count resident cards with incomplete public stage trace", () => {
+    const report = buildDecisionOpsResidentPublicVisibility({
+      publicEvents: [
+        pmEvent({
+          recordId: "market-partial",
+          candidateType: "market_overview",
+          candidateKey: "market_overview:utc:zh_CN:2026-05-19T09",
+          symbol: "MARKET",
+          ts: now,
+          stageTrace: [
+            {
+              stageId: "analyst_inputs",
+              status: "done",
+              observedAt: new Date(now - 120_000).toISOString(),
+            },
+            {
+              stageId: "research_lead",
+              status: "in_progress",
+              observedAt: new Date(now - 60_000).toISOString(),
+            },
+          ],
+        }),
+        pmEvent({
+          recordId: "hotspot-1",
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:2026-05-19T09:market",
+          symbol: "HOTSPOT",
+          ts: now - 60_000,
+        }),
+      ],
+      now,
+    });
+
+    expect(report).toMatchObject({
+      status: "critical",
+      allResidentCardsVisible: false,
+      counts: {
+        marketOverview: 0,
+        hotspot: 1,
+      },
+      missingResidentTypes: ["market_overview"],
+    });
+  });
 });
 
 function pmEvent({
@@ -123,6 +167,7 @@ function pmEvent({
   symbol,
   ts,
   rounds,
+  stageTrace,
 }: {
   recordId: string;
   candidateType: "market_overview" | "hotspot" | "symbol";
@@ -130,6 +175,7 @@ function pmEvent({
   symbol: string;
   ts: number;
   rounds?: NonNullable<Extract<PublicTimelineEvent["payload"], { kind: "pm_decision" }>["rounds"]>;
+  stageTrace?: Extract<PublicTimelineEvent["payload"], { kind: "pm_decision" }>["stageTrace"];
 }): PublicTimelineEvent {
   return {
     id: `pm-decision:${recordId}`,
@@ -149,7 +195,7 @@ function pmEvent({
       executable: candidateType === "symbol",
       tradeDecision: null,
       rounds,
-      stageTrace: [
+      stageTrace: stageTrace ?? [
         {
           stageId: "analyst_inputs",
           status: "done",

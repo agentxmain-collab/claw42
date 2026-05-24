@@ -23,6 +23,7 @@ import {
   cleanPublicDecisionText,
   containsPublicContentLeak,
 } from "@/lib/watch/publicContentGuardrails";
+import { hasCompletePublicDecisionStageTrace } from "@/lib/watch/publicPmDecisionDisplay";
 import {
   mapTeamMemberToPublicDecisionAgent,
   type PublicDecisionAgentId,
@@ -69,6 +70,10 @@ export function publicStageTraceFromRecord(
 
 function isAnalysisOnlyRecord(record: StrategyDecisionRecord | null) {
   return normalizeCandidateType(record?.candidate?.candidateType) !== "symbol";
+}
+
+function hasPublishableStageTrace(record: StrategyDecisionRecord | null | undefined) {
+  return hasCompletePublicDecisionStageTrace(record?.stageTrace);
 }
 
 function inferredMeta(entry: StreamEntry): WatchEntryMeta {
@@ -243,6 +248,7 @@ function pmDecisionPayload(
   const recordId = meta.recordId ?? entry.thread.strategy?.id ?? null;
   if (!recordId) return null;
   const indexedRecord = decisionRecord?.id === recordId ? decisionRecord : null;
+  if (!hasPublishableStageTrace(indexedRecord)) return null;
   const derived = publicDecisionProcessFromRecord(indexedRecord);
   const tradeDecision = normalizePublicTradeDecision(
     indexedRecord?.tradeDecision ?? meta.tradeDecision ?? null,
@@ -282,6 +288,7 @@ export function projectDecisionRecordToPublicEvent(
 ): PublicTimelineEvent | null {
   const ts = Date.parse(record.createdAt);
   if (!Number.isFinite(ts)) return null;
+  if (!hasPublishableStageTrace(record)) return null;
 
   const derived = publicDecisionProcessFromRecord(record);
   const tradeDecision = normalizePublicTradeDecision(record.tradeDecision);

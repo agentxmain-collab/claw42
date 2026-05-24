@@ -474,6 +474,63 @@ async function generateAnalystWithFallback({
   }
 }
 
+function isResidentCandidate(candidate: DecisionCandidate) {
+  return candidate.candidateType === "market_overview" || candidate.candidateType === "hotspot";
+}
+
+function residentLeadFallbackOutput({
+  memberId,
+  analystOutputs,
+  locale,
+}: {
+  memberId: "research_lead" | "risk_lead";
+  analystOutputs: readonly AnalystOutput[];
+  locale: Locale;
+}): LeadOutput {
+  const safeAnalystText = analystOutputs
+    .map((output) => cleanPublicDecisionText(output.oneLineSummary ?? output.rationale, locale))
+    .find((value): value is string => Boolean(value));
+  if (safeAnalystText) {
+    return {
+      rationale: safeAnalystText,
+      confidence: 0.55,
+    };
+  }
+  return memberId === "research_lead"
+    ? {
+        rationale:
+          "公开行情、新闻和价格信号已经完成汇总，当前重点是动量延续、关键价位和资金情绪的同步程度。",
+        confidence: 0.55,
+      }
+    : {
+        rationale: "风险侧以波动扩大、关键价位失守和情绪反转作为主要约束，当前结论保持审慎。",
+        confidence: 0.55,
+      };
+}
+
+async function generateLeadWithResidentRecovery({
+  memberId,
+  prompt,
+  generateLead,
+  candidate,
+  analystOutputs,
+  locale,
+}: {
+  memberId: "research_lead" | "risk_lead";
+  prompt: string;
+  generateLead: (memberId: TeamMemberId, prompt: string) => Promise<LeadOutput>;
+  candidate: DecisionCandidate;
+  analystOutputs: readonly AnalystOutput[];
+  locale: Locale;
+}) {
+  try {
+    return await generateLead(memberId, prompt);
+  } catch (error) {
+    if (!isResidentCandidate(candidate)) throw error;
+    return residentLeadFallbackOutput({ memberId, analystOutputs, locale });
+  }
+}
+
 async function defaultGenerateLeadOutput(
   memberId: TeamMemberId,
   prompt: string,
@@ -1641,9 +1698,9 @@ export async function runPmDecisionPipeline(
       }),
       evidenceIdsForPartial(localizedInput, publicAnalystRoundOutputs),
     );
-    const researchLead = await generateLead(
-      "research_lead",
-      await buildLeadPrompt(
+    let researchLead = await generateLeadWithResidentRecovery({
+      memberId: "research_lead",
+      prompt: await buildLeadPrompt(
         "research_lead",
         localizedInput,
         candidate,
@@ -1651,7 +1708,26 @@ export async function runPmDecisionPipeline(
         undefined,
         deps,
       ),
-    );
+      generateLead,
+      candidate,
+      analystOutputs: latestAnalystOutputs,
+      locale,
+    });
+    if (containsPublicContentLeak(researchLead.rationale)) {
+      if (isResidentCandidate(candidate)) {
+        researchLead = residentLeadFallbackOutput({
+          memberId: "research_lead",
+          analystOutputs: latestAnalystOutputs,
+          locale,
+        });
+      } else {
+        await writeSkippedRun({
+          skipReason: "research_lead_content_leak",
+          failedStage: "research_lead",
+        });
+        return null;
+      }
+    }
     if (containsPublicContentLeak(researchLead.rationale)) {
       await writeSkippedRun({
         skipReason: "research_lead_content_leak",
@@ -1676,9 +1752,9 @@ export async function runPmDecisionPipeline(
       }),
       evidenceIdsForPartial(localizedInput, publicAnalystRoundOutputs),
     );
-    const riskLead = await generateLead(
-      "risk_lead",
-      await buildLeadPrompt(
+    let riskLead = await generateLeadWithResidentRecovery({
+      memberId: "risk_lead",
+      prompt: await buildLeadPrompt(
         "risk_lead",
         localizedInput,
         candidate,
@@ -1686,7 +1762,26 @@ export async function runPmDecisionPipeline(
         researchLead,
         deps,
       ),
-    );
+      generateLead,
+      candidate,
+      analystOutputs: latestAnalystOutputs,
+      locale,
+    });
+    if (containsPublicContentLeak(riskLead.rationale)) {
+      if (isResidentCandidate(candidate)) {
+        riskLead = residentLeadFallbackOutput({
+          memberId: "risk_lead",
+          analystOutputs: latestAnalystOutputs,
+          locale,
+        });
+      } else {
+        await writeSkippedRun({
+          skipReason: "risk_lead_content_leak",
+          failedStage: "risk_lead",
+        });
+        return null;
+      }
+    }
     if (containsPublicContentLeak(riskLead.rationale)) {
       await writeSkippedRun({
         skipReason: "risk_lead_content_leak",
