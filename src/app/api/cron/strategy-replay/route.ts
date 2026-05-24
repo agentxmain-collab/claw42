@@ -262,6 +262,9 @@ async function buildCronDecisionRunDiagnostics(locale: ReturnType<typeof localeF
       startedAt: run.startedAt,
       completedAt: run.completedAt,
       skipReason: run.skipReason ?? null,
+      error: redactDecisionRunError(run.error),
+      stageStatus: run.stageStatus,
+      analystRoundCount: run.analystRoundCount,
       decisionRecordId: run.decisionRecordId ?? null,
       publicTimelineEventId: run.publicTimelineEventId ?? null,
       quality: run.quality
@@ -278,6 +281,16 @@ async function buildCronDecisionRunDiagnostics(locale: ReturnType<typeof localeF
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function redactDecisionRunError(error: string | null | undefined) {
+  if (!error) return null;
+  return error
+    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [redacted]")
+    .replace(/sk-[A-Za-z0-9_-]{12,}/gi, "sk-[redacted]")
+    .replace(/([?&](?:api[_-]?key|token|secret)=)[^&\s]+/gi, "$1[redacted]")
+    .replace(/\b((?:api[_-]?key|token|secret)=)[^\s&]+/gi, "$1[redacted]")
+    .slice(0, 320);
 }
 
 async function buildCronDecisionRecordDiagnostics(

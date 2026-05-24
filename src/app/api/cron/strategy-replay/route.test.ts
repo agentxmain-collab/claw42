@@ -240,7 +240,10 @@ describe("/api/cron/strategy-replay", () => {
         symbol: "BTC",
         startedAt: "2026-05-13T20:00:00.000Z",
         completedAt: "2026-05-13T20:01:00.000Z",
+        stageStatus: { information_collection: "succeeded" },
+        analystRoundCount: 1,
         skipReason: null,
+        error: null,
         decisionRecordId: "pm:BTC:test",
         publicTimelineEventId: "pm-decision:pm:BTC:test",
         quality: {
@@ -387,6 +390,9 @@ describe("/api/cron/strategy-replay", () => {
         candidateType: "symbol",
         decisionRecordId: "pm:BTC:test",
         publicTimelineEventId: "pm-decision:pm:BTC:test",
+        error: null,
+        stageStatus: { information_collection: "succeeded" },
+        analystRoundCount: 1,
         quality: expect.objectContaining({ publishable: true }),
       }),
     ]);
@@ -408,6 +414,47 @@ describe("/api/cron/strategy-replay", () => {
       ttlMs: 5 * 60_000,
       waitMs: 0,
     });
+  });
+
+  it("redacts failed PM run errors in trigger=now diagnostics", async () => {
+    readDecisionRunsMock.mockResolvedValueOnce([
+      {
+        id: "run:pm:HOTSPOT:test",
+        status: "failed",
+        triggerSource: "cron",
+        locale: "zh_CN",
+        candidate: {
+          candidateType: "hotspot",
+          candidateKey: "hotspot:utc:zh_CN:test",
+          displayTitle: "热点叙事追踪",
+        },
+        symbol: "HOTSPOT",
+        startedAt: "2026-05-13T20:00:00.000Z",
+        completedAt: "2026-05-13T20:01:00.000Z",
+        stageStatus: { information_collection: "failed" },
+        analystRoundCount: 0,
+        skipReason: null,
+        error: "provider failed with Bearer secret-token and api_key=secret-value",
+        decisionRecordId: null,
+        publicTimelineEventId: null,
+        quality: null,
+      },
+    ]);
+
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),
+    );
+    const payload = await response.json();
+
+    expect(payload.decisionRunDiagnostics).toEqual([
+      expect.objectContaining({
+        status: "failed",
+        candidateType: "hotspot",
+        error: "provider failed with Bearer [redacted] and api_key=[redacted]",
+        stageStatus: { information_collection: "failed" },
+        analystRoundCount: 0,
+      }),
+    ]);
   });
 
   it("does not let failed news debate orchestration block the PM update loop", async () => {
