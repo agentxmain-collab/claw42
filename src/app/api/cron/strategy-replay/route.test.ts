@@ -17,6 +17,8 @@ const readPmDecisionJobsMock = vi.hoisted(() => vi.fn());
 const publishPmDecisionJobToQueueMock = vi.hoisted(() => vi.fn());
 const runPmDecisionJobMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
+const getDecisionRecordStoreDiagnosticsMock = vi.hoisted(() => vi.fn());
+const getLastDecisionRecordWriteDiagnosticsMock = vi.hoisted(() => vi.fn());
 const resolveDecisionRecordFromPriceMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/news/normalizer", () => ({
@@ -63,6 +65,8 @@ vi.mock("@/lib/team/pmDecisionJobRunner", () => ({
 }));
 
 vi.mock("@/lib/team/decisionRecordStore", () => ({
+  getDecisionRecordStoreDiagnostics: getDecisionRecordStoreDiagnosticsMock,
+  getLastDecisionRecordWriteDiagnostics: getLastDecisionRecordWriteDiagnosticsMock,
   readAllDecisionRecords: readAllDecisionRecordsMock,
 }));
 
@@ -178,6 +182,8 @@ describe("/api/cron/strategy-replay", () => {
     publishPmDecisionJobToQueueMock.mockReset();
     runPmDecisionJobMock.mockReset();
     readAllDecisionRecordsMock.mockReset();
+    getDecisionRecordStoreDiagnosticsMock.mockReset();
+    getLastDecisionRecordWriteDiagnosticsMock.mockReset();
     resolveDecisionRecordFromPriceMock.mockReset();
 
     fetchNewsWithChainMock.mockResolvedValue({
@@ -218,6 +224,39 @@ describe("/api/cron/strategy-replay", () => {
       auditEventCount: 0,
     }));
     readPmDecisionJobsMock.mockResolvedValue([]);
+    getDecisionRecordStoreDiagnosticsMock.mockResolvedValue({
+      storageMode: "persistent",
+      configuredStorageMode: "persistent",
+      useKvEnvActualValue: '"true"',
+      kvConfigured: true,
+      kvKeyPrefix: "claw42:strategy:records:v1:",
+      kvSymbolIndexKey: "claw42:strategy:records:v1:zh_CN:symbols",
+      legacyKvSymbolIndexKey: "decision-record:v1:symbols",
+      deploymentId: "dpl_test",
+      gitSha: "sha_test",
+      lastWrite: null,
+      decisionRecordReadResult: {
+        locale: "zh_CN",
+        symbolsChecked: ["BTC"],
+        recordCount: 1,
+        firstRecordCreatedAt: "2026-05-13T20:00:00.000Z",
+        requestedRecordIdsPresent: ["pm:BTC:test"],
+      },
+    });
+    getLastDecisionRecordWriteDiagnosticsMock.mockReturnValue({
+      operation: "append",
+      storageMode: "persistent",
+      configuredStorageMode: "persistent",
+      locale: "zh_CN",
+      symbol: "BTC",
+      recordId: "pm:BTC:test",
+      kvKeyPrefix: "claw42:strategy:records:v1:",
+      kvSymbolKey: "claw42:strategy:records:v1:zh_CN:BTC",
+      kvSymbolIndexKey: "claw42:strategy:records:v1:zh_CN:symbols",
+      lpushResult: 1,
+      ltrimResult: "OK",
+      saddResult: 1,
+    });
     publishPmDecisionJobToQueueMock.mockResolvedValue({ mode: "disabled" });
     runPmDecisionJobMock.mockImplementation(async (job, context) => {
       context.onAudit?.({
@@ -301,6 +340,25 @@ describe("/api/cron/strategy-replay", () => {
         }),
       ]),
     );
+    expect(payload.decisionRecordDiagnostics).toMatchObject({
+      storageMode: "persistent",
+      useKvEnvActualValue: '"true"',
+      kvKeyPrefix: "claw42:strategy:records:v1:",
+      decisionRecordWriteResult: expect.objectContaining({
+        storageMode: "persistent",
+        recordId: "pm:BTC:test",
+      }),
+      decisionRecordReadResult: expect.objectContaining({
+        recordCount: 1,
+        requestedRecordIdsPresent: ["pm:BTC:test"],
+      }),
+    });
+    expect(getDecisionRecordStoreDiagnosticsMock).toHaveBeenCalledWith({
+      locale: "zh_CN",
+      symbols: ["BTC"],
+      recordIds: ["pm:BTC:test"],
+      limit: 20,
+    });
     expect(payload.resolvedPmDecisions).toBe(1);
     expect(resolveDecisionRecordFromPriceMock).toHaveBeenCalledWith(
       expect.objectContaining({ id: "pm:BTC:open" }),

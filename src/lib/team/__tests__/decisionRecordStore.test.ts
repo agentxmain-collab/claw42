@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   __decisionRecordStoreTestUtils,
   appendDecisionRecord,
+  getDecisionRecordStoreDiagnostics,
   readAllDecisionRecords,
   readDecisionRecords,
   upsertDecisionRecord,
@@ -131,6 +132,28 @@ describe("decisionRecordStore", () => {
       resolvedOutcome: "hit_tp",
       resolvedAt: "2026-05-10T01:00:00.000Z",
     });
+  });
+
+  test("reports safe storage diagnostics without exposing credentials", async () => {
+    await appendDecisionRecord(makeRecord({ id: "diag-record" }));
+
+    const diagnostics = await getDecisionRecordStoreDiagnostics({
+      locale: "zh_CN",
+      symbols: ["BTC"],
+      recordIds: ["diag-record"],
+    });
+
+    expect(diagnostics.storageMode).toBe("ephemeral");
+    expect(diagnostics.useKvEnvActualValue).toBe("undefined");
+    expect(diagnostics.kvKeyPrefix).toBe("claw42:strategy:records:v1:");
+    expect(diagnostics.decisionRecordReadResult).toMatchObject({
+      locale: "zh_CN",
+      recordCount: 1,
+      firstRecordCreatedAt: "2026-05-10T00:00:00.000Z",
+      requestedRecordIdsPresent: ["diag-record"],
+    });
+    expect(JSON.stringify(diagnostics)).not.toContain("TOKEN");
+    expect(JSON.stringify(diagnostics)).not.toContain("KV_REST_API");
   });
 });
 

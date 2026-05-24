@@ -7,7 +7,11 @@ import { getCoinPool } from "@/lib/marketDataCache";
 import { adjustDebtFromReplays } from "@/lib/agentRelationship";
 import { evaluateStrategy, recordStrategyReplay } from "@/lib/strategyHistory";
 import { tryAcquireLock } from "@/lib/storage/kv-lock";
-import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import {
+  getDecisionRecordStoreDiagnostics,
+  getLastDecisionRecordWriteDiagnostics,
+  readAllDecisionRecords,
+} from "@/lib/team/decisionRecordStore";
 import { resolveDecisionRecordFromPrice } from "@/lib/team/decisionResolution";
 import {
   summarizeProviderTelemetry,
@@ -185,6 +189,10 @@ export async function GET(request: NextRequest) {
   const hiddenPmDecisionOutputs = pmDecisionOutputs.length - visiblePmDecisionOutputs.length;
   const providerTelemetry = summarizeProviderTelemetry({ since: now });
   await warnIfSingleProviderConcentration(providerTelemetry);
+  const decisionRecordDiagnostics = await buildCronDecisionRecordDiagnostics(
+    locale,
+    pmDecisionOutputs,
+  );
 
   return NextResponse.json({
     ok: true,
@@ -228,12 +236,44 @@ export async function GET(request: NextRequest) {
     pmDecisionAudit: trigger === "now" ? pmDecisionAudit : undefined,
     providerTelemetry: trigger === "now" ? providerTelemetry : undefined,
     newsSourceHealth: trigger === "now" ? getNewsSourceHealthSnapshot() : undefined,
+    decisionRecordDiagnostics,
     resolvedPmDecisions,
     replayed: replayed.length,
     trigger,
     triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,
     servedAt: now,
   });
+}
+
+async function buildCronDecisionRecordDiagnostics(
+  locale: ReturnType<typeof localeFromRequestUrl>,
+  outputs: DispatchPmDecisionJobResult["outputs"],
+) {
+  try {
+    const recordIds = outputs.map((output) => output.record.id).filter(Boolean);
+    const symbols = outputs
+      .flatMap((output) => [
+        output.record.symbol,
+        output.publicTimelineEntry.payload.kind === "pm_decision"
+          ? output.publicTimelineEntry.payload.symbol
+          : null,
+      ])
+      .filter((symbol): symbol is string => typeof symbol === "string" && symbol.length > 0);
+    return {
+      ...(await getDecisionRecordStoreDiagnostics({
+        locale,
+        symbols,
+        recordIds,
+        limit: 20,
+      })),
+      decisionRecordWriteResult: getLastDecisionRecordWriteDiagnostics(),
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+      decisionRecordWriteResult: getLastDecisionRecordWriteDiagnostics(),
+    };
+  }
 }
 
 async function dispatchPmDecisionJob({
