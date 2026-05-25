@@ -13,6 +13,7 @@ export const heroAgents: HeroAgentVisual[] = [
     tier: "tier-c",
     readoutId: "NEWS·N",
     label: "News · N",
+    hasSpeech: true,
     style: { left: "69%", top: "19%", tz: "-92px", bob: "2px", dur: "7.2s", delay: "0.2s" },
   },
   {
@@ -21,6 +22,7 @@ export const heroAgents: HeroAgentVisual[] = [
     tier: "tier-c",
     readoutId: "TECH·T",
     label: "Technical · T",
+    hasSpeech: true,
     style: { left: "32%", top: "21%", tz: "-72px", bob: "3px", dur: "6.8s", delay: "1.8s" },
   },
   {
@@ -29,6 +31,7 @@ export const heroAgents: HeroAgentVisual[] = [
     tier: "tier-c",
     readoutId: "AGGR·A",
     label: "Aggressive · A",
+    hasSpeech: true,
     style: { left: "61%", top: "83%", tz: "-78px", bob: "3px", dur: "6.4s", delay: "1s" },
   },
   {
@@ -37,6 +40,7 @@ export const heroAgents: HeroAgentVisual[] = [
     tier: "tier-c",
     readoutId: "NEUT·N",
     label: "Neutral · N",
+    hasSpeech: true,
     style: { left: "8%", top: "28%", tz: "-90px", bob: "2px", dur: "7s", delay: "2s" },
   },
   {
@@ -54,6 +58,7 @@ export const heroAgents: HeroAgentVisual[] = [
     tier: "tier-b",
     readoutId: "CHAIN·O",
     label: "On-chain · O",
+    hasSpeech: true,
     style: { left: "88%", top: "51%", tz: "-15px", bob: "4px", dur: "5.4s", delay: "1.5s" },
   },
   {
@@ -62,6 +67,7 @@ export const heroAgents: HeroAgentVisual[] = [
     tier: "tier-b",
     readoutId: "CONS·C",
     label: "Conservative · C",
+    hasSpeech: true,
     style: { left: "17%", top: "73%", tz: "-20px", bob: "6px", dur: "6s", delay: "0.3s" },
   },
   {
@@ -88,6 +94,7 @@ export const heroAgents: HeroAgentVisual[] = [
     tier: "tier-a",
     readoutId: "BEAR·↓",
     label: "Bearish · ↓",
+    hasSpeech: true,
     style: { left: "69%", top: "62%", tz: "80px", bob: "8px", dur: "4.9s", delay: "1.2s" },
   },
   {
@@ -139,6 +146,25 @@ export const avatarLabelByRole: Record<DispatchV10AgentRoleId, string> = {
   portfolioManager: "PM",
   memoryLoop: "∞",
 };
+
+const AVATAR_BASE_PATH = "/agent-watch/c-line-ui-uplift-v1/avatars";
+
+export const avatarSrcByRole: Record<DispatchV10AgentRoleId, string> = {
+  fundamental: `${AVATAR_BASE_PATH}/fundamental_analyst.svg`,
+  onchain: `${AVATAR_BASE_PATH}/onchain_analyst.svg`,
+  news: `${AVATAR_BASE_PATH}/news_analyst.svg`,
+  technical: `${AVATAR_BASE_PATH}/chart_analyst.svg`,
+  bullish: `${AVATAR_BASE_PATH}/bullish_researcher.svg`,
+  bearish: `${AVATAR_BASE_PATH}/bearish_researcher.svg`,
+  trader: `${AVATAR_BASE_PATH}/trader.svg`,
+  aggressive: `${AVATAR_BASE_PATH}/aggressive_reviewer.svg`,
+  neutral: `${AVATAR_BASE_PATH}/neutral_reviewer.svg`,
+  conservative: `${AVATAR_BASE_PATH}/conservative_reviewer.svg`,
+  portfolioManager: `${AVATAR_BASE_PATH}/pm-approve.svg`,
+  memoryLoop: `${AVATAR_BASE_PATH}/memory_loop.svg`,
+};
+
+export const coreRobotAvatarSrc = `${AVATAR_BASE_PATH}/bot-base.svg`;
 
 export const v9AgentToV10Role: Record<DispatchAgentId, DispatchV10AgentRoleId> = {
   fundamental_analyst: "fundamental",

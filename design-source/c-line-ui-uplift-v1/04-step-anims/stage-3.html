@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-line · 板块 3 交易方案 · 动效</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800;900&family=Noto+Sans+SC:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#000; --card:#171717;
+    --line:rgba(255,255,255,0.08); --line-2:rgba(255,255,255,0.14);
+    --fg:#fff; --fg-2:#a6a6a6; --fg-3:#949494;
+    --purple:#5227ff; --purple-2:#7c5cff;
+    --lime:#d1ff55; --err:#e95032; --ok:#14a739; --warn:#fed500;
+    --radius-card:16px; --radius-panel:24px;
+    --font-display:"Manrope","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-display);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;padding:48px 32px 80px;}
+  .console{max-width:1240px;margin:0 auto;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  .doc-head{margin-bottom:32px;}
+  .doc-head h1{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .doc-head .sub{color:var(--fg-2);font-size:13.5px;line-height:1.65;max-width:760px;margin:0;}
+  .doc-head b{color:#fff;font-weight:700;}
+
+  /* canonical flow stage CSS */
+  .flow-stages-v4{display:flex;flex-direction:column;gap:16px;}
+  .fstage4{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius-panel);padding:22px 26px;
+    display:flex;flex-direction:row;gap:26px;align-items:stretch;
+    position:relative;overflow:visible;
+  }
+  .fstage4-side{flex:0 0 220px;display:flex;flex-direction:column;gap:12px;padding-right:22px;border-right:1px solid var(--line);position:relative;}
+  .fstage4-side::after{
+    content:attr(data-num);position:absolute;left:-14px;top:50%;
+    transform:translateY(-50%) rotate(-6deg);
+    font-family:var(--font-display);font-weight:900;font-size:200px;line-height:0.85;
+    letter-spacing:-0.06em;color:transparent;
+    -webkit-text-stroke:1.2px rgba(124,92,255,0.34);
+    pointer-events:none;user-select:none;z-index:0;
+  }
+  .fstage4 .fs4-head,.fstage4 .fs4-cnt,.fstage4 .fs4-side-chip{position:relative;z-index:2;}
+  .fs4-head{display:flex;align-items:baseline;gap:14px;}
+  .fs4-num{font-size:34px;font-weight:900;color:var(--fg);line-height:1;letter-spacing:-0.03em;}
+  .fs4-meta{display:flex;flex-direction:column;gap:3px;}
+  .fs4-name{font-size:17px;font-weight:800;line-height:1.2;margin:0;}
+  .fs4-tag{font-size:10px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;font-family:var(--font-mono);}
+  .fs4-cnt{font-size:13px;color:var(--fg);padding:7px 14px;background:rgba(255,255,255,0.06);border:1px solid transparent;border-radius:999px;font-weight:700;align-self:flex-start;}
+  .fs4-side-chip{margin-top:auto;padding:6px 12px;background:rgba(255,255,255,0.05);border:1px solid transparent;border-radius:8px;font-size:10px;color:var(--fg);letter-spacing:0.06em;text-transform:uppercase;font-weight:600;align-self:flex-start;font-family:var(--font-mono);}
+  .fstage4-body{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;position:relative;}
+
+  /* trader row: 1 fagent + assembly panel (NEW layer, right side empty space) */
+  .trader-row{
+    display:grid;
+    grid-template-columns:320px 1fr;
+    gap:18px;
+    align-items:stretch;
+  }
+  .fagent{background:rgba(255,255,255,0.025);border:1px solid var(--line);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:6px;min-height:72px;position:relative;transition:border-color .4s,box-shadow .4s,background .4s;}
+  .fagent-head{display:flex;align-items:center;gap:10px;}
+  .fagent-avatar{
+    width:30px;height:30px;border-radius:8px;flex-shrink:0;position:relative;
+    box-shadow:0 4px 12px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.16);
+    border:1px solid rgba(255,255,255,0.14);font-size:0 !important;
+  }
+  .fagent-avatar::before{
+    content:"";position:absolute;inset:5px 3px;border-radius:5px;
+    background:
+      radial-gradient(circle 1.5px at 30% 50%, var(--eye, #7ee0ff) 0 1.5px, transparent 2.1px),
+      radial-gradient(circle 1.5px at 70% 50%, var(--eye, #7ee0ff) 0 1.5px, transparent 2.1px),
+      radial-gradient(ellipse at 50% 65%, #06091a, #02030a 78%);
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .fagent-avatar::after{
+    content:"";position:absolute;left:50%;top:-5px;transform:translateX(-50%);
+    width:1.5px;height:5px;background:rgba(255,255,255,0.5);
+    box-shadow:0 -3px 0 -0.5px var(--lime);
+  }
+  .fagent-avatar.a-trade{background:#2a2a45;--eye:#a4abea;}
+  .fagent-info{flex:1;min-width:0;}
+  .fagent-name{font-size:12.5px;font-weight:800;line-height:1.2;}
+  .fagent-role{font-size:9px;color:var(--fg-3);margin-top:2px;letter-spacing:0.06em;font-family:var(--font-mono);}
+  .fagent-desc{font-size:11px;color:var(--fg-2);line-height:1.5;}
+
+  /* typing dots above avatar */
+  .fagent-avatar .typing-dots{
+    position:absolute;left:50%;bottom:calc(100% + 4px);
+    transform:translateX(-50%);
+    background:rgba(13,8,32,0.92);border:1px solid rgba(255,255,255,0.16);
+    padding:2.5px 6px;border-radius:6px;display:flex;gap:2.5px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);z-index:3;
+  }
+  .fagent-avatar .typing-dots i{width:3px;height:3px;border-radius:50%;background:var(--eye);box-shadow:0 0 3px var(--eye);}
+
+  /* output meta */
+  .fstage4-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px;margin-top:auto;position:relative;transition:border-color .4s,box-shadow .4s,background .4s;}
+  .fsd-col{display:flex;flex-direction:column;gap:4px;position:relative;}
+  .fsd-label{color:var(--fg-3);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;font-family:var(--font-mono);transition:color .4s;}
+  .fsd-value{color:var(--fg-2);font-size:12px;line-height:1.45;transition:color .4s;}
+
+  /* ════════════════════════════════════════════════════════════════
+     STAGE 3 · ASSEMBLY ANIMATION (overlay-only, no layout change)
+     循环 5.6s · "汇集 → 处理 → 输出"
+
+     0.0 → 0.6s · trader card border 紫色 → lime 渐亮 (接收数据)
+     0.4 → 1.4s · 卡片内部 scan band 横向扫过 (合成中)
+     1.4s · 右侧 assembly 第 1 行 "方向: LONG ↑" pop
+     1.9s · 第 2 行 "时机: NOW" pop
+     2.4s · 第 3 行 "仓位: 35%" pop
+     2.9s · 第 4 行 "止损: -7%" pop
+     3.6s · 下方大框 + 输出 文字 lime 亮起
+     4.6 → 5.6s · 衰减回 idle 并循环
+   ════════════════════════════════════════════════════════════════ */
+
+  .fagent.trader{animation:traderGlow 5.6s ease-in-out infinite;}
+  @keyframes traderGlow{
+    0%, 8%, 90%, 100%{border-color:var(--line);box-shadow:none;background:rgba(255,255,255,0.025);}
+    12%, 70%{border-color:rgba(109,196,212,0.6);box-shadow:0 0 0 1px rgba(109,196,212,0.32), 0 0 26px rgba(109,196,212,0.2);background:rgba(109,196,212,0.04);}
+    72%, 80%{border-color:rgba(209,255,85,0.5);box-shadow:0 0 0 1px rgba(209,255,85,0.32), 0 0 24px rgba(209,255,85,0.18);}
+  }
+
+  /* scan band inside trader card */
+  .fagent.trader::after{
+    content:"";position:absolute;left:8px;right:8px;top:50%;height:24px;
+    transform:translateY(-50%);
+    background:linear-gradient(90deg, transparent, rgba(109,196,212,0.18), rgba(209,255,85,0.32), rgba(109,196,212,0.18), transparent);
+    border-radius:8px;
+    pointer-events:none;opacity:0;
+    animation:scanBand 5.6s ease-in-out infinite;
+  }
+  @keyframes scanBand{
+    0%, 6%, 30%, 100%{opacity:0;transform:translateY(-50%) translateX(-100%);}
+    8%, 12%{opacity:0;transform:translateY(-50%) translateX(-100%);}
+    14%{opacity:0.8;transform:translateY(-50%) translateX(-50%);}
+    24%{opacity:0.8;transform:translateY(-50%) translateX(50%);}
+    28%{opacity:0;transform:translateY(-50%) translateX(100%);}
+  }
+
+  /* ── ASSEMBLY PANEL (right side empty space) ── */
+  .assembly{
+    background:rgba(13,8,32,0.5);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:12px;
+    padding:14px 18px;
+    display:flex;flex-direction:column;gap:8px;
+    position:relative;
+    transition:border-color .4s,box-shadow .4s,background .4s;
+    animation:assemblyFrame 5.6s ease-in-out infinite;
+  }
+  @keyframes assemblyFrame{
+    0%, 22%, 92%, 100%{border-color:rgba(255,255,255,0.06);box-shadow:none;}
+    32%, 80%{border-color:rgba(109,196,212,0.45);box-shadow:0 0 0 1px rgba(109,196,212,0.22), 0 0 22px rgba(109,196,212,0.16);}
+  }
+  .assembly-head{
+    display:flex;align-items:center;justify-content:space-between;
+    font-family:var(--font-mono);font-size:9.5px;color:var(--fg-3);
+    letter-spacing:0.14em;text-transform:uppercase;font-weight:700;
+    padding-bottom:6px;border-bottom:1px dashed rgba(255,255,255,0.08);margin-bottom:2px;
+  }
+  .assembly-head .live{
+    display:inline-flex;align-items:center;gap:6px;color:#a4abea;
+  }
+  .assembly-head .live::before{
+    content:"";width:5px;height:5px;border-radius:50%;background:#a4abea;
+    box-shadow:0 0 5px #a4abea;animation:pulse 1.4s ease-in-out infinite;
+  }
+  .assembly-head .progress{color:var(--lime);}
+
+  .assembly-row{
+    display:grid;grid-template-columns:80px 1fr 90px;align-items:center;gap:10px;
+    padding:5px 0;
+    opacity:0;transform:translateY(4px);
+    animation:rowPop 5.6s ease-out infinite;
+  }
+  .assembly-row .k{font-family:var(--font-mono);font-size:10px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;font-weight:700;}
+  .assembly-row .bar{
+    height:6px;border-radius:3px;
+    background:linear-gradient(90deg, rgba(109,196,212,0.6), rgba(209,255,85,0.6));
+    box-shadow:0 0 10px rgba(109,196,212,0.4);
+    transform-origin:left center;
+    animation:barGrow 5.6s ease-out infinite;
+  }
+  .assembly-row .v{
+    font-family:var(--font-mono);font-size:13px;font-weight:800;color:var(--lime);
+    text-align:right;letter-spacing:0.02em;
+    text-shadow:0 0 8px rgba(209,255,85,0.4);
+  }
+  .assembly-row.r1{animation-delay:0s;}
+  .assembly-row.r1 .bar{animation-delay:0s;}
+  .assembly-row.r2{animation-delay:0s;}
+  .assembly-row.r2 .bar{animation-delay:0s;}
+  .assembly-row.r3{animation-delay:0s;}
+  .assembly-row.r3 .bar{animation-delay:0s;}
+  .assembly-row.r4{animation-delay:0s;}
+  .assembly-row.r4 .bar{animation-delay:0s;}
+
+  /* per-row pop timing inside the 5.6s loop:
+     r1 at 25% (1.4s), r2 at 34% (1.9s), r3 at 43% (2.4s), r4 at 52% (2.9s) */
+  .assembly-row.r1{animation-name:rowPop1;}
+  .assembly-row.r2{animation-name:rowPop2;}
+  .assembly-row.r3{animation-name:rowPop3;}
+  .assembly-row.r4{animation-name:rowPop4;}
+  @keyframes rowPop1{0%, 22%, 92%, 100%{opacity:0;transform:translateY(4px);}28%, 85%{opacity:1;transform:translateY(0);}}
+  @keyframes rowPop2{0%, 31%, 92%, 100%{opacity:0;transform:translateY(4px);}37%, 85%{opacity:1;transform:translateY(0);}}
+  @keyframes rowPop3{0%, 40%, 92%, 100%{opacity:0;transform:translateY(4px);}46%, 85%{opacity:1;transform:translateY(0);}}
+  @keyframes rowPop4{0%, 49%, 92%, 100%{opacity:0;transform:translateY(4px);}55%, 85%{opacity:1;transform:translateY(0);}}
+
+  .assembly-row.r1 .bar{animation-name:barGrow1;}
+  .assembly-row.r2 .bar{animation-name:barGrow2;}
+  .assembly-row.r3 .bar{animation-name:barGrow3;}
+  .assembly-row.r4 .bar{animation-name:barGrow4;}
+  @keyframes barGrow1{0%, 22%, 92%, 100%{transform:scaleX(0);}28%{transform:scaleX(0.95);}32%, 85%{transform:scaleX(0.7);}}
+  @keyframes barGrow2{0%, 31%, 92%, 100%{transform:scaleX(0);}37%{transform:scaleX(0.95);}41%, 85%{transform:scaleX(0.55);}}
+  @keyframes barGrow3{0%, 40%, 92%, 100%{transform:scaleX(0);}46%{transform:scaleX(0.95);}50%, 85%{transform:scaleX(0.35);}}
+  @keyframes barGrow4{0%, 49%, 92%, 100%{transform:scaleX(0);}55%{transform:scaleX(0.95);}59%, 85%{transform:scaleX(0.7);}}
+
+  /* output frame lights up after assembly settles */
+  .fstage4-detail{animation:frameGlow 5.6s ease-in-out infinite;}
+  @keyframes frameGlow{
+    0%, 60%, 100%{border-color:var(--line);box-shadow:none;background:rgba(255,255,255,0.02);}
+    70%, 86%{border-color:rgba(209,255,85,0.5);box-shadow:0 0 0 1px rgba(209,255,85,0.28), 0 0 28px rgba(209,255,85,0.16);background:rgba(209,255,85,0.04);}
+  }
+  .fsd-col.is-target .fsd-value,
+  .fsd-col.is-target .fsd-label{animation:textLime 5.6s ease-in-out infinite;}
+  @keyframes textLime{
+    0%, 64%, 100%{color:inherit;}
+    72%, 88%{color:var(--lime);}
+  }
+
+  .fagent.trader .typing-dots{animation:dotsTrade 5.6s ease-in-out infinite;}
+  @keyframes dotsTrade{0%,8%,90%,100%{opacity:0.45;}14%,68%{opacity:1;}}
+
+  /* inter-stage connector */
+  .to-next{position:relative;height:36px;margin:-2px 0 4px;padding-left:120px;display:flex;align-items:center;}
+  .to-next svg{display:block;width:32px;height:100%;}
+  .to-next svg path{stroke:var(--lime);stroke-width:1.4;fill:none;stroke-dasharray:4 6;animation:dashFlow 1.6s linear infinite;}
+  @keyframes dashFlow{to{stroke-dashoffset:-50;}}
+  .to-next .label{margin-left:12px;font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;}
+  .to-next .label .arrow{color:var(--lime);margin:0 4px;}
+
+  .spec-note{
+    margin-top:24px;padding:18px 22px;
+    background:linear-gradient(135deg,rgba(209,255,85,0.05),rgba(82,39,255,0.02));
+    border:1px solid rgba(209,255,85,0.18);border-radius:14px;
+    color:var(--fg-2);font-size:12.5px;line-height:1.7;
+  }
+  .spec-note h3{color:#fff;font-size:13.5px;font-weight:800;margin:0 0 10px;}
+  .spec-note ul{margin:4px 0 4px 18px;padding:0;}
+  .spec-note ul li{margin-bottom:5px;}
+  .spec-note b{color:#fff;font-weight:700;}
+  .spec-note code{font-family:var(--font-mono);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:11.5px;}
+</style>
+</head>
+<body>
+<div class="console">
+
+  <div class="doc-head">
+    <h1>板块 3 · 交易方案 · 动效</h1>
+    <p class="sub">板式与原稿一致：左侧 trader 单卡 + 右侧空间留给 <b>方案组装面板</b>。<b>汇集 → 处理 → 输出</b>：① 辩论纪要进入 trader（卡片紫蓝 → lime border 渐亮）→ ② 卡片内部 scan band 横扫合成中 → ③ 右侧 4 行策略字段依次 pop（方向 / 时机 / 仓位 / 止损）→ ④ 下方大框 lime 亮起，输出文字变 lime。循环 5.6s。</p>
+  </div>
+
+  <div class="flow-stages-v4">
+    <article class="fstage4">
+      <div class="fstage4-side" data-num="3">
+        <div class="fs4-head"><span class="fs4-num">3</span><div class="fs4-meta"><h2 class="fs4-name">交易方案</h2><div class="fs4-tag">TRADER</div></div></div>
+        <span class="fs4-cnt">综合输出</span>
+        <span class="fs4-side-chip">方向 · 时机 · 仓位 · 止损</span>
+      </div>
+      <div class="fstage4-body">
+
+        <div class="trader-row">
+          <div class="fagent trader">
+            <div class="fagent-head">
+              <div class="fagent-avatar a-trade"><div class="typing-dots"><i></i><i></i><i></i></div>$</div>
+              <div class="fagent-info"><div class="fagent-name">交易策略总监</div><div class="fagent-role">Trader</div></div>
+            </div>
+            <div class="fagent-desc">综合简报 + 辩论 → 可执行方案</div>
+          </div>
+
+          <!-- assembly panel · right side -->
+          <div class="assembly">
+            <div class="assembly-head">
+              <span class="live">SYNTHESIZING</span>
+              <span class="progress">4 / 4 FIELDS</span>
+            </div>
+            <div class="assembly-row r1">
+              <span class="k">方向</span>
+              <span class="bar"></span>
+              <span class="v">LONG ↑</span>
+            </div>
+            <div class="assembly-row r2">
+              <span class="k">时机</span>
+              <span class="bar"></span>
+              <span class="v">NOW</span>
+            </div>
+            <div class="assembly-row r3">
+              <span class="k">仓位</span>
+              <span class="bar"></span>
+              <span class="v">35%</span>
+            </div>
+            <div class="assembly-row r4">
+              <span class="k">止损</span>
+              <span class="bar"></span>
+              <span class="v">−7%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="fstage4-detail">
+          <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">4 简报 + 多空辩论纪要</span></div>
+          <div class="fsd-col"><span class="fsd-label">决策</span><span class="fsd-value">方向 / 时机 / 仓位 / 止损</span></div>
+          <div class="fsd-col is-target"><span class="fsd-label">边界</span><span class="fsd-value">失效条件 + 风险线</span></div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="to-next">
+    <svg viewBox="0 0 32 36"><path d="M 16 2 L 16 34"/></svg>
+    <span class="label">交易方案 <span class="arrow">→</span> 风险审查（板块 4）</span>
+  </div>
+
+  <section class="spec-note">
+    <h3>动效序列（循环 5.6s · 综合 / 处理 / 输出）</h3>
+    <ul>
+      <li><b>0.0 → 0.7s</b> · trader 卡片 border 紫蓝色渐亮（接收辩论纪要）</li>
+      <li><b>0.8 → 1.6s</b> · 卡片内部 scan band 从左向右扫过（合成处理）</li>
+      <li><b>1.4 / 1.9 / 2.4 / 2.9s</b> · 右侧 4 行字段依次 pop 进场：方向 / 时机 / 仓位 / 止损 — 每行有 mini bar 横向 grow（生成感）+ lime 高亮的最终值</li>
+      <li><b>3.6 → 4.8s</b> · 右侧组装面板 border lime 亮起（方案就绪）+ 下方大框 + 输出文字变 lime</li>
+      <li><b>4.8 → 5.6s</b> · 全部衰减回 idle 进入下一循环</li>
+    </ul>
+    <p style="margin-top:10px;"><b>关键点</b>：右侧组装面板是新视觉层，但不破坏板式（与原稿"trader 卡 + 空白区"的 layout 一致，只是把空白填上了具体的方案字段，hover/idle 时可以保留作为 strategy preview 卡）。</p>
+  </section>
+
+</div>
+</body>
+</html>

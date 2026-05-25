@@ -424,7 +424,12 @@
             "value": "∞",
             "label": "Memory"
           }
-        ]
+        ],
+        "readoutLabels": {
+          "id": "ID",
+          "role": "角色",
+          "stat": "狀態"
+        }
       },
       "tabs": {
         "flow": "流程介紹",
@@ -656,7 +661,8 @@
         ],
         "footerStrong": "每一步都有专人",
         "footerText": "每一次分歧被記錄 · 每一筆結果被複盤",
-        "footerCta": "查看实时 AI 团队工作 →"
+        "footerCta": "查看实时 AI 团队工作 →",
+        "vsLabel": "VS"
       },
       "market": {
         "ariaLabel": "AI 团队工作台",

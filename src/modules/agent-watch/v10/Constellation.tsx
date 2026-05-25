@@ -2,8 +2,9 @@
 
 import React, { useRef } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
-import { heroAgents } from "./staticContent";
 import { AgentNode } from "./AgentNode";
+import { CoreRobot } from "./CoreRobot";
+import { heroAgents } from "./staticContent";
 import { useConstellationFocus } from "./useConstellationFocus";
 import { useReducedMotion } from "./useReducedMotion";
 
@@ -97,12 +98,7 @@ export function Constellation({ dict, active }: { dict: DispatchV10Dict; active:
             <span className="ring" />
             <span className="d1 ring" />
             <span className="d2 ring" />
-            <div className="head">
-              <div className="face">
-                <span className="eye" />
-                <span className="eye right" />
-              </div>
-            </div>
+            <CoreRobot className="hero-core-robot" />
             <div className="podium" />
           </div>
 

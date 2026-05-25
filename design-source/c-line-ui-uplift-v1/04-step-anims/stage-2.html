@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-line · 板块 2 多空辩论 · 动效</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800;900&family=Noto+Sans+SC:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#000; --card:#171717;
+    --line:rgba(255,255,255,0.08); --line-2:rgba(255,255,255,0.14);
+    --fg:#fff; --fg-2:#a6a6a6; --fg-3:#949494;
+    --purple:#5227ff; --purple-2:#7c5cff;
+    --lime:#d1ff55; --err:#e95032; --ok:#14a739; --warn:#fed500;
+    --bull:#7ad19a; --bear:#d48a7a;
+    --radius-card:16px; --radius-panel:24px;
+    --font-display:"Manrope","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-display);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;padding:48px 32px 80px;}
+  .console{max-width:1240px;margin:0 auto;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  .doc-head{margin-bottom:32px;}
+  .doc-head h1{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .doc-head .sub{color:var(--fg-2);font-size:13.5px;line-height:1.65;max-width:760px;margin:0;}
+  .doc-head b{color:#fff;font-weight:700;}
+
+  /* canonical flow stage CSS */
+  .flow-stages-v4{display:flex;flex-direction:column;gap:16px;}
+  .fstage4{
+    background:var(--card);border:1px solid rgba(82,39,255,0.3);
+    border-radius:var(--radius-panel);padding:22px 26px;
+    display:flex;flex-direction:row;gap:26px;align-items:stretch;
+    position:relative;overflow:visible;
+  }
+  .fstage4-side{flex:0 0 220px;display:flex;flex-direction:column;gap:12px;padding-right:22px;border-right:1px solid var(--line);position:relative;}
+  .fstage4-side::after{
+    content:attr(data-num);position:absolute;left:-14px;top:50%;
+    transform:translateY(-50%) rotate(-6deg);
+    font-family:var(--font-display);font-weight:900;font-size:200px;line-height:0.85;
+    letter-spacing:-0.06em;color:transparent;
+    -webkit-text-stroke:1.2px rgba(124,92,255,0.34);
+    pointer-events:none;user-select:none;z-index:0;
+  }
+  .fstage4 .fs4-head,.fstage4 .fs4-cnt,.fstage4 .fs4-side-chip{position:relative;z-index:2;}
+  .fs4-head{display:flex;align-items:baseline;gap:14px;}
+  .fs4-num{font-size:34px;font-weight:900;color:var(--fg);line-height:1;letter-spacing:-0.03em;}
+  .fs4-meta{display:flex;flex-direction:column;gap:3px;}
+  .fs4-name{font-size:17px;font-weight:800;line-height:1.2;margin:0;}
+  .fs4-tag{font-size:10px;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;font-family:var(--font-mono);}
+  .fs4-cnt{font-size:13px;color:var(--fg);padding:7px 14px;background:rgba(255,255,255,0.06);border:1px solid transparent;border-radius:999px;font-weight:700;align-self:flex-start;}
+  .fs4-side-chip{margin-top:auto;padding:6px 12px;background:rgba(255,255,255,0.05);border:1px solid transparent;border-radius:8px;font-size:10px;color:var(--fg);letter-spacing:0.06em;text-transform:uppercase;font-weight:600;align-self:flex-start;font-family:var(--font-mono);}
+  .fstage4-body{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0;position:relative;}
+
+  /* faceoff layout: bull | VS | bear */
+  .fagents-2.faceoff{
+    display:grid;grid-template-columns:1fr 96px 1fr;
+    gap:0;align-items:stretch;
+  }
+  .fagent{background:rgba(255,255,255,0.025);border:1px solid var(--line);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:6px;min-height:72px;position:relative;transition:border-color .25s,box-shadow .25s,background .25s;}
+  .fagents-2.faceoff > .fagent.bull{border-left:2px solid rgba(122,209,154,0.42);}
+  .fagents-2.faceoff > .fagent.bear{border-right:2px solid rgba(212,138,122,0.42);text-align:right;}
+  .fagents-2.faceoff > .fagent.bear .fagent-head{flex-direction:row-reverse;}
+  .fagents-2.faceoff > .fagent.bear .fagent-info{text-align:right;}
+
+  .fagent-head{display:flex;align-items:center;gap:10px;}
+  .fagent-avatar{
+    width:30px;height:30px;border-radius:8px;flex-shrink:0;position:relative;
+    box-shadow:0 4px 12px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.16);
+    border:1px solid rgba(255,255,255,0.14);font-size:0 !important;
+  }
+  .fagent-avatar::before{
+    content:"";position:absolute;inset:5px 3px;border-radius:5px;
+    background:
+      radial-gradient(circle 1.5px at 30% 50%, var(--eye) 0 1.5px, transparent 2.1px),
+      radial-gradient(circle 1.5px at 70% 50%, var(--eye) 0 1.5px, transparent 2.1px),
+      radial-gradient(ellipse at 50% 65%, #06091a, #02030a 78%);
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .fagent-avatar.a-bull{background:#2a4533;--eye:#88e1aa;}
+  .fagent-avatar.a-bear{background:#452a2a;--eye:#ff9a82;}
+  .fagent-info{flex:1;min-width:0;}
+  .fagent-name{font-size:12.5px;font-weight:800;line-height:1.2;}
+  .fagent-role{font-size:9px;color:var(--fg-3);margin-top:2px;letter-spacing:0.06em;font-family:var(--font-mono);}
+  .fagent-desc{font-size:11px;color:var(--fg-2);line-height:1.5;}
+
+  /* VS column */
+  .vs{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;color:var(--fg-3);
+    font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.14em;
+    text-transform:uppercase;font-weight:700;
+    position:relative;
+  }
+  .vs .x{font-family:var(--font-display);font-size:24px;font-weight:900;color:var(--lime);line-height:1;text-shadow:0 0 14px rgba(209,255,85,0.45);}
+  .vs .rounds{font-size:8.5px;color:var(--fg-3);}
+
+  /* output meta */
+  .fstage4-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px;margin-top:auto;position:relative;transition:border-color .4s,box-shadow .4s,background .4s;}
+  .fsd-col{display:flex;flex-direction:column;gap:4px;position:relative;}
+  .fsd-label{color:var(--fg-3);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;font-family:var(--font-mono);transition:color .4s;}
+  .fsd-value{color:var(--fg-2);font-size:12px;line-height:1.45;transition:color .4s;}
+
+  /* ═════════════════════════════════════════════════════════════════
+     STAGE 2 · CLASH ANIMATION (overlay-only, no layout change)
+     循环 4.4s:
+     - 0.0 → 1.0s: BULL 卡片 border lime-green 强亮 + box-shadow burst (出招)
+     - 1.0 → 2.0s: BEAR 卡片 border red 强亮 + box-shadow burst (反击)
+     - 0.6 → 2.2s: VS 中央电流 spark (重叠两次攻击) — 横向 zigzag bolt + screen flicker
+     - 2.4 → 3.6s: BULL & BEAR 同时 border 闪烁 (高潮阶段)
+     - 3.0 → 4.4s: 下方大框 +输出 lime 亮起（辩论纪要落地）
+   ═════════════════════════════════════════════════════════════════ */
+
+  .fagent.bull{animation:bullClash 4.4s ease-in-out infinite 0.0s;}
+  @keyframes bullClash{
+    0%, 22%, 54%, 80%, 100%{border-color:var(--line);border-left-color:rgba(122,209,154,0.42);box-shadow:none;background:rgba(255,255,255,0.025);}
+    6%, 16%{border-color:rgba(122,209,154,0.85);border-left-color:var(--bull);box-shadow:0 0 0 1px rgba(122,209,154,0.5), 0 0 32px rgba(122,209,154,0.32), inset 4px 0 16px rgba(122,209,154,0.18);background:rgba(122,209,154,0.06);}
+    60%{border-color:rgba(122,209,154,0.95);border-left-color:var(--bull);box-shadow:0 0 0 1px rgba(122,209,154,0.55), 0 0 24px rgba(122,209,154,0.24);background:rgba(122,209,154,0.04);}
+    66%, 74%{border-color:rgba(122,209,154,0.5);box-shadow:0 0 18px rgba(122,209,154,0.18);}
+  }
+  .fagent.bear{animation:bearClash 4.4s ease-in-out infinite 0.0s;}
+  @keyframes bearClash{
+    0%, 22%, 54%, 80%, 100%{border-color:var(--line);border-right-color:rgba(212,138,122,0.42);box-shadow:none;background:rgba(255,255,255,0.025);}
+    28%, 38%{border-color:rgba(212,138,122,0.85);border-right-color:var(--bear);box-shadow:0 0 0 1px rgba(212,138,122,0.5), 0 0 32px rgba(212,138,122,0.32), inset -4px 0 16px rgba(212,138,122,0.18);background:rgba(212,138,122,0.06);}
+    60%{border-color:rgba(212,138,122,0.95);border-right-color:var(--bear);box-shadow:0 0 0 1px rgba(212,138,122,0.55), 0 0 24px rgba(212,138,122,0.24);background:rgba(212,138,122,0.04);}
+    66%, 74%{border-color:rgba(212,138,122,0.5);box-shadow:0 0 18px rgba(212,138,122,0.18);}
+  }
+
+  /* VS center: lightning bolt + screen flicker */
+  .vs{overflow:visible;}
+  .vs .x{animation:vsPulse 4.4s ease-in-out infinite;position:relative;z-index:2;}
+  @keyframes vsPulse{
+    0%, 22%, 64%, 88%, 100%{transform:scale(1);text-shadow:0 0 14px rgba(209,255,85,0.45);color:var(--lime);opacity:1;}
+    28%, 38%{transform:scale(1.18);text-shadow:0 0 22px rgba(212,138,122,0.7), 0 0 40px rgba(212,138,122,0.4);color:#ffb09c;}
+    6%, 16%{transform:scale(1.18);text-shadow:0 0 22px rgba(122,209,154,0.7), 0 0 40px rgba(122,209,154,0.4);color:#9aebbb;}
+    55%{transform:scale(1.3);text-shadow:0 0 28px rgba(255,255,255,0.8), 0 0 50px rgba(209,255,85,0.6);color:#fff;}
+    68%, 78%{transform:scale(0.6);opacity:0.15;}
+  }
+
+  /* electric arcs — two zigzag currents from each side, meeting at center → 3 ROUNDS badge pops in */
+  .vs .bolt{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:180px;height:36px;pointer-events:none;z-index:1;
+    opacity:0;
+    animation:boltFlash 4.4s ease-in-out infinite;
+  }
+  .vs .bolt svg{display:block;width:100%;height:100%;overflow:visible;}
+  .vs .bolt path{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:miter;}
+  .vs .bolt path.bull-arc{stroke:#88e1aa;filter:drop-shadow(0 0 6px #88e1aa);}
+  .vs .bolt path.bear-arc{stroke:#ff9a82;filter:drop-shadow(0 0 6px #ff9a82);}
+  @keyframes boltFlash{
+    0%, 50%, 70%, 100%{opacity:0;}
+    55%{opacity:1;}
+    60%{opacity:0.4;}
+    66%{opacity:1;}
+  }
+  /* 3 ROUNDS badge appears at collision point */
+  .vs .rounds-badge{
+    position:absolute;left:50%;top:50%;
+    transform:translate(-50%,-50%) scale(0.4);
+    padding:5px 11px;
+    background:rgba(13,8,32,0.96);
+    border:1px solid var(--lime);
+    border-radius:8px;
+    font-family:var(--font-mono);font-size:10px;font-weight:800;
+    color:var(--lime);letter-spacing:0.16em;text-transform:uppercase;
+    box-shadow:0 0 18px rgba(209,255,85,0.45), 0 4px 12px rgba(0,0,0,0.5);
+    opacity:0;z-index:3;white-space:nowrap;
+    animation:roundsBadge 4.4s ease-in-out infinite;
+  }
+  @keyframes roundsBadge{
+    0%, 64%, 100%{opacity:0;transform:translate(-50%,-50%) scale(0.4);}
+    68%, 72%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+    78%{opacity:1;transform:translate(-50%,-50%) scale(1.05);}
+    84%{opacity:0;transform:translate(-50%,-50%) scale(1.1);}
+  }
+  /* dim × during rounds badge visible window */
+  .vs .x{animation:vsPulse 4.4s ease-in-out infinite;}
+
+  /* shockwave rings emanating from VS */
+  .vs .shock{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:40px;height:40px;border-radius:50%;
+    border:1.5px solid rgba(209,255,85,0.6);
+    pointer-events:none;z-index:0;opacity:0;
+    animation:shockExpand 4.4s ease-out infinite;
+  }
+  .vs .shock.s2{animation-delay:0.15s;}
+  @keyframes shockExpand{
+    0%, 50%, 78%, 100%{opacity:0;transform:translate(-50%,-50%) scale(0.4);}
+    55%{opacity:0.9;transform:translate(-50%,-50%) scale(0.5);}
+    72%{opacity:0;transform:translate(-50%,-50%) scale(3.4);}
+  }
+
+  /* output frame lights up after the clash settles */
+  .fstage4-detail{animation:frameGlow 4.4s ease-in-out infinite 3.0s;}
+  @keyframes frameGlow{
+    0%, 32%, 100%{border-color:var(--line);box-shadow:none;background:rgba(255,255,255,0.02);}
+    45%, 75%{border-color:rgba(209,255,85,0.5);box-shadow:0 0 0 1px rgba(209,255,85,0.28), 0 0 28px rgba(209,255,85,0.16);background:rgba(209,255,85,0.04);}
+  }
+  .fsd-col.is-target .fsd-value,
+  .fsd-col.is-target .fsd-label{animation:textLime 4.4s ease-in-out infinite 3.4s;}
+  @keyframes textLime{
+    0%, 42%, 100%{color:inherit;}
+    58%, 85%{color:var(--lime);}
+  }
+
+  /* ── typing dots — anchored to the avatar (above the bot's head) ── */
+  .fagent-avatar .typing-dots{
+    position:absolute;left:50%;bottom:calc(100% + 4px);
+    transform:translateX(-50%);
+    background:rgba(13,8,32,0.92);border:1px solid rgba(255,255,255,0.16);
+    padding:2.5px 6px;border-radius:6px;display:flex;gap:2.5px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    z-index:3;
+  }
+  .fagent-avatar .typing-dots i{width:3px;height:3px;border-radius:50%;background:var(--eye);box-shadow:0 0 3px var(--eye);}
+  .fagent.bull .typing-dots{animation:dotsBull 4.4s ease-in-out infinite;}
+  .fagent.bear .typing-dots{animation:dotsBear 4.4s ease-in-out infinite;}
+  @keyframes dotsBull{0%,22%,54%,100%{opacity:0.45;}6%,16%{opacity:1;}}
+  @keyframes dotsBear{0%,22%,54%,100%{opacity:0.45;}28%,38%{opacity:1;}}
+
+  /* inter-stage connector */
+  .to-next{position:relative;height:36px;margin:-2px 0 4px;padding-left:120px;display:flex;align-items:center;}
+  .to-next svg{display:block;width:32px;height:100%;}
+  .to-next svg path{stroke:var(--lime);stroke-width:1.4;fill:none;stroke-dasharray:4 6;animation:dashFlow 1.6s linear infinite;}
+  @keyframes dashFlow{to{stroke-dashoffset:-50;}}
+  .to-next .label{margin-left:12px;font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--fg-3);letter-spacing:0.1em;text-transform:uppercase;}
+  .to-next .label .arrow{color:var(--lime);margin:0 4px;}
+
+  .spec-note{
+    margin-top:24px;padding:18px 22px;
+    background:linear-gradient(135deg,rgba(209,255,85,0.05),rgba(82,39,255,0.02));
+    border:1px solid rgba(209,255,85,0.18);border-radius:14px;
+    color:var(--fg-2);font-size:12.5px;line-height:1.7;
+  }
+  .spec-note h3{color:#fff;font-size:13.5px;font-weight:800;margin:0 0 10px;}
+  .spec-note ul{margin:4px 0 4px 18px;padding:0;}
+  .spec-note ul li{margin-bottom:5px;}
+  .spec-note b{color:#fff;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="console">
+
+  <div class="doc-head">
+    <h1>板块 2 · 多空辩论 · 动效</h1>
+    <p class="sub">板式不变（与原稿 faceoff layout 一致）。<b>对抗性电流</b>动效：① BULL 卡片绿光出招 → BEAR 红光反击（交替 border 强亮）→ ② 中央 VS 出现 <b>闪电 bolt + 震波环</b>（高潮碰撞）→ ③ 碰撞消散后下方大框 lime 亮起，<b>输出</b> 文字变 lime（辩论纪要落地）。循环 4.4s。</p>
+  </div>
+
+  <div class="flow-stages-v4">
+    <article class="fstage4">
+      <div class="fstage4-side" data-num="2">
+        <div class="fs4-head"><span class="fs4-num">2</span><div class="fs4-meta"><h2 class="fs4-name">多空辩论</h2><div class="fs4-tag">RESEARCHERS</div></div></div>
+        <span class="fs4-cnt">多轮辩论</span>
+        <span class="fs4-side-chip">多轮 debate · 拿出最强论据</span>
+      </div>
+      <div class="fstage4-body">
+        <div class="fagents fagents-2 faceoff">
+          <div class="fagent bull">
+            <div class="fagent-head">
+              <div class="fagent-avatar a-bull"><div class="typing-dots"><i></i><i></i><i></i></div>↑</div>
+              <div class="fagent-info"><div class="fagent-name">多头研究总监</div><div class="fagent-role">Bullish</div></div>
+            </div>
+            <div class="fagent-desc">上行 thesis / 多头证据 / 失效条件</div>
+          </div>
+
+          <div class="vs">
+            <span class="shock"></span>
+            <span class="shock s2"></span>
+            <span class="bolt"><svg viewBox="0 0 180 36"><path class="bull-arc" d="M 0 18 L 14 8 L 28 24 L 42 10 L 56 22 L 70 12 L 84 18"/><path class="bear-arc" d="M 180 18 L 166 8 L 152 24 L 138 10 L 124 22 L 110 12 L 96 18"/></svg></span>
+            <span class="rounds-badge">3 ROUNDS</span>
+            <span class="x">×</span>
+          </div>
+
+          <div class="fagent bear">
+            <div class="fagent-head">
+              <div class="fagent-avatar a-bear"><div class="typing-dots"><i></i><i></i><i></i></div>↓</div>
+              <div class="fagent-info"><div class="fagent-name">空头研究总监</div><div class="fagent-role">Bearish</div></div>
+            </div>
+            <div class="fagent-desc">下行 thesis / 反转风险 / 不交易理由</div>
+          </div>
+        </div>
+
+        <div class="fstage4-detail">
+          <div class="fsd-col"><span class="fsd-label">输入</span><span class="fsd-value">4 份研究简报</span></div>
+          <div class="fsd-col"><span class="fsd-label">流程</span><span class="fsd-value">多轮立论 / 反驳 / 压力测试</span></div>
+          <div class="fsd-col is-target"><span class="fsd-label">输出</span><span class="fsd-value">辩论纪要 + 双方核心证据</span></div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="to-next">
+    <svg viewBox="0 0 32 36"><path d="M 16 2 L 16 34"/></svg>
+    <span class="label">辩论纪要 <span class="arrow">→</span> 交易方案（板块 3）</span>
+  </div>
+
+  <section class="spec-note">
+    <h3>动效序列（循环 4.4s · 对抗性电流）</h3>
+    <ul>
+      <li><b>0.0 → 0.7s</b> · <b>BULL 出招</b>：左卡 border 绿光强亮 + inset 绿色辉光 + 卡内绿背景</li>
+      <li><b>1.2 → 1.7s</b> · <b>BEAR 反击</b>：右卡 border 红光强亮 + inset 红色辉光 + 卡内红背景</li>
+      <li><b>2.4 → 3.2s</b> · <b>中央碰撞高潮</b>：VS × 放大变白 + <b>两折电流</b>同时闪现（绿色 zigzag 从left 伸入中央、红色 zigzag 从 right 伸入中央）+ 中央白光点 burst（碰撞点）+ 双层震波环从中心向外扩散</li>
+      <li><b>3.0 → 3.7s</b> · 同时 BULL & BEAR 两侧 border 一起闪烁，呼应"对峙"</li>
+      <li><b>3.3 → 4.0s</b> · 下方大框 border + 背景 lime 亮起 · <code>输出</code> 文字变 lime（纪要落地）</li>
+      <li><b>4.0 → 4.4s</b> · 衰减回 idle</li>
+    </ul>
+    <p style="margin-top:10px;">三点同步对方节奏：bull 卡的三点在 BULL 出招时亮，bear 卡的三点在 BEAR 反击时亮（轮替而非异步）— 强化"轮到我说"语义。</p>
+  </section>
+
+</div>
+</body>
+</html>

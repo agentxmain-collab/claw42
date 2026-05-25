@@ -20,6 +20,8 @@ import type {
   DispatchStageStatus,
 } from "../v9/types";
 import v9Styles from "../v9/dispatchConsoleV9.module.css";
+import { CoreRobot } from "./CoreRobot";
+import { InlineAvatarSvg, type InlineAvatarName } from "./InlineAvatarSvg";
 import { v9AgentToV10Role } from "./staticContent";
 
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -30,6 +32,14 @@ function ChatShellStat({ label, value }: { label: string; value: number }) {
       <span>{label}</span>
       <b>{value}</b>
     </div>
+  );
+}
+
+function MarketPanelAvatar({ name, className }: { name: InlineAvatarName; className: string }) {
+  return (
+    <span className={`market-panel-avatar ${className}`} aria-hidden="true">
+      <InlineAvatarSvg className="market-panel-avatar-img" name={name} />
+    </span>
   );
 }
 
@@ -137,6 +147,20 @@ function topicCandidateType(topic: DispatchTopic) {
 
 function topicCandidateClass(topic: DispatchTopic) {
   return CANDIDATE_CLASS[topicCandidateType(topic)];
+}
+
+function topicHeadAvatarName(topic: DispatchTopic): InlineAvatarName {
+  const candidateType = topicCandidateType(topic);
+  if (candidateType === "market_overview") return "portfolioManager";
+  if (candidateType === "hotspot") return "news";
+  return "technical";
+}
+
+function strategyAvatarName(topic: DispatchTopic): InlineAvatarName {
+  if (topicCandidateType(topic) !== "symbol") return "portfolioManager";
+  if (topic.strategy.action === "short") return "bearish";
+  if (topic.strategy.action === "long") return "bullish";
+  return "trader";
 }
 
 function inferredTradeReadinessKind(
@@ -400,9 +424,12 @@ function TopicHeadV10({
           </span>
         ) : null}
       </div>
-      <h2 id={`${bodyId}-title`} className="topic-title">
-        {topic.title}
-      </h2>
+      <div className="topic-title-row">
+        <MarketPanelAvatar className="topic-head-avatar" name={topicHeadAvatarName(topic)} />
+        <h2 id={`${bodyId}-title`} className="topic-title">
+          {topic.title}
+        </h2>
+      </div>
       {topic.explanation ? (
         <p className={["topic-explanation", collapsed && "collapsed"].filter(Boolean).join(" ")}>
           {topic.explanation}
@@ -553,6 +580,7 @@ function TopicStrategyV10({
       data-trade-readiness-kind={tradeReadinessKind ?? undefined}
     >
       <div className="strat-head">
+        <MarketPanelAvatar className="strat-head-avatar" name={strategyAvatarName(topic)} />
         <div className="row1">
           {latest ? (
             <span className="strategy-latest-badge">{dict.market.latestStrategy}</span>
@@ -787,7 +815,7 @@ export function MarketAnalysisPanel({
         <div className="chat-shell-head">
           <div className="cs-head-left">
             <div className="cs-icon" aria-hidden="true">
-              ●
+              <CoreRobot className="workbench-core-robot" />
             </div>
             <div className="cs-icon-info">
               <div className="cs-title">{dict.market.title}</div>

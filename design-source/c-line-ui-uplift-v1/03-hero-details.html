@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C-line · Hero 视觉细节</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Noto+Sans+SC:wght@500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0817;--panel:#150f2e;--panel-2:#1d1640;
+    --fg:#fff;--fg-2:#a89dc8;--fg-3:#7e729f;
+    --line:rgba(255,255,255,0.08);--line-2:rgba(255,255,255,0.14);
+    --lime:#d1ff55;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse 80% 60% at 50% 0%, #2a1d54 0%, #1a1530 50%, #0a0817 100%);
+    color:var(--fg);font-family:"Manrope","Noto Sans SC",system-ui,sans-serif;
+    min-height:100vh;padding:48px 32px 80px;
+  }
+  .shell{max-width:1360px;margin:0 auto;}
+  h1{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 8px;}
+  .sub{color:var(--fg-2);font-size:14px;line-height:1.65;max-width:760px;margin:0 0 36px;}
+
+  .sec-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px;margin-bottom:22px;}
+  .sec-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+  .sec-head .n{width:32px;height:32px;border-radius:8px;background:var(--panel-2);display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:14px;color:var(--lime);border:1px solid var(--line-2);}
+  .sec-head h2{font-size:18px;font-weight:800;letter-spacing:-0.01em;margin:0;}
+  .sec-head .sub-tag{color:var(--fg-3);font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;margin-left:6px;font-weight:600;}
+
+  .demo-row{display:grid;grid-template-columns:1.1fr 1fr;gap:24px;align-items:start;margin-bottom:14px;}
+  @media (max-width:860px){.demo-row{grid-template-columns:1fr;}}
+
+  .stage{
+    aspect-ratio:1.1;
+    background:radial-gradient(ellipse 60% 70% at 50% 52%, #1c1248, #0e0826 60%, #050310 100%);
+    border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid rgba(255,255,255,0.04);
+    position:relative;overflow:hidden;
+  }
+  .stage.show-overflow{overflow:visible;}
+  .stage-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+  .spec-block{font-size:13px;color:var(--fg-2);line-height:1.75;}
+  .spec-block h3{font-size:13.5px;font-weight:800;color:#fff;margin:0 0 8px;letter-spacing:-0.005em;}
+  .spec-block ul{margin:0 0 12px 18px;padding:0;}
+  .spec-block ul li{margin-bottom:4px;}
+  .spec-block b{color:#fff;font-weight:700;}
+  .spec-block code{font-family:var(--mono);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:11.5px;color:var(--fg-2);}
+
+  /* ─── core robot (compact ~120px) ─── */
+  @keyframes eyeBlink{0%,92%,100%{transform:scaleY(1);}94%,96%{transform:scaleY(0.1);}}
+  @keyframes coreFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  @keyframes ringExpand{0%{opacity:0.7;transform:translate(-50%,-50%) scale(0.65);}100%{opacity:0;transform:translate(-50%,-50%) scale(2.4);}}
+  @keyframes ringPulse{0%,100%{opacity:0.4;transform:translate(-50%,-50%) scale(1);}50%{opacity:0.9;transform:translate(-50%,-50%) scale(1.04);}}
+  @keyframes focusFrameIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.88);}60%{transform:translate(-50%,-50%) scale(1.04);}100%{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+  @keyframes dotBob{0%,80%,100%{transform:translateY(0);opacity:0.4;}40%{transform:translateY(-4px);opacity:1;}}
+  @keyframes panelTopPop{0%{opacity:0;transform:translateX(-50%) translateY(8px) scale(0.9);}60%{transform:translateX(-50%) translateY(0) scale(1.03);}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}}
+  @keyframes panelPop{0%{opacity:0;transform:translate(-100%,0) scale(0.85);}100%{opacity:1;transform:translate(-100%,0) scale(1);}}
+  @keyframes bubblePop{0%{opacity:0;transform:translate(-50%,-100%) scale(0.6);}50%{transform:translate(-50%,-100%) scale(1.05);}100%{opacity:1;transform:translate(-50%,-100%) scale(1);}}
+  @keyframes talkScan{0%{transform:translateY(-100%);}100%{transform:translateY(100%);}}
+  @keyframes talkEye{0%,100%{height:18px;}50%{height:6px;}}
+  @keyframes glowPulse{0%,100%{opacity:0.55;}50%{opacity:1;}}
+
+  .core-mini{
+    position:relative;
+    --accent:#7dc488;--accent-rgb:125,196,136;
+    animation:coreFloat 5.4s ease-in-out infinite;
+  }
+  .core-mini .head{
+    width:120px;height:88px;border-radius:32px;
+    background:linear-gradient(180deg,#4a2f8c 0%,#2d1664 60%,#170a3f 100%);
+    border:1.8px solid rgba(var(--accent-rgb),0.6);
+    position:relative;
+    box-shadow:0 0 30px rgba(var(--accent-rgb),0.32),0 0 50px rgba(124,92,255,0.45),0 18px 40px rgba(82,39,255,0.4),inset 0 4px 0 rgba(255,255,255,0.12);
+  }
+  .core-mini .head .ear{position:absolute;top:50%;transform:translateY(-50%);width:4px;height:24px;background:linear-gradient(180deg,#5a3aa8,#2d1664);border:1px solid rgba(var(--accent-rgb),0.45);z-index:-1;}
+  .core-mini .head .ear::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:1.6px;height:10px;border-radius:1px;background:var(--accent);box-shadow:0 0 4px var(--accent);}
+  .core-mini .head .ear.l{left:-5px;border-radius:5px 0 0 5px;border-right:none;}
+  .core-mini .head .ear.r{right:-5px;border-radius:0 5px 5px 0;border-left:none;}
+  .core-mini .head .foot{position:absolute;bottom:-4px;width:16px;height:8px;border-radius:0 0 8px 8px;background:linear-gradient(180deg,#3a2275,#1c0e4a);border:1px solid rgba(var(--accent-rgb),0.5);border-top:none;z-index:-1;}
+  .core-mini .head .foot.l{left:26px;}
+  .core-mini .head .foot.r{right:26px;}
+  .core-mini .face{position:absolute;inset:8px;border-radius:24px;background:radial-gradient(ellipse at 50% 50%,#060a1c,#02030a 75%);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;gap:30px;overflow:hidden;box-shadow:inset 0 3px 8px rgba(0,0,0,0.5);}
+  .core-mini .face::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(255,255,255,0.04) 2px,rgba(255,255,255,0.04) 3px);pointer-events:none;}
+  .core-mini .eye{width:12px;height:18px;border-radius:6px;background:var(--accent);box-shadow:0 0 12px var(--accent),0 0 24px rgba(var(--accent-rgb),0.5);animation:eyeBlink 4.6s ease-in-out infinite;}
+  .core-mini .eye.right{animation-delay:0.05s;}
+
+  /* ═══ § 1 · 聚焦指示框 ═══ */
+  .focus-frame{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:170px;height:140px;border-radius:42px;
+    border:1.5px solid var(--accent);
+    box-shadow:0 0 24px rgba(var(--accent-rgb),0.45),inset 0 0 12px rgba(var(--accent-rgb),0.18);
+    pointer-events:none;
+    animation:focusFrameIn 0.42s cubic-bezier(0.16,1,0.3,1) forwards, ringPulse 2.4s ease-in-out infinite 0.6s;
+  }
+  .focus-frame::before{
+    content:"";position:absolute;left:-10px;top:-10px;width:18px;height:18px;
+    border-top:2.5px solid var(--accent);border-left:2.5px solid var(--accent);border-radius:8px 0 0 0;
+  }
+  .focus-frame::after{
+    content:"";position:absolute;right:-10px;top:-10px;width:18px;height:18px;
+    border-top:2.5px solid var(--accent);border-right:2.5px solid var(--accent);border-radius:0 8px 0 0;
+  }
+  .focus-frame .br-l,.focus-frame .br-r{position:absolute;bottom:-10px;width:18px;height:18px;}
+  .focus-frame .br-l{left:-10px;border-bottom:2.5px solid var(--accent);border-left:2.5px solid var(--accent);border-radius:0 0 0 8px;}
+  .focus-frame .br-r{right:-10px;border-bottom:2.5px solid var(--accent);border-right:2.5px solid var(--accent);border-radius:0 0 8px 0;}
+
+  /* ═══ § 2 · 说话三点 ═══ */
+  .talk-bubble{
+    position:absolute;left:50%;top:-12px;transform:translate(-50%,-100%);
+    background:rgba(13,8,32,0.92);
+    border:1px solid rgba(var(--accent-rgb),0.65);
+    padding:8px 14px;border-radius:16px;
+    display:flex;gap:5px;align-items:center;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5),0 0 16px rgba(var(--accent-rgb),0.25);
+    opacity:1;
+  }
+  .talk-bubble .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 6px var(--accent);
+    animation:dotBob 1.4s ease-in-out infinite;
+  }
+  .talk-bubble .dot:nth-child(2){animation-delay:0.18s;}
+  .talk-bubble .dot:nth-child(3){animation-delay:0.36s;}
+  .talk-bubble.side{left:auto;right:-12px;top:50%;transform:translate(100%,-50%);animation:none;opacity:1;}
+
+  /* ═══ § 3 · 表情切换 (idle → talking) ═══ */
+  .core-mini.is-talking .eye{
+    animation:talkEye 0.42s ease-in-out infinite;
+    box-shadow:0 0 16px var(--accent),0 0 32px rgba(var(--accent-rgb),0.7);
+  }
+  .core-mini.is-talking .face{
+    box-shadow:inset 0 3px 8px rgba(0,0,0,0.5), inset 0 0 14px rgba(var(--accent-rgb),0.18);
+  }
+  .core-mini.is-talking .head{
+    animation:glowPulse 1.6s ease-in-out infinite;
+  }
+  .core-mini.is-talking .face::after{
+    content:"";position:absolute;left:0;right:0;height:30%;
+    background:linear-gradient(180deg, rgba(var(--accent-rgb),0.4), transparent);
+    animation:talkScan 1.6s linear infinite;
+  }
+
+  /* talking ring (concentric) */
+  .talk-ring{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:160px;height:130px;border-radius:38px;
+    border:1px solid rgba(var(--accent-rgb),0.55);
+    animation:ringExpand 2s ease-out infinite;
+    pointer-events:none;
+  }
+  .talk-ring.d1{animation-delay:0.7s;}
+
+  /* accent variants for the demos */
+  .acc-bull{--accent:#6dd49a;--accent-rgb:109,212,154;}
+  .acc-bear{--accent:#e87a76;--accent-rgb:232,122,118;}
+  .acc-onchain{--accent:#7dc488;--accent-rgb:125,196,136;}
+  .acc-news{--accent:#e89464;--accent-rgb:232,148,100;}
+  .acc-fund{--accent:#6ba3d4;--accent-rgb:107,163,212;}
+
+  /* per-stage label */
+  .stage-lbl{
+    position:absolute;left:14px;top:14px;
+    font-family:var(--mono);font-size:9.5px;font-weight:700;
+    letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-3);
+    background:rgba(0,0,0,0.4);padding:3px 7px;border-radius:5px;
+    border:1px solid var(--line);z-index:10;
+  }
+  .stage-lbl.lime{color:var(--lime);border-color:rgba(209,255,85,0.3);}
+
+  /* timing table */
+  .timing-table{font-family:var(--mono);font-size:11.5px;color:var(--fg-2);line-height:1.7;}
+  .timing-table .row{display:flex;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line);}
+  .timing-table .row:last-child{border-bottom:none;}
+  .timing-table .row span:first-child{width:130px;color:var(--fg-3);}
+  .timing-table .row b{color:var(--lime);font-weight:700;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <h1>③ Hero 视觉细节 · 3 项</h1>
+  <p class="sub">聚焦指示框 / 说话三点 / 表情切换。每项都给出 idle 状态 + 触发 (hover) 状态对比，附 timing + spec。Codex 调研：market hero 共用同一组件，开启 focus 即统一，无需另写。</p>
+
+  <!-- ═══════ § 1 · 聚焦框 ═══════ -->
+  <section class="sec-card">
+    <div class="sec-head">
+      <div class="n">1</div>
+      <h2>聚焦指示框</h2>
+      <span class="sub-tag">FOCUS FRAME · hover 触发</span>
+    </div>
+    <div class="demo-row">
+      <div class="stage-grid">
+        <div class="stage acc-bull">
+          <span class="stage-lbl">IDLE</span>
+          <div class="core-mini acc-bull">
+            <div class="head">
+              <span class="ear l"></span><span class="ear r"></span>
+              <div class="face"><span class="eye"></span><span class="eye right"></span></div>
+              <span class="foot l"></span><span class="foot r"></span>
+            </div>
+          </div>
+        </div>
+        <div class="stage acc-bull">
+          <span class="stage-lbl lime">HOVER · FOCUSED</span>
+          <div class="focus-frame"><span class="br-l"></span><span class="br-r"></span></div>
+          <div class="core-mini acc-bull">
+            <div class="head">
+              <span class="ear l"></span><span class="ear r"></span>
+              <div class="face"><span class="eye"></span><span class="eye right"></span></div>
+              <span class="foot l"></span><span class="foot r"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="spec-block">
+        <h3>视觉规格</h3>
+        <ul>
+          <li><b>形状</b>：圆角矩形 · radius 42 (与 head face 同步)</li>
+          <li><b>尺寸</b>：head 外扩 24px (聚焦感)</li>
+          <li><b>描边</b>：accent 1.5px 实线 · op 1.0</li>
+          <li><b>角标</b>：4 个 L 形角标 (top-left/right + bottom-left/right) · 18×18 · 2.5px stroke</li>
+          <li><b>外发光</b>：<code>0 0 24px rgba(accent, 0.45)</code></li>
+          <li><b>内阴影</b>：<code>inset 0 0 12px rgba(accent, 0.18)</code></li>
+        </ul>
+        <h3>动画 · 入场 + 持续 pulse</h3>
+        <div class="timing-table">
+          <div class="row"><span>入场 fade+scale</span><b>0.42s · cubic-bezier(.16,1,.3,1)</b></div>
+          <div class="row"><span>持续 pulse</span><b>2.4s · ease-in-out · loop</b></div>
+          <div class="row"><span>过冲峰值</span><b>scale 1.04 @ 60%</b></div>
+          <div class="row"><span>退出 (mouseleave)</span><b>0.24s fade + scale 0.92</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ § 2 · 说话三点 ═══════ -->
+  <section class="sec-card">
+    <div class="sec-head">
+      <div class="n">2</div>
+      <h2>说话三点</h2>
+      <span class="sub-tag">TYPING DOTS · 任意 agent 触发</span>
+    </div>
+    <div class="demo-row">
+      <div class="stage-grid">
+        <div class="stage acc-news show-overflow">
+          <span class="stage-lbl">POSITION A · 头顶气泡</span>
+          <div class="core-mini acc-news" style="margin-top:30px;">
+            <div class="head">
+              <div class="talk-bubble">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              </div>
+              <span class="ear l"></span><span class="ear r"></span>
+              <div class="face"><span class="eye"></span><span class="eye right"></span></div>
+              <span class="foot l"></span><span class="foot r"></span>
+            </div>
+          </div>
+        </div>
+        <div class="stage acc-fund show-overflow">
+          <span class="stage-lbl">POSITION B · 右侧浮动</span>
+          <div class="core-mini acc-fund">
+            <div class="head" style="position:relative;">
+              <span class="ear l"></span><span class="ear r"></span>
+              <div class="face"><span class="eye"></span><span class="eye right"></span></div>
+              <span class="foot l"></span><span class="foot r"></span>
+              <div class="talk-bubble side">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="spec-block">
+        <h3>位置规则</h3>
+        <ul>
+          <li><b>主位 (A · 头顶)</b>：focused agent + 任何主动说话的 agent · 气泡尾部指向头部</li>
+          <li><b>副位 (B · 右侧)</b>：当主位被占用 / 多 agent 同时说话时降级到侧位</li>
+          <li><b>层级</b>：z-index 50 (高于 focus frame)</li>
+          <li><b>距离</b>：与 head 边缘 12px gap</li>
+        </ul>
+        <h3>气泡视觉</h3>
+        <ul>
+          <li><b>背景</b>：<code>rgba(13,8,32,0.92)</code></li>
+          <li><b>描边</b>：accent op 0.65 · 1px</li>
+          <li><b>圆角</b>：18 18 18 6 (主位) / 18 18 6 18 (副位)</li>
+          <li><b>三点</b>：6×6 圆 · accent fill · glow 6px</li>
+        </ul>
+        <h3>动画</h3>
+        <div class="timing-table">
+          <div class="row"><span>气泡入场</span><b>0.28s · pop scale 0.6→1.05→1.0</b></div>
+          <div class="row"><span>三点 bob</span><b>1.4s · stagger 0.18s · ease-in-out · loop</b></div>
+          <div class="row"><span>气泡退出</span><b>0.18s fade · 不缩放</b></div>
+          <div class="row"><span>最小持续</span><b>1.4s (一轮 bob)</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ § 3 · 表情切换 ═══════ -->
+  <section class="sec-card">
+    <div class="sec-head">
+      <div class="n">3</div>
+      <h2>表情切换 · idle → talking</h2>
+      <span class="sub-tag">EYE BLINK 4.6s → TALK SCAN 0.42s</span>
+    </div>
+    <div class="demo-row">
+      <div class="stage-grid">
+        <div class="stage acc-onchain">
+          <span class="stage-lbl">IDLE · 4.6s blink</span>
+          <div class="core-mini acc-onchain">
+            <div class="head">
+              <span class="ear l"></span><span class="ear r"></span>
+              <div class="face"><span class="eye"></span><span class="eye right"></span></div>
+              <span class="foot l"></span><span class="foot r"></span>
+            </div>
+          </div>
+        </div>
+        <div class="stage acc-onchain">
+          <span class="stage-lbl lime">TALKING · 0.42s 高频</span>
+          <div class="talk-ring" style="--accent-rgb:125,196,136;"></div>
+          <div class="talk-ring d1" style="--accent-rgb:125,196,136;"></div>
+          <div class="core-mini acc-onchain is-talking">
+            <div class="head">
+              <span class="ear l"></span><span class="ear r"></span>
+              <div class="face"><span class="eye"></span><span class="eye right"></span></div>
+              <span class="foot l"></span><span class="foot r"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="spec-block">
+        <h3>idle 状态</h3>
+        <ul>
+          <li><b>眼</b>：4.6s blink cycle (94-96% squint)</li>
+          <li><b>身体</b>：5.4s float bob -6px</li>
+          <li><b>外发光</b>：accent 30px · 静态</li>
+        </ul>
+        <h3>talking 状态（触发：hover / 收到信号）</h3>
+        <ul>
+          <li><b>眼</b>：高频 squint loop · 0.42s · 18 ↔ 6 px</li>
+          <li><b>屏内</b>：accent 扫描带从上向下 · 1.6s linear loop</li>
+          <li><b>head 描边</b>：glow pulse 1.6s · op 0.55 ↔ 1.0</li>
+          <li><b>外圈</b>：双层呼吸环 ringExpand 2s · stagger 0.7s</li>
+        </ul>
+        <h3>切换时序</h3>
+        <div class="timing-table">
+          <div class="row"><span>idle → talking</span><b>0.2s 过渡 (eye + scan in)</b></div>
+          <div class="row"><span>talking 最小持续</span><b>1.6s (一轮 scan)</b></div>
+          <div class="row"><span>talking → idle</span><b>0.3s 过渡 · scan fade out</b></div>
+          <div class="row"><span>同步</span><b>说话气泡与 talking 状态联动出现</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ § 4 · 可扩展信息栏 ═══════ -->
+  <section class="sec-card">
+    <div class="sec-head">
+      <div class="n">4</div>
+      <h2>可扩展 hover 信息栏</h2>
+      <span class="sub-tag">INFO PANEL · 三档信息密度 / 可配置</span>
+    </div>
+
+    <style>
+      .info-panel{
+        position:absolute;left:50%;bottom:calc(100% + 14px);
+        transform:translateX(-50%);
+        min-width:160px;max-width:220px;
+        background:rgba(13,8,32,0.95);
+        border:1px solid rgba(var(--accent-rgb),0.55);
+        border-radius:14px;padding:12px 14px;
+        box-shadow:0 16px 36px rgba(0,0,0,0.55),0 0 20px rgba(var(--accent-rgb),0.2);
+        text-align:left;
+        opacity:1;
+      }
+      .info-panel .ip-name{font-size:14px;font-weight:800;color:#fff;letter-spacing:-0.005em;margin:0;}
+      .info-panel .ip-role{font-family:var(--mono);font-size:9.5px;color:var(--fg-3);letter-spacing:0.12em;text-transform:uppercase;margin-top:3px;font-weight:600;display:block;}
+      .info-panel .ip-divider{height:1px;background:rgba(255,255,255,0.08);margin:10px 0;}
+      .info-panel .ip-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg-2);}
+      .info-panel .ip-status .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:ringPulse 1.4s ease-in-out infinite;}
+      .info-panel .ip-status b{color:#fff;font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:0.05em;}
+      .info-panel .ip-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+      .info-panel .ip-stat .k{font-family:var(--mono);font-size:8.5px;color:var(--fg-3);letter-spacing:0.14em;text-transform:uppercase;font-weight:600;}
+      .info-panel .ip-stat .v{font-family:var(--mono);font-size:14px;font-weight:800;color:#fff;margin-top:1px;}
+      .info-panel .ip-stat .v.accent{color:var(--accent);}
+      .info-panel .ip-jump{margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 10px;background:rgba(var(--accent-rgb),0.12);border:1px solid rgba(var(--accent-rgb),0.35);border-radius:8px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);letter-spacing:0.05em;cursor:pointer;text-transform:uppercase;}
+      .info-panel .ip-jump:hover{background:rgba(var(--accent-rgb),0.2);}
+      .info-panel .ip-jump .arr{font-size:11px;line-height:1;}
+      .info-panel .ip-recent{margin-top:8px;}
+      .info-panel .ip-recent-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--fg-2);padding:4px 0;border-bottom:1px dashed rgba(255,255,255,0.06);}
+      .info-panel .ip-recent-row:last-child{border-bottom:none;}
+      .info-panel .ip-recent-row .sym{color:#fff;font-weight:700;}
+      .info-panel .ip-recent-row .delta.up{color:#6dd49a;}
+      .info-panel .ip-recent-row .delta.down{color:#e87a76;}
+
+      /* removed connector line */
+    </style>
+
+    <div class="stage-grid" style="grid-template-columns:repeat(3,1fr);">
+
+      <!-- VARIANT 1 · minimal (current behavior) -->
+      <div class="stage acc-bull show-overflow" style="aspect-ratio:1;padding-top:100px;"><span class="stage-lbl lime">TIER 1 · MINIMAL</span>
+        <div class="core-mini acc-bull">
+          <div class="head">
+            <div class="info-panel">
+              <h3 class="ip-name">多头研究员</h3>
+              <span class="ip-role">BULLISH · ↑</span>
+            </div>
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face"><span class="eye"></span><span class="eye right"></span></div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VARIANT 2 · standard with status + stats -->
+      <div class="stage acc-news show-overflow" style="aspect-ratio:1;padding-top:160px;"><span class="stage-lbl lime">TIER 2 · STANDARD</span>
+        <div class="core-mini acc-news">
+          <div class="head">
+            <div class="info-panel">
+              <h3 class="ip-name">宏观新闻员</h3>
+              <span class="ip-role">NEWS · ((●))</span>
+              <div class="ip-divider"></div>
+              <div class="ip-status">
+                <span class="pulse"></span>
+                Scanning <b>BTC · ETH</b>
+              </div>
+              <div class="ip-stats">
+                <div class="ip-stat"><div class="k">Win Rate</div><div class="v accent">68%</div></div>
+                <div class="ip-stat"><div class="k">Signals</div><div class="v">12</div></div>
+              </div>
+            </div>
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face"><span class="eye"></span><span class="eye right"></span></div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VARIANT 3 · detailed with jump action -->
+      <div class="stage acc-onchain show-overflow" style="aspect-ratio:1;padding-top:200px;"><span class="stage-lbl lime">TIER 3 · DETAILED</span>
+        <div class="core-mini acc-onchain">
+          <div class="head">
+            <div class="info-panel" style="min-width:170px;max-width:200px;">
+              <h3 class="ip-name">链上数据员</h3>
+              <span class="ip-role">ONCHAIN · ⛓</span>
+              <div class="ip-divider"></div>
+              <div class="ip-status">
+                <span class="pulse"></span>
+                Analyzing <b>SOL</b>
+              </div>
+              <div class="ip-recent">
+                <div class="ip-recent-row"><span class="sym">SOL</span><span class="delta up">+ Whale</span></div>
+                <div class="ip-recent-row"><span class="sym">ETH</span><span class="delta down">− Outflow</span></div>
+                <div class="ip-recent-row"><span class="sym">ARB</span><span class="delta up">+ TVL ↑</span></div>
+              </div>
+              <div class="ip-jump">View Report <span class="arr">→</span></div>
+            </div>
+            <span class="ear l"></span><span class="ear r"></span>
+            <div class="face"><span class="eye"></span><span class="eye right"></span></div>
+            <span class="foot l"></span><span class="foot r"></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="demo-row" style="margin-top:20px;grid-template-columns:1fr;">
+      <div class="spec-block">
+        <h3>设计原则</h3>
+        <ul>
+          <li><b>三档信息密度</b>，按场景配置：tier 1 仅名称 / tier 2 + 状态 + 胜率 / tier 3 + 最近事件 + 跳转</li>
+          <li><b>插槽化结构</b>：<code>ip-name · ip-role · ip-status · ip-stats · ip-recent · ip-jump</code> — 后端 schema 决定显示哪些 block</li>
+          <li><b>位置</b>：默认左上（参考截图）；如果空间冲突自动 mirror 到右上</li>
+          
+        </ul>
+        <h3>视觉规格</h3>
+        <ul>
+          <li><b>容器</b>：min-width 148 / max-width 200 (tier 3 可到 220) · padding 12×14 · radius 14</li>
+          <li><b>背景</b>：<code>rgba(13,8,32,0.95)</code> · 描边 accent op 0.55</li>
+          <li><b>名称</b>：14px 800 · <b>角色</b>：mono 9.5px upcase</li>
+          <li><b>状态指示</b>：6×6 accent 脉动圆点 + 文字</li>
+          <li><b>跳转按钮</b>：accent 12% bg · 35% border · mono 10px</li>
+        </ul>
+        <h3>动画</h3>
+        <div class="timing-table">
+          <div class="row"><span>入场 pop</span><b>0.32s cubic-bezier(.16,1,.3,1)</b></div>
+          <div class="row"><span>状态脉动圆点</span><b>1.4s · ease-in-out · loop</b></div>
+          <div class="row"><span>退出 fade</span><b>0.22s</b></div>
+          <div class="row"><span>tier 切换</span><b>height auto · 0.3s ease (内容增减)</b></div>
+        </div>
+        <h3>配置 schema (建议)</h3>
+        <div class="arch" style="background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:11px;color:var(--fg-2);line-height:1.6;white-space:pre;overflow-x:auto;margin-top:6px;">{
+  <span style="color:var(--lime);">"agent_id"</span>: "bullish_researcher",
+  <span style="color:var(--lime);">"tier"</span>: "standard",         <span style="color:#7e729f;">// minimal | standard | detailed</span>
+  <span style="color:var(--lime);">"status"</span>: {
+    <span style="color:var(--lime);">"label"</span>: "Scanning",
+    <span style="color:var(--lime);">"targets"</span>: ["BTC", "ETH"]
+  },
+  <span style="color:var(--lime);">"stats"</span>: { <span style="color:var(--lime);">"win_rate"</span>: 0.68, <span style="color:var(--lime);">"signals"</span>: 12 },
+  <span style="color:var(--lime);">"recent"</span>: [
+    { <span style="color:var(--lime);">"sym"</span>: "SOL", <span style="color:var(--lime);">"delta"</span>: "+ Whale", <span style="color:var(--lime);">"dir"</span>: "up" }
+  ],
+  <span style="color:var(--lime);">"jump"</span>: { <span style="color:var(--lime);">"label"</span>: "View Report", <span style="color:var(--lime);">"href"</span>: "/agents/bull/sol" }
+}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 整体协同 -->
+  <section class="sec-card" style="background:linear-gradient(135deg,rgba(209,255,85,0.06),rgba(82,39,255,0.04));border-color:rgba(209,255,85,0.2);">
+    <div class="sec-head">
+      <div class="n" style="background:var(--lime);color:#1a1338;border-color:var(--lime);">★</div>
+      <h2>组合演示 · 三项同时触发</h2>
+      <span class="sub-tag">HOVER · FOCUSED + TALKING</span>
+    </div>
+    <div class="stage" style="aspect-ratio:2.4;padding:40px 24px;">
+      <span class="stage-lbl lime">All states active</span>
+      <div class="talk-ring" style="--accent-rgb:109,212,154;"></div>
+      <div class="talk-ring d1" style="--accent-rgb:109,212,154;"></div>
+      <div class="focus-frame acc-bull"></div>
+      <div class="core-mini acc-bull is-talking" style="margin-top:30px;">
+        <div class="head">
+          <div class="talk-bubble">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          </div>
+          <span class="ear l"></span><span class="ear r"></span>
+          <div class="face"><span class="eye"></span><span class="eye right"></span></div>
+          <span class="foot l"></span><span class="foot r"></span>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:14px;color:var(--fg-2);font-size:12.5px;line-height:1.7;">
+      <b>触发链</b>：mouseenter → focus-frame in (0.42s) → 0.1s 延迟 → talking 状态切换 + 说话气泡 pop (0.28s)。<br/>
+      <b>退出链</b>：mouseleave → 气泡 fade (0.18s) → talking 收尾完成本轮 (≤1.6s) → focus-frame fade (0.24s)。
+    </p>
+  </section>
+
+  <!-- footer -->
+  <p style="margin-top:24px;color:var(--fg-2);font-size:13px;line-height:1.7;">
+    <b>确认这 4 项后</b>，进入 ④ 6 步交互序列动效时序表（第 1-6 步具体编排 / 整体时序）。
+  </p>
+
+</div>
+</body>
+</html>

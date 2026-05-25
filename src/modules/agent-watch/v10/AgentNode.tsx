@@ -1,6 +1,9 @@
+"use client";
+
 import React from "react";
 import type { CSSProperties } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
+import { InlineAvatarSvg } from "./InlineAvatarSvg";
 import type { HeroAgentVisual } from "./types";
 
 export function AgentNode({
@@ -22,10 +25,7 @@ export function AgentNode({
   return (
     <div className={`anode ${agent.tier} ${agent.className}`} style={style}>
       <div className="av">
-        <div className="screen">
-          <span className="e" />
-          <span className="e" />
-        </div>
+        <InlineAvatarSvg className="anode-avatar" name={agent.id} />
         {agent.hasSpeech ? (
           <span className="speech-dot">
             <span className="d" />
@@ -35,20 +35,18 @@ export function AgentNode({
         ) : null}
       </div>
       <div className="reticle">
+        <span className="b1" />
+        <span className="b2" />
         <span className="b3" />
         <span className="b4" />
         <span className="scan" />
       </div>
       <div className="readout">
-        <span className="lbl">ID</span> <b>{agent.readoutId}</b>
+        <b>{agent.readoutId}</b>
         <br />
-        <span className="lbl">ROLE</span> {role.readoutRole}
+        {role.readoutRole}
         <br />
-        <span className="lbl">STAT</span> <b>{role.stat}</b>
-      </div>
-      <div className="tip-card">
-        <div className="nm">{role.name}</div>
-        <span className="rl">{agent.label}</span>
+        <b>{role.stat}</b>
       </div>
     </div>
   );

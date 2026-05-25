@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Claw 42 purple bot avatar v1</title>
+  <desc id="desc">Single purple robot head with enlarged dark screen face and blue glowing eyes.</desc>
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="52%" r="56%">
+      <stop offset="0%" stop-color="#24124f"></stop>
+      <stop offset="48%" stop-color="#12091f"></stop>
+      <stop offset="100%" stop-color="#080610"></stop>
+    </radialGradient>
+    <linearGradient id="shellFill" x1="256" y1="210" x2="760" y2="790" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6d4be8"></stop>
+      <stop offset="38%" stop-color="#4320a8"></stop>
+      <stop offset="74%" stop-color="#2d1578"></stop>
+      <stop offset="100%" stop-color="#1a0b45"></stop>
+    </linearGradient>
+    <linearGradient id="shellHighlight" x1="320" y1="246" x2="720" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#9b83ff" stop-opacity="0.72"></stop>
+      <stop offset="48%" stop-color="#c9bbff" stop-opacity="0.34"></stop>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"></stop>
+    </linearGradient>
+    <linearGradient id="screenFill" x1="308" y1="337" x2="716" y2="670" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#111421"></stop>
+      <stop offset="44%" stop-color="#050812"></stop>
+      <stop offset="100%" stop-color="#02040a"></stop>
+    </linearGradient>
+    <radialGradient id="screenBlueGlow" cx="50%" cy="55%" r="52%">
+      <stop offset="0%" stop-color="#1a7bbd" stop-opacity="0.46"></stop>
+      <stop offset="52%" stop-color="#07223f" stop-opacity="0.22"></stop>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"></stop>
+    </radialGradient>
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#97ecff"></stop>
+      <stop offset="58%" stop-color="#63d8ff"></stop>
+      <stop offset="100%" stop-color="#1597d4"></stop>
+    </radialGradient>
+    <filter id="outerGlow" x="-18%" y="-18%" width="136%" height="136%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#c6ff3d" flood-opacity="0.92"></feDropShadow>
+      <feDropShadow dx="0" dy="0" stdDeviation="18" flood-color="#6e4bff" flood-opacity="0.46"></feDropShadow>
+      <feDropShadow dx="0" dy="26" stdDeviation="28" flood-color="#000000" flood-opacity="0.55"></feDropShadow>
+    </filter>
+    <filter id="screenGlow" x="-18%" y="-18%" width="136%" height="136%">
+      <feDropShadow dx="0" dy="0" stdDeviation="14" flood-color="#3aa7ff" flood-opacity="0.24"></feDropShadow>
+      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#000000" flood-opacity="0.62"></feDropShadow>
+    </filter>
+    <filter id="eyeShadow" x="-80%" y="-80%" width="260%" height="260%">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#6ee4ff" flood-opacity="0.74"></feDropShadow>
+      <feDropShadow dx="0" dy="0" stdDeviation="22" flood-color="#3aa7ff" flood-opacity="0.26"></feDropShadow>
+    </filter>
+    <clipPath id="screenClip">
+      <path d="M310 407C310 342 357 304 423 304H601C667 304 714 342 714 407V575C714 640 667 678 601 678H423C357 678 310 640 310 575Z"></path>
+    </clipPath>
+  </defs>
+
+  <path id="background" d="M98 70H926C982 70 1008 96 1008 152V872C1008 928 982 954 926 954H98C42 954 16 928 16 872V152C16 96 42 70 98 70Z" fill="url(#bgGlow)"></path>
+  <path id="ambient-glow" d="M244 600C244 376 344 238 512 238C680 238 780 376 780 600C780 738 658 812 512 812C366 812 244 738 244 600Z" fill="#5030c8" opacity="0.18"></path>
+  <path id="ground-shadow" d="M324 788C388 758 640 758 700 788C640 829 390 829 324 788Z" fill="#0a0714" opacity="0.72"></path>
+
+  <g id="bot" filter="url(#outerGlow)">
+    <path id="left-side-module" d="M240 443C240 411 255 396 281 396H304V563H281C255 563 240 548 240 516Z" fill="#28156f" stroke="#4a83d8" stroke-width="10"></path>
+    <path id="right-side-module" d="M720 396H743C769 396 784 411 784 443V516C784 548 769 563 743 563H720Z" fill="#28156f" stroke="#4a83d8" stroke-width="10"></path>
+    <path id="shell" d="M263 395C263 265 344 204 474 204H550C680 204 761 265 761 395V584C761 714 680 775 550 775H474C344 775 263 714 263 584Z" fill="url(#shellFill)" stroke="#bfff32" stroke-width="12"></path>
+    <path id="shell-top-highlight" d="M318 330C353 254 414 233 502 233H540C628 233 689 254 724 330C653 294 376 294 318 330Z" fill="url(#shellHighlight)" opacity="0.78"></path>
+    <path id="lower-feet-left" d="M374 773H432C432 793 421 804 397 804C380 804 372 795 374 773Z" fill="#21115c"></path>
+    <path id="lower-feet-right" d="M592 773H650C652 795 644 804 627 804C603 804 592 793 592 773Z" fill="#21115c"></path>
+    <g id="screen" filter="url(#screenGlow)">
+      <path d="M310 407C310 342 357 304 423 304H601C667 304 714 342 714 407V575C714 640 667 678 601 678H423C357 678 310 640 310 575Z" fill="url(#screenFill)"></path>
+      <path d="M310 407C310 342 357 304 423 304H601C667 304 714 342 714 407V575C714 640 667 678 601 678H423C357 678 310 640 310 575Z" fill="url(#screenBlueGlow)"></path>
+      <g clip-path="url(#screenClip)" opacity="0.22">
+        <path d="M322 346H702" stroke="#5ee2ff" stroke-width="3"></path>
+        <path d="M316 405H708" stroke="#5ee2ff" stroke-width="2"></path>
+        <path d="M316 464H708" stroke="#5ee2ff" stroke-width="2"></path>
+        <path d="M316 523H708" stroke="#5ee2ff" stroke-width="2"></path>
+        <path d="M322 582H702" stroke="#5ee2ff" stroke-width="3"></path>
+      </g>
+      <path d="M337 392C337 350 374 329 428 329H596C647 329 684 350 688 390" fill="none" stroke="#3d4a72" stroke-width="6" opacity="0.42"></path>
+    </g>
+    <ellipse id="left-eye" cx="430" cy="493" rx="31" ry="47" fill="url(#eyeGlow)" filter="url(#eyeShadow)"></ellipse>
+    <ellipse id="right-eye" cx="594" cy="493" rx="31" ry="47" fill="url(#eyeGlow)" filter="url(#eyeShadow)"></ellipse>
+  </g>
+</svg>

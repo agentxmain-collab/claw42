@@ -232,6 +232,11 @@ export type DispatchV10Dict = {
     titleSuffix: string;
     subtitle: string;
     metaAriaLabel: string;
+    readoutLabels: {
+      id: string;
+      role: string;
+      stat: string;
+    };
     meta: Array<{ value: string; label: string }>;
   };
   tabs: {
@@ -253,6 +258,7 @@ export type DispatchV10Dict = {
   flow: {
     ariaLabel: string;
     stages: DispatchV10StageDict[];
+    vsLabel: string;
     footerStrong: string;
     footerText: string;
     footerCta: string;
