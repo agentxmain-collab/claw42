@@ -635,7 +635,7 @@ Return JSON only:
 {
   "direction": "long" | "short" | "neutral" | "wait",
   "confidence": 0.0_to_1.0,
-  "oneLineSummary": "one sentence, <=80 Chinese chars or <=120 English chars",
+  "oneLineSummary": "one sentence, <=180 Chinese chars or <=240 English chars",
   "detailedRationale": "concrete role-specific rationale with numbers when available, <=500 chars",
   "dataStatus": "ok" | "partial" | "missing",
   "rationale": "same meaning as detailedRationale for legacy compatibility",
@@ -645,6 +645,7 @@ Return JSON only:
 Rules:
 - Stay inside your role mandate. Do not evaluate domains that are not listed in your role evidence context.
 - Use available role evidence to form a stance when there is a concrete signal.
+- If candidateType=symbol and recentNewsEvidence is empty, set dataStatus="missing", direction="wait", confidence<=0.2, and abstain instead of inventing analysis.
 - If role evidence is thin, lower confidence, set internal "dataStatus" to "partial" or "missing", and explain the decision basis without mentioning backend data availability.
 - Return "wait" only when your role evidence has no actionable signal. Do not invent a trade stance.
 - Public fields oneLineSummary, detailedRationale, and rationale must describe market evidence only; never discuss backend operations, source coverage, future data arrival, process state, or internal participant identifiers.

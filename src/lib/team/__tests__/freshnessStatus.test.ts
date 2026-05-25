@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateDecisionFreshnessStatus,
   isDecisionFreshEnoughForTrade,
+  shouldBypassFreshnessForTrade,
 } from "../freshnessStatus";
 
 const now = Date.parse("2026-05-22T12:00:00.000Z");
@@ -19,6 +20,15 @@ describe("decision freshness status", () => {
     expect(isDecisionFreshEnoughForTrade({ level: "aging" } as never)).toBe(true);
     expect(isDecisionFreshEnoughForTrade({ level: "stale" } as never)).toBe(false);
     expect(isDecisionFreshEnoughForTrade({ level: "expired" } as never)).toBe(false);
+  });
+
+  it("allows explicit trade directions to bypass display freshness gating", () => {
+    expect(shouldBypassFreshnessForTrade("long")).toBe(true);
+    expect(shouldBypassFreshnessForTrade("short")).toBe(true);
+    expect(shouldBypassFreshnessForTrade("neutral")).toBe(true);
+    expect(shouldBypassFreshnessForTrade("wait")).toBe(false);
+    expect(shouldBypassFreshnessForTrade("pending")).toBe(false);
+    expect(shouldBypassFreshnessForTrade(undefined)).toBe(false);
   });
 
   it("returns null for invalid timestamps instead of inventing freshness", () => {

@@ -396,12 +396,14 @@ describe("/api/cron/strategy-replay", () => {
         quality: expect.objectContaining({ publishable: true }),
       }),
     ]);
-    expect(getDecisionRecordStoreDiagnosticsMock).toHaveBeenCalledWith({
-      locale: "zh_CN",
-      symbols: ["BTC"],
-      recordIds: ["pm:BTC:test"],
-      limit: 20,
-    });
+    expect(getDecisionRecordStoreDiagnosticsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        locale: "zh_CN",
+        symbols: expect.arrayContaining(["BTC"]),
+        recordIds: expect.arrayContaining(["pm:BTC:test"]),
+        limit: 20,
+      }),
+    );
     expect(payload.resolvedPmDecisions).toBe(1);
     expect(resolveDecisionRecordFromPriceMock).toHaveBeenCalledWith(
       expect.objectContaining({ id: "pm:BTC:open" }),
@@ -539,7 +541,7 @@ describe("/api/cron/strategy-replay", () => {
     expect(payload.generatedHiddenPmDecisions).toBe(1);
   });
 
-  it("caps inline resident prewarm work when queue mode is unavailable", async () => {
+  it("runs up to three inline PM jobs when queue mode is unavailable", async () => {
     const prewarmNow = Date.parse("2026-05-13T18:00:00.000Z");
     vi.setSystemTime(prewarmNow);
 
@@ -547,16 +549,16 @@ describe("/api/cron/strategy-replay", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(payload.residentPrewarmGenerated).toBe(1);
+    expect(payload.residentPrewarmGenerated).toBe(2);
     expect(payload.residentPrewarmCandidates).toEqual([
       "market_overview:utc:zh_CN:2026-05-13T18",
       "hotspot:utc:zh_CN:2026-05-13T18:market",
     ]);
     expect(payload.pmDecisionInlineLimit).toEqual({
-      limit: 1,
-      used: 1,
-      deferredResidentCandidateKeys: ["hotspot:utc:zh_CN:2026-05-13T18:market"],
-      deferredBatch: true,
+      limit: 3,
+      used: 3,
+      deferredResidentCandidateKeys: [],
+      deferredBatch: false,
     });
     expect(payload.residentPrewarmAttempts).toEqual([
       expect.objectContaining({
@@ -564,6 +566,13 @@ describe("/api/cron/strategy-replay", () => {
         candidateKey: "market_overview:utc:zh_CN:2026-05-13T18",
         locale: "zh_CN",
         why: "fixed_cadence",
+        outputCount: 1,
+        spentInlineSlot: true,
+        lockedSkip: false,
+      }),
+      expect.objectContaining({
+        candidateType: "hotspot",
+        candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
         outputCount: 1,
         spentInlineSlot: true,
         lockedSkip: false,
@@ -581,10 +590,10 @@ describe("/api/cron/strategy-replay", () => {
         now: prewarmNow,
       }),
     );
-    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({ candidate: expect.objectContaining({ candidateType: "hotspot" }) }),
     );
-    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "batch" }),
     );
   });
@@ -643,10 +652,10 @@ describe("/api/cron/strategy-replay", () => {
     expect(response.status).toBe(200);
     expect(payload.residentPrewarmGenerated).toBe(1);
     expect(payload.pmDecisionInlineLimit).toEqual({
-      limit: 1,
-      used: 1,
+      limit: 3,
+      used: 2,
       deferredResidentCandidateKeys: [],
-      deferredBatch: true,
+      deferredBatch: false,
     });
     expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -664,7 +673,7 @@ describe("/api/cron/strategy-replay", () => {
         }),
       }),
     );
-    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "batch" }),
     );
   });
@@ -713,12 +722,12 @@ describe("/api/cron/strategy-replay", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(payload.residentPrewarmGenerated).toBe(0);
+    expect(payload.residentPrewarmGenerated).toBe(1);
     expect(payload.pmDecisionInlineLimit).toEqual({
-      limit: 1,
-      used: 1,
-      deferredResidentCandidateKeys: ["hotspot:utc:zh_CN:2026-05-13T18:market"],
-      deferredBatch: true,
+      limit: 3,
+      used: 3,
+      deferredResidentCandidateKeys: [],
+      deferredBatch: false,
     });
     expect(payload.residentPrewarmAttempts).toEqual([
       expect.objectContaining({
@@ -727,6 +736,13 @@ describe("/api/cron/strategy-replay", () => {
         locale: "zh_CN",
         why: "fixed_cadence",
         outputCount: 0,
+        spentInlineSlot: true,
+        lockedSkip: false,
+      }),
+      expect.objectContaining({
+        candidateType: "hotspot",
+        candidateKey: "hotspot:utc:zh_CN:2026-05-13T18:market",
+        outputCount: 1,
         spentInlineSlot: true,
         lockedSkip: false,
       }),
@@ -739,7 +755,7 @@ describe("/api/cron/strategy-replay", () => {
         }),
       }),
     );
-    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "once",
         candidate: expect.objectContaining({
@@ -747,7 +763,7 @@ describe("/api/cron/strategy-replay", () => {
         }),
       }),
     );
-    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalledWith(
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "batch" }),
     );
   });

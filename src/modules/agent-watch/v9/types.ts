@@ -124,6 +124,13 @@ export interface DispatchTopicExecutionMode {
   };
 }
 
+export interface NewsItemSummary {
+  headline: string;
+  source: string;
+  observedAt: string;
+  url?: string;
+}
+
 export type DispatchFreshnessStatus =
   | "idle"
   | "cached"
@@ -155,6 +162,7 @@ export interface DispatchTopic {
   status: DispatchTopicStatus;
   title: string;
   explanation?: string;
+  newsItems?: NewsItemSummary[];
   originalUrl?: string;
   sourceLabel?: string;
   startedAt: string;

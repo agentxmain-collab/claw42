@@ -106,6 +106,13 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(positions.trader).toMatchObject({ left: "43%", top: "77%" });
   });
 
+  test("keeps Round 6 market list layout compact", () => {
+    expect(css).toMatch(/\.fagent-avatar\) \{[\s\S]*align-self:\s*center;/);
+    expect(css).toContain("max-width: 820px");
+    expect(css).toMatch(/\.topic-strategy\) \{[\s\S]*gap:\s*16px;[\s\S]*padding:\s*16px 20px;/);
+    expect(css).toContain(".topic-eyebrow .topic-ranking-label");
+  });
+
   test("makes six flow stage cards visibly react on hover", () => {
     const hoverBlock = css.match(
       /\.dispatchConsoleV10 :global\(\.fstage4:hover\) \{([\s\S]*?)\}/,

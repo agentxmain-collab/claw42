@@ -47,7 +47,7 @@ export type PmDecisionTriggerAuditEvent =
       triggerSource: "cron" | "user_visit_trigger";
       locale: Locale;
       symbol: string;
-      reason: "no_trigger" | "locked" | "pipeline_returned_null";
+      reason: "no_trigger" | "no_news_evidence_for_symbol" | "locked" | "pipeline_returned_null";
     }
   | {
       type: "candidate_generated";
@@ -221,6 +221,16 @@ export async function triggerPmDecisionPipelineOnce({
     const scopedNewsEvidence = recentNewsEvidence.filter((evidence) =>
       evidenceMatchesCandidate(evidence, candidate),
     );
+    if (candidate.candidateType === "symbol" && scopedNewsEvidence.length === 0) {
+      onAudit?.({
+        type: "candidate_skipped",
+        triggerSource,
+        locale: normalizedLocale,
+        symbol: candidate.symbol ?? candidate.candidateKey,
+        reason: "no_news_evidence_for_symbol",
+      });
+      return null;
+    }
     if (
       !bypassLock &&
       !(await tryAcquireLock(`watch:pm-decision:${normalizedLocale}:${candidate.candidateKey}`, {
@@ -332,6 +342,16 @@ export async function triggerPmDecisionPipelineOnce({
       marketSignalIds: topic.marketSignalIds,
       newsEvidenceIds: topic.newsEvidenceIds,
     });
+    if (scopedNewsEvidence.length === 0) {
+      onAudit?.({
+        type: "candidate_skipped",
+        triggerSource,
+        locale: normalizedLocale,
+        symbol: candidate,
+        reason: "no_news_evidence_for_symbol",
+      });
+      continue;
+    }
     if (!hasTrigger) {
       onAudit?.({
         type: "candidate_skipped",

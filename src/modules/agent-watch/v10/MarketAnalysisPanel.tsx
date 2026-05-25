@@ -5,6 +5,7 @@ import type { DispatchV10Dict } from "@/i18n/types";
 import { trackEvent } from "@/lib/analytics";
 import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
 import { canRenderTradeCTA } from "@/lib/coinw/tradeGate";
+import { shouldBypassFreshnessForTrade } from "@/lib/team/freshnessStatus";
 import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
 import {
   compareDecisionCandidateOrder,
@@ -25,6 +26,7 @@ import { InlineAvatarSvg, type InlineAvatarName } from "./InlineAvatarSvg";
 import { v9AgentToV10Role } from "./staticContent";
 
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+const TOPIC_PAGE_SIZE = 15;
 
 function ChatShellStat({ label, value }: { label: string; value: number }) {
   return (
@@ -282,14 +284,14 @@ function restoreScrollAnchor(body: HTMLElement, anchor: ScrollAnchor) {
   body.scrollTop = Math.min(anchor.scrollTop, Math.max(0, body.scrollHeight - body.clientHeight));
 }
 
-function TopicRankingV10({ topic }: { topic: DispatchTopic }) {
+function TopicRankingInline({ topic }: { topic: DispatchTopic }) {
   const ranking = topic.topicRanking;
   if (!ranking) return null;
 
   return (
-    <div className="topic-ranking" data-topic-ranking-score={ranking.score}>
+    <span className="topic-ranking" data-topic-ranking-score={ranking.score}>
       <span className="topic-ranking-label">{ranking.rankLabel}</span>
-    </div>
+    </span>
   );
 }
 
@@ -309,7 +311,12 @@ function TopicCandidateBadge({ topic, dict }: { topic: DispatchTopic; dict: Disp
 }
 
 function isStaleOrExpired(topic: DispatchTopic) {
+  if (shouldBypassFreshnessForTrade(topic.strategy.action)) return false;
   return topic.freshnessStatus?.level === "stale" || topic.freshnessStatus?.level === "expired";
+}
+
+function freshnessForTrade(topic: DispatchTopic) {
+  return shouldBypassFreshnessForTrade(topic.strategy.action) ? undefined : topic.freshnessStatus;
 }
 
 function looksTruncated(value: string | undefined) {
@@ -404,6 +411,7 @@ function TopicHeadV10({
         : dict.market.statusActive;
   const freshnessAge = formatCardFreshnessAge(topic, dict);
   const staleAge = isStaleOrExpired(topic);
+  const newsItem = topic.newsItems?.[0];
 
   return (
     <div
@@ -424,6 +432,7 @@ function TopicHeadV10({
       <div className="topic-eyebrow" aria-live={topic.status === "active" ? "polite" : "off"}>
         <span className="live-tag">{liveLabel}</span>
         <TopicCandidateBadge topic={topic} dict={dict} />
+        <TopicRankingInline topic={topic} />
         {freshnessAge ? (
           <span className={["topic-age", staleAge && "stale"].filter(Boolean).join(" ")}>
             {freshnessAge}
@@ -436,7 +445,15 @@ function TopicHeadV10({
           {topic.title}
         </h2>
       </div>
-      {topic.explanation ? (
+      {newsItem ? (
+        <div className="topic-news-summary">
+          <span className="topic-news-headline">{newsItem.headline}</span>
+          <span className="topic-news-meta">
+            {newsItem.source}
+            {newsItem.observedAt ? ` · ${newsItem.observedAt}` : ""}
+          </span>
+        </div>
+      ) : topic.explanation ? (
         <p className={["topic-explanation", collapsed && "collapsed"].filter(Boolean).join(" ")}>
           {topic.explanation}
         </p>
@@ -558,7 +575,7 @@ function TopicStrategyV10({
     externalNavigationEnabled: true,
     executable: executableSymbol,
     readinessStates: topic.execution?.tradeReadiness?.states,
-    freshness: topic.freshnessStatus,
+    freshness: freshnessForTrade(topic),
   });
   const renderBlockedTradeCTA = executableSymbol && !canRenderCoinWTrade;
   const renderStaleReason = renderBlockedTradeCTA && isStaleOrExpired(topic);
@@ -734,6 +751,7 @@ function TopicCardV10({
     topic.freshnessStatus && `freshness-${topic.freshnessStatus.level}`,
     latest && "latest",
     collapsed && "collapsed",
+    !collapsed && "expanded",
   ]
     .filter(Boolean)
     .join(" ");
@@ -756,8 +774,42 @@ function TopicCardV10({
         feedbackValue={feedbackValue}
         onFeedback={onFeedback}
       />
-      <TopicRankingV10 topic={topic} />
     </article>
+  );
+}
+
+function TopicPagination({
+  currentPage,
+  pageCount,
+  onPageChange,
+}: {
+  currentPage: number;
+  pageCount: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (pageCount <= 1) return null;
+  const previousDisabled = currentPage <= 1;
+  const nextDisabled = currentPage >= pageCount;
+  return (
+    <nav className="topic-pagination" aria-label="Topic pagination">
+      <button
+        type="button"
+        disabled={previousDisabled}
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+      >
+        ‹
+      </button>
+      <span>
+        {currentPage}/{pageCount}
+      </span>
+      <button
+        type="button"
+        disabled={nextDisabled}
+        onClick={() => onPageChange(Math.min(pageCount, currentPage + 1))}
+      >
+        ›
+      </button>
+    </nav>
   );
 }
 
@@ -774,12 +826,20 @@ export function MarketAnalysisPanel({
 }) {
   const resolvedTopics = useMemo(() => {
     const normalizedTopics = (topics ?? []).map((topic) => normalizeTopicNames(topic, dict.roles));
-    return orderTopicsByRanking(normalizedTopics);
+    return orderTopicsByRanking(normalizedTopics).filter(
+      (topic) => topicCandidateType(topic) === "symbol",
+    );
   }, [dict.roles, topics]);
   const [collapsedByTopicId, setCollapsedByTopicId] = useState<TopicCollapseState>({});
   const [feedbackByTopicId, setFeedbackByTopicId] = useState<TopicFeedbackState>({});
+  const [currentPage, setCurrentPage] = useState(1);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const scrollAnchorRef = useRef<ScrollAnchor>({ topicId: null, offset: 0, scrollTop: 0 });
+  const pageCount = Math.max(1, Math.ceil(resolvedTopics.length / TOPIC_PAGE_SIZE));
+  const visibleTopics = useMemo(() => {
+    const pageStart = (currentPage - 1) * TOPIC_PAGE_SIZE;
+    return resolvedTopics.slice(pageStart, pageStart + TOPIC_PAGE_SIZE);
+  }, [currentPage, resolvedTopics]);
   const topicOrderSignature = resolvedTopics.map(topicDisplayIdentity).join("|");
   const doneCount = resolvedTopics.filter((topic) => topic.status === "done").length;
   const activeCount = resolvedTopics.filter((topic) => topic.status === "active").length;
@@ -804,6 +864,10 @@ export function MarketAnalysisPanel({
   useEffect(() => {
     setCollapsedByTopicId((current) => reconcileTopicCollapseState(resolvedTopics, current));
   }, [resolvedTopics]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(Math.max(1, page), pageCount));
+  }, [pageCount]);
 
   useIsomorphicLayoutEffect(() => {
     const body = bodyRef.current;
@@ -856,32 +920,39 @@ export function MarketAnalysisPanel({
               <span className="topic-empty-text">{dict.market.empty}</span>
             </div>
           ) : (
-            resolvedTopics.map((topic, index) => {
-              const topicIdentity = topicDisplayIdentity(topic);
-              return (
-                <div key={topicIdentity} data-topic-card-id={topicIdentity}>
-                  <TopicCardV10
-                    topic={topic}
-                    latest={index === 0}
-                    collapsed={collapsedByTopicId[topicIdentity] ?? topic.defaultCollapsed}
-                    onToggle={() => {
-                      setCollapsedByTopicId((current) =>
-                        toggleTopicCollapseState(current, topicIdentity, topic.defaultCollapsed),
-                      );
-                    }}
-                    dict={dict}
-                    onPlaceholder={onPlaceholder}
-                    feedbackValue={feedbackByTopicId[topicIdentity]}
-                    onFeedback={handleFeedback}
-                  />
-                  {index < resolvedTopics.length - 1 ? (
-                    <div className="topic-separator" aria-hidden="true">
-                      <span className="topic-separator-dot" />
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })
+            <>
+              {visibleTopics.map((topic, index) => {
+                const topicIdentity = topicDisplayIdentity(topic);
+                return (
+                  <div key={topicIdentity} data-topic-card-id={topicIdentity}>
+                    <TopicCardV10
+                      topic={topic}
+                      latest={(currentPage - 1) * TOPIC_PAGE_SIZE + index === 0}
+                      collapsed={collapsedByTopicId[topicIdentity] ?? topic.defaultCollapsed}
+                      onToggle={() => {
+                        setCollapsedByTopicId((current) =>
+                          toggleTopicCollapseState(current, topicIdentity, topic.defaultCollapsed),
+                        );
+                      }}
+                      dict={dict}
+                      onPlaceholder={onPlaceholder}
+                      feedbackValue={feedbackByTopicId[topicIdentity]}
+                      onFeedback={handleFeedback}
+                    />
+                    {index < visibleTopics.length - 1 ? (
+                      <div className="topic-separator" aria-hidden="true">
+                        <span className="topic-separator-dot" />
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+              <TopicPagination
+                currentPage={currentPage}
+                pageCount={pageCount}
+                onPageChange={setCurrentPage}
+              />
+            </>
           )}
         </div>
       </section>

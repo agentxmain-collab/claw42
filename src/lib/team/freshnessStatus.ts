@@ -45,3 +45,7 @@ export function isDecisionFreshEnoughForTrade(
 ) {
   return !freshness || freshness.level === "fresh" || freshness.level === "aging";
 }
+
+export function shouldBypassFreshnessForTrade(direction: string | null | undefined) {
+  return direction === "long" || direction === "short" || direction === "neutral";
+}

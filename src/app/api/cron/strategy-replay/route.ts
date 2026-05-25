@@ -35,7 +35,7 @@ export const maxDuration = 300;
 const STRATEGY_REPLAY_TRIGGER_LOCK_KEY = "cron:strategy-replay:trigger-now";
 const STRATEGY_REPLAY_TRIGGER_LOCK_MS = 5 * 60_000;
 const PM_RESOLUTION_RECORD_LIMIT = 100;
-const INLINE_PM_DECISION_JOB_LIMIT = 1;
+const INLINE_PM_DECISION_JOB_LIMIT = 3;
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;

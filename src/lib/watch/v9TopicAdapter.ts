@@ -289,6 +289,31 @@ function originalEvidenceUrl(evidence: NewsEvidence | undefined) {
   }
 }
 
+function newsItemsForGroup(
+  group: DispatchTopicGroup,
+  evidenceMap: V9AdapterContext["evidenceMap"],
+) {
+  return group.evidenceIds
+    .map((evidenceId) => evidenceMap?.[evidenceId])
+    .filter((evidence): evidence is NewsEvidence => Boolean(evidence))
+    .slice(0, 1)
+    .map((evidence) => {
+      const publishedAtMs = Date.parse(evidence.publishedAt);
+      const fetchedAtMs = Date.parse(evidence.fetchedAt);
+      const observedAtMs = Number.isFinite(publishedAtMs)
+        ? publishedAtMs
+        : Number.isFinite(fetchedAtMs)
+          ? fetchedAtMs
+          : group.latestAt;
+      return {
+        headline: evidence.title,
+        source: evidence.source,
+        observedAt: formatTime(observedAtMs),
+        ...(originalEvidenceUrl(evidence) ? { url: originalEvidenceUrl(evidence) } : {}),
+      };
+    });
+}
+
 function stageId(topicId: string, stage: number) {
   return `${topicId}-stage-${stage}`;
 }
@@ -1083,6 +1108,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       status,
       title: makeTitle(group, hasTradeDecision, hasRationale),
       explanation: makeExplanation(group, hasTradeDecision, hasRationale, evidence),
+      newsItems: newsItemsForGroup(group, ctx.evidenceMap),
       originalUrl,
       sourceLabel: originalUrl ? evidence?.source : undefined,
       startedAt: formatTime(group.startedAt),

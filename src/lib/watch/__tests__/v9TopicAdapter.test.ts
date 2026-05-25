@@ -199,6 +199,24 @@ function withResolution(
 }
 
 describe("mapPublicTimelineEventsToTopics", () => {
+  it("maps the first public evidence item into topic news summary", () => {
+    const [topic] = mapTopics({
+      events: [pmDecision()],
+      evidenceMap: { ev_1: evidence },
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic?.newsItems).toEqual([
+      {
+        headline: "BTC ETF outflows rise",
+        source: "CoinDesk",
+        observedAt: "15:59",
+        url: "https://example.com/btc",
+      },
+    ]);
+  });
+
   it("keeps the latest displayable hotspot when a newer hotspot has no public collection voice", () => {
     const older = pmDecision({
       id: "event-hotspot-displayable",
