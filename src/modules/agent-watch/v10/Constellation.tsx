@@ -3,7 +3,6 @@
 import React, { useRef } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
 import { AgentNode } from "./AgentNode";
-import { InlineAvatarSvg } from "./InlineAvatarSvg";
 import { heroAgents } from "./staticContent";
 import { useConstellationFocus } from "./useConstellationFocus";
 import { useReducedMotion } from "./useReducedMotion";
@@ -98,14 +97,16 @@ export function Constellation({ dict, active }: { dict: DispatchV10Dict; active:
             <span className="ring" />
             <span className="d1 ring" />
             <span className="d2 ring" />
+            <span className="ear-l" />
+            <span className="ear-r" />
+            <span className="foot-l" />
+            <span className="foot-r" />
             <div className="head">
-              <InlineAvatarSvg className="core-avatar" name="core" />
+              <div className="face">
+                <span className="eye" />
+                <span className="eye right" />
+              </div>
             </div>
-            <span className="core-indicator">
-              <span />
-              <span />
-              <span />
-            </span>
             <div className="podium" />
           </div>
 

@@ -22,6 +22,11 @@ describe("Hero v10", () => {
     expect((html.match(/class="anode-avatar"/g) ?? []).length).toBe(11);
     expect(html).not.toContain('class="screen"');
     expect(html).not.toContain('class="e"');
+    expect(html).toContain('class="ear-l"');
+    expect(html).toContain('class="face"');
+    expect(html).toContain('class="eye right"');
+    expect(html).not.toContain("core-indicator");
+    expect(html).not.toContain("core-avatar");
     expect(html).toContain('data-inline-avatar="portfolioManager"');
     expect(html).toContain("首席投资官");
   });

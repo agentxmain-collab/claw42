@@ -364,30 +364,127 @@
   top: 48%;
   left: 50%;
   z-index: 6;
+  overflow: visible;
   animation: dispatch-v10-core-float 5.4s ease-in-out infinite;
   transform: translate(-50%, -50%);
 }
 
+.dispatchConsoleV10 :global(.core .ear-l),
+.dispatchConsoleV10 :global(.core .ear-r) {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  width: 7px;
+  height: 46px;
+  border: 1px solid rgb(209 255 85 / 45%);
+  background: linear-gradient(180deg, #5a3aa8, #2d1664);
+  transform: translateY(-50%);
+}
+
+.dispatchConsoleV10 :global(.core .ear-l) {
+  left: -7px;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+}
+
+.dispatchConsoleV10 :global(.core .ear-r) {
+  right: -7px;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+}
+
+.dispatchConsoleV10 :global(.core .ear-l::after),
+.dispatchConsoleV10 :global(.core .ear-r::after) {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.5px;
+  height: 18px;
+  border-radius: 1.5px;
+  background: #7ee0ff;
+  box-shadow: 0 0 5px #7ee0ff;
+  transform: translate(-50%, -50%);
+}
+
+.dispatchConsoleV10 :global(.core .foot-l),
+.dispatchConsoleV10 :global(.core .foot-r) {
+  position: absolute;
+  bottom: -8px;
+  z-index: 0;
+  width: 30px;
+  height: 14px;
+  border: 1.5px solid rgb(209 255 85 / 45%);
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  background: linear-gradient(180deg, #3a2275, #1c0e4a);
+}
+
+.dispatchConsoleV10 :global(.core .foot-l) {
+  left: 40px;
+}
+
+.dispatchConsoleV10 :global(.core .foot-r) {
+  right: 40px;
+}
+
 .dispatchConsoleV10 :global(.core .head) {
   position: relative;
-  width: 280px;
-  height: 280px;
+  width: 200px;
+  height: 148px;
+  border: 2.5px solid rgb(209 255 85 / 55%);
+  border-radius: 54px;
+  background: linear-gradient(180deg, #4a2f8c 0%, #2d1664 60%, #170a3f 100%);
+  box-shadow:
+    0 0 60px rgb(209 255 85 / 32%),
+    0 0 92px rgb(124 92 255 / 55%),
+    0 28px 72px rgb(82 39 255 / 50%),
+    inset 0 6px 0 rgb(255 255 255 / 18%),
+    inset 0 -14px 28px rgb(82 39 255 / 35%);
 }
 
-.dispatchConsoleV10 :global(.core .core-avatar) {
+.dispatchConsoleV10 :global(.core .face) {
+  position: absolute;
+  inset: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 52px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 42px;
+  background: radial-gradient(ellipse at 50% 50%, #060a1c, #02030a 75%);
+  box-shadow: inset 0 4px 12px rgb(0 0 0 / 50%);
+}
+
+.dispatchConsoleV10 :global(.core .face::before) {
+  content: "";
   position: absolute;
   inset: 0;
-  z-index: 3;
-  display: block;
-  width: 100%;
-  height: 100%;
   pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 3px,
+    rgb(255 255 255 / 4%) 3px,
+    rgb(255 255 255 / 4%) 4px
+  );
 }
 
-.dispatchConsoleV10 :global(.core .core-avatar svg) {
-  display: block;
-  width: 100%;
-  height: 100%;
+.dispatchConsoleV10 :global(.core .eye) {
+  z-index: 1;
+  width: 20px;
+  height: 26px;
+  border-radius: 10px;
+  background: #7ee0ff;
+  box-shadow:
+    0 0 18px #7ee0ff,
+    0 0 36px rgb(126 224 255 / 55%);
+  animation: dispatch-v10-eye-blink 4.6s ease-in-out infinite;
+}
+
+.dispatchConsoleV10 :global(.core .eye.right) {
+  animation-delay: 0.05s;
 }
 
 .dispatchConsoleV10 :global(.core .podium) {
@@ -427,45 +524,12 @@
   box-shadow: 0 0 26px rgb(124 92 255 / 36%);
 }
 
-.dispatchConsoleV10 :global(.core .core-indicator) {
-  position: absolute;
-  top: -24px;
-  right: -24px;
-  z-index: 4;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 5px 8px;
-  border: 1px solid rgb(209 255 85 / 42%);
-  border-radius: 999px;
-  background: rgb(15 12 35 / 92%);
-  box-shadow:
-    0 8px 20px rgb(0 0 0 / 40%),
-    0 0 0 4px rgb(209 255 85 / 8%);
-}
-
-.dispatchConsoleV10 :global(.core .core-indicator span) {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--lime);
-  animation: dispatch-v10-tdot 1.35s ease-in-out infinite;
-}
-
-.dispatchConsoleV10 :global(.core .core-indicator span:nth-child(2)) {
-  animation-delay: 0.18s;
-}
-
-.dispatchConsoleV10 :global(.core .core-indicator span:nth-child(3)) {
-  animation-delay: 0.36s;
-}
-
 .dispatchConsoleV10 :global(.core .ring) {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 172px;
-  height: 172px;
+  width: 240px;
+  height: 200px;
   border: 1px solid rgb(209 255 85 / 34%);
   border-radius: 50%;
   pointer-events: none;
@@ -2142,13 +2206,53 @@
   }
 
   .dispatchConsoleV10 :global(.core .head) {
-    width: 220px;
-    height: 220px;
+    width: 168px;
+    height: 124px;
+    border-radius: 45px;
+  }
+
+  .dispatchConsoleV10 :global(.core .face) {
+    inset: 12px;
+    gap: 44px;
+    border-radius: 35px;
+  }
+
+  .dispatchConsoleV10 :global(.core .eye) {
+    width: 17px;
+    height: 22px;
+  }
+
+  .dispatchConsoleV10 :global(.core .ear-l),
+  .dispatchConsoleV10 :global(.core .ear-r) {
+    width: 6px;
+    height: 39px;
+  }
+
+  .dispatchConsoleV10 :global(.core .ear-l) {
+    left: -6px;
+  }
+
+  .dispatchConsoleV10 :global(.core .ear-r) {
+    right: -6px;
+  }
+
+  .dispatchConsoleV10 :global(.core .foot-l),
+  .dispatchConsoleV10 :global(.core .foot-r) {
+    width: 25px;
+    height: 12px;
+  }
+
+  .dispatchConsoleV10 :global(.core .foot-l) {
+    left: 34px;
+  }
+
+  .dispatchConsoleV10 :global(.core .foot-r) {
+    right: 34px;
   }
 
   .dispatchConsoleV10 :global(.core .ring) {
-    width: 138px;
-    height: 138px;
+    width: 202px;
+    height: 168px;
   }
 
   .dispatchConsoleV10 :global(.core .podium) {
