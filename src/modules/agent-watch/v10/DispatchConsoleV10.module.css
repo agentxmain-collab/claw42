@@ -588,23 +588,29 @@
 }
 
 .dispatchConsoleV10 :global(.anode.tier-a) {
-  --size: 68px;
+  --size: 84px;
+  --bob: 8px;
+  --dur: 5s;
 
   z-index: 5;
 }
 
 .dispatchConsoleV10 :global(.anode.tier-b) {
-  --size: 50px;
+  --size: 68px;
+  --bob: 5px;
+  --dur: 5.6s;
 
   z-index: 4;
   opacity: 0.95;
 }
 
 .dispatchConsoleV10 :global(.anode.tier-c) {
-  --size: 44px;
+  --size: 58px;
+  --bob: 3px;
+  --dur: 6.4s;
 
   z-index: 3;
-  opacity: 0.78;
+  opacity: 0.85;
 }
 
 .dispatchConsoleV10 :global(.anode .av) {

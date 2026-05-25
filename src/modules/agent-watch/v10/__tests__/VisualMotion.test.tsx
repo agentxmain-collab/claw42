@@ -9,6 +9,7 @@ import { Hero } from "../Hero";
 import { InlineAvatarSvg } from "../InlineAvatarSvg";
 import { MarketAnalysisPanel } from "../MarketAnalysisPanel";
 import { dispatchV10DemoTopics } from "../demoTopics";
+import { heroAgents } from "../staticContent";
 
 const dict = (zhCN as Dict).agentWatch.dispatchV10;
 const css = readFileSync(new URL("../DispatchConsoleV10.module.css", import.meta.url), "utf8");
@@ -75,6 +76,34 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(css).toMatch(/anode:hover[\s\S]+animation-duration:\s*1\.2s/);
     expect(css).toMatch(/fagent:hover[\s\S]+animation-duration:\s*1\.2s/);
     expect(css).toMatch(/workbench-core-robot:hover[\s\S]+animation-duration:\s*1\.2s/);
+  });
+
+  test("matches the approved constellation tier sizing", () => {
+    expect(css).toMatch(
+      /\.anode\.tier-a\) \{[\s\S]*--size:\s*84px;[\s\S]*--bob:\s*8px;[\s\S]*--dur:\s*5s;/,
+    );
+    expect(css).toMatch(
+      /\.anode\.tier-b\) \{[\s\S]*--size:\s*68px;[\s\S]*--bob:\s*5px;[\s\S]*--dur:\s*5\.6s;/,
+    );
+    expect(css).toMatch(
+      /\.anode\.tier-c\) \{[\s\S]*--size:\s*58px;[\s\S]*--bob:\s*3px;[\s\S]*--dur:\s*6\.4s;[\s\S]*opacity:\s*0\.85;/,
+    );
+  });
+
+  test("matches the approved constellation anode coordinates", () => {
+    const positions = Object.fromEntries(heroAgents.map((agent) => [agent.id, agent.style]));
+
+    expect(positions.news).toMatchObject({ left: "72%", top: "20%" });
+    expect(positions.technical).toMatchObject({ left: "29%", top: "21%" });
+    expect(positions.aggressive).toMatchObject({ left: "64%", top: "83%" });
+    expect(positions.neutral).toMatchObject({ left: "9%", top: "29%" });
+    expect(positions.fundamental).toMatchObject({ left: "73%", top: "40%" });
+    expect(positions.onchain).toMatchObject({ left: "88%", top: "50%" });
+    expect(positions.conservative).toMatchObject({ left: "21%", top: "71%" });
+    expect(positions.portfolioManager).toMatchObject({ left: "50%", top: "28%" });
+    expect(positions.bullish).toMatchObject({ left: "19%", top: "54%" });
+    expect(positions.bearish).toMatchObject({ left: "71%", top: "66%" });
+    expect(positions.trader).toMatchObject({ left: "43%", top: "77%" });
   });
 
   test("makes six flow stage cards visibly react on hover", () => {
