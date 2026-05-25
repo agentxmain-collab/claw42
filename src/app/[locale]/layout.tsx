@@ -4,8 +4,9 @@ import localFont from "next/font/local";
 import { notFound } from "next/navigation";
 import { AnalyticsPageView } from "@/components/AnalyticsPageView";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
+import { CoinwGlobalFooter } from "@/components/CoinwGlobalFooter";
+import { CoinwGlobalHeader } from "@/components/CoinwGlobalHeader";
 import { WebVitalsBeacon } from "@/components/observability/WebVitalsBeacon";
-import { SiteHeader } from "@/components/SiteHeader";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { HTML_LANG, LOCALES, RTL_LOCALES, isLocale } from "@/i18n/locales";
 import type { Locale } from "@/i18n/types";
@@ -76,8 +77,9 @@ export default async function LocaleLayout({
           <AppErrorBoundary>
             <AnalyticsPageView />
             <WebVitalsBeacon />
-            <SiteHeader />
+            <CoinwGlobalHeader />
             {children}
+            <CoinwGlobalFooter />
           </AppErrorBoundary>
         </I18nProvider>
       </body>

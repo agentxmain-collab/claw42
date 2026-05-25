@@ -289,29 +289,68 @@ function originalEvidenceUrl(evidence: NewsEvidence | undefined) {
   }
 }
 
+function evidenceObservedAt(evidence: NewsEvidence, fallback: number) {
+  const publishedAtMs = Date.parse(evidence.publishedAt);
+  if (Number.isFinite(publishedAtMs)) return publishedAtMs;
+  const fetchedAtMs = Date.parse(evidence.fetchedAt);
+  return Number.isFinite(fetchedAtMs) ? fetchedAtMs : fallback;
+}
+
+function isPublicNewsEvidence(evidence: NewsEvidence | undefined): evidence is NewsEvidence {
+  if (!evidence) return false;
+  if (evidence.source === "Claw42 Topic Selector") return false;
+  return Boolean(originalEvidenceUrl(evidence));
+}
+
+function evidenceMatchesGroup(evidence: NewsEvidence, group: DispatchTopicGroup) {
+  const symbol = group.symbol.trim().replace(/^\$+/, "").toUpperCase();
+  if (!symbol) return false;
+  if (evidence.symbol.length === 0) return true;
+  if (
+    evidence.symbol
+      .map((item) => item.trim().replace(/^\$+/, "").toUpperCase())
+      .some((item) => item === symbol)
+  ) {
+    return true;
+  }
+  return new RegExp(`(^|[^A-Z0-9])${symbol}([^A-Z0-9]|$)`).test(
+    `${evidence.title} ${evidence.summary}`.toUpperCase(),
+  );
+}
+
+function fallbackNewsEvidenceForGroup(
+  group: DispatchTopicGroup,
+  evidenceMap: V9AdapterContext["evidenceMap"],
+) {
+  return Object.values(evidenceMap ?? {})
+    .filter(isPublicNewsEvidence)
+    .filter((evidence) => evidenceMatchesGroup(evidence, group))
+    .sort(
+      (left, right) =>
+        evidenceObservedAt(right, group.latestAt) - evidenceObservedAt(left, group.latestAt),
+    )[0];
+}
+
 function newsItemsForGroup(
   group: DispatchTopicGroup,
   evidenceMap: V9AdapterContext["evidenceMap"],
 ) {
-  return group.evidenceIds
-    .map((evidenceId) => evidenceMap?.[evidenceId])
-    .filter((evidence): evidence is NewsEvidence => Boolean(evidence))
-    .slice(0, 1)
-    .map((evidence) => {
-      const publishedAtMs = Date.parse(evidence.publishedAt);
-      const fetchedAtMs = Date.parse(evidence.fetchedAt);
-      const observedAtMs = Number.isFinite(publishedAtMs)
-        ? publishedAtMs
-        : Number.isFinite(fetchedAtMs)
-          ? fetchedAtMs
-          : group.latestAt;
-      return {
-        headline: evidence.title,
-        source: evidence.source,
-        observedAt: formatTime(observedAtMs),
-        ...(originalEvidenceUrl(evidence) ? { url: originalEvidenceUrl(evidence) } : {}),
-      };
-    });
+  const evidence =
+    group.evidenceIds
+      .map((evidenceId) => evidenceMap?.[evidenceId])
+      .find((item): item is NewsEvidence => isPublicNewsEvidence(item)) ??
+    fallbackNewsEvidenceForGroup(group, evidenceMap);
+
+  return evidence
+    ? [
+        {
+          headline: evidence.title,
+          source: evidence.source,
+          observedAt: formatTime(evidenceObservedAt(evidence, group.latestAt)),
+          ...(originalEvidenceUrl(evidence) ? { url: originalEvidenceUrl(evidence) } : {}),
+        },
+      ]
+    : [];
 }
 
 function stageId(topicId: string, stage: number) {

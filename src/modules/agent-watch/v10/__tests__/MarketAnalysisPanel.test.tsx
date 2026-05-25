@@ -365,6 +365,34 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("旧解释不应该在头部重复出现");
   });
 
+  test("shows an explicit no-news placeholder instead of repeating the explanation", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "symbol-hype-no-news",
+              candidateType: "symbol",
+              candidateKey: "HYPE",
+              title: "HYPE 实时行情分析",
+              symbol: "HYPE",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            explanation: "这段解释不应该伪装成新闻摘要",
+            newsItems: [],
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("暂无相关新闻");
+    expect(html).not.toContain("这段解释不应该伪装成新闻摘要");
+  });
+
   test("paginates symbol topics at fifteen cards per page", () => {
     const topics = Array.from({ length: 16 }, (_, index) =>
       topicFixture({

@@ -350,9 +350,13 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     ]);
   });
 
-  it("does not let symbol-less market news trigger non-BTC candidates after BTC is locked", async () => {
+  it("falls through to another major when macro news exists and BTC is locked", async () => {
     const auditEvents: unknown[] = [];
-    tryAcquireLockMock.mockResolvedValue(null);
+    tryAcquireLockMock.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      key: "watch:pm-decision:zh_CN:ETH",
+      token: "test-token",
+      acquiredAt: now,
+    });
     const quietPool = {
       ...pool(),
       tickers: {
@@ -388,36 +392,32 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
       onAudit: (event) => auditEvents.push(event),
     });
 
-    expect(runPmDecisionPipelineMock).not.toHaveBeenCalled();
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
+    const selectedSymbol = input.candidate?.symbol;
+    expect(selectedSymbol).toBeDefined();
+    expect(["BTC", "ETH", "SOL"]).toContain(selectedSymbol);
+    expect(selectedSymbol).not.toBe("SOL");
+    expect(input.recentNewsEvidence.map((evidence) => evidence.symbol)).toContainEqual([]);
     expect(auditEvents).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           type: "candidate_considered",
-          symbol: "BTC",
+          symbol: "SOL",
           hasTrigger: true,
         }),
         expect.objectContaining({
           type: "candidate_skipped",
-          symbol: "BTC",
+          symbol: "SOL",
           reason: "locked",
         }),
         expect.objectContaining({
           type: "candidate_considered",
-          symbol: "ETH",
+          symbol: selectedSymbol,
         }),
         expect.objectContaining({
-          type: "candidate_skipped",
-          symbol: "ETH",
-          reason: "no_news_evidence_for_symbol",
-        }),
-        expect.objectContaining({
-          type: "candidate_considered",
-          symbol: "SOL",
-        }),
-        expect.objectContaining({
-          type: "candidate_skipped",
-          symbol: "SOL",
-          reason: "no_news_evidence_for_symbol",
+          type: "candidate_generated",
+          symbol: selectedSymbol,
         }),
       ]),
     );

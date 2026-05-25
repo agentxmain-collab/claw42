@@ -23,7 +23,6 @@ import type { NewsItem } from "@/lib/types";
 
 const PM_DECISION_SYMBOL_LOCK_MS = 170 * 60_000;
 const RECENT_TOPIC_WINDOW_MINUTES = 180;
-const MARKET_NEWS_ANCHOR_SYMBOL = "BTC";
 
 function normalizeSymbol(symbol: string) {
   return normalizePipelineSymbol(symbol) ?? symbol.trim().replace(/^\$+/, "").toUpperCase();
@@ -120,8 +119,13 @@ function symbolsFromPool(pool: CoinPoolPayload | undefined) {
 
 function evidenceMatchesCandidateSymbol(evidence: { symbol: string[] }, candidate: string) {
   const normalizedCandidate = normalizeSymbol(candidate);
-  if (evidence.symbol.length === 0) return normalizedCandidate === MARKET_NEWS_ANCHOR_SYMBOL;
-  return evidence.symbol.some((symbol) => normalizeSymbol(symbol) === normalizedCandidate);
+  if (evidence.symbol.length === 0) return true;
+  if (evidence.symbol.some((symbol) => normalizeSymbol(symbol) === normalizedCandidate)) {
+    return true;
+  }
+  const textEvidence = evidence as { title?: string; summary?: string };
+  const haystack = `${textEvidence.title ?? ""} ${textEvidence.summary ?? ""}`.toUpperCase();
+  return new RegExp(`(^|[^A-Z0-9])${normalizedCandidate}([^A-Z0-9]|$)`).test(haystack);
 }
 
 function evidenceMatchesCandidate(evidence: { symbol: string[] }, candidate: DecisionCandidate) {

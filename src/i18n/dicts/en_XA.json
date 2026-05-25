@@ -166,6 +166,15 @@
       "4. Past performance is not a reliable indicator of future performance. Before making any investment, carefully consider your experience, financial situation, investment objectives and risk tolerance, and consult an independent financial advisor. For more information, see our Risk Notice and Terms of Use."
     ]
   },
+  "disclaimerAnalysis": {
+    "title": "Disclaimer",
+    "paragraphs": [
+      "1. [XA] Claw 42 live strategy analysis is an information reference tool only; AI views on direction, entry, stop, target, and confidence are not trading advice.",
+      "2. [XA] You use Claw 42 strategy analysis at your own risk and must independently evaluate every analyst view, debate result, and final strategy.",
+      "3. [XA] Claw 42 is not liable for losses from using or being unable to use strategy analysis. Digital assets are volatile and risky.",
+      "4. [XA] Historical analysis is not a reliable predictor of future performance; consider your own risk tolerance and seek independent advice."
+    ]
+  },
   "team": {
     "trackRecord": {
       "title": "[Ţêåm Ţřåċƙ Řêċøřd]",
@@ -723,7 +732,8 @@
         "observationSummaryLabel": "__TBD__",
         "coinwNavigate": "__TBD__",
         "staleReason": "__TBD__",
-        "staleAgePrefix": "__TBD__"
+        "staleAgePrefix": "__TBD__",
+        "noNews": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

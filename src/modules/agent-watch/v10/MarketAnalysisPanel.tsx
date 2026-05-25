@@ -453,11 +453,11 @@ function TopicHeadV10({
             {newsItem.observedAt ? ` · ${newsItem.observedAt}` : ""}
           </span>
         </div>
-      ) : topic.explanation ? (
-        <p className={["topic-explanation", collapsed && "collapsed"].filter(Boolean).join(" ")}>
-          {topic.explanation}
-        </p>
-      ) : null}
+      ) : (
+        <div className="topic-news-summary topic-news-summary-empty">
+          <span className="topic-news-headline">{dict.market.noNews}</span>
+        </div>
+      )}
       {hasOriginalUrl(topic) ? (
         <a
           className="topic-original"

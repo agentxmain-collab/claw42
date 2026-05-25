@@ -217,6 +217,35 @@ describe("mapPublicTimelineEventsToTopics", () => {
     ]);
   });
 
+  it("uses the latest public news evidence when a record has no direct evidence ids", () => {
+    const [topic] = mapTopics({
+      events: [pmDecision({ evidenceIds: [] })],
+      evidenceMap: {
+        ev_unrelated_older: {
+          ...evidence,
+          id: "ev_unrelated_older",
+          title: "Older market context",
+          publishedAt: new Date(now - 30 * 60_000).toISOString(),
+          symbol: [],
+        },
+        ev_recent_macro: {
+          ...evidence,
+          id: "ev_recent_macro",
+          title: "Fresh market liquidity update",
+          publishedAt: new Date(now - 2 * 60_000).toISOString(),
+          symbol: [],
+        },
+      },
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic?.newsItems?.[0]).toMatchObject({
+      headline: "Fresh market liquidity update",
+      source: "CoinDesk",
+    });
+  });
+
   it("keeps the latest displayable hotspot when a newer hotspot has no public collection voice", () => {
     const older = pmDecision({
       id: "event-hotspot-displayable",

@@ -1,5 +1,8 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { redirect } from "next/navigation";
+import { AIDisclaimer } from "@/components/agent-watch/AIDisclaimer";
+import { getDict } from "@/i18n/dictRegistry";
+import type { Locale } from "@/i18n/types";
 import { AgentWatchBoard } from "@/modules/agent-watch/AgentWatchBoard";
 import { agentWatchRedirectPath } from "@/modules/agent-watch/locale";
 import { resolveDispatchInitialView } from "@/modules/agent-watch/v9/initialView";
@@ -15,6 +18,8 @@ export default async function AgentPage({
   searchParams?: Promise<{ view?: string | string[] }>;
 }) {
   const { locale } = await params;
+  const typedLocale = locale as Locale;
+  const t = getDict(typedLocale);
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const initialView = resolveDispatchInitialView(resolvedSearchParams.view);
   const redirectPath = agentWatchRedirectPath(locale);
@@ -23,23 +28,14 @@ export default async function AgentPage({
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 120% 60% at 50% 0%, rgba(124, 92, 255, 0.16) 0%, rgba(0, 0, 0, 0) 60%)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 40% at 50% 50%, rgba(58, 123, 255, 0.06) 0%, rgba(0, 0, 0, 0) 70%)",
-        }}
-      />
       <div className="relative z-10">
         <AgentWatchBoard console={DispatchConsoleV10} initialView={initialView} />
       </div>
+      <section className="disclaimer-analysis-section relative px-6 py-20 md:px-12 lg:px-20">
+        <div className="mx-auto max-w-7xl">
+          <AIDisclaimer>{t.disclaimerAnalysis.paragraphs.join(" ")}</AIDisclaimer>
+        </div>
+      </section>
     </main>
   );
 }

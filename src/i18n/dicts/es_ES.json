@@ -166,6 +166,15 @@
       "4. El rendimiento pasado no es un indicador fiable del rendimiento futuro. Antes de invertir, considere cuidadosamente su experiencia, situación financiera, objetivos de inversión y tolerancia al riesgo, y consulte a un asesor financiero independiente. Para más información, consulte nuestro Aviso de riesgo y Condiciones de uso."
     ]
   },
+  "disclaimerAnalysis": {
+    "title": "Aviso legal",
+    "paragraphs": [
+      "1. El análisis estratégico en vivo de Claw 42 es solo una herramienta informativa. Las direcciones, entradas, stops, objetivos y niveles de confianza son interpretaciones de datos públicos de mercado y noticias, no asesoramiento de inversión, financiero ni de trading.",
+      "2. Usas el análisis estratégico de Claw 42 y sus funciones relacionadas bajo tu propio riesgo. Debes evaluar de forma independiente las opiniones de los analistas, los debates y la estrategia final.",
+      "3. Claw 42 no será responsable de pérdidas derivadas del uso o la imposibilidad de usar esta función. Los activos digitales tienen alto riesgo y volatilidad.",
+      "4. Los resultados históricos no predicen de forma fiable el rendimiento futuro. Antes de invertir, considera tu experiencia, situación financiera, objetivos y tolerancia al riesgo, y consulta a un asesor independiente."
+    ]
+  },
   "team": {
     "trackRecord": {
       "title": "Muro de resultados del equipo",
@@ -723,7 +732,8 @@
         "observationSummaryLabel": "__TBD__",
         "coinwNavigate": "__TBD__",
         "staleReason": "__TBD__",
-        "staleAgePrefix": "__TBD__"
+        "staleAgePrefix": "__TBD__",
+        "noNews": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

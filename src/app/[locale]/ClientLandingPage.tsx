@@ -16,6 +16,7 @@ import { ScenariosSection } from "@/modules/landing/ScenariosSection";
 import { SkillsEcoSection } from "@/modules/landing/SkillsEcoSection";
 import { StartTradeSection } from "@/modules/landing/StartTradeSection";
 import { HeroScene } from "@/modules/landing/HeroScene";
+import { HeroCtaGuide } from "@/modules/landing/HeroCtaGuide";
 import { HeroSceneInteractive } from "@/modules/landing/HeroSceneInteractive";
 import {
   fadeOnlyVariants,
@@ -333,6 +334,8 @@ function DisclaimerSection() {
 }
 
 export default function ClientLandingPage({ landingContext }: ClientLandingPageProps) {
+  const { locale } = useI18n();
+
   useEffect(() => {
     if (!landingContext.isExternalEntry) return;
 
@@ -358,6 +361,7 @@ export default function ClientLandingPage({ landingContext }: ClientLandingPageP
   return (
     <main id="top" className="min-h-screen bg-black">
       {HERO_INTERACTIVE_ENABLED ? <HeroSceneInteractive /> : <HeroScene />}
+      <HeroCtaGuide locale={locale} />
       <QuickStartSection />
       <ScenariosSection />
       <WhySection />

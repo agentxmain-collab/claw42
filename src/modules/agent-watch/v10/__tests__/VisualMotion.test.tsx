@@ -108,7 +108,8 @@ describe("DispatchConsoleV10 visual motion", () => {
 
   test("keeps Round 6 market list layout compact", () => {
     expect(css).toMatch(/\.fagent-avatar\) \{[\s\S]*align-self:\s*center;/);
-    expect(css).toContain("max-width: 820px");
+    expect(css).not.toContain("max-width: 820px");
+    expect(css).toMatch(/\.topic-head\) \{[\s\S]*padding:\s*12px 18px 10px;/);
     expect(css).toMatch(/\.topic-strategy\) \{[\s\S]*gap:\s*16px;[\s\S]*padding:\s*16px 20px;/);
     expect(css).toContain(".topic-eyebrow .topic-ranking-label");
   });
@@ -126,5 +127,12 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(css).toMatch(/fstage4:hover \.fstage4-detail[\s\S]+border-color/);
     expect(css).toMatch(/fstage4\.debate:hover[\s\S]+box-shadow/);
     expect(css).toMatch(/fstage4\.memory:hover[\s\S]+box-shadow/);
+  });
+
+  test("keeps collapsed topic cards full width while tightening vertical density", () => {
+    expect(css).not.toMatch(/topic\.collapsed:not\(\.expanded\)[\s\S]{0,120}max-width:\s*820px/);
+    expect(css).not.toMatch(/topic\.collapsed:not\(\.expanded\)[\s\S]{0,120}margin-inline:\s*auto/);
+    expect(css).toMatch(/topic-head[\s\S]{0,160}padding:\s*12px 18px 10px/);
+    expect(css).toMatch(/topic-news-summary[\s\S]{0,220}line-height:\s*1\.4/);
   });
 });
