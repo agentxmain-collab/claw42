@@ -16,6 +16,9 @@ export function FlowStageCard({ stage, dict }: { stage: FlowStageVisual; dict: D
       aria-labelledby={`flow-stage-${stage.num}`}
     >
       <div className="fstage4-side" data-num={stage.num}>
+        <span className={`stage-watermark watermark watermark-${stage.num}`} aria-hidden="true">
+          {stage.num}
+        </span>
         <div className="fs4-head">
           <span className="fs4-num">{stage.num}</span>
           <div className="fs4-meta">

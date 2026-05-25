@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import type { CSSProperties } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
 import { avatarSrcByRole } from "./staticContent";
@@ -29,23 +28,22 @@ export function AgentNode({
   return (
     <div className={`anode ${agent.tier} ${agent.className}`} style={style}>
       <div className="av">
+        <span className="agent-antenna agent-antenna-stem" aria-hidden="true" />
+        <span className="agent-antenna agent-antenna-dot" aria-hidden="true" />
         {!avatarFailed ? (
-          <Image
-            className="avatar-svg"
+          <img
+            className="anode-avatar"
             src={avatarSrcByRole[agent.id]}
-            alt=""
-            aria-hidden="true"
+            alt={role.readoutRole}
             decoding="async"
-            fill
-            sizes="68px"
-            unoptimized
+            draggable={false}
             onError={() => setAvatarFailed(true)}
           />
-        ) : null}
-        <div className="screen">
-          <span className="e" />
-          <span className="e" />
-        </div>
+        ) : (
+          <span className="anode-avatar-fallback" aria-hidden="true">
+            {agent.readoutId.slice(0, 1)}
+          </span>
+        )}
         {agent.hasSpeech ? (
           <span className="speech-dot">
             <span className="d" />

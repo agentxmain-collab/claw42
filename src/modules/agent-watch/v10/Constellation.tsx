@@ -99,6 +99,8 @@ export function Constellation({ dict, active }: { dict: DispatchV10Dict; active:
             <span className="d1 ring" />
             <span className="d2 ring" />
             <div className="head">
+              <span className="core-antenna core-antenna-stem" aria-hidden="true" />
+              <span className="core-antenna core-antenna-dot" aria-hidden="true" />
               <Image
                 className="core-avatar"
                 src={coreRobotAvatarSrc}
@@ -109,10 +111,6 @@ export function Constellation({ dict, active }: { dict: DispatchV10Dict; active:
                 sizes="140px"
                 unoptimized
               />
-              <div className="face">
-                <span className="eye" />
-                <span className="eye right" />
-              </div>
             </div>
             <span className="core-indicator">
               <span />
