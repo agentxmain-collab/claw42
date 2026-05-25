@@ -80,13 +80,13 @@ describe("DispatchConsoleV10 visual motion", () => {
 
   test("matches the approved constellation tier sizing", () => {
     expect(css).toMatch(
-      /\.anode\.tier-a\) \{[\s\S]*--size:\s*84px;[\s\S]*--bob:\s*8px;[\s\S]*--dur:\s*5s;/,
+      /\.anode\.tier-a\) \{[\s\S]*--size:\s*71px;[\s\S]*--bob:\s*8px;[\s\S]*--dur:\s*5s;/,
     );
     expect(css).toMatch(
-      /\.anode\.tier-b\) \{[\s\S]*--size:\s*68px;[\s\S]*--bob:\s*5px;[\s\S]*--dur:\s*5\.6s;/,
+      /\.anode\.tier-b\) \{[\s\S]*--size:\s*57px;[\s\S]*--bob:\s*5px;[\s\S]*--dur:\s*5\.6s;/,
     );
     expect(css).toMatch(
-      /\.anode\.tier-c\) \{[\s\S]*--size:\s*58px;[\s\S]*--bob:\s*3px;[\s\S]*--dur:\s*6\.4s;[\s\S]*opacity:\s*0\.85;/,
+      /\.anode\.tier-c\) \{[\s\S]*--size:\s*49px;[\s\S]*--bob:\s*3px;[\s\S]*--dur:\s*6\.4s;[\s\S]*opacity:\s*0\.85;/,
     );
   });
 
