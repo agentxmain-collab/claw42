@@ -314,7 +314,13 @@ function isStaleOrExpired(topic: DispatchTopic) {
 
 function looksTruncated(value: string | undefined) {
   if (!value) return false;
-  return /(?:…|\.\.\.)\s*$/.test(value.trim());
+  const trimmed = value.trim();
+  return (
+    /(?:…|\.\.\.)\s*$/.test(trimmed) ||
+    /\b[0-9]+\.\s*$/.test(trimmed) ||
+    /[，、,]\s*$/.test(trimmed) ||
+    /\b[A-Za-z]\.{0,3}\s*$/.test(trimmed)
+  );
 }
 
 function looksIncompleteSummary(value: string | undefined) {

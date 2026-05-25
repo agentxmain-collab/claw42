@@ -588,7 +588,7 @@
 }
 
 .dispatchConsoleV10 :global(.anode.tier-a) {
-  --size: 71px;
+  --size: 70px;
   --bob: 8px;
   --dur: 5s;
 
@@ -596,7 +596,7 @@
 }
 
 .dispatchConsoleV10 :global(.anode.tier-b) {
-  --size: 57px;
+  --size: 50px;
   --bob: 5px;
   --dur: 5.6s;
 
@@ -605,7 +605,7 @@
 }
 
 .dispatchConsoleV10 :global(.anode.tier-c) {
-  --size: 49px;
+  --size: 45px;
   --bob: 3px;
   --dur: 6.4s;
 

@@ -105,7 +105,7 @@ export function validateChatContent(content: string): ChatGuardrailValidation {
   const reasons: string[] = [];
   const text = content.trim();
 
-  if (Array.from(text).length > 80) reasons.push("超过 80 字");
+  if (Array.from(text).length > 200) reasons.push("超过 200 字");
   if (FORBIDDEN_PREFIX_PATTERNS.some((pattern) => pattern.test(text))) {
     reasons.push("含报告前缀或套话");
   }

@@ -49,6 +49,7 @@ export function buildLocaleInstruction(locale: Locale): string {
     LOCALE_SCRIPT_HINTS[locale],
     "JSON keys must stay exactly as requested, but all natural-language values must use this locale.",
     "Ticker symbols, model/provider names, numbers, URLs, and evidence IDs may remain ASCII.",
+    "Foreign-language headlines, news source names (e.g. Cointelegraph, alternative.me), and technical-metric names you quote inline must be translated into the locale language; do not leave them in the original foreign-language phrase form.",
   ].join(" ");
 }
 
