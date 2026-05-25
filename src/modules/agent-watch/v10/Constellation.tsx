@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useRef } from "react";
-import Image from "next/image";
 import type { DispatchV10Dict } from "@/i18n/types";
-import { coreRobotAvatarSrc, heroAgents } from "./staticContent";
 import { AgentNode } from "./AgentNode";
+import { InlineAvatarSvg } from "./InlineAvatarSvg";
+import { heroAgents } from "./staticContent";
 import { useConstellationFocus } from "./useConstellationFocus";
 import { useReducedMotion } from "./useReducedMotion";
 
@@ -99,18 +99,7 @@ export function Constellation({ dict, active }: { dict: DispatchV10Dict; active:
             <span className="d1 ring" />
             <span className="d2 ring" />
             <div className="head">
-              <span className="core-antenna core-antenna-stem" aria-hidden="true" />
-              <span className="core-antenna core-antenna-dot" aria-hidden="true" />
-              <Image
-                className="core-avatar"
-                src={coreRobotAvatarSrc}
-                alt=""
-                aria-hidden="true"
-                decoding="async"
-                fill
-                sizes="140px"
-                unoptimized
-              />
+              <InlineAvatarSvg className="core-avatar" name="core" />
             </div>
             <span className="core-indicator">
               <span />

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import type { DispatchV10Dict } from "@/i18n/types";
 import { trackEvent } from "@/lib/analytics";
 import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
@@ -21,7 +20,8 @@ import type {
   DispatchStageStatus,
 } from "../v9/types";
 import v9Styles from "../v9/dispatchConsoleV9.module.css";
-import { avatarSrcByRole, coreRobotAvatarSrc, v9AgentToV10Role } from "./staticContent";
+import { InlineAvatarSvg, type InlineAvatarName } from "./InlineAvatarSvg";
+import { v9AgentToV10Role } from "./staticContent";
 
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
@@ -34,18 +34,10 @@ function ChatShellStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function MarketPanelAvatar({ src, className }: { src: string; className: string }) {
+function MarketPanelAvatar({ name, className }: { name: InlineAvatarName; className: string }) {
   return (
     <span className={`market-panel-avatar ${className}`} aria-hidden="true">
-      <Image
-        className="market-panel-avatar-img"
-        src={src}
-        alt=""
-        decoding="async"
-        fill
-        sizes="44px"
-        unoptimized
-      />
+      <InlineAvatarSvg className="market-panel-avatar-img" name={name} />
     </span>
   );
 }
@@ -156,18 +148,18 @@ function topicCandidateClass(topic: DispatchTopic) {
   return CANDIDATE_CLASS[topicCandidateType(topic)];
 }
 
-function topicHeadAvatarSrc(topic: DispatchTopic) {
+function topicHeadAvatarName(topic: DispatchTopic): InlineAvatarName {
   const candidateType = topicCandidateType(topic);
-  if (candidateType === "market_overview") return avatarSrcByRole.portfolioManager;
-  if (candidateType === "hotspot") return avatarSrcByRole.news;
-  return avatarSrcByRole.technical;
+  if (candidateType === "market_overview") return "portfolioManager";
+  if (candidateType === "hotspot") return "news";
+  return "technical";
 }
 
-function strategyAvatarSrc(topic: DispatchTopic) {
-  if (topicCandidateType(topic) !== "symbol") return avatarSrcByRole.portfolioManager;
-  if (topic.strategy.action === "short") return avatarSrcByRole.bearish;
-  if (topic.strategy.action === "long") return avatarSrcByRole.bullish;
-  return avatarSrcByRole.trader;
+function strategyAvatarName(topic: DispatchTopic): InlineAvatarName {
+  if (topicCandidateType(topic) !== "symbol") return "portfolioManager";
+  if (topic.strategy.action === "short") return "bearish";
+  if (topic.strategy.action === "long") return "bullish";
+  return "trader";
 }
 
 function inferredTradeReadinessKind(
@@ -432,7 +424,7 @@ function TopicHeadV10({
         ) : null}
       </div>
       <div className="topic-title-row">
-        <MarketPanelAvatar className="topic-head-avatar" src={topicHeadAvatarSrc(topic)} />
+        <MarketPanelAvatar className="topic-head-avatar" name={topicHeadAvatarName(topic)} />
         <h2 id={`${bodyId}-title`} className="topic-title">
           {topic.title}
         </h2>
@@ -587,7 +579,7 @@ function TopicStrategyV10({
       data-trade-readiness-kind={tradeReadinessKind ?? undefined}
     >
       <div className="strat-head">
-        <MarketPanelAvatar className="strat-head-avatar" src={strategyAvatarSrc(topic)} />
+        <MarketPanelAvatar className="strat-head-avatar" name={strategyAvatarName(topic)} />
         <div className="row1">
           {latest ? (
             <span className="strategy-latest-badge">{dict.market.latestStrategy}</span>
@@ -822,15 +814,7 @@ export function MarketAnalysisPanel({
         <div className="chat-shell-head">
           <div className="cs-head-left">
             <div className="cs-icon" aria-hidden="true">
-              <Image
-                className="cs-icon-avatar"
-                src={coreRobotAvatarSrc}
-                alt=""
-                decoding="async"
-                fill
-                sizes="44px"
-                unoptimized
-              />
+              <InlineAvatarSvg className="cs-icon-avatar" name="core" />
             </div>
             <div className="cs-icon-info">
               <div className="cs-title">{dict.market.title}</div>

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import type { CSSProperties } from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
-import { avatarSrcByRole } from "./staticContent";
+import { InlineAvatarSvg } from "./InlineAvatarSvg";
 import type { HeroAgentVisual } from "./types";
 
 export function AgentNode({
@@ -15,7 +15,6 @@ export function AgentNode({
   role: DispatchV10Dict["roles"][HeroAgentVisual["id"]];
   readoutLabels: DispatchV10Dict["hero"]["readoutLabels"];
 }) {
-  const [avatarFailed, setAvatarFailed] = useState(false);
   const style = {
     left: agent.style.left,
     top: agent.style.top,
@@ -28,22 +27,7 @@ export function AgentNode({
   return (
     <div className={`anode ${agent.tier} ${agent.className}`} style={style}>
       <div className="av">
-        <span className="agent-antenna agent-antenna-stem" aria-hidden="true" />
-        <span className="agent-antenna agent-antenna-dot" aria-hidden="true" />
-        {!avatarFailed ? (
-          <img
-            className="anode-avatar"
-            src={avatarSrcByRole[agent.id]}
-            alt={role.readoutRole}
-            decoding="async"
-            draggable={false}
-            onError={() => setAvatarFailed(true)}
-          />
-        ) : (
-          <span className="anode-avatar-fallback" aria-hidden="true">
-            {agent.readoutId.slice(0, 1)}
-          </span>
-        )}
+        <InlineAvatarSvg className="anode-avatar" name={agent.id} />
         {agent.hasSpeech ? (
           <span className="speech-dot">
             <span className="d" />

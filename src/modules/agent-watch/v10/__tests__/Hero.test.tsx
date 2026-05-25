@@ -22,7 +22,7 @@ describe("Hero v10", () => {
     expect((html.match(/class="anode-avatar"/g) ?? []).length).toBe(11);
     expect(html).not.toContain('class="screen"');
     expect(html).not.toContain('class="e"');
-    expect(html).toContain("/agent-watch/c-line-ui-uplift-v1/avatars/pm-approve.svg");
+    expect(html).toContain('data-inline-avatar="portfolioManager"');
     expect(html).toContain("首席投资官");
   });
 });

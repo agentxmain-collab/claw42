@@ -1,7 +1,7 @@
 import React from "react";
-import Image from "next/image";
 import type { DispatchV10Dict } from "@/i18n/types";
-import { avatarClassByRole, avatarSrcByRole } from "./staticContent";
+import { InlineAvatarSvg } from "./InlineAvatarSvg";
+import { avatarClassByRole } from "./staticContent";
 import type { FlowStageVisual } from "./types";
 
 export function FlowStageCard({ stage, dict }: { stage: FlowStageVisual; dict: DispatchV10Dict }) {
@@ -50,15 +50,7 @@ export function FlowStageCard({ stage, dict }: { stage: FlowStageVisual; dict: D
                       className={`fagent-avatar ${avatarClassByRole[agentId]}`}
                       aria-hidden="true"
                     >
-                      <Image
-                        className="avatar-svg"
-                        src={avatarSrcByRole[agentId]}
-                        alt=""
-                        decoding="async"
-                        fill
-                        sizes="44px"
-                        unoptimized
-                      />
+                      <InlineAvatarSvg className="avatar-svg" name={agentId} />
                     </div>
                     <div className="fagent-info">
                       <div className="fagent-name">{role.name}</div>

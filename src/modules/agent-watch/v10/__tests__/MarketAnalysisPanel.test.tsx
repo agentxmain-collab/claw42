@@ -97,7 +97,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain("交易策略总监");
   });
 
-  test("renders upgraded SVG avatars in chat shell, topic head, and strategy head", () => {
+  test("renders upgraded inline SVG avatars in chat shell, topic head, and strategy head", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[dispatchV10DemoTopics[0]!]}
@@ -106,9 +106,9 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("/agent-watch/c-line-ui-uplift-v1/avatars/bot-base.svg");
-    expect(html).toContain("/agent-watch/c-line-ui-uplift-v1/avatars/chart_analyst.svg");
-    expect(html).toContain("/agent-watch/c-line-ui-uplift-v1/avatars/bullish_researcher.svg");
+    expect(html).toContain('data-inline-avatar="core"');
+    expect(html).toContain('data-inline-avatar="technical"');
+    expect(html).toContain('data-inline-avatar="bullish"');
     expect((html.match(/market-panel-avatar/g) ?? []).length).toBeGreaterThanOrEqual(3);
   });
 
