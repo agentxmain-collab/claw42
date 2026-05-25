@@ -833,6 +833,12 @@
   box-shadow:
     0 4px 12px rgb(0 0 0 / 50%),
     0 0 0 3px rgb(209 255 85 / 7%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(3px) scale(var(--speech-scale, 1));
+  animation: dispatch-v10-speech-presence var(--speech-duration, 11.6s) ease-in-out infinite;
+  animation-delay: var(--speech-delay, 0s);
+  animation-fill-mode: both;
 }
 
 .dispatchConsoleV10 :global(.speech-dot .d) {
@@ -860,7 +866,7 @@
 }
 
 .dispatchConsoleV10 :global(.anode.tier-c .speech-dot) {
-  transform: scale(0.82);
+  --speech-scale: 0.82;
 }
 
 .dispatchConsoleV10 :global(.anode:hover .speech-dot),
@@ -868,6 +874,50 @@
   box-shadow:
     0 4px 12px rgb(0 0 0 / 50%),
     0 0 0 4px rgb(209 255 85 / 12%);
+}
+
+.dispatchConsoleV10 :global(.a-news .speech-dot) {
+  --speech-delay: -0.2s;
+}
+
+.dispatchConsoleV10 :global(.a-tech .speech-dot) {
+  --speech-delay: -1.3s;
+}
+
+.dispatchConsoleV10 :global(.a-aggr .speech-dot) {
+  --speech-delay: -2.5s;
+}
+
+.dispatchConsoleV10 :global(.a-neut .speech-dot) {
+  --speech-delay: -3.6s;
+}
+
+.dispatchConsoleV10 :global(.a-fund .speech-dot) {
+  --speech-delay: -4.8s;
+}
+
+.dispatchConsoleV10 :global(.a-sent .speech-dot) {
+  --speech-delay: -5.9s;
+}
+
+.dispatchConsoleV10 :global(.a-cons .speech-dot) {
+  --speech-delay: -7.1s;
+}
+
+.dispatchConsoleV10 :global(.a-pm .speech-dot) {
+  --speech-delay: -8.2s;
+}
+
+.dispatchConsoleV10 :global(.a-bull .speech-dot) {
+  --speech-delay: -9.4s;
+}
+
+.dispatchConsoleV10 :global(.a-bear .speech-dot) {
+  --speech-delay: -10.5s;
+}
+
+.dispatchConsoleV10 :global(.a-mem .speech-dot) {
+  --speech-delay: -11.1s;
 }
 
 .dispatchConsoleV10 :global(.a-fund) {
@@ -2372,6 +2422,25 @@
 
   50% {
     transform: translate(-50%, -50%) translateZ(var(--tz, 0)) translateY(calc(-1 * var(--bob, 6px)));
+  }
+}
+
+@keyframes dispatch-v10-speech-presence {
+  0%,
+  31% {
+    opacity: 1;
+    transform: translateY(0) scale(var(--speech-scale, 1));
+  }
+
+  38%,
+  91% {
+    opacity: 0;
+    transform: translateY(3px) scale(var(--speech-scale, 1));
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(var(--speech-scale, 1));
   }
 }
 
