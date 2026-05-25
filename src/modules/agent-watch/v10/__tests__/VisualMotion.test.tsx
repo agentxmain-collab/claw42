@@ -80,7 +80,7 @@ describe("DispatchConsoleV10 visual motion", () => {
 
   test("matches the approved constellation tier sizing", () => {
     expect(css).toMatch(
-      /\.anode\.tier-a\) \{[\s\S]*--size:\s*70px;[\s\S]*--bob:\s*8px;[\s\S]*--dur:\s*5s;/,
+      /\.anode\.tier-a\) \{[\s\S]*--size:\s*60px;[\s\S]*--bob:\s*8px;[\s\S]*--dur:\s*5s;/,
     );
     expect(css).toMatch(
       /\.anode\.tier-b\) \{[\s\S]*--size:\s*50px;[\s\S]*--bob:\s*5px;[\s\S]*--dur:\s*5\.6s;/,

@@ -588,7 +588,7 @@
 }
 
 .dispatchConsoleV10 :global(.anode.tier-a) {
-  --size: 70px;
+  --size: 60px;
   --bob: 8px;
   --dur: 5s;
 
