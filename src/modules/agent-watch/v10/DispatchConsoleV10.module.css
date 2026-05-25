@@ -15,6 +15,7 @@
   --radius-card: 16px;
   --radius-panel: 24px;
   --content-max: 1240px;
+  --bot-eye-blink-name: eyeBlink;
   --font-display:
     var(--font-geist-sans), "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui,
     sans-serif;
@@ -491,7 +492,11 @@
   box-shadow:
     0 0 18px #7ee0ff,
     0 0 36px rgb(126 224 255 / 55%);
-  animation: dispatch-v10-eye-blink 4.6s ease-in-out infinite;
+  animation-name: var(--bot-eye-blink-name);
+  animation-duration: 4.6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  transform-origin: center;
 }
 
 .dispatchConsoleV10 :global(.core .core-robot .eye.right) {
@@ -583,23 +588,29 @@
 }
 
 .dispatchConsoleV10 :global(.anode.tier-a) {
-  --size: 68px;
+  --size: 60px;
+  --bob: 8px;
+  --dur: 5s;
 
   z-index: 5;
 }
 
 .dispatchConsoleV10 :global(.anode.tier-b) {
   --size: 50px;
+  --bob: 5px;
+  --dur: 5.6s;
 
   z-index: 4;
   opacity: 0.95;
 }
 
 .dispatchConsoleV10 :global(.anode.tier-c) {
-  --size: 44px;
+  --size: 45px;
+  --bob: 3px;
+  --dur: 6.4s;
 
   z-index: 3;
-  opacity: 0.78;
+  opacity: 0.85;
 }
 
 .dispatchConsoleV10 :global(.anode .av) {
@@ -639,6 +650,29 @@
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.dispatchConsoleV10 :global(.anode .anode-avatar svg .avatar-eye),
+.dispatchConsoleV10 :global(.fagent-avatar .avatar-svg svg .avatar-eye),
+.dispatchConsoleV10 :global(.market-panel-avatar-img svg .avatar-eye) {
+  animation-name: var(--bot-eye-blink-name);
+  animation-duration: 4.6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-delay: var(--blink-delay, 0s);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.dispatchConsoleV10 :global(.anode:hover .anode-avatar svg .avatar-eye),
+.dispatchConsoleV10 :global(.anode.is-focus .anode-avatar svg .avatar-eye),
+.dispatchConsoleV10 :global(.fagent:hover .avatar-svg svg .avatar-eye),
+.dispatchConsoleV10 :global(.fagent:focus-within .avatar-svg svg .avatar-eye),
+.dispatchConsoleV10 :global(.market-panel-avatar:hover .market-panel-avatar-img svg .avatar-eye),
+.dispatchConsoleV10 :global(.workbench-core-robot:hover .eye),
+.dispatchConsoleV10 :global(.core:hover .core-robot .eye),
+.dispatchConsoleV10 :global(.cs-icon:hover .workbench-core-robot .eye) {
+  animation-duration: 1.2s;
 }
 
 .dispatchConsoleV10 :global(.anode .anode-avatar-fallback) {
@@ -902,34 +936,42 @@
 
 .dispatchConsoleV10 :global(.a-fund) {
   --eye: #8aa2d4;
+  --blink-delay: 0.05s;
 }
 
 .dispatchConsoleV10 :global(.a-sent) {
   --eye: #c89dd4;
+  --blink-delay: 0.45s;
 }
 
 .dispatchConsoleV10 :global(.a-news) {
   --eye: #92c692;
+  --blink-delay: 0.9s;
 }
 
 .dispatchConsoleV10 :global(.a-tech) {
   --eye: #d4b482;
+  --blink-delay: 1.35s;
 }
 
 .dispatchConsoleV10 :global(.a-bull) {
   --eye: #7ad19a;
+  --blink-delay: 1.8s;
 }
 
 .dispatchConsoleV10 :global(.a-bear) {
   --eye: #ff8e76;
+  --blink-delay: 2.25s;
 }
 
 .dispatchConsoleV10 :global(.a-trade) {
   --eye: #9aa0d4;
+  --blink-delay: 2.7s;
 }
 
 .dispatchConsoleV10 :global(.a-aggr) {
   --eye: #d49872;
+  --blink-delay: 3.15s;
 }
 
 .dispatchConsoleV10 :global(.a-aggr .anode-avatar),
@@ -939,18 +981,22 @@
 
 .dispatchConsoleV10 :global(.a-neut) {
   --eye: #b6b6b6;
+  --blink-delay: 3.6s;
 }
 
 .dispatchConsoleV10 :global(.a-cons) {
   --eye: #7ab2d4;
+  --blink-delay: 4.05s;
 }
 
 .dispatchConsoleV10 :global(.a-pm) {
   --eye: var(--lime);
+  --blink-delay: 4.5s;
 }
 
 .dispatchConsoleV10 :global(.a-mem) {
   --eye: #a98cff;
+  --blink-delay: 4.95s;
 }
 
 .dispatchConsoleV10 :global(.panel) {
@@ -994,14 +1040,27 @@
 }
 
 .dispatchConsoleV10 :global(.fstage4:hover) {
-  border-color: rgb(82 39 255 / 48%);
-  background: linear-gradient(90deg, rgb(82 39 255 / 5%), transparent 42%), var(--card);
-  box-shadow: 0 18px 54px rgb(0 0 0 / 24%);
-  transform: translateY(-1px);
+  border-color: rgb(209 255 85 / 54%);
+  background:
+    linear-gradient(90deg, rgb(82 39 255 / 13%), rgb(209 255 85 / 5%) 54%, transparent 82%),
+    var(--card);
+  box-shadow:
+    0 20px 60px rgb(0 0 0 / 30%),
+    0 0 48px rgb(124 92 255 / 42%),
+    inset 0 0 0 1px rgb(209 255 85 / 10%);
+  transform: translateY(-4px) scale(1.01);
 }
 
 .dispatchConsoleV10 :global(.fstage4.debate) {
   border-color: rgb(82 39 255 / 30%);
+}
+
+.dispatchConsoleV10 :global(.fstage4.debate:hover) {
+  border-color: rgb(209 255 85 / 54%);
+  box-shadow:
+    0 20px 60px rgb(0 0 0 / 30%),
+    0 0 48px rgb(124 92 255 / 46%),
+    inset 0 0 0 1px rgb(209 255 85 / 10%);
 }
 
 .dispatchConsoleV10 :global(.fstage4.final) {
@@ -1018,6 +1077,17 @@
   border-color: rgb(255 255 255 / 18%);
   border-style: dashed;
   background: rgb(82 39 255 / 4%);
+}
+
+.dispatchConsoleV10 :global(.fstage4.memory:hover) {
+  border-color: rgb(209 255 85 / 42%);
+  background:
+    linear-gradient(90deg, rgb(82 39 255 / 12%), rgb(209 255 85 / 5%) 50%, transparent 78%),
+    rgb(82 39 255 / 5%);
+  box-shadow:
+    0 18px 54px rgb(0 0 0 / 28%),
+    0 0 42px rgb(124 92 255 / 34%),
+    inset 0 0 0 1px rgb(209 255 85 / 8%);
 }
 
 .dispatchConsoleV10 :global(.fstage4:nth-of-type(1)),
@@ -1066,6 +1136,8 @@
 
 .dispatchConsoleV10 :global(.fstage4:hover .stage-watermark) {
   -webkit-text-stroke-color: rgb(124 92 255 / 32%);
+  text-shadow: 0 0 42px rgb(124 92 255 / 24%);
+  transform: translateY(-50%) rotate(-6deg) scale(1.03);
 }
 
 .dispatchConsoleV10 :global(.fstage4.final .stage-watermark) {
@@ -1438,6 +1510,12 @@
     box-shadow 0.25s;
 }
 
+.dispatchConsoleV10 :global(.fstage4:hover .fstage4-detail) {
+  border-color: rgb(209 255 85 / 22%);
+  background:
+    linear-gradient(90deg, rgb(124 92 255 / 9%), rgb(209 255 85 / 3%) 70%), rgb(255 255 255 / 3.8%);
+}
+
 .dispatchConsoleV10 :global(.fstage4-detail:hover) {
   border-color: rgb(82 39 255 / 34%);
   background: rgb(82 39 255 / 5.5%);
@@ -1707,6 +1785,11 @@
   box-shadow:
     0 0 8px #7ee0ff,
     0 0 14px rgb(126 224 255 / 45%);
+  animation-name: var(--bot-eye-blink-name);
+  animation-duration: 4.6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  transform-origin: center;
 }
 
 .dispatchConsoleV10 :global(.market-panel-avatar) {
@@ -2523,19 +2606,6 @@
 
   50% {
     transform: translate(-50%, -50%) translateY(-8px);
-  }
-}
-
-@keyframes dispatch-v10-eye-blink {
-  0%,
-  92%,
-  100% {
-    transform: scaleY(1);
-  }
-
-  94%,
-  96% {
-    transform: scaleY(0.1);
   }
 }
 

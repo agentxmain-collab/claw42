@@ -14,7 +14,7 @@ export const heroAgents: HeroAgentVisual[] = [
     readoutId: "NEWS·N",
     label: "News · N",
     hasSpeech: true,
-    style: { left: "69%", top: "19%", tz: "-92px", bob: "2px", dur: "7.2s", delay: "0.2s" },
+    style: { left: "72%", top: "20%", tz: "-92px", bob: "2px", dur: "7.2s", delay: "0.2s" },
   },
   {
     id: "technical",
@@ -23,7 +23,7 @@ export const heroAgents: HeroAgentVisual[] = [
     readoutId: "TECH·T",
     label: "Technical · T",
     hasSpeech: true,
-    style: { left: "32%", top: "21%", tz: "-72px", bob: "3px", dur: "6.8s", delay: "1.8s" },
+    style: { left: "29%", top: "21%", tz: "-72px", bob: "3px", dur: "6.8s", delay: "1.8s" },
   },
   {
     id: "aggressive",
@@ -32,7 +32,7 @@ export const heroAgents: HeroAgentVisual[] = [
     readoutId: "AGGR·A",
     label: "Aggressive · A",
     hasSpeech: true,
-    style: { left: "61%", top: "83%", tz: "-78px", bob: "3px", dur: "6.4s", delay: "1s" },
+    style: { left: "64%", top: "83%", tz: "-78px", bob: "3px", dur: "6.4s", delay: "1s" },
   },
   {
     id: "neutral",
@@ -41,7 +41,7 @@ export const heroAgents: HeroAgentVisual[] = [
     readoutId: "NEUT·N",
     label: "Neutral · N",
     hasSpeech: true,
-    style: { left: "8%", top: "28%", tz: "-90px", bob: "2px", dur: "7s", delay: "2s" },
+    style: { left: "9%", top: "29%", tz: "-90px", bob: "2px", dur: "7s", delay: "2s" },
   },
   {
     id: "fundamental",
@@ -50,7 +50,7 @@ export const heroAgents: HeroAgentVisual[] = [
     readoutId: "FUND·F",
     label: "Fundamentals · F",
     hasSpeech: true,
-    style: { left: "71%", top: "38%", tz: "0px", bob: "5px", dur: "6.2s", delay: "0.9s" },
+    style: { left: "73%", top: "40%", tz: "0px", bob: "5px", dur: "6.2s", delay: "0.9s" },
   },
   {
     id: "onchain",
@@ -59,7 +59,7 @@ export const heroAgents: HeroAgentVisual[] = [
     readoutId: "CHAIN·O",
     label: "On-chain · O",
     hasSpeech: true,
-    style: { left: "88%", top: "51%", tz: "-15px", bob: "4px", dur: "5.4s", delay: "1.5s" },
+    style: { left: "88%", top: "50%", tz: "-15px", bob: "4px", dur: "5.4s", delay: "1.5s" },
   },
   {
     id: "conservative",
@@ -68,7 +68,7 @@ export const heroAgents: HeroAgentVisual[] = [
     readoutId: "CONS·C",
     label: "Conservative · C",
     hasSpeech: true,
-    style: { left: "17%", top: "73%", tz: "-20px", bob: "6px", dur: "6s", delay: "0.3s" },
+    style: { left: "21%", top: "71%", tz: "-20px", bob: "6px", dur: "6s", delay: "0.3s" },
   },
   {
     id: "portfolioManager",
@@ -86,7 +86,7 @@ export const heroAgents: HeroAgentVisual[] = [
     readoutId: "BULL·↑",
     label: "Bullish · ↑",
     hasSpeech: true,
-    style: { left: "20%", top: "50%", tz: "72px", bob: "7px", dur: "5.4s", delay: "0s" },
+    style: { left: "19%", top: "54%", tz: "72px", bob: "7px", dur: "5.4s", delay: "0s" },
   },
   {
     id: "bearish",
@@ -95,7 +95,7 @@ export const heroAgents: HeroAgentVisual[] = [
     readoutId: "BEAR·↓",
     label: "Bearish · ↓",
     hasSpeech: true,
-    style: { left: "69%", top: "62%", tz: "80px", bob: "8px", dur: "4.9s", delay: "1.2s" },
+    style: { left: "71%", top: "66%", tz: "80px", bob: "8px", dur: "4.9s", delay: "1.2s" },
   },
   {
     id: "trader",
@@ -104,7 +104,7 @@ export const heroAgents: HeroAgentVisual[] = [
     readoutId: "TRADE·$",
     label: "Trader · $",
     hasSpeech: true,
-    style: { left: "42%", top: "71%", tz: "98px", bob: "9px", dur: "5.2s", delay: "0.4s" },
+    style: { left: "43%", top: "77%", tz: "98px", bob: "9px", dur: "5.2s", delay: "0.4s" },
   },
 ];
 

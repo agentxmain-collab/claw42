@@ -130,4 +130,16 @@ describe("TEAM_MEMBER_REGISTRY", () => {
       expect(prompt).toContain("detailedRationale");
     }
   });
+
+  test("keeps public output guardrails aligned across all prompt docs", () => {
+    for (const id of TEAM_MEMBER_IDS) {
+      const member = getTeamMember(id);
+      const prompt = readFileSync(member.promptDocPath, "utf8");
+
+      expect(prompt).toContain("Numeric direction rule");
+      expect(prompt).toContain("Foreign-source translation rule");
+      expect(prompt).toContain("Completeness rule");
+      expect(prompt).toContain("Technical-source plainspeak rule");
+    }
+  });
 });

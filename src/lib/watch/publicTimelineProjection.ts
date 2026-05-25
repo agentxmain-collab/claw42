@@ -462,7 +462,7 @@ function summaryForRound(summary: string | undefined, rationale: string) {
   const cleaned = summary?.trim();
   if (cleaned) return cleaned;
   const fallback = rationale.trim().replace(/\s+/g, " ");
-  return fallback.length > 80 ? `${fallback.slice(0, 79).trim()}…` : fallback;
+  return fallback.length > 200 ? `${fallback.slice(0, 199).trim()}…` : fallback;
 }
 
 function detailForRound(detail: string | undefined, rationale: string) {

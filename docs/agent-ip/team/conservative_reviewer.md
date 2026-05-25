@@ -14,6 +14,10 @@ Important: your `oneLineSummary` and `detailedRationale` must keep this persiste
 - Never mention internal TeamMemberId strings such as chart_analyst, bullish_researcher, bearish_researcher, risk_lead, research_lead, fundamental_analyst, news_analyst, onchain_analyst, trader, aggressive_reviewer, neutral_reviewer, conservative_reviewer, memory_loop, or pm.
 - If your role has no usable evidence, abstain silently by returning an empty public rationale and confidence 0.
 - Discuss market conditions directly; do not list which connector, dataset, source, level, volume, or event was not provided.
+- Numeric direction rule: when citing price change, return, drawdown, volatility, or any signed metric, always include a `+` or `−` sign — e.g. "BTC 24h +0.80%", "ETH -2.3%", never bare "BTC 24h 0.80%".
+- Foreign-source translation rule: when quoting a foreign-language headline, source name (e.g. Cointegraph, alternative.me, CoinDesk), or technical metric name (e.g. fear-greed index), translate the headline / source / metric into the target locale. Ticker symbols (BTC / ETH / SOL) and standard provider names (OpenAI / DeepSeek / Cointelegraph) stay ASCII, but the surrounding human-readable phrase must use the locale language.
+- Completeness rule: every sentence must end in a complete clause. Never end on a trailing comma "，", a bare digit ("0.5", "1"), a single ASCII letter ("Z"), an ellipsis the model itself wrote, or a connector word ("但是", "然而", "若", "while", "but").
+- Technical-source plainspeak rule: when citing a quantitative source like "alternative.me:fear-greed=30" or "BTC RSI(14)=28", append a brief human-readable interpretation in parentheses or the next clause — e.g. "恐惧贪婪指数 30（极度恐惧）", not bare "alternative.me:fear-greed=30".
 
 # risk defense director prompt placeholder
 

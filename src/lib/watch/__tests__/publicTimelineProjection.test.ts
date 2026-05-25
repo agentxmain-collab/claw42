@@ -568,6 +568,35 @@ describe("publicTimelineProjection", () => {
     expectNoInternalTeamIds(event.payload);
   });
 
+  it("keeps public fallback rationales below the 200 character limit intact", () => {
+    const longRationale =
+      "资金回流改善，需求在七六零零零附近保持有序，风险控制清晰，团队继续跟踪关键支撑和资金流同步增强，公开卡片应完整保留这一段中等长度文字，并让用户看到完整判断而不是被八十字阈值提前截断。";
+    expect(longRationale.length).toBeGreaterThan(80);
+    expect(longRationale.length).toBeLessThan(200);
+
+    const record: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-long-fallback-rationale",
+      analystInputs: [
+        {
+          memberId: "fundamental_analyst",
+          direction: "long",
+          confidence: 0.7,
+          rationale: longRationale,
+          evidenceIds: ["ev_long"],
+        },
+      ],
+    };
+
+    const event = projectDecisionRecordToPublicEvent(record);
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.rationaleByAgent?.[publicAgent("fundamental_analyst")]).toBe(
+      longRationale,
+    );
+    expect(event.payload.rounds?.[0]?.oneLineSummary).toBe(longRationale);
+  });
+
   it("does not project partial PM stage records into the public timeline", () => {
     const partialRecord: StrategyDecisionRecord = {
       ...decisionRecord,
