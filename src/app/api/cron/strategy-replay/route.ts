@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { normalizeNewsItem } from "@/lib/news/normalizer";
-import { fetchNewsWithChain } from "@/lib/news/sourceChain";
+import { fetchNewsFromAllSources, fetchNewsWithChain } from "@/lib/news/sourceChain";
+import { buildNewsDrivenCandidates } from "@/lib/news/symbolExtractor";
 import { getNewsSourceHealthSnapshot } from "@/lib/news/sourceHealth";
 import { tryOrchestrateNewsDebate, listNewsDebates } from "@/lib/debateOrchestrator";
 import { getCoinPool } from "@/lib/marketDataCache";
@@ -79,6 +80,10 @@ export async function GET(request: NextRequest) {
 
   const now = Date.now();
   const { items, servedBy, fellBackFrom } = await fetchNewsWithChain({ limit: 8 });
+  const newsDrivenSourceResult = await fetchNewsFromAllSources({ limitPerSource: 4 }).catch(() => ({
+    items: [],
+    fellBackFrom: [],
+  }));
   const debates = [];
   const normalizedItems: NewsItem[] = [];
 
@@ -98,6 +103,14 @@ export async function GET(request: NextRequest) {
     debates.push(debate);
     if (debates.length >= 2) break;
   }
+  const normalizedNewsDrivenItems =
+    newsDrivenSourceResult.items.length > 0
+      ? await Promise.all(
+          newsDrivenSourceResult.items.map(({ item, sourceId }) =>
+            normalizeNewsItem(item, sourceId).catch(() => item),
+          ),
+        )
+      : [];
 
   const pool = await getCoinPool();
   const decisionRecordRead = await readCronDecisionRecords(locale);
@@ -126,6 +139,11 @@ export async function GET(request: NextRequest) {
   });
   const pmDecisionAudit: PmDecisionTriggerAuditEvent[] = [];
   const pmPartialStageUpdates = true;
+  const newsDrivenCandidates = await buildNewsDrivenCandidates({
+    newsItems: normalizedNewsDrivenItems,
+    now,
+    limit: INLINE_PM_DECISION_JOB_LIMIT,
+  });
 
   const residentPlan = residentPrewarmPlan({
     locale,
@@ -138,6 +156,7 @@ export async function GET(request: NextRequest) {
     allowFirstFillBackfill: decisionRecordRead.readable,
   });
   const residentCandidates = residentPlan.candidates;
+  const newsDrivenResults = [];
   const residentPrewarmResults = [];
   const inlineDeferredCandidateKeys: string[] = [];
   let inlinePmDecisionJobs = 0;
@@ -147,6 +166,28 @@ export async function GET(request: NextRequest) {
       inlinePmDecisionJobs += 1;
     }
   };
+  // news-first cron loop: each fromNewsEvidence pair owns one card and strategy.
+  for (const { candidate, newsItem } of newsDrivenCandidates) {
+    if (inlineLimitReached()) {
+      inlineDeferredCandidateKeys.push(candidate.candidateKey);
+      continue;
+    }
+    const result = await dispatchPmDecisionJob({
+      kind: "once",
+      triggerSource: "cron",
+      locale,
+      now,
+      candidate,
+      pool,
+      newsItems: [newsItem],
+      persistNewsItems: [newsItem],
+      partialStageUpdates: pmPartialStageUpdates,
+      useQueue: trigger !== "now",
+      onAudit: (event) => pmDecisionAudit.push(event),
+    });
+    newsDrivenResults.push(result);
+    trackInlineUsage(result);
+  }
   for (const candidate of residentCandidates) {
     if (inlineLimitReached()) {
       inlineDeferredCandidateKeys.push(candidate.candidateKey);
@@ -183,6 +224,7 @@ export async function GET(request: NextRequest) {
       });
   if (batchResult) trackInlineUsage(batchResult);
   const pmDecisionOutputs = [
+    ...newsDrivenResults.flatMap((result) => result.outputs),
     ...residentPrewarmResults.flatMap((result) => result.outputs),
     ...(batchResult?.outputs ?? []),
   ];
@@ -217,6 +259,16 @@ export async function GET(request: NextRequest) {
       used: inlinePmDecisionJobs,
       deferredResidentCandidateKeys: inlineDeferredCandidateKeys,
       deferredBatch: batchResult === null,
+    },
+    newsDriven: {
+      attemptedCandidateKeys: newsDrivenCandidates.map((item) => item.candidate.candidateKey),
+      generated: newsDrivenResults.reduce(
+        (total, result) => total + result.outputs.filter(isPublicPmDecisionOutput).length,
+        0,
+      ),
+      queued: newsDrivenResults.filter((result) => result.queueResult.mode === "queue").length,
+      sourceItemCount: newsDrivenSourceResult.items.length,
+      sourceFallbacks: newsDrivenSourceResult.fellBackFrom,
     },
     residentPrewarmCandidates: residentCandidates.map((candidate) => candidate.candidateKey),
     residentPrewarmAttempts: residentPrewarmResults.map((result) =>
@@ -335,6 +387,7 @@ async function dispatchPmDecisionJob({
   candidate,
   pool,
   newsItems,
+  persistNewsItems,
   partialStageUpdates,
   useQueue,
   onAudit,
@@ -346,6 +399,7 @@ async function dispatchPmDecisionJob({
   candidate?: DecisionCandidate;
   pool: Awaited<ReturnType<typeof getCoinPool>>;
   newsItems: NewsItem[];
+  persistNewsItems?: NewsItem[];
   partialStageUpdates: boolean;
   useQueue: boolean;
   onAudit: (event: PmDecisionTriggerAuditEvent) => void;
@@ -355,6 +409,7 @@ async function dispatchPmDecisionJob({
     triggerSource,
     locale,
     ...(candidate ? { candidate } : {}),
+    ...(persistNewsItems?.length ? { newsItems: persistNewsItems } : {}),
     now,
   });
   const queueResult = useQueue

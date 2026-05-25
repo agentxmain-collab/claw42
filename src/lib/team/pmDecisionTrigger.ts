@@ -454,3 +454,38 @@ export async function triggerPmDecisionPipelineBatch({
   }
   return outputs;
 }
+
+export async function triggerPmDecisionPipelineFromNewsEvidence({
+  triggerSource,
+  pool,
+  newsItem,
+  candidate,
+  locale = LEGACY_WATCH_LOCALE,
+  now = Date.now(),
+  partialStageUpdates = true,
+  bypassLock = false,
+  onAudit,
+}: {
+  triggerSource: "cron" | "user_visit_trigger";
+  pool?: CoinPoolPayload;
+  newsItem: NewsItem;
+  candidate: DecisionCandidate;
+  locale?: Locale;
+  now?: number;
+  partialStageUpdates?: boolean;
+  bypassLock?: boolean;
+  onAudit?: PmDecisionTriggerAuditSink;
+}) {
+  // news-driven / fromNewsEvidence entrypoint: each matched news item owns one PM candidate.
+  return triggerPmDecisionPipelineOnce({
+    triggerSource,
+    pool,
+    newsItems: [newsItem],
+    locale,
+    candidate,
+    now,
+    partialStageUpdates,
+    bypassLock,
+    onAudit,
+  });
+}

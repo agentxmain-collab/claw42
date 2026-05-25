@@ -73,6 +73,7 @@ export function compareDecisionCandidateOrder(
 export function decisionCandidateDedupeKey({
   locale,
   candidateType,
+  candidateKey,
   symbol,
 }: {
   locale: Locale;
@@ -85,6 +86,11 @@ export function decisionCandidateDedupeKey({
   const type = normalizeCandidateType(candidateType);
   if (type === "symbol") {
     const normalizedSymbol = normalizeCandidateSymbol(symbol);
+    const normalizedCandidateKey = normalizeCandidateKey(candidateKey);
+    const candidateKeyAsSymbol = normalizeCandidateSymbol(normalizedCandidateKey);
+    if (normalizedCandidateKey && normalizedSymbol && candidateKeyAsSymbol !== normalizedSymbol) {
+      return `${locale}:symbol:${normalizedCandidateKey}`;
+    }
     return normalizedSymbol ? `${locale}:${normalizedSymbol}` : null;
   }
 

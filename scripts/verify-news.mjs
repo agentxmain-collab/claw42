@@ -9,6 +9,9 @@ const sourceIds = [
   "rss-coindesk",
   "rss-cointelegraph",
   "rss-decrypt",
+  "foresightnews",
+  "rss-panews-featured",
+  "rss-panews-flash",
   "binance-announcements",
   "coinw-announcements",
 ];
@@ -27,6 +30,8 @@ const requiredFiles = [
   "src/lib/news/adapters/cryptocompare-adapter.ts",
   "src/lib/news/adapters/coingecko-news-adapter.ts",
   "src/lib/news/adapters/rss-adapter.ts",
+  "src/lib/news/adapters/foresightnewsAdapter.ts",
+  "src/lib/news/adapters/panewsRssAdapter.ts",
   "src/lib/news/adapters/binance-announcements-adapter.ts",
   "src/lib/news/adapters/coinw-announcements-adapter.ts",
   "src/lib/news/adapters/cryptopanic-adapter.ts",
@@ -97,6 +102,8 @@ for (const domain of [
   "https://www.coindesk.com",
   "https://cointelegraph.com",
   "https://decrypt.co",
+  "https://api.foresightnews.pro",
+  "https://www.panewslab.com",
   "https://www.binance.com",
   "https://cryptopanic.com",
   "https://api.qrserver.com",
@@ -109,8 +116,8 @@ for (const id of sourceIds) {
   check(`registry:${id}`, sourceRegistry.includes(`id: "${id}"`));
 }
 check(
-  "registry:cryptopanic-standby",
-  /["']?cryptopanic["']?:[\s\S]*status:\s*"standby"/.test(sourceRegistry),
+  "registry:cryptopanic-active",
+  /["']?cryptopanic["']?:[\s\S]*status:\s*"active"/.test(sourceRegistry),
 );
 check(
   "registry:coinw-planned",
@@ -123,6 +130,8 @@ const srcFiles = [
   "src/lib/news/adapters/cryptocompare-adapter.ts",
   "src/lib/news/adapters/coingecko-news-adapter.ts",
   "src/lib/news/adapters/rss-adapter.ts",
+  "src/lib/news/adapters/foresightnewsAdapter.ts",
+  "src/lib/news/adapters/panewsRssAdapter.ts",
   "src/lib/news/adapters/binance-announcements-adapter.ts",
   "src/lib/news/adapters/coinw-announcements-adapter.ts",
   "src/lib/news/adapters/cryptopanic-adapter.ts",
@@ -160,7 +169,8 @@ check("cron:/api/cron/strategy-replay", vercelJson.includes("/api/cron/strategy-
 
 check("env:CRYPTOCOMPARE_API_KEY", Boolean(process.env.CRYPTOCOMPARE_API_KEY), "warn");
 check("env:COINGECKO_DEMO_KEY", Boolean(process.env.COINGECKO_DEMO_KEY), "warn");
-check("env:CRYPTOPANIC_API_KEY standby", Boolean(process.env.CRYPTOPANIC_API_KEY), "warn");
+check("env:FORESIGHTNEWS_TOKEN", Boolean(process.env.FORESIGHTNEWS_TOKEN), "warn");
+check("env:CRYPTOPANIC_API_KEY active", Boolean(process.env.CRYPTOPANIC_API_KEY), "warn");
 check("rss:live-check skipped", process.env.VERIFY_NEWS_LIVE === "1", "warn");
 check("coinw:planned endpoint pending", false, "warn");
 

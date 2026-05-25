@@ -7,6 +7,7 @@ import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 
 const normalizeNewsItemMock = vi.hoisted(() => vi.fn());
 const fetchNewsWithChainMock = vi.hoisted(() => vi.fn());
+const fetchNewsFromAllSourcesMock = vi.hoisted(() => vi.fn());
 const tryOrchestrateNewsDebateMock = vi.hoisted(() => vi.fn());
 const listNewsDebatesMock = vi.hoisted(() => vi.fn());
 const getCoinPoolMock = vi.hoisted(() => vi.fn());
@@ -27,7 +28,29 @@ vi.mock("@/lib/news/normalizer", () => ({
 }));
 
 vi.mock("@/lib/news/sourceChain", () => ({
+  fetchNewsFromAllSources: fetchNewsFromAllSourcesMock,
   fetchNewsWithChain: fetchNewsWithChainMock,
+}));
+
+vi.mock("@/lib/coinw/futuresInstruments", () => ({
+  getCoinWFuturesInstrumentSet: vi.fn(
+    async () =>
+      new Map([
+        ["BTC", { symbol: "BTC", coinwPair: "BTC_USDT", status: "fallback" }],
+        ["ETH", { symbol: "ETH", coinwPair: "ETH_USDT", status: "fallback" }],
+        ["SOL", { symbol: "SOL", coinwPair: "SOL_USDT", status: "fallback" }],
+        ["HYPE", { symbol: "HYPE", coinwPair: "HYPE_USDT", status: "fallback" }],
+      ]),
+  ),
+  normalizeCoinWFuturesSymbol: (value: unknown) => {
+    if (typeof value !== "string") return null;
+    const symbol = value
+      .trim()
+      .replace(/^\$+/, "")
+      .replace(/_?USDT$/i, "")
+      .toUpperCase();
+    return symbol && /^[A-Z0-9]{2,16}$/.test(symbol) ? symbol : null;
+  },
 }));
 
 vi.mock("@/lib/debateOrchestrator", () => ({
@@ -177,6 +200,7 @@ describe("/api/cron/strategy-replay", () => {
     vi.setSystemTime(now);
     normalizeNewsItemMock.mockReset();
     fetchNewsWithChainMock.mockReset();
+    fetchNewsFromAllSourcesMock.mockReset();
     tryOrchestrateNewsDebateMock.mockReset();
     listNewsDebatesMock.mockReset();
     getCoinPoolMock.mockReset();
@@ -195,6 +219,10 @@ describe("/api/cron/strategy-replay", () => {
     fetchNewsWithChainMock.mockResolvedValue({
       items: [newsItem()],
       servedBy: "rss-coindesk",
+      fellBackFrom: [],
+    });
+    fetchNewsFromAllSourcesMock.mockResolvedValue({
+      items: [],
       fellBackFrom: [],
     });
     normalizeNewsItemMock.mockImplementation(async (item) => item);
@@ -416,6 +444,54 @@ describe("/api/cron/strategy-replay", () => {
       ttlMs: 5 * 60_000,
       waitMs: 0,
     });
+  });
+
+  it("runs news-first candidates and persists the matched source news with the job", async () => {
+    const sourceNews: NewsItem = {
+      id: "rss-panews-flash:btc-1",
+      title: "比特币现货 ETF 净流入回升",
+      url: "https://www.panewslab.com/news/btc-1",
+      source: "PANews 快讯",
+      currencies: [],
+      sentiment: "bullish",
+      publishedAt: now,
+    };
+    fetchNewsFromAllSourcesMock.mockResolvedValueOnce({
+      items: [{ item: sourceNews, sourceId: "rss-panews-flash" }],
+      fellBackFrom: ["foresightnews"],
+    });
+
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.newsDriven.attemptedCandidateKeys).toHaveLength(1);
+    expect(payload.newsDriven.attemptedCandidateKeys[0]).toContain("news-driven:BTC:");
+    expect(payload.newsDriven.sourceItemCount).toBe(1);
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        triggerSource: "cron",
+        candidate: expect.objectContaining({
+          candidateType: "symbol",
+          candidateKey: expect.stringContaining("news-driven:BTC:"),
+          symbol: "BTC",
+        }),
+        newsItems: [expect.objectContaining({ id: "rss-panews-flash:btc-1" })],
+      }),
+    );
+    expect(runPmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        candidate: expect.objectContaining({
+          candidateKey: expect.stringContaining("news-driven:BTC:"),
+        }),
+      }),
+      expect.objectContaining({
+        newsItems: [expect.objectContaining({ id: "rss-panews-flash:btc-1" })],
+      }),
+    );
   });
 
   it("redacts failed PM run errors in trigger=now diagnostics", async () => {

@@ -65,6 +65,14 @@ vi.mock("@/lib/news/adapters/cryptopanic-adapter", () => ({
   CryptoPanicAdapter: mockAdapter("cryptopanic"),
 }));
 
+vi.mock("@/lib/news/adapters/foresightnewsAdapter", () => ({
+  ForesightNewsAdapter: mockAdapter("foresightnews"),
+}));
+
+vi.mock("@/lib/news/adapters/panewsRssAdapter", () => ({
+  PanewsRssAdapter: mockAdapter("rss-panews"),
+}));
+
 describe("fetchNewsWithChain", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -89,10 +97,14 @@ describe("fetchNewsWithChain", () => {
       expect(result.items.every((item) => item.source === "Claw 42 Mock News")).toBe(true);
       expect(result.fellBackFrom).toEqual([
         "cryptocompare",
+        "foresightnews",
+        "rss-panews-flash",
         "coingecko",
+        "cryptopanic",
         "rss-coindesk",
         "rss-cointelegraph",
         "rss-decrypt",
+        "rss-panews-featured",
         "binance-announcements",
       ]);
       expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('"served_by":"mock"'));
@@ -101,19 +113,7 @@ describe("fetchNewsWithChain", () => {
     }
   });
 
-  it("does not include standby sources in the default fallback chain", async () => {
-    adapterState.availableBySource.set("cryptopanic", true);
-    adapterState.itemsBySource.set("cryptopanic", [sourceItem("cryptopanic")]);
-
-    const { fetchNewsWithChain } = await import("@/lib/news/sourceChain");
-    const result = await fetchNewsWithChain({ limit: 2 });
-
-    expect(result.servedBy).toBe("mock");
-    expect(result.fellBackFrom).not.toContain("cryptopanic");
-  });
-
-  it("uses standby sources only when explicitly enabled", async () => {
-    vi.stubEnv("NEWS_ENABLE_STANDBY_SOURCES", "1");
+  it("includes CryptoPanic in the active fallback chain", async () => {
     adapterState.availableBySource.set("cryptopanic", true);
     adapterState.itemsBySource.set("cryptopanic", [sourceItem("cryptopanic")]);
 
@@ -121,13 +121,15 @@ describe("fetchNewsWithChain", () => {
     const result = await fetchNewsWithChain({ limit: 2 });
 
     expect(result.servedBy).toBe("cryptopanic");
-    expect(result.items).toEqual([expect.objectContaining({ source: "cryptopanic" })]);
-    expect(result.fellBackFrom).toContain("binance-announcements");
-    expect(result.fellBackFrom).not.toContain("cryptopanic");
+    expect(result.fellBackFrom).toEqual([
+      "cryptocompare",
+      "foresightnews",
+      "rss-panews-flash",
+      "coingecko",
+    ]);
   });
 
-  it("honors a standby preferred source when standby sources are enabled", async () => {
-    vi.stubEnv("NEWS_ENABLE_STANDBY_SOURCES", "1");
+  it("honors a preferred active fallback source", async () => {
     vi.stubEnv("NEWS_PRIMARY_SOURCE", "cryptopanic");
     adapterState.availableBySource.set("cryptocompare", true);
     adapterState.itemsBySource.set("cryptocompare", [sourceItem("cryptocompare")]);
@@ -155,9 +157,31 @@ describe("fetchNewsWithChain", () => {
 
       expect(result.servedBy).toBe("rss-coindesk");
       expect(result.items).toEqual([expect.objectContaining({ source: "rss-coindesk" })]);
-      expect(result.fellBackFrom).toEqual(["cryptocompare", "coingecko"]);
+      expect(result.fellBackFrom).toEqual([
+        "cryptocompare",
+        "foresightnews",
+        "rss-panews-flash",
+        "coingecko",
+        "cryptopanic",
+      ]);
     } finally {
       warnSpy.mockRestore();
     }
+  });
+
+  it("can fetch from every configured source without cross-source dedupe", async () => {
+    adapterState.availableBySource.set("cryptocompare", true);
+    adapterState.availableBySource.set("rss-panews-flash", true);
+    adapterState.itemsBySource.set("cryptocompare", [sourceItem("cryptocompare")]);
+    adapterState.itemsBySource.set("rss-panews-flash", [sourceItem("rss-panews-flash")]);
+
+    const { fetchNewsFromAllSources } = await import("@/lib/news/sourceChain");
+    const result = await fetchNewsFromAllSources({ limitPerSource: 2 });
+
+    expect(result.items).toEqual([
+      expect.objectContaining({ sourceId: "cryptocompare" }),
+      expect.objectContaining({ sourceId: "rss-panews-flash" }),
+    ]);
+    expect(result.fellBackFrom).toContain("foresightnews");
   });
 });

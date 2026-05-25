@@ -23,11 +23,28 @@ describe("getNewsSourceHealthSnapshot", () => {
     expect(health.find((source) => source.id === "coingecko")).toMatchObject({
       id: "coingecko",
       inFetchChain: true,
+      fetchChainRank: 3,
+      authRequired: true,
+      authConfigured: false,
+      availableByConfig: false,
+      unavailableReason: "missing_env",
+    });
+    expect(health.find((source) => source.id === "foresightnews")).toMatchObject({
+      id: "foresightnews",
+      inFetchChain: true,
       fetchChainRank: 1,
       authRequired: true,
       authConfigured: false,
       availableByConfig: false,
       unavailableReason: "missing_env",
+    });
+    expect(health.find((source) => source.id === "rss-panews-flash")).toMatchObject({
+      id: "rss-panews-flash",
+      inFetchChain: true,
+      fetchChainRank: 2,
+      authRequired: false,
+      authConfigured: true,
+      availableByConfig: true,
     });
     expect(health.find((source) => source.id === "rss-coindesk")).toMatchObject({
       id: "rss-coindesk",
@@ -37,9 +54,9 @@ describe("getNewsSourceHealthSnapshot", () => {
     });
     expect(health.find((source) => source.id === "cryptopanic")).toMatchObject({
       id: "cryptopanic",
-      inFetchChain: false,
-      fetchChainRank: null,
-      unavailableReason: "standby_disabled",
+      inFetchChain: true,
+      fetchChainRank: 4,
+      unavailableReason: "missing_env",
     });
     expect(health.find((source) => source.id === "coinw-announcements")).toMatchObject({
       id: "coinw-announcements",

@@ -6,7 +6,10 @@ export type NewsSourceId =
   | "rss-cointelegraph"
   | "rss-decrypt"
   | "binance-announcements"
-  | "coinw-announcements";
+  | "coinw-announcements"
+  | "foresightnews"
+  | "rss-panews-featured"
+  | "rss-panews-flash";
 
 export type SourceRole = "primary" | "fallback" | "specialty" | "standby" | "optional";
 
@@ -62,8 +65,8 @@ export const NEWS_SOURCE_REGISTRY: Record<NewsSourceId, NewsSourceConfig> = {
   },
   cryptopanic: {
     id: "cryptopanic",
-    status: "standby",
-    role: "standby",
+    status: "active",
+    role: "fallback",
     displayName: "CryptoPanic",
     endpoint: "https://cryptopanic.com/api/v1/posts/",
     authMode: "apiKey",
@@ -105,6 +108,41 @@ export const NEWS_SOURCE_REGISTRY: Record<NewsSourceId, NewsSourceConfig> = {
     cspHosts: ["https://decrypt.co"],
     attribution: "Source: Decrypt",
   },
+  foresightnews: {
+    id: "foresightnews",
+    status: "active",
+    role: "primary",
+    displayName: "ForesightNews",
+    endpoint: "https://api.foresightnews.pro/v1/outapi/news",
+    authMode: "apiKey",
+    envKey: "FORESIGHTNEWS_TOKEN",
+    rateLimitPerMin: 20,
+    fields: { sentimentNative: false, currenciesNative: true, votesNative: false },
+    cspHosts: ["https://api.foresightnews.pro"],
+    attribution: "Source: ForesightNews",
+  },
+  "rss-panews-featured": {
+    id: "rss-panews-featured",
+    status: "active",
+    role: "fallback",
+    displayName: "PANews 精选",
+    endpoint: "https://www.panewslab.com/rss.xml?lang=zh&type=NORMAL&featured=true",
+    authMode: "none",
+    fields: { sentimentNative: false, currenciesNative: false, votesNative: false },
+    cspHosts: ["https://www.panewslab.com"],
+    attribution: "Source: PANews",
+  },
+  "rss-panews-flash": {
+    id: "rss-panews-flash",
+    status: "active",
+    role: "primary",
+    displayName: "PANews 快讯",
+    endpoint: "https://www.panewslab.com/rss.xml?lang=zh&type=NEWS",
+    authMode: "none",
+    fields: { sentimentNative: false, currenciesNative: false, votesNative: false },
+    cspHosts: ["https://www.panewslab.com"],
+    attribution: "Source: PANews",
+  },
   "binance-announcements": {
     id: "binance-announcements",
     status: "active",
@@ -145,6 +183,9 @@ export const CRYPTOPANIC_SOURCE = NEWS_SOURCE_REGISTRY.cryptopanic;
 export const RSS_COINDESK_SOURCE = NEWS_SOURCE_REGISTRY["rss-coindesk"];
 export const RSS_COINTELEGRAPH_SOURCE = NEWS_SOURCE_REGISTRY["rss-cointelegraph"];
 export const RSS_DECRYPT_SOURCE = NEWS_SOURCE_REGISTRY["rss-decrypt"];
+export const FORESIGHTNEWS_SOURCE = NEWS_SOURCE_REGISTRY.foresightnews;
+export const RSS_PANEWS_FEATURED_SOURCE = NEWS_SOURCE_REGISTRY["rss-panews-featured"];
+export const RSS_PANEWS_FLASH_SOURCE = NEWS_SOURCE_REGISTRY["rss-panews-flash"];
 export const BINANCE_ANNOUNCEMENTS_SOURCE = NEWS_SOURCE_REGISTRY["binance-announcements"];
 export const COINW_ANNOUNCEMENTS_SOURCE = NEWS_SOURCE_REGISTRY["coinw-announcements"];
 

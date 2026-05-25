@@ -109,6 +109,30 @@ describe("mergePublicTimelineEvents", () => {
     ).toEqual(["pm:BILL:1778923198583", "pm:HYPE:1778908242659"]);
   });
 
+  it("keeps separate news-driven symbol cards for different source news", () => {
+    const first = pmDecision({
+      recordId: "pm:BTC:news-a",
+      symbol: "BTC",
+      ts: now,
+      candidateType: "symbol",
+      candidateKey: "news-driven:BTC:source-a",
+    });
+    const second = pmDecision({
+      recordId: "pm:BTC:news-b",
+      symbol: "BTC",
+      ts: now - 1,
+      candidateType: "symbol",
+      candidateKey: "news-driven:BTC:source-b",
+    });
+
+    expect(publicTimelinePmCandidateKey(first)).toBe("zh_CN:symbol:news-driven:BTC:source-a");
+    expect(
+      mergePublicTimelineEvents([first, second]).map((event) =>
+        event.payload.kind === "pm_decision" ? event.payload.recordId : event.id,
+      ),
+    ).toEqual(["pm:BTC:news-a", "pm:BTC:news-b"]);
+  });
+
   it("uses record id as a stable tie-breaker for same-timestamp PM decisions", () => {
     const beta = pmDecision({ recordId: "pm:ETH:beta", symbol: "ETH", ts: now });
     const alpha = pmDecision({ recordId: "pm:BTC:alpha", symbol: "BTC", ts: now });

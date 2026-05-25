@@ -4,6 +4,7 @@ import { kv } from "@vercel/kv";
 import type { Locale } from "@/i18n/types";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
+import type { NewsItem } from "@/lib/types";
 
 type KvClient = {
   set(key: string, value: unknown, options?: { ex?: number }): Promise<unknown>;
@@ -27,6 +28,7 @@ export interface PmDecisionJobRecord {
   idempotencyKey: string;
   candidate: DecisionCandidate | null;
   symbol: string | null;
+  newsItems?: NewsItem[];
   createdAt: string;
   updatedAt: string;
   startedAt: string | null;
@@ -55,6 +57,7 @@ export async function enqueuePmDecisionJob({
   locale = LEGACY_WATCH_LOCALE,
   candidate = null,
   symbol = null,
+  newsItems = [],
   now = Date.now(),
   maxAttempts = DEFAULT_MAX_ATTEMPTS,
 }: {
@@ -63,6 +66,7 @@ export async function enqueuePmDecisionJob({
   locale?: Locale;
   candidate?: DecisionCandidate | null;
   symbol?: string | null;
+  newsItems?: NewsItem[];
   now?: number;
   maxAttempts?: number;
 }): Promise<PmDecisionJobRecord> {
@@ -90,6 +94,7 @@ export async function enqueuePmDecisionJob({
     idempotencyKey,
     candidate: candidate ? candidateSnapshot(candidate) : null,
     symbol: normalizedSymbol,
+    ...(newsItems.length > 0 ? { newsItems: normalizeNewsItemsSnapshot(newsItems) } : {}),
     createdAt,
     updatedAt: createdAt,
     startedAt: null,
@@ -300,7 +305,37 @@ function normalizeJob(value: unknown): PmDecisionJobRecord | null {
             : {}),
         }
       : null,
+    ...(Array.isArray(value.newsItems) && value.newsItems.length > 0
+      ? { newsItems: normalizeNewsItemsSnapshot(value.newsItems) }
+      : {}),
   };
+}
+
+function normalizeNewsItemsSnapshot(items: NewsItem[]) {
+  return items
+    .flatMap((item) => {
+      if (!item || typeof item.id !== "string" || typeof item.title !== "string") return [];
+      return [
+        {
+          id: item.id,
+          title: item.title,
+          url: typeof item.url === "string" ? item.url : "",
+          source: typeof item.source === "string" ? item.source : "",
+          ...(typeof item.sourceDomain === "string" ? { sourceDomain: item.sourceDomain } : {}),
+          currencies: Array.isArray(item.currencies) ? item.currencies.map(String).slice(0, 5) : [],
+          sentiment:
+            item.sentiment === "bullish" || item.sentiment === "bearish"
+              ? item.sentiment
+              : "neutral",
+          publishedAt:
+            typeof item.publishedAt === "number" && Number.isFinite(item.publishedAt)
+              ? item.publishedAt
+              : Date.now(),
+          ...(item.votes ? { votes: item.votes } : {}),
+        } satisfies NewsItem,
+      ];
+    })
+    .slice(0, 3);
 }
 
 async function upsertLocalJob(job: PmDecisionJobRecord) {

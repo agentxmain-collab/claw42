@@ -6,9 +6,12 @@ import {
   COINW_ANNOUNCEMENTS_SOURCE,
   CRYPTOCOMPARE_SOURCE,
   CRYPTOPANIC_SOURCE,
+  FORESIGHTNEWS_SOURCE,
   getSourceChain,
   getStandbySources,
   isNewsSourceId,
+  RSS_PANEWS_FEATURED_SOURCE,
+  RSS_PANEWS_FLASH_SOURCE,
   RSS_COINDESK_SOURCE,
   RSS_COINTELEGRAPH_SOURCE,
   RSS_DECRYPT_SOURCE,
@@ -22,6 +25,8 @@ import { CoinGeckoNewsAdapter } from "@/lib/news/adapters/coingecko-news-adapter
 import { CoinWAnnouncementsAdapter } from "@/lib/news/adapters/coinw-announcements-adapter";
 import { CryptoCompareAdapter } from "@/lib/news/adapters/cryptocompare-adapter";
 import { CryptoPanicAdapter } from "@/lib/news/adapters/cryptopanic-adapter";
+import { ForesightNewsAdapter } from "@/lib/news/adapters/foresightnewsAdapter";
+import { PanewsRssAdapter } from "@/lib/news/adapters/panewsRssAdapter";
 import { RssNewsAdapter } from "@/lib/news/adapters/rss-adapter";
 import type { NewsAdapter } from "@/lib/news/adapters/types";
 import mockNews from "./mock-news.json";
@@ -34,12 +39,25 @@ export interface NewsChainResult {
   fellBackFrom: NewsSourceId[];
 }
 
+export interface MultiSourceNewsItem {
+  item: NewsItem;
+  sourceId: NewsSourceId;
+}
+
+export interface MultiSourceNewsResult {
+  items: MultiSourceNewsItem[];
+  fellBackFrom: NewsSourceId[];
+}
+
 const ADAPTERS = new Map<NewsSourceId, NewsAdapter>([
   [CRYPTOCOMPARE_SOURCE.id, new CryptoCompareAdapter()],
   [COINGECKO_SOURCE.id, new CoinGeckoNewsAdapter()],
   [RSS_COINDESK_SOURCE.id, new RssNewsAdapter(RSS_COINDESK_SOURCE)],
   [RSS_COINTELEGRAPH_SOURCE.id, new RssNewsAdapter(RSS_COINTELEGRAPH_SOURCE)],
   [RSS_DECRYPT_SOURCE.id, new RssNewsAdapter(RSS_DECRYPT_SOURCE)],
+  [FORESIGHTNEWS_SOURCE.id, new ForesightNewsAdapter()],
+  [RSS_PANEWS_FEATURED_SOURCE.id, new PanewsRssAdapter(RSS_PANEWS_FEATURED_SOURCE)],
+  [RSS_PANEWS_FLASH_SOURCE.id, new PanewsRssAdapter(RSS_PANEWS_FLASH_SOURCE)],
   [BINANCE_ANNOUNCEMENTS_SOURCE.id, new BinanceAnnouncementsAdapter()],
   [COINW_ANNOUNCEMENTS_SOURCE.id, new CoinWAnnouncementsAdapter()],
   [CRYPTOPANIC_SOURCE.id, new CryptoPanicAdapter()],
@@ -151,4 +169,32 @@ export async function fetchNewsWithChain(opts: { limit: number }): Promise<NewsC
     servedBy: "mock",
     fellBackFrom,
   };
+}
+
+export async function fetchNewsFromAllSources(opts: {
+  limitPerSource: number;
+}): Promise<MultiSourceNewsResult> {
+  const fellBackFrom: NewsSourceId[] = [];
+  const items: MultiSourceNewsItem[] = [];
+
+  for (const source of chainSources()) {
+    const adapter = ADAPTERS.get(source.id);
+    if (!adapter || !adapter.isAvailable()) {
+      fellBackFrom.push(source.id);
+      continue;
+    }
+    const sourceItems = await fetchFromAdapter(adapter, opts.limitPerSource);
+    if (sourceItems.length === 0) {
+      fellBackFrom.push(source.id);
+      continue;
+    }
+    items.push(...sourceItems.map((item) => ({ item, sourceId: source.id })));
+  }
+
+  recordNewsEvent("news_multi_source_fetched", {
+    source_count: new Set(items.map((entry) => entry.sourceId)).size,
+    item_count: items.length,
+    fellback_count: fellBackFrom.length,
+  });
+  return { items, fellBackFrom };
 }
