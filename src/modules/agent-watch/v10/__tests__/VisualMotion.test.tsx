@@ -6,6 +6,7 @@ import zhCN from "@/i18n/dicts/zh_CN.json";
 import type { Dict } from "@/i18n/types";
 import { FlowPanel } from "../FlowPanel";
 import { Hero } from "../Hero";
+import { InlineAvatarSvg } from "../InlineAvatarSvg";
 import { MarketAnalysisPanel } from "../MarketAnalysisPanel";
 import { dispatchV10DemoTopics } from "../demoTopics";
 
@@ -33,15 +34,33 @@ describe("DispatchConsoleV10 visual motion", () => {
 
     expect(countMatches(heroHtml, /data-inline-avatar="/g)).toBe(11);
     expect(heroHtml).not.toContain("inline-avatar-eyes");
-    expect(countMatches(heroHtml, /class="avatar-eye"/g)).toBeGreaterThanOrEqual(11);
+    expect(heroHtml).not.toContain('class="avatar-eye"');
+    expect(countMatches(heroHtml, /class="avatar-eye avatar-eye-symbol"/g)).toBeGreaterThanOrEqual(
+      11,
+    );
     expect(countMatches(flowHtml, /data-inline-avatar="/g)).toBe(
       countMatches(flowHtml, /class="avatar-svg"/g),
     );
     expect(flowHtml).not.toContain("inline-avatar-eyes");
-    expect(countMatches(flowHtml, /class="avatar-eye"/g)).toBeGreaterThanOrEqual(11);
+    expect(flowHtml).not.toContain('class="avatar-eye"');
+    expect(countMatches(flowHtml, /class="avatar-eye avatar-eye-symbol"/g)).toBeGreaterThanOrEqual(
+      11,
+    );
     expect(countMatches(marketHtml, /class="market-panel-avatar-img"/g)).toBeGreaterThan(0);
     expect(marketHtml).toContain("workbench-core-robot");
     expect(marketHtml).toContain('class="eye right"');
+  });
+
+  test("keeps core bot ellipse eyes distinct from role-specific symbol eyes", () => {
+    const coreHtml = renderToStaticMarkup(<InlineAvatarSvg className="avatar-svg" name="core" />);
+    const roleHtml = renderToStaticMarkup(
+      <InlineAvatarSvg className="avatar-svg" name="fundamental" />,
+    );
+
+    expect(coreHtml).not.toContain('class="avatar-eye"');
+    expect(countMatches(coreHtml, /class="avatar-eye avatar-eye-ellipse"/g)).toBe(2);
+    expect(roleHtml).not.toContain('class="avatar-eye"');
+    expect(countMatches(roleHtml, /class="avatar-eye avatar-eye-symbol"/g)).toBe(2);
   });
 
   test("defines shared bot blink timing and hover acceleration", () => {

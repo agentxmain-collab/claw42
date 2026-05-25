@@ -33,7 +33,8 @@ const inlineAvatarSvgByName: Record<InlineAvatarName, string> = {
 function withAvatarEyeBlinkTargets(svg: string) {
   return svg
     .replace(/(<ellipse id="(?:left|right)-eye")/g, '$1 class="avatar-eye"')
-    .replace(/<g transform="/g, '<g class="avatar-eye" transform="');
+    .replace(/class="avatar-eye"/g, 'class="avatar-eye avatar-eye-ellipse"')
+    .replace(/<g transform="/g, '<g class="avatar-eye avatar-eye-symbol" transform="');
 }
 
 const inlineAvatarSvgWithBlinkTargets = Object.fromEntries(
