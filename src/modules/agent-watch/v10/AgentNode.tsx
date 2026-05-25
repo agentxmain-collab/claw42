@@ -9,11 +9,9 @@ import type { HeroAgentVisual } from "./types";
 export function AgentNode({
   agent,
   role,
-  readoutLabels,
 }: {
   agent: HeroAgentVisual;
   role: DispatchV10Dict["roles"][HeroAgentVisual["id"]];
-  readoutLabels: DispatchV10Dict["hero"]["readoutLabels"];
 }) {
   const style = {
     left: agent.style.left,
@@ -44,15 +42,11 @@ export function AgentNode({
         <span className="scan" />
       </div>
       <div className="readout">
-        <span className="lbl">{readoutLabels.id}</span> <b>{agent.readoutId}</b>
+        <b>{agent.readoutId}</b>
         <br />
-        <span className="lbl">{readoutLabels.role}</span> {role.readoutRole}
+        {role.readoutRole}
         <br />
-        <span className="lbl">{readoutLabels.stat}</span> <b>{role.stat}</b>
-      </div>
-      <div className="tip-card">
-        <div className="nm">{role.name}</div>
-        <span className="rl">{agent.label}</span>
+        <b>{role.stat}</b>
       </div>
     </div>
   );

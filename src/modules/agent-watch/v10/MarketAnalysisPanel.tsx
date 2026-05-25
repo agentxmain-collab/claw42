@@ -20,6 +20,7 @@ import type {
   DispatchStageStatus,
 } from "../v9/types";
 import v9Styles from "../v9/dispatchConsoleV9.module.css";
+import { CoreRobot } from "./CoreRobot";
 import { InlineAvatarSvg, type InlineAvatarName } from "./InlineAvatarSvg";
 import { v9AgentToV10Role } from "./staticContent";
 
@@ -814,7 +815,7 @@ export function MarketAnalysisPanel({
         <div className="chat-shell-head">
           <div className="cs-head-left">
             <div className="cs-icon" aria-hidden="true">
-              <InlineAvatarSvg className="cs-icon-avatar" name="core" />
+              <CoreRobot className="workbench-core-robot" />
             </div>
             <div className="cs-icon-info">
               <div className="cs-title">{dict.market.title}</div>

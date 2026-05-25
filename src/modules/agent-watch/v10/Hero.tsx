@@ -73,7 +73,7 @@ export function Hero({
         />
       </div>
 
-      <Constellation dict={dict} active={activeView === "flow"} />
+      <Constellation dict={dict} active />
     </section>
   );
 }
