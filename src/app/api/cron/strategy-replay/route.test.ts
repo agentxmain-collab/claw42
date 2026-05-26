@@ -459,6 +459,29 @@ describe("/api/cron/strategy-replay", () => {
     });
   });
 
+  it("keeps trigger=now verification resident-first and bounded to one inline PM job", async () => {
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.pmDecisionInlineLimit.limit).toBe(1);
+    expect(payload.pmDecisionInlineLimit.used).toBe(1);
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledTimes(1);
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "once",
+        triggerSource: "cron",
+        candidate: expect.objectContaining({
+          candidateType: "market_overview",
+          candidateKey: "market_overview:utc:zh_CN:2026-05-13T18",
+        }),
+      }),
+    );
+    expect(runPmDecisionJobMock).toHaveBeenCalledTimes(1);
+  });
+
   it("runs news-first candidates and persists the matched source news with the job", async () => {
     const sourceNews: NewsItem = {
       id: "rss-panews-flash:btc-1",
@@ -474,9 +497,7 @@ describe("/api/cron/strategy-replay", () => {
       fellBackFrom: ["foresightnews"],
     });
 
-    const response = await GET(
-      new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),
-    );
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
     const payload = await response.json();
 
     expect(response.status).toBe(200);

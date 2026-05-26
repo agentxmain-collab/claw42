@@ -40,6 +40,7 @@ const STRATEGY_REPLAY_TRIGGER_LOCK_KEY = "cron:strategy-replay:trigger-now";
 const STRATEGY_REPLAY_TRIGGER_LOCK_MS = 5 * 60_000;
 const PM_RESOLUTION_RECORD_LIMIT = 100;
 const INLINE_PM_DECISION_JOB_LIMIT = CRON_MAX_SYMBOL_CARDS_PER_RUN;
+const MANUAL_TRIGGER_INLINE_PM_DECISION_JOB_LIMIT = 1;
 
 function isAuthorized(request: NextRequest) {
   if (process.env.VERCEL_ENV === "preview") return true;
@@ -164,52 +165,72 @@ export async function GET(request: NextRequest) {
   const residentPrewarmResults = [];
   const inlineDeferredCandidateKeys: string[] = [];
   let inlinePmDecisionJobs = 0;
-  const inlineLimitReached = () => inlinePmDecisionJobs >= INLINE_PM_DECISION_JOB_LIMIT;
+  const inlineJobLimit =
+    trigger === "now" ? MANUAL_TRIGGER_INLINE_PM_DECISION_JOB_LIMIT : INLINE_PM_DECISION_JOB_LIMIT;
+  const inlineLimitReached = () => inlinePmDecisionJobs >= inlineJobLimit;
   const trackInlineUsage = (result: DispatchPmDecisionJobResult) => {
     if (shouldSpendInlineSlot(result)) {
       inlinePmDecisionJobs += 1;
     }
   };
-  // news-first cron loop: each fromNewsEvidence pair owns one card and strategy.
-  for (const { candidate, newsItem } of newsDrivenCandidates) {
+  type DispatchPlanItem =
+    | { kind: "news-driven"; candidate: DecisionCandidate; newsItem: NewsItem }
+    | { kind: "resident-prewarm"; candidate: DecisionCandidate };
+  const newsDrivenDispatchPlan: DispatchPlanItem[] = newsDrivenCandidates.map(
+    ({ candidate, newsItem }) => ({
+      kind: "news-driven",
+      candidate,
+      newsItem,
+    }),
+  );
+  const residentPrewarmDispatchPlan: DispatchPlanItem[] = residentCandidates.map((candidate) => ({
+    kind: "resident-prewarm",
+    candidate,
+  }));
+  // Scheduled cron remains news-first. Manual preview verification is resident-first and bounded
+  // so one trigger cannot spend the full serverless window on many sequential PM jobs.
+  const dispatchPlan =
+    trigger === "now"
+      ? [...residentPrewarmDispatchPlan, ...newsDrivenDispatchPlan]
+      : [...newsDrivenDispatchPlan, ...residentPrewarmDispatchPlan];
+
+  for (const item of dispatchPlan) {
     if (inlineLimitReached()) {
-      inlineDeferredCandidateKeys.push(candidate.candidateKey);
+      inlineDeferredCandidateKeys.push(item.candidate.candidateKey);
       continue;
     }
-    const result = await dispatchPmDecisionJob({
-      kind: "once",
-      triggerSource: "cron",
-      locale,
-      now,
-      candidate,
-      pool,
-      newsItems: [newsItem],
-      persistNewsItems: [newsItem],
-      partialStageUpdates: pmPartialStageUpdates,
-      useQueue: trigger !== "now",
-      onAudit: (event) => pmDecisionAudit.push(event),
-    });
-    newsDrivenResults.push(result);
-    trackInlineUsage(result);
-  }
-  for (const candidate of residentCandidates) {
-    if (inlineLimitReached()) {
-      inlineDeferredCandidateKeys.push(candidate.candidateKey);
-      continue;
+    const result =
+      item.kind === "news-driven"
+        ? await dispatchPmDecisionJob({
+            kind: "once",
+            triggerSource: "cron",
+            locale,
+            now,
+            candidate: item.candidate,
+            pool,
+            newsItems: [item.newsItem],
+            persistNewsItems: [item.newsItem],
+            partialStageUpdates: pmPartialStageUpdates,
+            useQueue: trigger !== "now",
+            onAudit: (event) => pmDecisionAudit.push(event),
+          })
+        : await dispatchPmDecisionJob({
+            kind: "once",
+            triggerSource: "cron",
+            locale,
+            now,
+            candidate: item.candidate,
+            pool,
+            newsItems: normalizedItems,
+            partialStageUpdates: pmPartialStageUpdates,
+            useQueue: trigger !== "now",
+            onAudit: (event) => pmDecisionAudit.push(event),
+          });
+    if (item.kind === "news-driven") {
+      newsDrivenResults.push(result);
+    } else {
+      residentPrewarmResults.push(result);
     }
-    const result = await dispatchPmDecisionJob({
-      kind: "once",
-      triggerSource: "cron",
-      locale,
-      now,
-      candidate,
-      pool,
-      newsItems: normalizedItems,
-      partialStageUpdates: pmPartialStageUpdates,
-      useQueue: trigger !== "now",
-      onAudit: (event) => pmDecisionAudit.push(event),
-    });
-    residentPrewarmResults.push(result);
     trackInlineUsage(result);
   }
 
@@ -259,7 +280,7 @@ export async function GET(request: NextRequest) {
     pmDecisionQueueMessageId:
       batchResult?.queueResult.mode === "queue" ? batchResult.queueResult.messageId : undefined,
     pmDecisionInlineLimit: {
-      limit: INLINE_PM_DECISION_JOB_LIMIT,
+      limit: inlineJobLimit,
       used: inlinePmDecisionJobs,
       deferredResidentCandidateKeys: inlineDeferredCandidateKeys,
       deferredBatch: batchResult === null,
