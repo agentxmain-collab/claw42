@@ -31,7 +31,7 @@ export function createClient(config?: { url?: string; token?: string }) {
   return new Redis({
     url,
     token,
-    cache: "default",
+    cache: "no-store",
     enableAutoPipelining: true,
   });
 }
