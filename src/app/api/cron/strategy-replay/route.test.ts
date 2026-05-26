@@ -375,6 +375,19 @@ describe("/api/cron/strategy-replay", () => {
     expect(runPmDecisionJobMock).not.toHaveBeenCalled();
   });
 
+  it("allows preview cron verification without sharing the cron secret", async () => {
+    vi.stubEnv("CRON_SECRET", "test-cron-secret");
+    vi.stubEnv("VERCEL_ENV", "preview");
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(fetchNewsWithChainMock).toHaveBeenCalled();
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalled();
+  });
+
   it("returns PM decision audit details for trigger=now verification", async () => {
     const response = await GET(
       new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),

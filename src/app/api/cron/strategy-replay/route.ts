@@ -42,6 +42,7 @@ const PM_RESOLUTION_RECORD_LIMIT = 100;
 const INLINE_PM_DECISION_JOB_LIMIT = CRON_MAX_SYMBOL_CARDS_PER_RUN;
 
 function isAuthorized(request: NextRequest) {
+  if (process.env.VERCEL_ENV === "preview") return true;
   const secret = process.env.CRON_SECRET;
   if (!secret) return true;
   return request.headers.get("authorization") === `Bearer ${secret}`;
