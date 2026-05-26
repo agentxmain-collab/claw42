@@ -617,7 +617,7 @@ describe("/api/cron/strategy-replay", () => {
     expect(payload.generatedHiddenPmDecisions).toBe(1);
   });
 
-  it("runs up to three inline PM jobs when queue mode is unavailable", async () => {
+  it("runs up to eight inline PM jobs when queue mode is unavailable", async () => {
     const prewarmNow = Date.parse("2026-05-13T18:00:00.000Z");
     vi.setSystemTime(prewarmNow);
 
@@ -631,7 +631,7 @@ describe("/api/cron/strategy-replay", () => {
       "hotspot:utc:zh_CN:2026-05-13T18:market",
     ]);
     expect(payload.pmDecisionInlineLimit).toEqual({
-      limit: 3,
+      limit: 8,
       used: 3,
       deferredResidentCandidateKeys: [],
       deferredBatch: false,
@@ -728,7 +728,7 @@ describe("/api/cron/strategy-replay", () => {
     expect(response.status).toBe(200);
     expect(payload.residentPrewarmGenerated).toBe(1);
     expect(payload.pmDecisionInlineLimit).toEqual({
-      limit: 3,
+      limit: 8,
       used: 2,
       deferredResidentCandidateKeys: [],
       deferredBatch: false,
@@ -800,7 +800,7 @@ describe("/api/cron/strategy-replay", () => {
     expect(response.status).toBe(200);
     expect(payload.residentPrewarmGenerated).toBe(1);
     expect(payload.pmDecisionInlineLimit).toEqual({
-      limit: 3,
+      limit: 8,
       used: 3,
       deferredResidentCandidateKeys: [],
       deferredBatch: false,

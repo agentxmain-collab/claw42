@@ -191,6 +191,71 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     expect(input.recentNewsEvidence.map((evidence) => evidence.symbol)).toContainEqual(["ETH"]);
   });
 
+  it("runs cron candidates with symbol news even when no alert trigger fires", async () => {
+    const auditEvents: unknown[] = [];
+    const quietPool = {
+      ...pool(),
+      tickers: {
+        BTC: { price: 101000, change24h: 0.2 },
+        ETH: { price: 4200, change24h: 0.3 },
+        SOL: { price: 220, change24h: 0.4 },
+        USDT: { price: 1, change24h: 0.01 },
+      },
+      majors: [
+        { symbol: "BTC", price: 101000, change24h: 0.2, category: "majors" },
+        { symbol: "ETH", price: 4200, change24h: 0.3, category: "majors" },
+      ],
+      trending: [{ symbol: "SOL", price: 220, change24h: 0.4, category: "trending" }],
+    } satisfies CoinPoolPayload;
+
+    await triggerPmDecisionPipelineOnce({
+      triggerSource: "cron",
+      pool: quietPool,
+      newsItems: [
+        newsItem({
+          id: "news-btc-low",
+          title: "BTC market structure holds",
+          currencies: ["BTC"],
+          sentiment: "neutral",
+          votes: {
+            positive: 0,
+            negative: 0,
+            important: 0,
+          },
+        }),
+      ],
+      locale: "zh_CN",
+      now,
+      onAudit: (event) => auditEvents.push(event),
+    });
+
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
+    expect(input.candidate).toMatchObject({ candidateType: "symbol", symbol: "BTC" });
+    expect(input.importanceThreshold).toBe("low");
+    expect(auditEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "candidate_considered",
+          symbol: "BTC",
+          hasTrigger: false,
+        }),
+        expect.objectContaining({
+          type: "candidate_generated",
+          symbol: "BTC",
+        }),
+      ]),
+    );
+    expect(auditEvents).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "candidate_skipped",
+          reason: "no_trigger",
+        }),
+      ]),
+    );
+  });
+
   it("adds recent decision memory to the selection evidence sent into the PM prompt", async () => {
     readAllDecisionRecordsMock.mockResolvedValue([
       {

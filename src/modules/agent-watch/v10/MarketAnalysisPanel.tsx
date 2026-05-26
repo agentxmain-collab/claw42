@@ -319,66 +319,6 @@ function freshnessForTrade(topic: DispatchTopic) {
   return shouldBypassFreshnessForTrade(topic.strategy.action) ? undefined : topic.freshnessStatus;
 }
 
-function looksTruncated(value: string | undefined) {
-  if (!value) return false;
-  const trimmed = value.trim();
-  return (
-    /(?:…|\.\.\.)\s*$/.test(trimmed) ||
-    /\b[0-9]+\.\s*$/.test(trimmed) ||
-    /[，、,]\s*$/.test(trimmed) ||
-    /\b[A-Za-z]\.{0,3}\s*$/.test(trimmed)
-  );
-}
-
-function looksIncompleteSummary(value: string | undefined) {
-  if (!value) return false;
-  const text = value.trim();
-  return (
-    looksTruncated(text) ||
-    /(?:[0-9]+\.?|[A-Za-z]+|[，,、（(]|若|当|但|而|且|并|将|会|可|为|与|或|对|于)$/.test(text)
-  );
-}
-
-function normalizedLead(value: string) {
-  return value
-    .replace(/[，。,.；;：:\s]+$/g, "")
-    .replace(/\s+/g, "")
-    .slice(0, 24);
-}
-
-function fullerObservationCandidate(summary: string, candidates: string[]) {
-  const lead = normalizedLead(summary);
-  if (lead.length < 8) return null;
-  return candidates.find((candidate) => {
-    if (candidate.length <= summary.length + 40) return false;
-    return candidate.replace(/\s+/g, "").includes(lead);
-  });
-}
-
-function observationSummaryText(topic: DispatchTopic) {
-  const summary = topic.strategy.observationSummary?.trim();
-  const candidates = [
-    topic.explanation,
-    ...topic.messages.map((message) => message.detailedRationale ?? message.content),
-  ]
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
-  const sortedCandidates = [...candidates].sort((a, b) => b.length - a.length);
-
-  if (summary) {
-    if (!looksIncompleteSummary(summary)) return summary;
-    const fuller = fullerObservationCandidate(summary, sortedCandidates);
-    if (fuller) return fuller;
-  }
-
-  return (
-    sortedCandidates[0] ??
-    topic.strategy.observationSummary ??
-    topic.explanation ??
-    topic.strategy.meta
-  );
-}
-
 function formatCardFreshnessAge(topic: DispatchTopic, dict: DispatchV10Dict) {
   const ageMinutes = topic.freshnessStatus?.ageMinutes;
   if (typeof ageMinutes !== "number") return null;
@@ -411,7 +351,6 @@ function TopicHeadV10({
         : dict.market.statusActive;
   const freshnessAge = formatCardFreshnessAge(topic, dict);
   const staleAge = isStaleOrExpired(topic);
-  const newsItem = topic.newsItems?.[0];
 
   return (
     <div
@@ -445,19 +384,6 @@ function TopicHeadV10({
           {topic.title}
         </h2>
       </div>
-      {newsItem ? (
-        <div className="topic-news-summary">
-          <span className="topic-news-headline">{newsItem.headline}</span>
-          <span className="topic-news-meta">
-            {newsItem.source}
-            {newsItem.observedAt ? ` · ${newsItem.observedAt}` : ""}
-          </span>
-        </div>
-      ) : (
-        <div className="topic-news-summary topic-news-summary-empty">
-          <span className="topic-news-headline">{dict.market.noNews}</span>
-        </div>
-      )}
       {hasOriginalUrl(topic) ? (
         <a
           className="topic-original"
@@ -593,6 +519,7 @@ function TopicStrategyV10({
         }));
   const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderCoinWTrade);
   const coinwLinkType = canRenderCoinWTrade && topic.execution?.coinwPair ? "pair" : "generic";
+  const newsItem = topic.newsItems?.[0];
 
   return (
     <div
@@ -625,7 +552,19 @@ function TopicStrategyV10({
       {isObservationMode ? (
         <div className="observation-summary">
           <span className="lbl">{dict.market.observationSummaryLabel}</span>
-          <p>{observationSummaryText(topic)}</p>
+          {newsItem ? (
+            <p>
+              <span className="topic-news-headline">{newsItem.headline}</span>
+              <span className="topic-news-meta">
+                {newsItem.source}
+                {newsItem.observedAt ? ` · ${newsItem.observedAt}` : ""}
+              </span>
+            </p>
+          ) : (
+            <p>
+              <span className="topic-news-headline">{dict.market.noNews}</span>
+            </p>
+          )}
         </div>
       ) : (
         <>

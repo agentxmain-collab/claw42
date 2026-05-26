@@ -1347,4 +1347,53 @@ describe("runPmDecisionPipeline", () => {
     expect(generateTradeDecision).not.toHaveBeenCalled();
     expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
   });
+
+  it("skips symbol records before storage when generated strategy fields are incomplete", async () => {
+    const recordStrategyDecisionRecord = vi.fn(async (record) => record);
+    const appendWatchHistoryEntry = vi.fn();
+    const updateDecisionRecord = vi.fn();
+    const upsertDecisionRun = vi.fn();
+    const incompleteEvents: unknown[] = [];
+
+    const result = await runPmDecisionPipeline(
+      {
+        triggerSource: "cron",
+        recentMarketSignals: [signal()],
+        recentNewsEvidence: [evidence()],
+        now,
+        onCandidateStrategyIncomplete: (event) => incompleteEvents.push(event),
+      },
+      {
+        loadPromptDoc: async () => "prompt",
+        buildEvidenceContextPack: async () => fullEvidenceContextPack(),
+        generateAnalystOutput: vi.fn(async (memberId) => analystOutput(memberId)),
+        generateLeadOutput: vi.fn(async () => ({
+          rationale: "Evidence stack remains constructive",
+          confidence: 0.7,
+        })),
+        generateTradeDecision: vi.fn(async () => decision({ takeProfit: [] })),
+        recordStrategyDecisionRecord,
+        appendWatchHistoryEntry,
+        updateDecisionRecord,
+        upsertDecisionRun,
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(recordStrategyDecisionRecord).not.toHaveBeenCalled();
+    expect(appendWatchHistoryEntry).not.toHaveBeenCalled();
+    expect(incompleteEvents).toEqual([
+      expect.objectContaining({
+        symbol: "BTC",
+        candidateKey: "BTC",
+        missingFields: ["takeProfit"],
+      }),
+    ]);
+    expect(upsertDecisionRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: "skipped",
+        skipReason: "candidate_strategy_incomplete",
+      }),
+    );
+  });
 });

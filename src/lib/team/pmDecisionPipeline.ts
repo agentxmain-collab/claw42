@@ -95,6 +95,11 @@ export interface PmDecisionPipelineInput {
   locale?: Locale;
   now?: number;
   partialStageUpdates?: boolean;
+  onCandidateStrategyIncomplete?: (event: {
+    symbol: string;
+    candidateKey: string;
+    missingFields: string[];
+  }) => void;
 }
 
 export interface PmDecisionPipelineOutput {
@@ -252,6 +257,44 @@ function shouldRunPipeline(input: PmDecisionPipelineInput) {
       (evidence) => importanceRank(newsImportance(evidence)) >= importanceRank(threshold),
     )
   );
+}
+
+function hasRenderableNewsEvidence(evidence: NewsEvidence) {
+  return (
+    !evidence.id.startsWith("topic_selection:") &&
+    evidence.title.trim().length > 0 &&
+    evidence.source.trim().length > 0 &&
+    evidence.publishedAt.trim().length > 0
+  );
+}
+
+function isPositiveFiniteNumber(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function symbolStrategyCompletenessFailures({
+  input,
+  candidate,
+  tradeDecision,
+}: {
+  input: PmDecisionPipelineInput;
+  candidate: DecisionCandidate;
+  tradeDecision: TradeDecision | null;
+}) {
+  if (candidate.candidateType !== "symbol" || candidate.executable === false) return [];
+  const missingFields: string[] = [];
+  if (!input.recentNewsEvidence.some(hasRenderableNewsEvidence)) missingFields.push("newsItem");
+  if (!tradeDecision) {
+    missingFields.push("tradeDecision");
+    return missingFields;
+  }
+  if (tradeDecision.direction !== "long" && tradeDecision.direction !== "short") {
+    missingFields.push("direction");
+  }
+  if (!isPositiveFiniteNumber(tradeDecision.entryPrice)) missingFields.push("entry");
+  if (!isPositiveFiniteNumber(tradeDecision.stopLoss)) missingFields.push("stopLoss");
+  if (!tradeDecision.takeProfit.some(isPositiveFiniteNumber)) missingFields.push("takeProfit");
+  return missingFields;
 }
 
 async function defaultLoadPromptDoc(memberId: TeamMemberId): Promise<string> {
@@ -1838,10 +1881,21 @@ export async function runPmDecisionPipeline(
             severity: toSeverity(localizedInput),
             locale,
           });
-    if (!tradeDisabled && !tradeDecision) {
+    const incompleteStrategyFields = symbolStrategyCompletenessFailures({
+      input: localizedInput,
+      candidate,
+      tradeDecision,
+    });
+    if (incompleteStrategyFields.length > 0) {
+      localizedInput.onCandidateStrategyIncomplete?.({
+        symbol,
+        candidateKey: candidate.candidateKey,
+        missingFields: incompleteStrategyFields,
+      });
       await writeSkippedRun({
-        skipReason: "trade_decision_unavailable",
+        skipReason: "candidate_strategy_incomplete",
         activeStage: "trade_decision",
+        error: `missing:${incompleteStrategyFields.join(",")}`,
       });
       return null;
     }

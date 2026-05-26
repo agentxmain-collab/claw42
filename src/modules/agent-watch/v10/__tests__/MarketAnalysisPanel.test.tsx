@@ -341,12 +341,23 @@ describe("MarketAnalysisPanel v10", () => {
               symbol: "HYPE",
               score: 1,
               lastUpdatedAt: 1,
-              executable: true,
+              executable: false,
             }),
+            strategy: {
+              ...topicFixture({
+                id: "strategy-source",
+                title: "HYPE 实时行情分析",
+                symbol: "HYPE",
+                score: 1,
+                lastUpdatedAt: 1,
+                executable: false,
+              }).strategy,
+              mode: "observation",
+            },
             explanation: "旧解释不应该在头部重复出现",
             newsItems: [
               {
-                headline: "HYPE 24h 放量突破关键压力",
+                headline: "BTC 与主流资产同步进入风险再定价",
                 source: "CryptoCompare",
                 observedAt: "13:20",
               },
@@ -358,8 +369,8 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("topic-news-summary");
-    expect(html).toContain("HYPE 24h 放量突破关键压力");
+    expect(html).toContain("observation-summary");
+    expect(html).toContain("BTC 与主流资产同步进入风险再定价");
     expect(html).toContain("CryptoCompare");
     expect(html).toContain("13:20");
     expect(html).not.toContain("旧解释不应该在头部重复出现");
@@ -378,8 +389,19 @@ describe("MarketAnalysisPanel v10", () => {
               symbol: "HYPE",
               score: 1,
               lastUpdatedAt: 1,
-              executable: true,
+              executable: false,
             }),
+            strategy: {
+              ...topicFixture({
+                id: "strategy-source-no-news",
+                title: "HYPE 实时行情分析",
+                symbol: "HYPE",
+                score: 1,
+                lastUpdatedAt: 1,
+                executable: false,
+              }).strategy,
+              mode: "observation",
+            },
             explanation: "这段解释不应该伪装成新闻摘要",
             newsItems: [],
           },

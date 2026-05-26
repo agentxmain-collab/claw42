@@ -21,7 +21,10 @@ import {
 } from "@/lib/team/providerTelemetry";
 import { publishPmDecisionJobToQueue } from "@/lib/team/pmDecisionJobQueue";
 import { runPmDecisionJob } from "@/lib/team/pmDecisionJobRunner";
-import type { PmDecisionTriggerAuditEvent } from "@/lib/team/pmDecisionTrigger";
+import {
+  CRON_MAX_SYMBOL_CARDS_PER_RUN,
+  type PmDecisionTriggerAuditEvent,
+} from "@/lib/team/pmDecisionTrigger";
 import { enqueuePmDecisionJob, readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
 import { residentPrewarmPlan } from "@/lib/watch/residentPrewarm";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
@@ -36,7 +39,7 @@ export const maxDuration = 300;
 const STRATEGY_REPLAY_TRIGGER_LOCK_KEY = "cron:strategy-replay:trigger-now";
 const STRATEGY_REPLAY_TRIGGER_LOCK_MS = 5 * 60_000;
 const PM_RESOLUTION_RECORD_LIMIT = 100;
-const INLINE_PM_DECISION_JOB_LIMIT = 3;
+const INLINE_PM_DECISION_JOB_LIMIT = CRON_MAX_SYMBOL_CARDS_PER_RUN;
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
