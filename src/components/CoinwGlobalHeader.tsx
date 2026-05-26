@@ -1,14 +1,15 @@
 import React from "react";
+import tokens from "../../design-tokens/coinw-shell.json";
 
 const COINW_BASE = "https://www.coinw.com/zh_CN";
 
 const navItems = [
-  ["买币", `${COINW_BASE}/crypto-buy`],
-  ["行情", `${COINW_BASE}/markets`],
-  ["U本位合约", `${COINW_BASE}/futures`],
-  ["交易", `${COINW_BASE}/spot`],
-  ["跟单", `${COINW_BASE}/copy-trading`, "New"],
-  ["策略", `${COINW_BASE}/strategy`],
+  ["买币", `${COINW_BASE}/p2p-trading/personalized/buy`],
+  ["行情", `${COINW_BASE}/market/futures/all`],
+  ["U本位合约", `${COINW_BASE}/futures/usdt/btcusdt`],
+  ["交易", `${COINW_BASE}/spot/btcusdt`],
+  ["跟单", `${COINW_BASE}/copy-trading/futures`, "New"],
+  ["策略", `${COINW_BASE}/trading-bots/all`],
   ["赚币", `${COINW_BASE}/earn`],
   ["Launch X", `${COINW_BASE}/launchpad`],
   ["更多", COINW_BASE],
@@ -16,10 +17,40 @@ const navItems = [
 
 const utilityItems = [
   ["下载", `${COINW_BASE}/download`],
-  ["🌐", COINW_BASE],
-  ["☾", COINW_BASE],
-  ["🔔", `${COINW_BASE}/notifications`],
+  ["简体中文", COINW_BASE],
 ] as const;
+
+type TokenSection = (typeof tokens.header.sections)[number];
+type TokenStyleKey =
+  | "display"
+  | "fontFamily"
+  | "fontSize"
+  | "fontWeight"
+  | "lineHeight"
+  | "letterSpacing"
+  | "color"
+  | "backgroundColor"
+  | "borderColor"
+  | "borderRadius"
+  | "padding"
+  | "margin"
+  | "gap"
+  | "height"
+  | "width";
+
+function headerToken(key: TokenSection["key"]) {
+  const section = tokens.header.sections.find((item) => item.key === key);
+  if (!section) throw new Error(`Missing CoinW header token: ${key}`);
+  return section;
+}
+
+function styleFromToken(section: TokenSection, keys: TokenStyleKey[]): React.CSSProperties {
+  return keys.reduce<React.CSSProperties>((style, key) => {
+    const value = section.tokens[key];
+    if (value && value !== "normal") return { ...style, [key]: value };
+    return style;
+  }, {});
+}
 
 function externalLinkProps(label: string) {
   return {
@@ -30,31 +61,88 @@ function externalLinkProps(label: string) {
 }
 
 export function CoinwGlobalHeader() {
-  return (
-    <nav className="fixed inset-x-0 top-0 z-[80] h-[64px] border-b border-white/[0.06] bg-[#1A1A1A] font-[Satoshi,-apple-system,system-ui,sans-serif]">
-      <div className="mx-auto flex h-[64px] max-w-[1440px] items-center justify-between gap-5 px-6 md:px-10 lg:px-16">
-        <a
-          href={COINW_BASE}
-          className="flex shrink-0 items-center gap-2 text-[24px] font-black tracking-[-0.02em] text-white"
-          {...externalLinkProps("CoinW")}
-        >
-          <span className="grid size-8 place-items-center rounded-full bg-[#6C4FFF] text-[13px] font-black text-white">
-            W
-          </span>
-          <span>CoinW</span>
-        </a>
+  const shell = headerToken("shell");
+  const shellFontFamily = tokens.header.sections[0].tokens.fontFamily;
+  const logo = headerToken("logoLink");
+  const nav = headerToken("nav");
+  const navItem = headerToken("navItem");
+  const navLink = headerToken("navLink");
+  const rightCluster = headerToken("rightCluster");
+  const buttonGroup = headerToken("buttonGroup");
+  const loginButton = headerToken("loginButton");
+  const registerButton = headerToken("registerButton");
 
-        <div className="hidden min-w-0 flex-1 items-center justify-center gap-5 lg:flex">
+  return (
+    <nav
+      data-coinw-shell="header"
+      className="fixed inset-x-0 top-0 z-[80] flex items-center justify-between border-b"
+      style={{
+        ...styleFromToken(shell, [
+          "fontFamily",
+          "fontSize",
+          "fontWeight",
+          "lineHeight",
+          "letterSpacing",
+          "color",
+          "backgroundColor",
+          "borderColor",
+          "height",
+          "padding",
+        ]),
+        fontFamily: shellFontFamily,
+      }}
+    >
+      <div className="flex w-full items-center justify-between">
+        <a
+          data-coinw-shell="header-logo"
+          href={COINW_BASE}
+          className="block shrink-0"
+          style={styleFromToken(logo, ["width", "height"])}
+          {...externalLinkProps("CoinW")}
+          dangerouslySetInnerHTML={{ __html: tokens.assets.logoSvg }}
+        />
+
+        <div
+          data-coinw-shell="header-nav"
+          className="hidden min-w-0 flex-1 items-center lg:flex"
+          style={styleFromToken(nav, ["margin", "gap", "height"])}
+        >
           {navItems.map(([label, href, badge]) => (
             <a
+              data-coinw-shell="header-nav-link"
               key={label}
               href={href}
-              className="hover:text-white/72 inline-flex items-center gap-1.5 whitespace-nowrap text-[14px] font-bold leading-none text-white transition-colors"
+              className="inline-flex items-center whitespace-nowrap transition-opacity hover:opacity-75"
+              style={{
+                ...styleFromToken(navItem, ["height", "padding", "gap"]),
+                ...styleFromToken(navLink, [
+                  "fontFamily",
+                  "fontSize",
+                  "fontWeight",
+                  "lineHeight",
+                  "letterSpacing",
+                  "color",
+                ]),
+              }}
               {...externalLinkProps(label)}
             >
               {label}
               {badge ? (
-                <span className="rounded-full bg-[#6C4FFF] px-1.5 py-0.5 text-[10px] font-black uppercase text-white">
+                <span
+                  className="rounded-full uppercase"
+                  style={{
+                    ...styleFromToken(registerButton, [
+                      "fontFamily",
+                      "fontWeight",
+                      "color",
+                      "backgroundColor",
+                      "borderRadius",
+                    ]),
+                    fontSize: navLink.tokens.fontSize,
+                    lineHeight: navLink.tokens.lineHeight,
+                    padding: navLink.tokens.gap,
+                  }}
+                >
                   {badge}
                 </span>
               ) : null}
@@ -62,13 +150,25 @@ export function CoinwGlobalHeader() {
           ))}
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <div className="hidden items-center gap-1 md:flex">
+        <div
+          data-coinw-shell="header-right"
+          className="flex shrink-0 items-center"
+          style={styleFromToken(rightCluster, ["height", "gap"])}
+        >
+          <div className="hidden items-center md:flex" style={styleFromToken(buttonGroup, ["gap"])}>
             {utilityItems.map(([label, href]) => (
               <a
                 key={label}
                 href={href}
-                className="text-white/82 grid h-9 min-w-9 place-items-center rounded-full px-2 text-[13px] font-bold transition-colors hover:bg-white/[0.08] hover:text-white"
+                className="grid place-items-center rounded-full transition-opacity hover:opacity-75"
+                style={styleFromToken(navLink, [
+                  "fontFamily",
+                  "fontSize",
+                  "fontWeight",
+                  "lineHeight",
+                  "letterSpacing",
+                  "color",
+                ])}
                 {...externalLinkProps(label)}
               >
                 {label}
@@ -77,14 +177,40 @@ export function CoinwGlobalHeader() {
           </div>
           <a
             href={`${COINW_BASE}/login`}
-            className="rounded-full bg-white/[0.1] px-4 py-2 text-[14px] font-bold text-white transition-colors hover:bg-white/[0.16]"
+            data-coinw-shell="header-login"
+            className="rounded-full transition-opacity hover:opacity-75"
+            style={styleFromToken(loginButton, [
+              "fontFamily",
+              "fontSize",
+              "fontWeight",
+              "lineHeight",
+              "letterSpacing",
+              "color",
+              "backgroundColor",
+              "borderColor",
+              "borderRadius",
+              "padding",
+            ])}
             {...externalLinkProps("登录")}
           >
             登录
           </a>
           <a
             href={`${COINW_BASE}/register`}
-            className="rounded-full bg-[#6C4FFF] px-4 py-2 text-[14px] font-bold text-white transition-colors hover:bg-[#7a61ff]"
+            data-coinw-shell="header-register"
+            className="rounded-full transition-opacity hover:opacity-75"
+            style={styleFromToken(registerButton, [
+              "fontFamily",
+              "fontSize",
+              "fontWeight",
+              "lineHeight",
+              "letterSpacing",
+              "color",
+              "backgroundColor",
+              "borderColor",
+              "borderRadius",
+              "padding",
+            ])}
             {...externalLinkProps("注册")}
           >
             注册

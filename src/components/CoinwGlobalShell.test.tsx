@@ -21,7 +21,6 @@ describe("CoinW global shell", () => {
     expect(html).toContain("© 2013-2026 coinw.com ALL Rights Reserved");
     expect(html).toContain("永续合约");
     expect(html).toContain("官方验证通道");
-    expect(html).toContain("App Store");
-    expect(html).toContain("Google Play");
+    expect(html).toContain("简体中文");
   });
 });
