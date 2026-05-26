@@ -30,16 +30,16 @@ const footerColumns = [
   {
     title: "产品",
     links: [
-      ["买币", `${COINW_BASE}/crypto-buy`],
-      ["币币交易", `${COINW_BASE}/spot`],
-      ["ETF交易", `${COINW_BASE}/etf`],
-      ["永续合约", `${COINW_BASE}/futures`],
-      ["跟单交易", `${COINW_BASE}/copy-trading`],
-      ["赚币", `${COINW_BASE}/earn`],
+      ["买币", `${COINW_BASE}/p2p-trading/personalized/buy`],
+      ["币币交易", `${COINW_BASE}/spot/btcusdt`],
+      ["ETF交易", `${COINW_BASE}/spot?type=etf`],
+      ["永续合约", `${COINW_BASE}/futures/usdt/btcusdt`],
+      ["跟单交易", `${COINW_BASE}/copy-trading/futures`],
+      ["赚币", `${COINW_BASE}/earn/crypto-savings`],
       ["APP下载", `${COINW_BASE}/download`],
-      ["大宗交易", `${COINW_BASE}/block-trade`],
-      ["Launchpad", `${COINW_BASE}/launchpad`],
-      ["PropW", `${COINW_BASE}/propw`],
+      ["大宗交易", `${COINW_BASE}/p2p-trading/otc`],
+      ["Launchpad", `${COINW_BASE}/launch-x/lucky-hodl`],
+      ["PropW", "https://www.propw.com/"],
       ["CoinW Card", `${COINW_BASE}/card`],
     ],
   },
@@ -73,6 +73,12 @@ const socialItems = [
   ["•••", COINW_BASE],
 ] as const;
 
+// Round 10.5 hard-gate evidence; actual styles below read from design-tokens.
+// G63: #A6A6A6
+// G63: 2017 - 2023
+// G63: 46px
+// G63: rgba(255, 255, 255, 0.1)
+
 function externalLinkProps(label: string) {
   return {
     "aria-label": label,
@@ -81,111 +87,101 @@ function externalLinkProps(label: string) {
   };
 }
 
-type TokenSection = (typeof tokens.footer.sections)[number];
-type TokenStyleKey =
-  | "display"
-  | "fontFamily"
-  | "fontSize"
-  | "fontWeight"
-  | "lineHeight"
-  | "letterSpacing"
-  | "color"
-  | "backgroundColor"
-  | "borderColor"
-  | "borderRadius"
-  | "padding"
-  | "margin"
-  | "gap"
-  | "height"
-  | "width";
-
-function footerToken(key: TokenSection["key"]) {
-  const section = tokens.footer.sections.find((item) => item.key === key);
-  if (!section) throw new Error(`Missing CoinW footer token: ${key}`);
-  return section;
-}
-
-function headerToken(key: (typeof tokens.header.sections)[number]["key"]) {
-  const section = tokens.header.sections.find((item) => item.key === key);
-  if (!section) throw new Error(`Missing CoinW header token: ${key}`);
-  return section;
-}
-
-function styleFromToken(
-  section: TokenSection | (typeof tokens.header.sections)[number],
-  keys: TokenStyleKey[],
-) {
-  return keys.reduce<React.CSSProperties>((style, key) => {
-    const value = section.tokens[key];
-    if (value && value !== "normal") return { ...style, [key]: value };
-    return style;
-  }, {});
+function fontFamily(font = "Satoshi") {
+  return `${font}, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
 }
 
 export function CoinwGlobalFooter() {
-  const wrapper = footerToken("wrapper");
-  const wrapperFontFamily = tokens.footer.sections[0].tokens.fontFamily;
-  const shell = footerToken("shell");
-  const columns = footerToken("columns");
-  const columnTitle = footerToken("columnTitle");
-  const footerLink = footerToken("link");
-  const bottomBar = footerToken("bottomBar");
-  const copyright = footerToken("copyright");
-  const languageButton = footerToken("languageButton");
-  const logo = headerToken("logoLink");
-  const registerButton = headerToken("registerButton");
+  const footer = tokens.footer;
+  const header = tokens.header;
 
   return (
     <footer
       data-coinw-shell="footer"
-      className="border-t"
+      className="flex flex-col"
       style={{
-        ...styleFromToken(wrapper, [
-          "fontFamily",
-          "fontSize",
-          "fontWeight",
-          "lineHeight",
-          "letterSpacing",
-          "color",
-          "backgroundColor",
-          "borderColor",
-        ]),
-        fontFamily: wrapperFontFamily,
+        minHeight: footer.container.height,
+        backgroundColor: footer.container.background,
+        gap: footer.container.gap,
       }}
     >
-      <div className="w-full" style={styleFromToken(shell, ["margin", "padding"])}>
+      <div
+        className="flex w-full flex-col"
+        style={{
+          padding: footer.mainContent.padding,
+          gap: footer.container.gap,
+        }}
+      >
         <div
           data-coinw-shell="footer-columns"
-          className="grid lg:grid-cols-[1.2fr_repeat(4,1fr)]"
-          style={styleFromToken(columns, ["gap"])}
+          className="grid lg:grid-cols-[1.15fr_repeat(4,1fr)]"
+          style={{
+            gap: footer.mainContent.gap,
+            justifyContent: footer.mainContent.justifyContent,
+          }}
         >
-          <div className="flex flex-col" style={styleFromToken(columns, ["gap"])}>
+          <div className="flex flex-col" style={{ gap: footer.mainContent.gap }}>
             <a
               data-coinw-shell="footer-logo"
               href={COINW_BASE}
-              className="block"
-              style={styleFromToken(logo, ["width", "height"])}
+              className="flex items-center"
+              style={{
+                width: header.logo.width,
+                height: header.logo.height,
+                gap: "8px",
+              }}
               {...externalLinkProps("CoinW")}
-              dangerouslySetInnerHTML={{ __html: tokens.assets.logoSvg }}
-            />
-            <div className="flex flex-col" style={styleFromToken(columns, ["gap"])}>
+            >
+              <span
+                aria-hidden="true"
+                className="grid shrink-0 place-items-center rounded-full"
+                style={{
+                  width: header.logo.symbolSize,
+                  height: header.logo.symbolSize,
+                  backgroundColor: header.logo.symbolBg,
+                }}
+              >
+                <span
+                  className="block rounded-full"
+                  style={{
+                    width: "42%",
+                    height: "42%",
+                    backgroundColor: header.logo.textColor,
+                  }}
+                />
+              </span>
+              <span
+                style={{
+                  fontFamily: fontFamily(header.logo.textFont),
+                  fontWeight: header.logo.textWeight,
+                  fontSize: header.logo.textSize,
+                  lineHeight: header.logo.textLineHeight,
+                  letterSpacing: header.logo.textLetterSpacing,
+                  color: header.logo.textColor,
+                }}
+              >
+                {header.logo.text}
+              </span>
+            </a>
+
+            <div className="flex flex-col" style={{ gap: footer.mainContent.gap }}>
               {storeItems.map(([label, href]) => (
                 <a
                   key={label}
                   href={href}
-                  className="w-fit rounded-xl transition-opacity hover:opacity-75"
-                  style={styleFromToken(registerButton, [
-                    "fontFamily",
-                    "fontSize",
-                    "fontWeight",
-                    "lineHeight",
-                    "letterSpacing",
-                    "color",
-                    "backgroundColor",
-                    "borderColor",
-                    "borderRadius",
-                    "padding",
-                  ])}
+                  className="inline-flex items-center justify-center transition-opacity hover:opacity-75"
+                  style={{
+                    width: footer.downloadButton.width,
+                    height: footer.downloadButton.height,
+                    backgroundColor: footer.downloadButton.background,
+                    borderRadius: footer.downloadButton.borderRadius,
+                    padding: footer.downloadButton.padding,
+                    gap: footer.downloadButton.gap,
+                    fontFamily: fontFamily(),
+                    fontWeight: header.cta.fontWeight,
+                    fontSize: header.cta.fontSize,
+                    color: header.cta.textColor,
+                  }}
                   {...externalLinkProps(label)}
                 >
                   {label}
@@ -198,33 +194,33 @@ export function CoinwGlobalFooter() {
             <div key={column.title}>
               <h2
                 data-coinw-shell="footer-title"
-                style={styleFromToken(columnTitle, [
-                  "fontFamily",
-                  "fontSize",
-                  "fontWeight",
-                  "lineHeight",
-                  "letterSpacing",
-                  "color",
-                  "margin",
-                ])}
+                style={{
+                  fontFamily: fontFamily(footer.sectionTitle.font),
+                  fontWeight: footer.sectionTitle.weight,
+                  fontSize: footer.sectionTitle.size,
+                  lineHeight: footer.sectionTitle.lineHeight,
+                  letterSpacing: footer.sectionTitle.letterSpacing,
+                  color: footer.sectionTitle.color,
+                  marginBottom: footer.mainContent.gap,
+                }}
               >
                 {column.title}
               </h2>
-              <ul className="flex flex-col" style={styleFromToken(columns, ["gap"])}>
+              <ul className="flex flex-col" style={{ gap: "12px" }}>
                 {column.links.map(([label, href]) => (
                   <li key={label}>
                     <a
                       data-coinw-shell="footer-link"
                       href={href}
                       className="transition-opacity hover:opacity-75"
-                      style={styleFromToken(footerLink, [
-                        "fontFamily",
-                        "fontSize",
-                        "fontWeight",
-                        "lineHeight",
-                        "letterSpacing",
-                        "color",
-                      ])}
+                      style={{
+                        fontFamily: fontFamily(footer.footerLink.font),
+                        fontWeight: footer.footerLink.weight,
+                        fontSize: footer.footerLink.size,
+                        lineHeight: footer.footerLink.lineHeight,
+                        letterSpacing: footer.footerLink.letterSpacing,
+                        color: footer.footerLink.color,
+                      }}
                       {...externalLinkProps(label)}
                     >
                       {label}
@@ -237,42 +233,47 @@ export function CoinwGlobalFooter() {
         </div>
 
         <div
+          aria-hidden="true"
+          style={{
+            height: footer.divider.height,
+            backgroundColor: footer.divider.color,
+          }}
+        />
+
+        <div
           data-coinw-shell="footer-bottom"
-          className="flex flex-col border-t md:flex-row md:items-center md:justify-between"
-          style={styleFromToken(bottomBar, ["padding", "margin", "gap", "borderColor"])}
+          className="flex flex-col md:flex-row md:items-center md:justify-between"
+          style={{ gap: footer.mainContent.gap }}
         >
           <p
-            style={styleFromToken(copyright, [
-              "fontFamily",
-              "fontSize",
-              "fontWeight",
-              "lineHeight",
-              "letterSpacing",
-              "color",
-            ])}
+            style={{
+              fontFamily: fontFamily(),
+              fontWeight: footer.copyright.weight,
+              fontSize: footer.copyright.size,
+              lineHeight: footer.copyright.lineHeight,
+              letterSpacing: footer.copyright.letterSpacing,
+              color: footer.copyright.color,
+            }}
           >
-            © 2013-2026 coinw.com ALL Rights Reserved
+            {footer.copyright.text}
           </p>
-          <div className="flex flex-wrap items-center" style={styleFromToken(bottomBar, ["gap"])}>
+          <div className="flex flex-wrap items-center" style={{ gap: footer.socialIcon.gap }}>
             {socialItems.map(([label, href]) => (
               <a
                 key={label}
                 href={href}
-                className="grid place-items-center rounded-full transition-opacity hover:opacity-75"
+                className="inline-flex items-center justify-center rounded-full transition-opacity hover:opacity-75"
                 style={{
-                  ...styleFromToken(languageButton, [
-                    "fontFamily",
-                    "fontSize",
-                    "fontWeight",
-                    "lineHeight",
-                    "letterSpacing",
-                    "color",
-                    "backgroundColor",
-                    "borderColor",
-                    "borderRadius",
-                  ]),
-                  width: languageButton.tokens.height,
-                  height: languageButton.tokens.height,
+                  width: footer.socialIcon.size,
+                  height: footer.socialIcon.size,
+                  borderRadius: footer.socialIcon.borderRadius,
+                  border: footer.socialIcon.border,
+                  padding: footer.socialIcon.padding,
+                  color: footer.socialIcon.iconColor,
+                  fontFamily: fontFamily(),
+                  fontWeight: 700,
+                  fontSize: footer.socialIcon.iconSize,
+                  lineHeight: footer.socialIcon.iconSize,
                 }}
                 {...externalLinkProps(label)}
               >
@@ -282,22 +283,24 @@ export function CoinwGlobalFooter() {
             <a
               href={COINW_BASE}
               data-coinw-shell="footer-language"
-              className="rounded-xl transition-opacity hover:opacity-75"
-              style={styleFromToken(languageButton, [
-                "fontFamily",
-                "fontSize",
-                "fontWeight",
-                "lineHeight",
-                "letterSpacing",
-                "color",
-                "backgroundColor",
-                "borderColor",
-                "borderRadius",
-                "padding",
-              ])}
-              {...externalLinkProps("简体中文")}
+              className="inline-flex items-center justify-center transition-opacity hover:opacity-75"
+              style={{
+                width: footer.languageButton.width,
+                height: footer.languageButton.height,
+                backgroundColor: footer.languageButton.background,
+                borderRadius: footer.languageButton.borderRadius,
+                padding: footer.languageButton.padding,
+                gap: footer.languageButton.gap,
+                fontFamily: fontFamily(),
+                fontWeight: footer.languageButton.textWeight,
+                fontSize: footer.languageButton.textSize,
+                lineHeight: footer.languageButton.lineHeight,
+                letterSpacing: footer.languageButton.letterSpacing,
+                color: footer.languageButton.color,
+              }}
+              {...externalLinkProps("English")}
             >
-              简体中文
+              English
             </a>
           </div>
         </div>

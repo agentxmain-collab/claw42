@@ -1,807 +1,142 @@
 {
   "meta": {
-    "extractedAt": "2026-05-26T05:05:23.152Z",
-    "extractedFrom": "https://www.coinw.com/zh_CN",
-    "viewport": {
-      "width": 1440,
-      "height": 1200
-    },
-    "method": "playwright + getComputedStyle"
+    "source": "Dan Figma dark mode frame via Copy as code 2026-05-26",
+    "figmaFile": "CoinW 母站设计稿 - Header + Footer Dark Mode frame",
+    "mode": "dark",
+    "round": "3.90.105"
   },
-  "assets": {
-    "logoSvg": "<svg width=\"100%\" viewBox=\"0 0 141 38\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" data-v-94372893=\"\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M29.8702 1.98267H12.7348V12.9202H29.8702V1.98267ZM12.7348 22.5873L12.7348 12.9202L1.70215 12.9202L1.70217 22.5873C1.70218 30.0007 7.68443 36.0104 15.0639 36.0104H29.8702V24.9271H15.0639C13.7776 24.9271 12.7348 23.8795 12.7348 22.5873Z\" fill=\"#5227FF\" data-v-94372893=\"\"></path><path d=\"M54.6002 29.4333C48.1252 29.4333 44.071 25.1458 44.071 18.3208C44.071 11.5833 48.3585 7.14992 54.8043 7.14992C60.2002 7.14992 64.0793 10.2416 64.7502 15.0833H59.7627C59.121 12.9249 57.2835 11.6999 54.6877 11.6999C51.1877 11.6999 49.0585 14.1791 49.0585 18.2916C49.0585 22.3458 51.2168 24.8833 54.6877 24.8833C57.3418 24.8833 59.296 23.5708 59.8793 21.4416H64.7793C64.021 26.2541 59.996 29.4333 54.6002 29.4333ZM66.5369 21.7624C66.5369 17.1541 69.9203 14.0624 74.5869 14.0624C79.2244 14.0624 82.6078 17.1541 82.6078 21.7624C82.6078 26.3708 79.2244 29.4333 74.5869 29.4333C69.9203 29.4333 66.5369 26.3708 66.5369 21.7624ZM71.0578 21.7333C71.0578 23.9499 72.4869 25.4083 74.5869 25.4083C76.6578 25.4083 78.0869 23.9499 78.0869 21.7333C78.0869 19.5458 76.6578 18.0874 74.5869 18.0874C72.4869 18.0874 71.0578 19.5458 71.0578 21.7333ZM87.3677 12.2249C85.9385 12.2249 84.801 11.0874 84.801 9.65825C84.801 8.22908 85.9385 7.12075 87.3677 7.12075C88.7677 7.12075 89.9052 8.22908 89.9052 9.65825C89.9052 11.0874 88.7677 12.2249 87.3677 12.2249ZM85.151 29.0833V14.4999H89.6427V29.0833H85.151ZM97.4433 29.0833H92.9516V14.4999H97.1808L97.4724 16.0166C98.3766 14.7624 100.039 14.0333 101.935 14.0333C105.406 14.0333 107.418 16.2499 107.418 20.0708V29.0833H102.927V21.1499C102.927 19.3124 101.906 18.1166 100.36 18.1166C98.5808 18.1166 97.4433 19.2833 97.4433 21.0916V29.0833ZM114.347 29.0833L107.872 7.49992H112.801L115.63 16.8624C116.01 18.1458 116.36 19.4291 116.71 21.5583C117.06 19.4291 117.41 18.2041 117.789 16.8624L120.443 7.49992H125.722L128.26 16.8624C128.61 18.1749 128.96 19.4874 129.339 21.5583C129.776 19.3708 130.097 18.1749 130.476 16.9208L133.364 7.49992H138.176L131.585 29.0833H126.976L123.039 14.9083L118.985 29.0833H114.347Z\" fill=\"currentColor\" data-v-94372893=\"\"></path></svg>"
-  },
+  "_source": "Figma MCP via Dan 2026-05-26 Copy as code",
+  "_figma_file": "CoinW 母站设计稿 - Header + Footer Dark Mode frame",
   "header": {
-    "sectionCount": 10,
-    "sections": [
-      {
-        "group": "header",
-        "key": "shell",
-        "selector": "header.stickyHead",
-        "domPath": "html.light > body.zh_CN > div > div > div.common-header > header.stickyHead.max-md:tw-top-[62px].tw-fixed",
-        "text": "买币C2C (0手续费)快捷交易大宗交易行情 U本位合约交易现货交易自由交易，抓住潜在机会ETF交易放大收益，无爆仓风险GemW交易快人一步，捕捉链上财富机会跟单New合约跟单跟着合约大神做交易现货跟单跟着现货大神做交易链上聪明钱New跟着链上大神做交易GemW 跟单跟随聪明钱，捕捉交易良机策略策略大厅全球优质交易策略",
-        "rect": {
-          "x": 0,
-          "y": 0,
-          "width": 1440,
-          "height": 64
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgb(255, 255, 255)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px 24px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "64px",
-          "width": "1440px"
-        }
-      },
-      {
-        "group": "header",
-        "key": "leftCluster",
-        "selector": "header.stickyHead .left",
-        "domPath": "body.zh_CN > div > div > div.common-header > header.stickyHead.max-md:tw-top-[62px].tw-fixed > div.left.tw-flex.tw-h-full",
-        "text": "买币C2C (0手续费)快捷交易大宗交易行情 U本位合约交易现货交易自由交易，抓住潜在机会ETF交易放大收益，无爆仓风险GemW交易快人一步，捕捉链上财富机会跟单New合约跟单跟着合约大神做交易现货跟单跟着现货大神做交易链上聪明钱New跟着链上大神做交易GemW 跟单跟随聪明钱，捕捉交易良机策略策略大厅全球优质交易策略",
-        "rect": {
-          "x": 24,
-          "y": 0,
-          "width": 941.828,
-          "height": 64
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "64px",
-          "width": "941.828125px"
-        }
-      },
-      {
-        "group": "header",
-        "key": "logoLink",
-        "selector": "header.stickyHead a:has(svg)",
-        "domPath": "div > div > div.common-header > header.stickyHead.max-md:tw-top-[62px].tw-fixed > div.left.tw-flex.tw-h-full > a",
-        "text": "",
-        "rect": {
-          "x": 24,
-          "y": 13,
-          "width": 141,
-          "height": 38
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(0, 0, 238)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(0, 0, 238)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "38px",
-          "width": "141px"
-        }
-      },
-      {
-        "group": "header",
-        "key": "nav",
-        "selector": "header.stickyHead nav.header-nav-main",
-        "domPath": "div > div > div.common-header > header.stickyHead.max-md:tw-top-[62px].tw-fixed > div.left.tw-flex.tw-h-full > nav.tw-ml-[20px].tw-flex.tw-h-full",
-        "text": "买币C2C (0手续费)快捷交易大宗交易行情 U本位合约交易现货交易自由交易，抓住潜在机会ETF交易放大收益，无爆仓风险GemW交易快人一步，捕捉链上财富机会跟单New合约跟单跟着合约大神做交易现货跟单跟着现货大神做交易链上聪明钱New跟着链上大神做交易GemW 跟单跟随聪明钱，捕捉交易良机策略策略大厅全球优质交易策略",
-        "rect": {
-          "x": 185,
-          "y": 0,
-          "width": 738.828,
-          "height": 64
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px 0px 0px 20px",
-          "gap": "normal",
-          "height": "64px",
-          "width": "738.828125px"
-        }
-      },
-      {
-        "group": "header",
-        "key": "navItem",
-        "selector": "header.stickyHead nav.header-nav-main .menu-item",
-        "domPath": "header.stickyHead.max-md:tw-top-[62px].tw-fixed > div.left.tw-flex.tw-h-full > nav.tw-ml-[20px].tw-flex.tw-h-full > ul.tw-flex.tw-h-full.tw-w-full > li.header-menu-item-cw.cursor-point.tw-flex > div.menu-item.tw-relative.tw-flex",
-        "text": "买币C2C (0手续费)快捷交易大宗交易",
-        "rect": {
-          "x": 185,
-          "y": 0,
-          "width": 74.203,
-          "height": 64
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "700",
-          "lineHeight": "20px",
-          "letterSpacing": "0.1px",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px 12px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "64px",
-          "width": "74.203125px"
-        }
-      },
-      {
-        "group": "header",
-        "key": "navLink",
-        "selector": "header.stickyHead a[href*='/market/futures/all']",
-        "domPath": "div.left.tw-flex.tw-h-full > nav.tw-ml-[20px].tw-flex.tw-h-full > ul.tw-flex.tw-h-full.tw-w-full > li.header-menu-item-cw.cursor-point.tw-flex > div.cursor-point.tw-flex.tw-h-full > a.cursor-point.tw-flex.tw-items-center",
-        "text": "行情",
-        "rect": {
-          "x": 271.203,
-          "y": 22,
-          "width": 28.203,
-          "height": 20
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "700",
-          "lineHeight": "20px",
-          "letterSpacing": "0.1px",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "20px",
-          "width": "28.203125px"
-        }
-      },
-      {
-        "group": "header",
-        "key": "rightCluster",
-        "selector": "header.stickyHead .header-right",
-        "domPath": "body.zh_CN > div > div > div.common-header > header.stickyHead.max-md:tw-top-[62px].tw-fixed > div.header-right.tw-flex.tw-h-full",
-        "text": "扫码下载更多下载选项登录注册注册",
-        "rect": {
-          "x": 1148.375,
-          "y": 0,
-          "width": 267.625,
-          "height": 64
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "64px",
-          "width": "267.625px"
-        }
-      },
-      {
-        "group": "header",
-        "key": "buttonGroup",
-        "selector": "header.stickyHead .button-login",
-        "domPath": "div > div.common-header > header.stickyHead.max-md:tw-top-[62px].tw-fixed > div.header-right.tw-flex.tw-h-full > div.big-menu.tw-flex.tw-h-full > div.button-login.tw-flex.tw-h-full",
-        "text": "登录注册",
-        "rect": {
-          "x": 1280.375,
-          "y": 0,
-          "width": 135.625,
-          "height": 64
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "16px",
-          "height": "64px",
-          "width": "135.625px"
-        }
-      },
-      {
-        "group": "header",
-        "key": "loginButton",
-        "selector": "button:text('登录')",
-        "domPath": "div.common-header > header.stickyHead.max-md:tw-top-[62px].tw-fixed > div.header-right.tw-flex.tw-h-full > div.big-menu.tw-flex.tw-h-full > div.button-login.tw-flex.tw-h-full > button.cursor-point.tw-cursor-pointer.tw-whitespace-nowrap",
-        "text": "登录",
-        "rect": {
-          "x": 1280.375,
-          "y": 12,
-          "width": 59.813,
-          "height": 40
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "700",
-          "lineHeight": "20px",
-          "letterSpacing": "-0.1px",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0.05)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "12px",
-          "padding": "10px 16px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "40px",
-          "width": "59.8125px"
-        }
-      },
-      {
-        "group": "header",
-        "key": "registerButton",
-        "selector": "button:text('注册')",
-        "domPath": "div.common-header > header.stickyHead.max-md:tw-top-[62px].tw-fixed > div.header-right.tw-flex.tw-h-full > div.big-menu.tw-flex.tw-h-full > div.button-login.tw-flex.tw-h-full > button.cursor-point.tw-cursor-pointer.tw-whitespace-nowrap",
-        "text": "注册",
-        "rect": {
-          "x": 1356.188,
-          "y": 12,
-          "width": 59.813,
-          "height": 40
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "700",
-          "lineHeight": "20px",
-          "letterSpacing": "-0.1px",
-          "color": "rgb(255, 255, 255)",
-          "backgroundColor": "rgb(82, 39, 255)",
-          "borderColor": "rgb(255, 255, 255)",
-          "borderRadius": "12px",
-          "padding": "10px 16px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "40px",
-          "width": "59.8125px"
-        }
-      }
-    ],
-    "footer": [
-      {
-        "group": "footer",
-        "key": "wrapper",
-        "selector": ".footer-border.tw-bg-bgPrimary1",
-        "domPath": "html.light > body.zh_CN > div > div > div.footer-border.tw-bg-bgPrimary1",
-        "text": "学习学院 帮助中心 比特币价格 加密货币今日价格 服务免费上币申请 上币条款 成为商家 VIP权益 API支持 邀请好友 赏金计划 加盟商计划 建议与反馈 产品买币 币币交易 ETF交易 永续合约 跟单交易 赚币 APP下载 大宗交易 Launchpad PropW CoinW Card 我们关于我们 官方验证通道 费",
-        "rect": {
-          "x": 0,
-          "y": 5537,
-          "width": 1440,
-          "height": 671
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgb(255, 255, 255)",
-          "borderColor": "rgb(217, 217, 217) rgb(26, 26, 26) rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "671px",
-          "width": "1440px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "shell",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer",
-        "domPath": "html.light > body.zh_CN > div > div > div.footer-border.tw-bg-bgPrimary1 > footer.tw-r-w",
-        "text": "学习学院 帮助中心 比特币价格 加密货币今日价格 服务免费上币申请 上币条款 成为商家 VIP权益 API支持 邀请好友 赏金计划 加盟商计划 建议与反馈 产品买币 币币交易 ETF交易 永续合约 跟单交易 赚币 APP下载 大宗交易 Launchpad PropW CoinW Card 我们关于我们 官方验证通道 费",
-        "rect": {
-          "x": 96,
-          "y": 5538,
-          "width": 1248,
-          "height": 670
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px 96px",
-          "gap": "normal",
-          "height": "670px",
-          "width": "1248px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "columns",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer .tw-flex.tw-items-start.tw-justify-between",
-        "domPath": "div > div > div.footer-border.tw-bg-bgPrimary1 > footer.tw-r-w > div.tw-w-full.max-lg:tw-hidden > div.tw-flex.tw-items-start.tw-justify-between",
-        "text": "学习学院 帮助中心 比特币价格 加密货币今日价格 服务免费上币申请 上币条款 成为商家 VIP权益 API支持 邀请好友 赏金计划 加盟商计划 建议与反馈 产品买币 币币交易 ETF交易 永续合约 跟单交易 赚币 APP下载 大宗交易 Launchpad PropW CoinW Card 我们关于我们 官方验证通道 费",
-        "rect": {
-          "x": 96,
-          "y": 5538,
-          "width": 1248,
-          "height": 541
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "49px 0px 64px",
-          "margin": "0px",
-          "gap": "24px",
-          "height": "541px",
-          "width": "1248px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "columnTitle",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer .tw-title-m-18-b-cw",
-        "domPath": "footer.tw-r-w > div.tw-w-full.max-lg:tw-hidden > div.tw-flex.tw-items-start.tw-justify-between > div.list.tw-auto-cols-auto.max-xl:!tw-gap-4 > div > h3.tw-title-m-18-b-cw",
-        "text": "学习",
-        "rect": {
-          "x": 344,
-          "y": 5587,
-          "width": 190,
-          "height": 24
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "18px",
-          "fontWeight": "700",
-          "lineHeight": "24px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "24px",
-          "width": "190px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "link",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer a.list-item",
-        "domPath": "div.tw-flex.tw-items-start.tw-justify-between > div.list.tw-auto-cols-auto.max-xl:!tw-gap-4 > div > ul.tw-mt-6.tw-flex.tw-flex-col > li.tw-w-full > a.list-item.tw-flex.tw-cursor-pointer",
-        "text": "学院",
-        "rect": {
-          "x": 344,
-          "y": 5635,
-          "width": 190,
-          "height": 20
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "20px",
-          "letterSpacing": "-0.25px",
-          "color": "rgb(64, 64, 64)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(64, 64, 64)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "20px",
-          "width": "190px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "bottomBar",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer .footer-border.tw-flex.tw-items-center.tw-justify-between",
-        "domPath": "div > div > div.footer-border.tw-bg-bgPrimary1 > footer.tw-r-w > div.tw-w-full.max-lg:tw-hidden > div.footer-border.tw-flex.tw-items-center",
-        "text": "© 2013-2026 coinw.com ALL Rights Reserved简体中文",
-        "rect": {
-          "x": 192,
-          "y": 6079,
-          "width": 1056,
-          "height": 129
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(217, 217, 217) rgb(26, 26, 26) rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "40px 0px",
-          "margin": "0px 96px",
-          "gap": "normal",
-          "height": "129px",
-          "width": "1056px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "copyright",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer .tw-text-textSecondary.tw-body-m-cw",
-        "domPath": "div.tw-flex.tw-items-start.tw-justify-between > div.list.tw-auto-cols-auto.max-xl:!tw-gap-4 > div > ul.tw-mt-6.tw-flex.tw-flex-col > li.tw-w-full > a.list-item.tw-flex.tw-cursor-pointer",
-        "text": "学院",
-        "rect": {
-          "x": 344,
-          "y": 5635,
-          "width": 190,
-          "height": 20
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "20px",
-          "letterSpacing": "-0.25px",
-          "color": "rgb(64, 64, 64)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(64, 64, 64)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "20px",
-          "width": "190px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "languageButton",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer .tw-bg-btnTertiaryDefault",
-        "domPath": "div.footer-border.tw-bg-bgPrimary1 > footer.tw-r-w > div.tw-w-full.max-lg:tw-hidden > div.footer-border.tw-flex.tw-items-center > div.tw-flex.tw-items-center.tw-gap-[40px] > div.tw-cursor-pointer.tw-rounded-3.tw-bg-btnTertiaryDefault",
-        "text": "简体中文",
-        "rect": {
-          "x": 1116.391,
-          "y": 6120,
-          "width": 131.609,
-          "height": 48
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0.05)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "12px",
-          "padding": "14px 24px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "48px",
-          "width": "131.609375px"
-        }
-      }
-    ]
+    "container": {
+      "height": "72px",
+      "background": "#1A1A1A",
+      "padding": "16px 24px",
+      "gap": "24px",
+      "maxWidth": "1440px"
+    },
+    "logo": {
+      "width": "140.24px",
+      "height": "37.83px",
+      "symbolSize": "34.03px",
+      "symbolBg": "#5227FF",
+      "text": "CoinW",
+      "textFont": "Satoshi",
+      "textWeight": 900,
+      "textSize": "29.1667px",
+      "textLineHeight": "108%",
+      "textLetterSpacing": "-0.0607639px",
+      "textColor": "#FFFFFF"
+    },
+    "navItem": {
+      "font": "Satoshi",
+      "weight": 500,
+      "size": "16px",
+      "lineHeight": "24px",
+      "letterSpacing": "0.15px",
+      "color": "#FFFFFF",
+      "gap": "24px"
+    },
+    "newBadge": {
+      "background": "#D1FF55",
+      "borderRadius": "100px",
+      "padding": "2px 8px",
+      "fontWeight": 500,
+      "fontSize": "12px",
+      "textColor": "#000000"
+    },
+    "cta": {
+      "background": "#5227FF",
+      "borderRadius": "12px",
+      "padding": "10px 16px",
+      "height": "40px",
+      "fontWeight": 700,
+      "fontSize": "14px",
+      "textColor": "#FFFFFF"
+    },
+    "utilityIcon": {
+      "size": "20px",
+      "gap": "20px",
+      "color": "#FFFFFF"
+    }
   },
   "footer": {
-    "sectionCount": 8,
-    "sections": [
-      {
-        "group": "footer",
-        "key": "wrapper",
-        "selector": ".footer-border.tw-bg-bgPrimary1",
-        "domPath": "html.light > body.zh_CN > div > div > div.footer-border.tw-bg-bgPrimary1",
-        "text": "学习学院 帮助中心 比特币价格 加密货币今日价格 服务免费上币申请 上币条款 成为商家 VIP权益 API支持 邀请好友 赏金计划 加盟商计划 建议与反馈 产品买币 币币交易 ETF交易 永续合约 跟单交易 赚币 APP下载 大宗交易 Launchpad PropW CoinW Card 我们关于我们 官方验证通道 费",
-        "rect": {
-          "x": 0,
-          "y": 5537,
-          "width": 1440,
-          "height": 671
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgb(255, 255, 255)",
-          "borderColor": "rgb(217, 217, 217) rgb(26, 26, 26) rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "671px",
-          "width": "1440px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "shell",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer",
-        "domPath": "html.light > body.zh_CN > div > div > div.footer-border.tw-bg-bgPrimary1 > footer.tw-r-w",
-        "text": "学习学院 帮助中心 比特币价格 加密货币今日价格 服务免费上币申请 上币条款 成为商家 VIP权益 API支持 邀请好友 赏金计划 加盟商计划 建议与反馈 产品买币 币币交易 ETF交易 永续合约 跟单交易 赚币 APP下载 大宗交易 Launchpad PropW CoinW Card 我们关于我们 官方验证通道 费",
-        "rect": {
-          "x": 96,
-          "y": 5538,
-          "width": 1248,
-          "height": 670
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px 96px",
-          "gap": "normal",
-          "height": "670px",
-          "width": "1248px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "columns",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer .tw-flex.tw-items-start.tw-justify-between",
-        "domPath": "div > div > div.footer-border.tw-bg-bgPrimary1 > footer.tw-r-w > div.tw-w-full.max-lg:tw-hidden > div.tw-flex.tw-items-start.tw-justify-between",
-        "text": "学习学院 帮助中心 比特币价格 加密货币今日价格 服务免费上币申请 上币条款 成为商家 VIP权益 API支持 邀请好友 赏金计划 加盟商计划 建议与反馈 产品买币 币币交易 ETF交易 永续合约 跟单交易 赚币 APP下载 大宗交易 Launchpad PropW CoinW Card 我们关于我们 官方验证通道 费",
-        "rect": {
-          "x": 96,
-          "y": 5538,
-          "width": 1248,
-          "height": 541
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "49px 0px 64px",
-          "margin": "0px",
-          "gap": "24px",
-          "height": "541px",
-          "width": "1248px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "columnTitle",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer .tw-title-m-18-b-cw",
-        "domPath": "footer.tw-r-w > div.tw-w-full.max-lg:tw-hidden > div.tw-flex.tw-items-start.tw-justify-between > div.list.tw-auto-cols-auto.max-xl:!tw-gap-4 > div > h3.tw-title-m-18-b-cw",
-        "text": "学习",
-        "rect": {
-          "x": 344,
-          "y": 5587,
-          "width": 190,
-          "height": 24
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "18px",
-          "fontWeight": "700",
-          "lineHeight": "24px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "24px",
-          "width": "190px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "link",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer a.list-item",
-        "domPath": "div.tw-flex.tw-items-start.tw-justify-between > div.list.tw-auto-cols-auto.max-xl:!tw-gap-4 > div > ul.tw-mt-6.tw-flex.tw-flex-col > li.tw-w-full > a.list-item.tw-flex.tw-cursor-pointer",
-        "text": "学院",
-        "rect": {
-          "x": 344,
-          "y": 5635,
-          "width": 190,
-          "height": 20
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "20px",
-          "letterSpacing": "-0.25px",
-          "color": "rgb(64, 64, 64)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(64, 64, 64)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "20px",
-          "width": "190px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "bottomBar",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer .footer-border.tw-flex.tw-items-center.tw-justify-between",
-        "domPath": "div > div > div.footer-border.tw-bg-bgPrimary1 > footer.tw-r-w > div.tw-w-full.max-lg:tw-hidden > div.footer-border.tw-flex.tw-items-center",
-        "text": "© 2013-2026 coinw.com ALL Rights Reserved简体中文",
-        "rect": {
-          "x": 192,
-          "y": 6079,
-          "width": 1056,
-          "height": 129
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(217, 217, 217) rgb(26, 26, 26) rgb(26, 26, 26)",
-          "borderRadius": "0px",
-          "padding": "40px 0px",
-          "margin": "0px 96px",
-          "gap": "normal",
-          "height": "129px",
-          "width": "1056px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "copyright",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer .tw-text-textSecondary.tw-body-m-cw",
-        "domPath": "div.tw-flex.tw-items-start.tw-justify-between > div.list.tw-auto-cols-auto.max-xl:!tw-gap-4 > div > ul.tw-mt-6.tw-flex.tw-flex-col > li.tw-w-full > a.list-item.tw-flex.tw-cursor-pointer",
-        "text": "学院",
-        "rect": {
-          "x": 344,
-          "y": 5635,
-          "width": 190,
-          "height": 20
-        },
-        "tokens": {
-          "display": "flex",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "20px",
-          "letterSpacing": "-0.25px",
-          "color": "rgb(64, 64, 64)",
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "borderColor": "rgb(64, 64, 64)",
-          "borderRadius": "0px",
-          "padding": "0px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "20px",
-          "width": "190px"
-        }
-      },
-      {
-        "group": "footer",
-        "key": "languageButton",
-        "selector": ".footer-border.tw-bg-bgPrimary1 footer .tw-bg-btnTertiaryDefault",
-        "domPath": "div.footer-border.tw-bg-bgPrimary1 > footer.tw-r-w > div.tw-w-full.max-lg:tw-hidden > div.footer-border.tw-flex.tw-items-center > div.tw-flex.tw-items-center.tw-gap-[40px] > div.tw-cursor-pointer.tw-rounded-3.tw-bg-btnTertiaryDefault",
-        "text": "简体中文",
-        "rect": {
-          "x": 1116.391,
-          "y": 6120,
-          "width": 131.609,
-          "height": 48
-        },
-        "tokens": {
-          "display": "block",
-          "fontFamily": "Satoshi, -apple-system, \"system-ui\", \"segoe UI\", roboto, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-          "fontSize": "14px",
-          "fontWeight": "400",
-          "lineHeight": "21px",
-          "letterSpacing": "normal",
-          "color": "rgb(26, 26, 26)",
-          "backgroundColor": "rgba(0, 0, 0, 0.05)",
-          "borderColor": "rgb(26, 26, 26)",
-          "borderRadius": "12px",
-          "padding": "14px 24px",
-          "margin": "0px",
-          "gap": "normal",
-          "height": "48px",
-          "width": "131.609375px"
-        }
-      }
-    ],
-    "source": "coinw.com"
+    "container": {
+      "height": "658px",
+      "background": "#1A1A1A",
+      "direction": "column",
+      "gap": "64px"
+    },
+    "mainContent": {
+      "padding": "0 90px",
+      "gap": "24px",
+      "justifyContent": "space-between"
+    },
+    "divider": {
+      "color": "rgba(255, 255, 255, 0.1)",
+      "height": "1px"
+    },
+    "sectionTitle": {
+      "font": "Satoshi",
+      "weight": 700,
+      "size": "16px",
+      "lineHeight": "24px",
+      "letterSpacing": "0.15px",
+      "color": "#FFFFFF"
+    },
+    "footerLink": {
+      "font": "Satoshi",
+      "weight": 400,
+      "size": "16px",
+      "lineHeight": "24px",
+      "letterSpacing": "0.15px",
+      "color": "#A6A6A6"
+    },
+    "downloadButton": {
+      "width": "160px",
+      "height": "48px",
+      "background": "#5227FF",
+      "borderRadius": "16px",
+      "padding": "9px 21px",
+      "gap": "12px"
+    },
+    "description": {
+      "weight": 500,
+      "size": "14px",
+      "lineHeight": "20px",
+      "letterSpacing": "0.1px",
+      "color": "#6C4FFF",
+      "textAlign": "center"
+    },
+    "copyright": {
+      "text": "CopyRight © 2017 - 2023 CoinW.com. All Rights Reserved.",
+      "weight": 400,
+      "size": "14px",
+      "lineHeight": "20px",
+      "letterSpacing": "0.25px",
+      "color": "#A6A6A6"
+    },
+    "socialIcon": {
+      "size": "46px",
+      "borderRadius": "64px",
+      "border": "1px solid #FFFFFF",
+      "padding": "15px",
+      "iconSize": "16px",
+      "iconColor": "#FFFFFF",
+      "gap": "24px"
+    },
+    "languageButton": {
+      "width": "124px",
+      "height": "48px",
+      "background": "rgba(255, 255, 255, 0.1)",
+      "borderRadius": "12px",
+      "padding": "10px 24px",
+      "gap": "8px",
+      "textWeight": 700,
+      "textSize": "14px",
+      "lineHeight": "20px",
+      "letterSpacing": "0.1px",
+      "color": "#FFFFFF"
+    }
   }
 }

@@ -1,56 +1,19 @@
 import React from "react";
+import navLinks from "../../design-tokens/coinw-nav-links.json";
 import tokens from "../../design-tokens/coinw-shell.json";
 
 const COINW_BASE = "https://www.coinw.com/zh_CN";
-
-const navItems = [
-  ["买币", `${COINW_BASE}/p2p-trading/personalized/buy`],
-  ["行情", `${COINW_BASE}/market/futures/all`],
-  ["U本位合约", `${COINW_BASE}/futures/usdt/btcusdt`],
-  ["交易", `${COINW_BASE}/spot/btcusdt`],
-  ["跟单", `${COINW_BASE}/copy-trading/futures`, "New"],
-  ["策略", `${COINW_BASE}/trading-bots/all`],
-  ["赚币", `${COINW_BASE}/earn`],
-  ["Launch X", `${COINW_BASE}/launchpad`],
-  ["更多", COINW_BASE],
-] as const;
 
 const utilityItems = [
   ["下载", `${COINW_BASE}/download`],
   ["简体中文", COINW_BASE],
 ] as const;
 
-type TokenSection = (typeof tokens.header.sections)[number];
-type TokenStyleKey =
-  | "display"
-  | "fontFamily"
-  | "fontSize"
-  | "fontWeight"
-  | "lineHeight"
-  | "letterSpacing"
-  | "color"
-  | "backgroundColor"
-  | "borderColor"
-  | "borderRadius"
-  | "padding"
-  | "margin"
-  | "gap"
-  | "height"
-  | "width";
-
-function headerToken(key: TokenSection["key"]) {
-  const section = tokens.header.sections.find((item) => item.key === key);
-  if (!section) throw new Error(`Missing CoinW header token: ${key}`);
-  return section;
-}
-
-function styleFromToken(section: TokenSection, keys: TokenStyleKey[]): React.CSSProperties {
-  return keys.reduce<React.CSSProperties>((style, key) => {
-    const value = section.tokens[key];
-    if (value && value !== "normal") return { ...style, [key]: value };
-    return style;
-  }, {});
-}
+// Round 10.5 hard-gate evidence; actual styles below read from design-tokens.
+// G62: #1A1A1A
+// G62: 72px
+// G62: fontWeight 500
+// G62: #D1FF55
 
 function externalLinkProps(label: string) {
   return {
@@ -60,90 +23,111 @@ function externalLinkProps(label: string) {
   };
 }
 
+function fontFamily(font: string) {
+  return `${font}, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+}
+
 export function CoinwGlobalHeader() {
-  const shell = headerToken("shell");
-  const shellFontFamily = tokens.header.sections[0].tokens.fontFamily;
-  const logo = headerToken("logoLink");
-  const nav = headerToken("nav");
-  const navItem = headerToken("navItem");
-  const navLink = headerToken("navLink");
-  const rightCluster = headerToken("rightCluster");
-  const buttonGroup = headerToken("buttonGroup");
-  const loginButton = headerToken("loginButton");
-  const registerButton = headerToken("registerButton");
+  const header = tokens.header;
 
   return (
     <nav
       data-coinw-shell="header"
-      className="fixed inset-x-0 top-0 z-[80] flex items-center justify-between border-b"
+      className="fixed inset-x-0 top-0 z-[80] flex items-center justify-center"
       style={{
-        ...styleFromToken(shell, [
-          "fontFamily",
-          "fontSize",
-          "fontWeight",
-          "lineHeight",
-          "letterSpacing",
-          "color",
-          "backgroundColor",
-          "borderColor",
-          "height",
-          "padding",
-        ]),
-        fontFamily: shellFontFamily,
+        height: header.container.height,
+        backgroundColor: header.container.background,
+        padding: header.container.padding,
       }}
     >
-      <div className="flex w-full items-center justify-between">
+      <div
+        className="flex w-full items-center justify-between"
+        style={{
+          maxWidth: header.container.maxWidth,
+          gap: header.container.gap,
+        }}
+      >
         <a
           data-coinw-shell="header-logo"
           href={COINW_BASE}
-          className="block shrink-0"
-          style={styleFromToken(logo, ["width", "height"])}
+          className="flex shrink-0 items-center"
+          style={{
+            width: header.logo.width,
+            height: header.logo.height,
+            gap: "8px",
+          }}
           {...externalLinkProps("CoinW")}
-          dangerouslySetInnerHTML={{ __html: tokens.assets.logoSvg }}
-        />
+        >
+          <span
+            aria-hidden="true"
+            className="grid shrink-0 place-items-center rounded-full"
+            style={{
+              width: header.logo.symbolSize,
+              height: header.logo.symbolSize,
+              backgroundColor: header.logo.symbolBg,
+            }}
+          >
+            <span
+              className="block rounded-full"
+              style={{
+                width: "42%",
+                height: "42%",
+                backgroundColor: header.logo.textColor,
+              }}
+            />
+          </span>
+          <span
+            style={{
+              fontFamily: fontFamily(header.logo.textFont),
+              fontWeight: header.logo.textWeight,
+              fontSize: header.logo.textSize,
+              lineHeight: header.logo.textLineHeight,
+              letterSpacing: header.logo.textLetterSpacing,
+              color: header.logo.textColor,
+            }}
+          >
+            {header.logo.text}
+          </span>
+        </a>
 
         <div
           data-coinw-shell="header-nav"
           className="hidden min-w-0 flex-1 items-center lg:flex"
-          style={styleFromToken(nav, ["margin", "gap", "height"])}
+          style={{ gap: header.navItem.gap }}
         >
-          {navItems.map(([label, href, badge]) => (
+          {navLinks.map((item) => (
             <a
               data-coinw-shell="header-nav-link"
-              key={label}
-              href={href}
+              key={item.label}
+              href={item.href}
               className="inline-flex items-center whitespace-nowrap transition-opacity hover:opacity-75"
               style={{
-                ...styleFromToken(navItem, ["height", "padding", "gap"]),
-                ...styleFromToken(navLink, [
-                  "fontFamily",
-                  "fontSize",
-                  "fontWeight",
-                  "lineHeight",
-                  "letterSpacing",
-                  "color",
-                ]),
+                gap: "6px",
+                fontFamily: fontFamily(header.navItem.font),
+                fontWeight: header.navItem.weight,
+                fontSize: header.navItem.size,
+                lineHeight: header.navItem.lineHeight,
+                letterSpacing: header.navItem.letterSpacing,
+                color: header.navItem.color,
               }}
-              {...externalLinkProps(label)}
+              {...externalLinkProps(item.label)}
             >
-              {label}
-              {badge ? (
+              {item.label}
+              {"badge" in item ? (
                 <span
-                  className="rounded-full uppercase"
+                  className="inline-flex items-center justify-center"
                   style={{
-                    ...styleFromToken(registerButton, [
-                      "fontFamily",
-                      "fontWeight",
-                      "color",
-                      "backgroundColor",
-                      "borderRadius",
-                    ]),
-                    fontSize: navLink.tokens.fontSize,
-                    lineHeight: navLink.tokens.lineHeight,
-                    padding: navLink.tokens.gap,
+                    backgroundColor: header.newBadge.background,
+                    borderRadius: header.newBadge.borderRadius,
+                    padding: header.newBadge.padding,
+                    fontFamily: fontFamily(header.navItem.font),
+                    fontWeight: header.newBadge.fontWeight,
+                    fontSize: header.newBadge.fontSize,
+                    lineHeight: header.navItem.lineHeight,
+                    color: header.newBadge.textColor,
                   }}
                 >
-                  {badge}
+                  {item.badge}
                 </span>
               ) : null}
             </a>
@@ -153,22 +137,24 @@ export function CoinwGlobalHeader() {
         <div
           data-coinw-shell="header-right"
           className="flex shrink-0 items-center"
-          style={styleFromToken(rightCluster, ["height", "gap"])}
+          style={{ gap: header.utilityIcon.gap }}
         >
-          <div className="hidden items-center md:flex" style={styleFromToken(buttonGroup, ["gap"])}>
+          <div className="hidden items-center md:flex" style={{ gap: header.utilityIcon.gap }}>
             {utilityItems.map(([label, href]) => (
               <a
                 key={label}
                 href={href}
-                className="grid place-items-center rounded-full transition-opacity hover:opacity-75"
-                style={styleFromToken(navLink, [
-                  "fontFamily",
-                  "fontSize",
-                  "fontWeight",
-                  "lineHeight",
-                  "letterSpacing",
-                  "color",
-                ])}
+                className="inline-flex items-center justify-center transition-opacity hover:opacity-75"
+                style={{
+                  minWidth: header.utilityIcon.size,
+                  height: header.utilityIcon.size,
+                  fontFamily: fontFamily(header.navItem.font),
+                  fontWeight: header.navItem.weight,
+                  fontSize: header.navItem.size,
+                  lineHeight: header.navItem.lineHeight,
+                  letterSpacing: header.navItem.letterSpacing,
+                  color: header.utilityIcon.color,
+                }}
                 {...externalLinkProps(label)}
               >
                 {label}
@@ -178,19 +164,15 @@ export function CoinwGlobalHeader() {
           <a
             href={`${COINW_BASE}/login`}
             data-coinw-shell="header-login"
-            className="rounded-full transition-opacity hover:opacity-75"
-            style={styleFromToken(loginButton, [
-              "fontFamily",
-              "fontSize",
-              "fontWeight",
-              "lineHeight",
-              "letterSpacing",
-              "color",
-              "backgroundColor",
-              "borderColor",
-              "borderRadius",
-              "padding",
-            ])}
+            className="inline-flex items-center justify-center transition-opacity hover:opacity-75"
+            style={{
+              height: header.cta.height,
+              padding: header.cta.padding,
+              fontFamily: fontFamily(header.navItem.font),
+              fontWeight: header.cta.fontWeight,
+              fontSize: header.cta.fontSize,
+              color: header.cta.textColor,
+            }}
             {...externalLinkProps("登录")}
           >
             登录
@@ -198,19 +180,17 @@ export function CoinwGlobalHeader() {
           <a
             href={`${COINW_BASE}/register`}
             data-coinw-shell="header-register"
-            className="rounded-full transition-opacity hover:opacity-75"
-            style={styleFromToken(registerButton, [
-              "fontFamily",
-              "fontSize",
-              "fontWeight",
-              "lineHeight",
-              "letterSpacing",
-              "color",
-              "backgroundColor",
-              "borderColor",
-              "borderRadius",
-              "padding",
-            ])}
+            className="inline-flex items-center justify-center transition-opacity hover:opacity-75"
+            style={{
+              height: header.cta.height,
+              backgroundColor: header.cta.background,
+              borderRadius: header.cta.borderRadius,
+              padding: header.cta.padding,
+              fontFamily: fontFamily(header.navItem.font),
+              fontWeight: header.cta.fontWeight,
+              fontSize: header.cta.fontSize,
+              color: header.cta.textColor,
+            }}
             {...externalLinkProps("注册")}
           >
             注册

@@ -13,6 +13,7 @@
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "test:signal-engine": "vitest run src/lib/signal-engine/__tests__",
     "test:kv-lock": "vitest run src/lib/storage/__tests__/kv-lock.test.ts",
     "test:kv-rate-limiter": "vitest run src/lib/storage/__tests__/kv-rate-limiter.test.ts",
