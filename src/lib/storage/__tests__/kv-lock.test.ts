@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
   }),
 }));
 
-vi.mock("@vercel/kv", () => ({
+vi.mock("@/lib/kv-shim", () => ({
   kv: {
     set: vi.fn(async (key: string, value: string | number, options: SetOptions = {}) => {
       cleanup(key);

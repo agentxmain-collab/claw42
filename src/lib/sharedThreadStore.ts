@@ -1,6 +1,6 @@
 import type { ChatThread, NewsItem, TriggerReason } from "@/lib/types";
 import { appendWatchEntry } from "@/lib/watchHistoryStore";
-import { kv as vercelKv } from "@vercel/kv";
+import { kv as vercelKv } from "@/lib/kv-shim";
 
 export const LIMITS = {
   MAX_ACTIVE_THREADS_PER_SYMBOL: 1,

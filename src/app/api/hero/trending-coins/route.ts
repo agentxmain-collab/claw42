@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import { NextResponse } from "next/server";
 import { hasKvConfig } from "@/lib/observability/kv-metrics";
 import {

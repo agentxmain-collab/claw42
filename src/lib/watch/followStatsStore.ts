@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import type { FollowStatsSnapshot } from "@/lib/watch/v9TopicAdapter";
 
 const FOLLOW_STATS_KEY_PREFIX = "watch:follow-stats:v1";

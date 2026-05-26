@@ -1,5 +1,5 @@
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
-import { kv as vercelKv } from "@vercel/kv";
+import { kv as vercelKv } from "@/lib/kv-shim";
 import type { Locale } from "@/i18n/types";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
 

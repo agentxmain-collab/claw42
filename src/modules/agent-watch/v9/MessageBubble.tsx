@@ -66,6 +66,10 @@ function compactCollapsedSummary(value: string) {
   return { text: `${text}...`, truncated: text.length < normalized.length };
 }
 
+function isVisiblyTruncatedSummary(value: string) {
+  return /(\.\.\.|…)$/.test(value.trim());
+}
+
 function MessageBubbleComponent({
   message,
   labels = DEFAULT_MESSAGE_LABELS,
@@ -76,7 +80,8 @@ function MessageBubbleComponent({
   const avatar = AGENT_AVATAR[message.agentId];
   const [collapsed, setCollapsed] = React.useState(true);
   const rawDetailText = message.content.trim();
-  const summaryText = message.oneLineSummary?.trim() ?? "";
+  const rawSummaryText = message.oneLineSummary?.trim() ?? "";
+  const summaryText = isVisiblyTruncatedSummary(rawSummaryText) ? "" : rawSummaryText;
   const compactSummaryText = React.useMemo(
     () => compactCollapsedSummary(summaryText || rawDetailText),
     [rawDetailText, summaryText],

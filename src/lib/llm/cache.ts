@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import type { LLMOutput } from "@/lib/llm/providers/types";
 
 type CacheKvClient = {

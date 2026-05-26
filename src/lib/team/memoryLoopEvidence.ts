@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import { computeTeamWinrates, type TeamMemberWinrate } from "@/lib/team/computeTeamWinrates";
 import { readAllDecisionRecords, readDecisionRecords } from "@/lib/team/decisionRecordStore";
 import type { DecisionOutcome, StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";

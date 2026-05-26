@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import {
   TEAM_MEMBER_REGISTRY,
   isTeamMemberId,
