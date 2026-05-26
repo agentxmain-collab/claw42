@@ -1,7 +1,7 @@
 # Round 10 Token Comparison: coinw.com vs claw42 target
 
 - coinw.com source: https://www.coinw.com/zh_CN
-- claw42 target: http://localhost:3025/zh_CN
+- claw42 target: https://claw42-site-git-feature-c-li-6515c5-agentxmain-collabs-projects.vercel.app/zh_CN?_vercel_share=8dJyjPRgYDJzOHbcYaVrSbyMw1tfjHmW
 - matched rows: 15/15
 
 | Element         | Field           | coinw.com (actual)                                                                                      | claw42 target                                                                                           | Match? |
