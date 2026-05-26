@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, maxDuration } from "@/app/api/cron/strategy-replay/route";
+import { resolvePipelineMode } from "@/app/api/cron/strategy-replay/pipelineMode";
 import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 import type { NewsItem } from "@/lib/types";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
@@ -22,6 +23,7 @@ const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
 const getDecisionRecordStoreDiagnosticsMock = vi.hoisted(() => vi.fn());
 const getLastDecisionRecordWriteDiagnosticsMock = vi.hoisted(() => vi.fn());
 const resolveDecisionRecordFromPriceMock = vi.hoisted(() => vi.fn());
+const runSimplePipelineMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/news/normalizer", () => ({
   normalizeNewsItem: normalizeNewsItemMock,
@@ -100,6 +102,10 @@ vi.mock("@/lib/team/decisionRecordStore", () => ({
 
 vi.mock("@/lib/team/decisionResolution", () => ({
   resolveDecisionRecordFromPrice: resolveDecisionRecordFromPriceMock,
+}));
+
+vi.mock("@/lib/team/simplePipeline", () => ({
+  runSimplePipeline: runSimplePipelineMock,
 }));
 
 vi.mock("@/lib/watch/locale", () => ({
@@ -215,6 +221,8 @@ describe("/api/cron/strategy-replay", () => {
     getDecisionRecordStoreDiagnosticsMock.mockReset();
     getLastDecisionRecordWriteDiagnosticsMock.mockReset();
     resolveDecisionRecordFromPriceMock.mockReset();
+    runSimplePipelineMock.mockReset();
+    vi.stubEnv("PIPELINE_MODE", "full");
 
     fetchNewsWithChainMock.mockResolvedValue({
       items: [newsItem()],
@@ -355,6 +363,12 @@ describe("/api/cron/strategy-replay", () => {
       record: { id: "pm:BTC:open", resolvedOutcome: "hit_tp" },
       resolution: { outcome: "hit_tp" },
     });
+    runSimplePipelineMock.mockResolvedValue({
+      mode: "simple",
+      generatedRecords: [{ id: "pm:simple:BTC:test" }],
+      skippedCandidates: [],
+      candidateKeys: ["market_overview:zh_CN:2026-05-13"],
+    });
   });
 
   afterEach(() => {
@@ -386,6 +400,53 @@ describe("/api/cron/strategy-replay", () => {
     expect(payload.ok).toBe(true);
     expect(fetchNewsWithChainMock).toHaveBeenCalled();
     expect(enqueuePmDecisionJobMock).toHaveBeenCalled();
+  });
+
+  it("defaults to simple pipeline mode unless full is explicitly requested", () => {
+    expect(resolvePipelineMode({})).toBe("simple");
+    expect(resolvePipelineMode({ PIPELINE_MODE: "simple" })).toBe("simple");
+    expect(resolvePipelineMode({ PIPELINE_MODE: "full" })).toBe("full");
+    expect(resolvePipelineMode({ PIPELINE_MODE: "other" })).toBe("simple");
+  });
+
+  it("routes simple mode through runSimplePipeline without dispatching PM jobs", async () => {
+    vi.stubEnv("PIPELINE_MODE", "simple");
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      ok: true,
+      pipelineMode: "simple",
+      simplePipeline: {
+        generatedRecords: 1,
+        skippedCandidates: 0,
+      },
+    });
+    expect(runSimplePipelineMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        locale: "zh_CN",
+        pool: expect.objectContaining({ source: "coinw-kline" }),
+        residentCandidates: expect.any(Array),
+        newsDrivenCandidates: expect.any(Array),
+      }),
+    );
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalled();
+    expect(runPmDecisionJobMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves the existing dispatchPmDecisionJob path in full mode", async () => {
+    vi.stubEnv("PIPELINE_MODE", "full");
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.pipelineMode).toBe("full");
+    expect(runSimplePipelineMock).not.toHaveBeenCalled();
+    expect(enqueuePmDecisionJobMock).toHaveBeenCalled();
+    expect(runPmDecisionJobMock).toHaveBeenCalled();
   });
 
   it("returns PM decision audit details for trigger=now verification", async () => {

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { normalizeNewsItem } from "@/lib/news/normalizer";
 import { fetchNewsFromAllSources, fetchNewsWithChain } from "@/lib/news/sourceChain";
 import { buildNewsDrivenCandidates } from "@/lib/news/symbolExtractor";
+import { resolvePipelineMode } from "@/app/api/cron/strategy-replay/pipelineMode";
 import { getNewsSourceHealthSnapshot } from "@/lib/news/sourceHealth";
 import { tryOrchestrateNewsDebate, listNewsDebates } from "@/lib/debateOrchestrator";
 import { getCoinPool } from "@/lib/marketDataCache";
@@ -21,6 +22,7 @@ import {
 } from "@/lib/team/providerTelemetry";
 import { publishPmDecisionJobToQueue } from "@/lib/team/pmDecisionJobQueue";
 import { runPmDecisionJob } from "@/lib/team/pmDecisionJobRunner";
+import { runSimplePipeline } from "@/lib/team/simplePipeline";
 import {
   CRON_MAX_SYMBOL_CARDS_PER_RUN,
   type PmDecisionTriggerAuditEvent,
@@ -84,6 +86,7 @@ export async function GET(request: NextRequest) {
   }
 
   const now = Date.now();
+  const pipelineMode = resolvePipelineMode();
   const { items, servedBy, fellBackFrom } = await fetchNewsWithChain({ limit: 8 });
   const newsDrivenSourceResult = await fetchNewsFromAllSources({ limitPerSource: 4 }).catch(() => ({
     items: [],
@@ -95,6 +98,7 @@ export async function GET(request: NextRequest) {
   for (const item of items) {
     const normalizedItem = await normalizeNewsItem(item, servedBy);
     normalizedItems.push(normalizedItem);
+    if (pipelineMode !== "full") continue;
     let debate: Awaited<ReturnType<typeof tryOrchestrateNewsDebate>> = null;
     try {
       debate = await tryOrchestrateNewsDebate(normalizedItem, now + debates.length * 1000);
@@ -124,24 +128,26 @@ export async function GET(request: NextRequest) {
   const resolvedPmDecisions = await resolveOpenPmDecisions(pool, decisionRecords, now);
   const replayed = [];
 
-  for (const debate of listNewsDebates(20)) {
-    const strategy = debate.finalStrategy;
-    if (!strategy || strategy.direction === "wait") continue;
-    const ticker = [...pool.majors, ...pool.trending, ...pool.opportunity].find(
-      (item) => item.symbol.toUpperCase() === strategy.symbol.toUpperCase(),
-    );
-    if (!ticker) continue;
-    const entryPrice =
-      strategy.stopLoss > 0 ? (strategy.stopLoss + ticker.price) / 2 : ticker.price;
-    const replay = evaluateStrategy(strategy, entryPrice, ticker.price, now);
-    await recordStrategyReplay(replay);
-    replayed.push(replay);
-  }
-  await adjustDebtFromReplays(replayed, now).catch((error) => {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[claw42] relationship debt adjustment skipped", error);
+  if (pipelineMode === "full") {
+    for (const debate of listNewsDebates(20)) {
+      const strategy = debate.finalStrategy;
+      if (!strategy || strategy.direction === "wait") continue;
+      const ticker = [...pool.majors, ...pool.trending, ...pool.opportunity].find(
+        (item) => item.symbol.toUpperCase() === strategy.symbol.toUpperCase(),
+      );
+      if (!ticker) continue;
+      const entryPrice =
+        strategy.stopLoss > 0 ? (strategy.stopLoss + ticker.price) / 2 : ticker.price;
+      const replay = evaluateStrategy(strategy, entryPrice, ticker.price, now);
+      await recordStrategyReplay(replay);
+      replayed.push(replay);
     }
-  });
+    await adjustDebtFromReplays(replayed, now).catch((error) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[claw42] relationship debt adjustment skipped", error);
+      }
+    });
+  }
   const pmDecisionAudit: PmDecisionTriggerAuditEvent[] = [];
   const pmPartialStageUpdates = true;
   const newsDrivenCandidates = await buildNewsDrivenCandidates({
@@ -161,6 +167,53 @@ export async function GET(request: NextRequest) {
     allowFirstFillBackfill: decisionRecordRead.readable,
   });
   const residentCandidates = residentPlan.candidates;
+  if (pipelineMode === "simple") {
+    const simpleResult = await runSimplePipeline({
+      locale,
+      now,
+      pool,
+      newsItems: normalizedItems,
+      residentCandidates,
+      newsDrivenCandidates,
+    });
+    return NextResponse.json({
+      ok: true,
+      pipelineMode,
+      servedBy,
+      fellBackFrom,
+      generatedDebates: debates.length,
+      locale,
+      simplePipeline: {
+        generatedRecords: simpleResult.generatedRecords.length,
+        skippedCandidates: simpleResult.skippedCandidates.length,
+        candidateKeys: simpleResult.candidateKeys,
+      },
+      residentPrewarmCandidates: residentCandidates.map((candidate) => candidate.candidateKey),
+      residentPrewarmFixedCadenceCandidates: residentPlan.fixedCadenceCandidateKeys,
+      residentPrewarmBackfillCandidates: residentPlan.backfillCandidateKeys,
+      residentPrewarmBurst: {
+        threshold: residentPlan.burstThreshold,
+        candidateKey: residentPlan.burstCandidateKey,
+        score: residentPlan.burstScore,
+        triggered: residentPlan.burstCandidateKey !== null,
+      },
+      residentPrewarmSla: residentPlan.residentStatus,
+      newsDriven: {
+        attemptedCandidateKeys: newsDrivenCandidates.map((item) => item.candidate.candidateKey),
+        generated: simpleResult.generatedRecords.filter(
+          (record) => record.candidate?.candidateType === "symbol",
+        ).length,
+        queued: 0,
+        sourceItemCount: newsDrivenSourceResult.items.length,
+        sourceFallbacks: newsDrivenSourceResult.fellBackFrom,
+      },
+      resolvedPmDecisions,
+      replayed: replayed.length,
+      trigger,
+      triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,
+      servedAt: now,
+    });
+  }
   const newsDrivenResults = [];
   const residentPrewarmResults = [];
   const inlineDeferredCandidateKeys: string[] = [];
@@ -266,6 +319,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
+    pipelineMode,
     servedBy,
     fellBackFrom,
     generatedDebates: debates.length,

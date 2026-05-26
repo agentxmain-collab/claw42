@@ -555,6 +555,93 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
   });
 
+  it("maps simple pipeline observation cards to generic navigation without price fields", () => {
+    const event = pmDecision({
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-hotspot-simple",
+        symbol: "HOTSPOT",
+        candidateType: "hotspot",
+        candidateKey: "hotspot:zh_CN:2026-05-26",
+        displayTitle: "热点叙事追踪",
+        executable: false,
+        tradeDecision: null,
+        analysisSummary: "热点观察已经完成，不涉及具体交易。",
+        stageTrace: [
+          { stageId: "analyst_inputs", status: "done", observedAt: new Date(now).toISOString() },
+          { stageId: "research_lead", status: "done", observedAt: new Date(now).toISOString() },
+          { stageId: "trade_decision", status: "done", observedAt: new Date(now).toISOString() },
+          { stageId: "risk_lead", status: "done", observedAt: new Date(now).toISOString() },
+          { stageId: "record_write", status: "done", observedAt: new Date(now).toISOString() },
+          { stageId: "public_timeline", status: "done", observedAt: new Date(now).toISOString() },
+        ],
+        rationaleByMember: { pm: "热点观察已经完成。" },
+        citationsByMember: {},
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.strategy).toMatchObject({
+      mode: "observation",
+      entry: "",
+      stopLoss: "",
+      takeProfit: "",
+      observationSummary: "热点观察已经完成，不涉及具体交易。",
+      follow: {
+        primaryLabel: "去 CoinW 看合约",
+        primaryDisabled: false,
+      },
+    });
+    expect(topic.execution).toMatchObject({
+      executable: false,
+      watchOnly: true,
+    });
+  });
+
+  it("maps simple pipeline executable symbol cards to pair-specific trade strategy", () => {
+    const event = pmDecision({
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-btc-simple",
+        symbol: "BTC",
+        candidateType: "symbol",
+        candidateKey: "news-driven:BTC:test",
+        displayTitle: "BTC 实时行情分析",
+        executable: true,
+        tradeDecision,
+        analysisSummary: "BTC 交易方案已经生成。",
+        rationaleByMember: { pm: "BTC 交易方案已经生成。" },
+        citationsByMember: {},
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.strategy).toMatchObject({
+      mode: "trade",
+      action: "short",
+      entry: expect.stringContaining("80,"),
+      stopLoss: "81,200",
+      follow: {
+        primaryDisabled: false,
+        secondaryLabel: "查看详情",
+      },
+    });
+    expect(topic.execution).toMatchObject({
+      executable: true,
+      watchOnly: false,
+    });
+  });
+
   it("ignores non pm_decision events", () => {
     expect(
       mapTopics({

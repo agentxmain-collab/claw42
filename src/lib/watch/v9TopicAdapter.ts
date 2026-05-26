@@ -975,6 +975,7 @@ function makeStrategy(
       : `${decision.direction.toUpperCase()} ${Math.round(decision.positionSizing * 100)}%`;
 
   return {
+    mode: "trade",
     action: decision.direction === "wait" ? "wait" : decision.direction,
     actionLabel,
     name: decision.direction === "wait" ? "本次决策" : "交易方案",
