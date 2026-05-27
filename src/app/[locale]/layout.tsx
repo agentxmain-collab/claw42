@@ -7,6 +7,7 @@ import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { CoinwGlobalFooter } from "@/components/CoinwGlobalFooter";
 import { CoinwGlobalHeader } from "@/components/CoinwGlobalHeader";
 import { WebVitalsBeacon } from "@/components/observability/WebVitalsBeacon";
+import { SiteHeader } from "@/components/SiteHeader";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { HTML_LANG, LOCALES, RTL_LOCALES, isLocale } from "@/i18n/locales";
 import type { Locale } from "@/i18n/types";
@@ -34,6 +35,7 @@ const notoSansSC = Noto_Sans_SC({
   display: "swap",
 });
 const bodyFontClassName = `${inter.variable} ${satoshi.variable} ${notoSansSC.variable} font-language`;
+const SITE_SHELL_VARIANT = process.env.SITE_SHELL_VARIANT === "claw42" ? "claw42" : "coinw";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -69,6 +71,7 @@ export default async function LocaleLayout({
 
   const typedLocale = locale as Locale;
   const dir = RTL_LOCALES.has(typedLocale) ? "rtl" : "ltr";
+  const isClaw42Shell = SITE_SHELL_VARIANT === "claw42";
 
   return (
     <html lang={HTML_LANG[typedLocale]} dir={dir} className="dark">
@@ -77,9 +80,9 @@ export default async function LocaleLayout({
           <AppErrorBoundary>
             <AnalyticsPageView />
             <WebVitalsBeacon />
-            <CoinwGlobalHeader />
+            {isClaw42Shell ? <SiteHeader /> : <CoinwGlobalHeader />}
             {children}
-            <CoinwGlobalFooter />
+            {isClaw42Shell ? null : <CoinwGlobalFooter />}
           </AppErrorBoundary>
         </I18nProvider>
       </body>
