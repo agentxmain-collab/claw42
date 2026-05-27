@@ -25,6 +25,7 @@ function resetEnv() {
   delete process.env.DEEPSEEK_MODEL;
   delete process.env.DEEPSEEK_FALLBACK_MODEL;
   delete process.env.MINIMAX_API_KEY;
+  delete process.env.MINIMAX_MODEL;
   delete process.env.ANTHROPIC_API_KEY;
   delete process.env.OPENAI_API_KEY;
   delete process.env.KV_REST_API_URL;
@@ -350,5 +351,89 @@ describe("LLM provider core", () => {
     expect(requestModels).toEqual(["deepseek-v4-pro", "deepseek-v4-flash", "deepseek-chat"]);
     expect(output.text).toBe("stable fallback");
     expect(output.provider).toBe("deepseek-chat");
+  });
+
+  it("collects safe DeepSeek empty-response diagnostics without response text", async () => {
+    process.env.DEEPSEEK_API_KEY = "test-key";
+    const diagnostics: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                finish_reason: "length",
+                message: { content: "", reasoning_content: "private reasoning".repeat(20) },
+              },
+            ],
+            usage: { prompt_tokens: 120, completion_tokens: 700, total_tokens: 820 },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    await expect(
+      getProvider("deepseek-chat").generate({
+        prompt: "do not expose this prompt",
+        taskTag: "test:deepseek-empty-diagnostics",
+        diagnosticsCollector: (diagnostic) => diagnostics.push(diagnostic),
+      }),
+    ).rejects.toThrow("deepseek-chat deepseek-chat empty response");
+
+    expect(diagnostics).toHaveLength(3);
+    expect(diagnostics[0]).toMatchObject({
+      provider: "deepseek-chat",
+      model: "deepseek-v4-pro",
+      httpStatus: 200,
+      finishReason: "length",
+      usage: { promptTokens: 120, completionTokens: 700, totalTokens: 820 },
+      contentLength: 0,
+      reasoningContent: { present: true, length: "private reasoning".repeat(20).length },
+      error: "deepseek-chat deepseek-v4-pro empty response",
+    });
+    expect(JSON.stringify(diagnostics)).not.toContain("do not expose this prompt");
+    expect(JSON.stringify(diagnostics)).not.toContain("private reasoning");
+  });
+
+  it("collects safe Minimax empty-response diagnostics", async () => {
+    process.env.MINIMAX_API_KEY = "test-key";
+    process.env.MINIMAX_MODEL = "MiniMax-Test";
+    const diagnostics: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({
+            choices: [{ finish_reason: "stop", message: { content: "" } }],
+            usage: { prompt_tokens: 80, completion_tokens: 0, total_tokens: 80 },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    await expect(
+      getProvider("minimax").generate({
+        prompt: "private news title",
+        taskTag: "test:minimax-empty-diagnostics",
+        diagnosticsCollector: (diagnostic) => diagnostics.push(diagnostic),
+      }),
+    ).rejects.toThrow("minimax empty response");
+
+    expect(diagnostics).toEqual([
+      expect.objectContaining({
+        provider: "minimax",
+        model: "MiniMax-Test",
+        httpStatus: 200,
+        finishReason: "stop",
+        usage: { promptTokens: 80, completionTokens: 0, totalTokens: 80 },
+        contentLength: 0,
+        reasoningContent: { present: false, length: 0 },
+        error: "minimax empty response",
+      }),
+    ]);
+    expect(JSON.stringify(diagnostics)).not.toContain("private news title");
   });
 });

@@ -1,6 +1,7 @@
 import { generateText } from "@/lib/llm/generateText";
 import { parseJsonObjectWithRepair } from "@/lib/llm/jsonRepair";
 import { callExactProvider, mapTeamProviderToProviderId } from "@/lib/llm/providers";
+import type { LLMAttemptDiagnostic } from "@/lib/llm/providers";
 import { newsItemToEvidence } from "@/lib/news/newsEvidence";
 import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { appendDecisionRecord } from "@/lib/team/decisionRecordStore";
@@ -38,6 +39,7 @@ export interface SimplePipelineResult {
     reason: "non_executable_symbol" | "no_strategy";
   }>;
   candidateKeys: string[];
+  llmDiagnostics: LLMAttemptDiagnostic[];
 }
 
 type SimplePipelineDecision = {
@@ -69,11 +71,12 @@ export async function runSimplePipeline(input: SimplePipelineInput): Promise<Sim
   const candidateInputs = dedupeByCanonicalNewsItem(input.newsDrivenCandidates ?? []);
   const generatedRecords: StrategyDecisionRecord[] = [];
   const skippedCandidates: SimplePipelineResult["skippedCandidates"] = [];
+  const llmDiagnostics: LLMAttemptDiagnostic[] = [];
 
   for (let index = 0; index < candidateInputs.length; index += SIMPLE_PIPELINE_LLM_CONCURRENCY) {
     const batch = candidateInputs.slice(index, index + SIMPLE_PIPELINE_LLM_CONCURRENCY);
     const results = await Promise.all(
-      batch.map((candidateInput) => runSimpleCandidate(input, candidateInput)),
+      batch.map((candidateInput) => runSimpleCandidate(input, candidateInput, llmDiagnostics)),
     );
 
     for (const result of results) {
@@ -87,12 +90,14 @@ export async function runSimplePipeline(input: SimplePipelineInput): Promise<Sim
     generatedRecords,
     skippedCandidates,
     candidateKeys: candidateInputs.map(({ candidate }) => candidate.candidateKey),
+    llmDiagnostics,
   };
 }
 
 async function runSimpleCandidate(
   input: SimplePipelineInput,
   candidateInput: { candidate: DecisionCandidate; newsItem: NewsItem },
+  llmDiagnostics: LLMAttemptDiagnostic[],
 ) {
   const { candidate, newsItem } = candidateInput;
   if (candidate.candidateType !== "symbol" || candidate.executable === false) {
@@ -112,6 +117,7 @@ async function runSimpleCandidate(
     ...input,
     candidate,
     newsItem,
+    llmDiagnostics,
   });
   let tradeDecision = tradeDecisionFromSimpleDecision({
     decision,
@@ -126,6 +132,7 @@ async function runSimpleCandidate(
       ...input,
       candidate,
       newsItem,
+      llmDiagnostics,
       retryForTradePlan: true,
     });
     tradeDecision = tradeDecisionFromSimpleDecision({
@@ -142,6 +149,7 @@ async function runSimpleCandidate(
       ...input,
       candidate,
       newsItem,
+      llmDiagnostics,
     }).catch(() => null);
     if (validationDecision) {
       decision = validationDecision;
@@ -187,10 +195,12 @@ async function generateSimpleDecision({
   newsItems,
   candidate,
   newsItem,
+  llmDiagnostics,
   retryForTradePlan = false,
 }: SimplePipelineInput & {
   candidate: DecisionCandidate;
   newsItem: NewsItem;
+  llmDiagnostics: LLMAttemptDiagnostic[];
   retryForTradePlan?: boolean;
 }): Promise<SimplePipelineDecision> {
   const raw = await generateText(
@@ -202,6 +212,7 @@ async function generateSimpleDecision({
       enableGuardrails: false,
       providerOverride: mapTeamProviderToProviderId(TEAM_MEMBER_REGISTRY.pm.defaultProvider),
       timeoutMs: 30_000,
+      diagnosticsCollector: (diagnostic) => llmDiagnostics.push(diagnostic),
     },
   );
   return normalizeDecision(parseJsonObjectWithRepair(raw));
@@ -214,9 +225,11 @@ async function generateMinimaxValidationDecision({
   newsItems,
   candidate,
   newsItem,
+  llmDiagnostics,
 }: SimplePipelineInput & {
   candidate: DecisionCandidate;
   newsItem: NewsItem;
+  llmDiagnostics: LLMAttemptDiagnostic[];
 }): Promise<SimplePipelineDecision> {
   const output = await callExactProvider(
     {
@@ -234,6 +247,7 @@ async function generateMinimaxValidationDecision({
       maxTokens: 700,
       providerOverride: SIMPLE_PIPELINE_VALIDATION_PROVIDER,
       timeoutMs: 30_000,
+      diagnosticsCollector: (diagnostic) => llmDiagnostics.push(diagnostic),
     },
     SIMPLE_PIPELINE_VALIDATION_PROVIDER,
   );

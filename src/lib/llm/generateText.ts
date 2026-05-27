@@ -1,5 +1,5 @@
 import { callWithChain } from "@/lib/llm/providers";
-import type { ProviderId } from "@/lib/llm/providers";
+import type { LLMAttemptDiagnosticsCollector, ProviderId } from "@/lib/llm/providers";
 import {
   applyGuardrails,
   buildGuardrailRetryPrompt,
@@ -17,6 +17,7 @@ export interface GenerateTextOptions {
   enableGuardrails?: boolean;
   providerOverride?: ProviderId;
   timeoutMs?: number;
+  diagnosticsCollector?: LLMAttemptDiagnosticsCollector;
 }
 
 export async function generateText(prompt: string, options: GenerateTextOptions): Promise<string> {
@@ -44,6 +45,7 @@ export async function generateText(prompt: string, options: GenerateTextOptions)
     taskTag: options.taskTag,
     providerOverride: options.providerOverride,
     timeoutMs: options.timeoutMs,
+    diagnosticsCollector: options.diagnosticsCollector,
   });
 
   if (options.enableGuardrails === false || !hasMechanicalOutput(output.text, options.taskTag)) {
@@ -58,6 +60,7 @@ export async function generateText(prompt: string, options: GenerateTextOptions)
     timeoutMs: options.timeoutMs ?? 10_000,
     taskTag: `${options.taskTag}:guardrail-retry`,
     providerOverride: options.providerOverride,
+    diagnosticsCollector: options.diagnosticsCollector,
   });
 
   return applyGuardrails(retryOutput.text, options.taskTag);

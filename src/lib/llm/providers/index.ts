@@ -11,7 +11,14 @@ import type { TeamProviderId } from "@/lib/team/teamRegistry";
 import type { LLMInput, LLMOutput, LLMProvider, ProviderId } from "@/lib/llm/providers/types";
 
 export { BudgetExceededError };
-export type { LLMInput, LLMOutput, LLMProvider, ProviderId } from "@/lib/llm/providers/types";
+export type {
+  LLMAttemptDiagnostic,
+  LLMAttemptDiagnosticsCollector,
+  LLMInput,
+  LLMOutput,
+  LLMProvider,
+  ProviderId,
+} from "@/lib/llm/providers/types";
 
 const PROVIDERS: Record<ProviderId, LLMProvider> = {
   "deepseek-chat": deepseekChatProvider,

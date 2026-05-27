@@ -369,6 +369,7 @@ describe("/api/cron/strategy-replay", () => {
       generatedRecords: [{ id: "pm:simple:BTC:test" }],
       skippedCandidates: [],
       candidateKeys: ["news-driven:BTC:test"],
+      llmDiagnostics: [],
     });
   });
 
@@ -440,6 +441,48 @@ describe("/api/cron/strategy-replay", () => {
     expect(payload).not.toHaveProperty("residentPrewarmSla");
     expect(enqueuePmDecisionJobMock).not.toHaveBeenCalled();
     expect(runPmDecisionJobMock).not.toHaveBeenCalled();
+  });
+
+  it("exposes safe LLM diagnostics only for preview manual simple canaries", async () => {
+    vi.stubEnv("PIPELINE_MODE", "simple");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    runSimplePipelineMock.mockResolvedValueOnce({
+      mode: "simple",
+      generatedRecords: [],
+      skippedCandidates: [{ candidateKey: "news-driven:BTC:test", reason: "no_strategy" }],
+      candidateKeys: ["news-driven:BTC:test"],
+      llmDiagnostics: [
+        {
+          provider: "deepseek-chat",
+          model: "deepseek-v4-pro",
+          taskTag: "watch:simple-pipeline:symbol:zh_CN",
+          httpStatus: 200,
+          finishReason: "length",
+          usage: { promptTokens: 120, completionTokens: 700, totalTokens: 820 },
+          contentLength: 0,
+          reasoningContent: { present: true, length: 2048 },
+          error: "deepseek-chat deepseek-v4-pro empty response",
+          latencyMs: 1100,
+        },
+      ],
+    });
+
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),
+    );
+    const payload = await response.json();
+
+    expect(payload.simplePipeline.llmDiagnostics).toEqual([
+      expect.objectContaining({
+        provider: "deepseek-chat",
+        model: "deepseek-v4-pro",
+        httpStatus: 200,
+        finishReason: "length",
+        contentLength: 0,
+        reasoningContent: { present: true, length: 2048 },
+      }),
+    ]);
+    expect(JSON.stringify(payload.simplePipeline.llmDiagnostics)).not.toContain("BTC inflows rise");
   });
 
   it("limits simple scheduled runs to five news-driven cards", async () => {

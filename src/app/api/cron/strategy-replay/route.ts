@@ -175,6 +175,9 @@ export async function GET(request: NextRequest) {
         generatedRecords: simpleResult.generatedRecords.length,
         skippedCandidates: simpleResult.skippedCandidates.length,
         candidateKeys: simpleResult.candidateKeys,
+        llmDiagnostics: shouldExposeSimplePipelineDiagnostics(trigger)
+          ? simpleResult.llmDiagnostics
+          : undefined,
       },
       newsDriven: {
         attemptedCandidateKeys: newsDrivenCandidates.map((item) => item.candidate.candidateKey),
@@ -371,6 +374,10 @@ export async function GET(request: NextRequest) {
     triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,
     servedAt: now,
   });
+}
+
+function shouldExposeSimplePipelineDiagnostics(trigger: string | null) {
+  return trigger === "now" && process.env.VERCEL_ENV !== "production";
 }
 
 async function buildCronDecisionRunDiagnostics(locale: ReturnType<typeof localeFromRequestUrl>) {
