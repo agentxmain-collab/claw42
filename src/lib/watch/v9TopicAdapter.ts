@@ -1072,13 +1072,57 @@ function compareRankedGroups(
   b: { group: DispatchTopicGroup; ranking: ReturnType<typeof calculateTopicRankingScore> },
 ) {
   return (
-    b.ranking.score - a.ranking.score ||
     strategySortTime(b.group) - strategySortTime(a.group) ||
     b.group.latestAt - a.group.latestAt ||
+    b.ranking.score - a.ranking.score ||
     publicTimelineEventStableId(a.group.latestDecision).localeCompare(
       publicTimelineEventStableId(b.group.latestDecision),
     )
   );
+}
+
+function diversificationSymbol(group: DispatchTopicGroup) {
+  if (group.candidateType !== "symbol") return "";
+  return group.symbol.trim().replace(/^\$+/, "").toUpperCase();
+}
+
+function interleaveRankedGroupsBySymbol(
+  groups: Array<{
+    group: DispatchTopicGroup;
+    ranking: ReturnType<typeof calculateTopicRankingScore>;
+  }>,
+) {
+  const remaining = [...groups];
+  const interleaved: typeof groups = [];
+  while (remaining.length > 0) {
+    const previousSymbol = interleaved.length
+      ? diversificationSymbol(interleaved[interleaved.length - 1]!.group)
+      : "";
+    const nextIndex =
+      previousSymbol &&
+      remaining.some((entry) => diversificationSymbol(entry.group) !== previousSymbol)
+        ? remaining.findIndex((entry) => diversificationSymbol(entry.group) !== previousSymbol)
+        : 0;
+    const [next] = remaining.splice(nextIndex, 1);
+    if (next) interleaved.push(next);
+  }
+
+  const hasAdjacentSameSymbol = interleaved.some((entry, index) => {
+    if (index === 0) return false;
+    const current = diversificationSymbol(entry.group);
+    return Boolean(current && current === diversificationSymbol(interleaved[index - 1]!.group));
+  });
+  if (hasAdjacentSameSymbol) {
+    console.info(
+      JSON.stringify({
+        type: "claw42_watch_event",
+        event: "same_symbol_diversification_unavailable",
+        visible_count: interleaved.length,
+      }),
+    );
+  }
+
+  return interleaved;
 }
 
 function displayablePublicBetaGroup(group: DispatchTopicGroup) {
@@ -1107,8 +1151,9 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       };
     })
     .sort(compareRankedGroups);
+  const visibleRankedGroups = interleaveRankedGroupsBySymbol(rankedGroups);
 
-  return rankedGroups.map(({ group, ranking }, index) => {
+  return visibleRankedGroups.map(({ group, ranking }, index) => {
     const evidence = firstEvidence(group, ctx.evidenceMap);
     const originalUrl = originalEvidenceUrl(evidence);
     const latest = group.latestDecision;

@@ -814,7 +814,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topics.map((topic) => topic.id)).toEqual(["eth-record", "btc-record"]);
   });
 
-  it("orders strategy topics by ranking score before generated time", () => {
+  it("orders strategy topics by freshness before ranking score", () => {
     const lowerScoreNewerDecision: TradeDecision = {
       ...tradeDecision,
       id: "trade-eth-lower",
@@ -860,7 +860,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topics.map((topic) => topic.id)).toEqual(["btc-record", "eth-record"]);
+    expect(topics.map((topic) => topic.id)).toEqual(["eth-record", "btc-record"]);
     expect(topics.map((topic) => topic.topicRanking?.rankLabel)).toEqual(["排序 #1", "排序 #2"]);
   });
 
@@ -2033,5 +2033,100 @@ describe("mapPublicTimelineEventsToTopics", () => {
 
     expect(topic.originalUrl).toBeUndefined();
     expect(topic.sourceLabel).toBeUndefined();
+  });
+
+  it("orders visible cards by freshness before ranking score", () => {
+    const olderHighScore = pmDecision({
+      id: "event-btc-old",
+      ts: now - 20 * 60_000,
+      importance: "high",
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-btc-old",
+        symbol: "BTC",
+        candidateType: "symbol",
+        candidateKey: "news-driven:BTC:old",
+        displayTitle: "BTC 实时行情分析",
+        executable: true,
+        tradeDecision: {
+          ...tradeDecision,
+          symbol: "BTC",
+          confidence: 0.92,
+          generatedAt: new Date(now - 20 * 60_000).toISOString(),
+        },
+        rationaleByMember: { news_analyst: "BTC high-score but older." },
+        citationsByMember: { news_analyst: ["ev_1"] },
+      },
+    });
+    const newerLowerScore = pmDecision({
+      id: "event-eth-new",
+      ts: now - 2 * 60_000,
+      importance: "medium",
+      evidenceIds: ["ev_2"],
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-eth-new",
+        symbol: "ETH",
+        candidateType: "symbol",
+        candidateKey: "news-driven:ETH:new",
+        displayTitle: "ETH 实时行情分析",
+        executable: true,
+        tradeDecision: {
+          ...tradeDecision,
+          id: "trade-eth",
+          symbol: "ETH",
+          confidence: 0.52,
+          generatedAt: new Date(now - 2 * 60_000).toISOString(),
+        },
+        rationaleByMember: { news_analyst: "ETH newer but lower-score." },
+        citationsByMember: { news_analyst: ["ev_2"] },
+      },
+    });
+
+    const topics = mapTopics({
+      events: [olderHighScore, newerLowerScore],
+      evidenceMap: {
+        ev_1: evidence,
+        ev_2: { ...evidence, id: "ev_2", symbol: ["ETH"], impactSeverity: "low" },
+      },
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topics.map((topic) => topic.symbol)).toEqual(["ETH", "BTC"]);
+  });
+
+  it("interleaves same-symbol visible cards when another symbol is available", () => {
+    const eventFor = (symbol: string, key: string, minutesAgo: number) =>
+      pmDecision({
+        id: `event-${key}`,
+        ts: now - minutesAgo * 60_000,
+        evidenceIds: [`ev_${key}`],
+        payload: {
+          kind: "pm_decision",
+          recordId: `record-${key}`,
+          symbol,
+          candidateType: "symbol",
+          candidateKey: `news-driven:${symbol}:${key}`,
+          displayTitle: `${symbol} 实时行情分析`,
+          executable: true,
+          tradeDecision: {
+            ...tradeDecision,
+            id: `trade-${key}`,
+            symbol,
+            generatedAt: new Date(now - minutesAgo * 60_000).toISOString(),
+          },
+          rationaleByMember: { news_analyst: `${symbol} ${key} rationale.` },
+          citationsByMember: { news_analyst: [`ev_${key}`] },
+        },
+      });
+
+    const topics = mapTopics({
+      events: [eventFor("BTC", "btc-a", 1), eventFor("BTC", "btc-b", 2), eventFor("ETH", "eth", 3)],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH", "BTC"]);
   });
 });

@@ -115,8 +115,17 @@ function recordsWritten() {
 
 function completeDecision(symbol = "BTC") {
   return JSON.stringify({
+    localizedNewsTitle: `${symbol} 新闻推动交易关注`,
+    newsIntro: `${symbol} 新闻热度升温，短线交易关注度提高。`,
     analysisSummary: `${symbol} 成交与新闻共振，短线偏多。`,
     rationale: `${symbol} 成交与新闻共振，短线偏多。`,
+    newsBrief: `${symbol} 相关新闻带来新的市场关注，成交活跃度同步抬升。`,
+    symbolThesis: `${symbol} 当前价格与新闻叙事形成共振，趋势延续概率提高。`,
+    bullCase: `${symbol} 多头优势来自成交放大和新闻催化同步出现。`,
+    bearCase: `${symbol} 空头风险在于短线获利盘可能压制突破节奏。`,
+    tradePlanRationale: `${symbol} 交易计划选择顺势低仓位参与，等待确认后执行。`,
+    riskReview: `${symbol} 风险重点是新闻热度衰减或价格跌回关键支撑下方。`,
+    invalidationWatch: `${symbol} 若跌破止损区间或新闻催化失效，本轮策略失效。`,
     direction: "long",
     confidence: 0.76,
     entryPrice: 101000,
@@ -169,7 +178,24 @@ describe("runSimplePipeline", () => {
     });
     expect(generateTextMock.mock.calls[0]?.[0]).toContain("direction must be long or short");
     expect(generateTextMock.mock.calls[0]?.[0]).toContain("entryPrice must be a JSON number");
+    expect(generateTextMock.mock.calls[0]?.[0]).toContain("localizedNewsTitle");
+    expect(saveNewsEvidenceMock.mock.calls[0]?.[0]).toMatchObject({
+      title: "BTC 新闻推动交易关注",
+      summary: "BTC 新闻热度升温，短线交易关注度提高。",
+    });
     expect(record.analysisSummary).toBe("BTC 成交与新闻共振，短线偏多。");
+    expect(record.contributorIds).toEqual([
+      "news_analyst",
+      "research_lead",
+      "bullish_researcher",
+      "bearish_researcher",
+      "trader",
+      "risk_lead",
+      "pm",
+    ]);
+    expect(new Set(record.analystInputs.map((input) => input.rationale)).size).toBe(
+      record.analystInputs.length,
+    );
     expect(record.tradeDecision).toMatchObject({
       symbol: "BTC",
       direction: "long",
@@ -187,6 +213,9 @@ describe("runSimplePipeline", () => {
       analysisSummary: "BTC 成交与新闻共振，短线偏多。",
       tradeDecision: expect.objectContaining({ symbol: "BTC", direction: "long" }),
     });
+    const details = (event.payload.rounds ?? []).map((round) => round.detailedRationale);
+    expect(details.length).toBeGreaterThanOrEqual(6);
+    expect(new Set(details).size).toBe(details.length);
   });
 
   it("writes executable symbol records only when the LLM returns a complete trade plan", async () => {
@@ -349,7 +378,7 @@ describe("runSimplePipeline", () => {
     );
   });
 
-  it("allows multi cards same symbol different news", async () => {
+  it("soft-caps a mono-symbol run when diversification is unavailable", async () => {
     generateTextMock.mockResolvedValue(completeDecision("BTC"));
 
     const result = await runSimplePipeline({
@@ -379,11 +408,69 @@ describe("runSimplePipeline", () => {
       ],
     });
 
-    expect(result.generatedRecords).toHaveLength(2);
+    expect(result.generatedRecords).toHaveLength(1);
     expect(recordsWritten().map((record) => record.candidate?.candidateKey)).toEqual([
       "news-driven:BTC:story-a",
-      "news-driven:BTC:story-b",
     ]);
+  });
+
+  it("interleaves mixed symbols before simple LLM execution", async () => {
+    generateTextMock.mockImplementation((prompt: string) => {
+      const symbol = prompt.includes("symbol=ETH")
+        ? "ETH"
+        : prompt.includes("symbol=SOL")
+          ? "SOL"
+          : "BTC";
+      return Promise.resolve(completeDecision(symbol));
+    });
+
+    const result = await runSimplePipeline({
+      locale: "zh_CN",
+      now,
+      pool: pool(),
+      newsItems: [],
+      newsDrivenCandidates: [
+        {
+          candidate: candidateFor("BTC", "btc-a"),
+          newsItem: news("BTC", {
+            id: "btc-a",
+            title: "Bitcoin unique market update number one expands futures volume",
+            url: "https://example.com/btc-a",
+          }),
+          symbol: "BTC",
+        },
+        {
+          candidate: candidateFor("BTC", "btc-b"),
+          newsItem: news("BTC", {
+            id: "btc-b",
+            title: "Bitcoin unique market update number two expands futures volume",
+            url: "https://example.com/btc-b",
+          }),
+          symbol: "BTC",
+        },
+        {
+          candidate: candidateFor("ETH", "eth-a"),
+          newsItem: news("ETH", {
+            id: "eth-a",
+            title: "Ethereum unique market update expands futures volume",
+            url: "https://example.com/eth-a",
+          }),
+          symbol: "ETH",
+        },
+        {
+          candidate: candidateFor("SOL", "sol-a"),
+          newsItem: news("SOL", {
+            id: "sol-a",
+            title: "Solana unique market update expands futures volume",
+            url: "https://example.com/sol-a",
+          }),
+          symbol: "SOL",
+        },
+      ],
+    });
+
+    expect(result.generatedRecords).toHaveLength(4);
+    expect(recordsWritten().map((record) => record.symbol)).toEqual(["BTC", "ETH", "SOL", "BTC"]);
   });
 
   it("keeps simple pipeline LLM concurrency bounded at two", async () => {
@@ -397,19 +484,20 @@ describe("runSimplePipeline", () => {
       return completeDecision("BTC");
     });
 
+    const symbols = ["BTC", "ETH", "SOL", "HYPE", "DOGE"];
     const result = await runSimplePipeline({
       locale: "zh_CN",
       now,
       pool: pool(),
       newsItems: [],
-      newsDrivenCandidates: Array.from({ length: 5 }, (_, index) => ({
-        candidate: candidateFor("BTC", `story-${index}`),
-        newsItem: news("BTC", {
+      newsDrivenCandidates: symbols.map((symbol, index) => ({
+        candidate: candidateFor(symbol, `story-${index}`),
+        newsItem: news(symbol, {
           id: `story-${index}`,
-          title: `Bitcoin unique market update number ${index} expands futures volume`,
+          title: `${symbol} unique market update number ${index} expands futures volume`,
           url: `https://example.com/story-${index}`,
         }),
-        symbol: "BTC",
+        symbol,
       })),
     });
 

@@ -34,7 +34,9 @@ describe("normalizeNewsItem", () => {
     expect(generateTextMock).not.toHaveBeenCalled();
   });
 
-  it("anchors broad crypto market headlines locally before calling the LLM", async () => {
+  it("does not anchor broad crypto market headlines to BTC", async () => {
+    generateTextMock.mockResolvedValue(JSON.stringify({ currencies: [] }));
+
     const normalized = await normalizeNewsItem(
       newsItem({
         title: "Crypto market rally accelerates as liquidity improves",
@@ -42,9 +44,9 @@ describe("normalizeNewsItem", () => {
       "rss-coindesk",
     );
 
-    expect(normalized.currencies).toEqual(["BTC"]);
+    expect(normalized.currencies).toEqual([]);
     expect(normalized.sentiment).toBe("bullish");
-    expect(generateTextMock).not.toHaveBeenCalled();
+    expect(generateTextMock).toHaveBeenCalledTimes(1);
   });
 
   it("normalizes existing currency symbols locally before calling the LLM", async () => {

@@ -58,6 +58,10 @@ function symbolsFromText(text: string) {
   return matches;
 }
 
+function aboutnessText(item: NewsItem) {
+  return item.title;
+}
+
 function uniqueCoinwSymbols(symbols: readonly string[], instruments: CoinWFuturesInstrumentSet) {
   return Array.from(
     new Set(
@@ -73,9 +77,21 @@ export function extractSymbolsFromNewsText(
   item: NewsItem,
   instruments: CoinWFuturesInstrumentSet,
 ): string[] {
-  const nativeSymbols = Array.isArray(item.currencies) ? item.currencies : [];
-  const textSymbols = symbolsFromText(`${item.title} ${item.source} ${item.sourceDomain ?? ""}`);
-  return uniqueCoinwSymbols([...nativeSymbols, ...textSymbols], instruments);
+  const explicitSymbols = uniqueCoinwSymbols(symbolsFromText(aboutnessText(item)), instruments);
+  if (explicitSymbols.length > 0) return explicitSymbols;
+
+  const nativeSymbols = uniqueCoinwSymbols(
+    Array.isArray(item.currencies) ? item.currencies : [],
+    instruments,
+  );
+  if (nativeSymbols.length !== 1) return [];
+
+  const normalizedTitle = item.title.toLowerCase();
+  const [nativeSymbol] = nativeSymbols;
+  if (!nativeSymbol) return [];
+  if (normalizedTitle.includes(nativeSymbol.toLowerCase())) return [nativeSymbol];
+
+  return [];
 }
 
 export function matchSingleSymbol(
@@ -87,6 +103,51 @@ export function matchSingleSymbol(
 }
 
 export const newsToSymbol = matchSingleSymbol;
+
+export function selectNewsDrivenCandidatesWithSymbolDiversity(
+  candidates: NewsDrivenCandidate[],
+  limit: number,
+): NewsDrivenCandidate[] {
+  if (limit <= 0 || candidates.length === 0) return [];
+
+  const buckets = new Map<string, NewsDrivenCandidate[]>();
+  for (const candidate of candidates) {
+    const symbol = candidate.symbol.toUpperCase();
+    const bucket = buckets.get(symbol);
+    if (bucket) bucket.push(candidate);
+    else buckets.set(symbol, [candidate]);
+  }
+
+  if (buckets.size <= 1) {
+    if (candidates.length > 1) {
+      console.info(
+        JSON.stringify({
+          type: "claw42_news_event",
+          event: "same_symbol_diversification_unavailable",
+          symbol: candidates[0]?.symbol ?? null,
+          input_count: candidates.length,
+          output_count: 1,
+        }),
+      );
+    }
+    return candidates.slice(0, Math.min(limit, 1));
+  }
+
+  const selected: NewsDrivenCandidate[] = [];
+  while (selected.length < limit) {
+    let added = false;
+    for (const bucket of Array.from(buckets.values())) {
+      const next = bucket.shift();
+      if (!next) continue;
+      selected.push(next);
+      added = true;
+      if (selected.length >= limit) break;
+    }
+    if (!added) break;
+  }
+
+  return selected;
+}
 
 export async function buildNewsDrivenCandidates({
   newsItems,
@@ -124,8 +185,7 @@ export async function buildNewsDrivenCandidates({
         reasons,
       },
     });
-    if (candidates.length >= limit) break;
   }
 
-  return candidates;
+  return selectNewsDrivenCandidatesWithSymbolDiversity(candidates, limit);
 }

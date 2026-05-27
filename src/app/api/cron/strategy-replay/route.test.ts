@@ -487,16 +487,21 @@ describe("/api/cron/strategy-replay", () => {
 
   it("limits simple scheduled runs to five news-driven cards", async () => {
     vi.stubEnv("PIPELINE_MODE", "simple");
+    const symbols = ["BTC", "ETH", "SOL", "HYPE"];
     fetchNewsFromAllSourcesMock.mockResolvedValue({
-      items: Array.from({ length: 10 }, (_, index) => ({
-        item: {
-          ...newsItem(),
-          id: `news-${index}`,
-          title: `BTC market update ${index}`,
-          url: `https://example.com/btc-${index}`,
-        },
-        sourceId: "rss-coindesk",
-      })),
+      items: Array.from({ length: 10 }, (_, index) => {
+        const symbol = symbols[index % symbols.length]!;
+        return {
+          item: {
+            ...newsItem(),
+            id: `news-${index}`,
+            title: `${symbol} market update ${index}`,
+            url: `https://example.com/${symbol.toLowerCase()}-${index}`,
+            currencies: [symbol],
+          },
+          sourceId: "rss-coindesk",
+        };
+      }),
       fellBackFrom: [],
     });
 

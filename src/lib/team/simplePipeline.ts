@@ -6,11 +6,12 @@ import { newsItemToEvidence } from "@/lib/news/newsEvidence";
 import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { appendDecisionRecord } from "@/lib/team/decisionRecordStore";
 import type {
+  AnalystInputRecord,
   AnalystDirection,
   DecisionStageTraceEntry,
   StrategyDecisionRecord,
 } from "@/lib/team/strategyDecisionRecord";
-import { TEAM_MEMBER_REGISTRY } from "@/lib/team/teamRegistry";
+import { TEAM_MEMBER_REGISTRY, type TeamMemberId } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import type { NewsDrivenCandidate } from "@/lib/news/symbolExtractor";
@@ -43,8 +44,17 @@ export interface SimplePipelineResult {
 }
 
 type SimplePipelineDecision = {
+  localizedNewsTitle: string;
+  newsIntro: string;
   analysisSummary: string;
   rationale: string;
+  newsBrief: string;
+  symbolThesis: string;
+  bullCase: string;
+  bearCase: string;
+  tradePlanRationale: string;
+  riskReview: string;
+  invalidationWatch: string;
   direction: AnalystDirection;
   confidence: number;
   entryPrice?: number | null;
@@ -69,7 +79,9 @@ const SIMPLE_PIPELINE_STAGE_LABELS: Record<DecisionStageTraceEntry["stageId"], s
 };
 
 export async function runSimplePipeline(input: SimplePipelineInput): Promise<SimplePipelineResult> {
-  const candidateInputs = dedupeByCanonicalNewsItem(input.newsDrivenCandidates ?? []);
+  const candidateInputs = selectSimpleInputsWithSymbolDiversity(
+    dedupeByCanonicalNewsItem(input.newsDrivenCandidates ?? []),
+  );
   const generatedRecords: StrategyDecisionRecord[] = [];
   const skippedCandidates: SimplePipelineResult["skippedCandidates"] = [];
   const llmDiagnostics: LLMAttemptDiagnostic[] = [];
@@ -111,8 +123,8 @@ async function runSimpleCandidate(
   }
 
   const createdAt = new Date(input.now).toISOString();
-  const evidence = newsItemToEvidence(newsItem, createdAt);
-  const evidenceIds = [evidence.id];
+  const provisionalEvidence = newsItemToEvidence(newsItem, createdAt);
+  const evidenceIds = [provisionalEvidence.id];
   const symbol = recordSymbol(candidate);
   let decision = await generateSimpleDecision({
     ...input,
@@ -124,6 +136,7 @@ async function runSimpleCandidate(
     decision,
     candidate,
     symbol,
+    locale: input.locale,
     createdAt,
     evidenceIds,
   });
@@ -140,6 +153,7 @@ async function runSimpleCandidate(
       decision,
       candidate,
       symbol,
+      locale: input.locale,
       createdAt,
       evidenceIds,
     });
@@ -158,6 +172,7 @@ async function runSimpleCandidate(
         decision,
         candidate,
         symbol,
+        locale: input.locale,
         createdAt,
         evidenceIds,
       });
@@ -173,7 +188,9 @@ async function runSimpleCandidate(
     };
   }
 
-  const savedEvidence = await saveNewsEvidence(evidence);
+  const savedEvidence = await saveNewsEvidence(
+    newsEvidenceFromSimpleDecision(newsItem, decision, createdAt),
+  );
   const record = buildSimpleDecisionRecord({
     ...input,
     candidate,
@@ -209,7 +226,7 @@ async function generateSimpleDecision({
     {
       taskTag: `watch:simple-pipeline:${candidate.candidateType}:${locale}`,
       temperature: 0.25,
-      maxTokens: 700,
+      maxTokens: 1500,
       enableGuardrails: false,
       providerOverride: mapTeamProviderToProviderId(TEAM_MEMBER_REGISTRY.pm.defaultProvider),
       thinkingMode: "disabled",
@@ -247,7 +264,7 @@ async function generateMinimaxValidationDecision({
       }),
       taskTag: `watch:simple-pipeline-validation:${candidate.candidateType}:${locale}`,
       temperature: 0.25,
-      maxTokens: 700,
+      maxTokens: 1500,
       providerOverride: SIMPLE_PIPELINE_VALIDATION_PROVIDER,
       modelOverride: SIMPLE_PIPELINE_VALIDATION_MODEL,
       timeoutMs: 30_000,
@@ -282,7 +299,9 @@ function simpleDecisionPrompt({
     `executable=${candidate.executable ? "true" : "false"}`,
     priceContext(candidate, pool),
     newsContext(newsItem ? [newsItem] : newsItems),
-    "Required JSON keys: analysisSummary, rationale, direction, confidence, entryPrice, stopLoss, takeProfit, positionSizing, riskNote, invalidatesIf.",
+    "Required JSON keys: localizedNewsTitle, newsIntro, analysisSummary, rationale, newsBrief, symbolThesis, bullCase, bearCase, tradePlanRationale, riskReview, invalidationWatch, direction, confidence, entryPrice, stopLoss, takeProfit, positionSizing, riskNote, invalidatesIf.",
+    "localizedNewsTitle and newsIntro must be localized to locale. newsIntro is one concise sentence: what happened and why it matters for this symbol.",
+    "newsBrief, symbolThesis, bullCase, bearCase, tradePlanRationale, riskReview, invalidationWatch must be non-empty, mutually distinct, and localized to locale.",
     "direction must be long or short for this executable CoinW symbol card.",
     "entryPrice must be a JSON number near the current price; stopLoss must be a JSON number; takeProfit must be an array of one or more JSON numbers; positionSizing must be a JSON number from 0.03 to 0.5.",
     "Use conservative levels when the signal is mixed, but still return a complete executable plan.",
@@ -320,55 +339,16 @@ function buildSimpleDecisionRecord({
     analysisSummary: decision.analysisSummary,
     locale,
     decisionOwnerId: "pm",
-    contributorIds: ["news_analyst", "pm"],
-    analystInputs: [
-      {
-        memberId: "news_analyst",
-        direction: decision.direction,
-        confidence: decision.confidence,
-        rationale: decision.rationale,
-        oneLineSummary: oneLine(decision.analysisSummary || decision.rationale),
-        detailedRationale: decision.rationale,
-        dataStatus: evidenceIds.length > 0 ? "ok" : "partial",
-        evidenceIds,
-        rounds: [
-          {
-            round: 1,
-            direction: decision.direction,
-            confidence: decision.confidence,
-            rationale: decision.rationale,
-            oneLineSummary: oneLine(decision.analysisSummary || decision.rationale),
-            detailedRationale: decision.rationale,
-            dataStatus: evidenceIds.length > 0 ? "ok" : "partial",
-            evidenceIds,
-            observedAt: createdAt,
-          },
-        ],
-      },
-      {
-        memberId: "pm",
-        direction: decision.direction,
-        confidence: decision.confidence,
-        rationale: decision.rationale,
-        oneLineSummary: oneLine(decision.analysisSummary || decision.rationale),
-        detailedRationale: decision.rationale,
-        dataStatus: evidenceIds.length > 0 ? "ok" : "partial",
-        evidenceIds,
-        rounds: [
-          {
-            round: 1,
-            direction: decision.direction,
-            confidence: decision.confidence,
-            rationale: decision.rationale,
-            oneLineSummary: oneLine(decision.analysisSummary || decision.rationale),
-            detailedRationale: decision.rationale,
-            dataStatus: evidenceIds.length > 0 ? "ok" : "partial",
-            evidenceIds,
-            observedAt: createdAt,
-          },
-        ],
-      },
+    contributorIds: [
+      "news_analyst",
+      "research_lead",
+      "bullish_researcher",
+      "bearish_researcher",
+      "trader",
+      "risk_lead",
+      "pm",
     ],
+    analystInputs: simpleAnalystInputs({ decision, evidenceIds, createdAt }),
     stageTrace: buildCompletedStageTrace(createdAt),
     sourceThreadId: null,
     tradeDecision,
@@ -386,17 +366,20 @@ function tradeDecisionFromSimpleDecision({
   decision,
   candidate,
   symbol,
+  locale,
   createdAt,
   evidenceIds,
 }: {
   decision: SimplePipelineDecision;
   candidate: DecisionCandidate;
   symbol: string;
+  locale: Locale;
   createdAt: string;
   evidenceIds: string[];
 }): TradeDecision | null {
   if (candidate.candidateType !== "symbol" || candidate.executable === false) return null;
   if (decision.direction !== "long" && decision.direction !== "short") return null;
+  if (!hasValidSimpleDecisionSections(decision, locale)) return null;
   const entryPrice = finitePositive(decision.entryPrice);
   const stopLoss = finitePositive(decision.stopLoss);
   const takeProfit = Array.isArray(decision.takeProfit)
@@ -446,18 +429,188 @@ function buildCompletedStageTrace(observedAt: string): DecisionStageTraceEntry[]
     observedAt,
     startedAt: observedAt,
     completedAt: observedAt,
-    memberIds: stageId === "analyst_inputs" ? ["news_analyst"] : ["pm"],
+    memberIds: stageMembersForSimplePipeline(stageId),
     modelProvider: SIMPLE_PIPELINE_PROVIDER,
     promptVersion: SIMPLE_PIPELINE_PROMPT_VERSION,
   }));
+}
+
+function stageMembersForSimplePipeline(
+  stageId: DecisionStageTraceEntry["stageId"],
+): TeamMemberId[] {
+  if (stageId === "analyst_inputs") return ["news_analyst"];
+  if (stageId === "research_lead")
+    return ["research_lead", "bullish_researcher", "bearish_researcher"];
+  if (stageId === "trade_decision") return ["trader"];
+  if (stageId === "risk_lead") return ["risk_lead"];
+  return ["pm"];
+}
+
+function simpleAnalystInputs({
+  decision,
+  evidenceIds,
+  createdAt,
+}: {
+  decision: SimplePipelineDecision;
+  evidenceIds: string[];
+  createdAt: string;
+}): AnalystInputRecord[] {
+  return [
+    simpleAnalystInput(
+      "news_analyst",
+      decision.newsBrief,
+      decision.direction,
+      decision.confidence,
+      evidenceIds,
+      createdAt,
+    ),
+    simpleAnalystInput(
+      "research_lead",
+      decision.symbolThesis,
+      decision.direction,
+      decision.confidence,
+      evidenceIds,
+      createdAt,
+    ),
+    simpleAnalystInput(
+      "bullish_researcher",
+      decision.bullCase,
+      "long",
+      0.5,
+      evidenceIds,
+      createdAt,
+    ),
+    simpleAnalystInput(
+      "bearish_researcher",
+      decision.bearCase,
+      "short",
+      0.5,
+      evidenceIds,
+      createdAt,
+    ),
+    simpleAnalystInput(
+      "trader",
+      decision.tradePlanRationale,
+      decision.direction,
+      decision.confidence,
+      evidenceIds,
+      createdAt,
+    ),
+    simpleAnalystInput(
+      "risk_lead",
+      decision.riskReview,
+      "neutral",
+      Math.min(decision.confidence, 0.7),
+      evidenceIds,
+      createdAt,
+    ),
+    simpleAnalystInput(
+      "pm",
+      decision.invalidationWatch,
+      decision.direction,
+      decision.confidence,
+      evidenceIds,
+      createdAt,
+    ),
+  ];
+}
+
+function simpleAnalystInput(
+  memberId: TeamMemberId,
+  rationale: string,
+  direction: AnalystDirection,
+  confidence: number,
+  evidenceIds: string[],
+  observedAt: string,
+): AnalystInputRecord {
+  const oneLineSummary = oneLine(rationale);
+  return {
+    memberId,
+    direction,
+    confidence,
+    rationale,
+    oneLineSummary,
+    detailedRationale: rationale,
+    dataStatus: evidenceIds.length > 0 ? "ok" : "partial",
+    evidenceIds,
+    rounds: [
+      {
+        round: 1,
+        direction,
+        confidence,
+        rationale,
+        oneLineSummary,
+        detailedRationale: rationale,
+        dataStatus: evidenceIds.length > 0 ? "ok" : "partial",
+        evidenceIds,
+        observedAt,
+      },
+    ],
+  };
+}
+
+function newsEvidenceFromSimpleDecision(
+  newsItem: NewsItem,
+  decision: SimplePipelineDecision,
+  fetchedAt: string,
+) {
+  const evidence = newsItemToEvidence(
+    {
+      ...newsItem,
+      title: decision.localizedNewsTitle || newsItem.title,
+    },
+    fetchedAt,
+  );
+  return {
+    ...evidence,
+    summary: decision.newsIntro || decision.newsBrief || evidence.summary,
+  };
+}
+
+function hasValidSimpleDecisionSections(decision: SimplePipelineDecision, locale: Locale) {
+  const sections = [
+    decision.localizedNewsTitle,
+    decision.newsIntro,
+    decision.newsBrief,
+    decision.symbolThesis,
+    decision.bullCase,
+    decision.bearCase,
+    decision.tradePlanRationale,
+    decision.riskReview,
+    decision.invalidationWatch,
+  ];
+  if (sections.some((section) => section.trim().length < 6)) return false;
+  const sectionKeys = sections.map(compactSectionKey);
+  if (new Set(sectionKeys).size !== sectionKeys.length) return false;
+  if (String(locale).startsWith("zh")) {
+    return sections.some((section) => /[\u4e00-\u9fff]/.test(section));
+  }
+  return true;
+}
+
+function compactSectionKey(value: string) {
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[^\w\s\u4e00-\u9fff]/g, "")
+    .toLowerCase();
 }
 
 function normalizeDecision(parsed: Record<string, unknown>): SimplePipelineDecision {
   const rationale = text(parsed.rationale) || text(parsed.analysisSummary);
   const analysisSummary = text(parsed.analysisSummary) || oneLine(rationale);
   return {
+    localizedNewsTitle: text(parsed.localizedNewsTitle),
+    newsIntro: text(parsed.newsIntro),
     analysisSummary,
     rationale: rationale || analysisSummary,
+    newsBrief: text(parsed.newsBrief),
+    symbolThesis: text(parsed.symbolThesis),
+    bullCase: text(parsed.bullCase),
+    bearCase: text(parsed.bearCase),
+    tradePlanRationale: text(parsed.tradePlanRationale),
+    riskReview: text(parsed.riskReview),
+    invalidationWatch: text(parsed.invalidationWatch),
     direction: normalizeDirection(parsed.direction),
     confidence: normalizeConfidence(parsed.confidence),
     entryPrice: numberOrNull(parsed.entryPrice),
@@ -518,6 +671,45 @@ export function dedupeByCanonicalNewsItem(inputs: NewsDrivenCandidate[]) {
     deduped.push({ candidate, newsItem });
   }
   return deduped;
+}
+
+function selectSimpleInputsWithSymbolDiversity(
+  inputs: Array<{ candidate: DecisionCandidate; newsItem: NewsItem }>,
+) {
+  if (inputs.length <= 1) return inputs;
+  const buckets = new Map<string, Array<{ candidate: DecisionCandidate; newsItem: NewsItem }>>();
+  for (const input of inputs) {
+    const symbol = recordSymbol(input.candidate);
+    const bucket = buckets.get(symbol);
+    if (bucket) bucket.push(input);
+    else buckets.set(symbol, [input]);
+  }
+
+  if (buckets.size <= 1) {
+    console.info(
+      JSON.stringify({
+        type: "claw42_watch_event",
+        event: "same_symbol_diversification_unavailable",
+        symbol: recordSymbol(inputs[0]!.candidate),
+        input_count: inputs.length,
+        output_count: 1,
+      }),
+    );
+    return inputs.slice(0, 1);
+  }
+
+  const selected: typeof inputs = [];
+  while (selected.length < inputs.length) {
+    let added = false;
+    for (const bucket of Array.from(buckets.values())) {
+      const next = bucket.shift();
+      if (!next) continue;
+      selected.push(next);
+      added = true;
+    }
+    if (!added) break;
+  }
+  return selected;
 }
 
 function recordSymbol(candidate: DecisionCandidate) {

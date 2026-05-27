@@ -45,6 +45,16 @@ describe("news-driven symbol extraction", () => {
     expect(matchSingleSymbol(item, instruments)).toBeNull();
   });
 
+  it("does not convert broad market or index news into a BTC candidate", () => {
+    const broad = news({
+      title: "Crypto market liquidity improves as Russell 2000 futures rebound",
+      currencies: ["BTC"],
+    });
+
+    expect(extractSymbolsFromNewsText(broad, instruments)).toEqual([]);
+    expect(matchSingleSymbol(broad, instruments)).toBeNull();
+  });
+
   it("builds a source-news-specific candidate key", async () => {
     const [candidate] = await buildNewsDrivenCandidates({
       newsItems: [news({ id: "pa:btc:1", title: "比特币突破关键区间" })],
@@ -62,5 +72,47 @@ describe("news-driven symbol extraction", () => {
         }),
       }),
     );
+  });
+
+  it("selects different symbols first when news candidates are mixed", async () => {
+    const candidates = await buildNewsDrivenCandidates({
+      newsItems: [
+        news({
+          id: "btc-a",
+          title: "BTC futures volume expands",
+          url: "https://example.com/btc-a",
+        }),
+        news({ id: "btc-b", title: "BTC ETF flows recover", url: "https://example.com/btc-b" }),
+        news({
+          id: "eth-a",
+          title: "ETH futures volume expands",
+          url: "https://example.com/eth-a",
+        }),
+        news({ id: "sol-a", title: "SOL liquidity improves", url: "https://example.com/sol-a" }),
+      ],
+      instruments,
+      now,
+      limit: 4,
+    });
+
+    expect(candidates.map((candidate) => candidate.symbol)).toEqual(["BTC", "ETH", "SOL", "BTC"]);
+  });
+
+  it("soft-caps all-BTC candidate input when no alternative symbol exists", async () => {
+    const candidates = await buildNewsDrivenCandidates({
+      newsItems: [
+        news({
+          id: "btc-a",
+          title: "BTC futures volume expands",
+          url: "https://example.com/btc-a",
+        }),
+        news({ id: "btc-b", title: "BTC ETF flows recover", url: "https://example.com/btc-b" }),
+      ],
+      instruments,
+      now,
+      limit: 3,
+    });
+
+    expect(candidates.map((candidate) => candidate.symbol)).toEqual(["BTC"]);
   });
 });

@@ -21,10 +21,10 @@ describe("extractCurrenciesFromText", () => {
     ).toEqual([]);
   });
 
-  it("anchors broad crypto market headlines to BTC without matching market-maker stories", () => {
+  it("does not anchor broad crypto market headlines to BTC or market-maker stories", () => {
     expect(
       extractCurrenciesFromText("Crypto market rally accelerates as liquidity improves"),
-    ).toEqual(["BTC"]);
+    ).toEqual([]);
     expect(
       extractCurrenciesFromText("Crypto market maker raises capital for OTC expansion"),
     ).toEqual([]);
