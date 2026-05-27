@@ -409,20 +409,119 @@ function TopicHeadV10({
   );
 }
 
-function StrategyValue({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "muted" | "warn" | "lime";
-}) {
+function plainCardText(value: string | undefined) {
+  return (value ?? "")
+    .replace(/\*\*/g, "")
+    .replace(/\[[^\]]+\]\([^)]+\)/g, (match) => match.replace(/^\[|\]\([^)]+\)$/g, ""))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function directionTone(action: DispatchTopic["strategy"]["action"]) {
+  if (action === "long") return "long";
+  if (action === "short") return "short";
+  return "wait";
+}
+
+function directionText(action: DispatchTopic["strategy"]["action"]) {
+  if (action === "long") return "LONG";
+  if (action === "short") return "SHORT";
+  return "WAIT";
+}
+
+function directionByline(topic: DispatchTopic, observationMode: boolean) {
+  if (topic.strategy.action === "long") {
+    return `${observationMode ? "观察分析" : "多空双向分析"} · 多方占优`;
+  }
+  if (topic.strategy.action === "short") {
+    return `${observationMode ? "观察分析" : "多空双向分析"} · 空方占优`;
+  }
+  return `${observationMode ? "观察分析" : "多空双向分析"} · 等待确认`;
+}
+
+function directionIcon(action: DispatchTopic["strategy"]["action"]) {
+  if (action === "long") return "↑";
+  if (action === "short") return "↓";
+  return "•";
+}
+
+function allocationText(strategy: DispatchTopic["strategy"]) {
+  const fromAction = strategy.actionLabel.match(/(\d+(?:\.\d+)?)%/);
+  if (fromAction) return `${fromAction[1]}%`;
+  const fromMeta = strategy.meta.match(/(\d+(?:\.\d+)?)%/);
+  if (fromMeta) return `${fromMeta[1]}%`;
+  return "待定";
+}
+
+function messageSearchText(message: DispatchTopic["messages"][number]) {
+  return `${message.agentId} ${message.agentName} ${message.roleViewpoint ?? ""} ${message.direction ?? ""} ${message.directionLabel ?? ""} ${message.content}`;
+}
+
+function findReasoningMessage(
+  topic: DispatchTopic,
+  predicate: (message: DispatchTopic["messages"][number], searchText: string) => boolean,
+) {
+  return topic.messages.find((message) => {
+    const content = plainCardText(message.content);
+    if (!content) return false;
+    return predicate(message, messageSearchText(message));
+  });
+}
+
+function topicReasoningSections(topic: DispatchTopic) {
+  const sections: Array<{ key: string; label: string; text: string }> = [];
+  const used = new Set<string>();
+  const add = (key: string, label: string, text: string | undefined) => {
+    const clean = plainCardText(text);
+    if (!clean || used.has(clean)) return;
+    used.add(clean);
+    sections.push({ key, label, text: clean });
+  };
+
+  const bull = findReasoningMessage(
+    topic,
+    (message, searchText) =>
+      message.direction === "long" || /多头|多方|bullish|bull/i.test(searchText),
+  );
+  const bear = findReasoningMessage(
+    topic,
+    (message, searchText) =>
+      message.direction === "short" || /空头|空方|bearish|bear/i.test(searchText),
+  );
+  const trade = findReasoningMessage(
+    topic,
+    (message, searchText) =>
+      message.agentId === "trader" || /交易|执行|入场|方案/i.test(searchText),
+  );
+  const risk = findReasoningMessage(
+    topic,
+    (message, searchText) =>
+      message.agentId === "aggressive_reviewer" ||
+      message.agentId === "neutral_reviewer" ||
+      message.agentId === "conservative_reviewer" ||
+      /风险|审查|防守|中立|组合|risk/i.test(searchText),
+  );
+
+  add("bull", "多方观点", bull?.content);
+  add("bear", "空方观点", bear?.content);
+  add("trade", "交易方案", trade?.content);
+  add("risk", "风险审查", risk?.content);
+  add("strategy", "策略摘要", topic.strategy.observationSummary ?? topic.explanation);
+  add("trigger", "触发依据", topic.trigger.text);
+
+  return sections.slice(0, 4);
+}
+
+function primaryReasoning(
+  topic: DispatchTopic,
+  sections: ReturnType<typeof topicReasoningSections>,
+) {
+  const preferredKey =
+    topic.strategy.action === "long" ? "bull" : topic.strategy.action === "short" ? "bear" : "risk";
   return (
-    <div className="strat-field">
-      <span className="lbl">{label}</span>
-      <span className={`val${tone ? ` ${tone}` : ""}`}>{value}</span>
-    </div>
+    sections.find((section) => section.key === preferredKey) ??
+    sections.find((section) => section.key === "risk") ??
+    sections[0]
   );
 }
 
@@ -482,6 +581,9 @@ function TopicFeedback({
 function TopicStrategyV10({
   topic,
   latest,
+  collapsed,
+  bodyId,
+  onToggle,
   dict,
   onPlaceholder,
   feedbackValue,
@@ -489,6 +591,9 @@ function TopicStrategyV10({
 }: {
   topic: DispatchTopic;
   latest: boolean;
+  collapsed: boolean;
+  bodyId: string;
+  onToggle: () => void;
   dict: DispatchV10Dict;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
   feedbackValue?: TopicFeedbackValue;
@@ -509,7 +614,6 @@ function TopicStrategyV10({
   });
   const renderBlockedTradeCTA = executableSymbol && !canRenderCoinWTrade;
   const renderStaleReason = renderBlockedTradeCTA && isStaleOrExpired(topic);
-  const muted = strategy.action === "wait" || strategy.action === "pending" ? "muted" : undefined;
   const followStatus =
     topic.status === "pending"
       ? `${strategy.follow.watchCount} ${dict.market.watchReminder}`
@@ -524,133 +628,190 @@ function TopicStrategyV10({
   const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderCoinWTrade);
   const coinwLinkType = canRenderCoinWTrade && topic.execution?.coinwPair ? "pair" : "generic";
   const newsItem = topic.newsItems?.[0];
+  const reasoningSections = topicReasoningSections(topic);
+  const mainReasoning = primaryReasoning(topic, reasoningSections);
+  const tone = directionTone(strategy.action);
+  const byline = directionByline(topic, isObservationMode);
+  const cardHeadline = plainCardText(newsItem?.headline) || dict.market.noNews;
+  const progressLabel = topic.progress || topic.startedAt;
 
   return (
     <div
-      className={["topic-strategy", latest && "latest", isObservationMode && "observation"]
+      className={[
+        "topic-strategy",
+        "topic-card-v3",
+        `v3-${tone}`,
+        latest && "latest",
+        isObservationMode && "observation",
+      ]
         .filter(Boolean)
         .join(" ")}
+      data-topic-card-v3="true"
       data-trade-readiness-slot={tradeReadinessKind ? "card-status" : undefined}
       data-trade-readiness-kind={tradeReadinessKind ?? undefined}
     >
-      <div className="strat-head">
-        <MarketPanelAvatar className="strat-head-avatar" name={strategyAvatarName(topic)} />
-        <div className="row1">
-          {latest ? (
-            <span className="strategy-latest-badge">{dict.market.latestStrategy}</span>
-          ) : null}
-          <span className="name">{strategy.name}</span>
-          <span className="ticker">{strategy.ticker}</span>
-          <span className={`action ${strategy.action}`}>{strategy.actionLabel}</span>
+      <div className="v3-accent" aria-hidden="true" />
+      <div className="v3-inner">
+        <div className="v3-news-hero">
+          <div className="v3-news-kicker">决策源</div>
+          {newsItem?.url ? (
+            <a
+              className="v3-news-headline"
+              href={newsItem.url}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {cardHeadline}
+            </a>
+          ) : (
+            <div className="v3-news-headline">{cardHeadline}</div>
+          )}
+          <div className="v3-news-meta">
+            {newsItem ? (
+              <>
+                <span>{newsItem.source}</span>
+                {newsItem.observedAt ? <span>{newsItem.observedAt}</span> : null}
+              </>
+            ) : (
+              <span>{dict.market.noNews}</span>
+            )}
+            <span>{topic.trigger.ticker}</span>
+          </div>
         </div>
-        <div className="meta">
-          {strategy.meta}
-          {strategy.metaHighlight ? (
-            <>
-              {" "}
-              <b className={strategy.metaHighlight.tone}>{strategy.metaHighlight.text}</b>
-            </>
-          ) : null}
-        </div>
-      </div>
-      {isObservationMode ? (
-        <div className="observation-summary">
-          <span className="lbl">{dict.market.observationSummaryLabel}</span>
-          {newsItem ? (
-            <p>
-              <span className="topic-news-headline">{newsItem.headline}</span>
-              <span className="topic-news-meta">
-                {newsItem.source}
-                {newsItem.observedAt ? ` · ${newsItem.observedAt}` : ""}
+
+        <div className="v3-head">
+          <MarketPanelAvatar className="v3-avatar" name={strategyAvatarName(topic)} />
+          <div className="v3-title-block">
+            <div className="v3-title-row">
+              {latest ? (
+                <span className="strategy-latest-badge">{dict.market.latestStrategy}</span>
+              ) : null}
+              <span className="v3-ticker">{strategy.ticker}</span>
+              <span className={`v3-direction-chip ${tone}`}>
+                <span aria-hidden="true">{directionIcon(strategy.action)}</span>
+                {directionText(strategy.action)}
               </span>
-            </p>
-          ) : (
-            <p>
-              <span className="topic-news-headline">{dict.market.noNews}</span>
-            </p>
-          )}
+            </div>
+            <h3>{topic.title}</h3>
+            <p>{byline}</p>
+          </div>
+          <div className="v3-progress-chip">{progressLabel}</div>
         </div>
-      ) : (
-        <>
-          <StrategyValue label={dict.market.entry} value={strategy.entry} tone={muted} />
-          <StrategyValue
-            label={dict.market.stopLoss}
-            value={strategy.stopLoss}
-            tone={muted ?? "warn"}
-          />
-          <StrategyValue
-            label={dict.market.takeProfit}
-            value={strategy.takeProfit}
-            tone={muted ?? "lime"}
-          />
-        </>
-      )}
-      <div className="strat-cta">
-        <div className="cta-row">
-          {isObservationMode ? (
-            <a
-              className="cta-btn"
-              href={coinwFuturesUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(event) => {
-                event.stopPropagation();
-                trackEvent("coinw_trade_cta_click", {
-                  topicId: topic.id,
-                  candidateType,
-                  candidateKey: topic.candidateKey ?? null,
-                  symbol: topic.symbol,
-                  linkType: "generic",
-                  executable: false,
-                });
-              }}
-            >
-              {dict.market.coinwNavigate}
-            </a>
-          ) : canRenderCoinWTrade ? (
-            <a
-              className="cta-btn"
-              href={coinwFuturesUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(event) => {
-                event.stopPropagation();
-                trackEvent("coinw_trade_cta_click", {
-                  topicId: topic.id,
-                  candidateType,
-                  candidateKey: topic.candidateKey ?? null,
-                  symbol: topic.symbol,
-                  linkType: coinwLinkType,
-                  executable: true,
-                });
-              }}
-            >
-              {dict.market.coinwFuturesLink}
-            </a>
-          ) : renderBlockedTradeCTA ? (
-            <button className="cta-btn" type="button" disabled>
-              {dict.market.coinwFuturesLink}
-            </button>
-          ) : (
-            <button
-              className="cta-btn"
-              type="button"
-              onClick={() => onPlaceholder(topic, dict.market.coinwFuturesLink, "primary")}
-            >
-              {dict.market.coinwFuturesLink}
-            </button>
-          )}
+
+        <div className="v3-body">
+          <div className="v3-matrix" aria-label="交易方案">
+            {isObservationMode ? (
+              <div className="v3-cell v3-cell-wide observation-summary">
+                <span className="v3-cell-label">{dict.market.observationSummaryLabel}</span>
+                <strong>{plainCardText(strategy.observationSummary) || cardHeadline}</strong>
+              </div>
+            ) : (
+              <>
+                <div className="v3-cell">
+                  <span className="v3-cell-label">{dict.market.entry}</span>
+                  <strong>{strategy.entry}</strong>
+                </div>
+                <div className="v3-cell">
+                  <span className="v3-cell-label">{dict.market.stopLoss}</span>
+                  <strong className="warn">{strategy.stopLoss}</strong>
+                </div>
+                <div className="v3-cell">
+                  <span className="v3-cell-label">{dict.market.takeProfit}</span>
+                  <strong className="lime">{strategy.takeProfit}</strong>
+                </div>
+                <div className="v3-cell">
+                  <span className="v3-cell-label">仓位</span>
+                  <strong>{allocationText(strategy)}</strong>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="v3-cta-stack">
+            {isObservationMode ? (
+              <a
+                className="v3-mega-cta"
+                href={coinwFuturesUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  trackEvent("coinw_trade_cta_click", {
+                    topicId: topic.id,
+                    candidateType,
+                    candidateKey: topic.candidateKey ?? null,
+                    symbol: topic.symbol,
+                    linkType: "generic",
+                    executable: false,
+                  });
+                }}
+              >
+                {dict.market.coinwNavigate}
+              </a>
+            ) : canRenderCoinWTrade ? (
+              <a
+                className="v3-mega-cta"
+                href={coinwFuturesUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  trackEvent("coinw_trade_cta_click", {
+                    topicId: topic.id,
+                    candidateType,
+                    candidateKey: topic.candidateKey ?? null,
+                    symbol: topic.symbol,
+                    linkType: coinwLinkType,
+                    executable: true,
+                  });
+                }}
+              >
+                {dict.market.coinwFuturesLink}
+              </a>
+            ) : renderBlockedTradeCTA ? (
+              <button className="v3-mega-cta disabled" type="button" disabled>
+                {dict.market.coinwFuturesLink}
+              </button>
+            ) : (
+              <button
+                className="v3-mega-cta"
+                type="button"
+                onClick={() => onPlaceholder(topic, dict.market.coinwFuturesLink, "primary")}
+              >
+                {dict.market.coinwFuturesLink}
+              </button>
+            )}
+            <span className="v3-follow-meta">{followStatus}</span>
+            {renderStaleReason ? (
+              <span className="cta-visible-reason">{dict.market.staleReason}</span>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="v3-reason-row">
+          <section className="v3-reasoning" aria-label="核心推理">
+            <span className="v3-section-label">核心推理</span>
+            <strong>{mainReasoning?.label ?? byline}</strong>
+            <p>{mainReasoning?.text ?? plainCardText(strategy.meta)}</p>
+          </section>
           <button
-            className="cta-btn secondary"
+            className="v3-secondary"
             type="button"
-            onClick={() => onPlaceholder(topic, strategy.follow.secondaryLabel, "secondary")}
+            aria-expanded={!collapsed}
+            aria-controls={bodyId}
+            onClick={onToggle}
           >
-            {strategy.follow.secondaryLabel}
+            <span className="v3-section-label">
+              {collapsed ? "查看完整推理链" : "收起完整推理链"}
+            </span>
+            <strong>{byline}</strong>
+            <span>
+              {reasoningSections.map((section) => section.label).join(" / ") || strategy.name}
+            </span>
           </button>
-          {renderStaleReason ? (
-            <span className="cta-visible-reason">{dict.market.staleReason}</span>
-          ) : null}
         </div>
+
         {tradeReadinessKind ? (
           <span
             hidden
@@ -658,8 +819,14 @@ function TopicStrategyV10({
             data-trade-readiness-kind={tradeReadinessKind}
           />
         ) : null}
-        <div className="cta-meta">
-          {isObservationMode ? dict.market.analysisOnlyCopy : followStatus}
+        <div className="v3-analysis-meta">
+          {isObservationMode ? dict.market.analysisOnlyCopy : strategy.meta}
+          {strategy.metaHighlight ? (
+            <>
+              {" "}
+              <b className={strategy.metaHighlight.tone}>{strategy.metaHighlight.text}</b>
+            </>
+          ) : null}
         </div>
         <TopicFeedback topic={topic} dict={dict} value={feedbackValue} onFeedback={onFeedback} />
       </div>
@@ -712,6 +879,9 @@ function TopicCardV10({
       <TopicStrategyV10
         topic={topic}
         latest={latest}
+        collapsed={collapsed}
+        bodyId={bodyId}
+        onToggle={onToggle}
         dict={dict}
         onPlaceholder={onPlaceholder}
         feedbackValue={feedbackValue}

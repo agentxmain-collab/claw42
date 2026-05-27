@@ -415,6 +415,95 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("这段解释不应该伪装成新闻摘要");
   });
 
+  test("renders topic card v3 with truthful debate byline and reachable reasoning content", () => {
+    const longBull = "多头反驳：BTC 仍有 ETF 净流入和关键支撑，短线不能假设单边下跌。";
+    const longBear =
+      "空头主线：BTC 24 小时跌破关键区间，恐慌指数同步走弱，空方暂时占优但需要控制追空风险。";
+    const longRisk =
+      "风险审查：爆仓数据显示拥挤交易增加，若价格快速反抽，仓位需要保持轻量并等待确认。";
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "btc-v3",
+              candidateType: "symbol",
+              candidateKey: "BTC",
+              title: "BTC 实时行情分析",
+              symbol: "BTC",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            defaultCollapsed: true,
+            strategy: {
+              ...dispatchV10DemoTopics[0]!.strategy,
+              action: "short",
+              actionLabel: "SHORT 25%",
+              ticker: "$BTC",
+              meta: "置信度 65% · intraday",
+            },
+            messages: [
+              {
+                id: "bull-case",
+                stageId: "v10-demo-btc-decision-flow-stage-2",
+                agentId: "bullish_researcher",
+                agentName: "多头研究员",
+                roleViewpoint: "多头论证视角",
+                time: "12:00",
+                mentions: [],
+                content: longBull,
+                direction: "long",
+                directionLabel: "做多",
+                confidence: 35,
+              },
+              {
+                id: "bear-case",
+                stageId: "v10-demo-btc-decision-flow-stage-2",
+                agentId: "bearish_researcher",
+                agentName: "空头研究员",
+                roleViewpoint: "空头论证视角",
+                time: "12:00",
+                mentions: [],
+                content: longBear,
+                direction: "short",
+                directionLabel: "做空",
+                confidence: 68,
+              },
+              {
+                id: "risk-review",
+                stageId: "v10-demo-btc-decision-flow-stage-4",
+                agentId: "conservative_reviewer",
+                agentName: "风险防御总监",
+                roleViewpoint: "风险审查视角",
+                time: "12:00",
+                mentions: [],
+                content: longRisk,
+                direction: "wait",
+                directionLabel: "中性",
+                confidence: 55,
+              },
+            ],
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain('data-topic-card-v3="true"');
+    expect(html).toContain("多空双向分析 · 空方占优");
+    expect(html).toContain("核心推理");
+    expect(html).toContain("查看完整推理链");
+    expect(html).toContain('aria-controls="dispatch-v10-topic-btc-v3"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain(longBull);
+    expect(html).toContain(longBear);
+    expect(html).toContain(longRisk);
+    expect(html).not.toContain("4 Agent");
+    expect(html).not.toContain("7 轮辩论");
+  });
+
   test("paginates symbol topics at fifteen cards per page", () => {
     const topics = Array.from({ length: 16 }, (_, index) =>
       topicFixture({

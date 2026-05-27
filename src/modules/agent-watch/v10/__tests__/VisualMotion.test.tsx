@@ -135,4 +135,17 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(css).toMatch(/topic-head[\s\S]{0,160}padding:\s*12px 18px 10px/);
     expect(css).toMatch(/topic-news-summary[\s\S]{0,220}line-height:\s*1\.4/);
   });
+
+  test("keeps topic card v3 on CoinW colors with compact non-truncating reasoning boxes", () => {
+    const v3Css = css.slice(
+      css.indexOf(".dispatchConsoleV10 :global(.topic-strategy.topic-card-v3)"),
+    );
+
+    expect(v3Css).toContain("var(--purple)");
+    expect(v3Css).toContain("rgb(82 39 255");
+    expect(v3Css).not.toContain("#7c5cff");
+    expect(v3Css).not.toContain("-webkit-line-clamp");
+    expect(v3Css).not.toContain("text-overflow");
+    expect(css).toMatch(/\.v3-reasoning\),[\s\S]*\.v3-secondary\) \{[\s\S]*padding:\s*9px 11px;/);
+  });
 });
