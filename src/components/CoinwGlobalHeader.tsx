@@ -1,19 +1,28 @@
 import React from "react";
-import navLinks from "../../design-tokens/coinw-nav-links.json";
-import tokens from "../../design-tokens/coinw-shell.json";
+import Image from "next/image";
 
 const COINW_BASE = "https://www.coinw.com/zh_CN";
+const COINW_LOGO_ICON = "/images/coinw/coinw-logo.svg";
+
+const navLinks = [
+  ["买币", `${COINW_BASE}/p2p-trading/personalized/buy`],
+  ["行情", `${COINW_BASE}/market/futures/all`],
+  ["U本位合约", `${COINW_BASE}/futures/usdt/btcusdt`],
+  ["交易", `${COINW_BASE}/spot/btcusdt`],
+  ["跟单", `${COINW_BASE}/copy-trading/futures`, "New"],
+  ["策略", `${COINW_BASE}/trading-bots/all`],
+  ["赚币", `${COINW_BASE}/earn/crypto-savings`],
+  ["Launch X", `${COINW_BASE}/launch-x/lucky-hodl`],
+  ["更多", `${COINW_BASE}/`],
+] as const;
 
 const utilityItems = [
   ["下载", `${COINW_BASE}/download`],
   ["简体中文", COINW_BASE],
 ] as const;
 
-// Round 10.5 hard-gate evidence; actual styles below read from design-tokens.
-// G62: #1A1A1A
-// G62: 72px
-// G62: fontWeight 500
-// G62: #D1FF55
+// Round 6 rebuild ground truth from coinw.com/zh_CN rendered header:
+// header height 64px / padding 0 24px / nav 14px 700 20px / real SVG logo icon.
 
 function externalLinkProps(label: string) {
   return {
@@ -23,138 +32,83 @@ function externalLinkProps(label: string) {
   };
 }
 
-function fontFamily(font: string) {
-  return `${font}, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-}
-
 export function CoinwGlobalHeader() {
-  const header = tokens.header;
-
   return (
-    <nav
+    <header
       data-coinw-shell="header"
-      className="fixed inset-x-0 top-0 z-[80] flex items-center justify-center"
+      className="fixed inset-x-0 top-0 z-[80] flex h-16 items-center bg-[#1A1A1A] px-6 text-white"
       style={{
-        height: header.container.height,
-        backgroundColor: header.container.background,
-        padding: header.container.padding,
+        color: "#FFFFFF",
       }}
     >
-      <div
-        className="flex w-full items-center justify-between"
-        style={{
-          maxWidth: header.container.maxWidth,
-          gap: header.container.gap,
-        }}
-      >
+      <div className="flex h-16 w-full min-w-0 items-center">
         <a
           data-coinw-shell="header-logo"
           href={COINW_BASE}
-          className="flex shrink-0 items-center"
+          className="flex h-[38px] w-[141px] shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
           style={{
-            width: header.logo.width,
-            height: header.logo.height,
-            gap: "8px",
+            fontFamily: "var(--font-satoshi), var(--font-language)",
           }}
           {...externalLinkProps("CoinW")}
         >
-          <span
+          <Image
+            src={COINW_LOGO_ICON}
+            alt=""
+            width={24}
+            height={24}
+            className="h-6 w-6 shrink-0"
             aria-hidden="true"
-            className="grid shrink-0 place-items-center rounded-full"
-            style={{
-              width: header.logo.symbolSize,
-              height: header.logo.symbolSize,
-              backgroundColor: header.logo.symbolBg,
-            }}
-          >
-            <span
-              className="block rounded-full"
-              style={{
-                width: "42%",
-                height: "42%",
-                backgroundColor: header.logo.textColor,
-              }}
-            />
-          </span>
+            priority
+            unoptimized
+          />
           <span
+            className="text-[29px] font-black leading-[1.08] tracking-[-0.06px]"
             style={{
-              fontFamily: fontFamily(header.logo.textFont),
-              fontWeight: header.logo.textWeight,
-              fontSize: header.logo.textSize,
-              lineHeight: header.logo.textLineHeight,
-              letterSpacing: header.logo.textLetterSpacing,
-              color: header.logo.textColor,
+              color: "#FFFFFF",
             }}
           >
-            {header.logo.text}
+            CoinW
           </span>
         </a>
 
-        <div
+        <nav
           data-coinw-shell="header-nav"
-          className="hidden min-w-0 flex-1 items-center lg:flex"
-          style={{ gap: header.navItem.gap }}
+          className="ml-5 hidden min-w-0 flex-1 items-center lg:flex"
+          aria-label="CoinW"
         >
-          {navLinks.map((item) => (
-            <a
-              data-coinw-shell="header-nav-link"
-              key={item.label}
-              href={item.href}
-              className="inline-flex items-center whitespace-nowrap transition-opacity hover:opacity-75"
-              style={{
-                gap: "6px",
-                fontFamily: fontFamily(header.navItem.font),
-                fontWeight: header.navItem.weight,
-                fontSize: header.navItem.size,
-                lineHeight: header.navItem.lineHeight,
-                letterSpacing: header.navItem.letterSpacing,
-                color: header.navItem.color,
-              }}
-              {...externalLinkProps(item.label)}
-            >
-              {item.label}
-              {"badge" in item ? (
-                <span
-                  className="inline-flex items-center justify-center"
-                  style={{
-                    backgroundColor: header.newBadge.background,
-                    borderRadius: header.newBadge.borderRadius,
-                    padding: header.newBadge.padding,
-                    fontFamily: fontFamily(header.navItem.font),
-                    fontWeight: header.newBadge.fontWeight,
-                    fontSize: header.newBadge.fontSize,
-                    lineHeight: header.navItem.lineHeight,
-                    color: header.newBadge.textColor,
-                  }}
+          <ul className="flex h-16 items-center">
+            {navLinks.map(([label, href, badge]) => (
+              <li key={label} className="flex h-16 items-center px-3">
+                <a
+                  data-coinw-shell="header-nav-link"
+                  href={href}
+                  className="inline-flex items-center whitespace-nowrap text-sm font-bold leading-5 tracking-[0.1px] text-white transition-opacity hover:opacity-75"
+                  style={{ fontFamily: "var(--font-satoshi), var(--font-language)" }}
+                  {...externalLinkProps(label)}
                 >
-                  {item.badge}
-                </span>
-              ) : null}
-            </a>
-          ))}
-        </div>
+                  {label}
+                  {badge ? (
+                    <span className="ml-1.5 inline-flex h-5 items-center justify-center rounded-full bg-[#D1FF55] px-2 text-xs font-bold leading-5 text-black">
+                      {badge}
+                    </span>
+                  ) : null}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         <div
           data-coinw-shell="header-right"
-          className="flex shrink-0 items-center"
-          style={{ gap: header.utilityIcon.gap }}
+          className="ml-auto flex h-16 shrink-0 items-center gap-5"
+          style={{ fontFamily: "var(--font-satoshi), var(--font-language)" }}
         >
-          <div className="hidden items-center md:flex" style={{ gap: header.utilityIcon.gap }}>
+          <div className="hidden h-16 items-center gap-5 md:flex">
             {utilityItems.map(([label, href]) => (
               <a
                 key={label}
                 href={href}
-                className="inline-flex items-center justify-center transition-opacity hover:opacity-75"
-                style={{
-                  minWidth: header.utilityIcon.size,
-                  height: header.utilityIcon.size,
-                  fontFamily: fontFamily(header.navItem.font),
-                  fontWeight: header.navItem.weight,
-                  fontSize: header.navItem.size,
-                  lineHeight: header.navItem.lineHeight,
-                  letterSpacing: header.navItem.letterSpacing,
-                  color: header.utilityIcon.color,
-                }}
+                className="inline-flex h-16 items-center justify-center text-sm font-bold leading-5 tracking-[0.1px] text-white transition-opacity hover:opacity-75"
                 {...externalLinkProps(label)}
               >
                 {label}
@@ -164,15 +118,7 @@ export function CoinwGlobalHeader() {
           <a
             href={`${COINW_BASE}/login`}
             data-coinw-shell="header-login"
-            className="inline-flex items-center justify-center transition-opacity hover:opacity-75"
-            style={{
-              height: header.cta.height,
-              padding: header.cta.padding,
-              fontFamily: fontFamily(header.navItem.font),
-              fontWeight: header.cta.fontWeight,
-              fontSize: header.cta.fontSize,
-              color: header.cta.textColor,
-            }}
+            className="inline-flex h-10 items-center justify-center px-2 text-sm font-bold leading-5 tracking-[0.1px] text-white transition-opacity hover:opacity-75"
             {...externalLinkProps("登录")}
           >
             登录
@@ -180,23 +126,13 @@ export function CoinwGlobalHeader() {
           <a
             href={`${COINW_BASE}/register`}
             data-coinw-shell="header-register"
-            className="inline-flex items-center justify-center transition-opacity hover:opacity-75"
-            style={{
-              height: header.cta.height,
-              backgroundColor: header.cta.background,
-              borderRadius: header.cta.borderRadius,
-              padding: header.cta.padding,
-              fontFamily: fontFamily(header.navItem.font),
-              fontWeight: header.cta.fontWeight,
-              fontSize: header.cta.fontSize,
-              color: header.cta.textColor,
-            }}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#5227FF] px-4 text-sm font-bold leading-5 tracking-[0.1px] text-white transition-opacity hover:opacity-85"
             {...externalLinkProps("注册")}
           >
             注册
           </a>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
