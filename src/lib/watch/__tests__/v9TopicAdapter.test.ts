@@ -642,6 +642,50 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
   });
 
+  it("single news-driven contract", () => {
+    const event = pmDecision({
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-btc-news-driven",
+        symbol: "BTC",
+        candidateType: "symbol",
+        candidateKey: "news-driven:BTC:test",
+        displayTitle: "BTC 实时行情分析",
+        executable: true,
+        tradeDecision,
+        analysisSummary: "BTC 新闻触发后形成交易方案。",
+        rationaleByMember: { pm: "BTC 新闻触发后形成交易方案。" },
+        citationsByMember: { pm: ["ev_1"] },
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      evidenceMap: { ev_1: evidence },
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic).toMatchObject({
+      candidateType: "symbol",
+      candidateKey: "news-driven:BTC:test",
+      newsItems: [
+        {
+          headline: "BTC ETF outflows rise",
+          source: "CoinDesk",
+          url: "https://example.com/btc",
+        },
+      ],
+      strategy: {
+        mode: "trade",
+        action: "short",
+        follow: {
+          primaryDisabled: false,
+        },
+      },
+    });
+  });
+
   it("ignores non pm_decision events", () => {
     expect(
       mapTopics({

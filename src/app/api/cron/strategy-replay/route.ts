@@ -22,7 +22,7 @@ import {
 } from "@/lib/team/providerTelemetry";
 import { publishPmDecisionJobToQueue } from "@/lib/team/pmDecisionJobQueue";
 import { runPmDecisionJob } from "@/lib/team/pmDecisionJobRunner";
-import { runSimplePipeline } from "@/lib/team/simplePipeline";
+import { runSimplePipeline, SIMPLE_PIPELINE_CARDS_PER_RUN } from "@/lib/team/simplePipeline";
 import {
   CRON_MAX_SYMBOL_CARDS_PER_RUN,
   type PmDecisionTriggerAuditEvent,
@@ -153,27 +153,15 @@ export async function GET(request: NextRequest) {
   const newsDrivenCandidates = await buildNewsDrivenCandidates({
     newsItems: normalizedNewsDrivenItems,
     now,
-    limit: INLINE_PM_DECISION_JOB_LIMIT,
+    limit: pipelineMode === "simple" ? SIMPLE_PIPELINE_CARDS_PER_RUN : INLINE_PM_DECISION_JOB_LIMIT,
   });
 
-  const residentPlan = residentPrewarmPlan({
-    locale,
-    now,
-    pool,
-    newsItems: normalizedItems,
-    force: trigger === "now",
-    records: decisionRecords,
-    jobs: pmDecisionJobs,
-    allowFirstFillBackfill: decisionRecordRead.readable,
-  });
-  const residentCandidates = residentPlan.candidates;
   if (pipelineMode === "simple") {
     const simpleResult = await runSimplePipeline({
       locale,
       now,
       pool,
       newsItems: normalizedItems,
-      residentCandidates,
       newsDrivenCandidates,
     });
     return NextResponse.json({
@@ -188,16 +176,6 @@ export async function GET(request: NextRequest) {
         skippedCandidates: simpleResult.skippedCandidates.length,
         candidateKeys: simpleResult.candidateKeys,
       },
-      residentPrewarmCandidates: residentCandidates.map((candidate) => candidate.candidateKey),
-      residentPrewarmFixedCadenceCandidates: residentPlan.fixedCadenceCandidateKeys,
-      residentPrewarmBackfillCandidates: residentPlan.backfillCandidateKeys,
-      residentPrewarmBurst: {
-        threshold: residentPlan.burstThreshold,
-        candidateKey: residentPlan.burstCandidateKey,
-        score: residentPlan.burstScore,
-        triggered: residentPlan.burstCandidateKey !== null,
-      },
-      residentPrewarmSla: residentPlan.residentStatus,
       newsDriven: {
         attemptedCandidateKeys: newsDrivenCandidates.map((item) => item.candidate.candidateKey),
         generated: simpleResult.generatedRecords.filter(
@@ -214,6 +192,18 @@ export async function GET(request: NextRequest) {
       servedAt: now,
     });
   }
+
+  const residentPlan = residentPrewarmPlan({
+    locale,
+    now,
+    pool,
+    newsItems: normalizedItems,
+    force: trigger === "now",
+    records: decisionRecords,
+    jobs: pmDecisionJobs,
+    allowFirstFillBackfill: decisionRecordRead.readable,
+  });
+  const residentCandidates = residentPlan.candidates;
   const newsDrivenResults = [];
   const residentPrewarmResults = [];
   const inlineDeferredCandidateKeys: string[] = [];

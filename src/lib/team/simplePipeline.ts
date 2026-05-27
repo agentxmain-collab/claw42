@@ -1,6 +1,8 @@
 import { generateText } from "@/lib/llm/generateText";
 import { parseJsonObjectWithRepair } from "@/lib/llm/jsonRepair";
 import { mapTeamProviderToProviderId } from "@/lib/llm/providers";
+import { newsItemToEvidence } from "@/lib/news/newsEvidence";
+import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { appendDecisionRecord } from "@/lib/team/decisionRecordStore";
 import type {
   AnalystDirection,
@@ -9,26 +11,32 @@ import type {
 } from "@/lib/team/strategyDecisionRecord";
 import { TEAM_MEMBER_REGISTRY } from "@/lib/team/teamRegistry";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
-import { residentPrewarmCandidates } from "@/lib/watch/residentPrewarm";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import type { NewsDrivenCandidate } from "@/lib/news/symbolExtractor";
 import type { Locale } from "@/i18n/types";
 import type { NewsItem } from "@/lib/types";
 import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 
+export const SIMPLE_PIPELINE_CARDS_PER_RUN = 5;
+export const SIMPLE_PIPELINE_LLM_CONCURRENCY = 2;
+export const MIN_TITLE_DEDUPE_LENGTH = 24;
+export const MIN_TITLE_DEDUPE_CJK_LENGTH = 12;
+
 export interface SimplePipelineInput {
   locale: Locale;
   now: number;
   pool?: CoinPoolPayload;
   newsItems: NewsItem[];
-  residentCandidates?: DecisionCandidate[];
   newsDrivenCandidates?: NewsDrivenCandidate[];
 }
 
 export interface SimplePipelineResult {
   mode: "simple";
   generatedRecords: StrategyDecisionRecord[];
-  skippedCandidates: Array<{ candidateKey: string; reason: "non_executable_symbol" }>;
+  skippedCandidates: Array<{
+    candidateKey: string;
+    reason: "non_executable_symbol" | "no_strategy";
+  }>;
   candidateKeys: string[];
 }
 
@@ -57,48 +65,20 @@ const SIMPLE_PIPELINE_STAGE_LABELS: Record<DecisionStageTraceEntry["stageId"], s
 };
 
 export async function runSimplePipeline(input: SimplePipelineInput): Promise<SimplePipelineResult> {
-  const residentCandidates =
-    input.residentCandidates ??
-    residentPrewarmCandidates({
-      locale: input.locale,
-      now: input.now,
-      pool: input.pool,
-      newsItems: input.newsItems,
-      force: true,
-    });
-  const candidateInputs = dedupeCandidateInputs([
-    ...residentCandidates.map((candidate) => ({ candidate, newsItem: null })),
-    ...(input.newsDrivenCandidates ?? []).map(({ candidate, newsItem }) => ({
-      candidate,
-      newsItem,
-    })),
-  ]);
+  const candidateInputs = dedupeByCanonicalNewsItem(input.newsDrivenCandidates ?? []);
   const generatedRecords: StrategyDecisionRecord[] = [];
   const skippedCandidates: SimplePipelineResult["skippedCandidates"] = [];
 
-  for (const candidateInput of candidateInputs) {
-    const { candidate, newsItem } = candidateInput;
-    if (candidate.candidateType === "symbol" && candidate.executable === false) {
-      skippedCandidates.push({
-        candidateKey: candidate.candidateKey,
-        reason: "non_executable_symbol",
-      });
-      continue;
-    }
+  for (let index = 0; index < candidateInputs.length; index += SIMPLE_PIPELINE_LLM_CONCURRENCY) {
+    const batch = candidateInputs.slice(index, index + SIMPLE_PIPELINE_LLM_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map((candidateInput) => runSimpleCandidate(input, candidateInput)),
+    );
 
-    const decision = await generateSimpleDecision({
-      ...input,
-      candidate,
-      newsItem,
-    });
-    const record = buildSimpleDecisionRecord({
-      ...input,
-      candidate,
-      decision,
-      newsItem,
-    });
-    await appendDecisionRecord(record);
-    generatedRecords.push(record);
+    for (const result of results) {
+      if (result.record) generatedRecords.push(result.record);
+      if (result.skipped) skippedCandidates.push(result.skipped);
+    }
   }
 
   return {
@@ -109,6 +89,78 @@ export async function runSimplePipeline(input: SimplePipelineInput): Promise<Sim
   };
 }
 
+async function runSimpleCandidate(
+  input: SimplePipelineInput,
+  candidateInput: { candidate: DecisionCandidate; newsItem: NewsItem },
+) {
+  const { candidate, newsItem } = candidateInput;
+  if (candidate.candidateType !== "symbol" || candidate.executable === false) {
+    return {
+      skipped: {
+        candidateKey: candidate.candidateKey,
+        reason: "non_executable_symbol" as const,
+      },
+    };
+  }
+
+  const createdAt = new Date(input.now).toISOString();
+  const evidence = newsItemToEvidence(newsItem, createdAt);
+  const evidenceIds = [evidence.id];
+  const symbol = recordSymbol(candidate);
+  let decision = await generateSimpleDecision({
+    ...input,
+    candidate,
+    newsItem,
+  });
+  let tradeDecision = tradeDecisionFromSimpleDecision({
+    decision,
+    candidate,
+    symbol,
+    createdAt,
+    evidenceIds,
+  });
+
+  if (!tradeDecision) {
+    decision = await generateSimpleDecision({
+      ...input,
+      candidate,
+      newsItem,
+      retryForTradePlan: true,
+    });
+    tradeDecision = tradeDecisionFromSimpleDecision({
+      decision,
+      candidate,
+      symbol,
+      createdAt,
+      evidenceIds,
+    });
+  }
+
+  if (!tradeDecision) {
+    return {
+      skipped: {
+        candidateKey: candidate.candidateKey,
+        reason: "no_strategy" as const,
+      },
+    };
+  }
+
+  const savedEvidence = await saveNewsEvidence(evidence);
+  const record = buildSimpleDecisionRecord({
+    ...input,
+    candidate,
+    decision,
+    createdAt,
+    evidenceIds: [savedEvidence.id],
+    tradeDecision: {
+      ...tradeDecision,
+      evidenceIds: [savedEvidence.id],
+    },
+  });
+  await appendDecisionRecord(record);
+  return { record };
+}
+
 async function generateSimpleDecision({
   locale,
   now,
@@ -116,9 +168,11 @@ async function generateSimpleDecision({
   newsItems,
   candidate,
   newsItem,
+  retryForTradePlan = false,
 }: SimplePipelineInput & {
   candidate: DecisionCandidate;
-  newsItem: NewsItem | null;
+  newsItem: NewsItem;
+  retryForTradePlan?: boolean;
 }): Promise<SimplePipelineDecision> {
   const raw = await generateText(
     [
@@ -133,8 +187,10 @@ async function generateSimpleDecision({
       priceContext(candidate, pool),
       newsContext(newsItem ? [newsItem] : newsItems),
       "Fields: analysisSummary, rationale, direction(long|short|neutral|wait), confidence(0-1).",
-      "For executable symbol cards only, include entryPrice, stopLoss, takeProfit, positionSizing, riskNote, invalidatesIf when a concrete trade plan exists.",
-      "For market_overview or hotspot cards, do not include entryPrice, stopLoss, takeProfit, or positionSizing.",
+      "This is a CoinW executable symbol card. Include concrete entryPrice, stopLoss, takeProfit, positionSizing, riskNote, invalidatesIf.",
+      retryForTradePlan
+        ? "Previous response did not include a complete trade plan. Return long or short only when supportable, and ensure entryPrice, stopLoss, and takeProfit are filled."
+        : null,
     ]
       .filter(Boolean)
       .join("\n"),
@@ -155,22 +211,17 @@ function buildSimpleDecisionRecord({
   now,
   candidate,
   decision,
-  newsItem,
+  createdAt,
+  evidenceIds,
+  tradeDecision,
 }: SimplePipelineInput & {
   candidate: DecisionCandidate;
   decision: SimplePipelineDecision;
-  newsItem: NewsItem | null;
+  createdAt: string;
+  evidenceIds: string[];
+  tradeDecision: TradeDecision;
 }): StrategyDecisionRecord {
-  const createdAt = new Date(now).toISOString();
   const symbol = recordSymbol(candidate);
-  const evidenceIds = newsItem ? [`news:${newsItem.id}`] : evidenceIdsFromCandidate(candidate);
-  const tradeDecision = tradeDecisionFromSimpleDecision({
-    decision,
-    candidate,
-    symbol,
-    createdAt,
-    evidenceIds,
-  });
 
   return {
     id: simpleRecordId(candidate, now),
@@ -234,7 +285,7 @@ function buildSimpleDecisionRecord({
     sourceThreadId: null,
     tradeDecision,
     createdAt,
-    evaluationWindowEndsAt: tradeDecision ? new Date(now + 6 * 60 * 60_000).toISOString() : null,
+    evaluationWindowEndsAt: new Date(now + 6 * 60 * 60_000).toISOString(),
     resolvedAt: null,
     resolvedOutcome: null,
     promptVersion: SIMPLE_PIPELINE_PROMPT_VERSION,
@@ -335,22 +386,53 @@ function normalizeDecision(parsed: Record<string, unknown>): SimplePipelineDecis
   };
 }
 
-function dedupeCandidateInputs(
-  inputs: Array<{ candidate: DecisionCandidate; newsItem: NewsItem | null }>,
-) {
+export function normalizedUrlKey(url: string | null | undefined): string | null {
+  const trimmed = (url ?? "").trim();
+  if (!trimmed) return null;
+  return trimmed
+    .replace(/[#?].*$/, "")
+    .replace(/\/+$/, "")
+    .toLowerCase();
+}
+
+export function normalizedTitleKey(title: string | null | undefined): string | null {
+  const trimmed = (title ?? "").trim();
+  if (!trimmed) return null;
+  const normalized = trimmed
+    .replace(/\s+/g, " ")
+    .replace(/[^一-鿿\w\s]/g, "")
+    .toLowerCase()
+    .slice(0, 80);
+  const cjkChars = (normalized.match(/[一-鿿]/g) ?? []).length;
+  if (cjkChars >= MIN_TITLE_DEDUPE_CJK_LENGTH || normalized.length >= MIN_TITLE_DEDUPE_LENGTH) {
+    return normalized;
+  }
+  return null;
+}
+
+export function canonicalDedupeKeys(newsItem: NewsItem): string[] {
+  const keys: string[] = [];
+  const urlKey = normalizedUrlKey(newsItem.url);
+  if (urlKey) keys.push(`url:${urlKey}`);
+  const titleKey = normalizedTitleKey(newsItem.title);
+  if (titleKey) keys.push(`title:${titleKey}`);
+  return keys;
+}
+
+export function dedupeByCanonicalNewsItem(inputs: NewsDrivenCandidate[]) {
   const seen = new Set<string>();
-  const deduped: Array<{ candidate: DecisionCandidate; newsItem: NewsItem | null }> = [];
-  for (const input of inputs) {
-    if (seen.has(input.candidate.candidateKey)) continue;
-    seen.add(input.candidate.candidateKey);
-    deduped.push(input);
+  const deduped: Array<{ candidate: DecisionCandidate; newsItem: NewsItem }> = [];
+  for (const { candidate, newsItem } of inputs) {
+    const keys = canonicalDedupeKeys(newsItem);
+    if (keys.length === 0) continue;
+    if (keys.some((key) => seen.has(key))) continue;
+    keys.forEach((key) => seen.add(key));
+    deduped.push({ candidate, newsItem });
   }
   return deduped;
 }
 
 function recordSymbol(candidate: DecisionCandidate) {
-  if (candidate.candidateType === "market_overview") return "MARKET";
-  if (candidate.candidateType === "hotspot") return "HOTSPOT";
   return candidate.symbol?.trim().replace(/^\$+/, "").toUpperCase() || "UNKNOWN";
 }
 
@@ -373,13 +455,6 @@ function newsContext(items: NewsItem[]) {
     .slice(0, 4)
     .map((item) => `news=${item.title} (${item.source})`)
     .join("\n");
-}
-
-function evidenceIdsFromCandidate(candidate: DecisionCandidate) {
-  return candidate.reasons
-    .map((reason) => `${reason.kind}:${reason.label}`)
-    .filter((value, index, values) => values.indexOf(value) === index)
-    .slice(0, 4);
 }
 
 function text(value: unknown) {

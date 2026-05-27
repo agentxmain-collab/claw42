@@ -105,6 +105,7 @@ vi.mock("@/lib/team/decisionResolution", () => ({
 }));
 
 vi.mock("@/lib/team/simplePipeline", () => ({
+  SIMPLE_PIPELINE_CARDS_PER_RUN: 5,
   runSimplePipeline: runSimplePipelineMock,
 }));
 
@@ -367,7 +368,7 @@ describe("/api/cron/strategy-replay", () => {
       mode: "simple",
       generatedRecords: [{ id: "pm:simple:BTC:test" }],
       skippedCandidates: [],
-      candidateKeys: ["market_overview:zh_CN:2026-05-13"],
+      candidateKeys: ["news-driven:BTC:test"],
     });
   });
 
@@ -428,12 +429,38 @@ describe("/api/cron/strategy-replay", () => {
       expect.objectContaining({
         locale: "zh_CN",
         pool: expect.objectContaining({ source: "coinw-kline" }),
-        residentCandidates: expect.any(Array),
         newsDrivenCandidates: expect.any(Array),
       }),
     );
+    expect(runSimplePipelineMock.mock.calls[0][0]).not.toHaveProperty("residentCandidates");
+    expect(payload).not.toHaveProperty("residentPrewarmCandidates");
+    expect(payload).not.toHaveProperty("residentPrewarmFixedCadenceCandidates");
+    expect(payload).not.toHaveProperty("residentPrewarmBackfillCandidates");
+    expect(payload).not.toHaveProperty("residentPrewarmBurst");
+    expect(payload).not.toHaveProperty("residentPrewarmSla");
     expect(enqueuePmDecisionJobMock).not.toHaveBeenCalled();
     expect(runPmDecisionJobMock).not.toHaveBeenCalled();
+  });
+
+  it("limits simple scheduled runs to five news-driven cards", async () => {
+    vi.stubEnv("PIPELINE_MODE", "simple");
+    fetchNewsFromAllSourcesMock.mockResolvedValue({
+      items: Array.from({ length: 10 }, (_, index) => ({
+        item: {
+          ...newsItem(),
+          id: `news-${index}`,
+          title: `BTC market update ${index}`,
+          url: `https://example.com/btc-${index}`,
+        },
+        sourceId: "rss-coindesk",
+      })),
+      fellBackFrom: [],
+    });
+
+    const response = await GET(new NextRequest("https://claw42.ai/api/cron/strategy-replay"));
+
+    expect(response.status).toBe(200);
+    expect(runSimplePipelineMock.mock.calls[0][0].newsDrivenCandidates).toHaveLength(5);
   });
 
   it("preserves the existing dispatchPmDecisionJob path in full mode", async () => {
