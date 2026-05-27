@@ -189,9 +189,13 @@ function topicOrderKey(topic: DispatchTopic) {
 }
 
 function orderTopicsByRanking(topics: DispatchTopic[]) {
-  return [...topics].sort((left, right) =>
-    compareDecisionCandidateOrder(topicOrderKey(left), topicOrderKey(right)),
-  );
+  return [...topics].sort((left, right) => {
+    const leftRank = left.topicRanking?.rank ?? Number.POSITIVE_INFINITY;
+    const rightRank = right.topicRanking?.rank ?? Number.POSITIVE_INFINITY;
+    const rankDelta = leftRank - rightRank;
+    if (rankDelta !== 0) return rankDelta;
+    return compareDecisionCandidateOrder(topicOrderKey(left), topicOrderKey(right));
+  });
 }
 
 export function topicDisplayIdentity(topic: DispatchTopic) {

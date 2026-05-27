@@ -523,6 +523,77 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html.indexOf("ETH 实时行情分析")).toBeLessThan(html.indexOf("BTC 决策流"));
   });
 
+  test("uses ranking rank as the final rendered card order", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "old-rank-4",
+              candidateType: "symbol",
+              candidateKey: "news-driven:BTC:old",
+              title: "Older BTC card",
+              symbol: "BTC",
+              score: 60,
+              lastUpdatedAt: 100,
+              executable: true,
+            }),
+            topicRanking: {
+              score: 60,
+              intensity: 4,
+              rank: 4,
+              rankLabel: "排序 #4",
+              explanation: "Older BTC",
+            },
+          },
+          {
+            ...topicFixture({
+              id: "fresh-rank-1",
+              candidateType: "symbol",
+              candidateKey: "news-driven:BTC:fresh",
+              title: "Fresh BTC card",
+              symbol: "BTC",
+              score: 50,
+              lastUpdatedAt: 300,
+              executable: true,
+            }),
+            topicRanking: {
+              score: 50,
+              intensity: 3,
+              rank: 1,
+              rankLabel: "排序 #1",
+              explanation: "Fresh BTC",
+            },
+          },
+          {
+            ...topicFixture({
+              id: "fresh-rank-3",
+              candidateType: "symbol",
+              candidateKey: "news-driven:SOL:fresh",
+              title: "Fresh SOL card",
+              symbol: "SOL",
+              score: 90,
+              lastUpdatedAt: 200,
+              executable: true,
+            }),
+            topicRanking: {
+              score: 90,
+              intensity: 5,
+              rank: 3,
+              rankLabel: "排序 #3",
+              explanation: "Fresh SOL",
+            },
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html.indexOf("Fresh BTC card")).toBeLessThan(html.indexOf("Fresh SOL card"));
+    expect(html.indexOf("Fresh SOL card")).toBeLessThan(html.indexOf("Older BTC card"));
+  });
+
   test("renders the follow-trade primary action only for executable symbol topics", () => {
     const marketHtml = renderToStaticMarkup(
       <MarketAnalysisPanel

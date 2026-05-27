@@ -81,6 +81,59 @@ describe("DispatchConsoleV9", () => {
     expect(html).not.toContain("BTC live market check");
   });
 
+  test("renders ranked topics in rank order even when transport inserts older cards first", () => {
+    const [baseTopic] = dispatchTopics;
+    const html = renderToStaticMarkup(
+      <DispatchConsoleV9
+        initialView="mkt"
+        topics={[
+          {
+            ...baseTopic,
+            id: "old-rank-4",
+            title: "Older BTC card",
+            topicRanking: {
+              rank: 4,
+              rankLabel: "排序 #4",
+              score: 60,
+              intensity: 4,
+              explanation: "",
+            },
+            lastUpdatedAt: 100,
+          },
+          {
+            ...baseTopic,
+            id: "fresh-rank-1",
+            title: "Fresh BTC card",
+            topicRanking: {
+              rank: 1,
+              rankLabel: "排序 #1",
+              score: 80,
+              intensity: 5,
+              explanation: "",
+            },
+            lastUpdatedAt: 300,
+          },
+          {
+            ...baseTopic,
+            id: "fresh-rank-3",
+            title: "Fresh SOL card",
+            topicRanking: {
+              rank: 3,
+              rankLabel: "排序 #3",
+              score: 70,
+              intensity: 4,
+              explanation: "",
+            },
+            lastUpdatedAt: 200,
+          },
+        ]}
+      />,
+    );
+
+    expect(html.indexOf("Fresh BTC card")).toBeLessThan(html.indexOf("Fresh SOL card"));
+    expect(html.indexOf("Fresh SOL card")).toBeLessThan(html.indexOf("Older BTC card"));
+  });
+
   test("omits the source link when a topic has no original url", () => {
     const [topic] = dispatchTopics;
     const html = renderToStaticMarkup(
