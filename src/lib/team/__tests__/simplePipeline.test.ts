@@ -16,12 +16,21 @@ import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 
 const generateTextMock = vi.hoisted(() => vi.fn());
+const callExactProviderMock = vi.hoisted(() => vi.fn());
 const appendDecisionRecordMock = vi.hoisted(() => vi.fn());
 const saveNewsEvidenceMock = vi.hoisted(() => vi.fn((evidence) => Promise.resolve(evidence)));
 
 vi.mock("@/lib/llm/generateText", () => ({
   generateText: generateTextMock,
 }));
+
+vi.mock("@/lib/llm/providers", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/llm/providers")>("@/lib/llm/providers");
+  return {
+    ...actual,
+    callExactProvider: callExactProviderMock,
+  };
+});
 
 vi.mock("@/lib/team/decisionRecordStore", () => ({
   appendDecisionRecord: appendDecisionRecordMock,
@@ -131,6 +140,8 @@ function candidateFor(symbol: string, key = symbol): DecisionCandidate {
 describe("runSimplePipeline", () => {
   beforeEach(() => {
     generateTextMock.mockReset();
+    callExactProviderMock.mockReset();
+    callExactProviderMock.mockRejectedValue(new Error("minimax validation unavailable"));
     appendDecisionRecordMock.mockReset();
     saveNewsEvidenceMock.mockClear();
     appendDecisionRecordMock.mockResolvedValue(undefined);
@@ -233,8 +244,61 @@ describe("runSimplePipeline", () => {
       { candidateKey: hypeCandidate.candidateKey, reason: "no_strategy" },
     ]);
     expect(generateTextMock).toHaveBeenCalledTimes(2);
+    expect(callExactProviderMock).toHaveBeenCalledTimes(1);
+    expect(callExactProviderMock.mock.calls[0]?.[1]).toBe("minimax");
     expect(appendDecisionRecordMock).not.toHaveBeenCalled();
     expect(saveNewsEvidenceMock).not.toHaveBeenCalled();
+  });
+
+  it("uses an exact Minimax validation fallback after two incomplete DeepSeek attempts", async () => {
+    generateTextMock
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          analysisSummary: "HYPE 动量不足，暂不形成交易方案。",
+          rationale: "HYPE 动量不足。",
+          direction: "wait",
+          confidence: 0.42,
+        }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          analysisSummary: "HYPE 仍未形成交易方案。",
+          rationale: "HYPE 仍未形成交易方案。",
+          direction: "neutral",
+          confidence: 0.45,
+        }),
+      );
+    callExactProviderMock.mockResolvedValueOnce({
+      text: completeDecision("HYPE"),
+      provider: "minimax",
+      inputTokens: 40,
+      outputTokens: 40,
+      latencyMs: 120,
+      cached: false,
+    });
+
+    const result = await runSimplePipeline({
+      locale: "zh_CN",
+      now,
+      pool: pool(),
+      newsItems: [news("HYPE")],
+      newsDrivenCandidates: [{ candidate: hypeCandidate, newsItem: news("HYPE"), symbol: "HYPE" }],
+    });
+
+    expect(result.generatedRecords).toHaveLength(1);
+    expect(result.skippedCandidates).toHaveLength(0);
+    expect(generateTextMock).toHaveBeenCalledTimes(2);
+    expect(callExactProviderMock).toHaveBeenCalledTimes(1);
+    const [exactInput, exactProvider] = callExactProviderMock.mock.calls[0] ?? [];
+    expect(exactProvider).toBe("minimax");
+    expect(exactInput).toMatchObject({
+      providerOverride: "minimax",
+      taskTag: "watch:simple-pipeline-validation:symbol:zh_CN",
+    });
+    expect(recordsWritten()[0].tradeDecision).toMatchObject({
+      symbol: "HYPE",
+      direction: "long",
+    });
   });
 
   it("dedupes same canonical story by URL and title keys", async () => {

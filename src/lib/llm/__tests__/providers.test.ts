@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
+  BudgetExceededError,
   __llmProviderTestUtils,
+  callExactProvider,
   callWithChain,
   getProvider,
   getProviderChain,
@@ -12,6 +14,7 @@ import {
   shouldAlarmBudget,
   trackUsage,
 } from "@/lib/llm/budget-tracker";
+import { __providerTelemetryTestUtils } from "@/lib/team/providerTelemetry";
 import type { LLMProvider } from "@/lib/llm/providers/types";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -37,6 +40,7 @@ describe("LLM provider core", () => {
     resetEnv();
     __llmBudgetTestUtils.clearMemoryUsage();
     __llmProviderTestUtils.clearCache();
+    __providerTelemetryTestUtils.clearMemory();
   });
 
   afterEach(() => {
@@ -67,6 +71,121 @@ describe("LLM provider core", () => {
     expect(output.provider).toBe("stub");
     expect(output.text).toMatch(/^\[STUB:test:stub:/);
     expect(output.cached).toBe(false);
+  });
+
+  it("can call one exact provider without falling back to the chain", async () => {
+    await expect(
+      callExactProvider(
+        {
+          prompt: "hello",
+          taskTag: "test:exact-minimax-unhealthy",
+          maxTokens: 64,
+        },
+        "minimax",
+      ),
+    ).rejects.toThrow("Provider minimax unhealthy");
+
+    expect(__providerTelemetryTestUtils.memoryCalls[0]).toMatchObject({
+      taskTag: "test:exact-minimax-unhealthy",
+      providerChain: ["minimax"],
+      attemptedProviders: [],
+      skippedProviders: ["minimax"],
+      finalProvider: null,
+      fallbackCount: 0,
+      success: false,
+    });
+  });
+
+  it("records cost and telemetry for an exact successful provider call", async () => {
+    process.env.DEEPSEEK_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        return new Response(
+          JSON.stringify({
+            choices: [{ message: { content: "exact provider ok" } }],
+            usage: { prompt_tokens: 1_000_000, completion_tokens: 1_000_000 },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    const output = await callExactProvider(
+      {
+        prompt: "hello",
+        taskTag: "test:exact-deepseek",
+        maxTokens: 64,
+      },
+      "deepseek-chat",
+    );
+
+    expect(output.provider).toBe("deepseek-chat");
+    expect(output.text).toBe("exact provider ok");
+    expect(await getMonthlyUsage("deepseek-chat")).toMatchObject({ usd: 0.87 });
+    expect(__providerTelemetryTestUtils.memoryCalls[0]).toMatchObject({
+      taskTag: "test:exact-deepseek",
+      providerOverride: "deepseek-chat",
+      providerChain: ["deepseek-chat"],
+      attemptedProviders: ["deepseek-chat"],
+      skippedProviders: [],
+      finalProvider: "deepseek-chat",
+      fallbackCount: 0,
+      success: true,
+      cached: false,
+    });
+  });
+
+  it("skips exact provider fallback when the monthly budget is autopaused", async () => {
+    process.env.LLM_MONTHLY_BUDGET_USD = "1";
+    process.env.LLM_BUDGET_AUTOPAUSE_THRESHOLD = "0.5";
+    const provider: LLMProvider = {
+      id: "stub",
+      displayName: "Budget test",
+      async generate() {
+        throw new Error("not used");
+      },
+      async isHealthy() {
+        return true;
+      },
+      estimateCost() {
+        return { inputUsd: 0.25, outputUsd: 0.75 };
+      },
+    };
+    await trackUsage(
+      provider,
+      { prompt: "x", taskTag: "test:exact-budget-seed" },
+      {
+        text: "ok",
+        provider: "stub",
+        inputTokens: 1,
+        outputTokens: 1,
+        latencyMs: 1,
+        cached: false,
+      },
+    );
+
+    await expect(
+      callExactProvider(
+        {
+          prompt: "hello",
+          taskTag: "test:exact-budget-autopause",
+          maxTokens: 64,
+        },
+        "stub",
+      ),
+    ).rejects.toBeInstanceOf(BudgetExceededError);
+
+    expect(__providerTelemetryTestUtils.memoryCalls[0]).toMatchObject({
+      taskTag: "test:exact-budget-autopause",
+      providerChain: ["stub"],
+      attemptedProviders: [],
+      skippedProviders: ["stub"],
+      finalProvider: null,
+      fallbackCount: 0,
+      success: false,
+      error: "Monthly LLM budget exceeded autopause threshold",
+    });
   });
 
   it("returns cache hits when cacheKey is provided", async () => {

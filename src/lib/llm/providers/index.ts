@@ -61,6 +61,80 @@ export function getProviderChain(providerOverride?: ProviderId): ProviderId[] {
   return chain;
 }
 
+export async function callExactProvider(
+  input: LLMInput,
+  providerId: ProviderId,
+): Promise<LLMOutput> {
+  const startedAt = Date.now();
+  const providerChain: ProviderId[] = [providerId];
+  const attemptedProviders: ProviderId[] = [];
+  const skippedProviders: ProviderId[] = [];
+  const provider = getProvider(providerId);
+
+  if (await isBudgetAutopaused()) {
+    skippedProviders.push(providerId);
+    await recordProviderCall({
+      taskTag: input.taskTag,
+      providerOverride: providerId,
+      providerChain,
+      attemptedProviders,
+      skippedProviders,
+      finalProvider: null,
+      fallbackCount: 0,
+      latencyMs: Date.now() - startedAt,
+      success: false,
+      cached: false,
+      error: "Monthly LLM budget exceeded autopause threshold",
+    });
+    throw new BudgetExceededError("Monthly LLM budget exceeded autopause threshold");
+  }
+
+  try {
+    if (!(await provider.isHealthy())) {
+      skippedProviders.push(providerId);
+      throw new Error(`Provider ${providerId} unhealthy`);
+    }
+
+    attemptedProviders.push(providerId);
+    const output = await provider.generate({ ...input, providerOverride: providerId });
+    const normalizedOutput = { ...output, cached: false };
+    await trackUsage(provider, { ...input, providerOverride: providerId }, normalizedOutput);
+    await recordProviderCall({
+      taskTag: input.taskTag,
+      providerOverride: providerId,
+      providerChain,
+      attemptedProviders,
+      skippedProviders,
+      finalProvider: normalizedOutput.provider,
+      fallbackCount: 0,
+      latencyMs: Date.now() - startedAt,
+      success: true,
+      cached: false,
+    });
+    return normalizedOutput;
+  } catch (error) {
+    const lastError = error instanceof Error ? error : new Error(String(error));
+    console.warn(`LLM exact provider ${providerId} failed`, {
+      taskTag: input.taskTag,
+      error: lastError.message,
+    });
+    await recordProviderCall({
+      taskTag: input.taskTag,
+      providerOverride: providerId,
+      providerChain,
+      attemptedProviders,
+      skippedProviders,
+      finalProvider: null,
+      fallbackCount: 0,
+      latencyMs: Date.now() - startedAt,
+      success: false,
+      cached: false,
+      error: lastError.message,
+    });
+    throw lastError;
+  }
+}
+
 export async function callWithChain(input: LLMInput): Promise<LLMOutput> {
   const startedAt = Date.now();
   const providerChain = getProviderChain(input.providerOverride);

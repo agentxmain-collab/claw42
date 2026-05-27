@@ -1,6 +1,6 @@
 import { generateText } from "@/lib/llm/generateText";
 import { parseJsonObjectWithRepair } from "@/lib/llm/jsonRepair";
-import { mapTeamProviderToProviderId } from "@/lib/llm/providers";
+import { callExactProvider, mapTeamProviderToProviderId } from "@/lib/llm/providers";
 import { newsItemToEvidence } from "@/lib/news/newsEvidence";
 import { saveNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { appendDecisionRecord } from "@/lib/team/decisionRecordStore";
@@ -55,6 +55,7 @@ type SimplePipelineDecision = {
 
 const SIMPLE_PIPELINE_PROMPT_VERSION = "simple-pipeline:v1";
 const SIMPLE_PIPELINE_PROVIDER = "simple-pipeline";
+const SIMPLE_PIPELINE_VALIDATION_PROVIDER = "minimax";
 const SIMPLE_PIPELINE_STAGE_LABELS: Record<DecisionStageTraceEntry["stageId"], string> = {
   analyst_inputs: "Information collection",
   research_lead: "Research synthesis",
@@ -137,6 +138,24 @@ async function runSimpleCandidate(
   }
 
   if (!tradeDecision) {
+    const validationDecision = await generateMinimaxValidationDecision({
+      ...input,
+      candidate,
+      newsItem,
+    }).catch(() => null);
+    if (validationDecision) {
+      decision = validationDecision;
+      tradeDecision = tradeDecisionFromSimpleDecision({
+        decision,
+        candidate,
+        symbol,
+        createdAt,
+        evidenceIds,
+      });
+    }
+  }
+
+  if (!tradeDecision) {
     return {
       skipped: {
         candidateKey: candidate.candidateKey,
@@ -175,25 +194,7 @@ async function generateSimpleDecision({
   retryForTradePlan?: boolean;
 }): Promise<SimplePipelineDecision> {
   const raw = await generateText(
-    [
-      "Return JSON only for a public market analysis card.",
-      `locale=${locale}`,
-      `generatedAt=${new Date(now).toISOString()}`,
-      `candidateType=${candidate.candidateType}`,
-      `candidateKey=${candidate.candidateKey}`,
-      candidate.symbol ? `symbol=${candidate.symbol}` : null,
-      `displayTitle=${candidate.displayTitle}`,
-      `executable=${candidate.executable ? "true" : "false"}`,
-      priceContext(candidate, pool),
-      newsContext(newsItem ? [newsItem] : newsItems),
-      "Fields: analysisSummary, rationale, direction(long|short|neutral|wait), confidence(0-1).",
-      "This is a CoinW executable symbol card. Include concrete entryPrice, stopLoss, takeProfit, positionSizing, riskNote, invalidatesIf.",
-      retryForTradePlan
-        ? "Previous response did not include a complete trade plan. Return long or short only when supportable, and ensure entryPrice, stopLoss, and takeProfit are filled."
-        : null,
-    ]
-      .filter(Boolean)
-      .join("\n"),
+    simpleDecisionPrompt({ locale, now, pool, newsItems, candidate, newsItem, retryForTradePlan }),
     {
       taskTag: `watch:simple-pipeline:${candidate.candidateType}:${locale}`,
       temperature: 0.25,
@@ -204,6 +205,73 @@ async function generateSimpleDecision({
     },
   );
   return normalizeDecision(parseJsonObjectWithRepair(raw));
+}
+
+async function generateMinimaxValidationDecision({
+  locale,
+  now,
+  pool,
+  newsItems,
+  candidate,
+  newsItem,
+}: SimplePipelineInput & {
+  candidate: DecisionCandidate;
+  newsItem: NewsItem;
+}): Promise<SimplePipelineDecision> {
+  const output = await callExactProvider(
+    {
+      prompt: simpleDecisionPrompt({
+        locale,
+        now,
+        pool,
+        newsItems,
+        candidate,
+        newsItem,
+        retryForTradePlan: true,
+      }),
+      taskTag: `watch:simple-pipeline-validation:${candidate.candidateType}:${locale}`,
+      temperature: 0.25,
+      maxTokens: 700,
+      providerOverride: SIMPLE_PIPELINE_VALIDATION_PROVIDER,
+      timeoutMs: 30_000,
+    },
+    SIMPLE_PIPELINE_VALIDATION_PROVIDER,
+  );
+  return normalizeDecision(parseJsonObjectWithRepair(output.text));
+}
+
+function simpleDecisionPrompt({
+  locale,
+  now,
+  pool,
+  newsItems,
+  candidate,
+  newsItem,
+  retryForTradePlan = false,
+}: SimplePipelineInput & {
+  candidate: DecisionCandidate;
+  newsItem: NewsItem;
+  retryForTradePlan?: boolean;
+}) {
+  return [
+    "Return JSON only for a public market analysis card.",
+    `locale=${locale}`,
+    `generatedAt=${new Date(now).toISOString()}`,
+    `candidateType=${candidate.candidateType}`,
+    `candidateKey=${candidate.candidateKey}`,
+    candidate.symbol ? `symbol=${candidate.symbol}` : null,
+    `displayTitle=${candidate.displayTitle}`,
+    `executable=${candidate.executable ? "true" : "false"}`,
+    priceContext(candidate, pool),
+    newsContext(newsItem ? [newsItem] : newsItems),
+    "Fields: analysisSummary, rationale, direction(long|short|neutral|wait), confidence(0-1).",
+    "This is a CoinW executable symbol card. Include concrete entryPrice, stopLoss, takeProfit, positionSizing, riskNote, invalidatesIf.",
+    retryForTradePlan
+      ? "Previous response did not include a complete trade plan. Return long or short only when supportable, and ensure entryPrice, stopLoss, and takeProfit are filled."
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function buildSimpleDecisionRecord({
