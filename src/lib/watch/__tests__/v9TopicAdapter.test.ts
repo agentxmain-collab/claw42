@@ -246,7 +246,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
   });
 
-  it("keeps the latest displayable hotspot when a newer hotspot has no public collection voice", () => {
+  it("drops hotspot resident cards from the public news-driven board", () => {
     const older = pmDecision({
       id: "event-hotspot-displayable",
       ts: now - 10 * 60_000,
@@ -318,12 +318,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topics).toHaveLength(1);
-    expect(topics[0]).toMatchObject({
-      id: "record-hotspot-displayable",
-      symbol: "HOTSPOT",
-      title: "热点叙事追踪",
-    });
+    expect(topics).toHaveLength(0);
   });
 
   it("adapts a real pm_decision event into a v9 dispatch topic", () => {
@@ -518,7 +513,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic).toBeUndefined();
   });
 
-  it("does not allow non-symbol topics to become followable even when payload says executable", () => {
+  it("does not render non-symbol topics on the news-driven public board", () => {
     const event = pmDecision({
       payload: {
         kind: "pm_decision",
@@ -541,21 +536,10 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.candidateType).toBe("market_overview");
-    expect(topic.execution).toMatchObject({
-      executable: false,
-      watchOnly: true,
-    });
-    expect(topic.strategy).toMatchObject({
-      mode: "observation",
-      name: "观察结论",
-      follow: {
-        primaryDisabled: false,
-      },
-    });
+    expect(topic).toBeUndefined();
   });
 
-  it("maps simple pipeline observation cards to generic navigation without price fields", () => {
+  it("drops simple pipeline observation cards because public board is symbol-only", () => {
     const event = pmDecision({
       payload: {
         kind: "pm_decision",
@@ -586,21 +570,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.strategy).toMatchObject({
-      mode: "observation",
-      entry: "",
-      stopLoss: "",
-      takeProfit: "",
-      observationSummary: "热点观察已经完成，不涉及具体交易。",
-      follow: {
-        primaryLabel: "去 CoinW 看合约",
-        primaryDisabled: false,
-      },
-    });
-    expect(topic.execution).toMatchObject({
-      executable: false,
-      watchOnly: true,
-    });
+    expect(topic).toBeUndefined();
   });
 
   it("maps simple pipeline executable symbol cards to pair-specific trade strategy", () => {
@@ -951,7 +921,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.messages.some((message) => message.typing)).toBe(true);
   });
 
-  it("uses public analysis summary before unrelated evidence copy for analysis-only records", () => {
+  it("drops analysis-only resident records before public card mapping", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
     const [topic] = mapTopics({
@@ -979,9 +949,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.title).toBe("今日大盘综述");
-    expect(topic.explanation).toBe("市场当前处于多空拉锯但空头证据更扎实的阶段。");
-    expect(topic.trigger.text).toBe("市场当前处于多空拉锯但空头证据更扎实的阶段。");
+    expect(topic).toBeUndefined();
   });
 
   it("marks completed analysis-only records closed instead of leaving progress at stage 3", () => {
@@ -1046,31 +1014,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.status).toBe("done");
-    expect(topic.progress).toBe("12 分钟前分析");
-    expect(topic.stages.slice(0, 4).map((stage) => stage.status)).toEqual([
-      "done",
-      "done",
-      "done",
-      "done",
-    ]);
-    expect(topic.stages[4]).toMatchObject({
-      label: "阶段 5 · 观察结论",
-      status: "done",
-      note: "观察结论已完成，不涉及具体交易",
-    });
-    expect(topic.stages[5]).toMatchObject({
-      label: "阶段 6 · 观察结论",
-      status: "done",
-      note: "观察结论已完成，不涉及具体交易",
-    });
-    expect(topic.strategy).toMatchObject({
-      mode: "observation",
-      name: "观察结论",
-      meta: "观察结论已完成，不涉及具体交易",
-      observationSummary: "今日大盘分析已完成。",
-    });
-    expect(topic.messages.some((message) => message.typing)).toBe(false);
+    expect(topic).toBeUndefined();
   });
 
   it("renders partial stage trace as a monotonic current in-progress stage", () => {
@@ -1288,17 +1232,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.progress).toBe("当前进行到阶段 3 · 1 分钟前分析");
-    expect(topic.stages.map((stage) => stage.status)).toEqual([
-      "done",
-      "done",
-      "in_progress",
-      "pending",
-      "pending",
-      "pending",
-    ]);
-    expect(topic.messages.some((message) => message.sourceMemberId === "risk_lead")).toBe(false);
-    expect(topic.messages.some((message) => message.stageId === `${topic.id}-stage-4`)).toBe(false);
+    expect(topic).toBeUndefined();
   });
 
   it("keeps analysis-only risk messages hidden even when record-write and timeline audit stages are done", () => {
@@ -1381,19 +1315,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.progress).toBe("当前进行到阶段 3 · 1 分钟前分析");
-    expect(topic.stages.map((stage) => stage.status)).toEqual([
-      "done",
-      "done",
-      "in_progress",
-      "pending",
-      "pending",
-      "pending",
-    ]);
-    expect(topic.messages.map((message) => message.sourceMemberId)).toEqual([
-      "chart_analyst",
-      "research_lead",
-    ]);
+    expect(topic).toBeUndefined();
   });
 
   it("groups multi-round decision messages by round label", () => {

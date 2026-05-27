@@ -88,7 +88,7 @@ describe("publicTimelinePayload", () => {
     );
   });
 
-  it("keeps one stale-but-real resident market and hotspot record as a public floor", () => {
+  it("does not publish resident market and hotspot records as a public floor", () => {
     const servedAt = Date.UTC(2026, 4, 18, 12, 0, 0);
     const before = servedAt + 1;
     const events = [
@@ -105,7 +105,54 @@ describe("publicTimelinePayload", () => {
         before,
         servedAt,
       }).map((event) => event.id),
-    ).toEqual(["market-latest", "hotspot-latest"]);
+    ).toEqual([]);
+  });
+
+  it("publishes only fresh news-driven symbol records", async () => {
+    const servedAt = Date.UTC(2026, 4, 24, 6, 20, 0);
+    await appendDecisionRecord(
+      decisionRecord("pm:BTC:fresh", servedAt - 10 * 60_000, {
+        candidateKey: "news-driven:BTC:fresh",
+        promptVersion: "simple-pipeline:v1",
+        modelProvider: "simple-pipeline",
+      }),
+    );
+    await appendDecisionRecord(
+      decisionRecord("pm:ETH:old", servedAt - 16 * 60 * 60_000, {
+        candidateKey: "news-driven:ETH:old",
+        promptVersion: "simple-pipeline:v1",
+        modelProvider: "simple-pipeline",
+        symbol: "ETH",
+      }),
+    );
+    await appendDecisionRecord(
+      decisionRecord("pm:SOL:legacy", servedAt - 5 * 60_000, {
+        candidateKey: "SOL",
+        symbol: "SOL",
+      }),
+    );
+    await appendDecisionRecord(
+      decisionRecord("pm:market:latest", servedAt - 5 * 60_000, {
+        candidateType: "market_overview",
+        candidateKey: "market_overview:zh_CN:latest",
+        symbol: "MARKET",
+      }),
+    );
+
+    const payload = (await buildWatchTimelinePayload({
+      mode: "public",
+      locale: "zh_CN",
+      before: servedAt + 1,
+      limit: 10,
+      windowMinutes: 24 * 60,
+      servedAt,
+    })) as PublicWatchTimelinePayload;
+
+    expect(
+      payload.events.flatMap((event) =>
+        event.payload.kind === "pm_decision" ? [event.payload.recordId] : [],
+      ),
+    ).toEqual(["pm:BTC:fresh"]);
   });
 
   it("keeps up to three stale-but-real executable symbol records as a public floor", () => {
@@ -224,12 +271,35 @@ function pmHistoryEntry(recordId: string, ts: number): StreamEntry & { meta: Wat
   };
 }
 
-function decisionRecord(id: string, ts: number): StrategyDecisionRecord {
+function decisionRecord(
+  id: string,
+  ts: number,
+  overrides: {
+    candidateType?: "symbol" | "market_overview" | "hotspot";
+    candidateKey?: string;
+    symbol?: string;
+    promptVersion?: string;
+    modelProvider?: string;
+  } = {},
+): StrategyDecisionRecord {
+  const symbol = overrides.symbol ?? "BTC";
+  const promptVersion = overrides.promptVersion ?? "simple-pipeline:v1";
+  const modelProvider = overrides.modelProvider ?? "simple-pipeline";
   return {
     id,
     schemaVersion: 1,
     recordSource: "live",
-    symbol: "BTC",
+    symbol,
+    candidate: {
+      candidateType: overrides.candidateType ?? "symbol",
+      candidateKey: overrides.candidateKey ?? `news-driven:${symbol}:${id}`,
+      displayTitle:
+        overrides.candidateType === "market_overview" ? "今日大盘综述" : `${symbol} 实时行情分析`,
+      executable: (overrides.candidateType ?? "symbol") === "symbol",
+      cadence: "event",
+      score: 80,
+      reasons: [],
+    },
     locale: "zh_CN",
     decisionOwnerId: "pm",
     contributorIds: ["fundamental_analyst"],
@@ -243,13 +313,38 @@ function decisionRecord(id: string, ts: number): StrategyDecisionRecord {
       },
     ],
     sourceThreadId: `thread-${id}`,
-    tradeDecision: null,
+    tradeDecision:
+      (overrides.candidateType ?? "symbol") === "symbol"
+        ? {
+            id: `trade-${id}`,
+            schemaVersion: 1,
+            symbol,
+            generatedBy: "pm",
+            generatedAt: new Date(ts).toISOString(),
+            direction: "short",
+            entryType: "market",
+            entryPrice: 76000,
+            entryRange: null,
+            stopLoss: 77000,
+            takeProfit: [74000],
+            positionSizing: 0.08,
+            timeHorizon: "intraday",
+            rating: 4,
+            confidence: 0.68,
+            evidenceIds: [],
+            riskNote: "Risk is bounded by stop loss.",
+            invalidatesIf: "BTC reclaims resistance.",
+            promptVersion,
+            modelProvider,
+            severity: "medium",
+          }
+        : null,
     createdAt: new Date(ts).toISOString(),
     evaluationWindowEndsAt: null,
     resolvedAt: null,
     resolvedOutcome: null,
-    promptVersion: "test",
-    modelProvider: "stub",
+    promptVersion,
+    modelProvider,
     legacyFactionId: null,
     stageTrace: [
       {

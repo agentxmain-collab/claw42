@@ -1129,7 +1129,7 @@ function displayablePublicBetaGroup(group: DispatchTopicGroup) {
   const latest = group.latestDecision;
   if (latest.payload.kind !== "pm_decision") return false;
   if (!hasPublicInformationCollectionRound(latest)) return false;
-  if (group.candidateType !== "symbol") return true;
+  if (group.candidateType !== "symbol") return false;
   if (typeof latest.payload.executable === "boolean") return latest.payload.executable;
   return resolveSymbolMapping(group.symbol).execution.executable;
 }

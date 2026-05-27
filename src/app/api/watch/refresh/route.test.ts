@@ -344,39 +344,15 @@ describe("/api/watch/refresh", () => {
     expect(waitUntilMock).not.toHaveBeenCalled();
   });
 
-  it("supports market overview refresh with candidate cadence identity", async () => {
+  it("rejects resident refresh requests because public cards are news-driven symbols only", async () => {
     const response = await POST(residentRequest());
     const payload = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(payload).toMatchObject({
-      status: "stale",
-      refreshStarted: true,
-      symbol: "MARKET",
-      candidateType: "market_overview",
-      candidateKey: "market_overview:utc:zh_CN:2026-05-15T12",
-      displayTitle: "今日大盘综述",
-    });
-    expect(callOrder.slice(0, 5)).toEqual([
-      "rate",
-      "check:watch:refresh:in-flight:zh_CN:market_overview:utc:zh_CN:2026-05-15T12",
-      "freshness:records",
-      "check:watch:refresh:cooldown:zh_CN",
-      "check:watch:pm-decision:zh_CN:market_overview:utc:zh_CN:2026-05-15T12",
-    ]);
-    expect(waitUntilMock).toHaveBeenCalledOnce();
-    await waitUntilMock.mock.calls[0][0];
-    expect(enqueuePmDecisionJobMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: "once",
-        triggerSource: "user_visit_trigger",
-        locale: "zh_CN",
-        candidate: expect.objectContaining({
-          candidateType: "market_overview",
-          executable: false,
-        }),
-      }),
-    );
+    expect(response.status).toBe(400);
+    expect(payload).toEqual({ error: "invalid_candidate" });
+    expect(checkRateLimitMock).not.toHaveBeenCalled();
+    expect(waitUntilMock).not.toHaveBeenCalled();
+    expect(enqueuePmDecisionJobMock).not.toHaveBeenCalled();
   });
 
   it("supports server-selected priority symbol refresh when no symbol card exists yet", async () => {

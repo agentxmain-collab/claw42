@@ -20,6 +20,7 @@ import {
   comparePublicTimelineEvents,
   mergePublicTimelineEvents,
 } from "@/lib/watch/publicTimelineOrdering";
+import { normalizeCandidateType } from "@/lib/watch/decisionCandidate";
 import {
   buildDecisionRecordIndex,
   filterPublicTimelineEvents,
@@ -29,8 +30,11 @@ import {
 export const MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60;
 export const MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES = 72 * 60;
 export const PUBLIC_SYMBOL_FLOOR_TARGET = 3;
+export const PUBLIC_NEWS_DRIVEN_SYMBOL_MAX_AGE_MS = 6 * 60 * 60_000;
 
 const MAX_EVIDENCE_MAP_ITEMS = 120;
+const NEWS_DRIVEN_CANDIDATE_KEY_PREFIX = "news-driven:";
+const SIMPLE_PIPELINE_PROMPT_VERSION = "simple-pipeline:v1";
 
 export type WatchTimelineMode = "public" | "debug";
 
@@ -122,47 +126,34 @@ function mergeDecisionRecordBackfillEvents(
   );
 }
 
-function residentLane(event: PublicTimelineEvent): "market_overview" | "hotspot" | null {
-  if (event.payload.kind !== "pm_decision") return null;
-  if (event.payload.candidateType === "market_overview") return "market_overview";
-  if (event.payload.candidateType === "hotspot") return "hotspot";
-  return null;
-}
-
 export function selectResidentFloorRecordEvents(
-  events: PublicTimelineEvent[],
-  {
-    locale,
-    before,
-    since,
-    servedAt,
-  }: {
+  _events: PublicTimelineEvent[],
+  _options: {
     locale: Locale;
     before: number;
     since?: number;
     servedAt: number;
   },
-) {
-  const minTs = servedAt - MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES * 60_000;
-  const byLane = new Map<"market_overview" | "hotspot", PublicTimelineEvent>();
+): PublicTimelineEvent[] {
+  void _events;
+  void _options;
+  return [];
+}
 
-  for (const event of events) {
-    const lane = residentLane(event);
-    if (!lane) continue;
-    if (event.locale !== locale) continue;
-    if (event.ts >= before || event.ts < minTs) continue;
-    if (since !== undefined && event.ts <= since) continue;
-    const existing = byLane.get(lane);
-    if (
-      !existing ||
-      event.ts > existing.ts ||
-      (event.ts === existing.ts && event.id < existing.id)
-    ) {
-      byLane.set(lane, event);
-    }
-  }
+function isFreshNewsDrivenSymbolEvent(event: PublicTimelineEvent, servedAt: number) {
+  if (event.payload.kind !== "pm_decision") return false;
+  if (normalizeCandidateType(event.payload.candidateType) !== "symbol") return false;
+  if (!event.payload.candidateKey?.startsWith(NEWS_DRIVEN_CANDIDATE_KEY_PREFIX)) return false;
+  if (event.payload.tradeDecision?.promptVersion !== SIMPLE_PIPELINE_PROMPT_VERSION) return false;
+  if (event.ts > servedAt + 5 * 60_000) return false;
+  return servedAt - event.ts <= PUBLIC_NEWS_DRIVEN_SYMBOL_MAX_AGE_MS;
+}
 
-  return Array.from(byLane.values()).sort(comparePublicTimelineEvents);
+function filterFreshNewsDrivenSymbolEvents(events: PublicTimelineEvent[], servedAt: number) {
+  return events.filter(
+    (event) =>
+      event.payload.kind !== "pm_decision" || isFreshNewsDrivenSymbolEvent(event, servedAt),
+  );
 }
 
 function isExecutableSymbolEvent(event: PublicTimelineEvent) {
@@ -319,9 +310,12 @@ export async function buildWatchTimelinePayload({
     servedAt,
   });
   const events = mergeDecisionRecordBackfillEvents(
-    projectedEvents.sort(comparePublicTimelineEvents),
-    [...recordEvents, ...residentFloorRecordEvents, ...symbolFloorRecordEvents].sort(
-      comparePublicTimelineEvents,
+    filterFreshNewsDrivenSymbolEvents(projectedEvents.sort(comparePublicTimelineEvents), servedAt),
+    filterFreshNewsDrivenSymbolEvents(
+      [...recordEvents, ...residentFloorRecordEvents, ...symbolFloorRecordEvents].sort(
+        comparePublicTimelineEvents,
+      ),
+      servedAt,
     ),
     limit,
   );

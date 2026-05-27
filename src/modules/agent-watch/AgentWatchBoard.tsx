@@ -170,6 +170,7 @@ export function resolveVisibleSessionRefreshTarget({
   locale: string;
 }): VisibleSessionRefreshTarget | null {
   if (!timelineLoaded) return null;
+  void residentStatus;
 
   const symbolCoverage = publicBetaSymbolCoverage(
     topics
@@ -184,47 +185,12 @@ export function resolveVisibleSessionRefreshTarget({
     };
   }
 
-  const residentTarget = residentRefreshTarget({ residentStatus, locale });
-  if (residentTarget) return residentTarget;
-
   const latestRefreshSymbol = symbolCoverage[0];
   return {
     sessionKey: `freshness-trigger-${locale}-symbol-${latestRefreshSymbol}`,
     symbol: latestRefreshSymbol,
     params: { symbol: latestRefreshSymbol },
   };
-}
-
-function residentRefreshTarget({
-  residentStatus,
-  locale,
-}: {
-  residentStatus?: ResidentPrewarmStatus | null;
-  locale: string;
-}): VisibleSessionRefreshTarget | null {
-  if (!residentStatus) return null;
-  if (shouldRefreshResidentLane(residentStatus.marketOverview)) {
-    return {
-      sessionKey: `freshness-trigger-${locale}-resident-market_overview`,
-      symbol: "MARKET",
-      params: { candidateType: "market_overview" },
-    };
-  }
-  if (shouldRefreshResidentLane(residentStatus.hotspot)) {
-    return {
-      sessionKey: `freshness-trigger-${locale}-resident-hotspot`,
-      symbol: "HOTSPOT",
-      params: { candidateType: "hotspot" },
-    };
-  }
-  return null;
-}
-
-function shouldRefreshResidentLane(lane: ResidentPrewarmStatus["marketOverview"]) {
-  if (lane.state === "queued" || lane.state === "running") return false;
-  return (
-    lane.state === "empty" || lane.state === "failed" || lane.stale || lane.slaState !== "healthy"
-  );
 }
 
 export function AgentWatchBoard({

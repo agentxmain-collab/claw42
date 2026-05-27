@@ -152,7 +152,7 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     });
   });
 
-  test("repairs resident lanes after public symbol coverage is filled", () => {
+  test("does not repair resident lanes after public symbol coverage is filled", () => {
     expect(
       resolveVisibleSessionRefreshTarget({
         topics: [
@@ -169,8 +169,8 @@ describe("resolveVisibleSessionRefreshTarget", () => {
         locale: "zh_CN",
       }),
     ).toMatchObject({
-      symbol: "MARKET",
-      params: { candidateType: "market_overview" },
+      symbol: "BTC",
+      params: { symbol: "BTC" },
     });
   });
 
