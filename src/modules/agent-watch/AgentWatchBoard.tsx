@@ -120,6 +120,18 @@ function mergeTimelineEvents(current: PublicTimelineEvent[], next: PublicTimelin
   return mergePublicTimelineEvents([...current, ...next]);
 }
 
+export function sortTopicsForDisplay(topics: DispatchTopic[]) {
+  return [...topics].sort((a, b) => {
+    const rankDelta =
+      (a.topicRanking?.rank ?? Number.POSITIVE_INFINITY) -
+      (b.topicRanking?.rank ?? Number.POSITIVE_INFINITY);
+    if (rankDelta !== 0) return rankDelta;
+    const timeDelta = (b.lastUpdatedAt ?? 0) - (a.lastUpdatedAt ?? 0);
+    if (timeDelta !== 0) return timeDelta;
+    return a.id.localeCompare(b.id);
+  });
+}
+
 export function reconcileTimelineEventsForDisplay({
   current,
   next,
@@ -533,29 +545,28 @@ export function AgentWatchBoard({
     };
   }, [fetchFollowStats, recordIdsKey]);
 
-  const topics = useMemo(
-    () =>
-      mapPublicTimelineEventsToTopics({
-        events: timelineEvents,
-        evidenceMap: timelineEvidenceMap,
-        followStatsByRecordId,
-        locale: agentWatchLocale,
-        outcomeDict,
-        roundDict,
-        stageStatusDict,
-        topicRankingDict,
-      }),
-    [
-      agentWatchLocale,
+  const topics = useMemo(() => {
+    const mappedTopics = mapPublicTimelineEventsToTopics({
+      events: timelineEvents,
+      evidenceMap: timelineEvidenceMap,
       followStatsByRecordId,
+      locale: agentWatchLocale,
       outcomeDict,
       roundDict,
       stageStatusDict,
       topicRankingDict,
-      timelineEvents,
-      timelineEvidenceMap,
-    ],
-  );
+    });
+    return sortTopicsForDisplay(mappedTopics);
+  }, [
+    agentWatchLocale,
+    followStatsByRecordId,
+    outcomeDict,
+    roundDict,
+    stageStatusDict,
+    topicRankingDict,
+    timelineEvents,
+    timelineEvidenceMap,
+  ]);
   const consoleFreshness = useMemo<DispatchFreshnessState>(
     () => ({
       ...freshness,

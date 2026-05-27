@@ -2,12 +2,14 @@ import { describe, expect, test } from "vitest";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { ResidentPrewarmStatus } from "@/lib/watch/residentPrewarmStatus";
+import type { DispatchTopic } from "../v9/types";
 import {
   mergeTimelinePayloadForDisplay,
   reconcileTimelineEventsForDisplay,
   retryDelayForVisibleSessionRefresh,
   resolveVisibleSessionRefreshTarget,
   shouldPersistVisibleSessionRefreshResult,
+  sortTopicsForDisplay,
 } from "../AgentWatchBoard";
 
 function pmEvent(recordId: string, ts: number): PublicTimelineEvent {
@@ -44,6 +46,34 @@ function evidence(id: string): NewsEvidence {
 }
 
 describe("resolveVisibleSessionRefreshTarget", () => {
+  test("keeps rendered topics aligned with ranking order after timeline merge", () => {
+    const topics = sortTopicsForDisplay([
+      {
+        id: "old-rank-4",
+        symbol: "BTC",
+        candidateType: "symbol",
+        lastUpdatedAt: 100,
+        topicRanking: { rank: 4, rankLabel: "排序 #4", score: 60 },
+      },
+      {
+        id: "fresh-rank-1",
+        symbol: "CRV",
+        candidateType: "symbol",
+        lastUpdatedAt: 300,
+        topicRanking: { rank: 1, rankLabel: "排序 #1", score: 50 },
+      },
+      {
+        id: "fresh-rank-2",
+        symbol: "SOL",
+        candidateType: "symbol",
+        lastUpdatedAt: 200,
+        topicRanking: { rank: 2, rankLabel: "排序 #2", score: 50 },
+      },
+    ] as unknown as DispatchTopic[]);
+
+    expect(topics.map((topic) => topic.id)).toEqual(["fresh-rank-1", "fresh-rank-2", "old-rank-4"]);
+  });
+
   test("does not trigger before timeline has loaded", () => {
     expect(
       resolveVisibleSessionRefreshTarget({
