@@ -163,6 +163,12 @@ describe("runSimplePipeline", () => {
     expect(generateTextMock).toHaveBeenCalledTimes(result.generatedRecords.length);
     expect(saveNewsEvidenceMock).toHaveBeenCalledTimes(1);
     const [record] = recordsWritten();
+    expect(generateTextMock.mock.calls[0]?.[1]).toMatchObject({
+      responseFormat: "json_object",
+      thinkingMode: "disabled",
+    });
+    expect(generateTextMock.mock.calls[0]?.[0]).toContain("direction must be long or short");
+    expect(generateTextMock.mock.calls[0]?.[0]).toContain("entryPrice must be a JSON number");
     expect(record.analysisSummary).toBe("BTC 成交与新闻共振，短线偏多。");
     expect(record.tradeDecision).toMatchObject({
       symbol: "BTC",
@@ -292,6 +298,7 @@ describe("runSimplePipeline", () => {
     const [exactInput, exactProvider] = callExactProviderMock.mock.calls[0] ?? [];
     expect(exactProvider).toBe("minimax");
     expect(exactInput).toMatchObject({
+      modelOverride: "MiniMax-Text-01",
       providerOverride: "minimax",
       taskTag: "watch:simple-pipeline-validation:symbol:zh_CN",
     });

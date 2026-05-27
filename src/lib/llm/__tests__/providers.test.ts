@@ -282,6 +282,62 @@ describe("LLM provider core", () => {
     expect(estimate).toEqual({ inputUsd: 0.435, outputUsd: 0.87 });
   });
 
+  it("can force DeepSeek V4 into final JSON mode without exposing private text", async () => {
+    process.env.DEEPSEEK_API_KEY = "test-key";
+    let requestBody: Record<string, unknown> = {};
+    const diagnostics: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        requestBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                finish_reason: "stop",
+                message: {
+                  content: '{"analysisSummary":"ok","direction":"long"}',
+                  reasoning_content: "private reasoning",
+                },
+              },
+            ],
+            usage: { prompt_tokens: 12, completion_tokens: 8, total_tokens: 20 },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    const output = await getProvider("deepseek-chat").generate({
+      prompt: "private news title",
+      taskTag: "test:deepseek-final-json-mode",
+      thinkingMode: "disabled",
+      responseFormat: "json_object",
+      diagnosticsCollector: (diagnostic) => diagnostics.push(diagnostic),
+    });
+
+    expect(requestBody).toMatchObject({
+      model: "deepseek-v4-pro",
+      thinking: { type: "disabled" },
+      response_format: { type: "json_object" },
+    });
+    expect(output.text).toBe('{"analysisSummary":"ok","direction":"long"}');
+    expect(diagnostics).toEqual([
+      expect.objectContaining({
+        provider: "deepseek-chat",
+        model: "deepseek-v4-pro",
+        httpStatus: 200,
+        finishReason: "stop",
+        usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
+        contentLength: '{"analysisSummary":"ok","direction":"long"}'.length,
+        reasoningContent: { present: true, length: "private reasoning".length },
+        error: null,
+      }),
+    ]);
+    expect(JSON.stringify(diagnostics)).not.toContain("private news title");
+    expect(JSON.stringify(diagnostics)).not.toContain("private reasoning");
+  });
+
   it("falls back from DeepSeek V4 Pro to V4 Flash on transient model failure", async () => {
     process.env.DEEPSEEK_API_KEY = "test-key";
     const requestModels: string[] = [];
@@ -435,5 +491,51 @@ describe("LLM provider core", () => {
       }),
     ]);
     expect(JSON.stringify(diagnostics)).not.toContain("private news title");
+  });
+
+  it("can force Minimax validation onto a non-reasoning text model", async () => {
+    process.env.MINIMAX_API_KEY = "test-key";
+    process.env.MINIMAX_MODEL = "MiniMax-M2.7";
+    let requestBody: Record<string, unknown> = {};
+    const diagnostics: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        requestBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                finish_reason: "stop",
+                message: { content: '{"analysisSummary":"ok","direction":"short"}' },
+              },
+            ],
+            usage: { prompt_tokens: 20, completion_tokens: 12, total_tokens: 32 },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    const output = await getProvider("minimax").generate({
+      prompt: "private news title",
+      taskTag: "test:minimax-model-override",
+      modelOverride: "MiniMax-Text-01",
+      diagnosticsCollector: (diagnostic) => diagnostics.push(diagnostic),
+    });
+
+    expect(requestBody).toMatchObject({ model: "MiniMax-Text-01" });
+    expect(output.text).toBe('{"analysisSummary":"ok","direction":"short"}');
+    expect(diagnostics).toEqual([
+      expect.objectContaining({
+        provider: "minimax",
+        model: "MiniMax-Text-01",
+        httpStatus: 200,
+        finishReason: "stop",
+        contentLength: '{"analysisSummary":"ok","direction":"short"}'.length,
+        reasoningContent: { present: false, length: 0 },
+        error: null,
+      }),
+    ]);
   });
 });

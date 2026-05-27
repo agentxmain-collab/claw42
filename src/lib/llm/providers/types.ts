@@ -16,6 +16,9 @@ export interface LLMInput {
   cacheTTLSeconds?: number;
   taskTag: string;
   providerOverride?: ProviderId;
+  modelOverride?: string;
+  thinkingMode?: "enabled" | "disabled";
+  responseFormat?: "json_object";
   diagnosticsCollector?: LLMAttemptDiagnosticsCollector;
 }
 

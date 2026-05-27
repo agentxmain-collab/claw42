@@ -26,6 +26,7 @@ type MiniMaxResponse = {
 
 const INPUT_USD_PER_MILLION = 0.2;
 const OUTPUT_USD_PER_MILLION = 1.1;
+const DEFAULT_MINIMAX_MODEL = "MiniMax-Text-01";
 
 function collectMiniMaxAttemptDiagnostic(
   input: LLMInput,
@@ -55,6 +56,7 @@ export const minimaxProvider: LLMProvider = {
     if (!apiKey) throw new Error("missing MINIMAX_API_KEY");
 
     const startedAt = Date.now();
+    const model = input.modelOverride || process.env.MINIMAX_MODEL || DEFAULT_MINIMAX_MODEL;
     const messages = [
       ...(input.systemPrompt ? [{ role: "system", content: input.systemPrompt }] : []),
       { role: "user", content: input.prompt },
@@ -65,7 +67,7 @@ export const minimaxProvider: LLMProvider = {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
-          model: process.env.MINIMAX_MODEL || "MiniMax-Text-01",
+          model,
           messages,
           max_tokens: input.maxTokens ?? DEFAULT_MAX_TOKENS,
           temperature: input.temperature ?? DEFAULT_TEMPERATURE,
@@ -78,7 +80,7 @@ export const minimaxProvider: LLMProvider = {
     if (!response.ok) {
       const error = new Error(`minimax ${response.status}`);
       collectMiniMaxAttemptDiagnostic(input, {
-        model: process.env.MINIMAX_MODEL || "MiniMax-Text-01",
+        model,
         httpStatus: response.status,
         finishReason: null,
         usage: usageFromMiniMax(null),
@@ -98,7 +100,7 @@ export const minimaxProvider: LLMProvider = {
     if (!text) {
       const error = new Error("minimax empty response");
       collectMiniMaxAttemptDiagnostic(input, {
-        model: process.env.MINIMAX_MODEL || "MiniMax-Text-01",
+        model,
         httpStatus: response.status,
         finishReason: firstChoice?.finish_reason ?? null,
         usage: usageFromMiniMax(data),
@@ -112,6 +114,20 @@ export const minimaxProvider: LLMProvider = {
       });
       throw error;
     }
+
+    collectMiniMaxAttemptDiagnostic(input, {
+      model,
+      httpStatus: response.status,
+      finishReason: firstChoice?.finish_reason ?? null,
+      usage: usageFromMiniMax(data),
+      contentLength: content.length,
+      reasoningContent: {
+        present: reasoningContent.length > 0,
+        length: reasoningContent.length,
+      },
+      error: null,
+      latencyMs: Date.now() - startedAt,
+    });
 
     return {
       text,

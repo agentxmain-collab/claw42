@@ -16,6 +16,9 @@ export interface GenerateTextOptions {
   cacheTTLSeconds?: number;
   enableGuardrails?: boolean;
   providerOverride?: ProviderId;
+  modelOverride?: string;
+  thinkingMode?: "enabled" | "disabled";
+  responseFormat?: "json_object";
   timeoutMs?: number;
   diagnosticsCollector?: LLMAttemptDiagnosticsCollector;
 }
@@ -44,6 +47,9 @@ export async function generateText(prompt: string, options: GenerateTextOptions)
     cacheTTLSeconds: options.cacheTTLSeconds,
     taskTag: options.taskTag,
     providerOverride: options.providerOverride,
+    modelOverride: options.modelOverride,
+    thinkingMode: options.thinkingMode,
+    responseFormat: options.responseFormat,
     timeoutMs: options.timeoutMs,
     diagnosticsCollector: options.diagnosticsCollector,
   });
@@ -60,6 +66,9 @@ export async function generateText(prompt: string, options: GenerateTextOptions)
     timeoutMs: options.timeoutMs ?? 10_000,
     taskTag: `${options.taskTag}:guardrail-retry`,
     providerOverride: options.providerOverride,
+    modelOverride: options.modelOverride,
+    thinkingMode: options.thinkingMode,
+    responseFormat: options.responseFormat,
     diagnosticsCollector: options.diagnosticsCollector,
   });
 

@@ -58,6 +58,7 @@ type SimplePipelineDecision = {
 const SIMPLE_PIPELINE_PROMPT_VERSION = "simple-pipeline:v1";
 const SIMPLE_PIPELINE_PROVIDER = "simple-pipeline";
 const SIMPLE_PIPELINE_VALIDATION_PROVIDER = "minimax";
+const SIMPLE_PIPELINE_VALIDATION_MODEL = "MiniMax-Text-01";
 const SIMPLE_PIPELINE_STAGE_LABELS: Record<DecisionStageTraceEntry["stageId"], string> = {
   analyst_inputs: "Information collection",
   research_lead: "Research synthesis",
@@ -211,6 +212,8 @@ async function generateSimpleDecision({
       maxTokens: 700,
       enableGuardrails: false,
       providerOverride: mapTeamProviderToProviderId(TEAM_MEMBER_REGISTRY.pm.defaultProvider),
+      thinkingMode: "disabled",
+      responseFormat: "json_object",
       timeoutMs: 30_000,
       diagnosticsCollector: (diagnostic) => llmDiagnostics.push(diagnostic),
     },
@@ -246,6 +249,7 @@ async function generateMinimaxValidationDecision({
       temperature: 0.25,
       maxTokens: 700,
       providerOverride: SIMPLE_PIPELINE_VALIDATION_PROVIDER,
+      modelOverride: SIMPLE_PIPELINE_VALIDATION_MODEL,
       timeoutMs: 30_000,
       diagnosticsCollector: (diagnostic) => llmDiagnostics.push(diagnostic),
     },
@@ -278,8 +282,10 @@ function simpleDecisionPrompt({
     `executable=${candidate.executable ? "true" : "false"}`,
     priceContext(candidate, pool),
     newsContext(newsItem ? [newsItem] : newsItems),
-    "Fields: analysisSummary, rationale, direction(long|short|neutral|wait), confidence(0-1).",
-    "This is a CoinW executable symbol card. Include concrete entryPrice, stopLoss, takeProfit, positionSizing, riskNote, invalidatesIf.",
+    "Required JSON keys: analysisSummary, rationale, direction, confidence, entryPrice, stopLoss, takeProfit, positionSizing, riskNote, invalidatesIf.",
+    "direction must be long or short for this executable CoinW symbol card.",
+    "entryPrice must be a JSON number near the current price; stopLoss must be a JSON number; takeProfit must be an array of one or more JSON numbers; positionSizing must be a JSON number from 0.03 to 0.5.",
+    "Use conservative levels when the signal is mixed, but still return a complete executable plan.",
     retryForTradePlan
       ? "Previous response did not include a complete trade plan. Return long or short only when supportable, and ensure entryPrice, stopLoss, and takeProfit are filled."
       : null,

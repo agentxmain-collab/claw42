@@ -47,6 +47,26 @@ function resolveDeepSeekModels() {
   return models;
 }
 
+function requestBodyForModel(
+  input: LLMInput,
+  model: string,
+  messages: Array<{ role: string; content: string }>,
+) {
+  const body: Record<string, unknown> = {
+    model,
+    messages,
+    temperature: input.temperature ?? DEFAULT_TEMPERATURE,
+    max_tokens: input.maxTokens ?? DEFAULT_MAX_TOKENS,
+  };
+  if (input.thinkingMode) {
+    body.thinking = { type: input.thinkingMode };
+  }
+  if (input.responseFormat) {
+    body.response_format = { type: input.responseFormat };
+  }
+  return body;
+}
+
 function shouldTryFallback(status: number) {
   return status === 429 || status >= 500;
 }
@@ -91,12 +111,7 @@ export const deepseekChatProvider: LLMProvider = {
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-          body: JSON.stringify({
-            model,
-            messages,
-            temperature: input.temperature ?? DEFAULT_TEMPERATURE,
-            max_tokens: input.maxTokens ?? DEFAULT_MAX_TOKENS,
-          }),
+          body: JSON.stringify(requestBodyForModel(input, model, messages)),
         },
         input.timeoutMs,
       );
@@ -150,6 +165,24 @@ export const deepseekChatProvider: LLMProvider = {
         });
         continue;
       }
+
+      collectDeepSeekAttemptDiagnostic(input, {
+        model,
+        httpStatus: response.status,
+        finishReason: firstChoice?.finish_reason ?? null,
+        usage: usageFromDeepSeek(data),
+        contentLength: content.length,
+        reasoningContent: {
+          present: reasoningContent.length > 0,
+          length: reasoningContent.length,
+        },
+        error: null,
+        latencyMs: Date.now() - startedAt,
+      });
+      console.info("[claw42 deepseek-chat] succeeded", {
+        taskTag: input.taskTag,
+        model,
+      });
 
       return {
         text,
