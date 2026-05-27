@@ -28,6 +28,7 @@
       "42 秒前我还在读链上数据，现在轮到你问我问题。"
     ],
     "speechBubbleAriaLabel": "Claw 42 Agent 气泡提示",
+    "robotGuide": "点我看分析",
     "miniPlayer": {
       "title": "Agent 快速战术台",
       "loading": "Agent 正在分析...",

@@ -347,6 +347,7 @@ export interface Dict {
     ctaSecondary: string;
     speechBubble: string[];
     speechBubbleAriaLabel: string;
+    robotGuide: string;
     miniPlayer: {
       title: string;
       loading: string;

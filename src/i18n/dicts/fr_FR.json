@@ -28,6 +28,7 @@
       "Il y a 42 secondes je lisais des données on-chain. Maintenant c'est ton tour."
     ],
     "speechBubbleAriaLabel": "Bulle de dialogue Claw 42 Agent",
+    "robotGuide": "Touchez-moi pour analyser",
     "miniPlayer": {
       "title": "Bureau tactique rapide Agent",
       "loading": "Agent analyse...",

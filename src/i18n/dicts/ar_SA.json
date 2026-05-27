@@ -28,6 +28,7 @@
       "قبل 42 ثانية كنت أقرأ بيانات السلسلة. الآن دورك لتسأل."
     ],
     "speechBubbleAriaLabel": "فقاعة كلام وكيل Claw 42",
+    "robotGuide": "اضغطني للتحليل",
     "miniPlayer": {
       "title": "لوحة تكتيكات Agent السريعة",
       "loading": "Agent يقوم بالتحليل...",
