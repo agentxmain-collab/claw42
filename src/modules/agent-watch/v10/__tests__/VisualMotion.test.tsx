@@ -146,6 +146,16 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(v3Css).not.toContain("#7c5cff");
     expect(v3Css).not.toContain("-webkit-line-clamp");
     expect(v3Css).not.toContain("text-overflow");
+    expect(v3Css).toMatch(
+      /topic-strategy\.topic-card-v3\) \{[\s\S]*display:\s*block;[\s\S]*width:\s*100%;/,
+    );
+    expect(v3Css).toMatch(/topic-card-v3 \.v3-topic\) \{[\s\S]*width:\s*100%;/);
+    expect(v3Css).toMatch(
+      /topic-card-v3 \.v3-news-hero\) \{[\s\S]*grid-template-columns:\s*auto minmax\(0, 1fr\) auto;/,
+    );
+    expect(v3Css).toMatch(
+      /topic-card-v3 \.v3-body\) \{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(280px, 320px\);/,
+    );
     expect(css).toMatch(/\.topic-card-v3 \.v3-reasoning\)[\s\S]*padding:\s*10px 14px;/);
     expect(css).toMatch(/\.topic-card-v3 \.v3-secondary\)[\s\S]*padding:\s*12px 14px;/);
   });
