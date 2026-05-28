@@ -2,6 +2,7 @@ import { kv } from "@/lib/kv-shim";
 import {
   decisionRecordDirectKey,
   persistDecisionRecordDirect,
+  readDecisionRecordDirect,
 } from "@/lib/team/decisionRecordDirectStore";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { Locale } from "@/i18n/types";
@@ -19,7 +20,7 @@ const PUBLIC_CARD_INDEX_PREFIX = "claw42:public-card-index:v1:";
 export interface PublicCardIndexEntry {
   id: string;
   symbol: string;
-  decisionDir: "long" | "short" | "neutral" | "wait" | null;
+  decisionDir: "long" | "short";
   newsHeadline: string | null;
   createdAt: string;
   recordKey: string;
@@ -50,6 +51,7 @@ export interface PublicCardIndexBackfillResult {
   indexCountAfter: number;
   removedByAge: number;
   removedByCap: number;
+  removedByDirectionalClosure: number;
   durationMs: number;
 }
 
@@ -62,6 +64,7 @@ export type PublicCardIndexClient = {
     options?: { rev?: boolean },
   ): Promise<T>;
   zcard(key: string): Promise<number>;
+  zrem(key: string, member: string): Promise<number>;
   zremrangebyscore(key: string, min: number | string, max: number | string): Promise<number>;
   zremrangebyrank(key: string, start: number, stop: number): Promise<number>;
 };
@@ -73,13 +76,15 @@ export function publicCardIndexKey(locale: Locale) {
 export function buildPublicCardIndexEntry(
   record: StrategyDecisionRecord,
 ): PublicCardIndexEntry | null {
+  const decisionDir = directionalDecisionFromRecord(record);
+  if (!decisionDir || !record.resolvedAt) return null;
   const event = projectDecisionRecordToPublicEvent(record);
   if (!event || event.payload.kind !== "pm_decision") return null;
   const evidenceId = event.evidenceIds[0] ?? null;
   return {
     id: event.id,
     symbol: event.payload.symbol,
-    decisionDir: event.payload.tradeDecision?.direction ?? analystDirectionFromRecord(record),
+    decisionDir,
     newsHeadline: null,
     createdAt: record.createdAt,
     recordKey: decisionRecordDirectKey(record.locale, record.id),
@@ -108,20 +113,66 @@ export async function cleanupPublicCardIndex(
   {
     client = kv as PublicCardIndexClient,
     now = Date.now(),
-  }: { client?: PublicCardIndexClient; now?: number } = {},
+    readRecord = readIndexedDecisionRecord,
+  }: {
+    client?: PublicCardIndexClient;
+    now?: number;
+    readRecord?: (entry: PublicCardIndexEntry) => Promise<StrategyDecisionRecord | null>;
+  } = {},
 ) {
-  if (!hasKvConfig(client)) return { removedByAge: 0, removedByCap: 0, count: 0 };
+  if (!hasKvConfig(client)) {
+    return { removedByAge: 0, removedByCap: 0, removedByDirectionalClosure: 0, count: 0 };
+  }
   const key = publicCardIndexKey(locale);
   const cutoff = now - PUBLIC_CARD_RETENTION_MS;
   const removedByAge = await client.zremrangebyscore(key, 0, cutoff);
+  const removedByDirectionalClosure =
+    isMemoryClient(client) && readRecord === readIndexedDecisionRecord
+      ? 0
+      : await prunePublicCardIndexByDirectionalClosure(locale, {
+          client,
+          readRecord,
+        });
   const count = await client.zcard(key);
   const overflow = Math.max(0, count - PUBLIC_CARD_TOTAL_CAP);
   const removedByCap = overflow > 0 ? await client.zremrangebyrank(key, 0, overflow - 1) : 0;
   return {
     removedByAge,
     removedByCap,
+    removedByDirectionalClosure,
     count: count - removedByCap,
   };
+}
+
+export async function prunePublicCardIndexByDirectionalClosure(
+  locale: Locale,
+  {
+    client = kv as PublicCardIndexClient,
+    readRecord = readIndexedDecisionRecord,
+  }: {
+    client?: PublicCardIndexClient;
+    readRecord?: (entry: PublicCardIndexEntry) => Promise<StrategyDecisionRecord | null>;
+  } = {},
+) {
+  if (!hasKvConfig(client)) return 0;
+  const key = publicCardIndexKey(locale);
+  const members = await client.zrange<unknown[]>(key, 0, -1);
+  let removed = 0;
+
+  for (const member of members) {
+    const entry = parsePublicCardIndexEntry(member);
+    if (!isPublicCardIndexEntry(entry) || !isDirectionalDecision(entry.decisionDir)) {
+      removed += await client.zrem(key, serializePublicCardIndexMember(member));
+      continue;
+    }
+
+    const record = await readRecord(entry);
+    if (!record || !isClosedDirectionalRecord(record)) {
+      removed += await client.zrem(key, serializePublicCardIndexMember(member));
+    }
+  }
+
+  return removed;
 }
 
 export async function readPublicCardIndexPage(
@@ -234,7 +285,12 @@ export async function backfillPublicCardIndexFromRecords(
   }
 
   const cleanup = dryRun
-    ? { removedByAge: 0, removedByCap: 0, count: await safeIndexCount(normalizedLocale, client) }
+    ? {
+        removedByAge: 0,
+        removedByCap: 0,
+        removedByDirectionalClosure: 0,
+        count: await safeIndexCount(normalizedLocale, client),
+      }
     : await cleanupPublicCardIndex(normalizedLocale, { client, now });
 
   return {
@@ -247,8 +303,21 @@ export async function backfillPublicCardIndexFromRecords(
     indexCountAfter: cleanup.count,
     removedByAge: cleanup.removedByAge,
     removedByCap: cleanup.removedByCap,
+    removedByDirectionalClosure: cleanup.removedByDirectionalClosure,
     durationMs: Math.max(0, Date.now() - startedAt),
   };
+}
+
+function directionalDecisionFromRecord(record: StrategyDecisionRecord): "long" | "short" | null {
+  const tradeDirection = record.tradeDecision?.direction;
+  if (isDirectionalDecision(tradeDirection)) return tradeDirection;
+  if (record.tradeDecision) return null;
+  const analystDirection = analystDirectionFromRecord(record);
+  return isDirectionalDecision(analystDirection) ? analystDirection : null;
+}
+
+function isClosedDirectionalRecord(record: StrategyDecisionRecord) {
+  return Boolean(record.resolvedAt) && Boolean(directionalDecisionFromRecord(record));
 }
 
 function analystDirectionFromRecord(record: StrategyDecisionRecord) {
@@ -256,6 +325,14 @@ function analystDirectionFromRecord(record: StrategyDecisionRecord) {
     .map((input) => input.direction)
     .find((direction) => direction === "long" || direction === "short");
   return directional ?? record.analystInputs[0]?.direction ?? null;
+}
+
+function isDirectionalDecision(value: unknown): value is "long" | "short" {
+  return value === "long" || value === "short";
+}
+
+async function readIndexedDecisionRecord(entry: PublicCardIndexEntry) {
+  return readDecisionRecordDirect(entry.recordKey);
 }
 
 async function safeIndexCount(locale: Locale, client: PublicCardIndexClient) {
@@ -274,6 +351,10 @@ function parsePublicCardIndexEntry(value: unknown) {
   } catch {
     return null;
   }
+}
+
+function serializePublicCardIndexMember(value: unknown) {
+  return typeof value === "string" ? value : JSON.stringify(value);
 }
 
 function isPublicCardIndexEntry(value: unknown): value is PublicCardIndexEntry {
@@ -324,10 +405,17 @@ function createMemoryClient(): MemoryPublicCardIndexClient {
       options?: { rev?: boolean },
     ) {
       const items = options?.rev ? sorted(key).reverse() : sorted(key);
-      return items.slice(start, stop + 1).map(([member]) => member) as T;
+      const normalizedStop = stop < 0 ? items.length + stop : stop;
+      return items.slice(start, normalizedStop + 1).map(([member]) => member) as T;
     },
     async zcard(key) {
       return store.get(key)?.size ?? 0;
+    },
+    async zrem(key, member) {
+      const zset = store.get(key);
+      if (!zset) return 0;
+      const existed = zset.delete(member);
+      return existed ? 1 : 0;
     },
     async zremrangebyscore(key, min, max) {
       const zset = store.get(key);

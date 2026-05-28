@@ -30,6 +30,7 @@ import {
 import {
   backfillPublicCardIndexFromRecords,
   PUBLIC_CARD_PAGE_SIZE,
+  prunePublicCardIndexByDirectionalClosure,
   readPublicCardIndexPage,
 } from "@/lib/watch/publicCardIndex";
 
@@ -237,6 +238,7 @@ async function buildIndexedPublicTimelinePayload({
   windowMinutes,
   servedAt = Date.now(),
 }: Omit<WatchTimelinePayloadOptions, "mode">): Promise<PublicWatchTimelinePayload | null> {
+  await prunePublicCardIndexByDirectionalClosure(locale).catch(() => 0);
   const indexPage = await readPublicCardIndexPage(locale, {
     page,
     pageSize: Math.min(pageSize, limit),

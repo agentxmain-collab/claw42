@@ -3,14 +3,35 @@ import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import {
   __publicCardIndexTestUtils,
   backfillPublicCardIndexFromRecords,
+  buildPublicCardIndexEntry,
   cleanupPublicCardIndex,
   PUBLIC_CARD_RETENTION_MS,
   PUBLIC_CARD_TOTAL_CAP,
+  prunePublicCardIndexByDirectionalClosure,
+  publicCardIndexKey,
   readPublicCardIndexPage,
   writePublicCardIndexEntry,
 } from "@/lib/watch/publicCardIndex";
 
 describe("publicCardIndex", () => {
+  it("indexes only closed long or short decisions", () => {
+    const now = Date.UTC(2026, 4, 28, 7, 0, 0);
+
+    expect(buildPublicCardIndexEntry(makeRecord(1, now, { tradeDirection: "long" }))).toMatchObject(
+      { decisionDir: "long" },
+    );
+    expect(
+      buildPublicCardIndexEntry(makeRecord(2, now, { tradeDirection: "short" })),
+    ).toMatchObject({ decisionDir: "short" });
+    expect(buildPublicCardIndexEntry(makeRecord(3, now, { tradeDirection: "wait" }))).toBeNull();
+    expect(buildPublicCardIndexEntry(makeRecord(4, now, { resolvedAt: null }))).toBeNull();
+    expect(
+      buildPublicCardIndexEntry(
+        makeRecord(5, now, { tradeDirection: null, analystDirection: "neutral" }),
+      ),
+    ).toBeNull();
+  });
+
   it("reads latest cards by zset page", async () => {
     const client = __publicCardIndexTestUtils.createMemoryClient();
     const now = Date.UTC(2026, 4, 28, 7, 0, 0);
@@ -140,11 +161,61 @@ describe("publicCardIndex", () => {
     expect(page.totalCount).toBe(1);
     expect(page.entries[0]?.id).toBe("pm-decision:pm:BTC:1");
   });
+
+  it("prunes indexed cards without both direction and closure", async () => {
+    const client = __publicCardIndexTestUtils.createMemoryClient();
+    const now = Date.UTC(2026, 4, 28, 7, 0, 0);
+    const validLong = makeRecord(1, now, { tradeDirection: "long" });
+    const validShort = makeRecord(2, now + 1000, { tradeDirection: "short" });
+    const unresolved = makeRecord(3, now + 2000, {
+      tradeDirection: "long",
+      resolvedAt: null,
+    });
+    const wait = makeRecord(4, now + 3000, { tradeDirection: "wait" });
+    const neutral = makeRecord(5, now + 4000, {
+      tradeDirection: null,
+      analystDirection: "neutral",
+    });
+    const records = new Map(
+      [validLong, validShort, unresolved, wait, neutral].map((record) => [
+        `claw42:strategy:record-by-id:v1:zh_CN:${encodeURIComponent(record.id)}`,
+        record,
+      ]),
+    );
+
+    for (const record of [validLong, validShort]) {
+      await writePublicCardIndexEntry(record, { client });
+    }
+    await addRawIndexedEntry(client, unresolved, "long");
+    await addRawIndexedEntry(client, wait, "wait");
+    await addRawIndexedEntry(client, neutral, null);
+
+    const removed = await prunePublicCardIndexByDirectionalClosure("zh_CN", {
+      client,
+      readRecord: async (entry) => records.get(entry.recordKey) ?? null,
+    });
+    const page = await readPublicCardIndexPage("zh_CN", { page: 1, pageSize: 10, client });
+
+    expect(removed).toBe(3);
+    expect(page.totalCount).toBe(2);
+    expect(page.entries.map((entry) => entry.decisionDir).sort()).toEqual(["long", "short"]);
+  });
 });
 
-function makeRecord(index: number, createdAtMs: number): StrategyDecisionRecord {
+type MakeRecordOptions = {
+  tradeDirection?: "long" | "short" | "wait" | null;
+  analystDirection?: "long" | "short" | "neutral" | "wait";
+  resolvedAt?: string | null;
+};
+
+function makeRecord(
+  index: number,
+  createdAtMs: number,
+  { tradeDirection = "short", analystDirection = "short", resolvedAt }: MakeRecordOptions = {},
+): StrategyDecisionRecord {
   const id = `pm:BTC:${index}`;
   const createdAt = new Date(createdAtMs).toISOString();
+  const resolvedAtValue = resolvedAt === undefined ? createdAt : resolvedAt;
   return {
     id,
     schemaVersion: 2,
@@ -167,7 +238,7 @@ function makeRecord(index: number, createdAtMs: number): StrategyDecisionRecord 
     analystInputs: [
       {
         memberId: "news_analyst",
-        direction: "short",
+        direction: analystDirection,
         confidence: 0.7,
         rationale: "BTC weakens after news.",
         evidenceIds: [`ev_${index}`],
@@ -212,35 +283,57 @@ function makeRecord(index: number, createdAtMs: number): StrategyDecisionRecord 
       },
     ],
     sourceThreadId: null,
-    tradeDecision: {
-      id: `trade:BTC:${index}`,
-      schemaVersion: 1,
-      symbol: "BTC",
-      generatedBy: "pm",
-      generatedAt: createdAt,
-      direction: "short",
-      entryType: "market",
-      entryPrice: 76000,
-      entryRange: null,
-      stopLoss: 77000,
-      takeProfit: [74000],
-      positionSizing: 0.25,
-      timeHorizon: "intraday",
-      rating: 4,
-      confidence: 0.7,
-      evidenceIds: [`ev_${index}`],
-      riskNote: "Invalid above stop.",
-      invalidatesIf: "BTC reclaims resistance.",
-      promptVersion: "simple-pipeline:v1",
-      modelProvider: "simple-pipeline",
-      severity: "medium",
-    },
+    tradeDecision:
+      tradeDirection === null
+        ? null
+        : {
+            id: `trade:BTC:${index}`,
+            schemaVersion: 1,
+            symbol: "BTC",
+            generatedBy: "pm",
+            generatedAt: createdAt,
+            direction: tradeDirection,
+            entryType: tradeDirection === "wait" ? "wait" : "market",
+            entryPrice: tradeDirection === "wait" ? null : 76000,
+            entryRange: null,
+            stopLoss: tradeDirection === "wait" ? null : 77000,
+            takeProfit: tradeDirection === "wait" ? [] : [74000],
+            positionSizing: tradeDirection === "wait" ? 0 : 0.25,
+            timeHorizon: "intraday",
+            rating: 4,
+            confidence: 0.7,
+            evidenceIds: [`ev_${index}`],
+            riskNote: "Invalid above stop.",
+            invalidatesIf: "BTC reclaims resistance.",
+            promptVersion: "simple-pipeline:v1",
+            modelProvider: "simple-pipeline",
+            severity: "medium",
+          },
     createdAt,
     evaluationWindowEndsAt: null,
-    resolvedAt: null,
-    resolvedOutcome: null,
+    resolvedAt: resolvedAtValue,
+    resolvedOutcome: resolvedAtValue ? "expired" : null,
     promptVersion: "simple-pipeline:v1",
     modelProvider: "simple-pipeline",
     legacyFactionId: null,
   };
+}
+
+async function addRawIndexedEntry(
+  client: ReturnType<typeof __publicCardIndexTestUtils.createMemoryClient>,
+  record: StrategyDecisionRecord,
+  decisionDir: "long" | "short" | "neutral" | "wait" | null,
+) {
+  await client.zadd(publicCardIndexKey(record.locale), {
+    score: Date.parse(record.createdAt),
+    member: JSON.stringify({
+      id: `pm-decision:${record.id}`,
+      symbol: record.symbol,
+      decisionDir,
+      newsHeadline: null,
+      createdAt: record.createdAt,
+      recordKey: `claw42:strategy:record-by-id:v1:zh_CN:${encodeURIComponent(record.id)}`,
+      evidenceId: record.analystInputs[0]?.evidenceIds[0] ?? null,
+    }),
+  });
 }
