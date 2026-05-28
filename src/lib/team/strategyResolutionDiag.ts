@@ -1,7 +1,16 @@
 import { getCoinWFuturesInstrumentSet } from "@/lib/coinw/futuresInstruments";
 import { getCoinPool } from "@/lib/marketDataCache";
+import {
+  getNewsSourceHealthSnapshot,
+  type NewsSourceHealthSnapshot,
+} from "@/lib/news/sourceHealth";
 import { readAllDecisionRecords } from "@/lib/team/decisionRecordStore";
+import { readDecisionRuns, type DecisionRunRecord } from "@/lib/team/decisionRunLedger";
 import { evaluateDecisionResolution } from "@/lib/team/decisionResolution";
+import {
+  readProviderTelemetryCalls,
+  type ProviderCallTelemetry,
+} from "@/lib/team/providerTelemetry";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import { checkLock, type LockSnapshot } from "@/lib/storage/kv-lock";
@@ -48,6 +57,60 @@ export interface StrategyResolutionAugmentedDryRunSummary extends StrategyResolu
   };
 }
 
+export interface StrategyCronHealthTrace {
+  lastCronInvocations: Array<{
+    source: "pm_job" | "decision_run" | "strategy_record";
+    id: string;
+    status: string;
+    observedAt: string;
+    completedAt: string | null;
+    candidateKey: string | null;
+    symbol: string | null;
+    outputCount: number | null;
+    error: string | null;
+  }>;
+  providerHealthLast24h: {
+    totalCalls: number;
+    simplePipelineCalls: number;
+    successCalls: number;
+    failureCalls: number;
+    latestAt: string | null;
+    providerCounts: Record<string, number>;
+    attemptedProviderCounts: Record<string, number>;
+    errorSamples: string[];
+  };
+  klinePipelineHealth: {
+    poolSource: string | null;
+    poolIsStale: boolean;
+    poolError: string | null;
+    poolAgeMs: number | null;
+    tickerCount: number;
+    signalSymbols: string[];
+    signalSymbolCount: number;
+    poolSymbolCount: number;
+    recordsMissingPrice: number;
+    topMissingPriceSymbols: Array<{ symbol: string; count: number }>;
+  };
+  newsInputHealth: {
+    configuredSources: number;
+    availableSources: number;
+    activeFetchChainSources: string[];
+    missingEnvSources: string[];
+    recentJobNewsItemCount: number;
+    recentJobNewsDrivenCount: number;
+  };
+  stagesWriteRatio: {
+    rawRecordCount: number;
+    rawStrategyRecordCount: number;
+    publicIndexEntryCount: number;
+    rawRecordsLast1h: number;
+    rawStrategyRecordsLast1h: number;
+    publicIndexEntriesLast1h: number;
+    rawStrategyToRawRatio: number;
+    publicIndexToRawStrategyRatio: number;
+  };
+}
+
 export interface StrategyResolutionDiagnosticResult {
   locale: Locale;
   poolTsAgeMs: number | null;
@@ -76,6 +139,7 @@ export interface StrategyResolutionDiagnosticResult {
   lockStatus: {
     strategyReplayTriggerNow: LockSnapshot | null;
   };
+  cronHealthTrace: StrategyCronHealthTrace;
   readLimit: number;
   recordsRead: number;
   symbolsRead: number;
@@ -97,6 +161,12 @@ export interface BuildStrategyResolutionDiagnosticOptions {
     options: { limit: number },
   ) => Promise<PublicCardIndexWriteFailureMarker[]>;
   readJobs?: (options: { locale: Locale; limit: number }) => Promise<PmDecisionJobRecord[]>;
+  readRuns?: (options: { locale: Locale; limit: number }) => Promise<DecisionRunRecord[]>;
+  readProviderCalls?: (options: {
+    since?: number;
+    limit?: number;
+  }) => Promise<ProviderCallTelemetry[]>;
+  getNewsHealth?: () => NewsSourceHealthSnapshot[];
   getInstrumentSet?: () => Promise<ReadonlyMap<string, unknown>>;
   checkRuntimeLock?: (key: string) => Promise<LockSnapshot>;
 }
@@ -111,6 +181,9 @@ export async function buildStrategyResolutionDiagnostic({
   readIndexFailures = (targetLocale, options) =>
     readPublicCardIndexWriteFailureMarkers(targetLocale, options),
   readJobs = readPmDecisionJobs,
+  readRuns = readDecisionRuns,
+  readProviderCalls = readProviderTelemetryCalls,
+  getNewsHealth = getNewsSourceHealthSnapshot,
   getInstrumentSet = getCoinWFuturesInstrumentSet,
   checkRuntimeLock = checkLock,
 }: BuildStrategyResolutionDiagnosticOptions): Promise<StrategyResolutionDiagnosticResult> {
@@ -120,6 +193,9 @@ export async function buildStrategyResolutionDiagnostic({
     publicIndexPage,
     indexFailureMarkers,
     jobs,
+    runs,
+    providerCalls,
+    newsHealth,
     instruments,
     triggerLock,
   ] = await Promise.all([
@@ -128,6 +204,11 @@ export async function buildStrategyResolutionDiagnostic({
     readIndexPage(locale, { page: 1, pageSize: 100 }),
     readIndexFailures(locale, { limit: 100 }).catch(() => []),
     readJobs({ locale, limit: Math.min(readLimit, 100) }),
+    readRuns({ locale, limit: Math.min(readLimit, 100) }).catch(() => []),
+    readProviderCalls({ since: now - 24 * 60 * 60_000, limit: 500 }).catch(() => []),
+    Promise.resolve()
+      .then(getNewsHealth)
+      .catch(() => []),
     getInstrumentSet(),
     checkRuntimeLock(`cron:strategy-replay:trigger-now:${locale}`).catch(() => null),
   ]);
@@ -150,6 +231,10 @@ export async function buildStrategyResolutionDiagnostic({
   const latestPublicIndexCreatedAt = latestIso(
     publicIndexPage.entries.map((entry) => entry.createdAt),
   );
+  const rawRecordsLast1h = countRecent(records, now);
+  const rawStrategyRecordsLast1h = countRecent(rawStrategyRecords, now);
+  const publicIndexEntriesLast1h = countRecent(publicIndexPage.entries, now);
+  const dryRun = buildDryRun(classified, instruments);
 
   return {
     locale,
@@ -163,9 +248,9 @@ export async function buildStrategyResolutionDiagnostic({
       opportunity: pool?.opportunity.length ?? 0,
     },
     buckets: bucketCounts(classified.map((item) => item.bucket)),
-    rawRecordsLast1h: countRecent(records, now),
-    rawStrategyRecordsLast1h: countRecent(rawStrategyRecords, now),
-    publicIndexEntriesLast1h: countRecent(publicIndexPage.entries, now),
+    rawRecordsLast1h,
+    rawStrategyRecordsLast1h,
+    publicIndexEntriesLast1h,
     rawStrategyButNotIndexedCount: rawStrategyButNotIndexed.length,
     indexWriteFailureSample: (indexFailureMarkerSample.length
       ? indexFailureMarkerSample
@@ -173,7 +258,7 @@ export async function buildStrategyResolutionDiagnostic({
     ).slice(0, 10),
     latestRawRecordCreatedAt,
     latestPublicIndexCreatedAt,
-    dryRun: buildDryRun(classified, instruments),
+    dryRun,
     recentJobErrors: jobs
       .filter((job) => job.status === "failed" || Boolean(job.lastError))
       .slice(0, 10)
@@ -186,11 +271,187 @@ export async function buildStrategyResolutionDiagnostic({
     lockStatus: {
       strategyReplayTriggerNow: triggerLock,
     },
+    cronHealthTrace: buildCronHealthTrace({
+      records,
+      rawStrategyRecords,
+      publicIndexPage,
+      rawRecordsLast1h,
+      rawStrategyRecordsLast1h,
+      publicIndexEntriesLast1h,
+      jobs,
+      runs,
+      providerCalls,
+      newsHealth,
+      pool,
+      poolResult,
+      now,
+      dryRun,
+    }),
     readLimit,
     recordsRead: records.length,
     symbolsRead: new Set(records.map((record) => normalizeSymbol(record.symbol))).size,
     sampleRecordIds: records.slice(0, 10).map((record) => record.id),
   };
+}
+
+function buildCronHealthTrace({
+  records,
+  rawStrategyRecords,
+  publicIndexPage,
+  rawRecordsLast1h,
+  rawStrategyRecordsLast1h,
+  publicIndexEntriesLast1h,
+  jobs,
+  runs,
+  providerCalls,
+  newsHealth,
+  pool,
+  poolResult,
+  now,
+  dryRun,
+}: {
+  records: StrategyDecisionRecord[];
+  rawStrategyRecords: StrategyDecisionRecord[];
+  publicIndexPage: PublicCardIndexPage;
+  rawRecordsLast1h: number;
+  rawStrategyRecordsLast1h: number;
+  publicIndexEntriesLast1h: number;
+  jobs: PmDecisionJobRecord[];
+  runs: DecisionRunRecord[];
+  providerCalls: ProviderCallTelemetry[];
+  newsHealth: NewsSourceHealthSnapshot[];
+  pool: CoinPoolPayload | null;
+  poolResult: { ok: true; value: CoinPoolPayload } | { ok: false; error: string };
+  now: number;
+  dryRun: ReturnType<typeof buildDryRun>;
+}): StrategyCronHealthTrace {
+  const simplePipelineCalls = providerCalls.filter((call) =>
+    call.taskTag.startsWith("watch:simple-pipeline"),
+  );
+  const signalSymbols = Object.entries(pool?.signals ?? {})
+    .filter(([, value]) => Boolean(value))
+    .map(([symbol]) => normalizeSymbol(symbol))
+    .sort();
+  const poolSymbols = new Set(
+    [...(pool?.majors ?? []), ...(pool?.trending ?? []), ...(pool?.opportunity ?? [])].map(
+      (entry) => normalizeSymbol(entry.symbol),
+    ),
+  );
+  const recentJobs = jobs.filter((job) => countRecent([job], now) > 0);
+
+  return {
+    lastCronInvocations: buildLastCronInvocations({ jobs, runs, records }),
+    providerHealthLast24h: {
+      totalCalls: providerCalls.length,
+      simplePipelineCalls: simplePipelineCalls.length,
+      successCalls: providerCalls.filter((call) => call.success).length,
+      failureCalls: providerCalls.filter((call) => !call.success).length,
+      latestAt: latestIso(providerCalls.map((call) => new Date(call.ts).toISOString())),
+      providerCounts: countStringValues(
+        providerCalls.flatMap((call) => (call.finalProvider ? [call.finalProvider] : [])),
+      ),
+      attemptedProviderCounts: countStringValues(
+        providerCalls.flatMap((call) => call.attemptedProviders),
+      ),
+      errorSamples: providerCalls
+        .flatMap((call) => (call.error ? [redactDiagnosticError(call.error)] : []))
+        .slice(0, 10),
+    },
+    klinePipelineHealth: {
+      poolSource: pool?.source ?? null,
+      poolIsStale: Boolean(pool?.isStale),
+      poolError: poolResult.ok ? (pool?.error ?? null) : poolResult.error,
+      poolAgeMs: pool ? Math.max(0, now - pool.ts) : null,
+      tickerCount: Object.keys(pool?.tickers ?? {}).length,
+      signalSymbols,
+      signalSymbolCount: signalSymbols.length,
+      poolSymbolCount: poolSymbols.size,
+      recordsMissingPrice: dryRun.baselinePoolOnly.stillMissingPrice,
+      topMissingPriceSymbols: dryRun.baselinePoolOnly.topMissingSymbols,
+    },
+    newsInputHealth: {
+      configuredSources: newsHealth.length,
+      availableSources: newsHealth.filter((source) => source.availableByConfig).length,
+      activeFetchChainSources: newsHealth
+        .filter((source) => source.inFetchChain)
+        .sort((a, b) => (a.fetchChainRank ?? 999) - (b.fetchChainRank ?? 999))
+        .map((source) => source.id),
+      missingEnvSources: newsHealth
+        .filter((source) => source.unavailableReason === "missing_env")
+        .map((source) => source.id),
+      recentJobNewsItemCount: recentJobs.reduce(
+        (total, job) => total + (job.newsItems?.length ?? 0),
+        0,
+      ),
+      recentJobNewsDrivenCount: recentJobs.filter((job) =>
+        job.candidate?.candidateKey.startsWith("news-driven:"),
+      ).length,
+    },
+    stagesWriteRatio: {
+      rawRecordCount: records.length,
+      rawStrategyRecordCount: rawStrategyRecords.length,
+      publicIndexEntryCount: publicIndexPage.totalCount,
+      rawRecordsLast1h,
+      rawStrategyRecordsLast1h,
+      publicIndexEntriesLast1h,
+      rawStrategyToRawRatio: ratio(rawStrategyRecords.length, records.length),
+      publicIndexToRawStrategyRatio: ratio(publicIndexPage.totalCount, rawStrategyRecords.length),
+    },
+  };
+}
+
+function buildLastCronInvocations({
+  jobs,
+  runs,
+  records,
+}: {
+  jobs: PmDecisionJobRecord[];
+  runs: DecisionRunRecord[];
+  records: StrategyDecisionRecord[];
+}): StrategyCronHealthTrace["lastCronInvocations"] {
+  const invocations: StrategyCronHealthTrace["lastCronInvocations"] = [
+    ...jobs
+      .filter((job) => job.triggerSource === "cron")
+      .map((job) => ({
+        source: "pm_job" as const,
+        id: job.id,
+        status: job.status,
+        observedAt: job.createdAt,
+        completedAt: job.completedAt,
+        candidateKey: job.candidate?.candidateKey ?? null,
+        symbol: job.symbol ?? job.candidate?.symbol ?? null,
+        outputCount: job.outputCount,
+        error: job.lastError ? redactDiagnosticError(job.lastError) : null,
+      })),
+    ...runs
+      .filter((run) => run.triggerSource === "cron")
+      .map((run) => ({
+        source: "decision_run" as const,
+        id: run.id,
+        status: run.status,
+        observedAt: run.startedAt,
+        completedAt: run.completedAt,
+        candidateKey: run.candidate?.candidateKey ?? null,
+        symbol: run.symbol ?? run.candidate?.symbol ?? null,
+        outputCount: run.decisionRecordId ? 1 : 0,
+        error: run.error ? redactDiagnosticError(run.error) : null,
+      })),
+    ...records.slice(0, 20).map((record) => ({
+      source: "strategy_record" as const,
+      id: record.id,
+      status: isStrategyRecord(record) ? "strategy_record_written" : "raw_record_written",
+      observedAt: record.createdAt,
+      completedAt: record.resolvedAt ?? null,
+      candidateKey: record.candidate?.candidateKey ?? null,
+      symbol: record.symbol,
+      outputCount: isStrategyRecord(record) ? 1 : 0,
+      error: null,
+    })),
+  ];
+  return invocations
+    .filter((item) => Number.isFinite(Date.parse(item.observedAt)))
+    .sort((a, b) => Date.parse(b.observedAt) - Date.parse(a.observedAt) || a.id.localeCompare(b.id))
+    .slice(0, 10);
 }
 
 export function classifyDecisionRecord(
@@ -340,6 +601,26 @@ function latestIso(values: Array<string | null | undefined>) {
       .filter((value): value is string => typeof value === "string")
       .sort((a, b) => Date.parse(b) - Date.parse(a))[0] ?? null
   );
+}
+
+function countStringValues(values: string[]) {
+  return values.reduce<Record<string, number>>((counts, value) => {
+    counts[value] = (counts[value] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function ratio(numerator: number, denominator: number) {
+  return denominator > 0 ? Number((numerator / denominator).toFixed(4)) : 0;
+}
+
+function redactDiagnosticError(error: string) {
+  return error
+    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [redacted]")
+    .replace(/sk-[A-Za-z0-9_-]{12,}/gi, "sk-[redacted]")
+    .replace(/([?&](?:api[_-]?key|token|secret)=)[^&\s]+/gi, "$1[redacted]")
+    .replace(/\b((?:api[_-]?key|token|secret)=)[^\s&]+/gi, "$1[redacted]")
+    .slice(0, 320);
 }
 
 function publicIndexIdForRecord(record: StrategyDecisionRecord) {

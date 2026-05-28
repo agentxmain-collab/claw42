@@ -10,6 +10,9 @@ const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
 const readPublicCardIndexPageMock = vi.hoisted(() => vi.fn());
 const readPublicCardIndexWriteFailureMarkersMock = vi.hoisted(() => vi.fn());
 const readPmDecisionJobsMock = vi.hoisted(() => vi.fn());
+const readDecisionRunsMock = vi.hoisted(() => vi.fn());
+const readProviderTelemetryCallsMock = vi.hoisted(() => vi.fn());
+const getNewsSourceHealthSnapshotMock = vi.hoisted(() => vi.fn());
 const getCoinWFuturesInstrumentSetMock = vi.hoisted(() => vi.fn());
 const checkLockMock = vi.hoisted(() => vi.fn());
 
@@ -28,6 +31,18 @@ vi.mock("@/lib/watch/publicCardIndex", () => ({
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
   readPmDecisionJobs: readPmDecisionJobsMock,
+}));
+
+vi.mock("@/lib/team/decisionRunLedger", () => ({
+  readDecisionRuns: readDecisionRunsMock,
+}));
+
+vi.mock("@/lib/team/providerTelemetry", () => ({
+  readProviderTelemetryCalls: readProviderTelemetryCallsMock,
+}));
+
+vi.mock("@/lib/news/sourceHealth", () => ({
+  getNewsSourceHealthSnapshot: getNewsSourceHealthSnapshotMock,
 }));
 
 vi.mock("@/lib/coinw/futuresInstruments", () => ({
@@ -62,6 +77,22 @@ describe("/api/admin/strategy-resolution-diag", () => {
     });
     readPublicCardIndexWriteFailureMarkersMock.mockReset().mockResolvedValue([]);
     readPmDecisionJobsMock.mockReset().mockResolvedValue([]);
+    readDecisionRunsMock.mockReset().mockResolvedValue([]);
+    readProviderTelemetryCallsMock.mockReset().mockResolvedValue([]);
+    getNewsSourceHealthSnapshotMock.mockReset().mockReturnValue([
+      {
+        id: "cryptocompare",
+        displayName: "CryptoCompare",
+        role: "primary",
+        status: "active",
+        authRequired: true,
+        authConfigured: true,
+        inFetchChain: true,
+        fetchChainRank: 0,
+        availableByConfig: true,
+        unavailableReason: null,
+      },
+    ]);
     getCoinWFuturesInstrumentSetMock.mockReset().mockResolvedValue(new Map([["BTC", {}]]));
     checkLockMock.mockReset().mockResolvedValue({
       key: "cron:strategy-replay:trigger-now:zh_CN",
@@ -112,6 +143,21 @@ describe("/api/admin/strategy-resolution-diag", () => {
     );
     expect(payload.rawRecordsLast1h).toBe(1);
     expect(payload.dryRun.baselinePoolOnly.resolvableCount).toBe(1);
+    expect(payload.cronHealthTrace).toMatchObject({
+      providerHealthLast24h: {
+        totalCalls: 0,
+        simplePipelineCalls: 0,
+      },
+      newsInputHealth: {
+        configuredSources: 1,
+        availableSources: 1,
+      },
+      stagesWriteRatio: {
+        rawRecordCount: 1,
+        rawStrategyRecordCount: 1,
+        publicIndexEntryCount: 0,
+      },
+    });
     expect(payload.dryRun.coinwResolverAugmented.perSourceBreakdown).toEqual({
       pool: 1,
       coinwWhitelistedAssumed: 0,

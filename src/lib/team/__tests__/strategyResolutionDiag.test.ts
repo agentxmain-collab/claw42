@@ -6,6 +6,7 @@ import {
 } from "@/lib/team/strategyResolutionDiag";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
+import type { ProviderCallTelemetry } from "@/lib/team/providerTelemetry";
 import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 import type { PublicCardIndexPage } from "@/lib/watch/publicCardIndex";
 
@@ -162,6 +163,71 @@ describe("buildStrategyResolutionDiagnostic", () => {
           auditEventCount: 0,
         },
       ],
+      readRuns: async () => [
+        {
+          id: "run-1",
+          schemaVersion: 1,
+          status: "failed",
+          triggerSource: "cron",
+          locale: "zh_CN",
+          candidate: {
+            candidateType: "symbol",
+            candidateKey: "news-driven:BTC:test",
+            displayTitle: "BTC",
+            executable: true,
+            symbol: "BTC",
+          },
+          symbol: "BTC",
+          startedAt: new Date(now - 2 * 60_000).toISOString(),
+          completedAt: new Date(now - 60_000).toISOString(),
+          stageStatus: { analyst_inputs: "failed" },
+          analystRoundCount: 0,
+          activeMemberIds: [],
+          abstainedMemberIds: [],
+          decisionRecordId: null,
+          publicTimelineEventId: null,
+          error: "deepseek-chat empty response",
+          skipReason: null,
+        },
+      ],
+      readProviderCalls: async () => [
+        providerCall({
+          taskTag: "watch:simple-pipeline:symbol:zh_CN",
+          success: false,
+          error: "deepseek-chat deepseek-v4-pro empty response",
+        }),
+        providerCall({
+          taskTag: "watch:simple-pipeline:symbol:zh_CN",
+          finalProvider: "deepseek-chat",
+          success: true,
+        }),
+      ],
+      getNewsHealth: () => [
+        {
+          id: "cryptocompare",
+          displayName: "CryptoCompare",
+          role: "primary",
+          status: "active",
+          authRequired: true,
+          authConfigured: true,
+          inFetchChain: true,
+          fetchChainRank: 0,
+          availableByConfig: true,
+          unavailableReason: null,
+        },
+        {
+          id: "cryptopanic",
+          displayName: "CryptoPanic",
+          role: "standby",
+          status: "standby",
+          authRequired: true,
+          authConfigured: false,
+          inFetchChain: false,
+          fetchChainRank: null,
+          availableByConfig: false,
+          unavailableReason: "missing_env",
+        },
+      ],
       getInstrumentSet: async () =>
         new Map([
           ["BTC", {}],
@@ -196,6 +262,40 @@ describe("buildStrategyResolutionDiagnostic", () => {
         lastError: "provider empty",
       },
     ]);
+    expect(result.cronHealthTrace.providerHealthLast24h).toMatchObject({
+      totalCalls: 2,
+      simplePipelineCalls: 2,
+      successCalls: 1,
+      failureCalls: 1,
+      providerCounts: { "deepseek-chat": 1 },
+      attemptedProviderCounts: { "deepseek-chat": 2 },
+    });
+    expect(result.cronHealthTrace.klinePipelineHealth).toMatchObject({
+      poolSource: "coinw-kline",
+      recordsMissingPrice: 2,
+      topMissingPriceSymbols: [
+        { symbol: "HYPE", count: 1 },
+        { symbol: "NOPE", count: 1 },
+      ],
+    });
+    expect(result.cronHealthTrace.newsInputHealth).toMatchObject({
+      configuredSources: 2,
+      availableSources: 1,
+      activeFetchChainSources: ["cryptocompare"],
+      missingEnvSources: ["cryptopanic"],
+    });
+    expect(result.cronHealthTrace.stagesWriteRatio).toMatchObject({
+      rawRecordCount: 3,
+      rawStrategyRecordCount: 3,
+      publicIndexEntryCount: 1,
+      rawStrategyToRawRatio: 1,
+      publicIndexToRawStrategyRatio: 0.3333,
+    });
+    expect(result.cronHealthTrace.lastCronInvocations[0]).toMatchObject({
+      source: "pm_job",
+      id: "job-1",
+      status: "failed",
+    });
   });
 });
 
@@ -231,6 +331,27 @@ function publicIndexPage(ids: string[]): PublicCardIndexPage {
     totalCount: ids.length,
     hasMore: false,
     oldestAt: ids.length > 0 ? new Date(now).toISOString() : null,
+  };
+}
+
+function providerCall(overrides: Partial<ProviderCallTelemetry>): ProviderCallTelemetry {
+  return {
+    ts: now - 60_000,
+    taskTag: "watch:simple-pipeline:symbol:zh_CN",
+    roleId: null,
+    defaultProvider: null,
+    providerOverride: "deepseek-chat",
+    providerChain: ["deepseek-chat", "minimax"],
+    attemptedProviders: ["deepseek-chat"],
+    skippedProviders: [],
+    finalProvider: null,
+    fallbackCount: 0,
+    latencyMs: 1200,
+    success: true,
+    cached: false,
+    cacheHitProvider: null,
+    error: null,
+    ...overrides,
   };
 }
 
