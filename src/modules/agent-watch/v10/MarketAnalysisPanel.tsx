@@ -984,13 +984,15 @@ function TopicCardV10({
 
   return (
     <article className={topicClassName}>
-      <TopicHeadV10
-        topic={topic}
-        bodyId={bodyId}
-        collapsed={collapsed}
-        onToggle={onToggle}
-        dict={dict}
-      />
+      {!collapsed ? (
+        <TopicHeadV10
+          topic={topic}
+          bodyId={bodyId}
+          collapsed={collapsed}
+          onToggle={onToggle}
+          dict={dict}
+        />
+      ) : null}
       <TopicBody topic={topic} bodyId={bodyId} messageLabels={dict.message} />
       <TopicStrategyV10
         topic={topic}

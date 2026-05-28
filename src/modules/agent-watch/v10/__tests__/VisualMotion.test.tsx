@@ -132,11 +132,14 @@ describe("DispatchConsoleV10 visual motion", () => {
   test("keeps collapsed topic cards full width while tightening vertical density", () => {
     expect(css).not.toMatch(/topic\.collapsed:not\(\.expanded\)[\s\S]{0,120}max-width:\s*820px/);
     expect(css).not.toMatch(/topic\.collapsed:not\(\.expanded\)[\s\S]{0,120}margin-inline:\s*auto/);
+    expect(css).toMatch(
+      /topic\.collapsed:not\(\.expanded\)\) \{[\s\S]*width:\s*calc\(100% \+ 44px\);[\s\S]*margin-inline:\s*-22px;/,
+    );
     expect(css).toMatch(/topic-head[\s\S]{0,160}padding:\s*12px 18px 10px/);
     expect(css).toMatch(/topic-news-summary[\s\S]{0,220}line-height:\s*1\.4/);
   });
 
-  test("keeps topic card v3 on CoinW colors with compact non-truncating reasoning boxes", () => {
+  test("keeps topic card v3 on CoinW colors with compact bounded reasoning boxes", () => {
     const v3Css = css.slice(
       css.indexOf(".dispatchConsoleV10 :global(.topic-strategy.topic-card-v3)"),
     );
@@ -156,7 +159,11 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(v3Css).toMatch(
       /topic-card-v3 \.v3-body\) \{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(280px, 320px\);/,
     );
-    expect(css).toMatch(/\.topic-card-v3 \.v3-reasoning\)[\s\S]*padding:\s*10px 14px;/);
-    expect(css).toMatch(/\.topic-card-v3 \.v3-secondary\)[\s\S]*padding:\s*12px 14px;/);
+    expect(css).toMatch(
+      /\.topic-card-v3 \.v3-reasoning\)[\s\S]*height:\s*64px;[\s\S]*padding:\s*7px 12px;/,
+    );
+    expect(css).toMatch(
+      /\.topic-card-v3 \.v3-secondary\)[\s\S]*height:\s*64px;[\s\S]*padding:\s*8px 12px;/,
+    );
   });
 });

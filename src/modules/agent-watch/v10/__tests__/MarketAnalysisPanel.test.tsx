@@ -506,6 +506,8 @@ describe("MarketAnalysisPanel v10", () => {
     );
 
     expect(html).toContain('data-topic-card-v3="true"');
+    expect(html).not.toContain('class="topic-head"');
+    expect(html).not.toContain('class="topic-title-row"');
     expect(html).toContain('class="v3-topic short');
     expect(html).toContain('class="v3-news-tag"');
     expect(html).toContain("决策源");
