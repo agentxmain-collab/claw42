@@ -1,7 +1,8 @@
 import { mkdtemp, rm } from "fs/promises";
 import os from "os";
 import path from "path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { waitUntil } from "@vercel/functions";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import {
   __decisionRecordStoreTestUtils,
@@ -18,6 +19,13 @@ import {
   selectSymbolFloorRecordEvents,
 } from "@/lib/watch/publicTimelinePayload";
 import type { StreamEntry, WatchEntryMeta } from "@/modules/agent-watch/types";
+import { readPublicCardIndexPage } from "@/lib/watch/publicCardIndex";
+
+const waitUntilMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@vercel/functions", () => ({
+  waitUntil: waitUntilMock,
+}));
 
 let tempDir: string;
 
@@ -61,12 +69,15 @@ describe("publicTimelinePayload", () => {
     delete process.env.USE_PERSISTENT_KV;
     delete process.env.KV_REST_API_URL;
     delete process.env.KV_REST_API_TOKEN;
+    delete process.env.VERCEL;
     __resetWatchHistoryForTests();
     __decisionRecordStoreTestUtils.clearMemoryRecords();
+    waitUntilMock.mockReset();
   });
 
   afterEach(async () => {
     delete process.env.DECISION_RECORD_STORE_DIR;
+    delete process.env.VERCEL;
     await rm(tempDir, { recursive: true, force: true });
     __resetWatchHistoryForTests();
     __decisionRecordStoreTestUtils.clearMemoryRecords();
@@ -178,6 +189,50 @@ describe("publicTimelinePayload", () => {
     );
     expect(recordIds).toContain("pm:market:old");
     expect(payload.windowMinutes).toBe(72 * 60);
+  });
+
+  it("runs empty-index backfill inline outside Vercel", async () => {
+    const servedAt = Date.UTC(2026, 4, 24, 6, 20, 0);
+    await appendDecisionRecord(
+      decisionRecord("pm:BTC:inline-backfill", servedAt - 60_000, {
+        candidateKey: "news-driven:BTC:inline-backfill",
+      }),
+    );
+
+    await buildWatchTimelinePayload({
+      mode: "public",
+      locale: "zh_CN",
+      before: servedAt + 1,
+      limit: 10,
+      windowMinutes: 60,
+      servedAt,
+    });
+    const page = await readPublicCardIndexPage("zh_CN", { page: 1, pageSize: 10 });
+
+    expect(waitUntil).not.toHaveBeenCalled();
+    expect(page.totalCount).toBe(0);
+  });
+
+  it("uses Vercel waitUntil for empty-index backfill in deployed runtimes", async () => {
+    process.env.VERCEL = "1";
+    const servedAt = Date.UTC(2026, 4, 24, 6, 20, 0);
+    await appendDecisionRecord(
+      decisionRecord("pm:BTC:waituntil-backfill", servedAt - 60_000, {
+        candidateKey: "news-driven:BTC:waituntil-backfill",
+      }),
+    );
+
+    await buildWatchTimelinePayload({
+      mode: "public",
+      locale: "zh_CN",
+      before: servedAt + 1,
+      limit: 10,
+      windowMinutes: 60,
+      servedAt,
+    });
+
+    expect(waitUntil).toHaveBeenCalledTimes(1);
+    expect(waitUntil).toHaveBeenCalledWith(expect.any(Promise));
   });
 
   it("keeps up to three stale-but-real executable symbol records as a public floor", () => {

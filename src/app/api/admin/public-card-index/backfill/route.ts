@@ -15,9 +15,12 @@ const BACKFILL_RECORD_READ_LIMIT = 2_000;
 const DEFAULT_BACKFILL_LOCALES: Locale[] = ["zh_CN", "en_US"];
 
 function isAuthorized(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return request.headers.get("authorization") === `Bearer ${secret}`;
+  const cronSecret = process.env.CRON_SECRET;
+  const backfillToken = process.env.BACKFILL_TOKEN;
+  // BACKFILL_TOKEN is a scoped manual-trigger fallback for this idempotent route only.
+  if (cronSecret && request.headers.get("authorization") === `Bearer ${cronSecret}`) return true;
+  if (backfillToken && request.nextUrl.searchParams.get("token") === backfillToken) return true;
+  return false;
 }
 
 export async function POST(request: NextRequest) {

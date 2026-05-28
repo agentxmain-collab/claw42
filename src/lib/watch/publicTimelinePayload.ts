@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n/types";
+import { waitUntil } from "@vercel/functions";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { readAllDecisionRecords, readDecisionRecords } from "@/lib/team/decisionRecordStore";
@@ -409,7 +410,7 @@ export async function buildWatchTimelinePayload({
     limit,
   );
   if (usingEmptyIndexFallback && decisionRecords.length > 0) {
-    schedulePublicCardIndexBackfill(decisionRecords, locale);
+    await schedulePublicCardIndexBackfill(decisionRecords, locale);
   }
   const evidenceMap = stagingFixture
     ? Object.fromEntries(
@@ -441,13 +442,19 @@ export async function buildWatchTimelinePayload({
   };
 }
 
-function schedulePublicCardIndexBackfill(records: StrategyDecisionRecord[], locale: Locale) {
-  const run = () => {
-    void backfillPublicCardIndexFromRecords(records, { locale }).catch(() => null);
-  };
-  if (typeof setImmediate === "function") {
-    setImmediate(run);
-    return;
+async function schedulePublicCardIndexBackfill(records: StrategyDecisionRecord[], locale: Locale) {
+  const task = backfillPublicCardIndexFromRecords(records, { locale }).catch(() => null);
+  if (shouldUseVercelWaitUntil()) {
+    try {
+      waitUntil(task);
+      return;
+    } catch {
+      // Fall through to inline await for local/test runtimes that cannot register waitUntil.
+    }
   }
-  setTimeout(run, 0);
+  await task;
+}
+
+function shouldUseVercelWaitUntil() {
+  return process.env.VERCEL === "1" || process.env.VERCEL === "true";
 }

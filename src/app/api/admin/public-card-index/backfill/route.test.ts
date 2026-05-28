@@ -16,6 +16,7 @@ vi.mock("@/lib/watch/publicCardIndex", () => ({
 describe("/api/admin/public-card-index/backfill", () => {
   beforeEach(() => {
     vi.stubEnv("CRON_SECRET", "test-cron-secret");
+    vi.stubEnv("BACKFILL_TOKEN", "test-backfill-token");
     readAllDecisionRecordsMock.mockReset();
     backfillPublicCardIndexFromRecordsMock.mockReset();
     readAllDecisionRecordsMock.mockResolvedValue([{ id: "record-1" }]);
@@ -101,5 +102,23 @@ describe("/api/admin/public-card-index/backfill", () => {
         dryRun: true,
       }),
     );
+  });
+
+  it("accepts the scoped backfill query token without the cron bearer secret", async () => {
+    vi.stubEnv("CRON_SECRET", "");
+
+    const response = await POST(
+      new NextRequest(
+        "https://claw42.ai/api/admin/public-card-index/backfill?locale=en_US&token=test-backfill-token",
+      ),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      ok: true,
+      locales: ["en_US"],
+    });
+    expect(readAllDecisionRecordsMock).toHaveBeenCalledWith(2000, "en_US");
   });
 });
