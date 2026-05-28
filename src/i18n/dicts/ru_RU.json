@@ -734,7 +734,9 @@
         "coinwNavigate": "__TBD__",
         "staleReason": "__TBD__",
         "staleAgePrefix": "__TBD__",
-        "noNews": "__TBD__"
+        "noNews": "__TBD__",
+        "loadingMore": "__TBD__",
+        "loadedAll": "__TBD__"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

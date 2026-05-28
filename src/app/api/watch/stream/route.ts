@@ -90,6 +90,8 @@ export async function GET(request: Request) {
         locale,
         before: Date.now(),
         limit,
+        page: 1,
+        pageSize: limit,
         windowMinutes,
       })) as PublicWatchTimelinePayload;
     },

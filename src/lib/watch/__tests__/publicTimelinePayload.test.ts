@@ -108,7 +108,7 @@ describe("publicTimelinePayload", () => {
     ).toEqual([]);
   });
 
-  it("publishes only fresh news-driven symbol records", async () => {
+  it("publishes news-driven symbol records beyond the previous six-hour visibility gate", async () => {
     const servedAt = Date.UTC(2026, 4, 24, 6, 20, 0);
     await appendDecisionRecord(
       decisionRecord("pm:BTC:fresh", servedAt - 10 * 60_000, {
@@ -148,11 +148,10 @@ describe("publicTimelinePayload", () => {
       servedAt,
     })) as PublicWatchTimelinePayload;
 
-    expect(
-      payload.events.flatMap((event) =>
-        event.payload.kind === "pm_decision" ? [event.payload.recordId] : [],
-      ),
-    ).toEqual(["pm:BTC:fresh"]);
+    const recordIds = payload.events.flatMap((event) =>
+      event.payload.kind === "pm_decision" ? [event.payload.recordId] : [],
+    );
+    expect(recordIds).toEqual(expect.arrayContaining(["pm:BTC:fresh", "pm:ETH:old"]));
   });
 
   it("keeps up to three stale-but-real executable symbol records as a public floor", () => {

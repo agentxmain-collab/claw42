@@ -614,7 +614,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("7 轮辩论");
   });
 
-  test("paginates symbol topics at fifteen cards per page", () => {
+  test("renders accumulated server-loaded pages and final infinite-scroll state", () => {
     const topics = Array.from({ length: 16 }, (_, index) =>
       topicFixture({
         id: `symbol-${index + 1}`,
@@ -628,12 +628,23 @@ describe("MarketAnalysisPanel v10", () => {
       }),
     );
     const html = renderToStaticMarkup(
-      <MarketAnalysisPanel topics={topics} dict={dict} onPlaceholder={() => undefined} />,
+      <MarketAnalysisPanel
+        topics={topics}
+        dict={dict}
+        onPlaceholder={() => undefined}
+        pagination={{
+          hasMore: false,
+          loading: false,
+          loadedCount: topics.length,
+          onLoadMore: () => undefined,
+        }}
+      />,
     );
 
-    expect(html).toContain("topic-pagination");
+    expect(html).not.toContain("topic-pagination");
     expect(html).toContain("SYM15 实时行情分析");
-    expect(html).not.toContain("SYM16 实时行情分析");
+    expect(html).toContain("SYM16 实时行情分析");
+    expect(html).toContain("已加载全部 16 张");
   });
 
   test("counts stats from the symbol-only visible list", () => {

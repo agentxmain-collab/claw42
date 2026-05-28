@@ -734,7 +734,9 @@
         "coinwNavigate": "__TBD__",
         "staleReason": "__TBD__",
         "staleAgePrefix": "__TBD__",
-        "noNews": "暫無相關新聞"
+        "noNews": "暫無相關新聞",
+        "loadingMore": "__TBD__",
+        "loadedAll": "__TBD__"
       },
       "placeholder": {
         "title": "跟单功能开发中",

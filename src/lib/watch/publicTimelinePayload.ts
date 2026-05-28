@@ -9,6 +9,7 @@ import {
   deriveResidentPrewarmStatus,
   type ResidentPrewarmStatus,
 } from "@/lib/watch/residentPrewarmStatus";
+import { readDecisionRecordDirect } from "@/lib/team/decisionRecordDirectStore";
 import type { StreamEntry } from "@/modules/agent-watch/types";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
 import {
@@ -20,21 +21,18 @@ import {
   comparePublicTimelineEvents,
   mergePublicTimelineEvents,
 } from "@/lib/watch/publicTimelineOrdering";
-import { normalizeCandidateType } from "@/lib/watch/decisionCandidate";
 import {
   buildDecisionRecordIndex,
   filterPublicTimelineEvents,
   projectDecisionRecordToPublicEvent,
 } from "@/lib/watch/publicTimelineProjection";
+import { PUBLIC_CARD_PAGE_SIZE, readPublicCardIndexPage } from "@/lib/watch/publicCardIndex";
 
 export const MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60;
 export const MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES = 72 * 60;
 export const PUBLIC_SYMBOL_FLOOR_TARGET = 3;
-export const PUBLIC_NEWS_DRIVEN_SYMBOL_MAX_AGE_MS = 6 * 60 * 60_000;
 
 const MAX_EVIDENCE_MAP_ITEMS = 120;
-const NEWS_DRIVEN_CANDIDATE_KEY_PREFIX = "news-driven:";
-const SIMPLE_PIPELINE_PROMPT_VERSION = "simple-pipeline:v1";
 
 export type WatchTimelineMode = "public" | "debug";
 
@@ -48,6 +46,9 @@ export interface PublicWatchTimelinePayload {
   servedAt: number;
   nextPollMs: number;
   residentStatus?: ResidentPrewarmStatus;
+  page?: number;
+  pageSize?: number;
+  totalCount?: number;
 }
 
 export interface DebugWatchTimelinePayload {
@@ -68,6 +69,8 @@ export interface WatchTimelinePayloadOptions {
   before: number;
   since?: number;
   limit: number;
+  page?: number;
+  pageSize?: number;
   windowMinutes: number;
   servedAt?: number;
 }
@@ -138,22 +141,6 @@ export function selectResidentFloorRecordEvents(
   void _events;
   void _options;
   return [];
-}
-
-function isFreshNewsDrivenSymbolEvent(event: PublicTimelineEvent, servedAt: number) {
-  if (event.payload.kind !== "pm_decision") return false;
-  if (normalizeCandidateType(event.payload.candidateType) !== "symbol") return false;
-  if (!event.payload.candidateKey?.startsWith(NEWS_DRIVEN_CANDIDATE_KEY_PREFIX)) return false;
-  if (event.payload.tradeDecision?.promptVersion !== SIMPLE_PIPELINE_PROMPT_VERSION) return false;
-  if (event.ts > servedAt + 5 * 60_000) return false;
-  return servedAt - event.ts <= PUBLIC_NEWS_DRIVEN_SYMBOL_MAX_AGE_MS;
-}
-
-function filterFreshNewsDrivenSymbolEvents(events: PublicTimelineEvent[], servedAt: number) {
-  return events.filter(
-    (event) =>
-      event.payload.kind !== "pm_decision" || isFreshNewsDrivenSymbolEvent(event, servedAt),
-  );
 }
 
 function isExecutableSymbolEvent(event: PublicTimelineEvent) {
@@ -233,18 +220,106 @@ async function readTargetedDecisionRecords(
   return batches.flat();
 }
 
+async function buildIndexedPublicTimelinePayload({
+  locale,
+  before,
+  since,
+  limit,
+  page = 1,
+  pageSize = PUBLIC_CARD_PAGE_SIZE,
+  windowMinutes,
+  servedAt = Date.now(),
+}: Omit<WatchTimelinePayloadOptions, "mode">): Promise<PublicWatchTimelinePayload | null> {
+  const indexPage = await readPublicCardIndexPage(locale, {
+    page,
+    pageSize: Math.min(pageSize, limit),
+  });
+  if (indexPage.totalCount === 0 && indexPage.entries.length === 0) return null;
+
+  const records = (
+    await Promise.all(indexPage.entries.map((entry) => readDecisionRecordDirect(entry.recordKey)))
+  ).filter((record): record is StrategyDecisionRecord => Boolean(record));
+  const events = records
+    .map(projectDecisionRecordToPublicEvent)
+    .filter((event): event is PublicTimelineEvent => Boolean(event))
+    .filter(
+      (event) =>
+        event.locale === locale && event.ts < before && (since === undefined || event.ts > since),
+    )
+    .sort(comparePublicTimelineEvents);
+  const evidenceMap = await evidenceMapForEvents(events);
+  const jobs = await readPmDecisionJobs({ locale, limit: 100 }).catch(() => []);
+
+  return {
+    events,
+    evidenceMap,
+    oldestTs:
+      events.length > 0
+        ? (events[events.length - 1]?.ts ?? Date.parse(indexPage.oldestAt ?? ""))
+        : Number.isFinite(Date.parse(indexPage.oldestAt ?? ""))
+          ? Date.parse(indexPage.oldestAt ?? "")
+          : null,
+    hasMore: indexPage.hasMore,
+    windowMinutes,
+    locale,
+    servedAt,
+    nextPollMs: resolveWatchTimelineNextPollMs(servedAt),
+    residentStatus: deriveResidentPrewarmStatus({
+      records,
+      jobs,
+      now: servedAt,
+    }),
+    page: indexPage.page,
+    pageSize: indexPage.pageSize,
+    totalCount: indexPage.totalCount,
+  };
+}
+
+async function evidenceMapForEvents(events: PublicTimelineEvent[]) {
+  const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
+    0,
+    MAX_EVIDENCE_MAP_ITEMS,
+  );
+  return Object.fromEntries(
+    (
+      await Promise.all(
+        evidenceIds.map(
+          async (evidenceId) => [evidenceId, await getNewsEvidence(evidenceId)] as const,
+        ),
+      )
+    ).flatMap(([evidenceId, evidence]) => (evidence ? [[evidenceId, evidence]] : [])),
+  );
+}
+
 export async function buildWatchTimelinePayload({
   mode,
   locale,
   before,
   since,
   limit,
+  page,
+  pageSize,
   windowMinutes,
   servedAt = Date.now(),
 }: WatchTimelinePayloadOptions): Promise<WatchTimelinePayload> {
   const stagingFixture = shouldUseStagingMockTimeline()
     ? getStagingMockTimeline(locale, servedAt)
     : null;
+
+  if (mode === "public" && !stagingFixture) {
+    const indexedPayload = await buildIndexedPublicTimelinePayload({
+      locale,
+      before,
+      since,
+      limit,
+      page,
+      pageSize,
+      windowMinutes,
+      servedAt,
+    });
+    if (indexedPayload) return indexedPayload;
+  }
+
   const result =
     stagingFixture ?? (await getWatchHistory({ before, since, limit, windowMinutes, locale }));
   if (mode === "debug") {
@@ -310,36 +385,23 @@ export async function buildWatchTimelinePayload({
     servedAt,
   });
   const events = mergeDecisionRecordBackfillEvents(
-    filterFreshNewsDrivenSymbolEvents(projectedEvents.sort(comparePublicTimelineEvents), servedAt),
-    filterFreshNewsDrivenSymbolEvents(
-      [...recordEvents, ...residentFloorRecordEvents, ...symbolFloorRecordEvents].sort(
-        comparePublicTimelineEvents,
-      ),
-      servedAt,
+    projectedEvents.sort(comparePublicTimelineEvents),
+    [...recordEvents, ...residentFloorRecordEvents, ...symbolFloorRecordEvents].sort(
+      comparePublicTimelineEvents,
     ),
     limit,
   );
-  const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
-    0,
-    MAX_EVIDENCE_MAP_ITEMS,
-  );
   const evidenceMap = stagingFixture
     ? Object.fromEntries(
-        evidenceIds.flatMap((evidenceId) =>
-          stagingFixture.evidenceMap[evidenceId]
-            ? [[evidenceId, stagingFixture.evidenceMap[evidenceId]]]
-            : [],
-        ),
+        Array.from(new Set(events.flatMap((event) => event.evidenceIds)))
+          .slice(0, MAX_EVIDENCE_MAP_ITEMS)
+          .flatMap((evidenceId) =>
+            stagingFixture.evidenceMap[evidenceId]
+              ? [[evidenceId, stagingFixture.evidenceMap[evidenceId]]]
+              : [],
+          ),
       )
-    : Object.fromEntries(
-        (
-          await Promise.all(
-            evidenceIds.map(
-              async (evidenceId) => [evidenceId, await getNewsEvidence(evidenceId)] as const,
-            ),
-          )
-        ).flatMap(([evidenceId, evidence]) => (evidence ? [[evidenceId, evidence]] : [])),
-      );
+    : await evidenceMapForEvents(events);
 
   return {
     events,

@@ -15,6 +15,7 @@ export function DispatchConsoleV10({
   onViewChange,
   onTopicAction,
   freshness,
+  pagination,
 }: DispatchConsoleV10Props) {
   const { t } = useI18n();
   const dict = t.agentWatch.dispatchV10;
@@ -75,6 +76,7 @@ export function DispatchConsoleV10({
           topics={topics}
           dict={dict}
           freshness={freshness}
+          pagination={pagination}
           onPlaceholder={handleTopicAction}
         />
       </section>

@@ -187,6 +187,13 @@ export interface DispatchTopic {
 
 export type DispatchTopicAction = "primary" | "secondary";
 
+export interface DispatchTopicPaginationState {
+  hasMore: boolean;
+  loading: boolean;
+  loadedCount: number;
+  onLoadMore: () => void;
+}
+
 export interface DispatchConsoleV9Props {
   events?: PublicTimelineEvent[];
   evidenceMap?: Record<string, NewsEvidence>;
@@ -201,4 +208,5 @@ export interface DispatchConsoleV9Props {
   ) => void | Promise<void>;
   followTradeDict?: DispatchV10FollowTradeDict;
   freshness?: DispatchFreshnessState;
+  pagination?: DispatchTopicPaginationState;
 }

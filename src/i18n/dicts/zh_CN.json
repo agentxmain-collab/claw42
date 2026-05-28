@@ -734,7 +734,9 @@
         "coinwNavigate": "去 CoinW 看合约",
         "staleReason": "行情已过期，等待新分析后开放交易",
         "staleAgePrefix": "分析于",
-        "noNews": "暂无相关新闻"
+        "noNews": "暂无相关新闻",
+        "loadingMore": "继续加载中",
+        "loadedAll": "已加载全部 {count} 张"
       },
       "placeholder": {
         "title": "跟单功能开发中",

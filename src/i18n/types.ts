@@ -317,6 +317,8 @@ export type DispatchV10Dict = {
     feedbackHelpful: string;
     feedbackNotHelpful: string;
     feedbackThanks: string;
+    loadingMore: string;
+    loadedAll: string;
   };
   placeholder: {
     title: string;

@@ -31,11 +31,9 @@ import type {
   DispatchView,
 } from "./v9/types";
 import { resolveAgentWatchLocale } from "./locale";
-import { fallbackBeforeForPublicTimeline } from "./utils/publicTimelineWindow";
 
-const PUBLIC_TIMELINE_MIN_ENTRIES = 30;
+const PUBLIC_TIMELINE_PAGE_SIZE = 15;
 const PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES = 60;
-const PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES = 24 * 60;
 const DEFAULT_TIMELINE_POLL_MS = 90_000;
 const TIMELINE_STREAM_RETRY_MS = 30_000;
 const TIMELINE_HIDDEN_POLL_MS = 5 * 60_000;
@@ -61,6 +59,9 @@ interface PublicTimelinePayload {
   servedAt: number;
   nextPollMs?: number;
   residentStatus?: ResidentPrewarmStatus;
+  page?: number;
+  pageSize?: number;
+  totalCount?: number;
 }
 
 interface FollowStatsPayload {
@@ -236,6 +237,10 @@ export function AgentWatchBoard({
   const [freshness, setFreshness] = useState<DispatchFreshnessState>({ status: "idle" });
   const [residentStatus, setResidentStatus] = useState<ResidentPrewarmStatus | null>(null);
   const [timelineLoaded, setTimelineLoaded] = useState(false);
+  const [timelinePage, setTimelinePage] = useState(1);
+  const [timelineHasMore, setTimelineHasMore] = useState(false);
+  const [timelineTotalCount, setTimelineTotalCount] = useState(0);
+  const [timelineLoadingMore, setTimelineLoadingMore] = useState(false);
   const nextTimelinePollMsRef = useRef(DEFAULT_TIMELINE_POLL_MS);
 
   const applyTimelinePayload = useCallback(
@@ -258,6 +263,13 @@ export function AgentWatchBoard({
         );
       }
       if (payload.residentStatus) setResidentStatus(payload.residentStatus);
+      if (typeof payload.page === "number") {
+        setTimelinePage((current) =>
+          mode === "replace" && payload.page === 1 ? 1 : Math.max(current, payload.page ?? 1),
+        );
+      }
+      if (typeof payload.totalCount === "number") setTimelineTotalCount(payload.totalCount);
+      setTimelineHasMore(payload.hasMore);
       setTimelineLoaded(true);
     },
     [],
@@ -267,17 +279,23 @@ export function AgentWatchBoard({
     async ({
       windowMinutes,
       before,
-      limit = 100,
+      limit = PUBLIC_TIMELINE_PAGE_SIZE,
+      page = 1,
+      pageSize = PUBLIC_TIMELINE_PAGE_SIZE,
       signal,
     }: {
       windowMinutes: number;
       before?: number | null;
       limit?: number;
+      page?: number;
+      pageSize?: number;
       signal?: AbortSignal;
     }) => {
       const params = new URLSearchParams({
         windowMinutes: String(windowMinutes),
         limit: String(limit),
+        page: String(page),
+        pageSize: String(pageSize),
         locale: agentWatchLocale,
       });
       if (before) params.set("before", String(before));
@@ -320,20 +338,6 @@ export function AgentWatchBoard({
         : nextTimelinePollMsRef.current;
     }
 
-    async function payloadWithTimelineFallback(
-      primary: PublicTimelinePayload,
-      signal: AbortSignal,
-    ) {
-      if (primary.events.length >= PUBLIC_TIMELINE_MIN_ENTRIES) return primary;
-      const fallback = await fetchTimelineWindow({
-        windowMinutes: PUBLIC_TIMELINE_FALLBACK_WINDOW_MINUTES,
-        before: fallbackBeforeForPublicTimeline(primary),
-        limit: 100,
-        signal,
-      });
-      return mergeTimelinePayloadForDisplay(primary, fallback);
-    }
-
     async function loadTimeline() {
       controller?.abort();
       controller = new AbortController();
@@ -341,14 +345,14 @@ export function AgentWatchBoard({
       try {
         const primary = await fetchTimelineWindow({
           windowMinutes: PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES,
-          limit: 100,
+          limit: PUBLIC_TIMELINE_PAGE_SIZE,
+          page: 1,
+          pageSize: PUBLIC_TIMELINE_PAGE_SIZE,
           signal: controller.signal,
         });
         if (cancelled) return;
         nextTimelinePollMsRef.current = primary.nextPollMs ?? DEFAULT_TIMELINE_POLL_MS;
-        const displayPayload = await payloadWithTimelineFallback(primary, controller.signal);
-        if (cancelled) return;
-        applyTimelinePayload(displayPayload, "replace");
+        applyTimelinePayload(primary, "replace");
       } catch (error: unknown) {
         if (
           (error as { name?: string }).name !== "AbortError" &&
@@ -367,8 +371,7 @@ export function AgentWatchBoard({
       nextTimelinePollMsRef.current = payload.nextPollMs ?? DEFAULT_TIMELINE_POLL_MS;
       controller?.abort();
       controller = new AbortController();
-      const displayPayload = await payloadWithTimelineFallback(payload, controller.signal);
-      if (!cancelled) applyTimelinePayload(displayPayload, "replace");
+      if (!cancelled) applyTimelinePayload(payload, "replace");
     }
 
     function startPolling(delay = 0) {
@@ -389,7 +392,9 @@ export function AgentWatchBoard({
       closeEventSource();
       const params = new URLSearchParams({
         windowMinutes: String(PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES),
-        limit: "100",
+        limit: String(PUBLIC_TIMELINE_PAGE_SIZE),
+        page: "1",
+        pageSize: String(PUBLIC_TIMELINE_PAGE_SIZE),
         locale: agentWatchLocale,
       });
       eventSource = new EventSource(apiPath(`/api/watch/stream?${params}`));
@@ -443,6 +448,36 @@ export function AgentWatchBoard({
       document.removeEventListener("visibilitychange", restartTimelineTransport);
     };
   }, [agentWatchLocale, applyTimelinePayload, fetchTimelineWindow]);
+
+  const handleLoadMoreTimeline = useCallback(() => {
+    if (!timelineHasMore || timelineLoadingMore) return;
+    setTimelineLoadingMore(true);
+    const nextPage = timelinePage + 1;
+    void fetchTimelineWindow({
+      windowMinutes: PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES,
+      limit: PUBLIC_TIMELINE_PAGE_SIZE,
+      page: nextPage,
+      pageSize: PUBLIC_TIMELINE_PAGE_SIZE,
+    })
+      .then((payload) => {
+        nextTimelinePollMsRef.current = payload.nextPollMs ?? DEFAULT_TIMELINE_POLL_MS;
+        applyTimelinePayload(payload, "append");
+      })
+      .catch((error: unknown) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[claw42] public timeline page fetch failed", error);
+        }
+      })
+      .finally(() => {
+        setTimelineLoadingMore(false);
+      });
+  }, [
+    applyTimelinePayload,
+    fetchTimelineWindow,
+    timelineHasMore,
+    timelineLoadingMore,
+    timelinePage,
+  ]);
 
   const recordIds = useMemo(
     () =>
@@ -829,6 +864,12 @@ export function AgentWatchBoard({
         marketSnapshot={null}
         followTradeDict={followTradeDict}
         freshness={consoleFreshness}
+        pagination={{
+          hasMore: timelineHasMore,
+          loading: timelineLoadingMore,
+          loadedCount: timelineTotalCount || topics.length,
+          onLoadMore: handleLoadMoreTimeline,
+        }}
       />
       {HISTORY_WALL_ENABLED ? (
         <HistoryWall

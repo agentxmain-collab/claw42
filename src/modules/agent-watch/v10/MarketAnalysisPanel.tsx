@@ -18,6 +18,7 @@ import type {
   DispatchFreshnessState,
   DispatchTopic,
   DispatchTopicAction,
+  DispatchTopicPaginationState,
   DispatchStageStatus,
 } from "../v9/types";
 import v9Styles from "../v9/dispatchConsoleV9.module.css";
@@ -26,7 +27,6 @@ import { InlineAvatarSvg, type InlineAvatarName } from "./InlineAvatarSvg";
 import { v9AgentToV10Role } from "./staticContent";
 
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-const TOPIC_PAGE_SIZE = 15;
 
 function ChatShellStat({ label, value }: { label: string; value: number }) {
   return (
@@ -924,51 +924,18 @@ function TopicCardV10({
   );
 }
 
-function TopicPagination({
-  currentPage,
-  pageCount,
-  onPageChange,
-}: {
-  currentPage: number;
-  pageCount: number;
-  onPageChange: (page: number) => void;
-}) {
-  if (pageCount <= 1) return null;
-  const previousDisabled = currentPage <= 1;
-  const nextDisabled = currentPage >= pageCount;
-  return (
-    <nav className="topic-pagination" aria-label="Topic pagination">
-      <button
-        type="button"
-        disabled={previousDisabled}
-        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-      >
-        ‹
-      </button>
-      <span>
-        {currentPage}/{pageCount}
-      </span>
-      <button
-        type="button"
-        disabled={nextDisabled}
-        onClick={() => onPageChange(Math.min(pageCount, currentPage + 1))}
-      >
-        ›
-      </button>
-    </nav>
-  );
-}
-
 export function MarketAnalysisPanel({
   topics,
   dict,
   onPlaceholder,
   freshness,
+  pagination,
 }: {
   topics?: DispatchTopic[];
   dict: DispatchV10Dict;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
   freshness?: DispatchFreshnessState;
+  pagination?: DispatchTopicPaginationState;
 }) {
   const resolvedTopics = useMemo(() => {
     const normalizedTopics = (topics ?? []).map((topic) => normalizeTopicNames(topic, dict.roles));
@@ -977,14 +944,12 @@ export function MarketAnalysisPanel({
     );
   }, [dict.roles, topics]);
   const [collapsedByTopicId, setCollapsedByTopicId] = useState<TopicCollapseState>({});
-  const [currentPage, setCurrentPage] = useState(1);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const scrollAnchorRef = useRef<ScrollAnchor>({ topicId: null, offset: 0, scrollTop: 0 });
-  const pageCount = Math.max(1, Math.ceil(resolvedTopics.length / TOPIC_PAGE_SIZE));
-  const visibleTopics = useMemo(() => {
-    const pageStart = (currentPage - 1) * TOPIC_PAGE_SIZE;
-    return resolvedTopics.slice(pageStart, pageStart + TOPIC_PAGE_SIZE);
-  }, [currentPage, resolvedTopics]);
+  const paginationHasMore = pagination?.hasMore ?? false;
+  const paginationLoading = pagination?.loading ?? false;
+  const paginationOnLoadMore = pagination?.onLoadMore;
   const topicOrderSignature = resolvedTopics.map(topicDisplayIdentity).join("|");
   const doneCount = resolvedTopics.filter((topic) => topic.status === "done").length;
   const activeCount = resolvedTopics.filter((topic) => topic.status === "active").length;
@@ -999,8 +964,24 @@ export function MarketAnalysisPanel({
   }, [resolvedTopics]);
 
   useEffect(() => {
-    setCurrentPage((page) => Math.min(Math.max(1, page), pageCount));
-  }, [pageCount]);
+    if (!paginationHasMore || paginationLoading || !paginationOnLoadMore) return;
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    if (typeof window === "undefined" || typeof window.IntersectionObserver === "undefined") {
+      paginationOnLoadMore();
+      return;
+    }
+
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) paginationOnLoadMore();
+      },
+      { root: bodyRef.current, rootMargin: "240px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [paginationHasMore, paginationLoading, paginationOnLoadMore]);
 
   useIsomorphicLayoutEffect(() => {
     const body = bodyRef.current;
@@ -1054,13 +1035,13 @@ export function MarketAnalysisPanel({
             </div>
           ) : (
             <>
-              {visibleTopics.map((topic, index) => {
+              {resolvedTopics.map((topic, index) => {
                 const topicIdentity = topicDisplayIdentity(topic);
                 return (
                   <div key={topicIdentity} data-topic-card-id={topicIdentity}>
                     <TopicCardV10
                       topic={topic}
-                      latest={(currentPage - 1) * TOPIC_PAGE_SIZE + index === 0}
+                      latest={index === 0}
                       collapsed={collapsedByTopicId[topicIdentity] ?? topic.defaultCollapsed}
                       onToggle={() => {
                         setCollapsedByTopicId((current) =>
@@ -1070,7 +1051,7 @@ export function MarketAnalysisPanel({
                       dict={dict}
                       onPlaceholder={onPlaceholder}
                     />
-                    {index < visibleTopics.length - 1 ? (
+                    {index < resolvedTopics.length - 1 ? (
                       <div className="topic-separator" aria-hidden="true">
                         <span className="topic-separator-dot" />
                       </div>
@@ -1078,11 +1059,15 @@ export function MarketAnalysisPanel({
                   </div>
                 );
               })}
-              <TopicPagination
-                currentPage={currentPage}
-                pageCount={pageCount}
-                onPageChange={setCurrentPage}
-              />
+              {pagination ? (
+                <div className="topic-infinite-status" ref={loadMoreRef} role="status">
+                  {pagination.loading
+                    ? dict.market.loadingMore
+                    : pagination.hasMore
+                      ? ""
+                      : dict.market.loadedAll.replace("{count}", String(pagination.loadedCount))}
+                </div>
+              ) : null}
             </>
           )}
         </div>

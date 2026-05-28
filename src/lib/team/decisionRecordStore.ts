@@ -1,9 +1,11 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { kv } from "@/lib/kv-shim";
+import { persistDecisionRecordDirect } from "@/lib/team/decisionRecordDirectStore";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { Locale } from "@/i18n/types";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
+import { cleanupPublicCardIndex, writePublicCardIndexEntry } from "@/lib/watch/publicCardIndex";
 
 type KvListClient = {
   lpush(key: string, value: string): Promise<unknown>;
@@ -18,7 +20,7 @@ const LEGACY_KV_PREFIX = "decision-record:v1:";
 const LEGACY_KV_SYMBOL_INDEX_KEY = `${LEGACY_KV_PREFIX}symbols`;
 const KV_PREFIX = "claw42:strategy:records:v1:";
 const LOCAL_LINE_CAP = 500;
-const KV_LINE_CAP = 1_000;
+const KV_LINE_CAP = 500;
 const memoryRecords = new Map<string, StrategyDecisionRecord[]>();
 let warnedAboutMemoryFallback = false;
 
@@ -83,6 +85,7 @@ export async function appendDecisionRecord(record: StrategyDecisionRecord): Prom
       const lpushResult = await client.lpush(key, JSON.stringify(normalizedRecord));
       const ltrimResult = await client.ltrim(key, 0, KV_LINE_CAP - 1);
       const saddResult = await client.sadd(indexKey, normalizedRecord.symbol);
+      await writePublicCardStorage(normalizedRecord);
       rememberDecisionRecordWrite({
         operation: "append",
         storageMode: "persistent",
@@ -416,6 +419,7 @@ async function upsertKvRecord(record: StrategyDecisionRecord) {
   const lpushResult = await client.lpush(key, JSON.stringify(record));
   const ltrimResult = await client.ltrim(key, 0, KV_LINE_CAP - 1);
   const saddResult = await client.sadd(kvSymbolIndexKey(record.locale), record.symbol);
+  await writePublicCardStorage(record);
   return {
     lremAttemptCount: lremResults.length,
     lremResultCount: lremResults.filter((result) => Number(result) > 0).length,
@@ -423,6 +427,14 @@ async function upsertKvRecord(record: StrategyDecisionRecord) {
     ltrimResult: safeStorageResult(ltrimResult),
     saddResult: safeStorageResult(saddResult),
   };
+}
+
+async function writePublicCardStorage(record: StrategyDecisionRecord) {
+  await Promise.allSettled([
+    persistDecisionRecordDirect(record),
+    writePublicCardIndexEntry(record),
+  ]);
+  await cleanupPublicCardIndex(record.locale).catch(() => null);
 }
 
 async function appendLocalRecord(record: StrategyDecisionRecord) {
