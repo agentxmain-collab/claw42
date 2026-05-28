@@ -53,17 +53,7 @@ function formatFreshnessText(freshness: DispatchFreshnessState | undefined, dict
   if (freshness.status === "refreshing" || freshness.refreshStarted) {
     return `${dict.market.newAnalysisRunning} · ${dict.market.autoRefreshOnComplete}`;
   }
-  if (freshness.lastDecisionAt) {
-    const minutes = Math.max(
-      0,
-      Math.round((Date.now() - Date.parse(freshness.lastDecisionAt)) / 60_000),
-    );
-    return `${dict.market.cachedStateLabel} · ${dict.market.analyzedAgo.replace(
-      "{minutes}",
-      String(minutes),
-    )}`;
-  }
-  if (freshness.status === "no_signal") return dict.market.cachedStateLabel;
+  if (freshness.lastDecisionAt || freshness.status === "no_signal") return null;
   return null;
 }
 
@@ -79,16 +69,7 @@ function formatResidentPrewarmText(freshness: DispatchFreshnessState, dict: Disp
   if (status.overallState === "failed") {
     return `${dict.market.residentUpdateIssue} · ${dict.market.residentCacheFallback}`;
   }
-  if (status.latestSucceededAt) {
-    const minutes = Math.max(
-      0,
-      Math.round((status.servedAt - Date.parse(status.latestSucceededAt)) / 60_000),
-    );
-    return `${dict.market.residentCachedState} · ${dict.market.analyzedAgo.replace(
-      "{minutes}",
-      String(minutes),
-    )}`;
-  }
+  if (status.latestSucceededAt) return null;
   return null;
 }
 

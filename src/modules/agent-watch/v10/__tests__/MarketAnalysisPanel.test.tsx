@@ -154,6 +154,64 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain("完成后自动刷新");
   });
 
+  test("omits cached analysis age from the workbench header", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        dict={dict}
+        freshness={{
+          status: "idle",
+          symbol: "BTC",
+          lastDecisionAt: "2026-05-19T11:00:00.000Z",
+          refreshSource: "records",
+          residentStatus: {
+            schemaVersion: 1,
+            servedAt: Date.parse("2026-05-19T12:00:00.000Z"),
+            overallState: "ready",
+            slaState: "healthy",
+            latestSucceededAt: "2026-05-19T11:00:00.000Z",
+            marketOverview: {
+              kind: "market_overview",
+              state: "ready",
+              slaState: "healthy",
+              stale: false,
+              ageMs: 60 * 60_000,
+              expectedIntervalMs: 3 * 60 * 60_000,
+              staleAfterMs: 6 * 60 * 60_000,
+              lastSucceededAt: "2026-05-19T11:00:00.000Z",
+              lastAttemptAt: null,
+              nextRunAt: null,
+              lastError: null,
+              jobId: null,
+              candidateKey: "market:zh_CN",
+            },
+            hotspot: {
+              kind: "hotspot",
+              state: "ready",
+              slaState: "healthy",
+              stale: false,
+              ageMs: 90 * 60_000,
+              expectedIntervalMs: 3 * 60 * 60_000,
+              staleAfterMs: 6 * 60 * 60_000,
+              lastSucceededAt: "2026-05-19T10:30:00.000Z",
+              lastAttemptAt: null,
+              nextRunAt: null,
+              lastError: null,
+              jobId: null,
+              candidateKey: "hotspot:zh_CN",
+            },
+          },
+        }}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("AI 团队工作台");
+    expect(html).toContain("实时交易决策流");
+    expect(html).toContain("热点");
+    expect(html).not.toContain("全局分析缓存");
+    expect(html).not.toMatch(/分析于\s*\d+\s*分钟前/);
+  });
+
   test("renders resident prewarm status ahead of user-trigger freshness copy", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
