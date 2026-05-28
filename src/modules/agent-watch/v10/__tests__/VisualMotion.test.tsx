@@ -141,11 +141,12 @@ describe("DispatchConsoleV10 visual motion", () => {
       css.indexOf(".dispatchConsoleV10 :global(.topic-strategy.topic-card-v3)"),
     );
 
-    expect(v3Css).toContain("var(--purple)");
+    expect(v3Css).toContain("#5227ff");
     expect(v3Css).toContain("rgb(82 39 255");
     expect(v3Css).not.toContain("#7c5cff");
     expect(v3Css).not.toContain("-webkit-line-clamp");
     expect(v3Css).not.toContain("text-overflow");
-    expect(css).toMatch(/\.v3-reasoning\),[\s\S]*\.v3-secondary\) \{[\s\S]*padding:\s*9px 11px;/);
+    expect(css).toMatch(/\.topic-card-v3 \.v3-reasoning\)[\s\S]*padding:\s*10px 14px;/);
+    expect(css).toMatch(/\.topic-card-v3 \.v3-secondary\)[\s\S]*padding:\s*12px 14px;/);
   });
 });

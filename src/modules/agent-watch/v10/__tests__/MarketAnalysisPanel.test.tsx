@@ -89,7 +89,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("SOL 决策流");
   });
 
-  test("renders latest strategy and normalized role titles for explicit topics", () => {
+  test("renders normalized role titles for explicit topics", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={dispatchV10DemoTopics}
@@ -98,13 +98,12 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("最新策略");
     expect(html).toContain("技术策略主管");
     expect(html).toContain("宏观情报分析师");
     expect(html).toContain("交易策略总监");
   });
 
-  test("renders upgraded avatars in chat shell, topic head, and strategy head", () => {
+  test("renders upgraded avatars in chat shell and topic head", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[dispatchV10DemoTopics[0]!]}
@@ -118,8 +117,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("cs-icon-avatar");
     expect(html).not.toContain('data-inline-avatar="core"');
     expect(html).toContain('data-inline-avatar="technical"');
-    expect(html).toContain('data-inline-avatar="bullish"');
-    expect((html.match(/market-panel-avatar/g) ?? []).length).toBeGreaterThanOrEqual(3);
+    expect((html.match(/market-panel-avatar/g) ?? []).length).toBeGreaterThanOrEqual(1);
   });
 
   test("renders lightweight card feedback controls for public beta learning", () => {
@@ -369,7 +367,7 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("observation-summary");
+    expect(html).toContain('class="v3-news-headline"');
     expect(html).toContain("BTC 与主流资产同步进入风险再定价");
     expect(html).toContain("CryptoCompare");
     expect(html).toContain("13:20");
@@ -415,7 +413,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("这段解释不应该伪装成新闻摘要");
   });
 
-  test("renders topic card v3 with truthful debate byline and reachable reasoning content", () => {
+  test("renders topic card v3 with the seven-block handoff structure and real data", () => {
     const longBull = "多头反驳：BTC 仍有 ETF 净流入和关键支撑，短线不能假设单边下跌。";
     const longBear =
       "空头主线：BTC 24 小时跌破关键区间，恐慌指数同步走弱，空方暂时占优但需要控制追空风险。";
@@ -441,8 +439,24 @@ describe("MarketAnalysisPanel v10", () => {
               action: "short",
               actionLabel: "SHORT 25%",
               ticker: "$BTC",
+              entry: "76,200 - 76,500",
+              stopLoss: "77,200",
+              takeProfit: "74,000",
               meta: "置信度 65% · intraday",
+              follow: {
+                ...dispatchV10DemoTopics[0]!.strategy.follow,
+                watchCount: 0,
+                followCount: 0,
+              },
             },
+            newsItems: [
+              {
+                headline: "BTC 跌破 76,000 USD 关键支撑位，24 小时跌幅扩大到 1.78%",
+                source: "PANews",
+                observedAt: "2026-05-28 07:14 · 4 分钟前",
+                url: "https://example.com/btc-news",
+              },
+            ],
             messages: [
               {
                 id: "bull-case",
@@ -492,6 +506,41 @@ describe("MarketAnalysisPanel v10", () => {
     );
 
     expect(html).toContain('data-topic-card-v3="true"');
+    expect(html).toContain('class="v3-topic short');
+    expect(html).toContain('class="v3-news-tag"');
+    expect(html).toContain("决策源");
+    expect(html).toContain('class="v3-news-headline"');
+    expect(html).toContain("<em>76,000 USD</em>");
+    expect(html).toContain('class="v3-news-orig"');
+    expect(html).toContain("原文");
+    expect(html).toContain('class="v3-news-foot"');
+    expect(html).toContain("PANews");
+    expect(html).toContain('class="v3-title-ticker"');
+    expect(html).toContain('class="v3-title-rest"');
+    expect(html).toContain('class="v3-time-chip"');
+    expect((html.match(/class="v3-cell"/g) ?? []).length).toBe(3);
+    expect(html).toContain("入场区间");
+    expect(html).toContain("当前");
+    expect(html).toContain("77,200");
+    expect(html).toContain("74,000");
+    expect(html).toContain('class="v3-mega-top"');
+    expect(html).toContain('class="v3-mega-icon"');
+    expect(html).toContain("SHORT");
+    expect(html).toContain("25%");
+    expect(html).toContain('class="v3-mega-bottom"');
+    expect(html).toContain("去交易");
+    expect(html).toContain('class="v3-reason-head"');
+    expect(html).toContain('class="v3-reason-tag"');
+    expect(html).toContain('class="v3-reason-byline"');
+    expect((html.match(/class="v3-reason-p"/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(html).toContain('class="v3-reason-hl"');
+    expect(html).toContain('class="v3-reason-code"');
+    expect(html).toContain('class="v3-secondary"');
+    expect(html).toContain('class="v3-sec-head"');
+    expect(html).toContain('class="v3-sec-foot"');
+    expect(html).toContain('class="v3-pulse"');
+    expect(html).toContain("0 人在看 · 0 已跟单");
+    expect(html).toContain("展开");
     expect(html).toContain("多空双向分析 · 空方占优");
     expect(html).toContain("核心推理");
     expect(html).toContain("查看完整推理链");
