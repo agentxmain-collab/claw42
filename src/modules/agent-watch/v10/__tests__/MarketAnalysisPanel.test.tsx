@@ -120,7 +120,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect((html.match(/market-panel-avatar/g) ?? []).length).toBeGreaterThanOrEqual(1);
   });
 
-  test("renders lightweight card feedback controls for public beta learning", () => {
+  test("does not render the removed public feedback controls on topic cards", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[dispatchV10DemoTopics[0]!]}
@@ -129,10 +129,11 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("这条分析有帮助吗");
-    expect(html).toContain("有帮助");
-    expect(html).toContain("没帮助");
-    expect(html).toContain('data-feedback-topic="BTC"');
+    expect(html).not.toContain("这条分析有帮助吗");
+    expect(html).not.toContain("有帮助");
+    expect(html).not.toContain("没帮助");
+    expect(html).not.toContain("topic-feedback");
+    expect(html).not.toContain("data-feedback-topic");
   });
 
   test("renders visible-session freshness state", () => {

@@ -129,10 +129,10 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(css).toMatch(/fstage4\.memory:hover[\s\S]+box-shadow/);
   });
 
-  test("keeps collapsed topic cards full width while tightening vertical density", () => {
+  test("keeps collapsed topic cards inside the natural shell gutters", () => {
     expect(css).not.toMatch(/topic\.collapsed:not\(\.expanded\)[\s\S]{0,120}max-width:\s*820px/);
     expect(css).not.toMatch(/topic\.collapsed:not\(\.expanded\)[\s\S]{0,120}margin-inline:\s*auto/);
-    expect(css).toMatch(
+    expect(css).not.toMatch(
       /topic\.collapsed:not\(\.expanded\)\) \{[\s\S]*width:\s*calc\(100% \+ 44px\);[\s\S]*margin-inline:\s*-22px;/,
     );
     expect(css).toMatch(/topic-head[\s\S]{0,160}padding:\s*12px 18px 10px/);
@@ -149,6 +149,9 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(v3Css).not.toContain("#7c5cff");
     expect(v3Css).not.toContain("-webkit-line-clamp");
     expect(v3Css).not.toContain("text-overflow");
+    expect(css).not.toContain("calc(100% + 44px)");
+    expect(css).not.toContain("margin-inline: -22px");
+    expect(css).not.toContain("topic-feedback");
     expect(v3Css).toMatch(
       /topic-strategy\.topic-card-v3\) \{[\s\S]*display:\s*block;[\s\S]*width:\s*100%;/,
     );
@@ -160,10 +163,10 @@ describe("DispatchConsoleV10 visual motion", () => {
       /topic-card-v3 \.v3-body\) \{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(280px, 320px\);/,
     );
     expect(css).toMatch(
-      /\.topic-card-v3 \.v3-reasoning\)[\s\S]*height:\s*64px;[\s\S]*padding:\s*7px 12px;/,
+      /\.topic-card-v3 \.v3-reasoning\)[\s\S]*height:\s*64px;[\s\S]*overflow-y:\s*auto;[\s\S]*padding:\s*7px 12px;/,
     );
     expect(css).toMatch(
-      /\.topic-card-v3 \.v3-secondary\)[\s\S]*height:\s*64px;[\s\S]*padding:\s*8px 12px;/,
+      /\.topic-card-v3 \.v3-secondary\)[\s\S]*height:\s*64px;[\s\S]*overflow-y:\s*auto;[\s\S]*padding:\s*8px 12px;/,
     );
   });
 });
