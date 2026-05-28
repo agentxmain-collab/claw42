@@ -6,7 +6,12 @@ import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { TradeDecision } from "@/lib/team/tradeDecision";
 import { checkLock, type LockSnapshot } from "@/lib/storage/kv-lock";
 import { readPmDecisionJobs, type PmDecisionJobRecord } from "@/lib/watch/pmDecisionJobLedger";
-import { readPublicCardIndexPage, type PublicCardIndexPage } from "@/lib/watch/publicCardIndex";
+import {
+  readPublicCardIndexPage,
+  readPublicCardIndexWriteFailureMarkers,
+  type PublicCardIndexPage,
+  type PublicCardIndexWriteFailureMarker,
+} from "@/lib/watch/publicCardIndex";
 import type { Locale } from "@/i18n/types";
 import type { CoinPoolPayload } from "@/modules/agent-watch/types";
 
@@ -87,6 +92,10 @@ export interface BuildStrategyResolutionDiagnosticOptions {
     locale: Locale,
     options: { page: number; pageSize: number },
   ) => Promise<PublicCardIndexPage>;
+  readIndexFailures?: (
+    locale: Locale,
+    options: { limit: number },
+  ) => Promise<PublicCardIndexWriteFailureMarker[]>;
   readJobs?: (options: { locale: Locale; limit: number }) => Promise<PmDecisionJobRecord[]>;
   getInstrumentSet?: () => Promise<ReadonlyMap<string, unknown>>;
   checkRuntimeLock?: (key: string) => Promise<LockSnapshot>;
@@ -99,14 +108,25 @@ export async function buildStrategyResolutionDiagnostic({
   getPool = getCoinPool,
   readRecords = readAllDecisionRecords,
   readIndexPage = (targetLocale, options) => readPublicCardIndexPage(targetLocale, options),
+  readIndexFailures = (targetLocale, options) =>
+    readPublicCardIndexWriteFailureMarkers(targetLocale, options),
   readJobs = readPmDecisionJobs,
   getInstrumentSet = getCoinWFuturesInstrumentSet,
   checkRuntimeLock = checkLock,
 }: BuildStrategyResolutionDiagnosticOptions): Promise<StrategyResolutionDiagnosticResult> {
-  const [poolResult, records, publicIndexPage, jobs, instruments, triggerLock] = await Promise.all([
+  const [
+    poolResult,
+    records,
+    publicIndexPage,
+    indexFailureMarkers,
+    jobs,
+    instruments,
+    triggerLock,
+  ] = await Promise.all([
     settle(getPool),
     readRecords(readLimit, locale),
     readIndexPage(locale, { page: 1, pageSize: 100 }),
+    readIndexFailures(locale, { limit: 100 }).catch(() => []),
     readJobs({ locale, limit: Math.min(readLimit, 100) }),
     getInstrumentSet(),
     checkRuntimeLock(`cron:strategy-replay:trigger-now:${locale}`).catch(() => null),
@@ -120,6 +140,12 @@ export async function buildStrategyResolutionDiagnostic({
   }));
   const publicIndexIds = new Set(publicIndexPage.entries.map((entry) => entry.id));
   const rawStrategyRecords = records.filter(isStrategyRecord);
+  const rawStrategyButNotIndexed = rawStrategyRecords.filter(
+    (record) => !publicIndexIds.has(publicIndexIdForRecord(record)),
+  );
+  const indexFailureMarkerSample = indexFailureMarkers
+    .map((marker) => marker.recordId)
+    .filter(Boolean);
   const latestRawRecordCreatedAt = latestIso(records.map((record) => record.createdAt));
   const latestPublicIndexCreatedAt = latestIso(
     publicIndexPage.entries.map((entry) => entry.createdAt),
@@ -140,13 +166,11 @@ export async function buildStrategyResolutionDiagnostic({
     rawRecordsLast1h: countRecent(records, now),
     rawStrategyRecordsLast1h: countRecent(rawStrategyRecords, now),
     publicIndexEntriesLast1h: countRecent(publicIndexPage.entries, now),
-    rawStrategyButNotIndexedCount: rawStrategyRecords.filter(
-      (record) => !publicIndexIds.has(publicIndexIdForRecord(record)),
-    ).length,
-    indexWriteFailureSample: rawStrategyRecords
-      .filter((record) => !publicIndexIds.has(publicIndexIdForRecord(record)))
-      .slice(0, 10)
-      .map((record) => record.id),
+    rawStrategyButNotIndexedCount: rawStrategyButNotIndexed.length,
+    indexWriteFailureSample: (indexFailureMarkerSample.length
+      ? indexFailureMarkerSample
+      : rawStrategyButNotIndexed.map((record) => record.id)
+    ).slice(0, 10),
     latestRawRecordCreatedAt,
     latestPublicIndexCreatedAt,
     dryRun: buildDryRun(classified, instruments),

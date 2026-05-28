@@ -127,6 +127,17 @@ describe("buildStrategyResolutionDiagnostic", () => {
       getPool: async () => pool(),
       readRecords: async () => records,
       readIndexPage: async () => publicIndexPage(["pm-decision:hit-tp"]),
+      readIndexFailures: async () => [
+        {
+          recordId: "missing-hype",
+          locale: "zh_CN",
+          symbol: "HYPE",
+          recordCreatedAt: new Date(now - 10 * 60_000).toISOString(),
+          failedAt: new Date(now).toISOString(),
+          stage: "public-card-index",
+          error: "zadd down",
+        },
+      ],
       readJobs: async () => [
         {
           id: "job-1",
@@ -176,6 +187,7 @@ describe("buildStrategyResolutionDiagnostic", () => {
       { symbol: "NOPE", count: 1 },
     ]);
     expect(result.rawStrategyButNotIndexedCount).toBe(2);
+    expect(result.indexWriteFailureSample).toEqual(["missing-hype"]);
     expect(result.recentJobErrors).toEqual([
       {
         id: "job-1",

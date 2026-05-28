@@ -5,7 +5,11 @@ import { persistDecisionRecordDirect } from "@/lib/team/decisionRecordDirectStor
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { Locale } from "@/i18n/types";
 import { LEGACY_WATCH_LOCALE, normalizeWatchLocale } from "@/lib/watch/locale";
-import { cleanupPublicCardIndex, writePublicCardIndexEntry } from "@/lib/watch/publicCardIndex";
+import {
+  cleanupPublicCardIndex,
+  writePublicCardIndexEntry,
+  writePublicCardIndexFailureMarker,
+} from "@/lib/watch/publicCardIndex";
 
 type KvListClient = {
   lpush(key: string, value: string): Promise<unknown>;
@@ -41,6 +45,7 @@ export interface DecisionRecordWriteDiagnostics {
   saddResult?: unknown;
   lremAttemptCount?: number;
   lremResultCount?: number;
+  publicCardStorageFailures?: Array<{ stage: string; error: string }>;
   localResult?: "ok";
   fallbackReason?: string;
 }
@@ -85,7 +90,7 @@ export async function appendDecisionRecord(record: StrategyDecisionRecord): Prom
       const lpushResult = await client.lpush(key, JSON.stringify(normalizedRecord));
       const ltrimResult = await client.ltrim(key, 0, KV_LINE_CAP - 1);
       const saddResult = await client.sadd(indexKey, normalizedRecord.symbol);
-      await writePublicCardStorage(normalizedRecord);
+      const publicCardStorageFailures = await writePublicCardStorage(normalizedRecord);
       rememberDecisionRecordWrite({
         operation: "append",
         storageMode: "persistent",
@@ -99,6 +104,7 @@ export async function appendDecisionRecord(record: StrategyDecisionRecord): Prom
         lpushResult: safeStorageResult(lpushResult),
         ltrimResult: safeStorageResult(ltrimResult),
         saddResult: safeStorageResult(saddResult),
+        publicCardStorageFailures,
       });
       return;
     } catch (error) {
@@ -419,22 +425,58 @@ async function upsertKvRecord(record: StrategyDecisionRecord) {
   const lpushResult = await client.lpush(key, JSON.stringify(record));
   const ltrimResult = await client.ltrim(key, 0, KV_LINE_CAP - 1);
   const saddResult = await client.sadd(kvSymbolIndexKey(record.locale), record.symbol);
-  await writePublicCardStorage(record);
+  const publicCardStorageFailures = await writePublicCardStorage(record);
   return {
     lremAttemptCount: lremResults.length,
     lremResultCount: lremResults.filter((result) => Number(result) > 0).length,
     lpushResult: safeStorageResult(lpushResult),
     ltrimResult: safeStorageResult(ltrimResult),
     saddResult: safeStorageResult(saddResult),
+    publicCardStorageFailures,
   };
 }
 
 async function writePublicCardStorage(record: StrategyDecisionRecord) {
-  await Promise.allSettled([
+  const results = await Promise.allSettled([
     persistDecisionRecordDirect(record),
     writePublicCardIndexEntry(record),
   ]);
-  await cleanupPublicCardIndex(record.locale).catch(() => null);
+  const failures = results.flatMap((result, index) =>
+    result.status === "rejected"
+      ? [
+          {
+            stage: index === 0 ? "direct-record" : "public-card-index",
+            error: safeErrorMessage(result.reason),
+          },
+        ]
+      : [],
+  );
+  for (const failure of failures) {
+    console.warn("[claw42] public card storage write failed", {
+      locale: record.locale,
+      symbol: record.symbol,
+      recordId: record.id,
+      stage: failure.stage,
+      error: failure.error,
+    });
+    await writePublicCardIndexFailureMarker({
+      recordId: record.id,
+      locale: record.locale,
+      symbol: record.symbol,
+      recordCreatedAt: record.createdAt,
+      failedAt: new Date().toISOString(),
+      stage: failure.stage,
+      error: failure.error,
+    }).catch(() => null);
+  }
+  await cleanupPublicCardIndex(record.locale).catch((error) => {
+    console.warn("[claw42] public card index cleanup failed", {
+      locale: record.locale,
+      recordId: record.id,
+      error: safeErrorMessage(error),
+    });
+  });
+  return failures;
 }
 
 async function appendLocalRecord(record: StrategyDecisionRecord) {

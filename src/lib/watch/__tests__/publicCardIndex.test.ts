@@ -9,7 +9,10 @@ import {
   PUBLIC_CARD_TOTAL_CAP,
   prunePublicCardIndexByDirectionalClosure,
   publicCardIndexKey,
+  publicCardIndexWriteFailureLogKey,
   readPublicCardIndexPage,
+  readPublicCardIndexWriteFailureMarkers,
+  writePublicCardIndexFailureMarker,
   writePublicCardIndexEntry,
 } from "@/lib/watch/publicCardIndex";
 
@@ -55,6 +58,40 @@ describe("publicCardIndex", () => {
     ]);
     expect(page.totalCount).toBe(20);
     expect(page.hasMore).toBe(true);
+  });
+
+  it("keeps a bounded write-failure marker log per locale", async () => {
+    const client = createFailureLogClient();
+
+    await writePublicCardIndexFailureMarker(
+      {
+        recordId: "record-1",
+        locale: "zh_CN",
+        symbol: "BTC",
+        recordCreatedAt: "2026-05-28T07:00:00.000Z",
+        failedAt: "2026-05-28T07:01:00.000Z",
+        stage: "public-card-index",
+        error: "zadd failed",
+      },
+      { client, cap: 1 },
+    );
+    await writePublicCardIndexFailureMarker(
+      {
+        recordId: "record-2",
+        locale: "zh_CN",
+        symbol: "ETH",
+        recordCreatedAt: "2026-05-28T07:02:00.000Z",
+        failedAt: "2026-05-28T07:03:00.000Z",
+        stage: "direct-record",
+        error: "direct write failed",
+      },
+      { client, cap: 1 },
+    );
+
+    const markers = await readPublicCardIndexWriteFailureMarkers("zh_CN", { client, limit: 10 });
+
+    expect(markers.map((marker) => marker.recordId)).toEqual(["record-2"]);
+    expect(client.store.has(publicCardIndexWriteFailureLogKey("zh_CN"))).toBe(true);
   });
 
   it("cleans cards older than sixty days", async () => {
@@ -336,4 +373,22 @@ async function addRawIndexedEntry(
       evidenceId: record.analystInputs[0]?.evidenceIds[0] ?? null,
     }),
   });
+}
+
+function createFailureLogClient() {
+  const store = new Map<string, string[]>();
+  return {
+    store,
+    async lpush(key: string, value: string) {
+      store.set(key, [value, ...(store.get(key) ?? [])]);
+      return store.get(key)?.length ?? 0;
+    },
+    async ltrim(key: string, start: number, stop: number) {
+      store.set(key, (store.get(key) ?? []).slice(start, stop + 1));
+      return "OK";
+    },
+    async lrange(key: string, start: number, stop: number) {
+      return (store.get(key) ?? []).slice(start, stop + 1);
+    },
+  };
 }

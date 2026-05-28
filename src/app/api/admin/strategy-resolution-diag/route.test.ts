@@ -8,6 +8,7 @@ import type { TradeDecision } from "@/lib/team/tradeDecision";
 const getCoinPoolMock = vi.hoisted(() => vi.fn());
 const readAllDecisionRecordsMock = vi.hoisted(() => vi.fn());
 const readPublicCardIndexPageMock = vi.hoisted(() => vi.fn());
+const readPublicCardIndexWriteFailureMarkersMock = vi.hoisted(() => vi.fn());
 const readPmDecisionJobsMock = vi.hoisted(() => vi.fn());
 const getCoinWFuturesInstrumentSetMock = vi.hoisted(() => vi.fn());
 const checkLockMock = vi.hoisted(() => vi.fn());
@@ -22,6 +23,7 @@ vi.mock("@/lib/team/decisionRecordStore", () => ({
 
 vi.mock("@/lib/watch/publicCardIndex", () => ({
   readPublicCardIndexPage: readPublicCardIndexPageMock,
+  readPublicCardIndexWriteFailureMarkers: readPublicCardIndexWriteFailureMarkersMock,
 }));
 
 vi.mock("@/lib/watch/pmDecisionJobLedger", () => ({
@@ -58,6 +60,7 @@ describe("/api/admin/strategy-resolution-diag", () => {
       hasMore: false,
       oldestAt: null,
     });
+    readPublicCardIndexWriteFailureMarkersMock.mockReset().mockResolvedValue([]);
     readPmDecisionJobsMock.mockReset().mockResolvedValue([]);
     getCoinWFuturesInstrumentSetMock.mockReset().mockResolvedValue(new Map([["BTC", {}]]));
     checkLockMock.mockReset().mockResolvedValue({

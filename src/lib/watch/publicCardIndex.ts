@@ -14,8 +14,10 @@ export const PUBLIC_CARD_RETENTION_SECONDS = 60 * 24 * 60 * 60;
 export const PUBLIC_CARD_TOTAL_CAP = 8_000;
 export const PUBLIC_CARD_PAGE_SIZE = 15;
 export const PUBLIC_CARD_INDEX_ESTIMATED_ENTRY_BYTES = 500;
+export const PUBLIC_CARD_INDEX_WRITE_FAILURE_LOG_CAP = 100;
 
 const PUBLIC_CARD_INDEX_PREFIX = "claw42:public-card-index:v1:";
+const PUBLIC_CARD_INDEX_WRITE_FAILURE_LOG_PREFIX = "claw42:public-card-index:v1:write-failure-log:";
 
 export interface PublicCardIndexEntry {
   id: string;
@@ -34,6 +36,16 @@ export interface PublicCardIndexPage {
   totalCount: number;
   hasMore: boolean;
   oldestAt: string | null;
+}
+
+export interface PublicCardIndexWriteFailureMarker {
+  recordId: string;
+  locale: Locale;
+  symbol: string;
+  recordCreatedAt: string;
+  failedAt: string;
+  stage: string;
+  error: string;
 }
 
 export interface PublicCardIndexBackfillResult {
@@ -69,8 +81,18 @@ export type PublicCardIndexClient = {
   zremrangebyrank(key: string, start: number, stop: number): Promise<number>;
 };
 
+export type PublicCardIndexFailureLogClient = {
+  lpush(key: string, value: string): Promise<unknown>;
+  ltrim(key: string, start: number, stop: number): Promise<unknown>;
+  lrange(key: string, start: number, stop: number): Promise<unknown[]>;
+};
+
 export function publicCardIndexKey(locale: Locale) {
   return `${PUBLIC_CARD_INDEX_PREFIX}${normalizeWatchLocale(locale)}`;
+}
+
+export function publicCardIndexWriteFailureLogKey(locale: Locale) {
+  return `${PUBLIC_CARD_INDEX_WRITE_FAILURE_LOG_PREFIX}${normalizeWatchLocale(locale)}`;
 }
 
 export function buildPublicCardIndexEntry(
@@ -213,6 +235,48 @@ export async function readPublicCardIndexPage(
     hasMore: start + entries.length < totalCount,
     oldestAt: oldestEntry?.createdAt ?? null,
   };
+}
+
+export async function readPublicCardIndexEntries(
+  locale: Locale,
+  {
+    limit = PUBLIC_CARD_TOTAL_CAP,
+    client = kv as PublicCardIndexClient,
+  }: { limit?: number; client?: PublicCardIndexClient } = {},
+) {
+  if (!hasKvConfig(client)) return [];
+  const safeLimit = Math.max(1, Math.min(Math.floor(limit), PUBLIC_CARD_TOTAL_CAP));
+  const members = await client.zrange<unknown[]>(publicCardIndexKey(locale), 0, safeLimit - 1, {
+    rev: true,
+  });
+  return members.map(parsePublicCardIndexEntry).filter(isPublicCardIndexEntry);
+}
+
+export async function writePublicCardIndexFailureMarker(
+  marker: PublicCardIndexWriteFailureMarker,
+  {
+    client = kv as unknown as PublicCardIndexFailureLogClient,
+    cap = PUBLIC_CARD_INDEX_WRITE_FAILURE_LOG_CAP,
+  }: { client?: PublicCardIndexFailureLogClient; cap?: number } = {},
+) {
+  if (!hasFailureLogConfig(client)) return null;
+  const key = publicCardIndexWriteFailureLogKey(marker.locale);
+  await client.lpush(key, JSON.stringify(marker));
+  await client.ltrim(key, 0, Math.max(0, cap - 1));
+  return marker;
+}
+
+export async function readPublicCardIndexWriteFailureMarkers(
+  locale: Locale,
+  {
+    limit = PUBLIC_CARD_INDEX_WRITE_FAILURE_LOG_CAP,
+    client = kv as unknown as PublicCardIndexFailureLogClient,
+  }: { limit?: number; client?: PublicCardIndexFailureLogClient } = {},
+) {
+  if (!hasFailureLogConfig(client)) return [];
+  const key = publicCardIndexWriteFailureLogKey(locale);
+  const values = await client.lrange(key, 0, Math.max(0, limit - 1));
+  return values.map(parsePublicCardIndexFailureMarker).filter(isPublicCardIndexFailureMarker);
 }
 
 export async function getPublicCardIndexStats(
@@ -368,8 +432,43 @@ function isPublicCardIndexEntry(value: unknown): value is PublicCardIndexEntry {
   );
 }
 
+function parsePublicCardIndexFailureMarker(value: unknown) {
+  if (typeof value === "object" && value !== null) return value;
+  if (typeof value !== "string") return null;
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function isPublicCardIndexFailureMarker(
+  value: unknown,
+): value is PublicCardIndexWriteFailureMarker {
+  if (typeof value !== "object" || value === null) return false;
+  const marker = value as Partial<PublicCardIndexWriteFailureMarker>;
+  return (
+    typeof marker.recordId === "string" &&
+    typeof marker.locale === "string" &&
+    typeof marker.symbol === "string" &&
+    typeof marker.recordCreatedAt === "string" &&
+    typeof marker.failedAt === "string" &&
+    typeof marker.stage === "string" &&
+    typeof marker.error === "string"
+  );
+}
+
 function hasKvConfig(client: PublicCardIndexClient) {
   if (isMemoryClient(client)) return true;
+  return Boolean(
+    process.env.USE_PERSISTENT_KV === "true" &&
+    process.env.KV_REST_API_URL &&
+    process.env.KV_REST_API_TOKEN,
+  );
+}
+
+function hasFailureLogConfig(client: PublicCardIndexFailureLogClient) {
+  if (client !== (kv as unknown as PublicCardIndexFailureLogClient)) return true;
   return Boolean(
     process.env.USE_PERSISTENT_KV === "true" &&
     process.env.KV_REST_API_URL &&
