@@ -154,6 +154,32 @@ describe("publicTimelinePayload", () => {
     expect(recordIds).toEqual(expect.arrayContaining(["pm:BTC:fresh", "pm:ETH:old"]));
   });
 
+  it("widens the fallback record window to seventy two hours when the compact index is empty", async () => {
+    const servedAt = Date.UTC(2026, 4, 24, 6, 20, 0);
+    await appendDecisionRecord(
+      decisionRecord("pm:market:old", servedAt - 48 * 60 * 60_000, {
+        candidateType: "market_overview",
+        candidateKey: "market_overview:zh_CN:old",
+        symbol: "MARKET",
+      }),
+    );
+
+    const payload = (await buildWatchTimelinePayload({
+      mode: "public",
+      locale: "zh_CN",
+      before: servedAt + 1,
+      limit: 10,
+      windowMinutes: 60,
+      servedAt,
+    })) as PublicWatchTimelinePayload;
+
+    const recordIds = payload.events.flatMap((event) =>
+      event.payload.kind === "pm_decision" ? [event.payload.recordId] : [],
+    );
+    expect(recordIds).toContain("pm:market:old");
+    expect(payload.windowMinutes).toBe(72 * 60);
+  });
+
   it("keeps up to three stale-but-real executable symbol records as a public floor", () => {
     const servedAt = Date.UTC(2026, 4, 18, 12, 0, 0);
     const before = servedAt + 1;

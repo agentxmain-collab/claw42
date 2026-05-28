@@ -1,5 +1,8 @@
 import { kv } from "@/lib/kv-shim";
-import { decisionRecordDirectKey } from "@/lib/team/decisionRecordDirectStore";
+import {
+  decisionRecordDirectKey,
+  persistDecisionRecordDirect,
+} from "@/lib/team/decisionRecordDirectStore";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import type { Locale } from "@/i18n/types";
 import { normalizeWatchLocale } from "@/lib/watch/locale";
@@ -30,6 +33,24 @@ export interface PublicCardIndexPage {
   totalCount: number;
   hasMore: boolean;
   oldestAt: string | null;
+}
+
+export interface PublicCardIndexBackfillResult {
+  ok: true;
+  locale: Locale;
+  dryRun: boolean;
+  recordsScanned: number;
+  recordsWritten: number;
+  recordsSkippedReason: {
+    localeMismatch: number;
+    notProjectable: number;
+    invalidCreatedAt: number;
+    writeFailed: number;
+  };
+  indexCountAfter: number;
+  removedByAge: number;
+  removedByCap: number;
+  durationMs: number;
 }
 
 export type PublicCardIndexClient = {
@@ -155,11 +176,94 @@ export async function getPublicCardIndexStats(
   };
 }
 
+export async function backfillPublicCardIndexFromRecords(
+  records: StrategyDecisionRecord[],
+  {
+    locale,
+    dryRun = false,
+    client = kv as PublicCardIndexClient,
+    now = Date.now(),
+    persistRecord = persistDecisionRecordDirect,
+  }: {
+    locale: Locale;
+    dryRun?: boolean;
+    client?: PublicCardIndexClient;
+    now?: number;
+    persistRecord?: (record: StrategyDecisionRecord) => Promise<unknown>;
+  },
+): Promise<PublicCardIndexBackfillResult> {
+  const startedAt = Date.now();
+  const normalizedLocale = normalizeWatchLocale(locale);
+  const skipped = {
+    localeMismatch: 0,
+    notProjectable: 0,
+    invalidCreatedAt: 0,
+    writeFailed: 0,
+  };
+  let recordsWritten = 0;
+
+  for (const record of records) {
+    if (normalizeWatchLocale(record.locale) !== normalizedLocale) {
+      skipped.localeMismatch += 1;
+      continue;
+    }
+    const entry = buildPublicCardIndexEntry(record);
+    if (!entry) {
+      skipped.notProjectable += 1;
+      continue;
+    }
+    const score = Date.parse(entry.createdAt);
+    if (!Number.isFinite(score)) {
+      skipped.invalidCreatedAt += 1;
+      continue;
+    }
+    if (dryRun) {
+      recordsWritten += 1;
+      continue;
+    }
+    try {
+      await persistRecord(record);
+      await client.zadd(publicCardIndexKey(normalizedLocale), {
+        score,
+        member: JSON.stringify(entry),
+      });
+      recordsWritten += 1;
+    } catch {
+      skipped.writeFailed += 1;
+    }
+  }
+
+  const cleanup = dryRun
+    ? { removedByAge: 0, removedByCap: 0, count: await safeIndexCount(normalizedLocale, client) }
+    : await cleanupPublicCardIndex(normalizedLocale, { client, now });
+
+  return {
+    ok: true,
+    locale: normalizedLocale,
+    dryRun,
+    recordsScanned: records.length,
+    recordsWritten,
+    recordsSkippedReason: skipped,
+    indexCountAfter: cleanup.count,
+    removedByAge: cleanup.removedByAge,
+    removedByCap: cleanup.removedByCap,
+    durationMs: Math.max(0, Date.now() - startedAt),
+  };
+}
+
 function analystDirectionFromRecord(record: StrategyDecisionRecord) {
   const directional = record.analystInputs
     .map((input) => input.direction)
     .find((direction) => direction === "long" || direction === "short");
   return directional ?? record.analystInputs[0]?.direction ?? null;
+}
+
+async function safeIndexCount(locale: Locale, client: PublicCardIndexClient) {
+  try {
+    return await client.zcard(publicCardIndexKey(locale));
+  } catch {
+    return 0;
+  }
 }
 
 function parsePublicCardIndexEntry(value: unknown) {

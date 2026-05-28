@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import {
   __publicCardIndexTestUtils,
+  backfillPublicCardIndexFromRecords,
   cleanupPublicCardIndex,
   PUBLIC_CARD_RETENTION_MS,
   PUBLIC_CARD_TOTAL_CAP,
@@ -70,6 +71,74 @@ describe("publicCardIndex", () => {
     expect(page.totalCount).toBe(PUBLIC_CARD_TOTAL_CAP);
     expect(page.entries[0]?.id).toBe(`pm-decision:pm:BTC:${PUBLIC_CARD_TOTAL_CAP + 24}`);
     expect(tail.entries[0]?.id).toBe("pm-decision:pm:BTC:25");
+  });
+
+  it("backfills raw decision records into the public card index", async () => {
+    const client = __publicCardIndexTestUtils.createMemoryClient();
+    const now = Date.UTC(2026, 4, 28, 7, 0, 0);
+    const records = Array.from({ length: 50 }, (_, index) => makeRecord(index, now + index * 1000));
+
+    const result = await backfillPublicCardIndexFromRecords(records, {
+      locale: "zh_CN",
+      client,
+      now,
+      persistRecord: async () => null,
+    });
+    const page = await readPublicCardIndexPage("zh_CN", { page: 1, pageSize: 50, client });
+
+    expect(result).toMatchObject({
+      ok: true,
+      locale: "zh_CN",
+      recordsScanned: 50,
+      recordsWritten: 50,
+      indexCountAfter: 50,
+    });
+    expect(page.totalCount).toBe(50);
+    expect(page.entries).toHaveLength(50);
+  });
+
+  it("keeps public card backfill idempotent for repeated runs", async () => {
+    const client = __publicCardIndexTestUtils.createMemoryClient();
+    const now = Date.UTC(2026, 4, 28, 7, 0, 0);
+    const records = Array.from({ length: 50 }, (_, index) => makeRecord(index, now + index * 1000));
+
+    await backfillPublicCardIndexFromRecords(records, {
+      locale: "zh_CN",
+      client,
+      now,
+      persistRecord: async () => null,
+    });
+    const second = await backfillPublicCardIndexFromRecords(records, {
+      locale: "zh_CN",
+      client,
+      now,
+      persistRecord: async () => null,
+    });
+    const page = await readPublicCardIndexPage("zh_CN", { page: 1, pageSize: 100, client });
+
+    expect(second.indexCountAfter).toBe(50);
+    expect(page.totalCount).toBe(50);
+  });
+
+  it("runs age cleanup after backfill", async () => {
+    const client = __publicCardIndexTestUtils.createMemoryClient();
+    const now = Date.UTC(2026, 4, 28, 7, 0, 0);
+    const tooOld = now - PUBLIC_CARD_RETENTION_MS - 1;
+    for (let index = 0; index < 5; index += 1) {
+      await writePublicCardIndexEntry(makeRecord(100 + index, tooOld - index), { client });
+    }
+
+    const result = await backfillPublicCardIndexFromRecords([makeRecord(1, now)], {
+      locale: "zh_CN",
+      client,
+      now,
+      persistRecord: async () => null,
+    });
+    const page = await readPublicCardIndexPage("zh_CN", { page: 1, pageSize: 10, client });
+
+    expect(result.removedByAge).toBe(5);
+    expect(page.totalCount).toBe(1);
+    expect(page.entries[0]?.id).toBe("pm-decision:pm:BTC:1");
   });
 });
 

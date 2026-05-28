@@ -26,7 +26,11 @@ import {
   filterPublicTimelineEvents,
   projectDecisionRecordToPublicEvent,
 } from "@/lib/watch/publicTimelineProjection";
-import { PUBLIC_CARD_PAGE_SIZE, readPublicCardIndexPage } from "@/lib/watch/publicCardIndex";
+import {
+  backfillPublicCardIndexFromRecords,
+  PUBLIC_CARD_PAGE_SIZE,
+  readPublicCardIndexPage,
+} from "@/lib/watch/publicCardIndex";
 
 export const MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60;
 export const MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES = 72 * 60;
@@ -79,10 +83,12 @@ export function resolveWatchTimelineNextPollMs(servedAt: number) {
   return servedAt % (3 * 60_000) < 30_000 ? 30_000 : 90_000;
 }
 
-export function resolvePublicTimelineRecordCutoff(servedAt: number, windowMinutes: number) {
-  return (
-    servedAt - Math.max(1, Math.min(windowMinutes, MAX_PUBLIC_TIMELINE_WINDOW_MINUTES)) * 60_000
-  );
+export function resolvePublicTimelineRecordCutoff(
+  servedAt: number,
+  windowMinutes: number,
+  maxWindowMinutes = MAX_PUBLIC_TIMELINE_WINDOW_MINUTES,
+) {
+  return servedAt - Math.max(1, Math.min(windowMinutes, maxWindowMinutes)) * 60_000;
 }
 
 function shouldReplaceWithRecordEvent(
@@ -305,6 +311,7 @@ export async function buildWatchTimelinePayload({
   const stagingFixture = shouldUseStagingMockTimeline()
     ? getStagingMockTimeline(locale, servedAt)
     : null;
+  let usingEmptyIndexFallback = false;
 
   if (mode === "public" && !stagingFixture) {
     const indexedPayload = await buildIndexedPublicTimelinePayload({
@@ -318,6 +325,7 @@ export async function buildWatchTimelinePayload({
       servedAt,
     });
     if (indexedPayload) return indexedPayload;
+    usingEmptyIndexFallback = true;
   }
 
   const result =
@@ -363,7 +371,16 @@ export async function buildWatchTimelinePayload({
     ...Array.from(decisionRecordsById.values()),
     ...targetedRecords,
   ]);
-  const cutoff = resolvePublicTimelineRecordCutoff(servedAt, windowMinutes);
+  const effectiveWindowMinutes = usingEmptyIndexFallback
+    ? Math.max(windowMinutes, MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES)
+    : windowMinutes;
+  const cutoff = resolvePublicTimelineRecordCutoff(
+    servedAt,
+    effectiveWindowMinutes,
+    usingEmptyIndexFallback
+      ? MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES
+      : MAX_PUBLIC_TIMELINE_WINDOW_MINUTES,
+  );
   const allRecordEvents = Array.from(decisionRecordsForBackfill.values())
     .map(projectDecisionRecordToPublicEvent)
     .filter((event): event is PublicTimelineEvent => Boolean(event))
@@ -391,6 +408,9 @@ export async function buildWatchTimelinePayload({
     ),
     limit,
   );
+  if (usingEmptyIndexFallback && decisionRecords.length > 0) {
+    schedulePublicCardIndexBackfill(decisionRecords, locale);
+  }
   const evidenceMap = stagingFixture
     ? Object.fromEntries(
         Array.from(new Set(events.flatMap((event) => event.evidenceIds)))
@@ -409,7 +429,7 @@ export async function buildWatchTimelinePayload({
     oldestTs:
       events.length > 0 ? (events[events.length - 1]?.ts ?? result.oldestTs) : result.oldestTs,
     hasMore: result.hasMore,
-    windowMinutes,
+    windowMinutes: effectiveWindowMinutes,
     locale,
     servedAt,
     nextPollMs: resolveWatchTimelineNextPollMs(servedAt),
@@ -419,4 +439,15 @@ export async function buildWatchTimelinePayload({
       now: servedAt,
     }),
   };
+}
+
+function schedulePublicCardIndexBackfill(records: StrategyDecisionRecord[], locale: Locale) {
+  const run = () => {
+    void backfillPublicCardIndexFromRecords(records, { locale }).catch(() => null);
+  };
+  if (typeof setImmediate === "function") {
+    setImmediate(run);
+    return;
+  }
+  setTimeout(run, 0);
 }
