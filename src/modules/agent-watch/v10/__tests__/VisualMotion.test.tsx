@@ -153,7 +153,7 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(css).not.toContain("margin-inline: -22px");
     expect(css).not.toContain("topic-feedback");
     expect(v3Css).toMatch(
-      /topic-strategy\.topic-card-v3\) \{[\s\S]*display:\s*block;[\s\S]*width:\s*100%;/,
+      /topic-strategy\.topic-card-v3\) \{[\s\S]*display:\s*block;[\s\S]*width:\s*100%;[\s\S]*margin:\s*0;/,
     );
     expect(v3Css).toMatch(/topic-card-v3 \.v3-topic\) \{[\s\S]*width:\s*100%;/);
     expect(v3Css).toMatch(

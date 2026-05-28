@@ -2287,6 +2287,7 @@
   min-width: 0;
   align-self: stretch;
   box-sizing: border-box;
+  margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
