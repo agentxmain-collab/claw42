@@ -72,10 +72,7 @@ function summarizeBackfillResults(results: PublicCardIndexBackfillResult[]) {
     indexCountAfter: results.reduce((total, result) => total + result.indexCountAfter, 0),
     removedByAge: results.reduce((total, result) => total + result.removedByAge, 0),
     removedByCap: results.reduce((total, result) => total + result.removedByCap, 0),
-    removedByDirectionalClosure: results.reduce(
-      (total, result) => total + result.removedByDirectionalClosure,
-      0,
-    ),
+    removedByNonStrategy: results.reduce((total, result) => total + result.removedByNonStrategy, 0),
     writeFailed: results.reduce(
       (total, result) => total + result.recordsSkippedReason.writeFailed,
       0,

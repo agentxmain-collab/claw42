@@ -5,19 +5,21 @@ import {
   backfillPublicCardIndexFromRecords,
   buildPublicCardIndexEntry,
   cleanupPublicCardIndex,
+  hasPublicStrategy,
   PUBLIC_CARD_RETENTION_MS,
   PUBLIC_CARD_TOTAL_CAP,
-  prunePublicCardIndexByDirectionalClosure,
+  prunePublicCardIndexByStrategy,
   publicCardIndexKey,
   publicCardIndexWriteFailureLogKey,
   readPublicCardIndexPage,
   readPublicCardIndexWriteFailureMarkers,
+  rebuildPublicCardIndexFromRecords,
   writePublicCardIndexFailureMarker,
   writePublicCardIndexEntry,
 } from "@/lib/watch/publicCardIndex";
 
 describe("publicCardIndex", () => {
-  it("indexes only closed long or short decisions", () => {
+  it("indexes records as soon as a concrete public strategy exists", () => {
     const now = Date.UTC(2026, 4, 28, 7, 0, 0);
 
     expect(buildPublicCardIndexEntry(makeRecord(1, now, { tradeDirection: "long" }))).toMatchObject(
@@ -27,12 +29,30 @@ describe("publicCardIndex", () => {
       buildPublicCardIndexEntry(makeRecord(2, now, { tradeDirection: "short" })),
     ).toMatchObject({ decisionDir: "short" });
     expect(buildPublicCardIndexEntry(makeRecord(3, now, { tradeDirection: "wait" }))).toBeNull();
-    expect(buildPublicCardIndexEntry(makeRecord(4, now, { resolvedAt: null }))).toBeNull();
+    expect(buildPublicCardIndexEntry(makeRecord(4, now, { resolvedAt: null }))).toMatchObject({
+      decisionDir: "short",
+      resolvedAt: null,
+    });
     expect(
       buildPublicCardIndexEntry(
         makeRecord(5, now, { tradeDirection: null, analystDirection: "neutral" }),
       ),
     ).toBeNull();
+    expect(
+      buildPublicCardIndexEntry(
+        makeRecord(6, now, { tradeDirection: null, analystDirection: "long" }),
+      ),
+    ).toBeNull();
+    expect(
+      buildPublicCardIndexEntry(makeRecord(7, now, { tradePatch: { entryPrice: null } })),
+    ).toBeNull();
+    expect(
+      buildPublicCardIndexEntry(makeRecord(8, now, { tradePatch: { stopLoss: null } })),
+    ).toBeNull();
+    expect(
+      buildPublicCardIndexEntry(makeRecord(9, now, { tradePatch: { takeProfit: [] } })),
+    ).toBeNull();
+    expect(hasPublicStrategy(makeRecord(10, now, { resolvedAt: null }))).toBe(true);
   });
 
   it("reads latest cards by zset page", async () => {
@@ -199,7 +219,7 @@ describe("publicCardIndex", () => {
     expect(page.entries[0]?.id).toBe("pm-decision:pm:BTC:1");
   });
 
-  it("prunes indexed cards without both direction and closure", async () => {
+  it("prunes indexed cards without a concrete public strategy", async () => {
     const client = __publicCardIndexTestUtils.createMemoryClient();
     const now = Date.UTC(2026, 4, 28, 7, 0, 0);
     const validLong = makeRecord(1, now, { tradeDirection: "long" });
@@ -213,29 +233,72 @@ describe("publicCardIndex", () => {
       tradeDirection: null,
       analystDirection: "neutral",
     });
+    const invalidEntry = makeRecord(6, now + 5000, {
+      tradeDirection: "long",
+      tradePatch: { entryPrice: null },
+    });
     const records = new Map(
-      [validLong, validShort, unresolved, wait, neutral].map((record) => [
+      [validLong, validShort, unresolved, wait, neutral, invalidEntry].map((record) => [
         `claw42:strategy:record-by-id:v1:zh_CN:${encodeURIComponent(record.id)}`,
         record,
       ]),
     );
 
-    for (const record of [validLong, validShort]) {
+    for (const record of [validLong, validShort, unresolved]) {
       await writePublicCardIndexEntry(record, { client });
     }
-    await addRawIndexedEntry(client, unresolved, "long");
     await addRawIndexedEntry(client, wait, "wait");
     await addRawIndexedEntry(client, neutral, null);
+    await addRawIndexedEntry(client, invalidEntry, "long");
 
-    const removed = await prunePublicCardIndexByDirectionalClosure("zh_CN", {
+    const removed = await prunePublicCardIndexByStrategy("zh_CN", {
       client,
       readRecord: async (entry) => records.get(entry.recordKey) ?? null,
     });
     const page = await readPublicCardIndexPage("zh_CN", { page: 1, pageSize: 10, client });
 
     expect(removed).toBe(3);
-    expect(page.totalCount).toBe(2);
-    expect(page.entries.map((entry) => entry.decisionDir).sort()).toEqual(["long", "short"]);
+    expect(page.totalCount).toBe(3);
+    expect(page.entries.map((entry) => entry.id).sort()).toEqual([
+      "pm-decision:pm:BTC:1",
+      "pm-decision:pm:BTC:2",
+      "pm-decision:pm:BTC:3",
+    ]);
+  });
+
+  it("rebuilds the public card index by adding eligible records and removing stale members", async () => {
+    const client = __publicCardIndexTestUtils.createMemoryClient();
+    const now = Date.UTC(2026, 4, 28, 7, 0, 0);
+    const existing = makeRecord(1, now, { tradeDirection: "long" });
+    const added = makeRecord(2, now + 1000, { tradeDirection: "short", resolvedAt: null });
+    const wait = makeRecord(3, now + 2000, { tradeDirection: "wait" });
+    const noTrade = makeRecord(4, now + 3000, { tradeDirection: null, analystDirection: "long" });
+
+    await writePublicCardIndexEntry(existing, { client });
+    await addRawIndexedEntry(client, wait, "wait");
+
+    const result = await rebuildPublicCardIndexFromRecords([existing, added, wait, noTrade], {
+      locale: "zh_CN",
+      client,
+      persistRecord: async () => null,
+    });
+    const page = await readPublicCardIndexPage("zh_CN", { page: 1, pageSize: 10, client });
+
+    expect(result).toMatchObject({
+      ok: true,
+      recordsRead: 4,
+      candidateCount: 2,
+      addedCount: 1,
+      removedCount: 1,
+      kept: 1,
+      alreadyIndexed: 1,
+      skippedNonStrategy: 2,
+      errors: 0,
+    });
+    expect(page.entries.map((entry) => entry.id).sort()).toEqual([
+      "pm-decision:pm:BTC:1",
+      "pm-decision:pm:BTC:2",
+    ]);
   });
 });
 
@@ -243,12 +306,18 @@ type MakeRecordOptions = {
   tradeDirection?: "long" | "short" | "wait" | null;
   analystDirection?: "long" | "short" | "neutral" | "wait";
   resolvedAt?: string | null;
+  tradePatch?: Partial<NonNullable<StrategyDecisionRecord["tradeDecision"]>>;
 };
 
 function makeRecord(
   index: number,
   createdAtMs: number,
-  { tradeDirection = "short", analystDirection = "short", resolvedAt }: MakeRecordOptions = {},
+  {
+    tradeDirection = "short",
+    analystDirection = "short",
+    resolvedAt,
+    tradePatch,
+  }: MakeRecordOptions = {},
 ): StrategyDecisionRecord {
   const id = `pm:BTC:${index}`;
   const createdAt = new Date(createdAtMs).toISOString();
@@ -345,6 +414,7 @@ function makeRecord(
             promptVersion: "simple-pipeline:v1",
             modelProvider: "simple-pipeline",
             severity: "medium",
+            ...tradePatch,
           },
     createdAt,
     evaluationWindowEndsAt: null,

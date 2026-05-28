@@ -45,7 +45,7 @@ describe("decisionRecordStore public card storage failures", () => {
     cleanupPublicCardIndexMock.mockReset().mockResolvedValue({
       removedByAge: 0,
       removedByCap: 0,
-      removedByDirectionalClosure: 0,
+      removedByNonStrategy: 0,
       count: 0,
     });
     vi.spyOn(console, "warn").mockImplementation(() => undefined);

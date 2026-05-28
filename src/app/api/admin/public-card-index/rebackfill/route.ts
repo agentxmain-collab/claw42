@@ -5,6 +5,7 @@ import {
   backfillPublicCardIndexFromRecords,
   buildPublicCardIndexEntry,
   readPublicCardIndexEntries,
+  rebuildPublicCardIndexFromRecords,
   type PublicCardIndexBackfillResult,
 } from "@/lib/watch/publicCardIndex";
 import { normalizeWatchLocale } from "@/lib/watch/locale";
@@ -37,7 +38,47 @@ async function handleRebackfill(request: NextRequest) {
     );
   }
   const dryRun = request.nextUrl.searchParams.get("dryRun") === "1";
+  const action = request.nextUrl.searchParams.get("action") ?? "rebackfill";
+  if (action !== "rebackfill") {
+    if (action !== "rebuild") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "unsupported_action",
+          action,
+          supportedActions: ["rebackfill", "rebuild"],
+        },
+        { status: 400 },
+      );
+    }
+  }
+
   const records = await readAllDecisionRecords(REBACKFILL_RECORD_READ_LIMIT, locale);
+
+  if (action === "rebuild") {
+    const result = await rebuildPublicCardIndexFromRecords(records, { locale, dryRun });
+    return NextResponse.json(
+      {
+        ok: true,
+        locale,
+        action,
+        dryRun,
+        rebuiltCount: result.rebuiltCount,
+        addedCount: result.addedCount,
+        removedCount: result.removedCount,
+        kept: result.kept,
+        alreadyIndexed: result.alreadyIndexed,
+        recordsRead: result.recordsRead,
+        candidateCount: result.candidateCount,
+        skippedNonStrategy: result.skippedNonStrategy,
+        errors: result.errors,
+        result,
+        durationMs: Math.max(0, Date.now() - startedAt),
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const indexedEntries = await readPublicCardIndexEntries(locale);
   const indexedIds = new Set(indexedEntries.map((entry) => entry.id));
   const candidates: StrategyDecisionRecord[] = [];

@@ -207,7 +207,7 @@ describe("MarketAnalysisPanel v10", () => {
 
     expect(html).toContain("AI 团队工作台");
     expect(html).toContain("实时交易决策流");
-    expect(html).toContain("热点");
+    expect(html).not.toContain("cs-stat");
     expect(html).not.toContain("全局分析缓存");
     expect(html).not.toMatch(/分析于\s*\d+\s*分钟前/);
   });
@@ -599,8 +599,8 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain('class="v3-secondary"');
     expect(html).toContain('class="v3-sec-head"');
     expect(html).toContain('class="v3-sec-foot"');
-    expect(html).toContain('class="v3-pulse"');
-    expect(html).toContain("0 人在看 · 0 已跟单");
+    expect(html).not.toContain('class="v3-pulse"');
+    expect(html).not.toContain("0 人在看 · 0 已跟单");
     expect(html).toContain("展开");
     expect(html).toContain("多空双向分析 · 空方占优");
     expect(html).toContain("核心推理");
@@ -647,7 +647,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain("已加载全部 16 张");
   });
 
-  test("counts stats from the symbol-only visible list", () => {
+  test("omits the header counter block from the symbol-only visible list", () => {
     const marketOnlyHtml = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
@@ -695,9 +695,56 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(marketOnlyHtml).toContain("<span>热点</span><b>0</b>");
-    expect(symbolHtml).toContain("<span>热点</span><b>0</b>");
-    expect(symbolHtml).toContain("<span>起步</span><b>0</b>");
+    expect(marketOnlyHtml).not.toContain("cs-head-right");
+    expect(symbolHtml).not.toContain("cs-head-right");
+    expect(symbolHtml).not.toContain("cs-stat");
+  });
+
+  test("marks unresolved public strategies as tracking and resolved strategies as completed", () => {
+    const trackingHtml = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          topicFixture({
+            id: "tracking-btc",
+            candidateType: "symbol",
+            candidateKey: "BTC",
+            title: "BTC 实时行情分析",
+            symbol: "BTC",
+            score: 1,
+            lastUpdatedAt: 1,
+            executable: true,
+          }),
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+    const completedHtml = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "completed-btc",
+              candidateType: "symbol",
+              candidateKey: "BTC",
+              title: "BTC 实时行情分析",
+              symbol: "BTC",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            resolvedAt: "2026-05-28T07:30:00.000Z",
+          } as DispatchTopic & { resolvedAt: string },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(trackingHtml).toContain("strategy-lifecycle-badge tracking");
+    expect(trackingHtml).toContain("追踪");
+    expect(completedHtml).toContain("strategy-lifecycle-badge completed");
+    expect(completedHtml).toContain("完成");
   });
 
   test("uses ranking order for visible symbol topics instead of render index", () => {

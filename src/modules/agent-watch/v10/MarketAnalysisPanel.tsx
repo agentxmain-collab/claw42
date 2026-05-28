@@ -12,7 +12,6 @@ import {
   normalizeCandidateType,
   type CandidateType,
 } from "@/lib/watch/decisionCandidate";
-import { IntensityBar } from "../v9/IntensityBar";
 import { TopicBody } from "../v9/TopicBody";
 import type {
   DispatchFreshnessState,
@@ -27,15 +26,6 @@ import { InlineAvatarSvg, type InlineAvatarName } from "./InlineAvatarSvg";
 import { v9AgentToV10Role } from "./staticContent";
 
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-function ChatShellStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="cs-stat">
-      <span>{label}</span>
-      <b>{value}</b>
-    </div>
-  );
-}
 
 function MarketPanelAvatar({ name, className }: { name: InlineAvatarName; className: string }) {
   return (
@@ -286,6 +276,15 @@ function TopicCandidateBadge({ topic, dict }: { topic: DispatchTopic; dict: Disp
   );
 }
 
+function StrategyLifecycleBadge({ topic }: { topic: DispatchTopic }) {
+  const completed = Boolean((topic as DispatchTopic & { resolvedAt?: string | null }).resolvedAt);
+  return (
+    <span className={["strategy-lifecycle-badge", completed ? "completed" : "tracking"].join(" ")}>
+      {completed ? "完成" : "追踪"}
+    </span>
+  );
+}
+
 function isStaleOrExpired(topic: DispatchTopic) {
   if (shouldBypassFreshnessForTrade(topic.strategy.action)) return false;
   return topic.freshnessStatus?.level === "stale" || topic.freshnessStatus?.level === "expired";
@@ -346,6 +345,7 @@ function TopicHeadV10({
       />
       <div className="topic-eyebrow" aria-live={topic.status === "active" ? "polite" : "off"}>
         <span className="live-tag">{liveLabel}</span>
+        <StrategyLifecycleBadge topic={topic} />
         <TopicCandidateBadge topic={topic} dict={dict} />
         <TopicRankingInline topic={topic} />
         {freshnessAge ? (
@@ -370,7 +370,6 @@ function TopicHeadV10({
         </a>
       ) : null}
       <div className="topic-meta-row">
-        <IntensityBar value={topic.intensity} />
         <div className="trigger">
           <span className="trigger-pill ticker">{topic.trigger.ticker}</span>
           <span className="trigger-text">{topic.trigger.text}</span>
@@ -628,10 +627,6 @@ function TopicStrategyV10({
   });
   const renderBlockedTradeCTA = executableSymbol && !canRenderCoinWTrade;
   const renderStaleReason = renderBlockedTradeCTA && isStaleOrExpired(topic);
-  const followStatus =
-    topic.status === "pending"
-      ? `${strategy.follow.watchCount} ${dict.market.watchReminder}`
-      : `${strategy.follow.watchCount} ${dict.market.watchCount} · ${strategy.follow.followCount} ${dict.market.followed}`;
   const coinwFuturesUrl =
     isObservationMode || !canRenderCoinWTrade
       ? buildCoinWFuturesTradeUrl({ coinwPair: null })
@@ -716,8 +711,6 @@ function TopicStrategyV10({
               ) : null}
               <span className="sep">·</span>
               <span className="sym">{strategy.ticker}</span>
-              <span className="sep">·</span>
-              <span>激烈度 {topic.intensity}/5</span>
             </div>
           </div>
 
@@ -847,10 +840,6 @@ function TopicStrategyV10({
                 </span>
               </div>
               <div className="v3-sec-foot">
-                <span className="v3-sec-meta">
-                  <i className="v3-pulse" aria-hidden="true" />
-                  {followStatus}
-                </span>
                 <span className="v3-sec-cta">{collapsed ? "展开 →" : "收起 →"}</span>
               </div>
             </button>
@@ -951,12 +940,6 @@ export function MarketAnalysisPanel({
   const paginationLoading = pagination?.loading ?? false;
   const paginationOnLoadMore = pagination?.onLoadMore;
   const topicOrderSignature = resolvedTopics.map(topicDisplayIdentity).join("|");
-  const doneCount = resolvedTopics.filter((topic) => topic.status === "done").length;
-  const activeCount = resolvedTopics.filter((topic) => topic.status === "active").length;
-  const pendingCount = resolvedTopics.filter((topic) => topic.status === "pending").length;
-  const hotspotCount = resolvedTopics.filter(
-    (topic) => topicCandidateType(topic) === "hotspot",
-  ).length;
   const freshnessText = formatFreshnessText(freshness, dict);
 
   useEffect(() => {
@@ -1006,15 +989,6 @@ export function MarketAnalysisPanel({
               <div className="cs-sub">{dict.market.subtitle}</div>
               {freshnessText ? <div className="cs-freshness">{freshnessText}</div> : null}
             </div>
-          </div>
-          <div className="cs-head-right" aria-label={dict.market.statsAriaLabel}>
-            <ChatShellStat label={dict.market.hot} value={hotspotCount} />
-            <div className="cs-divider" />
-            <ChatShellStat label={dict.market.closed} value={doneCount} />
-            <div className="cs-divider" />
-            <ChatShellStat label={dict.market.debating} value={activeCount} />
-            <div className="cs-divider" />
-            <ChatShellStat label={dict.market.started} value={pendingCount} />
           </div>
         </div>
 

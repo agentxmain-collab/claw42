@@ -35,7 +35,7 @@ describe("/api/admin/public-card-index/backfill", () => {
       indexCountAfter: options.dryRun ? 0 : 50,
       removedByAge: 0,
       removedByCap: 0,
-      removedByDirectionalClosure: 0,
+      removedByNonStrategy: 0,
       durationMs: 1,
     }));
   });

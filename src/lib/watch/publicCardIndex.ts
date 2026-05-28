@@ -25,6 +25,7 @@ export interface PublicCardIndexEntry {
   decisionDir: "long" | "short";
   newsHeadline: string | null;
   createdAt: string;
+  resolvedAt?: string | null;
   recordKey: string;
   evidenceId: string | null;
 }
@@ -63,7 +64,25 @@ export interface PublicCardIndexBackfillResult {
   indexCountAfter: number;
   removedByAge: number;
   removedByCap: number;
-  removedByDirectionalClosure: number;
+  removedByNonStrategy: number;
+  durationMs: number;
+}
+
+export interface PublicCardIndexRebuildResult {
+  ok: true;
+  locale: Locale;
+  dryRun: boolean;
+  recordsRead: number;
+  candidateCount: number;
+  rebuiltCount: number;
+  addedCount: number;
+  removedCount: number;
+  kept: number;
+  alreadyIndexed: number;
+  skippedNonStrategy: number;
+  invalidCreatedAt: number;
+  errors: number;
+  indexCountAfter: number;
   durationMs: number;
 }
 
@@ -98,8 +117,11 @@ export function publicCardIndexWriteFailureLogKey(locale: Locale) {
 export function buildPublicCardIndexEntry(
   record: StrategyDecisionRecord,
 ): PublicCardIndexEntry | null {
-  const decisionDir = directionalDecisionFromRecord(record);
-  if (!decisionDir || !record.resolvedAt) return null;
+  const decision = record.tradeDecision;
+  if (!hasPublicStrategy(record) || !decision || !isDirectionalDecision(decision.direction)) {
+    return null;
+  }
+  const decisionDir = decision.direction;
   const event = projectDecisionRecordToPublicEvent(record);
   if (!event || event.payload.kind !== "pm_decision") return null;
   const evidenceId = event.evidenceIds[0] ?? null;
@@ -109,6 +131,7 @@ export function buildPublicCardIndexEntry(
     decisionDir,
     newsHeadline: null,
     createdAt: record.createdAt,
+    resolvedAt: record.resolvedAt ?? null,
     recordKey: decisionRecordDirectKey(record.locale, record.id),
     evidenceId,
   };
@@ -143,15 +166,15 @@ export async function cleanupPublicCardIndex(
   } = {},
 ) {
   if (!hasKvConfig(client)) {
-    return { removedByAge: 0, removedByCap: 0, removedByDirectionalClosure: 0, count: 0 };
+    return { removedByAge: 0, removedByCap: 0, removedByNonStrategy: 0, count: 0 };
   }
   const key = publicCardIndexKey(locale);
   const cutoff = now - PUBLIC_CARD_RETENTION_MS;
   const removedByAge = await client.zremrangebyscore(key, 0, cutoff);
-  const removedByDirectionalClosure =
+  const removedByNonStrategy =
     isMemoryClient(client) && readRecord === readIndexedDecisionRecord
       ? 0
-      : await prunePublicCardIndexByDirectionalClosure(locale, {
+      : await prunePublicCardIndexByStrategy(locale, {
           client,
           readRecord,
         });
@@ -161,12 +184,12 @@ export async function cleanupPublicCardIndex(
   return {
     removedByAge,
     removedByCap,
-    removedByDirectionalClosure,
+    removedByNonStrategy,
     count: count - removedByCap,
   };
 }
 
-export async function prunePublicCardIndexByDirectionalClosure(
+export async function prunePublicCardIndexByStrategy(
   locale: Locale,
   {
     client = kv as PublicCardIndexClient,
@@ -189,7 +212,7 @@ export async function prunePublicCardIndexByDirectionalClosure(
     }
 
     const record = await readRecord(entry);
-    if (!record || !isClosedDirectionalRecord(record)) {
+    if (!record || !hasPublicStrategy(record)) {
       removed += await client.zrem(key, serializePublicCardIndexMember(member));
     }
   }
@@ -352,7 +375,7 @@ export async function backfillPublicCardIndexFromRecords(
     ? {
         removedByAge: 0,
         removedByCap: 0,
-        removedByDirectionalClosure: 0,
+        removedByNonStrategy: 0,
         count: await safeIndexCount(normalizedLocale, client),
       }
     : await cleanupPublicCardIndex(normalizedLocale, { client, now });
@@ -367,28 +390,138 @@ export async function backfillPublicCardIndexFromRecords(
     indexCountAfter: cleanup.count,
     removedByAge: cleanup.removedByAge,
     removedByCap: cleanup.removedByCap,
-    removedByDirectionalClosure: cleanup.removedByDirectionalClosure,
+    removedByNonStrategy: cleanup.removedByNonStrategy,
     durationMs: Math.max(0, Date.now() - startedAt),
   };
 }
 
-function directionalDecisionFromRecord(record: StrategyDecisionRecord): "long" | "short" | null {
-  const tradeDirection = record.tradeDecision?.direction;
-  if (isDirectionalDecision(tradeDirection)) return tradeDirection;
-  if (record.tradeDecision) return null;
-  const analystDirection = analystDirectionFromRecord(record);
-  return isDirectionalDecision(analystDirection) ? analystDirection : null;
+export async function rebuildPublicCardIndexFromRecords(
+  records: StrategyDecisionRecord[],
+  {
+    locale,
+    dryRun = false,
+    client = kv as PublicCardIndexClient,
+    persistRecord = persistDecisionRecordDirect,
+  }: {
+    locale: Locale;
+    dryRun?: boolean;
+    client?: PublicCardIndexClient;
+    persistRecord?: (record: StrategyDecisionRecord) => Promise<unknown>;
+  },
+): Promise<PublicCardIndexRebuildResult> {
+  const startedAt = Date.now();
+  const normalizedLocale = normalizeWatchLocale(locale);
+  const key = publicCardIndexKey(normalizedLocale);
+  const currentMembers = hasKvConfig(client) ? await client.zrange<unknown[]>(key, 0, -1) : [];
+  const currentById = new Map<string, unknown>();
+  const invalidMembers: unknown[] = [];
+
+  for (const member of currentMembers) {
+    const entry = parsePublicCardIndexEntry(member);
+    if (isPublicCardIndexEntry(entry)) {
+      currentById.set(entry.id, member);
+    } else {
+      invalidMembers.push(member);
+    }
+  }
+
+  const eligible = new Map<
+    string,
+    { record: StrategyDecisionRecord; entry: PublicCardIndexEntry; score: number }
+  >();
+  let skippedNonStrategy = 0;
+  let invalidCreatedAt = 0;
+  let errors = 0;
+
+  for (const record of records) {
+    if (normalizeWatchLocale(record.locale) !== normalizedLocale) continue;
+    const entry = buildPublicCardIndexEntry(record);
+    if (!entry) {
+      skippedNonStrategy += 1;
+      continue;
+    }
+    const score = Date.parse(entry.createdAt);
+    if (!Number.isFinite(score)) {
+      invalidCreatedAt += 1;
+      continue;
+    }
+    eligible.set(entry.id, { record, entry, score });
+  }
+
+  let removedCount = invalidMembers.length;
+  let addedCount = 0;
+  let alreadyIndexed = 0;
+
+  if (!dryRun) {
+    for (const member of invalidMembers) {
+      try {
+        await client.zrem(key, serializePublicCardIndexMember(member));
+      } catch {
+        errors += 1;
+      }
+    }
+  }
+
+  for (const [id, member] of Array.from(currentById.entries())) {
+    if (eligible.has(id)) {
+      alreadyIndexed += 1;
+      continue;
+    }
+    removedCount += 1;
+    if (!dryRun) {
+      try {
+        await client.zrem(key, serializePublicCardIndexMember(member));
+      } catch {
+        errors += 1;
+      }
+    }
+  }
+
+  for (const [id, candidate] of Array.from(eligible.entries())) {
+    if (currentById.has(id)) continue;
+    addedCount += 1;
+    if (!dryRun) {
+      try {
+        await persistRecord(candidate.record);
+        await client.zadd(key, {
+          score: candidate.score,
+          member: JSON.stringify(candidate.entry),
+        });
+      } catch {
+        errors += 1;
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    locale: normalizedLocale,
+    dryRun,
+    recordsRead: records.length,
+    candidateCount: eligible.size,
+    rebuiltCount: addedCount + removedCount,
+    addedCount,
+    removedCount,
+    kept: alreadyIndexed,
+    alreadyIndexed,
+    skippedNonStrategy,
+    invalidCreatedAt,
+    errors,
+    indexCountAfter: dryRun ? currentById.size : await safeIndexCount(normalizedLocale, client),
+    durationMs: Math.max(0, Date.now() - startedAt),
+  };
 }
 
-function isClosedDirectionalRecord(record: StrategyDecisionRecord) {
-  return Boolean(record.resolvedAt) && Boolean(directionalDecisionFromRecord(record));
-}
-
-function analystDirectionFromRecord(record: StrategyDecisionRecord) {
-  const directional = record.analystInputs
-    .map((input) => input.direction)
-    .find((direction) => direction === "long" || direction === "short");
-  return directional ?? record.analystInputs[0]?.direction ?? null;
+export function hasPublicStrategy(record: StrategyDecisionRecord) {
+  const decision = record.tradeDecision;
+  return Boolean(
+    decision &&
+    isDirectionalDecision(decision.direction) &&
+    Number.isFinite(decision.entryPrice) &&
+    Number.isFinite(decision.stopLoss) &&
+    Array.isArray(decision.takeProfit) &&
+    decision.takeProfit.some((value) => Number.isFinite(value)),
+  );
 }
 
 function isDirectionalDecision(value: unknown): value is "long" | "short" {

@@ -1182,6 +1182,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       displayTitle: group.displayTitle,
       symbol: group.symbol,
       lastUpdatedAt: group.latestAt,
+      resolvedAt: latest.payload.resolution?.resolvedAt ?? null,
       freshnessStatus: latest.payload.freshnessStatus,
       execution: {
         executable,
