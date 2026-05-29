@@ -15,6 +15,8 @@
   --radius-card: 16px;
   --radius-panel: 24px;
   --content-max: 1240px;
+  --coinw-shell-header-height: 72px;
+  --hero-header-breathing-room: 36px;
   --bot-eye-blink-name: eyeBlink;
   --font-display:
     var(--font-geist-sans), "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui,
@@ -26,7 +28,7 @@
   max-width: var(--content-max);
   min-height: 100vh;
   margin: 0 auto;
-  padding: 24px 48px 60px;
+  padding: calc(var(--coinw-shell-header-height) + var(--hero-header-breathing-room)) 48px 60px;
   color: var(--fg);
   font-family: var(--font-display);
   font-size: 14px;
@@ -2967,7 +2969,7 @@
 
 @media (max-width: 880px) {
   .dispatchConsoleV10 {
-    padding: 24px 18px 48px;
+    padding: calc(var(--coinw-shell-header-height) + 28px) 18px 48px;
   }
 
   .dispatchConsoleV10 :global(.hero-right) {

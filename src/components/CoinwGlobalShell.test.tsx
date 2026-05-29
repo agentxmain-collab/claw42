@@ -35,7 +35,7 @@ describe("CoinW global shell", () => {
   test("renders the CoinW-style footer truth and image slots", () => {
     const html = renderToStaticMarkup(<CoinwGlobalFooter />);
 
-    expect(html).toContain("CopyRight © 2017 - 2023 CoinW.com. All Rights Reserved.");
+    expect(html).toContain("CopyRight © 2013 - 2026 CoinW.com. All Rights Reserved.");
     expect(html).toContain("/images/coinw/coinw-logo-wordmark.svg");
     expect(html).toContain('data-coinw-shell="footer"');
     expect(html).toContain("Company");
@@ -47,7 +47,7 @@ describe("CoinW global shell", () => {
     expect(html).toContain('data-coinw-shell="footer-download"');
     expect(html).toContain("/images/coinw/social-tiktok.svg");
     expect(html).toContain("/images/coinw/lang-english.svg");
-    expect(html).not.toContain("© 2013-2026");
+    expect(html).not.toContain("CopyRight © 2017 - 2023");
   });
 
   test("keeps Figma-derived CoinW shell vector assets present as real SVG files", () => {

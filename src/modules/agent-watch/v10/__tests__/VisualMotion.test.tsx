@@ -114,6 +114,17 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(css).not.toContain(".topic-eyebrow .topic-ranking-label");
   });
 
+  test("keeps the hero copy below the fixed CoinW shell header", () => {
+    expect(css).toContain("--coinw-shell-header-height: 72px");
+    expect(css).toContain("--hero-header-breathing-room: 36px");
+    expect(css).toMatch(
+      /padding:\s*calc\(var\(--coinw-shell-header-height\) \+ var\(--hero-header-breathing-room\)\) 48px 60px;/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 880px\)[\s\S]*padding:\s*calc\(var\(--coinw-shell-header-height\) \+ 28px\) 18px 48px;/,
+    );
+  });
+
   test("makes six flow stage cards visibly react on hover", () => {
     const hoverBlock = css.match(
       /\.dispatchConsoleV10 :global\(\.fstage4:hover\) \{([\s\S]*?)\}/,

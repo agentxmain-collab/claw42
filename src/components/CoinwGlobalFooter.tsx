@@ -3,7 +3,7 @@ import React from "react";
 
 const COINW_BASE = "https://www.coinw.com/en_US";
 const COINW_ROOT = "https://www.coinw.com";
-const FOOTER_COPYRIGHT = "CopyRight © 2017 - 2023 CoinW.com. All Rights Reserved.";
+const FOOTER_COPYRIGHT = "CopyRight © 2013 - 2026 CoinW.com. All Rights Reserved.";
 
 const coinwFontFamily =
   'var(--font-satoshi), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
