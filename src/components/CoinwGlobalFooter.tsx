@@ -1,95 +1,73 @@
+/* eslint-disable @next/next/no-img-element */
 import React from "react";
-import Image from "next/image";
 
-const COINW_BASE = "https://www.coinw.com/zh_CN";
+const COINW_BASE = "https://www.coinw.com/en_US";
 const COINW_ROOT = "https://www.coinw.com";
-const COINW_LOGO_ICON = "/images/coinw/coinw-logo.svg";
-const FOOTER_COPYRIGHT = "© 2013-2026 coinw.com ALL Rights Reserved";
+const FOOTER_COPYRIGHT = "CopyRight © 2017 - 2023 CoinW.com. All Rights Reserved.";
+
+const coinwFontFamily =
+  'var(--font-satoshi), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 const footerColumns = [
   {
-    title: "学习",
+    title: "Company",
     links: [
-      ["学院", `${COINW_BASE}/academy`],
-      ["帮助中心", `${COINW_BASE}/help-center/`],
-      ["比特币价格", `${COINW_BASE}/price/btc`],
-      ["加密货币今日价格", `${COINW_BASE}/price`],
+      ["About us", `${COINW_BASE}/about-us`],
+      ["News", `${COINW_BASE}/news`],
+      ["CoinW verity", `${COINW_BASE}/verification`],
+      ["Fee rate", `${COINW_BASE}/fees`],
+      ["Risk statement", `${COINW_BASE}/risk`],
     ],
   },
   {
-    title: "服务",
+    title: "Products",
     links: [
-      ["免费上币申请", `${COINW_ROOT}/coin-apply`],
-      [
-        "上币条款",
-        `${COINW_BASE}/help-center/faq/official-updates/2025-10-13/terms-and-conditions-of-token-listing/7032`,
-      ],
-      ["成为商家", `${COINW_ROOT}/p2p-trading/merchant-program`],
-      [
-        "VIP权益",
-        `${COINW_BASE}/announcement/maintenance-updates/2025-07-03/coinw-launches-new-spot-trading-fee-stru/6178`,
-      ],
-      ["API支持", `${COINW_ROOT}/api-doc/common/introduction`],
-      ["邀请好友", `${COINW_ROOT}/referral`],
-      ["赏金计划", "https://hackenproof.com/coinw/coinw-web-and-mobile"],
-      ["加盟商计划", `${COINW_BASE}/affiliate`],
-      ["建议与反馈", `${COINW_ROOT}/submit-feedback`],
+      ["Buy crypto", `${COINW_BASE}/p2p-trading/personalized/buy`],
+      ["Spot trading", `${COINW_BASE}/spot/btcusdt`],
+      ["ETF trading", `${COINW_BASE}/spot?type=etf`],
+      ["Futures", `${COINW_BASE}/futures/usdt/btcusdt`],
+      ["Copy-trading", `${COINW_BASE}/copy-trading/futures`, "New"],
+      ["CoinW earn", `${COINW_BASE}/earn/crypto-savings`],
+      ["CoinW ventures", `${COINW_BASE}/ventures`],
     ],
   },
   {
-    title: "产品",
+    title: "Services",
     links: [
-      ["买币", `${COINW_ROOT}/p2p-trading/personalized/buy`],
-      ["币币交易", `${COINW_ROOT}/spot`],
-      ["ETF交易", `${COINW_ROOT}/spot?type=etf`],
-      ["永续合约", `${COINW_ROOT}/futures/usdt`],
-      ["跟单交易", `${COINW_ROOT}/followup`],
-      ["赚币", `${COINW_ROOT}/earn/crypto-savings`],
-      ["APP下载", `${COINW_ROOT}/install-app`],
-      ["大宗交易", `${COINW_ROOT}/p2p-trading/otc`],
-      ["Launchpad", `${COINW_ROOT}/earn/launchdiscount`],
-      ["PropW", "https://www.propw.com/zh_CN"],
-      ["CoinW Card", `${COINW_BASE}/crypto-card`],
+      ["Listing application", `${COINW_BASE}/listing`],
+      ["T&C of Listing", `${COINW_BASE}/listing-terms`],
+      ["Become the merchant", `${COINW_BASE}/merchant`],
+      ["VIP Program", `${COINW_BASE}/vip`],
+      ["APIs", `${COINW_ROOT}/api-doc/common/introduction`],
+      ["Invite Friends", `${COINW_BASE}/referral`],
+      ["Bug Bounty", "https://hackenproof.com/coinw/coinw-web-and-mobile"],
     ],
   },
   {
-    title: "我们",
+    title: "Learn",
     links: [
-      ["关于我们", `${COINW_BASE}/about-us`],
-      ["官方验证通道", `${COINW_ROOT}/verification`],
-      ["费率说明", `${COINW_ROOT}/fees`],
-      [
-        "法律声明",
-        `${COINW_BASE}/help-center/faq/official-updates/2025-09-15/legal-statement/6585`,
-      ],
-      [
-        "风险告知书",
-        `${COINW_BASE}/help-center/announcement-center/product-updates/productupdates/2022-11-13/risk-disclosure-statement/2560`,
-      ],
-      ["隐私保护", `${COINW_BASE}/announcement/product-updates/2022-08-10/隐私政策和声明/2559`],
-      ["安全能力", `${COINW_BASE}/about-us/security-and-protection`],
-      ["用户协议", `${COINW_BASE}/help-center/faq/official-updates/2020-04-15/user-agreement/6912`],
-      ["储备金证明", `${COINW_ROOT}/proof-of-reserves`],
+      ["Novice Camp", `${COINW_BASE}/academy`],
+      ["Futures Academy", `${COINW_BASE}/academy/futures`],
+      ["Help Center", `${COINW_BASE}/support`],
+      ["Crypto Introduction", `${COINW_BASE}/markets`],
     ],
   },
 ] as const;
 
 const storeItems = [
-  ["App Store", `${COINW_ROOT}/install-app`],
-  ["Google Play", `${COINW_ROOT}/install-app`],
+  ["App Store", "/images/coinw/badge-appstore.png", `${COINW_BASE}/download`],
+  ["Google Play", "/images/coinw/badge-googleplay.png", `${COINW_BASE}/download`],
 ] as const;
 
 const socialItems = [
-  ["推特", `${COINW_ROOT}/connect?activeId=0`],
-  ["电报", `${COINW_ROOT}/connect?activeId=1`],
-  ["脸书", `${COINW_ROOT}/connect?activeId=2`],
-  ["Discord", `${COINW_ROOT}/connect?activeId=3`],
-  ["Instagram", `${COINW_ROOT}/connect?activeId=4`],
-  ["•••", `${COINW_ROOT}/connect?activeId=2`],
+  ["Facebook", "/images/coinw/social-facebook.png", `${COINW_ROOT}/connect?activeId=2`],
+  ["X", "/images/coinw/social-x.png", `${COINW_ROOT}/connect?activeId=0`],
+  ["Instagram", "/images/coinw/social-instagram.png", `${COINW_ROOT}/connect?activeId=4`],
+  ["YouTube", "/images/coinw/social-youtube.png", `${COINW_ROOT}/connect?activeId=5`],
+  ["Google", "/images/coinw/social-google.png", `${COINW_ROOT}/connect?activeId=6`],
+  ["LinkedIn", "/images/coinw/social-linkedin.png", `${COINW_ROOT}/connect?activeId=7`],
+  ["TikTok", "/images/coinw/social-tiktok.png", `${COINW_ROOT}/connect?activeId=8`],
 ] as const;
-
-// Round 6 rebuild: footer keeps CoinW live-site structure and public links,
-// but social/app-store vector assets remain in evidence/round6-asset-gap-list.md.
 
 function externalLinkProps(label: string) {
   return {
@@ -99,57 +77,57 @@ function externalLinkProps(label: string) {
   };
 }
 
-function fontFamily(font = "Satoshi") {
-  return `${font}, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+function NewBadge() {
+  return (
+    <span className="ml-2 inline-flex h-5 items-center justify-center rounded-full bg-[#D1FF55] px-2 text-[12px] font-medium leading-5 text-black">
+      New
+    </span>
+  );
 }
 
 export function CoinwGlobalFooter() {
   return (
     <footer
       data-coinw-shell="footer"
-      className="flex min-h-[600px] flex-col bg-[#1A1A1A] text-white"
-      style={{ fontFamily: fontFamily() }}
+      className="flex min-h-[650px] flex-col bg-[#1A1A1A] text-white"
+      style={{ fontFamily: coinwFontFamily }}
     >
-      <div className="flex w-full flex-col gap-8 px-6 py-12 md:px-[90px] md:py-16">
+      <div className="flex w-full flex-col gap-12 px-6 py-16 md:px-[90px]">
         <div
           data-coinw-shell="footer-columns"
           className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.15fr_repeat(4,1fr)]"
         >
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-7">
             <a
               data-coinw-shell="footer-logo"
               href={COINW_BASE}
-              className="flex h-[38px] w-[141px] items-center gap-2 transition-opacity hover:opacity-80"
+              className="flex h-[38px] w-[141px] items-center transition-opacity hover:opacity-80"
               {...externalLinkProps("CoinW")}
             >
-              <Image
-                src={COINW_LOGO_ICON}
-                alt=""
-                width={24}
-                height={24}
-                className="h-6 w-6 shrink-0"
-                aria-hidden="true"
-                unoptimized
+              <img
+                src="/images/coinw/logo-white.png"
+                alt="CoinW"
+                width={141}
+                height={38}
+                className="h-[38px] w-[141px] object-contain"
               />
-              <span
-                className="text-[29px] font-black leading-[1.08] tracking-[-0.06px] text-white"
-                style={{
-                  fontFamily: fontFamily(),
-                }}
-              >
-                CoinW
-              </span>
             </a>
 
             <div className="flex flex-col gap-3">
-              {storeItems.map(([label, href]) => (
+              {storeItems.map(([label, src, href]) => (
                 <a
                   key={label}
                   href={href}
-                  className="inline-flex h-12 w-40 items-center justify-center rounded-2xl bg-[#5227FF] px-5 text-sm font-bold leading-5 tracking-[0.1px] text-white transition-opacity hover:opacity-85"
+                  className="inline-flex h-12 w-40 items-center justify-center transition-opacity hover:opacity-85"
                   {...externalLinkProps(label)}
                 >
-                  {label}
+                  <img
+                    src={src}
+                    alt={label}
+                    width={160}
+                    height={48}
+                    className="h-12 w-40 rounded-2xl object-contain"
+                  />
                 </a>
               ))}
             </div>
@@ -160,27 +138,42 @@ export function CoinwGlobalFooter() {
               <h2
                 data-coinw-shell="footer-title"
                 className="mb-6 text-base font-bold leading-6 tracking-[0.15px] text-white"
-                style={{ fontFamily: fontFamily() }}
+                style={{ fontFamily: coinwFontFamily }}
               >
                 {column.title}
               </h2>
               <ul className="flex flex-col gap-3">
-                {column.links.map(([label, href]) => (
+                {column.links.map(([label, href, badge]) => (
                   <li key={label}>
                     <a
                       data-coinw-shell="footer-link"
                       href={href}
-                      className="text-base font-normal leading-6 tracking-[0.15px] text-[#A6A6A6] transition-opacity hover:opacity-75"
-                      style={{ fontFamily: fontFamily() }}
+                      className="inline-flex items-center text-base font-normal leading-6 tracking-[0.15px] text-[#A6A6A6] transition-opacity hover:opacity-75"
+                      style={{ fontFamily: coinwFontFamily }}
                       {...externalLinkProps(label)}
                     >
                       {label}
+                      {badge ? <NewBadge /> : null}
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
+        </div>
+
+        <div
+          data-coinw-shell="footer-disclaimer"
+          className="mx-auto max-w-[760px] text-center text-sm leading-5 tracking-[0.1px]"
+        >
+          <p className="text-[#A6A6A6]">
+            <span className="font-medium text-[#6C4FFF]">Disclaimer:</span> Cryptocurrency trading
+            is subject to market risks.
+          </p>
+          <p className="mt-2 text-[#A6A6A6]">
+            Please trade responsibly and ensure you fully understand the risks before making any
+            investment decisions.
+          </p>
         </div>
 
         <div aria-hidden="true" className="h-px bg-white/10" />
@@ -193,23 +186,35 @@ export function CoinwGlobalFooter() {
             {FOOTER_COPYRIGHT}
           </p>
           <div className="flex flex-wrap items-center gap-6">
-            {socialItems.map(([label, href]) => (
+            {socialItems.map(([label, src, href]) => (
               <a
                 key={label}
                 href={href}
-                className="inline-flex h-[46px] w-[46px] items-center justify-center rounded-full border border-white text-xs font-bold leading-none text-white transition-opacity hover:opacity-75"
+                className="inline-flex h-[46px] w-[46px] items-center justify-center rounded-full border border-white transition-opacity hover:opacity-75"
                 {...externalLinkProps(label)}
               >
-                {label}
+                <img
+                  src={src}
+                  alt={label}
+                  width={46}
+                  height={46}
+                  className="h-[46px] w-[46px] rounded-full object-contain"
+                />
               </a>
             ))}
             <a
               href={COINW_BASE}
               data-coinw-shell="footer-language"
-              className="inline-flex h-12 min-w-[124px] items-center justify-center rounded-xl bg-white/10 px-6 text-sm font-bold leading-5 tracking-[0.1px] text-white transition-opacity hover:opacity-75"
-              {...externalLinkProps("简体中文")}
+              className="inline-flex h-12 w-[124px] items-center justify-center transition-opacity hover:opacity-75"
+              {...externalLinkProps("English")}
             >
-              简体中文
+              <img
+                src="/images/coinw/lang-english.png"
+                alt="English"
+                width={124}
+                height={48}
+                className="h-12 w-[124px] rounded-xl object-contain"
+              />
             </a>
           </div>
         </div>
