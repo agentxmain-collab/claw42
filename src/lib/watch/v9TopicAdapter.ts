@@ -976,7 +976,9 @@ function makeStrategy(
   const actionLabel =
     decision.direction === "wait"
       ? "WAIT"
-      : `${decision.direction.toUpperCase()} ${Math.round(decision.positionSizing * 100)}%`;
+      : `${decision.direction.toUpperCase()} ${
+          dispatchDict(group.locale).market.positionSizeLabel
+        } ${Math.round(decision.positionSizing * 100)}%`;
 
   return {
     mode: "trade",

@@ -354,7 +354,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       },
       strategy: {
         action: "short",
-        actionLabel: "SHORT 6%",
+        actionLabel: "SHORT 建议仓位 6%",
         entry: "80,300 - 80,700",
         stopLoss: "81,200",
         takeProfit: "79,000 / 78,000",
@@ -922,10 +922,21 @@ describe("mapPublicTimelineEventsToTopics", () => {
       ["done", "done", "done", "done", "final", "pending"],
     ]);
     expect(topics.map((topic) => topic.strategy.actionLabel)).toEqual([
-      "LONG 8%",
-      "SHORT 8%",
+      "LONG 建议仓位 8%",
+      "SHORT 建议仓位 8%",
       "WAIT",
     ]);
+  });
+
+  it("localizes the trade action position-size label for English topics", () => {
+    const [topic] = mapTopics({
+      events: [pmDecision({ locale: "en_US" })],
+      evidenceMap: { ev_1: evidence },
+      locale: "en_US",
+      now,
+    });
+
+    expect(topic.strategy.actionLabel).toBe("SHORT Suggested size 6%");
   });
 
   it("marks incomplete PM decisions with rationale as active analysis", () => {

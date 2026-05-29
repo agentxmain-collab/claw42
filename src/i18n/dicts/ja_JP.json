@@ -705,6 +705,7 @@
         "entry": "Entry",
         "stopLoss": "Stop",
         "takeProfit": "Target",
+        "positionSizeLabel": "推奨ポジション",
         "watchReminder": "watch alerts",
         "watchCount": "watching",
         "followed": "followed",

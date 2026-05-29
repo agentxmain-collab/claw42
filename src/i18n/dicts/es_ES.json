@@ -705,6 +705,7 @@
         "entry": "Entry",
         "stopLoss": "Stop",
         "takeProfit": "Target",
+        "positionSizeLabel": "Tamaño sugerido",
         "watchReminder": "watch alerts",
         "watchCount": "watching",
         "followed": "followed",

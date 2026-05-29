@@ -705,6 +705,7 @@
         "entry": "入场",
         "stopLoss": "止损",
         "takeProfit": "止盈",
+        "positionSizeLabel": "建議倉位",
         "watchReminder": "人订阅提醒",
         "watchCount": "人在看",
         "followed": "已跟單",

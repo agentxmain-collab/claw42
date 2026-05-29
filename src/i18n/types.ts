@@ -288,6 +288,7 @@ export type DispatchV10Dict = {
     entry: string;
     stopLoss: string;
     takeProfit: string;
+    positionSizeLabel: string;
     observationSummaryLabel: string;
     coinwNavigate: string;
     staleReason: string;
