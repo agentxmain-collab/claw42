@@ -1187,7 +1187,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       execution: {
         executable,
         coinwPair,
-        tradeUrl: buildCoinWFuturesTradeUrl({ coinwPair }),
+        tradeUrl: buildCoinWFuturesTradeUrl({ coinwPair, locale: ctx.locale }),
         watchOnly: !executable,
         watchOnlyReason: symbolMapping.execution.watchOnlyReason,
       },

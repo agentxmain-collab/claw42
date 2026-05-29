@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildCoinWFuturesTradeUrl, normalizeCoinWFuturesPair } from "@/lib/coinw/futuresLinks";
+import {
+  buildCoinWFuturesTradeUrl,
+  normalizeCoinWFuturesLocale,
+  normalizeCoinWFuturesPair,
+} from "@/lib/coinw/futuresLinks";
 
 describe("CoinW futures links", () => {
   it("normalizes CoinW futures pair identifiers", () => {
@@ -9,12 +13,18 @@ describe("CoinW futures links", () => {
     expect(normalizeCoinWFuturesPair("")).toBeNull();
   });
 
-  it("builds a safe futures landing URL when a pair URL template is not configured", () => {
-    expect(buildCoinWFuturesTradeUrl({ coinwPair: "BTC_USDT" })).toBe(
-      "https://www.coinw.com/market/futures",
+  it("normalizes CoinW route locales", () => {
+    expect(normalizeCoinWFuturesLocale("zh_CN")).toBe("zh_CN");
+    expect(normalizeCoinWFuturesLocale("en_US")).toBe("en_US");
+    expect(normalizeCoinWFuturesLocale("bad-locale")).toBe("zh_CN");
+  });
+
+  it("builds locale-aware CoinW futures URLs by default", () => {
+    expect(buildCoinWFuturesTradeUrl({ coinwPair: "BTC_USDT", locale: "zh_CN" })).toBe(
+      "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
     );
-    expect(buildCoinWFuturesTradeUrl({ coinwPair: null })).toBe(
-      "https://www.coinw.com/market/futures",
+    expect(buildCoinWFuturesTradeUrl({ coinwPair: null, locale: "zh_CN" })).toBe(
+      "https://www.coinw.com/zh_CN/futures/usdt",
     );
   });
 
@@ -22,8 +32,9 @@ describe("CoinW futures links", () => {
     expect(
       buildCoinWFuturesTradeUrl({
         coinwPair: "BTC_USDT",
-        template: "https://www.coinw.com/futures/{pairCompactLower}",
+        locale: "en_US",
+        template: "https://www.coinw.com/{locale}/futures/{pairCompactLower}",
       }),
-    ).toBe("https://www.coinw.com/futures/btcusdt");
+    ).toBe("https://www.coinw.com/en_US/futures/btcusdt");
   });
 });

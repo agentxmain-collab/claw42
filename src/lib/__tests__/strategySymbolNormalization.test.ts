@@ -54,7 +54,13 @@ describe("strategy symbol normalization", () => {
     expect(validation.reasons).not.toContain("missing live price for $ETH");
 
     const deeplink = buildCoinwDeeplink(strategy(" $$eth "));
-    expect(deeplink).toContain("symbol=ETHUSDT");
+    expect(deeplink).toBe("https://www.coinw.com/zh_CN/futures/usdt/ethusdt");
     expect(deeplink).not.toContain("%24ETHUSDT");
+  });
+
+  it("falls back to CoinW futures landing when the symbol is not in the local futures whitelist", () => {
+    expect(buildCoinwDeeplink(strategy("NOTLISTED"))).toBe(
+      "https://www.coinw.com/zh_CN/futures/usdt",
+    );
   });
 });

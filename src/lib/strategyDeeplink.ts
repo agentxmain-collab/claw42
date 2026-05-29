@@ -1,18 +1,17 @@
 import type { FinalStrategy } from "@/lib/types";
+import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
+import {
+  normalizeCoinWFuturesSymbol,
+  staticCoinWFuturesInstrumentSet,
+} from "@/lib/coinw/futuresInstruments";
 
-const COINW_BASE = "claw42-todo://placeholder";
-
-export function buildCoinwDeeplink(strategy: FinalStrategy): string {
+export function buildCoinwDeeplink(strategy: FinalStrategy, locale = "zh_CN"): string {
   if (strategy.direction === "wait") return "";
 
-  // TODO(Dan): replace placeholder with the official CoinW affiliate URL template.
-  const params = new URLSearchParams({
-    symbol: `${strategy.symbol.trim().replace(/^\$+/, "").toUpperCase()}USDT`,
-    side: strategy.direction === "long" ? "buy" : "sell",
-    sl: strategy.stopLoss.toString(),
-    tp1: strategy.takeProfit[0]?.toString() ?? "",
-    tp2: strategy.takeProfit[1]?.toString() ?? "",
-    ref: "claw42",
+  const symbol = normalizeCoinWFuturesSymbol(strategy.symbol);
+  const instrument = symbol ? staticCoinWFuturesInstrumentSet().get(symbol) : null;
+  return buildCoinWFuturesTradeUrl({
+    coinwPair: instrument?.coinwPair ?? null,
+    locale,
   });
-  return `${COINW_BASE}?${params.toString()}`;
 }

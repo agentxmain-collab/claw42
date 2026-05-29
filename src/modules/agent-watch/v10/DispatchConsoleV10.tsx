@@ -17,7 +17,7 @@ export function DispatchConsoleV10({
   freshness,
   pagination,
 }: DispatchConsoleV10Props) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const dict = t.agentWatch.dispatchV10;
   const [activeView, setActiveView] = useState<DispatchView>(initialView);
   const [placeholder, setPlaceholder] = useState<{
@@ -75,6 +75,7 @@ export function DispatchConsoleV10({
         <MarketAnalysisPanel
           topics={topics}
           dict={dict}
+          locale={locale}
           freshness={freshness}
           pagination={pagination}
           onPlaceholder={handleTopicAction}

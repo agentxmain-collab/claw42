@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { DispatchV10Dict } from "@/i18n/types";
+import type { DispatchV10Dict, Locale } from "@/i18n/types";
 import { trackEvent } from "@/lib/analytics";
 import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
 import { canRenderTradeCTA } from "@/lib/coinw/tradeGate";
@@ -598,6 +598,7 @@ function TopicStrategyV10({
   bodyId,
   onToggle,
   dict,
+  locale,
   onPlaceholder,
 }: {
   topic: DispatchTopic;
@@ -606,6 +607,7 @@ function TopicStrategyV10({
   bodyId: string;
   onToggle: () => void;
   dict: DispatchV10Dict;
+  locale: Locale;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
   const { strategy } = topic;
@@ -625,10 +627,11 @@ function TopicStrategyV10({
   const renderStaleReason = renderBlockedTradeCTA && isStaleOrExpired(topic);
   const coinwFuturesUrl =
     isObservationMode || !canRenderCoinWTrade
-      ? buildCoinWFuturesTradeUrl({ coinwPair: null })
+      ? buildCoinWFuturesTradeUrl({ coinwPair: null, locale })
       : (topic.execution?.tradeUrl ??
         buildCoinWFuturesTradeUrl({
           coinwPair: topic.execution?.coinwPair,
+          locale,
         }));
   const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderCoinWTrade);
   const coinwLinkType = canRenderCoinWTrade && topic.execution?.coinwPair ? "pair" : "generic";
@@ -862,6 +865,7 @@ function TopicCardV10({
   collapsed,
   onToggle,
   dict,
+  locale,
   onPlaceholder,
 }: {
   topic: DispatchTopic;
@@ -869,6 +873,7 @@ function TopicCardV10({
   collapsed: boolean;
   onToggle: () => void;
   dict: DispatchV10Dict;
+  locale: Locale;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
   const bodyId = `dispatch-v10-topic-${topic.id}`;
@@ -903,6 +908,7 @@ function TopicCardV10({
         bodyId={bodyId}
         onToggle={onToggle}
         dict={dict}
+        locale={locale}
         onPlaceholder={onPlaceholder}
       />
     </article>
@@ -912,12 +918,14 @@ function TopicCardV10({
 export function MarketAnalysisPanel({
   topics,
   dict,
+  locale = "zh_CN",
   onPlaceholder,
   freshness,
   pagination,
 }: {
   topics?: DispatchTopic[];
   dict: DispatchV10Dict;
+  locale?: Locale;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
   freshness?: DispatchFreshnessState;
   pagination?: DispatchTopicPaginationState;
@@ -1019,6 +1027,7 @@ export function MarketAnalysisPanel({
                         );
                       }}
                       dict={dict}
+                      locale={locale}
                       onPlaceholder={onPlaceholder}
                     />
                     {index < resolvedTopics.length - 1 ? (

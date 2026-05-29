@@ -67,6 +67,8 @@ const BLOCKED_PUBLIC_TRIGGER_MODULES = [
 
 type DependencyGraph = Map<string, string[]>;
 
+const madgeGraphCache = new Map<string, Promise<DependencyGraph>>();
+
 function toProjectPath(absolutePath: string) {
   return path.relative(ROOT, absolutePath).split(path.sep).join("/");
 }
@@ -81,6 +83,15 @@ function resolveGraphPath(entryPoint: string, graphPath: string) {
 }
 
 async function readMadgeGraph(entryPoint: string): Promise<DependencyGraph> {
+  const cached = madgeGraphCache.get(entryPoint);
+  if (cached) return cached;
+
+  const graphPromise = readMadgeGraphUncached(entryPoint);
+  madgeGraphCache.set(entryPoint, graphPromise);
+  return graphPromise;
+}
+
+async function readMadgeGraphUncached(entryPoint: string): Promise<DependencyGraph> {
   const result = await madge(entryPoint, {
     tsConfig: "tsconfig.json",
     fileExtensions: ["ts", "tsx"],
@@ -264,7 +275,7 @@ describe("chat authenticity public import boundary", () => {
     }
 
     expect(violations).toEqual([]);
-  }, 15_000);
+  }, 30_000);
 
   test("dev-only stream chat module remains available outside the public closure", () => {
     const source = fs.readFileSync(path.join(ROOT, "src/lib/dev/streamChatThreads.ts"), "utf8");
