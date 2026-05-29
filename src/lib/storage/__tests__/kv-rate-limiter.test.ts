@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import { checkRateLimit } from "../kv-rate-limiter";
 
-vi.mock("@vercel/kv", () => ({
+vi.mock("@/lib/kv-shim", () => ({
   kv: {
     incr: vi.fn(),
     expire: vi.fn(),

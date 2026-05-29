@@ -28,6 +28,7 @@
       "42 seconds ago I was reading on-chain data. Now it's your turn to ask."
     ],
     "speechBubbleAriaLabel": "Claw 42 Agent speech bubble",
+    "robotGuide": "Tap me for analysis",
     "miniPlayer": {
       "title": "Agent quick tactics desk",
       "loading": "Agent is analyzing...",
@@ -164,6 +165,15 @@
       "2. Your use of Claw 42 Skills and any related risks are borne by you at your sole discretion. You are independently responsible for evaluating whether the information obtained suits your specific needs. Claw 42 does not endorse or guarantee any AI-generated content, and such content should not be the sole basis of any decision. AI-generated content may contain or reflect third-party views and may include errors, bias or outdated information.",
       "3. Claw 42 bears no responsibility for any loss arising from use or inability to use Claw 42 Skills. Claw 42 reserves the right to terminate or restrict this feature at its sole discretion. Digital asset prices carry high market risk and volatility. The value of your investment may go down as well as up, and you may not recover your principal. You are fully responsible for your investment decisions. Claw 42 assumes no liability for any loss you may suffer.",
       "4. Past performance is not a reliable indicator of future performance. Before making any investment, carefully consider your experience, financial situation, investment objectives and risk tolerance, and consult an independent financial advisor. For more information, see our Risk Notice and Terms of Use."
+    ]
+  },
+  "disclaimerAnalysis": {
+    "title": "Disclaimer",
+    "paragraphs": [
+      "1. Claw 42 live strategy analysis is an information reference tool only. Long/short views, entries, take-profit, stop-loss, and confidence shown here are AI-team interpretations of public market and news data. They are not investment, financial, trading, or other advice, and are not recommendations to buy, sell, or hold any asset.",
+      "2. You use Claw 42 strategy analysis and related features at your own risk. You are responsible for independently evaluating analyst views, debate conclusions, and final strategies for your own needs. AI-generated output should not be your sole basis for decisions.",
+      "3. Claw 42 is not liable for losses resulting from use or inability to use the strategy analysis feature. Digital assets involve high market risk and volatility, and you are fully responsible for your own investment decisions.",
+      "4. Historical analysis is not a reliable predictor of future performance. Before investing, consider your experience, financial situation, objectives, and risk tolerance, and consult an independent financial adviser."
     ]
   },
   "team": {
@@ -723,7 +733,10 @@
         "observationSummaryLabel": "__TBD__",
         "coinwNavigate": "__TBD__",
         "staleReason": "__TBD__",
-        "staleAgePrefix": "__TBD__"
+        "staleAgePrefix": "__TBD__",
+        "noNews": "No related news yet",
+        "loadingMore": "Loading more",
+        "loadedAll": "Loaded all {count} cards"
       },
       "placeholder": {
         "title": "Copy-trading is in development",

@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 
 export interface RateLimitOptions {
   max: number;

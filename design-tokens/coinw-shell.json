@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "source": "Dan Figma dark mode frame via Copy as code 2026-05-26",
+    "figmaFile": "CoinW 母站设计稿 - Header + Footer Dark Mode frame",
+    "mode": "dark",
+    "round": "3.90.105"
+  },
+  "_source": "Figma MCP via Dan 2026-05-26 Copy as code",
+  "_figma_file": "CoinW 母站设计稿 - Header + Footer Dark Mode frame",
+  "header": {
+    "container": {
+      "height": "72px",
+      "background": "#1A1A1A",
+      "padding": "16px 24px",
+      "gap": "24px",
+      "maxWidth": "1440px"
+    },
+    "logo": {
+      "width": "140.24px",
+      "height": "37.83px",
+      "symbolSize": "34.03px",
+      "symbolBg": "#5227FF",
+      "text": "CoinW",
+      "textFont": "Satoshi",
+      "textWeight": 900,
+      "textSize": "29.1667px",
+      "textLineHeight": "108%",
+      "textLetterSpacing": "-0.0607639px",
+      "textColor": "#FFFFFF"
+    },
+    "navItem": {
+      "font": "Satoshi",
+      "weight": 500,
+      "size": "16px",
+      "lineHeight": "24px",
+      "letterSpacing": "0.15px",
+      "color": "#FFFFFF",
+      "gap": "24px"
+    },
+    "newBadge": {
+      "background": "#D1FF55",
+      "borderRadius": "100px",
+      "padding": "2px 8px",
+      "fontWeight": 500,
+      "fontSize": "12px",
+      "textColor": "#000000"
+    },
+    "cta": {
+      "background": "#5227FF",
+      "borderRadius": "12px",
+      "padding": "10px 16px",
+      "height": "40px",
+      "fontWeight": 700,
+      "fontSize": "14px",
+      "textColor": "#FFFFFF"
+    },
+    "utilityIcon": {
+      "size": "20px",
+      "gap": "20px",
+      "color": "#FFFFFF"
+    }
+  },
+  "footer": {
+    "container": {
+      "height": "658px",
+      "background": "#1A1A1A",
+      "direction": "column",
+      "gap": "64px"
+    },
+    "mainContent": {
+      "padding": "0 90px",
+      "gap": "24px",
+      "justifyContent": "space-between"
+    },
+    "divider": {
+      "color": "rgba(255, 255, 255, 0.1)",
+      "height": "1px"
+    },
+    "sectionTitle": {
+      "font": "Satoshi",
+      "weight": 700,
+      "size": "16px",
+      "lineHeight": "24px",
+      "letterSpacing": "0.15px",
+      "color": "#FFFFFF"
+    },
+    "footerLink": {
+      "font": "Satoshi",
+      "weight": 400,
+      "size": "16px",
+      "lineHeight": "24px",
+      "letterSpacing": "0.15px",
+      "color": "#A6A6A6"
+    },
+    "downloadButton": {
+      "width": "160px",
+      "height": "48px",
+      "background": "#5227FF",
+      "borderRadius": "16px",
+      "padding": "9px 21px",
+      "gap": "12px"
+    },
+    "description": {
+      "weight": 500,
+      "size": "14px",
+      "lineHeight": "20px",
+      "letterSpacing": "0.1px",
+      "color": "#6C4FFF",
+      "textAlign": "center"
+    },
+    "copyright": {
+      "text": "CopyRight © 2017 - 2023 CoinW.com. All Rights Reserved.",
+      "weight": 400,
+      "size": "14px",
+      "lineHeight": "20px",
+      "letterSpacing": "0.25px",
+      "color": "#A6A6A6"
+    },
+    "socialIcon": {
+      "size": "46px",
+      "borderRadius": "64px",
+      "border": "1px solid #FFFFFF",
+      "padding": "15px",
+      "iconSize": "16px",
+      "iconColor": "#FFFFFF",
+      "gap": "24px"
+    },
+    "languageButton": {
+      "width": "124px",
+      "height": "48px",
+      "background": "rgba(255, 255, 255, 0.1)",
+      "borderRadius": "12px",
+      "padding": "10px 24px",
+      "gap": "8px",
+      "textWeight": 700,
+      "textSize": "14px",
+      "lineHeight": "20px",
+      "letterSpacing": "0.1px",
+      "color": "#FFFFFF"
+    }
+  }
+}

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import { consumeQuota, peekQuota } from "../kv-quota";
 
-vi.mock("@vercel/kv", () => ({
+vi.mock("@/lib/kv-shim", () => ({
   kv: {
     incrby: vi.fn(),
     decrby: vi.fn(),

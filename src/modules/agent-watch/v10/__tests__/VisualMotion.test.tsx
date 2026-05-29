@@ -106,6 +106,25 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(positions.trader).toMatchObject({ left: "43%", top: "77%" });
   });
 
+  test("keeps Round 6 market list layout compact", () => {
+    expect(css).toMatch(/\.fagent-avatar\) \{[\s\S]*align-self:\s*center;/);
+    expect(css).not.toContain("max-width: 820px");
+    expect(css).toMatch(/\.topic-head\) \{[\s\S]*padding:\s*12px 18px 10px;/);
+    expect(css).toMatch(/\.topic-strategy\) \{[\s\S]*gap:\s*16px;[\s\S]*padding:\s*16px 20px;/);
+    expect(css).not.toContain(".topic-eyebrow .topic-ranking-label");
+  });
+
+  test("keeps the hero copy below the fixed CoinW shell header", () => {
+    expect(css).toContain("--coinw-shell-header-height: 72px");
+    expect(css).toContain("--hero-header-breathing-room: 36px");
+    expect(css).toMatch(
+      /padding:\s*calc\(var\(--coinw-shell-header-height\) \+ var\(--hero-header-breathing-room\)\) 48px 60px;/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 880px\)[\s\S]*padding:\s*calc\(var\(--coinw-shell-header-height\) \+ 28px\) 18px 48px;/,
+    );
+  });
+
   test("makes six flow stage cards visibly react on hover", () => {
     const hoverBlock = css.match(
       /\.dispatchConsoleV10 :global\(\.fstage4:hover\) \{([\s\S]*?)\}/,
@@ -119,5 +138,46 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(css).toMatch(/fstage4:hover \.fstage4-detail[\s\S]+border-color/);
     expect(css).toMatch(/fstage4\.debate:hover[\s\S]+box-shadow/);
     expect(css).toMatch(/fstage4\.memory:hover[\s\S]+box-shadow/);
+  });
+
+  test("keeps collapsed topic cards inside the natural shell gutters", () => {
+    expect(css).not.toMatch(/topic\.collapsed:not\(\.expanded\)[\s\S]{0,120}max-width:\s*820px/);
+    expect(css).not.toMatch(/topic\.collapsed:not\(\.expanded\)[\s\S]{0,120}margin-inline:\s*auto/);
+    expect(css).not.toMatch(
+      /topic\.collapsed:not\(\.expanded\)\) \{[\s\S]*width:\s*calc\(100% \+ 44px\);[\s\S]*margin-inline:\s*-22px;/,
+    );
+    expect(css).toMatch(/topic-head[\s\S]{0,160}padding:\s*12px 18px 10px/);
+    expect(css).toMatch(/topic-news-summary[\s\S]{0,220}line-height:\s*1\.4/);
+  });
+
+  test("keeps topic card v3 on CoinW colors with compact bounded reasoning boxes", () => {
+    const v3Css = css.slice(
+      css.indexOf(".dispatchConsoleV10 :global(.topic-strategy.topic-card-v3)"),
+    );
+
+    expect(v3Css).toContain("#5227ff");
+    expect(v3Css).toContain("rgb(82 39 255");
+    expect(v3Css).not.toContain("#7c5cff");
+    expect(v3Css).not.toContain("-webkit-line-clamp");
+    expect(v3Css).not.toContain("text-overflow");
+    expect(css).not.toContain("calc(100% + 44px)");
+    expect(css).not.toContain("margin-inline: -22px");
+    expect(css).not.toContain("topic-feedback");
+    expect(v3Css).toMatch(
+      /topic-strategy\.topic-card-v3\) \{[\s\S]*display:\s*block;[\s\S]*width:\s*100%;[\s\S]*margin:\s*0;/,
+    );
+    expect(v3Css).toMatch(/topic-card-v3 \.v3-topic\) \{[\s\S]*width:\s*100%;/);
+    expect(v3Css).toMatch(
+      /topic-card-v3 \.v3-news-hero\) \{[\s\S]*grid-template-columns:\s*auto minmax\(0, 1fr\) auto;/,
+    );
+    expect(v3Css).toMatch(
+      /topic-card-v3 \.v3-body\) \{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(280px, 320px\);/,
+    );
+    expect(css).toMatch(
+      /\.topic-card-v3 \.v3-reasoning\)[\s\S]*height:\s*64px;[\s\S]*overflow-y:\s*auto;[\s\S]*padding:\s*7px 12px;/,
+    );
+    expect(css).toMatch(
+      /\.topic-card-v3 \.v3-secondary\)[\s\S]*height:\s*64px;[\s\S]*overflow-y:\s*auto;[\s\S]*padding:\s*8px 12px;/,
+    );
   });
 });

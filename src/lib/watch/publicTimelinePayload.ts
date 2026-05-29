@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n/types";
+import { waitUntil } from "@vercel/functions";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { readAllDecisionRecords, readDecisionRecords } from "@/lib/team/decisionRecordStore";
@@ -9,6 +10,7 @@ import {
   deriveResidentPrewarmStatus,
   type ResidentPrewarmStatus,
 } from "@/lib/watch/residentPrewarmStatus";
+import { readDecisionRecordDirect } from "@/lib/team/decisionRecordDirectStore";
 import type { StreamEntry } from "@/modules/agent-watch/types";
 import { getWatchHistory } from "@/lib/watchHistoryStore";
 import {
@@ -25,6 +27,12 @@ import {
   filterPublicTimelineEvents,
   projectDecisionRecordToPublicEvent,
 } from "@/lib/watch/publicTimelineProjection";
+import {
+  backfillPublicCardIndexFromRecords,
+  PUBLIC_CARD_PAGE_SIZE,
+  prunePublicCardIndexByStrategy,
+  readPublicCardIndexPage,
+} from "@/lib/watch/publicCardIndex";
 
 export const MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60;
 export const MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES = 72 * 60;
@@ -44,6 +52,9 @@ export interface PublicWatchTimelinePayload {
   servedAt: number;
   nextPollMs: number;
   residentStatus?: ResidentPrewarmStatus;
+  page?: number;
+  pageSize?: number;
+  totalCount?: number;
 }
 
 export interface DebugWatchTimelinePayload {
@@ -64,6 +75,8 @@ export interface WatchTimelinePayloadOptions {
   before: number;
   since?: number;
   limit: number;
+  page?: number;
+  pageSize?: number;
   windowMinutes: number;
   servedAt?: number;
 }
@@ -72,10 +85,12 @@ export function resolveWatchTimelineNextPollMs(servedAt: number) {
   return servedAt % (3 * 60_000) < 30_000 ? 30_000 : 90_000;
 }
 
-export function resolvePublicTimelineRecordCutoff(servedAt: number, windowMinutes: number) {
-  return (
-    servedAt - Math.max(1, Math.min(windowMinutes, MAX_PUBLIC_TIMELINE_WINDOW_MINUTES)) * 60_000
-  );
+export function resolvePublicTimelineRecordCutoff(
+  servedAt: number,
+  windowMinutes: number,
+  maxWindowMinutes = MAX_PUBLIC_TIMELINE_WINDOW_MINUTES,
+) {
+  return servedAt - Math.max(1, Math.min(windowMinutes, maxWindowMinutes)) * 60_000;
 }
 
 function shouldReplaceWithRecordEvent(
@@ -122,47 +137,18 @@ function mergeDecisionRecordBackfillEvents(
   );
 }
 
-function residentLane(event: PublicTimelineEvent): "market_overview" | "hotspot" | null {
-  if (event.payload.kind !== "pm_decision") return null;
-  if (event.payload.candidateType === "market_overview") return "market_overview";
-  if (event.payload.candidateType === "hotspot") return "hotspot";
-  return null;
-}
-
 export function selectResidentFloorRecordEvents(
-  events: PublicTimelineEvent[],
-  {
-    locale,
-    before,
-    since,
-    servedAt,
-  }: {
+  _events: PublicTimelineEvent[],
+  _options: {
     locale: Locale;
     before: number;
     since?: number;
     servedAt: number;
   },
-) {
-  const minTs = servedAt - MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES * 60_000;
-  const byLane = new Map<"market_overview" | "hotspot", PublicTimelineEvent>();
-
-  for (const event of events) {
-    const lane = residentLane(event);
-    if (!lane) continue;
-    if (event.locale !== locale) continue;
-    if (event.ts >= before || event.ts < minTs) continue;
-    if (since !== undefined && event.ts <= since) continue;
-    const existing = byLane.get(lane);
-    if (
-      !existing ||
-      event.ts > existing.ts ||
-      (event.ts === existing.ts && event.id < existing.id)
-    ) {
-      byLane.set(lane, event);
-    }
-  }
-
-  return Array.from(byLane.values()).sort(comparePublicTimelineEvents);
+): PublicTimelineEvent[] {
+  void _events;
+  void _options;
+  return [];
 }
 
 function isExecutableSymbolEvent(event: PublicTimelineEvent) {
@@ -242,18 +228,109 @@ async function readTargetedDecisionRecords(
   return batches.flat();
 }
 
+async function buildIndexedPublicTimelinePayload({
+  locale,
+  before,
+  since,
+  limit,
+  page = 1,
+  pageSize = PUBLIC_CARD_PAGE_SIZE,
+  windowMinutes,
+  servedAt = Date.now(),
+}: Omit<WatchTimelinePayloadOptions, "mode">): Promise<PublicWatchTimelinePayload | null> {
+  await prunePublicCardIndexByStrategy(locale).catch(() => 0);
+  const indexPage = await readPublicCardIndexPage(locale, {
+    page,
+    pageSize: Math.min(pageSize, limit),
+  });
+  if (indexPage.totalCount === 0 && indexPage.entries.length === 0) return null;
+
+  const records = (
+    await Promise.all(indexPage.entries.map((entry) => readDecisionRecordDirect(entry.recordKey)))
+  ).filter((record): record is StrategyDecisionRecord => Boolean(record));
+  const events = records
+    .map(projectDecisionRecordToPublicEvent)
+    .filter((event): event is PublicTimelineEvent => Boolean(event))
+    .filter(
+      (event) =>
+        event.locale === locale && event.ts < before && (since === undefined || event.ts > since),
+    )
+    .sort(comparePublicTimelineEvents);
+  const evidenceMap = await evidenceMapForEvents(events);
+  const jobs = await readPmDecisionJobs({ locale, limit: 100 }).catch(() => []);
+
+  return {
+    events,
+    evidenceMap,
+    oldestTs:
+      events.length > 0
+        ? (events[events.length - 1]?.ts ?? Date.parse(indexPage.oldestAt ?? ""))
+        : Number.isFinite(Date.parse(indexPage.oldestAt ?? ""))
+          ? Date.parse(indexPage.oldestAt ?? "")
+          : null,
+    hasMore: indexPage.hasMore,
+    windowMinutes,
+    locale,
+    servedAt,
+    nextPollMs: resolveWatchTimelineNextPollMs(servedAt),
+    residentStatus: deriveResidentPrewarmStatus({
+      records,
+      jobs,
+      now: servedAt,
+    }),
+    page: indexPage.page,
+    pageSize: indexPage.pageSize,
+    totalCount: indexPage.totalCount,
+  };
+}
+
+async function evidenceMapForEvents(events: PublicTimelineEvent[]) {
+  const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
+    0,
+    MAX_EVIDENCE_MAP_ITEMS,
+  );
+  return Object.fromEntries(
+    (
+      await Promise.all(
+        evidenceIds.map(
+          async (evidenceId) => [evidenceId, await getNewsEvidence(evidenceId)] as const,
+        ),
+      )
+    ).flatMap(([evidenceId, evidence]) => (evidence ? [[evidenceId, evidence]] : [])),
+  );
+}
+
 export async function buildWatchTimelinePayload({
   mode,
   locale,
   before,
   since,
   limit,
+  page,
+  pageSize,
   windowMinutes,
   servedAt = Date.now(),
 }: WatchTimelinePayloadOptions): Promise<WatchTimelinePayload> {
   const stagingFixture = shouldUseStagingMockTimeline()
     ? getStagingMockTimeline(locale, servedAt)
     : null;
+  let usingEmptyIndexFallback = false;
+
+  if (mode === "public" && !stagingFixture) {
+    const indexedPayload = await buildIndexedPublicTimelinePayload({
+      locale,
+      before,
+      since,
+      limit,
+      page,
+      pageSize,
+      windowMinutes,
+      servedAt,
+    });
+    if (indexedPayload) return indexedPayload;
+    usingEmptyIndexFallback = true;
+  }
+
   const result =
     stagingFixture ?? (await getWatchHistory({ before, since, limit, windowMinutes, locale }));
   if (mode === "debug") {
@@ -297,7 +374,16 @@ export async function buildWatchTimelinePayload({
     ...Array.from(decisionRecordsById.values()),
     ...targetedRecords,
   ]);
-  const cutoff = resolvePublicTimelineRecordCutoff(servedAt, windowMinutes);
+  const effectiveWindowMinutes = usingEmptyIndexFallback
+    ? Math.max(windowMinutes, MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES)
+    : windowMinutes;
+  const cutoff = resolvePublicTimelineRecordCutoff(
+    servedAt,
+    effectiveWindowMinutes,
+    usingEmptyIndexFallback
+      ? MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES
+      : MAX_PUBLIC_TIMELINE_WINDOW_MINUTES,
+  );
   const allRecordEvents = Array.from(decisionRecordsForBackfill.values())
     .map(projectDecisionRecordToPublicEvent)
     .filter((event): event is PublicTimelineEvent => Boolean(event))
@@ -325,27 +411,20 @@ export async function buildWatchTimelinePayload({
     ),
     limit,
   );
-  const evidenceIds = Array.from(new Set(events.flatMap((event) => event.evidenceIds))).slice(
-    0,
-    MAX_EVIDENCE_MAP_ITEMS,
-  );
+  if (usingEmptyIndexFallback && decisionRecords.length > 0) {
+    await schedulePublicCardIndexBackfill(decisionRecords, locale);
+  }
   const evidenceMap = stagingFixture
     ? Object.fromEntries(
-        evidenceIds.flatMap((evidenceId) =>
-          stagingFixture.evidenceMap[evidenceId]
-            ? [[evidenceId, stagingFixture.evidenceMap[evidenceId]]]
-            : [],
-        ),
+        Array.from(new Set(events.flatMap((event) => event.evidenceIds)))
+          .slice(0, MAX_EVIDENCE_MAP_ITEMS)
+          .flatMap((evidenceId) =>
+            stagingFixture.evidenceMap[evidenceId]
+              ? [[evidenceId, stagingFixture.evidenceMap[evidenceId]]]
+              : [],
+          ),
       )
-    : Object.fromEntries(
-        (
-          await Promise.all(
-            evidenceIds.map(
-              async (evidenceId) => [evidenceId, await getNewsEvidence(evidenceId)] as const,
-            ),
-          )
-        ).flatMap(([evidenceId, evidence]) => (evidence ? [[evidenceId, evidence]] : [])),
-      );
+    : await evidenceMapForEvents(events);
 
   return {
     events,
@@ -353,7 +432,7 @@ export async function buildWatchTimelinePayload({
     oldestTs:
       events.length > 0 ? (events[events.length - 1]?.ts ?? result.oldestTs) : result.oldestTs,
     hasMore: result.hasMore,
-    windowMinutes,
+    windowMinutes: effectiveWindowMinutes,
     locale,
     servedAt,
     nextPollMs: resolveWatchTimelineNextPollMs(servedAt),
@@ -363,4 +442,21 @@ export async function buildWatchTimelinePayload({
       now: servedAt,
     }),
   };
+}
+
+async function schedulePublicCardIndexBackfill(records: StrategyDecisionRecord[], locale: Locale) {
+  const task = backfillPublicCardIndexFromRecords(records, { locale }).catch(() => null);
+  if (shouldUseVercelWaitUntil()) {
+    try {
+      waitUntil(task);
+      return;
+    } catch {
+      // Fall through to inline await for local/test runtimes that cannot register waitUntil.
+    }
+  }
+  await task;
+}
+
+function shouldUseVercelWaitUntil() {
+  return process.env.VERCEL === "1" || process.env.VERCEL === "true";
 }

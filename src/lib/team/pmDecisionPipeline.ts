@@ -95,6 +95,11 @@ export interface PmDecisionPipelineInput {
   locale?: Locale;
   now?: number;
   partialStageUpdates?: boolean;
+  onCandidateStrategyIncomplete?: (event: {
+    symbol: string;
+    candidateKey: string;
+    missingFields: string[];
+  }) => void;
 }
 
 export interface PmDecisionPipelineOutput {
@@ -252,6 +257,44 @@ function shouldRunPipeline(input: PmDecisionPipelineInput) {
       (evidence) => importanceRank(newsImportance(evidence)) >= importanceRank(threshold),
     )
   );
+}
+
+function hasRenderableNewsEvidence(evidence: NewsEvidence) {
+  return (
+    !evidence.id.startsWith("topic_selection:") &&
+    evidence.title.trim().length > 0 &&
+    evidence.source.trim().length > 0 &&
+    evidence.publishedAt.trim().length > 0
+  );
+}
+
+function isPositiveFiniteNumber(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function symbolStrategyCompletenessFailures({
+  input,
+  candidate,
+  tradeDecision,
+}: {
+  input: PmDecisionPipelineInput;
+  candidate: DecisionCandidate;
+  tradeDecision: TradeDecision | null;
+}) {
+  if (candidate.candidateType !== "symbol" || candidate.executable === false) return [];
+  const missingFields: string[] = [];
+  if (!input.recentNewsEvidence.some(hasRenderableNewsEvidence)) missingFields.push("newsItem");
+  if (!tradeDecision) {
+    missingFields.push("tradeDecision");
+    return missingFields;
+  }
+  if (tradeDecision.direction !== "long" && tradeDecision.direction !== "short") {
+    missingFields.push("direction");
+  }
+  if (!isPositiveFiniteNumber(tradeDecision.entryPrice)) missingFields.push("entry");
+  if (!isPositiveFiniteNumber(tradeDecision.stopLoss)) missingFields.push("stopLoss");
+  if (!tradeDecision.takeProfit.some(isPositiveFiniteNumber)) missingFields.push("takeProfit");
+  return missingFields;
 }
 
 async function defaultLoadPromptDoc(memberId: TeamMemberId): Promise<string> {
@@ -635,7 +678,7 @@ Return JSON only:
 {
   "direction": "long" | "short" | "neutral" | "wait",
   "confidence": 0.0_to_1.0,
-  "oneLineSummary": "one sentence, <=80 Chinese chars or <=120 English chars",
+  "oneLineSummary": "one sentence, <=180 Chinese chars or <=240 English chars",
   "detailedRationale": "concrete role-specific rationale with numbers when available, <=500 chars",
   "dataStatus": "ok" | "partial" | "missing",
   "rationale": "same meaning as detailedRationale for legacy compatibility",
@@ -645,6 +688,7 @@ Return JSON only:
 Rules:
 - Stay inside your role mandate. Do not evaluate domains that are not listed in your role evidence context.
 - Use available role evidence to form a stance when there is a concrete signal.
+- If candidateType=symbol and recentNewsEvidence is empty, set dataStatus="missing", direction="wait", confidence<=0.2, and abstain instead of inventing analysis.
 - If role evidence is thin, lower confidence, set internal "dataStatus" to "partial" or "missing", and explain the decision basis without mentioning backend data availability.
 - Return "wait" only when your role evidence has no actionable signal. Do not invent a trade stance.
 - Public fields oneLineSummary, detailedRationale, and rationale must describe market evidence only; never discuss backend operations, source coverage, future data arrival, process state, or internal participant identifiers.
@@ -1837,10 +1881,21 @@ export async function runPmDecisionPipeline(
             severity: toSeverity(localizedInput),
             locale,
           });
-    if (!tradeDisabled && !tradeDecision) {
+    const incompleteStrategyFields = symbolStrategyCompletenessFailures({
+      input: localizedInput,
+      candidate,
+      tradeDecision,
+    });
+    if (incompleteStrategyFields.length > 0) {
+      localizedInput.onCandidateStrategyIncomplete?.({
+        symbol,
+        candidateKey: candidate.candidateKey,
+        missingFields: incompleteStrategyFields,
+      });
       await writeSkippedRun({
-        skipReason: "trade_decision_unavailable",
+        skipReason: "candidate_strategy_incomplete",
         activeStage: "trade_decision",
+        error: `missing:${incompleteStrategyFields.join(",")}`,
       });
       return null;
     }

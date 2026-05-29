@@ -103,6 +103,34 @@ textarea:focus-visible,
   z-index: 1;
 }
 
+.disclaimer-analysis-section {
+  position: relative;
+  overflow: hidden;
+  background: #000000;
+}
+
+.disclaimer-analysis-section::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 0;
+  height: clamp(120px, 14vw, 180px);
+  background: linear-gradient(
+    to top,
+    rgba(82, 39, 255, 0.72) 0%,
+    rgba(82, 39, 255, 0.34) 42%,
+    rgba(82, 39, 255, 0.1) 72%,
+    rgba(82, 39, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.disclaimer-analysis-section > div {
+  position: relative;
+  z-index: 1;
+}
+
 .claw42-hero-scene {
   --claw42-hero-background-width: max(1600px, 128vw);
   --claw42-hero-background-drop: calc(

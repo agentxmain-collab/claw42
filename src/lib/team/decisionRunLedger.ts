@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import type {
   DecisionStageTraceId,
   DecisionStageTraceStatus,

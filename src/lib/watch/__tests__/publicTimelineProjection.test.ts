@@ -665,6 +665,79 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.executable).toBe(false);
   });
 
+  it("projects simple pipeline public fields without leaking internal strategy mode", () => {
+    const simpleRecord: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-simple-market",
+      schemaVersion: 2,
+      symbol: "MARKET",
+      tradeDecision: null,
+      analysisSummary: "今日大盘观察完成，暂不生成具体交易方案。",
+      candidate: {
+        candidateType: "market_overview",
+        candidateKey: "market_overview:zh_CN:2026-05-26",
+        displayTitle: "今日大盘综述",
+        executable: false,
+        cadence: "daily",
+        score: 100,
+        reasons: [],
+      },
+      stageTrace: [
+        {
+          stageId: "analyst_inputs",
+          label: "Information collection",
+          status: "done",
+          observedAt: new Date(now).toISOString(),
+        },
+        {
+          stageId: "research_lead",
+          label: "Research synthesis",
+          status: "done",
+          observedAt: new Date(now).toISOString(),
+        },
+        {
+          stageId: "trade_decision",
+          label: "Trade plan",
+          status: "done",
+          observedAt: new Date(now).toISOString(),
+        },
+        {
+          stageId: "risk_lead",
+          label: "Risk review",
+          status: "done",
+          observedAt: new Date(now).toISOString(),
+        },
+        {
+          stageId: "record_write",
+          label: "Record write",
+          status: "done",
+          observedAt: new Date(now).toISOString(),
+        },
+        {
+          stageId: "public_timeline",
+          label: "Public timeline",
+          status: "done",
+          observedAt: new Date(now).toISOString(),
+        },
+      ],
+    };
+
+    const event = projectDecisionRecordToPublicEvent(simpleRecord);
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload).toMatchObject({
+      candidateType: "market_overview",
+      executable: false,
+      tradeDecision: null,
+      analysisSummary: "今日大盘观察完成，暂不生成具体交易方案。",
+      stageTrace: expect.arrayContaining([
+        expect.objectContaining({ stageId: "public_timeline", status: "done" }),
+      ]),
+    });
+    expect(JSON.stringify(event.payload)).not.toContain("strategy");
+    expect(JSON.stringify(event.payload)).not.toContain("mode");
+  });
+
   it("publishes a concise public analysis summary instead of the raw PM wall text", () => {
     const marketRecord: StrategyDecisionRecord = {
       ...decisionRecord,
@@ -1104,6 +1177,58 @@ describe("publicTimelineProjection", () => {
       reason: "take_profit_reached",
     });
   });
+
+  it.each(["pool", "coinw-futures-ticker", "coingecko-ticker"] as const)(
+    "projects safe PM decision resolution price source %s",
+    (resolutionPriceSource) => {
+      const entry: StreamEntry = {
+        kind: "chat_thread",
+        id: `thread-resolved-${resolutionPriceSource}`,
+        ts: now,
+        thread: {
+          id: `thread-resolved-${resolutionPriceSource}`,
+          seed: {
+            id: "seed",
+            type: "market",
+            title: "Market",
+            description: "Market",
+            symbols: ["BTC"],
+            sentiment: "neutral",
+            createdAt: now,
+          },
+          messages: [],
+          strategy: null,
+          status: "completed",
+          createdAt: now,
+        },
+        meta: {
+          visibility: "public",
+          importance: "high",
+          sourceTrigger: "pm_decision",
+          evidenceIds: ["ev_1"],
+          locale: "zh_CN",
+          recordId: "record-1",
+          tradeDecision,
+        },
+      };
+      const resolvedRecord: StrategyDecisionRecord = {
+        ...decisionRecord,
+        resolvedAt: new Date(now + 30 * 60_000).toISOString(),
+        resolvedOutcome: "expired",
+        resolvedPrice: 76500,
+        resolutionReason: "evaluation_window_elapsed",
+        resolutionPriceSource,
+      };
+
+      const event = projectStreamEntryToPublic(entry, {
+        mode: "public",
+        decisionRecordsById: new Map([[resolvedRecord.id, resolvedRecord]]),
+      });
+
+      if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+      expect(event.payload.resolution?.observedPriceSource).toBe(resolutionPriceSource);
+    },
+  );
 
   it("projects only the safe stage trace subset into PM decision payload", () => {
     const entry: StreamEntry = {

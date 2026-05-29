@@ -263,14 +263,18 @@ function clampRetrySeconds(value: number) {
   );
 }
 
-async function loadPmDecisionQueueRunContext(): Promise<RunPmDecisionJobContext> {
+async function loadPmDecisionQueueRunContext(
+  job: PmDecisionJobRecord,
+): Promise<RunPmDecisionJobContext> {
   const [pool, news] = await Promise.all([
     getCoinPool(),
-    fetchNewsWithChain({ limit: 8 }).catch(() => ({
-      items: [],
-      servedBy: "mock" as const,
-      fellBackFrom: [],
-    })),
+    job.newsItems?.length
+      ? Promise.resolve({ items: job.newsItems, servedBy: "mock" as const, fellBackFrom: [] })
+      : fetchNewsWithChain({ limit: 8 }).catch(() => ({
+          items: [],
+          servedBy: "mock" as const,
+          fellBackFrom: [],
+        })),
   ]);
   const newsItems = await Promise.all(
     news.items.map((item) => normalizeNewsItem(item, news.servedBy).catch(() => item)),

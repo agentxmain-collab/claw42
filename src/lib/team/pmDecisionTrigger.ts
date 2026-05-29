@@ -23,7 +23,8 @@ import type { NewsItem } from "@/lib/types";
 
 const PM_DECISION_SYMBOL_LOCK_MS = 170 * 60_000;
 const RECENT_TOPIC_WINDOW_MINUTES = 180;
-const MARKET_NEWS_ANCHOR_SYMBOL = "BTC";
+export const CRON_MIN_SYMBOL_CARDS_PER_RUN = 3;
+export const CRON_MAX_SYMBOL_CARDS_PER_RUN = 8;
 
 function normalizeSymbol(symbol: string) {
   return normalizePipelineSymbol(symbol) ?? symbol.trim().replace(/^\$+/, "").toUpperCase();
@@ -47,7 +48,15 @@ export type PmDecisionTriggerAuditEvent =
       triggerSource: "cron" | "user_visit_trigger";
       locale: Locale;
       symbol: string;
-      reason: "no_trigger" | "locked" | "pipeline_returned_null";
+      reason: "no_news_evidence_for_symbol" | "locked" | "pipeline_returned_null";
+    }
+  | {
+      type: "candidate_strategy_incomplete";
+      triggerSource: "cron" | "user_visit_trigger";
+      locale: Locale;
+      symbol: string;
+      candidateKey: string;
+      missingFields: string[];
     }
   | {
       type: "candidate_generated";
@@ -65,12 +74,14 @@ export type PmDecisionTriggerAuditEvent =
     }
   | {
       type: "candidate_cost_cap_applied";
-      triggerSource: "user_visit_trigger";
+      triggerSource: "cron" | "user_visit_trigger";
       locale: Locale;
       candidateCount: number;
       cappedTo: number;
       maxResidentCandidates: 1;
-      maxSymbolCandidates: typeof USER_VISIT_SYMBOL_CANDIDATE_CAP;
+      maxSymbolCandidates:
+        | typeof USER_VISIT_SYMBOL_CANDIDATE_CAP
+        | typeof CRON_MAX_SYMBOL_CARDS_PER_RUN;
     };
 
 type PmDecisionTriggerAuditSink = (event: PmDecisionTriggerAuditEvent) => void;
@@ -120,8 +131,13 @@ function symbolsFromPool(pool: CoinPoolPayload | undefined) {
 
 function evidenceMatchesCandidateSymbol(evidence: { symbol: string[] }, candidate: string) {
   const normalizedCandidate = normalizeSymbol(candidate);
-  if (evidence.symbol.length === 0) return normalizedCandidate === MARKET_NEWS_ANCHOR_SYMBOL;
-  return evidence.symbol.some((symbol) => normalizeSymbol(symbol) === normalizedCandidate);
+  if (evidence.symbol.length === 0) return true;
+  if (evidence.symbol.some((symbol) => normalizeSymbol(symbol) === normalizedCandidate)) {
+    return true;
+  }
+  const textEvidence = evidence as { title?: string; summary?: string };
+  const haystack = `${textEvidence.title ?? ""} ${textEvidence.summary ?? ""}`.toUpperCase();
+  return new RegExp(`(^|[^A-Z0-9])${normalizedCandidate}([^A-Z0-9]|$)`).test(haystack);
 }
 
 function evidenceMatchesCandidate(evidence: { symbol: string[] }, candidate: DecisionCandidate) {
@@ -138,6 +154,57 @@ function marketSignalsForCandidate(
     return marketSignalsFromPool(pool, now).slice(0, 8);
   }
   return marketSignalsFromPool(pool, now, candidate.symbol);
+}
+
+function capCandidateTopicsForTrigger({
+  symbol,
+  triggerSource,
+  selectedCandidateTopics,
+}: {
+  symbol?: string;
+  triggerSource: "cron" | "user_visit_trigger";
+  selectedCandidateTopics: ReturnType<typeof selectPmDecisionTopics>;
+}) {
+  if (symbol) return selectedCandidateTopics;
+  if (
+    triggerSource === "user_visit_trigger" &&
+    selectedCandidateTopics.length > USER_VISIT_SYMBOL_CANDIDATE_CAP
+  ) {
+    return selectedCandidateTopics.slice(0, USER_VISIT_SYMBOL_CANDIDATE_CAP);
+  }
+  if (triggerSource === "cron") {
+    const limit = Math.min(
+      CRON_MAX_SYMBOL_CARDS_PER_RUN,
+      Math.max(CRON_MIN_SYMBOL_CARDS_PER_RUN, selectedCandidateTopics.length),
+    );
+    return selectedCandidateTopics.slice(0, limit);
+  }
+  return selectedCandidateTopics;
+}
+
+function emitCandidateStrategyIncomplete({
+  onAudit,
+  triggerSource,
+  locale,
+  symbol,
+  candidateKey,
+  missingFields,
+}: {
+  onAudit?: PmDecisionTriggerAuditSink;
+  triggerSource: "cron" | "user_visit_trigger";
+  locale: Locale;
+  symbol: string;
+  candidateKey: string;
+  missingFields: string[];
+}) {
+  onAudit?.({
+    type: "candidate_strategy_incomplete",
+    triggerSource,
+    locale,
+    symbol,
+    candidateKey,
+    missingFields,
+  });
 }
 
 export async function evidenceFromNewsItems(items: NewsItem[]) {
@@ -221,6 +288,16 @@ export async function triggerPmDecisionPipelineOnce({
     const scopedNewsEvidence = recentNewsEvidence.filter((evidence) =>
       evidenceMatchesCandidate(evidence, candidate),
     );
+    if (candidate.candidateType === "symbol" && scopedNewsEvidence.length === 0) {
+      onAudit?.({
+        type: "candidate_skipped",
+        triggerSource,
+        locale: normalizedLocale,
+        symbol: candidate.symbol ?? candidate.candidateKey,
+        reason: "no_news_evidence_for_symbol",
+      });
+      return null;
+    }
     if (
       !bypassLock &&
       !(await tryAcquireLock(`watch:pm-decision:${normalizedLocale}:${candidate.candidateKey}`, {
@@ -243,10 +320,17 @@ export async function triggerPmDecisionPipelineOnce({
       candidate,
       recentMarketSignals,
       recentNewsEvidence: scopedNewsEvidence,
-      importanceThreshold: "medium",
+      importanceThreshold: "low",
       locale: normalizedLocale,
       now,
       partialStageUpdates,
+      onCandidateStrategyIncomplete: (event) =>
+        emitCandidateStrategyIncomplete({
+          onAudit,
+          triggerSource,
+          locale: normalizedLocale,
+          ...event,
+        }),
     });
     if (result) {
       onAudit?.({
@@ -269,12 +353,11 @@ export async function triggerPmDecisionPipelineOnce({
     symbol,
     now,
   });
-  const candidateTopics =
-    !symbol &&
-    triggerSource === "user_visit_trigger" &&
-    selectedCandidateTopics.length > USER_VISIT_SYMBOL_CANDIDATE_CAP
-      ? selectedCandidateTopics.slice(0, USER_VISIT_SYMBOL_CANDIDATE_CAP)
-      : selectedCandidateTopics;
+  const candidateTopics = capCandidateTopicsForTrigger({
+    symbol,
+    triggerSource,
+    selectedCandidateTopics,
+  });
   if (
     !symbol &&
     triggerSource === "user_visit_trigger" &&
@@ -288,6 +371,21 @@ export async function triggerPmDecisionPipelineOnce({
       cappedTo: candidateTopics.length,
       maxResidentCandidates: 1,
       maxSymbolCandidates: USER_VISIT_SYMBOL_CANDIDATE_CAP,
+    });
+  }
+  if (
+    !symbol &&
+    triggerSource === "cron" &&
+    selectedCandidateTopics.length > candidateTopics.length
+  ) {
+    onAudit?.({
+      type: "candidate_cost_cap_applied",
+      triggerSource,
+      locale: normalizedLocale,
+      candidateCount: selectedCandidateTopics.length,
+      cappedTo: candidateTopics.length,
+      maxResidentCandidates: 1,
+      maxSymbolCandidates: CRON_MAX_SYMBOL_CARDS_PER_RUN,
     });
   }
   if (candidateTopics.length === 0) {
@@ -332,17 +430,16 @@ export async function triggerPmDecisionPipelineOnce({
       marketSignalIds: topic.marketSignalIds,
       newsEvidenceIds: topic.newsEvidenceIds,
     });
-    if (!hasTrigger) {
+    if (scopedNewsEvidence.length === 0) {
       onAudit?.({
         type: "candidate_skipped",
         triggerSource,
         locale: normalizedLocale,
         symbol: candidate,
-        reason: "no_trigger",
+        reason: "no_news_evidence_for_symbol",
       });
       continue;
     }
-
     const lock = await tryAcquireLock(`watch:pm-decision:${normalizedLocale}:${candidate}`, {
       ttlMs: PM_DECISION_SYMBOL_LOCK_MS,
       waitMs: 0,
@@ -370,10 +467,17 @@ export async function triggerPmDecisionPipelineOnce({
       candidate: decisionCandidate,
       recentMarketSignals,
       recentNewsEvidence: [selectionEvidence, ...scopedNewsEvidence],
-      importanceThreshold: "high",
+      importanceThreshold: "low",
       locale: normalizedLocale,
       now,
       partialStageUpdates,
+      onCandidateStrategyIncomplete: (event) =>
+        emitCandidateStrategyIncomplete({
+          onAudit,
+          triggerSource,
+          locale: normalizedLocale,
+          ...event,
+        }),
     });
     if (result) {
       onAudit?.({
@@ -429,4 +533,39 @@ export async function triggerPmDecisionPipelineBatch({
     if (output) outputs.push(output);
   }
   return outputs;
+}
+
+export async function triggerPmDecisionPipelineFromNewsEvidence({
+  triggerSource,
+  pool,
+  newsItem,
+  candidate,
+  locale = LEGACY_WATCH_LOCALE,
+  now = Date.now(),
+  partialStageUpdates = true,
+  bypassLock = false,
+  onAudit,
+}: {
+  triggerSource: "cron" | "user_visit_trigger";
+  pool?: CoinPoolPayload;
+  newsItem: NewsItem;
+  candidate: DecisionCandidate;
+  locale?: Locale;
+  now?: number;
+  partialStageUpdates?: boolean;
+  bypassLock?: boolean;
+  onAudit?: PmDecisionTriggerAuditSink;
+}) {
+  // news-driven / fromNewsEvidence entrypoint: each matched news item owns one PM candidate.
+  return triggerPmDecisionPipelineOnce({
+    triggerSource,
+    pool,
+    newsItems: [newsItem],
+    locale,
+    candidate,
+    now,
+    partialStageUpdates,
+    bypassLock,
+    onAudit,
+  });
 }

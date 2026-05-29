@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import {
   TEAM_MEMBER_REGISTRY,
   isTeamMemberId,
@@ -10,6 +10,7 @@ import type { ProviderId } from "@/lib/llm/providers/types";
 type ProviderTelemetryKvClient = {
   lpush(key: string, value: string): Promise<unknown>;
   ltrim(key: string, start: number, stop: number): Promise<unknown>;
+  lrange(key: string, start: number, stop: number): Promise<unknown[]>;
   expire(key: string, seconds: number): Promise<unknown>;
 };
 
@@ -145,6 +146,35 @@ export async function recordProviderCall(input: ProviderTelemetryInput): Promise
   }
 }
 
+export async function readProviderTelemetryCalls({
+  since,
+  limit = KV_LINE_CAP,
+}: {
+  since?: number;
+  limit?: number;
+} = {}): Promise<ProviderCallTelemetry[]> {
+  const safeLimit = Math.max(1, Math.min(Math.floor(limit), KV_LINE_CAP));
+  if (!hasKvClient()) {
+    return memoryCalls
+      .filter((call) => since === undefined || call.ts >= since)
+      .slice(0, safeLimit);
+  }
+
+  try {
+    const client = kv as ProviderTelemetryKvClient;
+    const values = await client.lrange(KV_KEY, 0, safeLimit - 1);
+    return values
+      .map(parseProviderTelemetry)
+      .filter(isProviderTelemetry)
+      .filter((call) => since === undefined || call.ts >= since);
+  } catch (error) {
+    warnKvFallback(error);
+    return memoryCalls
+      .filter((call) => since === undefined || call.ts >= since)
+      .slice(0, safeLimit);
+  }
+}
+
 export function summarizeProviderTelemetry({
   since,
   threshold = DEFAULT_CONCENTRATION_THRESHOLD,
@@ -187,6 +217,28 @@ export function summarizeProviderTelemetry({
       alert: totalSuccesses > 0 && ratio >= threshold,
     },
   };
+}
+
+function parseProviderTelemetry(value: unknown) {
+  if (typeof value === "object" && value !== null) return value;
+  if (typeof value !== "string") return null;
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function isProviderTelemetry(value: unknown): value is ProviderCallTelemetry {
+  if (typeof value !== "object" || value === null) return false;
+  const event = value as Partial<ProviderCallTelemetry>;
+  return (
+    typeof event.ts === "number" &&
+    typeof event.taskTag === "string" &&
+    Array.isArray(event.providerChain) &&
+    Array.isArray(event.attemptedProviders) &&
+    typeof event.success === "boolean"
+  );
 }
 
 export async function warnIfSingleProviderConcentration(

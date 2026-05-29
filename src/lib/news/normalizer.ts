@@ -76,7 +76,7 @@ Rules:
 - sentiment is based on likely crypto market impact, not editorial tone
 - currencies: only include symbols explicitly mentioned or strongly implied
 - max 5 currencies
-- if uncertain and this is broad crypto market news, return ["BTC"]
+- if uncertain and this is broad crypto market news, return []
 - if no clear coin or market anchor, return []
 - JSON only`;
 }

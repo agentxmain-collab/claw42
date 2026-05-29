@@ -124,6 +124,13 @@ export interface DispatchTopicExecutionMode {
   };
 }
 
+export interface NewsItemSummary {
+  headline: string;
+  source: string;
+  observedAt: string;
+  url?: string;
+}
+
 export type DispatchFreshnessStatus =
   | "idle"
   | "cached"
@@ -155,6 +162,7 @@ export interface DispatchTopic {
   status: DispatchTopicStatus;
   title: string;
   explanation?: string;
+  newsItems?: NewsItemSummary[];
   originalUrl?: string;
   sourceLabel?: string;
   startedAt: string;
@@ -179,6 +187,13 @@ export interface DispatchTopic {
 
 export type DispatchTopicAction = "primary" | "secondary";
 
+export interface DispatchTopicPaginationState {
+  hasMore: boolean;
+  loading: boolean;
+  loadedCount: number;
+  onLoadMore: () => void;
+}
+
 export interface DispatchConsoleV9Props {
   events?: PublicTimelineEvent[];
   evidenceMap?: Record<string, NewsEvidence>;
@@ -193,4 +208,5 @@ export interface DispatchConsoleV9Props {
   ) => void | Promise<void>;
   followTradeDict?: DispatchV10FollowTradeDict;
   freshness?: DispatchFreshnessState;
+  pagination?: DispatchTopicPaginationState;
 }

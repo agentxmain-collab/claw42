@@ -3,6 +3,22 @@ import type { DispatchV10FollowTradeDict } from "@/i18n/types";
 import { Topic } from "./Topic";
 import type { DispatchTopic, DispatchTopicAction } from "./types";
 
+function displayRank(topic: DispatchTopic) {
+  if (typeof topic.topicRanking?.rank === "number") return topic.topicRanking.rank;
+  const match = topic.topicRanking?.rankLabel.match(/\d+/);
+  return match ? Number.parseInt(match[0], 10) : Number.POSITIVE_INFINITY;
+}
+
+function sortTopicsForRender(topics: DispatchTopic[]) {
+  return [...topics].sort((a, b) => {
+    const rankDelta = displayRank(a) - displayRank(b);
+    if (rankDelta !== 0) return rankDelta;
+    const timeDelta = (b.lastUpdatedAt ?? 0) - (a.lastUpdatedAt ?? 0);
+    if (timeDelta !== 0) return timeDelta;
+    return a.id.localeCompare(b.id);
+  });
+}
+
 function ChatShellStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="cs-stat">
@@ -24,6 +40,7 @@ export const ChatShell = React.memo(function ChatShell({
   const doneCount = topics.filter((topic) => topic.status === "done").length;
   const activeCount = topics.filter((topic) => topic.status === "active").length;
   const pendingCount = topics.filter((topic) => topic.status === "pending").length;
+  const orderedTopics = sortTopicsForRender(topics);
 
   return (
     <section className="chat-shell" aria-label="AI 团队工作台">
@@ -49,12 +66,12 @@ export const ChatShell = React.memo(function ChatShell({
       </div>
 
       <div className="chat-shell-body">
-        {topics.length === 0 ? (
+        {orderedTopics.length === 0 ? (
           <div className="topic-empty" role="status">
             暂无决策更新
           </div>
         ) : (
-          topics.map((topic, index) => (
+          orderedTopics.map((topic, index) => (
             <div key={topic.id}>
               <Topic
                 topic={topic}
@@ -62,7 +79,7 @@ export const ChatShell = React.memo(function ChatShell({
                 onPlaceholder={onPlaceholder}
                 followTradeDict={followTradeDict}
               />
-              {index < topics.length - 1 ? (
+              {index < orderedTopics.length - 1 ? (
                 <div className="topic-separator" aria-hidden="true">
                   <span className="topic-separator-dot" />
                 </div>

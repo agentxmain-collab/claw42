@@ -65,7 +65,6 @@ const COMMON_CRYPTO_SYMBOLS = new Set([
   "WIF",
 ]);
 const CURRENCY_NAME_ALIASES: Array<[RegExp, string]> = [
-  [/\b(?:crypto|cryptocurrency|digital assets?)\s+markets?(?!\s+maker)\b/gi, "BTC"],
   [/\bbitcoin cash\b/gi, "BCH"],
   [/\bbitcoin\b/gi, "BTC"],
   [/\bethereum\b/gi, "ETH"],

@@ -1,0 +1,39 @@
+[
+  {
+    "label": "买币",
+    "href": "https://www.coinw.com/zh_CN/p2p-trading/personalized/buy"
+  },
+  {
+    "label": "行情",
+    "href": "https://www.coinw.com/zh_CN/market/futures/all"
+  },
+  {
+    "label": "U本位合约",
+    "href": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt"
+  },
+  {
+    "label": "交易",
+    "href": "https://www.coinw.com/zh_CN/spot/btcusdt"
+  },
+  {
+    "label": "跟单",
+    "href": "https://www.coinw.com/zh_CN/copy-trading/futures",
+    "badge": "New"
+  },
+  {
+    "label": "策略",
+    "href": "https://www.coinw.com/zh_CN/trading-bots/all"
+  },
+  {
+    "label": "赚币",
+    "href": "https://www.coinw.com/zh_CN/earn/crypto-savings"
+  },
+  {
+    "label": "Launch X",
+    "href": "https://www.coinw.com/zh_CN/launch-x/lucky-hodl"
+  },
+  {
+    "label": "更多",
+    "href": "https://www.coinw.com/zh_CN/"
+  }
+]

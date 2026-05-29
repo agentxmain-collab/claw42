@@ -49,6 +49,13 @@ function topicFixture({
       ticker: `$${symbol}`,
       text: title,
     },
+    newsItems: [
+      {
+        headline: `${title} headline`,
+        source: "CoinDesk",
+        observedAt: "12:00",
+      },
+    ],
     execution: {
       executable,
       coinwPair: executable ? `${symbol}USDT` : null,
@@ -82,7 +89,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("SOL 决策流");
   });
 
-  test("renders latest strategy and normalized role titles for explicit topics", () => {
+  test("renders normalized role titles for explicit topics", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={dispatchV10DemoTopics}
@@ -91,13 +98,12 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("最新策略");
     expect(html).toContain("技术策略主管");
     expect(html).toContain("宏观情报分析师");
     expect(html).toContain("交易策略总监");
   });
 
-  test("renders upgraded avatars in chat shell, topic head, and strategy head", () => {
+  test("renders upgraded avatars in chat shell and topic head", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[dispatchV10DemoTopics[0]!]}
@@ -111,11 +117,10 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("cs-icon-avatar");
     expect(html).not.toContain('data-inline-avatar="core"');
     expect(html).toContain('data-inline-avatar="technical"');
-    expect(html).toContain('data-inline-avatar="bullish"');
-    expect((html.match(/market-panel-avatar/g) ?? []).length).toBeGreaterThanOrEqual(3);
+    expect((html.match(/market-panel-avatar/g) ?? []).length).toBeGreaterThanOrEqual(1);
   });
 
-  test("renders lightweight card feedback controls for public beta learning", () => {
+  test("does not render the removed public feedback controls on topic cards", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[dispatchV10DemoTopics[0]!]}
@@ -124,10 +129,11 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain("这条分析有帮助吗");
-    expect(html).toContain("有帮助");
-    expect(html).toContain("没帮助");
-    expect(html).toContain('data-feedback-topic="BTC"');
+    expect(html).not.toContain("这条分析有帮助吗");
+    expect(html).not.toContain("有帮助");
+    expect(html).not.toContain("没帮助");
+    expect(html).not.toContain("topic-feedback");
+    expect(html).not.toContain("data-feedback-topic");
   });
 
   test("renders visible-session freshness state", () => {
@@ -146,6 +152,64 @@ describe("MarketAnalysisPanel v10", () => {
 
     expect(html).toContain("新分析进行中");
     expect(html).toContain("完成后自动刷新");
+  });
+
+  test("omits cached analysis age from the workbench header", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        dict={dict}
+        freshness={{
+          status: "idle",
+          symbol: "BTC",
+          lastDecisionAt: "2026-05-19T11:00:00.000Z",
+          refreshSource: "records",
+          residentStatus: {
+            schemaVersion: 1,
+            servedAt: Date.parse("2026-05-19T12:00:00.000Z"),
+            overallState: "ready",
+            slaState: "healthy",
+            latestSucceededAt: "2026-05-19T11:00:00.000Z",
+            marketOverview: {
+              kind: "market_overview",
+              state: "ready",
+              slaState: "healthy",
+              stale: false,
+              ageMs: 60 * 60_000,
+              expectedIntervalMs: 3 * 60 * 60_000,
+              staleAfterMs: 6 * 60 * 60_000,
+              lastSucceededAt: "2026-05-19T11:00:00.000Z",
+              lastAttemptAt: null,
+              nextRunAt: null,
+              lastError: null,
+              jobId: null,
+              candidateKey: "market:zh_CN",
+            },
+            hotspot: {
+              kind: "hotspot",
+              state: "ready",
+              slaState: "healthy",
+              stale: false,
+              ageMs: 90 * 60_000,
+              expectedIntervalMs: 3 * 60 * 60_000,
+              staleAfterMs: 6 * 60 * 60_000,
+              lastSucceededAt: "2026-05-19T10:30:00.000Z",
+              lastAttemptAt: null,
+              nextRunAt: null,
+              lastError: null,
+              jobId: null,
+              candidateKey: "hotspot:zh_CN",
+            },
+          },
+        }}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("AI 团队工作台");
+    expect(html).toContain("实时交易决策流");
+    expect(html).not.toContain("cs-stat");
+    expect(html).not.toContain("全局分析缓存");
+    expect(html).not.toMatch(/分析于\s*\d+\s*分钟前/);
   });
 
   test("renders resident prewarm status ahead of user-trigger freshness copy", () => {
@@ -230,7 +294,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("演示模式：当前不会真实下单");
   });
 
-  test("does not render a clickable trade entry for stale executable decisions", () => {
+  test("bypasses freshness gating for stale executable decisions with a concrete direction", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
@@ -245,6 +309,12 @@ describe("MarketAnalysisPanel v10", () => {
               lastUpdatedAt: 1,
               executable: true,
             }),
+            strategy: {
+              ...dispatchV10DemoTopics[0]!.strategy,
+              action: "long",
+              actionLabel: "做多",
+              ticker: "$BTC",
+            },
             freshnessStatus: {
               level: "stale",
               observedAt: "2026-05-21T00:00:00.000Z",
@@ -260,14 +330,13 @@ describe("MarketAnalysisPanel v10", () => {
     );
 
     expect(html).toContain("freshness-stale");
-    expect(html).toContain("disabled");
-    expect(html).toContain("行情已过期，等待新分析后开放交易");
+    expect(html).not.toContain("行情已过期，等待新分析后开放交易");
     expect(html).toContain("分析于 8 小时前");
-    expect(html).not.toContain("coinw_trade_cta_click");
-    expect(html).not.toContain('target="_blank"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain("去交易");
   });
 
-  test("renders analysis-only market cards as observation summaries with generic CoinW navigation", () => {
+  test("filters market and hotspot cards from the symbol-only market analysis list", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
@@ -282,64 +351,74 @@ describe("MarketAnalysisPanel v10", () => {
               lastUpdatedAt: 1,
               executable: false,
             }),
-            strategy: {
-              ...dispatchV10DemoTopics[0]!.strategy,
-              mode: "observation",
-              ticker: "$MARKET",
-              name: "观察结论",
-              meta: "观察结论已完成，不涉及具体交易",
-              observationSummary: "市场维持震荡，资金仍围绕 BTC 与主流资产轮动。",
-              entry: "",
-              stopLoss: "",
-              takeProfit: "",
-            },
           },
+          topicFixture({
+            id: "hotspot-observation",
+            candidateType: "hotspot",
+            candidateKey: "hotspot:stablecoin-flow:2026-05-22",
+            title: "热点叙事追踪",
+            symbol: "HOTSPOT",
+            score: 2,
+            lastUpdatedAt: 2,
+            executable: false,
+          }),
+          topicFixture({
+            id: "symbol-hype",
+            candidateType: "symbol",
+            candidateKey: "HYPE",
+            title: "HYPE 实时行情分析",
+            symbol: "HYPE",
+            score: 3,
+            lastUpdatedAt: 3,
+            executable: true,
+          }),
         ]}
         dict={dict}
         onPlaceholder={() => undefined}
       />,
     );
 
-    expect(html).toContain("观察结论");
-    expect(html).toContain("市场维持震荡");
-    expect(html).toContain("去 CoinW 看合约");
-    expect(html).toContain('href="https://www.coinw.com/market/futures"');
-    expect(html).not.toContain('<span class="lbl">入场</span>');
-    expect(html).not.toContain('<span class="lbl">止损</span>');
-    expect(html).not.toContain('<span class="lbl">止盈</span>');
+    expect(html).toContain("HYPE 实时行情分析");
+    expect(html).not.toContain("今日大盘综述");
+    expect(html).not.toContain("热点叙事追踪");
+    expect(html).not.toContain("candidate-market-overview");
+    expect(html).not.toContain("candidate-hotspot");
   });
 
-  test("uses fuller public rationale when observation summary is visibly incomplete", () => {
-    const fullObservation =
-      "团队形成一致看多共识，核心逻辑是恐慌贪婪指数28处于极度恐惧区间，历史上对应中期底部概率上升，同时 BTC 24h 仅小幅回落，风险资产反弹条件仍在。";
+  test("renders the first news item instead of repeating the topic explanation", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
           {
             ...topicFixture({
-              id: "market-overview-fuller-observation",
-              candidateType: "market_overview",
-              candidateKey: "market_overview:daily:zh_CN:2026-05-22",
-              title: "今日大盘综述",
-              symbol: "MARKET",
+              id: "symbol-hype-news",
+              candidateType: "symbol",
+              candidateKey: "HYPE",
+              title: "HYPE 实时行情分析",
+              symbol: "HYPE",
               score: 1,
               lastUpdatedAt: 1,
               executable: false,
             }),
-            explanation: fullObservation,
-            messages: [],
             strategy: {
-              ...dispatchV10DemoTopics[0]!.strategy,
+              ...topicFixture({
+                id: "strategy-source",
+                title: "HYPE 实时行情分析",
+                symbol: "HYPE",
+                score: 1,
+                lastUpdatedAt: 1,
+                executable: false,
+              }).strategy,
               mode: "observation",
-              ticker: "$MARKET",
-              name: "观察结论",
-              meta: "观察结论已完成，不涉及具体交易",
-              observationSummary:
-                "团队形成一致看多共识，核心逻辑是恐慌贪婪指数28处于极度恐惧区间，历史上对应中期底部，BTC 24h仅跌0.",
-              entry: "",
-              stopLoss: "",
-              takeProfit: "",
             },
+            explanation: "旧解释不应该在头部重复出现",
+            newsItems: [
+              {
+                headline: "BTC 与主流资产同步进入风险再定价",
+                source: "CryptoCompare",
+                observedAt: "13:20",
+              },
+            ],
           },
         ]}
         dict={dict}
@@ -347,47 +426,228 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html).toContain(fullObservation);
-    expect(html).not.toContain("BTC 24h仅跌0.");
+    expect(html).toContain('class="v3-news-headline"');
+    expect(html).toContain("BTC 与主流资产同步进入风险再定价");
+    expect(html).toContain("CryptoCompare");
+    expect(html).toContain("13:20");
+    expect(html).not.toContain("旧解释不应该在头部重复出现");
   });
 
-  test("renders market and hotspot candidate badges with type-specific card classes", () => {
+  test("shows an explicit no-news placeholder instead of repeating the explanation", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
-          topicFixture({
-            id: "market-overview-1",
-            candidateType: "market_overview",
-            candidateKey: "market_overview:daily:zh_CN:2026-05-17",
-            title: "今日大盘综述",
-            symbol: "MARKET",
-            score: 1,
-            lastUpdatedAt: 1,
-            executable: false,
-          }),
-          topicFixture({
-            id: "hotspot-1",
-            candidateType: "hotspot",
-            candidateKey: "hotspot:stablecoin-flow:2026-05-17",
-            title: "稳定币资金流热点",
-            symbol: "USDT",
-            score: 1,
-            lastUpdatedAt: 1,
-            executable: false,
-          }),
+          {
+            ...topicFixture({
+              id: "symbol-hype-no-news",
+              candidateType: "symbol",
+              candidateKey: "HYPE",
+              title: "HYPE 实时行情分析",
+              symbol: "HYPE",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: false,
+            }),
+            strategy: {
+              ...topicFixture({
+                id: "strategy-source-no-news",
+                title: "HYPE 实时行情分析",
+                symbol: "HYPE",
+                score: 1,
+                lastUpdatedAt: 1,
+                executable: false,
+              }).strategy,
+              mode: "observation",
+            },
+            explanation: "这段解释不应该伪装成新闻摘要",
+            newsItems: [],
+          },
         ]}
         dict={dict}
         onPlaceholder={() => undefined}
       />,
     );
 
-    expect(html).toContain("大盘");
-    expect(html).toContain("热点");
-    expect(html).toContain("candidate-market-overview");
-    expect(html).toContain("candidate-hotspot");
+    expect(html).toContain("暂无相关新闻");
+    expect(html).not.toContain("这段解释不应该伪装成新闻摘要");
   });
 
-  test("counts hotspot stats from hotspot cards, not total cards", () => {
+  test("renders topic card v3 with the seven-block handoff structure and real data", () => {
+    const longBull = "多头反驳：BTC 仍有 ETF 净流入和关键支撑，短线不能假设单边下跌。";
+    const longBear =
+      "空头主线：BTC 24 小时跌破关键区间，恐慌指数同步走弱，空方暂时占优但需要控制追空风险。";
+    const longRisk =
+      "风险审查：爆仓数据显示拥挤交易增加，若价格快速反抽，仓位需要保持轻量并等待确认。";
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "btc-v3",
+              candidateType: "symbol",
+              candidateKey: "BTC",
+              title: "BTC 实时行情分析",
+              symbol: "BTC",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            defaultCollapsed: true,
+            strategy: {
+              ...dispatchV10DemoTopics[0]!.strategy,
+              action: "short",
+              actionLabel: "SHORT 25%",
+              ticker: "$BTC",
+              entry: "76,200 - 76,500",
+              stopLoss: "77,200",
+              takeProfit: "74,000",
+              meta: "置信度 65% · intraday",
+              follow: {
+                ...dispatchV10DemoTopics[0]!.strategy.follow,
+                watchCount: 0,
+                followCount: 0,
+              },
+            },
+            newsItems: [
+              {
+                headline: "BTC 跌破 76,000 USD 关键支撑位，24 小时跌幅扩大到 1.78%",
+                source: "PANews",
+                observedAt: "2026-05-28 07:14 · 4 分钟前",
+                url: "https://example.com/btc-news",
+              },
+            ],
+            messages: [
+              {
+                id: "bull-case",
+                stageId: "v10-demo-btc-decision-flow-stage-2",
+                agentId: "bullish_researcher",
+                agentName: "多头研究员",
+                roleViewpoint: "多头论证视角",
+                time: "12:00",
+                mentions: [],
+                content: longBull,
+                direction: "long",
+                directionLabel: "做多",
+                confidence: 35,
+              },
+              {
+                id: "bear-case",
+                stageId: "v10-demo-btc-decision-flow-stage-2",
+                agentId: "bearish_researcher",
+                agentName: "空头研究员",
+                roleViewpoint: "空头论证视角",
+                time: "12:00",
+                mentions: [],
+                content: longBear,
+                direction: "short",
+                directionLabel: "做空",
+                confidence: 68,
+              },
+              {
+                id: "risk-review",
+                stageId: "v10-demo-btc-decision-flow-stage-4",
+                agentId: "conservative_reviewer",
+                agentName: "风险防御总监",
+                roleViewpoint: "风险审查视角",
+                time: "12:00",
+                mentions: [],
+                content: longRisk,
+                direction: "wait",
+                directionLabel: "中性",
+                confidence: 55,
+              },
+            ],
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain('data-topic-card-v3="true"');
+    expect(html).not.toContain('class="topic-head"');
+    expect(html).not.toContain('class="topic-title-row"');
+    expect(html).toContain('class="v3-topic short');
+    expect(html).toContain('class="v3-news-tag"');
+    expect(html).toContain("决策源");
+    expect(html).toContain('class="v3-news-headline"');
+    expect(html).toContain("<em>76,000 USD</em>");
+    expect(html).toContain('class="v3-news-orig"');
+    expect(html).toContain("原文");
+    expect(html).toContain('class="v3-news-foot"');
+    expect(html).toContain("PANews");
+    expect(html).toContain('class="v3-title-ticker"');
+    expect(html).toContain('class="v3-title-rest"');
+    expect(html).toContain('class="v3-time-chip"');
+    expect((html.match(/class="v3-cell"/g) ?? []).length).toBe(3);
+    expect(html).toContain("入场区间");
+    expect(html).toContain("当前");
+    expect(html).toContain("77,200");
+    expect(html).toContain("74,000");
+    expect(html).toContain('class="v3-mega-top"');
+    expect(html).toContain('class="v3-mega-icon"');
+    expect(html).toContain("SHORT");
+    expect(html).toContain("25%");
+    expect(html).toContain('class="v3-mega-bottom"');
+    expect(html).toContain("去交易");
+    expect(html).toContain('class="v3-reason-head"');
+    expect(html).toContain('class="v3-reason-tag"');
+    expect(html).toContain('class="v3-reason-byline"');
+    expect((html.match(/class="v3-reason-p"/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(html).toContain('class="v3-reason-hl"');
+    expect(html).toContain('class="v3-reason-code"');
+    expect(html).toContain('class="v3-secondary"');
+    expect(html).toContain('class="v3-sec-head"');
+    expect(html).toContain('class="v3-sec-foot"');
+    expect(html).not.toContain('class="v3-pulse"');
+    expect(html).not.toContain("0 人在看 · 0 已跟单");
+    expect(html).toContain("展开");
+    expect(html).toContain("多空双向分析 · 空方占优");
+    expect(html).toContain("核心推理");
+    expect(html).toContain("查看完整推理链");
+    expect(html).toContain('aria-controls="dispatch-v10-topic-btc-v3"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain(longBull);
+    expect(html).toContain(longBear);
+    expect(html).toContain(longRisk);
+    expect(html).not.toContain("4 Agent");
+    expect(html).not.toContain("7 轮辩论");
+  });
+
+  test("renders accumulated server-loaded pages and final infinite-scroll state", () => {
+    const topics = Array.from({ length: 16 }, (_, index) =>
+      topicFixture({
+        id: `symbol-${index + 1}`,
+        candidateType: "symbol",
+        candidateKey: `SYM${index + 1}`,
+        title: `SYM${index + 1} 实时行情分析`,
+        symbol: `SYM${index + 1}`,
+        score: 100 - index,
+        lastUpdatedAt: 100 - index,
+        executable: true,
+      }),
+    );
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={topics}
+        dict={dict}
+        onPlaceholder={() => undefined}
+        pagination={{
+          hasMore: false,
+          loading: false,
+          loadedCount: topics.length,
+          onLoadMore: () => undefined,
+        }}
+      />,
+    );
+
+    expect(html).not.toContain("topic-pagination");
+    expect(html).toContain("SYM15 实时行情分析");
+    expect(html).toContain("SYM16 实时行情分析");
+    expect(html).toContain("已加载全部 16 张");
+  });
+
+  test("omits the header counter block from the symbol-only visible list", () => {
     const marketOnlyHtml = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
@@ -406,7 +666,7 @@ describe("MarketAnalysisPanel v10", () => {
         onPlaceholder={() => undefined}
       />,
     );
-    const marketAndHotspotHtml = renderToStaticMarkup(
+    const symbolHtml = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
           topicFixture({
@@ -420,14 +680,14 @@ describe("MarketAnalysisPanel v10", () => {
             executable: false,
           }),
           topicFixture({
-            id: "hotspot-1",
-            candidateType: "hotspot",
-            candidateKey: "hotspot:stablecoin-flow:2026-05-17",
-            title: "稳定币资金流热点",
-            symbol: "USDT",
+            id: "symbol-1",
+            candidateType: "symbol",
+            candidateKey: "BTC",
+            title: "BTC 实时行情分析",
+            symbol: "BTC",
             score: 1,
             lastUpdatedAt: 1,
-            executable: false,
+            executable: true,
           }),
         ]}
         dict={dict}
@@ -435,11 +695,59 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(marketOnlyHtml).toContain("<span>热点</span><b>0</b>");
-    expect(marketAndHotspotHtml).toContain("<span>热点</span><b>1</b>");
+    expect(marketOnlyHtml).not.toContain("cs-head-right");
+    expect(symbolHtml).not.toContain("cs-head-right");
+    expect(symbolHtml).not.toContain("cs-stat");
   });
 
-  test("uses canonical candidate ordering instead of render index", () => {
+  test("marks unresolved public strategies as tracking and resolved strategies as completed", () => {
+    const trackingHtml = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          topicFixture({
+            id: "tracking-btc",
+            candidateType: "symbol",
+            candidateKey: "BTC",
+            title: "BTC 实时行情分析",
+            symbol: "BTC",
+            score: 1,
+            lastUpdatedAt: 1,
+            executable: true,
+          }),
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+    const completedHtml = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "completed-btc",
+              candidateType: "symbol",
+              candidateKey: "BTC",
+              title: "BTC 实时行情分析",
+              symbol: "BTC",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            resolvedAt: "2026-05-28T07:30:00.000Z",
+          } as DispatchTopic & { resolvedAt: string },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(trackingHtml).toContain("strategy-lifecycle-badge tracking");
+    expect(trackingHtml).toContain("追踪");
+    expect(completedHtml).toContain("strategy-lifecycle-badge completed");
+    expect(completedHtml).toContain("完成");
+  });
+
+  test("uses ranking order for visible symbol topics instead of render index", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
@@ -454,24 +762,14 @@ describe("MarketAnalysisPanel v10", () => {
             executable: true,
           }),
           topicFixture({
-            id: "hotspot-btc-etf",
-            candidateType: "hotspot",
-            candidateKey: "hotspot:btc-etf:2026-05-17",
-            title: "ETF 资金热点",
-            symbol: "BTC",
-            score: 10,
+            id: "symbol-eth",
+            candidateType: "symbol",
+            candidateKey: "ETH",
+            title: "ETH 实时行情分析",
+            symbol: "ETH",
+            score: 100,
             lastUpdatedAt: 200,
-            executable: false,
-          }),
-          topicFixture({
-            id: "market-daily",
-            candidateType: "market_overview",
-            candidateKey: "market_overview:daily:zh_CN:2026-05-17",
-            title: "今日大盘综述",
-            symbol: "MARKET",
-            score: 1,
-            lastUpdatedAt: 100,
-            executable: false,
+            executable: true,
           }),
         ]}
         dict={dict}
@@ -479,8 +777,80 @@ describe("MarketAnalysisPanel v10", () => {
       />,
     );
 
-    expect(html.indexOf("今日大盘综述")).toBeLessThan(html.indexOf("ETF 资金热点"));
-    expect(html.indexOf("ETF 资金热点")).toBeLessThan(html.indexOf("BTC 决策流"));
+    expect(html.indexOf("ETH 实时行情分析")).toBeLessThan(html.indexOf("BTC 决策流"));
+  });
+
+  test("uses ranking rank as the final rendered card order", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "old-rank-4",
+              candidateType: "symbol",
+              candidateKey: "news-driven:BTC:old",
+              title: "Older BTC card",
+              symbol: "BTC",
+              score: 60,
+              lastUpdatedAt: 100,
+              executable: true,
+            }),
+            topicRanking: {
+              score: 60,
+              intensity: 4,
+              rank: 4,
+              rankLabel: "排序 #4",
+              explanation: "Older BTC",
+            },
+          },
+          {
+            ...topicFixture({
+              id: "fresh-rank-1",
+              candidateType: "symbol",
+              candidateKey: "news-driven:BTC:fresh",
+              title: "Fresh BTC card",
+              symbol: "BTC",
+              score: 50,
+              lastUpdatedAt: 300,
+              executable: true,
+            }),
+            topicRanking: {
+              score: 50,
+              intensity: 3,
+              rank: 1,
+              rankLabel: "排序 #1",
+              explanation: "Fresh BTC",
+            },
+          },
+          {
+            ...topicFixture({
+              id: "fresh-rank-3",
+              candidateType: "symbol",
+              candidateKey: "news-driven:SOL:fresh",
+              title: "Fresh SOL card",
+              symbol: "SOL",
+              score: 90,
+              lastUpdatedAt: 200,
+              executable: true,
+            }),
+            topicRanking: {
+              score: 90,
+              intensity: 5,
+              rank: 3,
+              rankLabel: "排序 #3",
+              explanation: "Fresh SOL",
+            },
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html.indexOf("Fresh BTC card")).toBeLessThan(html.indexOf("Fresh SOL card"));
+    expect(html.indexOf("Fresh SOL card")).toBeLessThan(html.indexOf("Older BTC card"));
+    expect(html).not.toContain("排序 #");
+    expect(html).not.toContain("topic-ranking-label");
   });
 
   test("renders the follow-trade primary action only for executable symbol topics", () => {
@@ -523,11 +893,12 @@ describe("MarketAnalysisPanel v10", () => {
 
     expect(marketHtml).not.toContain("演示模式");
     expect(marketHtml).not.toContain("仅分析 / 不自动下单");
+    expect(marketHtml).not.toContain("今日大盘综述");
     expect(symbolHtml).not.toContain("演示模式");
     expect(symbolHtml).toContain("去交易");
   });
 
-  test("renders one CoinW futures navigation action in the primary action slot", () => {
+  test("renders CoinW futures navigation only for visible symbol topics", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
@@ -558,10 +929,9 @@ describe("MarketAnalysisPanel v10", () => {
     );
 
     expect(html).toContain("去交易");
-    expect(html).toContain("去 CoinW 看合约");
-    expect(html).toContain('href="https://www.coinw.com/market/futures"');
+    expect(html).not.toContain("去 CoinW 看合约");
+    expect(html).not.toContain("今日大盘综述");
     expect(html.match(/去交易/g)).toHaveLength(1);
-    expect(html.match(/去 CoinW 看合约/g)).toHaveLength(1);
     expect(html).not.toContain("仅分析 / 不自动下单");
   });
 
@@ -601,8 +971,8 @@ describe("MarketAnalysisPanel v10", () => {
       );
 
       expect(html).toContain('href="https://www.coinw.com/futures/hypeusdt"');
-      expect(html).toContain('href="https://www.coinw.com/market/futures"');
-      expect(html).toContain('data-trade-readiness-kind="instrument_unavailable"');
+      expect(html).not.toContain('href="https://www.coinw.com/market/futures"');
+      expect(html).not.toContain('data-trade-readiness-kind="instrument_unavailable"');
     } finally {
       if (previousTemplate === undefined) {
         delete process.env.NEXT_PUBLIC_COINW_FUTURES_TRADE_URL_TEMPLATE;

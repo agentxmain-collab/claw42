@@ -199,7 +199,54 @@ function withResolution(
 }
 
 describe("mapPublicTimelineEventsToTopics", () => {
-  it("keeps the latest displayable hotspot when a newer hotspot has no public collection voice", () => {
+  it("maps the first public evidence item into topic news summary", () => {
+    const [topic] = mapTopics({
+      events: [pmDecision()],
+      evidenceMap: { ev_1: evidence },
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic?.newsItems).toEqual([
+      {
+        headline: "BTC ETF outflows rise",
+        source: "CoinDesk",
+        observedAt: "15:59",
+        url: "https://example.com/btc",
+      },
+    ]);
+  });
+
+  it("uses the latest public news evidence when a record has no direct evidence ids", () => {
+    const [topic] = mapTopics({
+      events: [pmDecision({ evidenceIds: [] })],
+      evidenceMap: {
+        ev_unrelated_older: {
+          ...evidence,
+          id: "ev_unrelated_older",
+          title: "Older market context",
+          publishedAt: new Date(now - 30 * 60_000).toISOString(),
+          symbol: [],
+        },
+        ev_recent_macro: {
+          ...evidence,
+          id: "ev_recent_macro",
+          title: "Fresh market liquidity update",
+          publishedAt: new Date(now - 2 * 60_000).toISOString(),
+          symbol: [],
+        },
+      },
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic?.newsItems?.[0]).toMatchObject({
+      headline: "Fresh market liquidity update",
+      source: "CoinDesk",
+    });
+  });
+
+  it("drops hotspot resident cards from the public news-driven board", () => {
     const older = pmDecision({
       id: "event-hotspot-displayable",
       ts: now - 10 * 60_000,
@@ -271,12 +318,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topics).toHaveLength(1);
-    expect(topics[0]).toMatchObject({
-      id: "record-hotspot-displayable",
-      symbol: "HOTSPOT",
-      title: "热点叙事追踪",
-    });
+    expect(topics).toHaveLength(0);
   });
 
   it("adapts a real pm_decision event into a v9 dispatch topic", () => {
@@ -471,7 +513,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic).toBeUndefined();
   });
 
-  it("does not allow non-symbol topics to become followable even when payload says executable", () => {
+  it("does not render non-symbol topics on the news-driven public board", () => {
     const event = pmDecision({
       payload: {
         kind: "pm_decision",
@@ -494,16 +536,122 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.candidateType).toBe("market_overview");
-    expect(topic.execution).toMatchObject({
-      executable: false,
-      watchOnly: true,
+    expect(topic).toBeUndefined();
+  });
+
+  it("drops simple pipeline observation cards because public board is symbol-only", () => {
+    const event = pmDecision({
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-hotspot-simple",
+        symbol: "HOTSPOT",
+        candidateType: "hotspot",
+        candidateKey: "hotspot:zh_CN:2026-05-26",
+        displayTitle: "热点叙事追踪",
+        executable: false,
+        tradeDecision: null,
+        analysisSummary: "热点观察已经完成，不涉及具体交易。",
+        stageTrace: [
+          { stageId: "analyst_inputs", status: "done", observedAt: new Date(now).toISOString() },
+          { stageId: "research_lead", status: "done", observedAt: new Date(now).toISOString() },
+          { stageId: "trade_decision", status: "done", observedAt: new Date(now).toISOString() },
+          { stageId: "risk_lead", status: "done", observedAt: new Date(now).toISOString() },
+          { stageId: "record_write", status: "done", observedAt: new Date(now).toISOString() },
+          { stageId: "public_timeline", status: "done", observedAt: new Date(now).toISOString() },
+        ],
+        rationaleByMember: { pm: "热点观察已经完成。" },
+        citationsByMember: {},
+      },
     });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic).toBeUndefined();
+  });
+
+  it("maps simple pipeline executable symbol cards to pair-specific trade strategy", () => {
+    const event = pmDecision({
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-btc-simple",
+        symbol: "BTC",
+        candidateType: "symbol",
+        candidateKey: "news-driven:BTC:test",
+        displayTitle: "BTC 实时行情分析",
+        executable: true,
+        tradeDecision,
+        analysisSummary: "BTC 交易方案已经生成。",
+        rationaleByMember: { pm: "BTC 交易方案已经生成。" },
+        citationsByMember: {},
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
     expect(topic.strategy).toMatchObject({
-      mode: "observation",
-      name: "观察结论",
+      mode: "trade",
+      action: "short",
+      entry: expect.stringContaining("80,"),
+      stopLoss: "81,200",
       follow: {
         primaryDisabled: false,
+        secondaryLabel: "查看详情",
+      },
+    });
+    expect(topic.execution).toMatchObject({
+      executable: true,
+      watchOnly: false,
+    });
+  });
+
+  it("single news-driven contract", () => {
+    const event = pmDecision({
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-btc-news-driven",
+        symbol: "BTC",
+        candidateType: "symbol",
+        candidateKey: "news-driven:BTC:test",
+        displayTitle: "BTC 实时行情分析",
+        executable: true,
+        tradeDecision,
+        analysisSummary: "BTC 新闻触发后形成交易方案。",
+        rationaleByMember: { pm: "BTC 新闻触发后形成交易方案。" },
+        citationsByMember: { pm: ["ev_1"] },
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      evidenceMap: { ev_1: evidence },
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic).toMatchObject({
+      candidateType: "symbol",
+      candidateKey: "news-driven:BTC:test",
+      newsItems: [
+        {
+          headline: "BTC ETF outflows rise",
+          source: "CoinDesk",
+          url: "https://example.com/btc",
+        },
+      ],
+      strategy: {
+        mode: "trade",
+        action: "short",
+        follow: {
+          primaryDisabled: false,
+        },
       },
     });
   });
@@ -636,7 +784,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topics.map((topic) => topic.id)).toEqual(["eth-record", "btc-record"]);
   });
 
-  it("orders strategy topics by ranking score before generated time", () => {
+  it("orders strategy topics by freshness before ranking score", () => {
     const lowerScoreNewerDecision: TradeDecision = {
       ...tradeDecision,
       id: "trade-eth-lower",
@@ -682,7 +830,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topics.map((topic) => topic.id)).toEqual(["btc-record", "eth-record"]);
+    expect(topics.map((topic) => topic.id)).toEqual(["eth-record", "btc-record"]);
     expect(topics.map((topic) => topic.topicRanking?.rankLabel)).toEqual(["排序 #1", "排序 #2"]);
   });
 
@@ -773,7 +921,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
     expect(topic.messages.some((message) => message.typing)).toBe(true);
   });
 
-  it("uses public analysis summary before unrelated evidence copy for analysis-only records", () => {
+  it("drops analysis-only resident records before public card mapping", () => {
     const event = pmDecision();
     if (event.payload.kind !== "pm_decision") throw new Error("expected pm decision fixture");
     const [topic] = mapTopics({
@@ -801,9 +949,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.title).toBe("今日大盘综述");
-    expect(topic.explanation).toBe("市场当前处于多空拉锯但空头证据更扎实的阶段。");
-    expect(topic.trigger.text).toBe("市场当前处于多空拉锯但空头证据更扎实的阶段。");
+    expect(topic).toBeUndefined();
   });
 
   it("marks completed analysis-only records closed instead of leaving progress at stage 3", () => {
@@ -868,31 +1014,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.status).toBe("done");
-    expect(topic.progress).toBe("12 分钟前分析");
-    expect(topic.stages.slice(0, 4).map((stage) => stage.status)).toEqual([
-      "done",
-      "done",
-      "done",
-      "done",
-    ]);
-    expect(topic.stages[4]).toMatchObject({
-      label: "阶段 5 · 观察结论",
-      status: "done",
-      note: "观察结论已完成，不涉及具体交易",
-    });
-    expect(topic.stages[5]).toMatchObject({
-      label: "阶段 6 · 观察结论",
-      status: "done",
-      note: "观察结论已完成，不涉及具体交易",
-    });
-    expect(topic.strategy).toMatchObject({
-      mode: "observation",
-      name: "观察结论",
-      meta: "观察结论已完成，不涉及具体交易",
-      observationSummary: "今日大盘分析已完成。",
-    });
-    expect(topic.messages.some((message) => message.typing)).toBe(false);
+    expect(topic).toBeUndefined();
   });
 
   it("renders partial stage trace as a monotonic current in-progress stage", () => {
@@ -1110,17 +1232,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.progress).toBe("当前进行到阶段 3 · 1 分钟前分析");
-    expect(topic.stages.map((stage) => stage.status)).toEqual([
-      "done",
-      "done",
-      "in_progress",
-      "pending",
-      "pending",
-      "pending",
-    ]);
-    expect(topic.messages.some((message) => message.sourceMemberId === "risk_lead")).toBe(false);
-    expect(topic.messages.some((message) => message.stageId === `${topic.id}-stage-4`)).toBe(false);
+    expect(topic).toBeUndefined();
   });
 
   it("keeps analysis-only risk messages hidden even when record-write and timeline audit stages are done", () => {
@@ -1203,19 +1315,7 @@ describe("mapPublicTimelineEventsToTopics", () => {
       now,
     });
 
-    expect(topic.progress).toBe("当前进行到阶段 3 · 1 分钟前分析");
-    expect(topic.stages.map((stage) => stage.status)).toEqual([
-      "done",
-      "done",
-      "in_progress",
-      "pending",
-      "pending",
-      "pending",
-    ]);
-    expect(topic.messages.map((message) => message.sourceMemberId)).toEqual([
-      "chart_analyst",
-      "research_lead",
-    ]);
+    expect(topic).toBeUndefined();
   });
 
   it("groups multi-round decision messages by round label", () => {
@@ -1855,5 +1955,100 @@ describe("mapPublicTimelineEventsToTopics", () => {
 
     expect(topic.originalUrl).toBeUndefined();
     expect(topic.sourceLabel).toBeUndefined();
+  });
+
+  it("orders visible cards by freshness before ranking score", () => {
+    const olderHighScore = pmDecision({
+      id: "event-btc-old",
+      ts: now - 20 * 60_000,
+      importance: "high",
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-btc-old",
+        symbol: "BTC",
+        candidateType: "symbol",
+        candidateKey: "news-driven:BTC:old",
+        displayTitle: "BTC 实时行情分析",
+        executable: true,
+        tradeDecision: {
+          ...tradeDecision,
+          symbol: "BTC",
+          confidence: 0.92,
+          generatedAt: new Date(now - 20 * 60_000).toISOString(),
+        },
+        rationaleByMember: { news_analyst: "BTC high-score but older." },
+        citationsByMember: { news_analyst: ["ev_1"] },
+      },
+    });
+    const newerLowerScore = pmDecision({
+      id: "event-eth-new",
+      ts: now - 2 * 60_000,
+      importance: "medium",
+      evidenceIds: ["ev_2"],
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-eth-new",
+        symbol: "ETH",
+        candidateType: "symbol",
+        candidateKey: "news-driven:ETH:new",
+        displayTitle: "ETH 实时行情分析",
+        executable: true,
+        tradeDecision: {
+          ...tradeDecision,
+          id: "trade-eth",
+          symbol: "ETH",
+          confidence: 0.52,
+          generatedAt: new Date(now - 2 * 60_000).toISOString(),
+        },
+        rationaleByMember: { news_analyst: "ETH newer but lower-score." },
+        citationsByMember: { news_analyst: ["ev_2"] },
+      },
+    });
+
+    const topics = mapTopics({
+      events: [olderHighScore, newerLowerScore],
+      evidenceMap: {
+        ev_1: evidence,
+        ev_2: { ...evidence, id: "ev_2", symbol: ["ETH"], impactSeverity: "low" },
+      },
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topics.map((topic) => topic.symbol)).toEqual(["ETH", "BTC"]);
+  });
+
+  it("interleaves same-symbol visible cards when another symbol is available", () => {
+    const eventFor = (symbol: string, key: string, minutesAgo: number) =>
+      pmDecision({
+        id: `event-${key}`,
+        ts: now - minutesAgo * 60_000,
+        evidenceIds: [`ev_${key}`],
+        payload: {
+          kind: "pm_decision",
+          recordId: `record-${key}`,
+          symbol,
+          candidateType: "symbol",
+          candidateKey: `news-driven:${symbol}:${key}`,
+          displayTitle: `${symbol} 实时行情分析`,
+          executable: true,
+          tradeDecision: {
+            ...tradeDecision,
+            id: `trade-${key}`,
+            symbol,
+            generatedAt: new Date(now - minutesAgo * 60_000).toISOString(),
+          },
+          rationaleByMember: { news_analyst: `${symbol} ${key} rationale.` },
+          citationsByMember: { news_analyst: [`ev_${key}`] },
+        },
+      });
+
+    const topics = mapTopics({
+      events: [eventFor("BTC", "btc-a", 1), eventFor("BTC", "btc-b", 2), eventFor("ETH", "eth", 3)],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH", "BTC"]);
   });
 });

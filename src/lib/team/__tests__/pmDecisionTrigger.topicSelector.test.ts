@@ -191,6 +191,71 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     expect(input.recentNewsEvidence.map((evidence) => evidence.symbol)).toContainEqual(["ETH"]);
   });
 
+  it("runs cron candidates with symbol news even when no alert trigger fires", async () => {
+    const auditEvents: unknown[] = [];
+    const quietPool = {
+      ...pool(),
+      tickers: {
+        BTC: { price: 101000, change24h: 0.2 },
+        ETH: { price: 4200, change24h: 0.3 },
+        SOL: { price: 220, change24h: 0.4 },
+        USDT: { price: 1, change24h: 0.01 },
+      },
+      majors: [
+        { symbol: "BTC", price: 101000, change24h: 0.2, category: "majors" },
+        { symbol: "ETH", price: 4200, change24h: 0.3, category: "majors" },
+      ],
+      trending: [{ symbol: "SOL", price: 220, change24h: 0.4, category: "trending" }],
+    } satisfies CoinPoolPayload;
+
+    await triggerPmDecisionPipelineOnce({
+      triggerSource: "cron",
+      pool: quietPool,
+      newsItems: [
+        newsItem({
+          id: "news-btc-low",
+          title: "BTC market structure holds",
+          currencies: ["BTC"],
+          sentiment: "neutral",
+          votes: {
+            positive: 0,
+            negative: 0,
+            important: 0,
+          },
+        }),
+      ],
+      locale: "zh_CN",
+      now,
+      onAudit: (event) => auditEvents.push(event),
+    });
+
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
+    expect(input.candidate).toMatchObject({ candidateType: "symbol", symbol: "BTC" });
+    expect(input.importanceThreshold).toBe("low");
+    expect(auditEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "candidate_considered",
+          symbol: "BTC",
+          hasTrigger: false,
+        }),
+        expect.objectContaining({
+          type: "candidate_generated",
+          symbol: "BTC",
+        }),
+      ]),
+    );
+    expect(auditEvents).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "candidate_skipped",
+          reason: "no_trigger",
+        }),
+      ]),
+    );
+  });
+
   it("adds recent decision memory to the selection evidence sent into the PM prompt", async () => {
     readAllDecisionRecordsMock.mockResolvedValue([
       {
@@ -253,7 +318,14 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     await triggerPmDecisionPipelineOnce({
       triggerSource: "user_visit_trigger",
       pool: pool(),
-      newsItems: [newsItem()],
+      newsItems: [
+        newsItem(),
+        newsItem({
+          id: "news-sol",
+          title: "SOL momentum improves",
+          currencies: ["SOL"],
+        }),
+      ],
       locale: "zh_CN",
       now,
     });
@@ -264,7 +336,9 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     });
     const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
     expect(input.recentMarketSignals.map((signal) => signal.symbol)).toEqual(["SOL"]);
-    expect(input.recentNewsEvidence.map((evidence) => evidence.symbol)).toEqual([["SOL"]]);
+    expect(input.recentNewsEvidence.map((evidence) => evidence.symbol)).toEqual(
+      expect.arrayContaining([["SOL"]]),
+    );
   });
 
   it("emits audit events for candidates skipped by trigger and lock state", async () => {
@@ -285,6 +359,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     });
 
     expect(runPmDecisionPipelineMock).not.toHaveBeenCalled();
+    expect(tryAcquireLockMock).not.toHaveBeenCalled();
     expect(auditEvents).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -295,20 +370,58 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
         expect.objectContaining({
           type: "candidate_skipped",
           symbol: "BTC",
-          reason: "locked",
+          reason: "no_news_evidence_for_symbol",
         }),
         expect.objectContaining({
           type: "candidate_skipped",
           symbol: "BILL",
-          reason: "no_trigger",
+          reason: "no_news_evidence_for_symbol",
         }),
       ]),
     );
   });
 
-  it("does not let symbol-less market news trigger non-BTC candidates after BTC is locked", async () => {
+  it("skips an explicit symbol candidate before locking when no scoped news evidence exists", async () => {
     const auditEvents: unknown[] = [];
-    tryAcquireLockMock.mockResolvedValue(null);
+
+    const result = await triggerPmDecisionPipelineOnce({
+      triggerSource: "cron",
+      pool: pool(),
+      newsItems: [],
+      locale: "zh_CN",
+      candidate: {
+        candidateType: "symbol",
+        candidateKey: "BTC",
+        symbol: "BTC",
+        displayTitle: "BTC 实时行情分析",
+        executable: true,
+        cadence: "event",
+        score: 1,
+        reasons: [],
+      },
+      now,
+      onAudit: (event) => auditEvents.push(event),
+    });
+
+    expect(result).toBeNull();
+    expect(tryAcquireLockMock).not.toHaveBeenCalled();
+    expect(runPmDecisionPipelineMock).not.toHaveBeenCalled();
+    expect(auditEvents).toEqual([
+      expect.objectContaining({
+        type: "candidate_skipped",
+        symbol: "BTC",
+        reason: "no_news_evidence_for_symbol",
+      }),
+    ]);
+  });
+
+  it("falls through to another major when macro news exists and BTC is locked", async () => {
+    const auditEvents: unknown[] = [];
+    tryAcquireLockMock.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      key: "watch:pm-decision:zh_CN:ETH",
+      token: "test-token",
+      acquiredAt: now,
+    });
     const quietPool = {
       ...pool(),
       tickers: {
@@ -344,38 +457,32 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
       onAudit: (event) => auditEvents.push(event),
     });
 
-    expect(runPmDecisionPipelineMock).not.toHaveBeenCalled();
+    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    const input = runPmDecisionPipelineMock.mock.calls[0]?.[0] as PmDecisionPipelineInput;
+    const selectedSymbol = input.candidate?.symbol;
+    expect(selectedSymbol).toBeDefined();
+    expect(["BTC", "ETH", "SOL"]).toContain(selectedSymbol);
+    expect(selectedSymbol).not.toBe("SOL");
+    expect(input.recentNewsEvidence.map((evidence) => evidence.symbol)).toContainEqual([]);
     expect(auditEvents).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           type: "candidate_considered",
-          symbol: "BTC",
+          symbol: "SOL",
           hasTrigger: true,
         }),
         expect.objectContaining({
           type: "candidate_skipped",
-          symbol: "BTC",
+          symbol: "SOL",
           reason: "locked",
         }),
         expect.objectContaining({
           type: "candidate_considered",
-          symbol: "ETH",
-          hasTrigger: false,
+          symbol: selectedSymbol,
         }),
         expect.objectContaining({
-          type: "candidate_skipped",
-          symbol: "ETH",
-          reason: "no_trigger",
-        }),
-        expect.objectContaining({
-          type: "candidate_considered",
-          symbol: "SOL",
-          hasTrigger: false,
-        }),
-        expect.objectContaining({
-          type: "candidate_skipped",
-          symbol: "SOL",
-          reason: "no_trigger",
+          type: "candidate_generated",
+          symbol: selectedSymbol,
         }),
       ]),
     );
@@ -418,8 +525,8 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
         }),
       ]),
     );
-    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(3);
-    expect(tryAcquireLockMock).toHaveBeenCalledTimes(3);
+    expect(runPmDecisionPipelineMock).not.toHaveBeenCalled();
+    expect(tryAcquireLockMock).not.toHaveBeenCalled();
   });
 
   it("lets user visits rotate a quiet major when symbol coverage is still sparse", async () => {
@@ -444,7 +551,7 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
       onAudit: (event) => auditEvents.push(event),
     });
 
-    expect(runPmDecisionPipelineMock).toHaveBeenCalledTimes(1);
+    expect(runPmDecisionPipelineMock).not.toHaveBeenCalled();
     expect(auditEvents).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -453,8 +560,9 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
           hasTrigger: true,
         }),
         expect.objectContaining({
-          type: "candidate_generated",
+          type: "candidate_skipped",
           symbol: "BTC",
+          reason: "no_news_evidence_for_symbol",
         }),
       ]),
     );
@@ -485,7 +593,9 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     const outputs = await triggerPmDecisionPipelineBatch({
       triggerSource: "cron",
       pool: expandedPool,
-      newsItems: [],
+      newsItems: [
+        newsItem({ id: "news-bill", title: "BILL momentum accelerates", currencies: ["BILL"] }),
+      ],
       locale: "zh_CN",
       now,
     });
@@ -568,7 +678,13 @@ describe("triggerPmDecisionPipelineOnce topic selection", () => {
     const result = await triggerPmDecisionPipelineOnce({
       triggerSource: "user_visit_trigger",
       pool: pool(),
-      newsItems: [newsItem()],
+      newsItems: [
+        newsItem({
+          id: "news-btc",
+          title: "BTC rotation baseline holds",
+          currencies: ["BTC"],
+        }),
+      ],
       locale: "zh_CN",
       now,
       onAudit: (event) => auditEvents.push(event),

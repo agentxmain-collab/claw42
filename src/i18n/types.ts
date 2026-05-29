@@ -281,6 +281,7 @@ export type DispatchV10Dict = {
     messageExpand: string;
     messageCollapse: string;
     original: string;
+    noNews: string;
     progressAriaLabel: string;
     progressLabels: string[];
     latestStrategy: string;
@@ -316,6 +317,8 @@ export type DispatchV10Dict = {
     feedbackHelpful: string;
     feedbackNotHelpful: string;
     feedbackThanks: string;
+    loadingMore: string;
+    loadedAll: string;
   };
   placeholder: {
     title: string;
@@ -346,6 +349,7 @@ export interface Dict {
     ctaSecondary: string;
     speechBubble: string[];
     speechBubbleAriaLabel: string;
+    robotGuide: string;
     miniPlayer: {
       title: string;
       loading: string;
@@ -443,6 +447,10 @@ export interface Dict {
     }>;
   };
   disclaimer: {
+    title: string;
+    paragraphs: string[];
+  };
+  disclaimerAnalysis: {
     title: string;
     paragraphs: string[];
   };

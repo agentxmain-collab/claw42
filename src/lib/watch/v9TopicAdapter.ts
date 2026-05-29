@@ -289,6 +289,70 @@ function originalEvidenceUrl(evidence: NewsEvidence | undefined) {
   }
 }
 
+function evidenceObservedAt(evidence: NewsEvidence, fallback: number) {
+  const publishedAtMs = Date.parse(evidence.publishedAt);
+  if (Number.isFinite(publishedAtMs)) return publishedAtMs;
+  const fetchedAtMs = Date.parse(evidence.fetchedAt);
+  return Number.isFinite(fetchedAtMs) ? fetchedAtMs : fallback;
+}
+
+function isPublicNewsEvidence(evidence: NewsEvidence | undefined): evidence is NewsEvidence {
+  if (!evidence) return false;
+  if (evidence.source === "Claw42 Topic Selector") return false;
+  return Boolean(originalEvidenceUrl(evidence));
+}
+
+function evidenceMatchesGroup(evidence: NewsEvidence, group: DispatchTopicGroup) {
+  const symbol = group.symbol.trim().replace(/^\$+/, "").toUpperCase();
+  if (!symbol) return false;
+  if (evidence.symbol.length === 0) return true;
+  if (
+    evidence.symbol
+      .map((item) => item.trim().replace(/^\$+/, "").toUpperCase())
+      .some((item) => item === symbol)
+  ) {
+    return true;
+  }
+  return new RegExp(`(^|[^A-Z0-9])${symbol}([^A-Z0-9]|$)`).test(
+    `${evidence.title} ${evidence.summary}`.toUpperCase(),
+  );
+}
+
+function fallbackNewsEvidenceForGroup(
+  group: DispatchTopicGroup,
+  evidenceMap: V9AdapterContext["evidenceMap"],
+) {
+  return Object.values(evidenceMap ?? {})
+    .filter(isPublicNewsEvidence)
+    .filter((evidence) => evidenceMatchesGroup(evidence, group))
+    .sort(
+      (left, right) =>
+        evidenceObservedAt(right, group.latestAt) - evidenceObservedAt(left, group.latestAt),
+    )[0];
+}
+
+function newsItemsForGroup(
+  group: DispatchTopicGroup,
+  evidenceMap: V9AdapterContext["evidenceMap"],
+) {
+  const evidence =
+    group.evidenceIds
+      .map((evidenceId) => evidenceMap?.[evidenceId])
+      .find((item): item is NewsEvidence => isPublicNewsEvidence(item)) ??
+    fallbackNewsEvidenceForGroup(group, evidenceMap);
+
+  return evidence
+    ? [
+        {
+          headline: evidence.title,
+          source: evidence.source,
+          observedAt: formatTime(evidenceObservedAt(evidence, group.latestAt)),
+          ...(originalEvidenceUrl(evidence) ? { url: originalEvidenceUrl(evidence) } : {}),
+        },
+      ]
+    : [];
+}
+
 function stageId(topicId: string, stage: number) {
   return `${topicId}-stage-${stage}`;
 }
@@ -911,6 +975,7 @@ function makeStrategy(
       : `${decision.direction.toUpperCase()} ${Math.round(decision.positionSizing * 100)}%`;
 
   return {
+    mode: "trade",
     action: decision.direction === "wait" ? "wait" : decision.direction,
     actionLabel,
     name: decision.direction === "wait" ? "本次决策" : "交易方案",
@@ -1007,20 +1072,64 @@ function compareRankedGroups(
   b: { group: DispatchTopicGroup; ranking: ReturnType<typeof calculateTopicRankingScore> },
 ) {
   return (
-    b.ranking.score - a.ranking.score ||
     strategySortTime(b.group) - strategySortTime(a.group) ||
     b.group.latestAt - a.group.latestAt ||
+    b.ranking.score - a.ranking.score ||
     publicTimelineEventStableId(a.group.latestDecision).localeCompare(
       publicTimelineEventStableId(b.group.latestDecision),
     )
   );
 }
 
+function diversificationSymbol(group: DispatchTopicGroup) {
+  if (group.candidateType !== "symbol") return "";
+  return group.symbol.trim().replace(/^\$+/, "").toUpperCase();
+}
+
+function interleaveRankedGroupsBySymbol(
+  groups: Array<{
+    group: DispatchTopicGroup;
+    ranking: ReturnType<typeof calculateTopicRankingScore>;
+  }>,
+) {
+  const remaining = [...groups];
+  const interleaved: typeof groups = [];
+  while (remaining.length > 0) {
+    const previousSymbol = interleaved.length
+      ? diversificationSymbol(interleaved[interleaved.length - 1]!.group)
+      : "";
+    const nextIndex =
+      previousSymbol &&
+      remaining.some((entry) => diversificationSymbol(entry.group) !== previousSymbol)
+        ? remaining.findIndex((entry) => diversificationSymbol(entry.group) !== previousSymbol)
+        : 0;
+    const [next] = remaining.splice(nextIndex, 1);
+    if (next) interleaved.push(next);
+  }
+
+  const hasAdjacentSameSymbol = interleaved.some((entry, index) => {
+    if (index === 0) return false;
+    const current = diversificationSymbol(entry.group);
+    return Boolean(current && current === diversificationSymbol(interleaved[index - 1]!.group));
+  });
+  if (hasAdjacentSameSymbol) {
+    console.info(
+      JSON.stringify({
+        type: "claw42_watch_event",
+        event: "same_symbol_diversification_unavailable",
+        visible_count: interleaved.length,
+      }),
+    );
+  }
+
+  return interleaved;
+}
+
 function displayablePublicBetaGroup(group: DispatchTopicGroup) {
   const latest = group.latestDecision;
   if (latest.payload.kind !== "pm_decision") return false;
   if (!hasPublicInformationCollectionRound(latest)) return false;
-  if (group.candidateType !== "symbol") return true;
+  if (group.candidateType !== "symbol") return false;
   if (typeof latest.payload.executable === "boolean") return latest.payload.executable;
   return resolveSymbolMapping(group.symbol).execution.executable;
 }
@@ -1042,8 +1151,9 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       };
     })
     .sort(compareRankedGroups);
+  const visibleRankedGroups = interleaveRankedGroupsBySymbol(rankedGroups);
 
-  return rankedGroups.map(({ group, ranking }, index) => {
+  return visibleRankedGroups.map(({ group, ranking }, index) => {
     const evidence = firstEvidence(group, ctx.evidenceMap);
     const originalUrl = originalEvidenceUrl(evidence);
     const latest = group.latestDecision;
@@ -1072,6 +1182,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       displayTitle: group.displayTitle,
       symbol: group.symbol,
       lastUpdatedAt: group.latestAt,
+      resolvedAt: latest.payload.resolution?.resolvedAt ?? null,
       freshnessStatus: latest.payload.freshnessStatus,
       execution: {
         executable,
@@ -1083,6 +1194,7 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       status,
       title: makeTitle(group, hasTradeDecision, hasRationale),
       explanation: makeExplanation(group, hasTradeDecision, hasRationale, evidence),
+      newsItems: newsItemsForGroup(group, ctx.evidenceMap),
       originalUrl,
       sourceLabel: originalUrl ? evidence?.source : undefined,
       startedAt: formatTime(group.startedAt),

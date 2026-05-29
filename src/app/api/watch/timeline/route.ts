@@ -44,6 +44,11 @@ export async function GET(request: NextRequest) {
     MAX_PUBLIC_TIMELINE_WINDOW_MINUTES,
   );
   const limit = Math.min(Math.max(numberParam(url.searchParams.get("limit"), 30), 1), 100);
+  const page = Math.max(Math.floor(numberParam(url.searchParams.get("page"), 1)), 1);
+  const pageSize = Math.min(
+    Math.max(Math.floor(numberParam(url.searchParams.get("pageSize"), limit)), 1),
+    100,
+  );
   const before = strictNumberParam(url.searchParams.get("before"), Date.now());
   const sinceParam = url.searchParams.get("since");
   const since = sinceParam ? strictNumberParam(sinceParam, 0) : undefined;
@@ -57,7 +62,9 @@ export async function GET(request: NextRequest) {
     locale,
     before,
     since,
-    limit,
+    limit: mode === "public" ? pageSize : limit,
+    page,
+    pageSize,
     windowMinutes,
   });
   const includeStorageDiagnostics = url.searchParams.get("diagnostics") === "storage";

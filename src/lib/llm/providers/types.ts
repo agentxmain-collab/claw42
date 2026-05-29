@@ -16,6 +16,10 @@ export interface LLMInput {
   cacheTTLSeconds?: number;
   taskTag: string;
   providerOverride?: ProviderId;
+  modelOverride?: string;
+  thinkingMode?: "enabled" | "disabled";
+  responseFormat?: "json_object";
+  diagnosticsCollector?: LLMAttemptDiagnosticsCollector;
 }
 
 export interface LLMOutput {
@@ -35,6 +39,28 @@ export interface LLMProvider {
   isHealthy(): Promise<boolean>;
   estimateCost(input: LLMInput): { inputUsd: number; outputUsd: number };
 }
+
+export interface LLMAttemptDiagnostic {
+  provider: ProviderId;
+  model: string;
+  taskTag: string;
+  httpStatus: number | null;
+  finishReason: string | null;
+  usage: {
+    promptTokens: number | null;
+    completionTokens: number | null;
+    totalTokens: number | null;
+  };
+  contentLength: number | null;
+  reasoningContent: {
+    present: boolean;
+    length: number | null;
+  };
+  error: string | null;
+  latencyMs: number;
+}
+
+export type LLMAttemptDiagnosticsCollector = (diagnostic: LLMAttemptDiagnostic) => void;
 
 export const DEFAULT_TEMPERATURE = 0.7;
 export const DEFAULT_MAX_TOKENS = 800;

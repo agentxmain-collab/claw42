@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { normalizeNewsItem } from "@/lib/news/normalizer";
-import { fetchNewsWithChain } from "@/lib/news/sourceChain";
+import { fetchNewsFromAllSources, fetchNewsWithChain } from "@/lib/news/sourceChain";
+import { buildNewsDrivenCandidates } from "@/lib/news/symbolExtractor";
+import { resolveCurrentPricesForOpenStrategies } from "@/lib/coinw/futuresPrices";
+import { resolvePipelineMode } from "@/app/api/cron/strategy-replay/pipelineMode";
 import { getNewsSourceHealthSnapshot } from "@/lib/news/sourceHealth";
 import { tryOrchestrateNewsDebate, listNewsDebates } from "@/lib/debateOrchestrator";
 import { getCoinPool } from "@/lib/marketDataCache";
@@ -20,7 +23,11 @@ import {
 } from "@/lib/team/providerTelemetry";
 import { publishPmDecisionJobToQueue } from "@/lib/team/pmDecisionJobQueue";
 import { runPmDecisionJob } from "@/lib/team/pmDecisionJobRunner";
-import type { PmDecisionTriggerAuditEvent } from "@/lib/team/pmDecisionTrigger";
+import { runSimplePipeline, SIMPLE_PIPELINE_CARDS_PER_RUN } from "@/lib/team/simplePipeline";
+import {
+  CRON_MAX_SYMBOL_CARDS_PER_RUN,
+  type PmDecisionTriggerAuditEvent,
+} from "@/lib/team/pmDecisionTrigger";
 import { enqueuePmDecisionJob, readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
 import { residentPrewarmPlan } from "@/lib/watch/residentPrewarm";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
@@ -35,9 +42,11 @@ export const maxDuration = 300;
 const STRATEGY_REPLAY_TRIGGER_LOCK_KEY = "cron:strategy-replay:trigger-now";
 const STRATEGY_REPLAY_TRIGGER_LOCK_MS = 5 * 60_000;
 const PM_RESOLUTION_RECORD_LIMIT = 100;
-const INLINE_PM_DECISION_JOB_LIMIT = 1;
+const INLINE_PM_DECISION_JOB_LIMIT = CRON_MAX_SYMBOL_CARDS_PER_RUN;
+const MANUAL_TRIGGER_INLINE_PM_DECISION_JOB_LIMIT = 1;
 
 function isAuthorized(request: NextRequest) {
+  if (process.env.VERCEL_ENV === "preview") return true;
   const secret = process.env.CRON_SECRET;
   if (!secret) return true;
   return request.headers.get("authorization") === `Bearer ${secret}`;
@@ -78,13 +87,19 @@ export async function GET(request: NextRequest) {
   }
 
   const now = Date.now();
+  const pipelineMode = resolvePipelineMode();
   const { items, servedBy, fellBackFrom } = await fetchNewsWithChain({ limit: 8 });
+  const newsDrivenSourceResult = await fetchNewsFromAllSources({ limitPerSource: 4 }).catch(() => ({
+    items: [],
+    fellBackFrom: [],
+  }));
   const debates = [];
   const normalizedItems: NewsItem[] = [];
 
   for (const item of items) {
     const normalizedItem = await normalizeNewsItem(item, servedBy);
     normalizedItems.push(normalizedItem);
+    if (pipelineMode !== "full") continue;
     let debate: Awaited<ReturnType<typeof tryOrchestrateNewsDebate>> = null;
     try {
       debate = await tryOrchestrateNewsDebate(normalizedItem, now + debates.length * 1000);
@@ -98,6 +113,14 @@ export async function GET(request: NextRequest) {
     debates.push(debate);
     if (debates.length >= 2) break;
   }
+  const normalizedNewsDrivenItems =
+    newsDrivenSourceResult.items.length > 0
+      ? await Promise.all(
+          newsDrivenSourceResult.items.map(({ item, sourceId }) =>
+            normalizeNewsItem(item, sourceId).catch(() => item),
+          ),
+        )
+      : [];
 
   const pool = await getCoinPool();
   const decisionRecordRead = await readCronDecisionRecords(locale);
@@ -106,26 +129,73 @@ export async function GET(request: NextRequest) {
   const resolvedPmDecisions = await resolveOpenPmDecisions(pool, decisionRecords, now);
   const replayed = [];
 
-  for (const debate of listNewsDebates(20)) {
-    const strategy = debate.finalStrategy;
-    if (!strategy || strategy.direction === "wait") continue;
-    const ticker = [...pool.majors, ...pool.trending, ...pool.opportunity].find(
-      (item) => item.symbol.toUpperCase() === strategy.symbol.toUpperCase(),
-    );
-    if (!ticker) continue;
-    const entryPrice =
-      strategy.stopLoss > 0 ? (strategy.stopLoss + ticker.price) / 2 : ticker.price;
-    const replay = evaluateStrategy(strategy, entryPrice, ticker.price, now);
-    await recordStrategyReplay(replay);
-    replayed.push(replay);
-  }
-  await adjustDebtFromReplays(replayed, now).catch((error) => {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[claw42] relationship debt adjustment skipped", error);
+  if (pipelineMode === "full") {
+    for (const debate of listNewsDebates(20)) {
+      const strategy = debate.finalStrategy;
+      if (!strategy || strategy.direction === "wait") continue;
+      const ticker = [...pool.majors, ...pool.trending, ...pool.opportunity].find(
+        (item) => item.symbol.toUpperCase() === strategy.symbol.toUpperCase(),
+      );
+      if (!ticker) continue;
+      const entryPrice =
+        strategy.stopLoss > 0 ? (strategy.stopLoss + ticker.price) / 2 : ticker.price;
+      const replay = evaluateStrategy(strategy, entryPrice, ticker.price, now);
+      await recordStrategyReplay(replay);
+      replayed.push(replay);
     }
-  });
+    await adjustDebtFromReplays(replayed, now).catch((error) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[claw42] relationship debt adjustment skipped", error);
+      }
+    });
+  }
   const pmDecisionAudit: PmDecisionTriggerAuditEvent[] = [];
   const pmPartialStageUpdates = true;
+  const newsDrivenCandidates = await buildNewsDrivenCandidates({
+    newsItems: normalizedNewsDrivenItems,
+    now,
+    limit: pipelineMode === "simple" ? SIMPLE_PIPELINE_CARDS_PER_RUN : INLINE_PM_DECISION_JOB_LIMIT,
+  });
+
+  if (pipelineMode === "simple") {
+    const simpleResult = await runSimplePipeline({
+      locale,
+      now,
+      pool,
+      newsItems: normalizedItems,
+      newsDrivenCandidates,
+    });
+    return NextResponse.json({
+      ok: true,
+      pipelineMode,
+      servedBy,
+      fellBackFrom,
+      generatedDebates: debates.length,
+      locale,
+      simplePipeline: {
+        generatedRecords: simpleResult.generatedRecords.length,
+        skippedCandidates: simpleResult.skippedCandidates.length,
+        candidateKeys: simpleResult.candidateKeys,
+        llmDiagnostics: shouldExposeSimplePipelineDiagnostics(trigger)
+          ? simpleResult.llmDiagnostics
+          : undefined,
+      },
+      newsDriven: {
+        attemptedCandidateKeys: newsDrivenCandidates.map((item) => item.candidate.candidateKey),
+        generated: simpleResult.generatedRecords.filter(
+          (record) => record.candidate?.candidateType === "symbol",
+        ).length,
+        queued: 0,
+        sourceItemCount: newsDrivenSourceResult.items.length,
+        sourceFallbacks: newsDrivenSourceResult.fellBackFrom,
+      },
+      resolvedPmDecisions,
+      replayed: replayed.length,
+      trigger,
+      triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,
+      servedAt: now,
+    });
+  }
 
   const residentPlan = residentPrewarmPlan({
     locale,
@@ -138,33 +208,76 @@ export async function GET(request: NextRequest) {
     allowFirstFillBackfill: decisionRecordRead.readable,
   });
   const residentCandidates = residentPlan.candidates;
+  const newsDrivenResults = [];
   const residentPrewarmResults = [];
   const inlineDeferredCandidateKeys: string[] = [];
   let inlinePmDecisionJobs = 0;
-  const inlineLimitReached = () => inlinePmDecisionJobs >= INLINE_PM_DECISION_JOB_LIMIT;
+  const inlineJobLimit =
+    trigger === "now" ? MANUAL_TRIGGER_INLINE_PM_DECISION_JOB_LIMIT : INLINE_PM_DECISION_JOB_LIMIT;
+  const inlineLimitReached = () => inlinePmDecisionJobs >= inlineJobLimit;
   const trackInlineUsage = (result: DispatchPmDecisionJobResult) => {
     if (shouldSpendInlineSlot(result)) {
       inlinePmDecisionJobs += 1;
     }
   };
-  for (const candidate of residentCandidates) {
+  type DispatchPlanItem =
+    | { kind: "news-driven"; candidate: DecisionCandidate; newsItem: NewsItem }
+    | { kind: "resident-prewarm"; candidate: DecisionCandidate };
+  const newsDrivenDispatchPlan: DispatchPlanItem[] = newsDrivenCandidates.map(
+    ({ candidate, newsItem }) => ({
+      kind: "news-driven",
+      candidate,
+      newsItem,
+    }),
+  );
+  const residentPrewarmDispatchPlan: DispatchPlanItem[] = residentCandidates.map((candidate) => ({
+    kind: "resident-prewarm",
+    candidate,
+  }));
+  // Scheduled cron remains news-first. Manual preview verification is resident-first and bounded
+  // so one trigger cannot spend the full serverless window on many sequential PM jobs.
+  const dispatchPlan =
+    trigger === "now"
+      ? [...residentPrewarmDispatchPlan, ...newsDrivenDispatchPlan]
+      : [...newsDrivenDispatchPlan, ...residentPrewarmDispatchPlan];
+
+  for (const item of dispatchPlan) {
     if (inlineLimitReached()) {
-      inlineDeferredCandidateKeys.push(candidate.candidateKey);
+      inlineDeferredCandidateKeys.push(item.candidate.candidateKey);
       continue;
     }
-    const result = await dispatchPmDecisionJob({
-      kind: "once",
-      triggerSource: "cron",
-      locale,
-      now,
-      candidate,
-      pool,
-      newsItems: normalizedItems,
-      partialStageUpdates: pmPartialStageUpdates,
-      useQueue: trigger !== "now",
-      onAudit: (event) => pmDecisionAudit.push(event),
-    });
-    residentPrewarmResults.push(result);
+    const result =
+      item.kind === "news-driven"
+        ? await dispatchPmDecisionJob({
+            kind: "once",
+            triggerSource: "cron",
+            locale,
+            now,
+            candidate: item.candidate,
+            pool,
+            newsItems: [item.newsItem],
+            persistNewsItems: [item.newsItem],
+            partialStageUpdates: pmPartialStageUpdates,
+            useQueue: trigger !== "now",
+            onAudit: (event) => pmDecisionAudit.push(event),
+          })
+        : await dispatchPmDecisionJob({
+            kind: "once",
+            triggerSource: "cron",
+            locale,
+            now,
+            candidate: item.candidate,
+            pool,
+            newsItems: normalizedItems,
+            partialStageUpdates: pmPartialStageUpdates,
+            useQueue: trigger !== "now",
+            onAudit: (event) => pmDecisionAudit.push(event),
+          });
+    if (item.kind === "news-driven") {
+      newsDrivenResults.push(result);
+    } else {
+      residentPrewarmResults.push(result);
+    }
     trackInlineUsage(result);
   }
 
@@ -183,6 +296,7 @@ export async function GET(request: NextRequest) {
       });
   if (batchResult) trackInlineUsage(batchResult);
   const pmDecisionOutputs = [
+    ...newsDrivenResults.flatMap((result) => result.outputs),
     ...residentPrewarmResults.flatMap((result) => result.outputs),
     ...(batchResult?.outputs ?? []),
   ];
@@ -199,6 +313,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
+    pipelineMode,
     servedBy,
     fellBackFrom,
     generatedDebates: debates.length,
@@ -213,10 +328,20 @@ export async function GET(request: NextRequest) {
     pmDecisionQueueMessageId:
       batchResult?.queueResult.mode === "queue" ? batchResult.queueResult.messageId : undefined,
     pmDecisionInlineLimit: {
-      limit: INLINE_PM_DECISION_JOB_LIMIT,
+      limit: inlineJobLimit,
       used: inlinePmDecisionJobs,
       deferredResidentCandidateKeys: inlineDeferredCandidateKeys,
       deferredBatch: batchResult === null,
+    },
+    newsDriven: {
+      attemptedCandidateKeys: newsDrivenCandidates.map((item) => item.candidate.candidateKey),
+      generated: newsDrivenResults.reduce(
+        (total, result) => total + result.outputs.filter(isPublicPmDecisionOutput).length,
+        0,
+      ),
+      queued: newsDrivenResults.filter((result) => result.queueResult.mode === "queue").length,
+      sourceItemCount: newsDrivenSourceResult.items.length,
+      sourceFallbacks: newsDrivenSourceResult.fellBackFrom,
     },
     residentPrewarmCandidates: residentCandidates.map((candidate) => candidate.candidateKey),
     residentPrewarmAttempts: residentPrewarmResults.map((result) =>
@@ -250,6 +375,10 @@ export async function GET(request: NextRequest) {
     triggerLockAcquiredAt: triggerLock?.acquiredAt ?? null,
     servedAt: now,
   });
+}
+
+function shouldExposeSimplePipelineDiagnostics(trigger: string | null) {
+  return trigger === "now" && process.env.VERCEL_ENV !== "production";
 }
 
 async function buildCronDecisionRunDiagnostics(locale: ReturnType<typeof localeFromRequestUrl>) {
@@ -335,6 +464,7 @@ async function dispatchPmDecisionJob({
   candidate,
   pool,
   newsItems,
+  persistNewsItems,
   partialStageUpdates,
   useQueue,
   onAudit,
@@ -346,6 +476,7 @@ async function dispatchPmDecisionJob({
   candidate?: DecisionCandidate;
   pool: Awaited<ReturnType<typeof getCoinPool>>;
   newsItems: NewsItem[];
+  persistNewsItems?: NewsItem[];
   partialStageUpdates: boolean;
   useQueue: boolean;
   onAudit: (event: PmDecisionTriggerAuditEvent) => void;
@@ -355,6 +486,7 @@ async function dispatchPmDecisionJob({
     triggerSource,
     locale,
     ...(candidate ? { candidate } : {}),
+    ...(persistNewsItems?.length ? { newsItems: persistNewsItems } : {}),
     now,
   });
   const queueResult = useQueue
@@ -433,30 +565,31 @@ async function resolveOpenPmDecisions(
   now: number,
 ) {
   try {
-    const priceBySymbol = new Map(
-      [...pool.majors, ...pool.trending, ...pool.opportunity].flatMap((item) => {
-        const symbol = normalizeResolutionSymbol(item.symbol);
-        return symbol ? ([[symbol, item.price]] as const) : [];
-      }),
-    );
-    let resolved = 0;
-
-    for (const record of records) {
-      if (record.resolvedOutcome === "manual_close") continue;
-      if (record.resolvedOutcome || !record.tradeDecision) continue;
+    const openRecords = records.flatMap((record) => {
+      if (record.resolvedOutcome === "manual_close") return [];
+      if (record.resolvedOutcome || !record.tradeDecision) return [];
       const symbol =
         normalizeResolutionSymbol(record.symbol) ??
         normalizeResolutionSymbol(record.tradeDecision.symbol);
-      if (!symbol) continue;
-      const price = priceBySymbol.get(symbol);
-      if (typeof price !== "number" || !Number.isFinite(price)) continue;
+      return symbol ? [{ record, symbol }] : [];
+    });
+    const prices = await resolveCurrentPricesForOpenStrategies({
+      symbols: openRecords.map((entry) => entry.symbol),
+      pool,
+      now,
+    });
+    let resolved = 0;
+
+    for (const { record, symbol } of openRecords) {
+      const resolutionPrice = prices.get(symbol);
+      if (!resolutionPrice || resolutionPrice.source === "missingCoinWPrice") continue;
       try {
         const result = await resolveDecisionRecordFromPrice(
           record,
-          price,
+          resolutionPrice.price,
           now,
           undefined,
-          pool.source,
+          resolutionPrice.source,
         );
         if (result) resolved += 1;
       } catch (error) {

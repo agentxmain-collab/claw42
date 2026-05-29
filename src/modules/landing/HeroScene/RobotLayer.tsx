@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -10,6 +10,7 @@ import { resolveAgentWatchLocale } from "@/modules/agent-watch/locale";
 import type { Pose } from "./useRobotPose";
 import { SpeechBubble } from "./SpeechBubble";
 import { buildHeroSpeechLines, mergeHeroSpeechLinePools } from "./heroSpeechLines";
+import { HeroRobotGuide } from "./HeroRobotGuide";
 
 interface RobotLayerProps {
   robotRef: RefObject<HTMLDivElement>;
@@ -67,6 +68,8 @@ const FACE_SPRING = {
   mass: 0.5,
 };
 
+const ROBOT_GUIDE_DISMISS_DELAY_MS = 6200;
+
 export function RobotLayer({
   robotRef,
   pose,
@@ -78,6 +81,7 @@ export function RobotLayer({
   const { t, locale } = useI18n();
   const [blink, setBlink] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [guideVisible, setGuideVisible] = useState(true);
   const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
   const agentWatchLocale = resolveAgentWatchLocale(locale);
   const { data } = useAgentAnalysis({ enabled: true, locale: agentWatchLocale });
@@ -114,6 +118,11 @@ export function RobotLayer({
     const pointY = 40 + Number(y) * 20;
     return `radial-gradient(circle at ${pointX}% ${pointY}%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 25%, transparent 55%)`;
   });
+  const guideSide = displayPose === "right" ? "left" : "right";
+
+  const dismissGuide = useCallback(() => {
+    setGuideVisible(false);
+  }, []);
 
   useEffect(() => {
     mouseMotionX.set(reduceMotion ? 0 : mouseX);
@@ -143,6 +152,18 @@ export function RobotLayer({
     };
   }, [reduceMotion]);
 
+  useEffect(() => {
+    setGuideVisible(true);
+    const timeoutId = window.setTimeout(dismissGuide, ROBOT_GUIDE_DISMISS_DELAY_MS);
+    const dismissOnScroll = () => dismissGuide();
+    window.addEventListener("scroll", dismissOnScroll, { passive: true });
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("scroll", dismissOnScroll);
+    };
+  }, [dismissGuide]);
+
   return (
     <div
       ref={robotRef}
@@ -159,10 +180,14 @@ export function RobotLayer({
         role="button"
         tabIndex={0}
         aria-label={t.hero.speechBubbleAriaLabel}
-        onClick={onOpenWatch}
+        onClick={() => {
+          dismissGuide();
+          onOpenWatch();
+        }}
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault();
+          dismissGuide();
           onOpenWatch();
         }}
         onMouseEnter={() => setHovered(true)}
@@ -173,6 +198,12 @@ export function RobotLayer({
           reduceMotion ? { duration: 0 } : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
         }
       >
+        <HeroRobotGuide
+          label={t.hero.robotGuide}
+          visible={guideVisible}
+          reduceMotion={reduceMotion}
+          side={guideSide}
+        />
         <motion.div
           className="relative"
           style={{

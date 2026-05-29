@@ -144,7 +144,6 @@ const PUBLIC_EVIDENCE_REASON_KINDS = new Set<TopicReasonKind>([
   "momentum",
   "memory",
 ]);
-const MARKET_NEWS_ANCHOR_SYMBOL = "BTC";
 
 export function clearTopicSelectionCacheForTests() {
   topicSelectionCache.clear();
@@ -224,8 +223,10 @@ function rotatingMajorSymbols(events: PublicTimelineEvent[] | undefined, now: nu
 
 function evidenceMatchesSymbol(evidence: NewsEvidence, symbol: string) {
   const normalizedSymbol = normalizeSymbol(symbol);
-  if (evidence.symbol.length === 0) return normalizedSymbol === MARKET_NEWS_ANCHOR_SYMBOL;
-  return evidence.symbol.map(normalizeSymbol).includes(normalizedSymbol);
+  if (evidence.symbol.length === 0) return true;
+  if (evidence.symbol.map(normalizeSymbol).includes(normalizedSymbol)) return true;
+  const haystack = `${evidence.title} ${evidence.summary}`.toUpperCase();
+  return new RegExp(`(^|[^A-Z0-9])${normalizedSymbol}([^A-Z0-9]|$)`).test(haystack);
 }
 
 function socialSignalMatchesSymbol(signal: SocialSignalObservation, symbol: string) {

@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
 import type { CoinWFuturesOrderIntent, CoinWFuturesOrderType } from "./futuresOrderIntent";
 import {

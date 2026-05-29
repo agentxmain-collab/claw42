@@ -35,8 +35,6 @@ import {
 import {
   HOTSPOT_STORAGE_SYMBOL,
   MARKET_OVERVIEW_STORAGE_SYMBOL,
-  hotspotDecisionCandidate,
-  marketOverviewCandidate,
   symbolDecisionCandidate,
 } from "@/lib/watch/residentCandidate";
 import { filterPublicTimelineEvents } from "@/lib/watch/publicTimelineProjection";
@@ -162,24 +160,12 @@ function isRealSymbolValue(value: string | null | undefined) {
   );
 }
 
-function candidateFromRequest(url: URL, locale: Locale, now: number): DecisionCandidate | null {
+function candidateFromRequest(url: URL): DecisionCandidate | null {
   const candidateType = url.searchParams.get("candidateType");
   if (candidateType === "symbol" && !normalizeRefreshSymbol(url.searchParams.get("symbol"))) {
     return autoSymbolRefreshCandidate();
   }
-  if (candidateType === "market_overview") {
-    return marketOverviewCandidate({ locale, now });
-  }
-  if (candidateType === "hotspot") {
-    return hotspotDecisionCandidate({
-      locale,
-      now,
-      candidateKey: url.searchParams.get("candidateKey"),
-      displayTitle: url.searchParams.get("displayTitle"),
-      symbol: url.searchParams.get("symbol"),
-      executable: url.searchParams.get("executable") === "true",
-    });
-  }
+  if (candidateType === "market_overview" || candidateType === "hotspot") return null;
   const symbol = normalizeRefreshSymbol(url.searchParams.get("symbol"));
   return symbol ? symbolDecisionCandidate({ symbol }) : null;
 }
@@ -324,7 +310,7 @@ async function handleStatus(request: Request) {
   const url = requestUrl(request);
   const now = requestNow(url);
   const locale = normalizeWatchLocale(url.searchParams.get("locale"));
-  const candidate = candidateFromRequest(url, locale, now);
+  const candidate = candidateFromRequest(url);
   if (!candidate) return NextResponse.json({ error: "invalid_candidate" }, { status: 400 });
   const freshness = await loadFreshness(candidate, locale, now);
   const status: WatchRefreshStatus = freshness.isFresh ? "cached" : "stale";
@@ -339,7 +325,7 @@ export async function POST(request: Request) {
   const url = requestUrl(request);
   const now = requestNow(url);
   const locale = normalizeWatchLocale(url.searchParams.get("locale"));
-  const candidate = candidateFromRequest(url, locale, now);
+  const candidate = candidateFromRequest(url);
   if (!candidate) return NextResponse.json({ error: "invalid_candidate" }, { status: 400 });
   const identityKey = refreshIdentityKey(candidate);
   const rateLimit = await checkRateLimit(`watch-refresh:ip:${ipKey(request)}`, REFRESH_RATE_LIMIT);

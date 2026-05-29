@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 
 type KvClient = {
@@ -9,7 +9,7 @@ type KvClient = {
 };
 
 const KV_PREFIX = "news-evidence:v1:";
-const KV_TTL_SECONDS = 7 * 24 * 60 * 60;
+export const NEWS_EVIDENCE_TTL_SECONDS = 60 * 24 * 60 * 60;
 const memoryEvidence = new Map<string, NewsEvidence>();
 
 function hasKvConfig() {
@@ -28,7 +28,9 @@ export async function saveNewsEvidence(evidence: NewsEvidence): Promise<NewsEvid
   memoryEvidence.set(evidence.id, evidence);
   if (hasKvConfig()) {
     try {
-      await (kv as KvClient).set(keyForEvidence(evidence.id), evidence, { ex: KV_TTL_SECONDS });
+      await (kv as KvClient).set(keyForEvidence(evidence.id), evidence, {
+        ex: NEWS_EVIDENCE_TTL_SECONDS,
+      });
       return evidence;
     } catch {
       // Keep memory/local fallback below.

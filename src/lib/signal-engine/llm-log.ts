@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv-shim";
 import type { LLMInput, LLMOutput, LLMProvider } from "@/lib/llm/providers/types";
 
 type LogKvClient = {

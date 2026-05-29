@@ -348,7 +348,7 @@ describe("selectPmDecisionTopics", () => {
     expect(topics.map((topic) => topic.symbol)).toEqual(["BTC", "ETH", "SOL"]);
   });
 
-  it("anchors symbol-less market news to BTC instead of every pool candidate", () => {
+  it("uses symbol-less market news as macro context for every executable pool candidate", () => {
     const topics = selectPmDecisionTopics({
       pool: pool(),
       marketSignals: [
@@ -367,12 +367,12 @@ describe("selectPmDecisionTopics", () => {
       now,
     });
 
-    expect(topics.find((topic) => topic.symbol === "BTC")?.newsEvidenceIds).toEqual(["ev_market"]);
-    expect(topics.find((topic) => topic.symbol === "BTC")?.scoreBreakdown.news).toBe(60);
-    expect(topics.find((topic) => topic.symbol === "ETH")?.newsEvidenceIds).toEqual([]);
-    expect(topics.find((topic) => topic.symbol === "ETH")?.scoreBreakdown.news).toBe(0);
-    expect(topics.find((topic) => topic.symbol === "SOL")?.newsEvidenceIds).toEqual([]);
-    expect(topics.find((topic) => topic.symbol === "SOL")?.scoreBreakdown.news).toBe(0);
+    for (const symbol of ["BTC", "ETH", "SOL"]) {
+      expect(topics.find((topic) => topic.symbol === symbol)?.newsEvidenceIds).toEqual([
+        "ev_market",
+      ]);
+      expect(topics.find((topic) => topic.symbol === symbol)?.scoreBreakdown.news).toBe(60);
+    }
   });
 
   it("uses the major rotation universe as the final fallback when no pool, signal, or news symbol exists", () => {
