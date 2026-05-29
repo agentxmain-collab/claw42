@@ -111,7 +111,7 @@ describe("DispatchConsoleV10 visual motion", () => {
     expect(css).not.toContain("max-width: 820px");
     expect(css).toMatch(/\.topic-head\) \{[\s\S]*padding:\s*12px 18px 10px;/);
     expect(css).toMatch(/\.topic-strategy\) \{[\s\S]*gap:\s*16px;[\s\S]*padding:\s*16px 20px;/);
-    expect(css).toContain(".topic-eyebrow .topic-ranking-label");
+    expect(css).not.toContain(".topic-eyebrow .topic-ranking-label");
   });
 
   test("makes six flow stage cards visibly react on hover", () => {

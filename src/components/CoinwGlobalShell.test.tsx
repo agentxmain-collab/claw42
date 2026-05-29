@@ -13,7 +13,7 @@ describe("CoinW global shell", () => {
     const html = renderToStaticMarkup(<CoinwGlobalHeader />);
 
     expect(html).toContain("CoinW");
-    expect(html).toContain("/images/coinw/logo-white.png");
+    expect(html).toContain("/images/coinw/coinw-logo-wordmark.svg");
     expect(html).toContain('data-coinw-shell="header"');
     expect(html).toContain("Buy crypto");
     expect(html).toContain("Trade");
@@ -24,10 +24,10 @@ describe("CoinW global shell", () => {
     expect(html).toContain("Lucky HODL");
     expect(html).toContain("More");
     expect(html).toContain("Wallet");
-    expect(html).toContain("/images/coinw/cta-deposit.png");
-    expect(html).toContain("/images/coinw/header-avatar.png");
+    expect(html).toContain("Deposit");
+    expect(html).toContain("/images/coinw/header-account.svg");
     expect(html).toContain("https://www.coinw.com/en_US/futures/usdt/btcusdt");
-    expect(html).toContain("h-16");
+    expect(html).toContain("h-[72px]");
     expect(html).toContain('target="_blank"');
     expect(html).not.toContain("var(--font-language)");
   });
@@ -36,7 +36,7 @@ describe("CoinW global shell", () => {
     const html = renderToStaticMarkup(<CoinwGlobalFooter />);
 
     expect(html).toContain("CopyRight © 2017 - 2023 CoinW.com. All Rights Reserved.");
-    expect(html).toContain("/images/coinw/logo-white.png");
+    expect(html).toContain("/images/coinw/coinw-logo-wordmark.svg");
     expect(html).toContain('data-coinw-shell="footer"');
     expect(html).toContain("Company");
     expect(html).toContain("Products");
@@ -44,36 +44,36 @@ describe("CoinW global shell", () => {
     expect(html).toContain("Learn");
     expect(html).toContain("Copy-trading");
     expect(html).toContain("Disclaimer:");
-    expect(html).toContain("/images/coinw/badge-appstore.png");
-    expect(html).toContain("/images/coinw/social-tiktok.png");
-    expect(html).toContain("/images/coinw/lang-english.png");
+    expect(html).toContain('data-coinw-shell="footer-download"');
+    expect(html).toContain("/images/coinw/social-tiktok.svg");
+    expect(html).toContain("/images/coinw/lang-english.svg");
     expect(html).not.toContain("© 2013-2026");
   });
 
-  test("keeps Dan-provided CoinW shell image assets present as real PNG files", () => {
+  test("keeps Figma-derived CoinW shell vector assets present as real SVG files", () => {
     const assets = [
-      "logo-white.png",
-      "badge-appstore.png",
-      "badge-googleplay.png",
-      "social-facebook.png",
-      "social-x.png",
-      "social-instagram.png",
-      "social-youtube.png",
-      "social-google.png",
-      "social-linkedin.png",
-      "social-tiktok.png",
-      "lang-english.png",
-      "cta-deposit.png",
-      "header-avatar.png",
-      "header-bell.png",
-      "header-globe.png",
-      "header-moon.png",
+      "coinw-logo-wordmark.svg",
+      "social-facebook.svg",
+      "social-x.svg",
+      "social-instagram.svg",
+      "social-youtube.svg",
+      "social-google.svg",
+      "social-linkedin.svg",
+      "social-tiktok.svg",
+      "lang-english.svg",
+      "header-account.svg",
+      "header-bell.svg",
+      "header-globe.svg",
+      "header-moon.svg",
     ];
 
     for (const asset of assets) {
       const path = join(root, "public/images/coinw", asset);
       expect(existsSync(path)).toBe(true);
-      expect(readFileSync(path).subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+      const svg = readFileSync(path, "utf8");
+      expect(svg.trimStart()).toMatch(/^<svg\b/);
+      expect(svg).not.toContain("<image");
+      expect(svg).not.toContain("data:image");
     }
   });
 });

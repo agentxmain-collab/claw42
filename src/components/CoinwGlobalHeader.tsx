@@ -57,10 +57,34 @@ const navItems = [
 ] as const;
 
 const utilityIcons = [
-  ["Account", "/images/coinw/header-avatar.png", `${COINW_BASE}/user`],
-  ["Notifications", "/images/coinw/header-bell.png", `${COINW_BASE}/notifications`],
-  ["Language", "/images/coinw/header-globe.png", COINW_BASE],
-  ["Dark mode", "/images/coinw/header-moon.png", COINW_BASE],
+  {
+    label: "Account",
+    src: "/images/coinw/header-account.svg",
+    href: `${COINW_BASE}/user`,
+    width: 16,
+    height: 20,
+  },
+  {
+    label: "Notifications",
+    src: "/images/coinw/header-bell.svg",
+    href: `${COINW_BASE}/notifications`,
+    width: 16,
+    height: 20,
+  },
+  {
+    label: "Language",
+    src: "/images/coinw/header-globe.svg",
+    href: COINW_BASE,
+    width: 20,
+    height: 20,
+  },
+  {
+    label: "Dark mode",
+    src: "/images/coinw/header-moon.svg",
+    href: COINW_BASE,
+    width: 20,
+    height: 20,
+  },
 ] as const;
 
 function externalLinkProps(label: string) {
@@ -91,22 +115,22 @@ export function CoinwGlobalHeader() {
   return (
     <header
       data-coinw-shell="header"
-      className="fixed inset-x-0 top-0 z-[80] flex h-16 items-center bg-[#1A1A1A] px-6 text-white"
+      className="fixed inset-x-0 top-0 z-[80] flex h-[72px] items-center bg-[#1A1A1A] px-6 text-white"
       style={{ fontFamily: coinwFontFamily }}
     >
-      <div className="flex h-16 w-full min-w-0 items-center">
+      <div className="flex h-[72px] w-full min-w-0 items-center">
         <a
           data-coinw-shell="header-logo"
           href={COINW_BASE}
-          className="flex h-[38px] w-[141px] shrink-0 items-center transition-opacity hover:opacity-80"
+          className="flex h-9 w-[140px] shrink-0 items-center transition-opacity hover:opacity-80"
           {...externalLinkProps("CoinW")}
         >
           <img
-            src="/images/coinw/logo-white.png"
+            src="/images/coinw/coinw-logo-wordmark.svg"
             alt="CoinW"
-            width={141}
-            height={38}
-            className="h-[38px] w-[141px] object-contain"
+            width={140}
+            height={36}
+            className="h-9 w-[140px] object-contain"
           />
         </a>
 
@@ -116,9 +140,9 @@ export function CoinwGlobalHeader() {
           aria-label="CoinW"
           style={{ fontFamily: coinwFontFamily }}
         >
-          <ul className="flex h-16 items-center">
+          <ul className="flex h-[72px] items-center">
             {navItems.map((item) => (
-              <li key={item.label} className="group relative flex h-16 items-center px-3">
+              <li key={item.label} className="group relative flex h-[72px] items-center px-3">
                 <a
                   data-coinw-shell="header-nav-link"
                   href={item.href}
@@ -156,12 +180,12 @@ export function CoinwGlobalHeader() {
 
         <div
           data-coinw-shell="header-right"
-          className="ml-auto flex h-16 shrink-0 items-center gap-5"
+          className="ml-auto flex h-[72px] shrink-0 items-center gap-6"
           style={{ fontFamily: coinwFontFamily }}
         >
           <a
             href={`${COINW_BASE}/assets`}
-            className="hidden h-16 items-center justify-center text-sm font-bold leading-5 tracking-[0.1px] text-white transition-opacity hover:opacity-75 md:inline-flex"
+            className="hidden h-[72px] items-center justify-center text-sm font-bold leading-5 tracking-[0.1px] text-white transition-opacity hover:opacity-75 md:inline-flex"
             {...externalLinkProps("Wallet")}
           >
             Wallet
@@ -170,31 +194,26 @@ export function CoinwGlobalHeader() {
           <a
             href={`${COINW_BASE}/assets/deposit`}
             data-coinw-shell="header-deposit"
-            className="inline-flex h-10 items-center justify-center transition-opacity hover:opacity-85"
+            className="inline-flex h-10 w-[83px] items-center justify-center rounded-xl bg-[#5227FF] text-sm font-bold leading-5 tracking-[0.1px] text-white transition-opacity hover:opacity-85"
+            style={{ fontFamily: coinwFontFamily }}
             {...externalLinkProps("Deposit")}
           >
-            <img
-              src="/images/coinw/cta-deposit.png"
-              alt="Deposit"
-              width={83}
-              height={40}
-              className="h-10 w-[83px] rounded-xl object-contain"
-            />
+            Deposit
           </a>
-          <div className="hidden items-center gap-5 md:flex">
-            {utilityIcons.map(([label, src, href]) => (
+          <div className="hidden items-center gap-6 md:flex">
+            {utilityIcons.map(({ label, src, href, width, height }) => (
               <a
                 key={label}
                 href={href}
-                className="inline-flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-75"
+                className="inline-flex h-6 w-6 items-center justify-center transition-opacity hover:opacity-75"
                 {...externalLinkProps(label)}
               >
                 <img
                   src={src}
                   alt={label}
-                  width={40}
-                  height={40}
-                  className="h-10 w-10 object-contain"
+                  width={width}
+                  height={height}
+                  className="h-auto max-h-5 w-auto max-w-5 object-contain"
                 />
               </a>
             ))}

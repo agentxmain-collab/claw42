@@ -254,11 +254,7 @@ function TopicRankingInline({ topic }: { topic: DispatchTopic }) {
   const ranking = topic.topicRanking;
   if (!ranking) return null;
 
-  return (
-    <span className="topic-ranking" data-topic-ranking-score={ranking.score}>
-      <span className="topic-ranking-label">{ranking.rankLabel}</span>
-    </span>
-  );
+  return <span aria-hidden="true" hidden data-topic-ranking-score={ranking.score} />;
 }
 
 function hasOriginalUrl(topic: DispatchTopic) {

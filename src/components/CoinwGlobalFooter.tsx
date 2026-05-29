@@ -54,19 +54,14 @@ const footerColumns = [
   },
 ] as const;
 
-const storeItems = [
-  ["App Store", "/images/coinw/badge-appstore.png", `${COINW_BASE}/download`],
-  ["Google Play", "/images/coinw/badge-googleplay.png", `${COINW_BASE}/download`],
-] as const;
-
 const socialItems = [
-  ["Facebook", "/images/coinw/social-facebook.png", `${COINW_ROOT}/connect?activeId=2`],
-  ["X", "/images/coinw/social-x.png", `${COINW_ROOT}/connect?activeId=0`],
-  ["Instagram", "/images/coinw/social-instagram.png", `${COINW_ROOT}/connect?activeId=4`],
-  ["YouTube", "/images/coinw/social-youtube.png", `${COINW_ROOT}/connect?activeId=5`],
-  ["Google", "/images/coinw/social-google.png", `${COINW_ROOT}/connect?activeId=6`],
-  ["LinkedIn", "/images/coinw/social-linkedin.png", `${COINW_ROOT}/connect?activeId=7`],
-  ["TikTok", "/images/coinw/social-tiktok.png", `${COINW_ROOT}/connect?activeId=8`],
+  ["Facebook", "/images/coinw/social-facebook.svg", `${COINW_ROOT}/connect?activeId=2`],
+  ["X", "/images/coinw/social-x.svg", `${COINW_ROOT}/connect?activeId=0`],
+  ["Instagram", "/images/coinw/social-instagram.svg", `${COINW_ROOT}/connect?activeId=4`],
+  ["YouTube", "/images/coinw/social-youtube.svg", `${COINW_ROOT}/connect?activeId=5`],
+  ["Google", "/images/coinw/social-google.svg", `${COINW_ROOT}/connect?activeId=6`],
+  ["LinkedIn", "/images/coinw/social-linkedin.svg", `${COINW_ROOT}/connect?activeId=7`],
+  ["TikTok", "/images/coinw/social-tiktok.svg", `${COINW_ROOT}/connect?activeId=8`],
 ] as const;
 
 function externalLinkProps(label: string) {
@@ -101,35 +96,31 @@ export function CoinwGlobalFooter() {
             <a
               data-coinw-shell="footer-logo"
               href={COINW_BASE}
-              className="flex h-[38px] w-[141px] items-center transition-opacity hover:opacity-80"
+              className="flex h-9 w-[140px] items-center transition-opacity hover:opacity-80"
               {...externalLinkProps("CoinW")}
             >
               <img
-                src="/images/coinw/logo-white.png"
+                src="/images/coinw/coinw-logo-wordmark.svg"
                 alt="CoinW"
-                width={141}
-                height={38}
-                className="h-[38px] w-[141px] object-contain"
+                width={140}
+                height={36}
+                className="h-9 w-[140px] object-contain"
               />
             </a>
 
             <div className="flex flex-col gap-3">
-              {storeItems.map(([label, src, href]) => (
-                <a
-                  key={label}
-                  href={href}
-                  className="inline-flex h-12 w-40 items-center justify-center transition-opacity hover:opacity-85"
-                  {...externalLinkProps(label)}
-                >
-                  <img
-                    src={src}
-                    alt={label}
-                    width={160}
-                    height={48}
-                    className="h-12 w-40 rounded-2xl object-contain"
-                  />
-                </a>
-              ))}
+              <p className="text-base font-bold leading-6 tracking-[0.15px] text-white">
+                Download app
+              </p>
+              <a
+                href={`${COINW_BASE}/download`}
+                data-coinw-shell="footer-download"
+                className="inline-flex h-12 w-40 items-center justify-center rounded-2xl bg-[#5227FF] text-base font-bold leading-6 tracking-[0.15px] text-white transition-opacity hover:opacity-85"
+                style={{ fontFamily: coinwFontFamily }}
+                {...externalLinkProps("Download")}
+              >
+                Download
+              </a>
             </div>
           </div>
 
@@ -198,7 +189,7 @@ export function CoinwGlobalFooter() {
                   alt={label}
                   width={46}
                   height={46}
-                  className="h-[46px] w-[46px] rounded-full object-contain"
+                  className="h-[46px] w-[46px] object-contain"
                 />
               </a>
             ))}
@@ -209,7 +200,7 @@ export function CoinwGlobalFooter() {
               {...externalLinkProps("English")}
             >
               <img
-                src="/images/coinw/lang-english.png"
+                src="/images/coinw/lang-english.svg"
                 alt="English"
                 width={124}
                 height={48}

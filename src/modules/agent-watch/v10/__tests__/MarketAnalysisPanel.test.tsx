@@ -849,6 +849,8 @@ describe("MarketAnalysisPanel v10", () => {
 
     expect(html.indexOf("Fresh BTC card")).toBeLessThan(html.indexOf("Fresh SOL card"));
     expect(html.indexOf("Fresh SOL card")).toBeLessThan(html.indexOf("Older BTC card"));
+    expect(html).not.toContain("排序 #");
+    expect(html).not.toContain("topic-ranking-label");
   });
 
   test("renders the follow-trade primary action only for executable symbol topics", () => {

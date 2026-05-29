@@ -1879,23 +1879,6 @@
   gap: 6px;
 }
 
-.dispatchConsoleV10 :global(.topic-eyebrow .topic-ranking) {
-  display: inline-flex;
-  align-items: center;
-}
-
-.dispatchConsoleV10 :global(.topic-eyebrow .topic-ranking-label) {
-  padding: 2px 8px;
-  border: 1px solid rgb(209 255 85 / 22%);
-  border-radius: 999px;
-  color: var(--lime);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .dispatchConsoleV10 :global(.strategy-lifecycle-badge) {
   display: inline-flex;
   align-items: center;
