@@ -1,10 +1,45 @@
 # Dual Shell Reference
 
-This document archives the two supported outer-shell variants after Stage 4. It is a
-reference snapshot only. The shared page body, watch pipeline, public cards, analytics,
-and CoinW trade gates are outside this document.
+This document archives the two supported outer-shell variants after the 2026-05-29
+cron/deeplink production release. It is a reference snapshot only. The shared page
+body, watch pipeline, public cards, analytics, and CoinW trade gates are outside this
+document.
 
-Snapshot source: branch `feature/stage5_prep`, base commit `88ed387`.
+Current production source:
+
+- Main commit: `7d7106f36031146cc799997a77536ff16cc76823`
+- Snapshot tag: `prod-snapshot-2026-05-29-cron-deeplink-shipped`
+- Production deployment: `dpl_DqC6yiagiiJr8rKbQMWYW76idKG7`
+
+## Build Recipes
+
+Both shells are built from the same commit. The selected shell is controlled only by
+`SITE_SHELL_VARIANT`.
+
+| Variant | `SITE_SHELL_VARIANT` | Deployment reference               | Intended surface                     |
+| ------- | -------------------- | ---------------------------------- | ------------------------------------ |
+| A       | `claw42`             | `dpl_DqC6yiagiiJr8rKbQMWYW76idKG7` | current `claw42.ai` production shell |
+| B       | `coinw`              | `dpl_EccJpn2HyFiGRJEFhVF396FEN3J5` | CoinW-branded preview shell          |
+
+To rebuild either shell from the preserved snapshot:
+
+1. Check out `prod-snapshot-2026-05-29-cron-deeplink-shipped`.
+2. Set `SITE_SHELL_VARIANT=claw42` for Variant A or `SITE_SHELL_VARIANT=coinw`
+   for Variant B.
+3. Build/deploy through the existing `claw42-site` Vercel project. Do not create or
+   link a new Vercel project.
+
+Rollback chain:
+
+- Use Vercel rollback/promote only after Dan character-level production approval.
+- If the shell variant is wrong, first confirm `SITE_SHELL_VARIANT` on the target
+  environment, then roll back to the approved deployment or rebuild from the snapshot
+  tag above.
+- Earlier snapshots remain available as:
+  - `prod-snapshot-2026-05-25-pre-ui-v1`
+  - `prod-snapshot-2026-05-24-pre-v12-coverage`
+  - `prod-snapshot-2026-05-24-pre-v11-fix`
+  - `prod-snapshot-2026-05-23-pre-phase1`
 
 ## Runtime Switch
 
