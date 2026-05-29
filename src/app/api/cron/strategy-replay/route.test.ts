@@ -24,6 +24,7 @@ const getDecisionRecordStoreDiagnosticsMock = vi.hoisted(() => vi.fn());
 const getLastDecisionRecordWriteDiagnosticsMock = vi.hoisted(() => vi.fn());
 const resolveDecisionRecordFromPriceMock = vi.hoisted(() => vi.fn());
 const runSimplePipelineMock = vi.hoisted(() => vi.fn());
+const resolveCurrentPricesForOpenStrategiesMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/news/normalizer", () => ({
   normalizeNewsItem: normalizeNewsItemMock,
@@ -53,6 +54,10 @@ vi.mock("@/lib/coinw/futuresInstruments", () => ({
       .toUpperCase();
     return symbol && /^[A-Z0-9]{2,16}$/.test(symbol) ? symbol : null;
   },
+}));
+
+vi.mock("@/lib/coinw/futuresPrices", () => ({
+  resolveCurrentPricesForOpenStrategies: resolveCurrentPricesForOpenStrategiesMock,
 }));
 
 vi.mock("@/lib/debateOrchestrator", () => ({
@@ -136,7 +141,15 @@ function pool(): CoinPoolPayload {
       SOL: { price: 220, change24h: 0.2 },
       USDT: { price: 1, change24h: 0 },
     },
-    majors: [{ symbol: "BTC", price: 101000, change24h: 3.3, category: "majors" }],
+    majors: [
+      {
+        symbol: "BTC",
+        price: 101000,
+        change24h: 3.3,
+        category: "majors",
+        execution: { executable: true, coinwPair: "BTC_USDT", watchOnly: false },
+      },
+    ],
     trending: [],
     opportunity: [],
     source: "coinw-kline",
@@ -222,6 +235,7 @@ describe("/api/cron/strategy-replay", () => {
     getDecisionRecordStoreDiagnosticsMock.mockReset();
     getLastDecisionRecordWriteDiagnosticsMock.mockReset();
     resolveDecisionRecordFromPriceMock.mockReset();
+    resolveCurrentPricesForOpenStrategiesMock.mockReset();
     runSimplePipelineMock.mockReset();
     vi.stubEnv("PIPELINE_MODE", "full");
 
@@ -360,6 +374,43 @@ describe("/api/cron/strategy-replay", () => {
       residentDecisionRecord("market_overview", "2026-05-13T18:30:00.000Z"),
       residentDecisionRecord("hotspot", "2026-05-13T18:45:00.000Z"),
     ]);
+    resolveCurrentPricesForOpenStrategiesMock.mockImplementation(
+      async ({
+        symbols,
+        pool: inputPool,
+        now: inputNow,
+      }: {
+        symbols: string[];
+        pool?: CoinPoolPayload;
+        now: number;
+      }) => {
+        const entries = [
+          ...(inputPool?.majors ?? []),
+          ...(inputPool?.trending ?? []),
+          ...(inputPool?.opportunity ?? []),
+        ];
+        return new Map(
+          symbols.flatMap((symbol: string) => {
+            const entry = entries.find((item) => item.symbol.toUpperCase() === symbol);
+            if (!entry) return [];
+            return [
+              [
+                symbol,
+                {
+                  symbol,
+                  price: entry.price,
+                  source: entry.execution?.executable
+                    ? "pool"
+                    : (inputPool?.source ?? "coinw-kline"),
+                  fetchedAt: new Date(inputNow).toISOString(),
+                  coinwPair: entry.execution?.coinwPair ?? `${symbol}_USDT`,
+                },
+              ],
+            ];
+          }),
+        );
+      },
+    );
     resolveDecisionRecordFromPriceMock.mockResolvedValue({
       record: { id: "pm:BTC:open", resolvedOutcome: "hit_tp" },
       resolution: { outcome: "hit_tp" },
@@ -587,7 +638,7 @@ describe("/api/cron/strategy-replay", () => {
       101000,
       expect.any(Number),
       undefined,
-      "coinw-kline",
+      "pool",
     );
     expect(tryAcquireLockMock).toHaveBeenCalledWith("cron:strategy-replay:trigger-now:zh_CN", {
       ttlMs: 5 * 60_000,
@@ -1242,7 +1293,7 @@ describe("/api/cron/strategy-replay", () => {
       101000,
       expect.any(Number),
       undefined,
-      "coinw-kline",
+      "pool",
     );
   });
 
@@ -1267,7 +1318,51 @@ describe("/api/cron/strategy-replay", () => {
       101000,
       expect.any(Number),
       undefined,
-      "coinw-kline",
+      "pool",
+    );
+  });
+
+  it("resolves open PM decisions with CoinW ticker prices when a symbol falls out of the pool", async () => {
+    readAllDecisionRecordsMock.mockResolvedValueOnce([
+      {
+        id: "pm:HYPE:open",
+        symbol: "HYPE",
+        tradeDecision: { id: "trade:HYPE:open", symbol: "HYPE" },
+        resolvedOutcome: null,
+      },
+    ]);
+    resolveCurrentPricesForOpenStrategiesMock.mockResolvedValueOnce(
+      new Map([
+        [
+          "HYPE",
+          {
+            symbol: "HYPE",
+            price: 61.78,
+            source: "coinw-futures-ticker",
+            fetchedAt: new Date(now).toISOString(),
+            coinwPair: "HYPE_USDT",
+          },
+        ],
+      ]),
+    );
+
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now"),
+    );
+    const payload = await response.json();
+
+    expect(payload.resolvedPmDecisions).toBe(1);
+    expect(resolveCurrentPricesForOpenStrategiesMock).toHaveBeenCalledWith({
+      symbols: ["HYPE"],
+      pool: expect.any(Object),
+      now: expect.any(Number),
+    });
+    expect(resolveDecisionRecordFromPriceMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "pm:HYPE:open" }),
+      61.78,
+      expect.any(Number),
+      undefined,
+      "coinw-futures-ticker",
     );
   });
 
@@ -1299,7 +1394,7 @@ describe("/api/cron/strategy-replay", () => {
       101000,
       expect.any(Number),
       undefined,
-      "coinw-kline",
+      "pool",
     );
   });
 });

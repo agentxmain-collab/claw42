@@ -1178,6 +1178,58 @@ describe("publicTimelineProjection", () => {
     });
   });
 
+  it.each(["pool", "coinw-futures-ticker", "coingecko-ticker"] as const)(
+    "projects safe PM decision resolution price source %s",
+    (resolutionPriceSource) => {
+      const entry: StreamEntry = {
+        kind: "chat_thread",
+        id: `thread-resolved-${resolutionPriceSource}`,
+        ts: now,
+        thread: {
+          id: `thread-resolved-${resolutionPriceSource}`,
+          seed: {
+            id: "seed",
+            type: "market",
+            title: "Market",
+            description: "Market",
+            symbols: ["BTC"],
+            sentiment: "neutral",
+            createdAt: now,
+          },
+          messages: [],
+          strategy: null,
+          status: "completed",
+          createdAt: now,
+        },
+        meta: {
+          visibility: "public",
+          importance: "high",
+          sourceTrigger: "pm_decision",
+          evidenceIds: ["ev_1"],
+          locale: "zh_CN",
+          recordId: "record-1",
+          tradeDecision,
+        },
+      };
+      const resolvedRecord: StrategyDecisionRecord = {
+        ...decisionRecord,
+        resolvedAt: new Date(now + 30 * 60_000).toISOString(),
+        resolvedOutcome: "expired",
+        resolvedPrice: 76500,
+        resolutionReason: "evaluation_window_elapsed",
+        resolutionPriceSource,
+      };
+
+      const event = projectStreamEntryToPublic(entry, {
+        mode: "public",
+        decisionRecordsById: new Map([[resolvedRecord.id, resolvedRecord]]),
+      });
+
+      if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+      expect(event.payload.resolution?.observedPriceSource).toBe(resolutionPriceSource);
+    },
+  );
+
   it("projects only the safe stage trace subset into PM decision payload", () => {
     const entry: StreamEntry = {
       kind: "chat_thread",

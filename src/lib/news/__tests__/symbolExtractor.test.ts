@@ -5,7 +5,10 @@ import {
   extractSymbolsFromNewsText,
   matchSingleSymbol,
 } from "@/lib/news/symbolExtractor";
-import { staticCoinWFuturesInstrumentSet } from "@/lib/coinw/futuresInstruments";
+import {
+  buildCoinWFuturesInstrumentSet,
+  staticCoinWFuturesInstrumentSet,
+} from "@/lib/coinw/futuresInstruments";
 
 const instruments = staticCoinWFuturesInstrumentSet();
 const now = Date.UTC(2026, 4, 26, 8, 0, 0);
@@ -43,6 +46,35 @@ describe("news-driven symbol extraction", () => {
 
     expect(extractSymbolsFromNewsText(item, instruments)).toEqual([]);
     expect(matchSingleSymbol(item, instruments)).toBeNull();
+  });
+
+  it("accepts HOOD when CoinW lists it as an online futures instrument", async () => {
+    const hoodInstruments = buildCoinWFuturesInstrumentSet([
+      { symbol: "HOOD", coinwPair: "HOOD_USDT", status: "online" },
+    ]);
+
+    const [candidate] = await buildNewsDrivenCandidates({
+      newsItems: [
+        news({
+          id: "hood-news",
+          title: "HOOD futures volume expands after CoinW listing",
+          url: "https://example.com/hood-news",
+        }),
+      ],
+      instruments: hoodInstruments,
+      now,
+    });
+
+    expect(candidate).toEqual(
+      expect.objectContaining({
+        symbol: "HOOD",
+        candidate: expect.objectContaining({
+          candidateType: "symbol",
+          candidateKey: expect.stringContaining("news-driven:HOOD:"),
+          executable: true,
+        }),
+      }),
+    );
   });
 
   it("does not convert broad market or index news into a BTC candidate", () => {

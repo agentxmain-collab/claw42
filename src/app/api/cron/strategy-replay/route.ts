@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { normalizeNewsItem } from "@/lib/news/normalizer";
 import { fetchNewsFromAllSources, fetchNewsWithChain } from "@/lib/news/sourceChain";
 import { buildNewsDrivenCandidates } from "@/lib/news/symbolExtractor";
+import { resolveCurrentPricesForOpenStrategies } from "@/lib/coinw/futuresPrices";
 import { resolvePipelineMode } from "@/app/api/cron/strategy-replay/pipelineMode";
 import { getNewsSourceHealthSnapshot } from "@/lib/news/sourceHealth";
 import { tryOrchestrateNewsDebate, listNewsDebates } from "@/lib/debateOrchestrator";
@@ -564,30 +565,31 @@ async function resolveOpenPmDecisions(
   now: number,
 ) {
   try {
-    const priceBySymbol = new Map(
-      [...pool.majors, ...pool.trending, ...pool.opportunity].flatMap((item) => {
-        const symbol = normalizeResolutionSymbol(item.symbol);
-        return symbol ? ([[symbol, item.price]] as const) : [];
-      }),
-    );
-    let resolved = 0;
-
-    for (const record of records) {
-      if (record.resolvedOutcome === "manual_close") continue;
-      if (record.resolvedOutcome || !record.tradeDecision) continue;
+    const openRecords = records.flatMap((record) => {
+      if (record.resolvedOutcome === "manual_close") return [];
+      if (record.resolvedOutcome || !record.tradeDecision) return [];
       const symbol =
         normalizeResolutionSymbol(record.symbol) ??
         normalizeResolutionSymbol(record.tradeDecision.symbol);
-      if (!symbol) continue;
-      const price = priceBySymbol.get(symbol);
-      if (typeof price !== "number" || !Number.isFinite(price)) continue;
+      return symbol ? [{ record, symbol }] : [];
+    });
+    const prices = await resolveCurrentPricesForOpenStrategies({
+      symbols: openRecords.map((entry) => entry.symbol),
+      pool,
+      now,
+    });
+    let resolved = 0;
+
+    for (const { record, symbol } of openRecords) {
+      const resolutionPrice = prices.get(symbol);
+      if (!resolutionPrice || resolutionPrice.source === "missingCoinWPrice") continue;
       try {
         const result = await resolveDecisionRecordFromPrice(
           record,
-          price,
+          resolutionPrice.price,
           now,
           undefined,
-          pool.source,
+          resolutionPrice.source,
         );
         if (result) resolved += 1;
       } catch (error) {
