@@ -51,6 +51,14 @@ export interface PublicDecisionRoundEntry {
 
 export type PublicTradeDecision = Omit<TradeDecision, "generatedBy">;
 
+export interface PublicDecisionExecution {
+  executable: boolean;
+  coinwPair: string | null;
+  tradeUrl?: string;
+  watchOnly: boolean;
+  watchOnlyReason?: "not_listed_on_coinw" | "mapping_unknown";
+}
+
 export type PublicTimelinePayload =
   | {
       kind: "market_signal";
@@ -72,6 +80,8 @@ export type PublicTimelinePayload =
       displayTitle?: string;
       /** Whether this record can be used for follow-trade actions. Missing means legacy payload. */
       executable?: boolean;
+      /** Public execution metadata used by the trade CTA. */
+      execution?: PublicDecisionExecution;
       /** Public freshness guard for rendering and trade CTA safety. */
       freshnessStatus?: DecisionFreshnessStatus;
       /** Analysis-only resident candidates can publish a summary without a trade card. */

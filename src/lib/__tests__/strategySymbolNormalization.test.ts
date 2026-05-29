@@ -58,9 +58,9 @@ describe("strategy symbol normalization", () => {
     expect(deeplink).not.toContain("%24ETHUSDT");
   });
 
-  it("falls back to CoinW futures landing when the symbol is not in the local futures whitelist", () => {
+  it("builds symbol-specific futures links without depending on the local futures whitelist", () => {
     expect(buildCoinwDeeplink(strategy("NOTLISTED"))).toBe(
-      "https://www.coinw.com/zh_CN/futures/usdt",
+      "https://www.coinw.com/zh_CN/futures/usdt/notlistedusdt",
     );
   });
 });

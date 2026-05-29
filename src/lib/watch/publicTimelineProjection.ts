@@ -1,4 +1,5 @@
 import type {
+  PublicDecisionExecution,
   PublicDecisionRoundEntry,
   PublicDecisionStageTraceEntry,
   PublicTimelineEvent,
@@ -10,6 +11,7 @@ import type { Locale } from "@/i18n/types";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { calculateDecisionFreshnessStatus } from "@/lib/team/freshnessStatus";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
+import { buildCoinWFuturesTradeUrl, normalizeCoinWFuturesPair } from "@/lib/coinw/futuresLinks";
 import { isTeamMemberId, type TeamMemberId } from "@/lib/team/teamRegistry";
 import {
   normalizeCandidateKey,
@@ -169,6 +171,62 @@ function executableForRecord(record: StrategyDecisionRecord | null, symbol: stri
   return resolveSymbolMapping(symbol).execution.executable;
 }
 
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value : null;
+}
+
+function publicExecutionForRecord({
+  record,
+  symbol,
+  candidateType,
+  executable,
+  locale,
+}: {
+  record: StrategyDecisionRecord | null;
+  symbol: string;
+  candidateType: CandidateType;
+  executable: boolean;
+  locale: Locale;
+}): PublicDecisionExecution | undefined {
+  if (candidateType !== "symbol") return undefined;
+  const symbolMapping = resolveSymbolMapping(symbol);
+  const rawRecord = record as
+    | (StrategyDecisionRecord & {
+        coinwPair?: unknown;
+        execution?: { coinwPair?: unknown; watchOnlyReason?: unknown };
+        candidate?: StrategyDecisionRecord["candidate"] & {
+          coinwPair?: unknown;
+          execution?: { coinwPair?: unknown; watchOnlyReason?: unknown };
+        };
+      })
+    | null;
+  const explicitPair = normalizeCoinWFuturesPair(
+    stringValue(rawRecord?.execution?.coinwPair) ??
+      stringValue(rawRecord?.coinwPair) ??
+      stringValue(rawRecord?.candidate?.execution?.coinwPair) ??
+      stringValue(rawRecord?.candidate?.coinwPair) ??
+      symbolMapping.execution.coinwPair,
+  );
+  const bestEffortPair = normalizeCoinWFuturesPair(`${symbol}_USDT`);
+  const coinwPair = executable ? (explicitPair ?? bestEffortPair) : null;
+  const watchOnlyReason =
+    rawRecord?.execution?.watchOnlyReason === "not_listed_on_coinw" ||
+    rawRecord?.execution?.watchOnlyReason === "mapping_unknown"
+      ? rawRecord.execution.watchOnlyReason
+      : rawRecord?.candidate?.execution?.watchOnlyReason === "not_listed_on_coinw" ||
+          rawRecord?.candidate?.execution?.watchOnlyReason === "mapping_unknown"
+        ? rawRecord.candidate.execution.watchOnlyReason
+        : symbolMapping.execution.watchOnlyReason;
+
+  return {
+    executable,
+    coinwPair,
+    tradeUrl: buildCoinWFuturesTradeUrl({ coinwPair, locale }),
+    watchOnly: !executable,
+    ...(!executable && watchOnlyReason ? { watchOnlyReason } : {}),
+  };
+}
+
 function candidateMetaForRecord(record: StrategyDecisionRecord | null, symbol: string) {
   const rawRecord = record as
     | (StrategyDecisionRecord & {
@@ -271,6 +329,13 @@ function pmDecisionPayload(
   const candidateMeta = candidateMetaForRecord(indexedRecord, symbol);
   const executable = executableForRecord(indexedRecord, symbol);
   if (candidateMeta.candidateType === "symbol" && !executable) return null;
+  const execution = publicExecutionForRecord({
+    record: indexedRecord,
+    symbol,
+    candidateType: candidateMeta.candidateType,
+    executable,
+    locale: meta.locale,
+  });
 
   return {
     kind: "pm_decision",
@@ -278,6 +343,7 @@ function pmDecisionPayload(
     symbol,
     ...candidateMeta,
     executable,
+    ...(execution ? { execution } : {}),
     freshnessStatus: calculateDecisionFreshnessStatus(entry.ts) ?? undefined,
     ...(analysisSummary ? { analysisSummary } : {}),
     tradeDecision,
@@ -310,6 +376,13 @@ export function projectDecisionRecordToPublicEvent(
   const candidateMeta = candidateMetaForRecord(record, symbol);
   const executable = executableForRecord(record, symbol);
   if (candidateMeta.candidateType === "symbol" && !executable) return null;
+  const execution = publicExecutionForRecord({
+    record,
+    symbol,
+    candidateType: candidateMeta.candidateType,
+    executable,
+    locale: record.locale,
+  });
 
   const payload: PublicTimelineEvent["payload"] = {
     kind: "pm_decision",
@@ -317,6 +390,7 @@ export function projectDecisionRecordToPublicEvent(
     symbol,
     ...candidateMeta,
     executable,
+    ...(execution ? { execution } : {}),
     freshnessStatus: calculateDecisionFreshnessStatus(record.createdAt) ?? undefined,
     ...(analysisSummary ? { analysisSummary } : {}),
     tradeDecision,

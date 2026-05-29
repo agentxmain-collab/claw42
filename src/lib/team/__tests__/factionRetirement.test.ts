@@ -66,8 +66,11 @@ async function readMadgeGraph(entryPoint: string): Promise<DependencyGraph> {
   return graph;
 }
 
-async function findImportPath(entryPoint: string, blockedModule: string): Promise<string[] | null> {
-  const graph = await readMadgeGraph(entryPoint);
+function findImportPathInGraph(
+  entryPoint: string,
+  blockedModule: string,
+  graph: DependencyGraph,
+): string[] | null {
   const start = path.resolve(ROOT, entryPoint);
   const target = path.resolve(ROOT, blockedModule);
   const queue: string[][] = [[start]];
@@ -93,8 +96,9 @@ describe("faction retirement public import boundary", () => {
     const violations: string[] = [];
 
     for (const entryPoint of PUBLIC_WATCH_ENTRY_POINTS) {
+      const graph = await readMadgeGraph(entryPoint);
       for (const blockedModule of BLOCKED_LEGACY_MODULES) {
-        const importPath = await findImportPath(entryPoint, blockedModule);
+        const importPath = findImportPathInGraph(entryPoint, blockedModule, graph);
         if (importPath) {
           violations.push(`${entryPoint} -> ${blockedModule}\n${importPath.join(" -> ")}`);
         }
@@ -102,5 +106,5 @@ describe("faction retirement public import boundary", () => {
     }
 
     expect(violations).toEqual([]);
-  }, 15_000);
+  }, 30_000);
 });

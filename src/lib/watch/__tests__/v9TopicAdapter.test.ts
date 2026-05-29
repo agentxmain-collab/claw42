@@ -608,6 +608,42 @@ describe("mapPublicTimelineEventsToTopics", () => {
     });
     expect(topic.execution).toMatchObject({
       executable: true,
+      coinwPair: "BTC_USDT",
+      tradeUrl: "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+      watchOnly: false,
+    });
+  });
+
+  it("falls back to a symbol-derived CoinW pair when public payload execution is absent", () => {
+    const event = pmDecision({
+      payload: {
+        kind: "pm_decision",
+        recordId: "record-genius-simple",
+        symbol: "GENIUS",
+        candidateType: "symbol",
+        candidateKey: "news-driven:GENIUS:test",
+        displayTitle: "GENIUS 实时行情分析",
+        executable: true,
+        tradeDecision: {
+          ...tradeDecision,
+          symbol: "GENIUS",
+        },
+        analysisSummary: "GENIUS 交易方案已经生成。",
+        rationaleByMember: { pm: "GENIUS 交易方案已经生成。" },
+        citationsByMember: {},
+      },
+    });
+
+    const [topic] = mapTopics({
+      events: [event],
+      locale: "zh_CN",
+      now,
+    });
+
+    expect(topic.execution).toMatchObject({
+      executable: true,
+      coinwPair: "GENIUS_USDT",
+      tradeUrl: "https://www.coinw.com/zh_CN/futures/usdt/geniususdt",
       watchOnly: false,
     });
   });

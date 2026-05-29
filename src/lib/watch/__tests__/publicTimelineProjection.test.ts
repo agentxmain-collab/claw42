@@ -560,12 +560,49 @@ describe("publicTimelineProjection", () => {
     expect(event.payload.candidateKey).toBe("BTC");
     expect(event.payload.displayTitle).toBe("BTC 实时行情分析");
     expect(event.payload.executable).toBe(true);
+    expect(event.payload.execution).toMatchObject({
+      executable: true,
+      coinwPair: "BTC_USDT",
+      tradeUrl: "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+      watchOnly: false,
+    });
     expect(event.payload.freshnessStatus).toMatchObject({
       level: "fresh",
       observedAt: decisionRecord.createdAt,
     });
     expect(event.payload.rounds).toHaveLength(3);
     expectNoInternalTeamIds(event.payload);
+  });
+
+  it("projects executable symbol trade URLs by symbol even when the static mapping lacks the coin", () => {
+    const record: StrategyDecisionRecord = {
+      ...decisionRecord,
+      id: "record-genius",
+      symbol: "GENIUS",
+      tradeDecision: {
+        ...tradeDecision,
+        symbol: "GENIUS",
+      },
+      candidate: {
+        candidateType: "symbol",
+        candidateKey: "news-driven:GENIUS:test",
+        displayTitle: "GENIUS 实时行情分析",
+        executable: true,
+        cadence: "intraday",
+        score: 90,
+        reasons: [],
+      },
+    };
+
+    const event = projectDecisionRecordToPublicEvent(record);
+
+    if (event?.payload.kind !== "pm_decision") throw new Error("expected pm decision payload");
+    expect(event.payload.execution).toMatchObject({
+      executable: true,
+      coinwPair: "GENIUS_USDT",
+      tradeUrl: "https://www.coinw.com/zh_CN/futures/usdt/geniususdt",
+      watchOnly: false,
+    });
   });
 
   it("keeps public fallback rationales below the 200 character limit intact", () => {

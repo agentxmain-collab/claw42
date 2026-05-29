@@ -3,7 +3,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { DispatchV10Dict, Locale } from "@/i18n/types";
 import { trackEvent } from "@/lib/analytics";
-import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
+import { buildCoinWFuturesTradeUrl, normalizeCoinWFuturesPair } from "@/lib/coinw/futuresLinks";
 import { canRenderTradeCTA } from "@/lib/coinw/tradeGate";
 import { shouldBypassFreshnessForTrade } from "@/lib/team/freshnessStatus";
 import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
@@ -61,6 +61,13 @@ function formatResidentPrewarmText(freshness: DispatchFreshnessState, dict: Disp
   }
   if (status.latestSucceededAt) return null;
   return null;
+}
+
+function fallbackCoinwPairForTopic(topic: DispatchTopic) {
+  return (
+    normalizeCoinWFuturesPair(topic.execution?.coinwPair) ??
+    normalizeCoinWFuturesPair(`${topic.symbol}_USDT`)
+  );
 }
 
 function normalizeTopicNames(topic: DispatchTopic, roles: DispatchV10Dict["roles"]): DispatchTopic {
@@ -625,16 +632,17 @@ function TopicStrategyV10({
   });
   const renderBlockedTradeCTA = executableSymbol && !canRenderCoinWTrade;
   const renderStaleReason = renderBlockedTradeCTA && isStaleOrExpired(topic);
+  const coinwPair = canRenderCoinWTrade ? fallbackCoinwPairForTopic(topic) : null;
   const coinwFuturesUrl =
     isObservationMode || !canRenderCoinWTrade
       ? buildCoinWFuturesTradeUrl({ coinwPair: null, locale })
       : (topic.execution?.tradeUrl ??
         buildCoinWFuturesTradeUrl({
-          coinwPair: topic.execution?.coinwPair,
+          coinwPair,
           locale,
         }));
   const tradeReadinessKind = inferredTradeReadinessKind(topic, canRenderCoinWTrade);
-  const coinwLinkType = canRenderCoinWTrade && topic.execution?.coinwPair ? "pair" : "generic";
+  const coinwLinkType = canRenderCoinWTrade && coinwPair ? "pair" : "generic";
   const newsItem = topic.newsItems?.[0];
   const reasoningSections = topicReasoningSections(topic);
   const mainReasoning = primaryReasoning(topic, reasoningSections);

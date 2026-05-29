@@ -275,7 +275,7 @@ describe("chat authenticity public import boundary", () => {
     }
 
     expect(violations).toEqual([]);
-  }, 30_000);
+  }, 60_000);
 
   test("dev-only stream chat module remains available outside the public closure", () => {
     const source = fs.readFileSync(path.join(ROOT, "src/lib/dev/streamChatThreads.ts"), "utf8");

@@ -33,7 +33,7 @@ import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { DecisionStageTraceId } from "@/lib/team/strategyDecisionRecord";
 import { publicTimelineEventStableId } from "@/lib/watch/publicTimelineOrdering";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
-import { buildCoinWFuturesTradeUrl } from "@/lib/coinw/futuresLinks";
+import { buildCoinWFuturesTradeUrl, normalizeCoinWFuturesPair } from "@/lib/coinw/futuresLinks";
 import {
   mapPublicDecisionAgentToTeamMember,
   mapTeamMemberToPublicDecisionAgent,
@@ -144,6 +144,10 @@ const MEMORY_LOOP_EXPECTED_WRITEBACK_HOURS = 24;
 
 function dispatchDict(locale: Locale) {
   return DISPATCH_DICTS[locale] ?? DISPATCH_DICTS.zh_CN;
+}
+
+function fallbackCoinwPairForSymbol(symbol: string) {
+  return normalizeCoinWFuturesPair(`${symbol}_USDT`);
 }
 
 function dataGapLabel(
@@ -1173,7 +1177,14 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       (typeof latest.payload.executable === "boolean"
         ? latest.payload.executable
         : symbolMapping.execution.executable);
-    const coinwPair = executable ? symbolMapping.execution.coinwPair : null;
+    const payloadExecution = latest.payload.execution;
+    const coinwPair = executable
+      ? (normalizeCoinWFuturesPair(payloadExecution?.coinwPair) ??
+        normalizeCoinWFuturesPair(symbolMapping.execution.coinwPair) ??
+        fallbackCoinwPairForSymbol(group.symbol))
+      : null;
+    const tradeUrl =
+      payloadExecution?.tradeUrl ?? buildCoinWFuturesTradeUrl({ coinwPair, locale: ctx.locale });
 
     return {
       id: recordId,
@@ -1187,9 +1198,10 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       execution: {
         executable,
         coinwPair,
-        tradeUrl: buildCoinWFuturesTradeUrl({ coinwPair, locale: ctx.locale }),
-        watchOnly: !executable,
-        watchOnlyReason: symbolMapping.execution.watchOnlyReason,
+        tradeUrl,
+        watchOnly: payloadExecution?.watchOnly ?? !executable,
+        watchOnlyReason:
+          payloadExecution?.watchOnlyReason ?? symbolMapping.execution.watchOnlyReason,
       },
       status,
       title: makeTitle(group, hasTradeDecision, hasRationale),

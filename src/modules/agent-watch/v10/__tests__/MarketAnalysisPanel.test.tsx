@@ -983,6 +983,37 @@ describe("MarketAnalysisPanel v10", () => {
     }
   });
 
+  test("builds a symbol-specific CoinW link when execution coinwPair is missing", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "symbol-genius",
+              candidateType: "symbol",
+              candidateKey: "GENIUS",
+              title: "GENIUS 实时行情分析",
+              symbol: "GENIUS",
+              score: 2,
+              lastUpdatedAt: 2,
+              executable: true,
+            }),
+            execution: {
+              executable: true,
+              coinwPair: null,
+              watchOnly: false,
+            },
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).toContain('href="https://www.coinw.com/zh_CN/futures/usdt/geniususdt"');
+    expect(html).not.toContain('href="https://www.coinw.com/zh_CN/futures/usdt"');
+  });
+
   test("renders non-public trade readiness slots for all failure kinds", () => {
     const failureKinds: TradingReadinessFailureKind[] = [
       "analysis_data_degraded",
