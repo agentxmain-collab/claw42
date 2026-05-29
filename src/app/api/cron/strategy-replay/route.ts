@@ -30,7 +30,7 @@ import {
 } from "@/lib/team/pmDecisionTrigger";
 import { enqueuePmDecisionJob, readPmDecisionJobs } from "@/lib/watch/pmDecisionJobLedger";
 import { residentPrewarmPlan } from "@/lib/watch/residentPrewarm";
-import { localeFromRequestUrl } from "@/lib/watch/locale";
+import { LEGACY_WATCH_LOCALE, localeFromRequestUrl } from "@/lib/watch/locale";
 import type { DecisionCandidate } from "@/lib/watch/decisionCandidate";
 import { isPublicDisplayablePmDecisionEvent } from "@/lib/watch/publicPmDecisionDisplay";
 import type { NewsItem } from "@/lib/types";
@@ -44,6 +44,7 @@ const STRATEGY_REPLAY_TRIGGER_LOCK_MS = 5 * 60_000;
 const PM_RESOLUTION_RECORD_LIMIT = 100;
 const INLINE_PM_DECISION_JOB_LIMIT = CRON_MAX_SYMBOL_CARDS_PER_RUN;
 const MANUAL_TRIGGER_INLINE_PM_DECISION_JOB_LIMIT = 1;
+const STRATEGY_REPLAY_DEFAULT_LOCALE = LEGACY_WATCH_LOCALE;
 
 function isAuthorized(request: NextRequest) {
   if (process.env.VERCEL_ENV === "preview") return true;
@@ -62,13 +63,20 @@ function normalizeResolutionSymbol(symbol: unknown) {
   return normalized && normalized !== "UNKNOWN" ? normalized : null;
 }
 
+function localeFromStrategyReplayRequest(request: NextRequest) {
+  if (request.nextUrl.searchParams.has("locale")) {
+    return localeFromRequestUrl(request.nextUrl, request.headers.get("accept-language"));
+  }
+  return STRATEGY_REPLAY_DEFAULT_LOCALE;
+}
+
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   const trigger = request.nextUrl.searchParams.get("trigger");
-  const locale = localeFromRequestUrl(request.nextUrl, request.headers.get("accept-language"));
+  const locale = localeFromStrategyReplayRequest(request);
   const triggerLockKey = `${STRATEGY_REPLAY_TRIGGER_LOCK_KEY}:${locale}`;
   const triggerLock =
     trigger === "now"

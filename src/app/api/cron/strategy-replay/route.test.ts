@@ -25,6 +25,7 @@ const getLastDecisionRecordWriteDiagnosticsMock = vi.hoisted(() => vi.fn());
 const resolveDecisionRecordFromPriceMock = vi.hoisted(() => vi.fn());
 const runSimplePipelineMock = vi.hoisted(() => vi.fn());
 const resolveCurrentPricesForOpenStrategiesMock = vi.hoisted(() => vi.fn());
+const localeFromRequestUrlMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/news/normalizer", () => ({
   normalizeNewsItem: normalizeNewsItemMock,
@@ -115,7 +116,8 @@ vi.mock("@/lib/team/simplePipeline", () => ({
 }));
 
 vi.mock("@/lib/watch/locale", () => ({
-  localeFromRequestUrl: () => "zh_CN",
+  LEGACY_WATCH_LOCALE: "zh_CN",
+  localeFromRequestUrl: localeFromRequestUrlMock,
 }));
 
 const now = Date.UTC(2026, 4, 13, 20, 0, 0);
@@ -237,7 +239,9 @@ describe("/api/cron/strategy-replay", () => {
     resolveDecisionRecordFromPriceMock.mockReset();
     resolveCurrentPricesForOpenStrategiesMock.mockReset();
     runSimplePipelineMock.mockReset();
+    localeFromRequestUrlMock.mockReset();
     vi.stubEnv("PIPELINE_MODE", "full");
+    localeFromRequestUrlMock.mockReturnValue("zh_CN");
 
     fetchNewsWithChainMock.mockResolvedValue({
       items: [newsItem()],
@@ -492,6 +496,42 @@ describe("/api/cron/strategy-replay", () => {
     expect(payload).not.toHaveProperty("residentPrewarmSla");
     expect(enqueuePmDecisionJobMock).not.toHaveBeenCalled();
     expect(runPmDecisionJobMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps scheduled cron in zh_CN when the request has no explicit locale", async () => {
+    vi.stubEnv("PIPELINE_MODE", "simple");
+    localeFromRequestUrlMock.mockReturnValue("en_US");
+
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/cron/strategy-replay", {
+        headers: { "accept-language": "en-US,en;q=0.9" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(localeFromRequestUrlMock).not.toHaveBeenCalled();
+    expect(runSimplePipelineMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        locale: "zh_CN",
+      }),
+    );
+  });
+
+  it("honors an explicit locale query for manual verification", async () => {
+    vi.stubEnv("PIPELINE_MODE", "simple");
+    localeFromRequestUrlMock.mockReturnValue("en_US");
+
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/cron/strategy-replay?trigger=now&locale=en_US"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(localeFromRequestUrlMock).toHaveBeenCalled();
+    expect(runSimplePipelineMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        locale: "en_US",
+      }),
+    );
   });
 
   it("exposes safe LLM diagnostics only for preview manual simple canaries", async () => {

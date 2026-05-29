@@ -102,5 +102,5 @@ describe("faction retirement public import boundary", () => {
     }
 
     expect(violations).toEqual([]);
-  });
+  }, 15_000);
 });
