@@ -114,12 +114,31 @@ export function CoinwGlobalFooter() {
               </p>
               <a
                 href={`${COINW_BASE}/download`}
-                data-coinw-shell="footer-download"
-                className="inline-flex h-12 w-40 items-center justify-center rounded-2xl bg-[#5227FF] text-base font-bold leading-6 tracking-[0.15px] text-white transition-opacity hover:opacity-85"
-                style={{ fontFamily: coinwFontFamily }}
-                {...externalLinkProps("Download")}
+                data-coinw-shell="footer-download-appstore"
+                className="inline-flex h-12 w-40 items-center justify-center transition-opacity hover:opacity-85"
+                {...externalLinkProps("Download on the App Store")}
               >
-                Download
+                <img
+                  src="/images/coinw/btn-appstore.svg"
+                  alt="App Store"
+                  width={160}
+                  height={48}
+                  className="h-12 w-40 object-contain"
+                />
+              </a>
+              <a
+                href={`${COINW_BASE}/download`}
+                data-coinw-shell="footer-download-googleplay"
+                className="inline-flex h-12 w-40 items-center justify-center transition-opacity hover:opacity-85"
+                {...externalLinkProps("Get it on Google Play")}
+              >
+                <img
+                  src="/images/coinw/btn-googleplay.svg"
+                  alt="Google Play"
+                  width={160}
+                  height={48}
+                  className="h-12 w-40 object-contain"
+                />
               </a>
             </div>
           </div>

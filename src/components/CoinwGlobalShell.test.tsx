@@ -44,7 +44,15 @@ describe("CoinW global shell", () => {
     expect(html).toContain("Learn");
     expect(html).toContain("Copy-trading");
     expect(html).toContain("Disclaimer:");
-    expect(html).toContain('data-coinw-shell="footer-download"');
+    expect(html).toContain("Download app");
+    expect(html).toContain('data-coinw-shell="footer-download-appstore"');
+    expect(html).toContain('data-coinw-shell="footer-download-googleplay"');
+    expect(html).toContain("/images/coinw/btn-appstore.svg");
+    expect(html).toContain("/images/coinw/btn-googleplay.svg");
+    expect(html.indexOf("footer-download-appstore")).toBeLessThan(
+      html.indexOf("footer-download-googleplay"),
+    );
+    expect(html).not.toContain(">Download</a>");
     expect(html).toContain("/images/coinw/social-tiktok.svg");
     expect(html).toContain("/images/coinw/lang-english.svg");
     expect(html).not.toContain("CopyRight © 2017 - 2023");
@@ -61,6 +69,8 @@ describe("CoinW global shell", () => {
       "social-linkedin.svg",
       "social-tiktok.svg",
       "lang-english.svg",
+      "btn-appstore.svg",
+      "btn-googleplay.svg",
       "header-account.svg",
       "header-bell.svg",
       "header-globe.svg",
