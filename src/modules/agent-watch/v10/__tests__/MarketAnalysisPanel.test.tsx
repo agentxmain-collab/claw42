@@ -929,6 +929,7 @@ describe("MarketAnalysisPanel v10", () => {
     );
 
     expect(html).toContain("去交易");
+    expect(html).toContain('href="https://www.coinw.com/zh_CN/futures/usdt/hypeusdt"');
     expect(html).not.toContain("去 CoinW 看合约");
     expect(html).not.toContain("今日大盘综述");
     expect(html.match(/去交易/g)).toHaveLength(1);

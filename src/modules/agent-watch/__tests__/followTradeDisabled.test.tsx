@@ -42,6 +42,7 @@ describe("follow trade disabled safety state", () => {
     );
 
     expect(html).toContain("去交易");
+    expect(html).toContain('href="https://www.coinw.com/zh_CN/futures/usdt/btcusdt"');
     expect(html).not.toContain("演示模式");
     expect(html).not.toContain("不真实下单 · 后续接入授权和风险确认");
     expect(html).not.toContain('title="演示模式：当前不会真实下单"');
