@@ -10,10 +10,18 @@ interface SpeechBubbleProps {
   reduceMotion: boolean;
   side: "left" | "right";
   lines?: string[];
+  analysisLine?: string | null;
 }
 
-export function SpeechBubble({ visible, reduceMotion, side, lines }: SpeechBubbleProps) {
+export function SpeechBubble({
+  visible,
+  reduceMotion,
+  side,
+  lines,
+  analysisLine,
+}: SpeechBubbleProps) {
   const { t } = useI18n();
+  const resolvedAnalysisLine = analysisLine?.trim() ?? "";
   const pool = useMemo(() => {
     const cleaned = lines?.map((line) => line.trim()).filter(Boolean);
     return cleaned?.length ? cleaned : t.hero.speechBubble;
@@ -25,6 +33,12 @@ export function SpeechBubble({ visible, reduceMotion, side, lines }: SpeechBubbl
 
   useEffect(() => {
     if (visible) {
+      if (resolvedAnalysisLine) {
+        lastLineRef.current = resolvedAnalysisLine;
+        setSelectedLine(resolvedAnalysisLine);
+        return;
+      }
+
       let nextLine = pool[Math.floor(Math.random() * pool.length)] ?? "";
       if (pool.length > 1 && nextLine === lastLineRef.current) {
         const nextIndex =
@@ -35,7 +49,7 @@ export function SpeechBubble({ visible, reduceMotion, side, lines }: SpeechBubbl
       lastLineRef.current = nextLine;
       setSelectedLine(nextLine);
     }
-  }, [visible, pool, poolKey]);
+  }, [visible, pool, poolKey, resolvedAnalysisLine]);
 
   useEffect(() => {
     if (!visible) {
@@ -63,6 +77,9 @@ export function SpeechBubble({ visible, reduceMotion, side, lines }: SpeechBubbl
     return () => window.clearInterval(timer);
   }, [selectedLine, visible, reduceMotion]);
 
+  const fallbackLine = selectedLine || pool[0] || "";
+  const displayLine = reduceMotion ? resolvedAnalysisLine || fallbackLine : typedLine;
+
   return (
     <div
       className="claw42-speech-bubble-root pointer-events-none absolute"
@@ -84,11 +101,13 @@ export function SpeechBubble({ visible, reduceMotion, side, lines }: SpeechBubbl
             transition={{ duration: reduceMotion ? 0 : 0.22, ease: "easeOut" }}
             className="claw42-speech-bubble relative rounded-2xl bg-white/95 px-4 py-3 font-mono text-[13px] font-medium leading-snug text-gray-900 shadow-[0_8px_32px_rgba(0,0,0,0.3)] md:text-[14px]"
             style={{ width: "min(82vw, 420px)" }}
+            data-bubble-mode={resolvedAnalysisLine ? "analysis-summary" : "random-speech"}
+            data-analysis-summary-source={resolvedAnalysisLine ? "watch-timeline" : undefined}
             aria-label={t.hero.speechBubbleAriaLabel}
             role="status"
           >
             <span className="inline whitespace-pre-wrap break-words">
-              {typedLine}
+              {displayLine}
               <motion.span
                 className="ml-[2px] inline-block h-[1.05em] w-[1.5px] rounded-full bg-[#6c4fff] align-[-0.12em] shadow-[0_0_8px_rgba(108,79,255,0.65)]"
                 animate={reduceMotion ? { opacity: 1 } : { opacity: [0.18, 1, 0.18] }}

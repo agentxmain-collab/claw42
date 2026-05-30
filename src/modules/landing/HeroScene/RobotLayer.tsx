@@ -12,6 +12,7 @@ import type { Pose } from "./useRobotPose";
 import { SpeechBubble } from "./SpeechBubble";
 import { buildHeroSpeechLines, mergeHeroSpeechLinePools } from "./heroSpeechLines";
 import { HeroRobotGuide } from "./HeroRobotGuide";
+import { useHeroAnalysisBrief } from "./useHeroAnalysisBrief";
 
 interface RobotLayerProps {
   robotRef: RefObject<HTMLDivElement>;
@@ -86,6 +87,7 @@ export function RobotLayer({
   const displayPose: "left" | "right" = pose === "right" ? "right" : "left";
   const agentWatchLocale = resolveAgentWatchLocale(locale);
   const { data } = useAgentAnalysis({ enabled: true, locale: agentWatchLocale });
+  const analysisBrief = useHeroAnalysisBrief(agentWatchLocale);
   const liveLines = useMemo(
     () => buildHeroSpeechLines(data, agentWatchLocale) ?? LIVE_LOADING_LINES[agentWatchLocale],
     [data, agentWatchLocale],
@@ -390,6 +392,7 @@ export function RobotLayer({
           reduceMotion={reduceMotion}
           side={displayPose === "right" ? "left" : "right"}
           lines={dynamicLines}
+          analysisLine={analysisBrief?.line}
         />
       </motion.div>
     </div>
