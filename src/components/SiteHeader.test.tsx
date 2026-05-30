@@ -47,4 +47,14 @@ describe("SiteHeader", () => {
     expect(html).toContain('aria-current="page"');
     expect(html).toContain("bg-white/[0.08]");
   });
+
+  test("renders realtime analysis in the left primary zone with emphasized styling", () => {
+    const html = renderToStaticMarkup(<SiteHeader />);
+
+    expect(html).toContain('data-header-zone="primary-left"');
+    expect(html).toContain('data-nav-priority="primary-agent-live"');
+    expect(html).toContain("font-black");
+    expect(html).toContain("ring-[#D1FF55]/35");
+    expect(html.indexOf('data-header-zone="primary-left"')).toBeLessThan(html.indexOf("简体中文"));
+  });
 });

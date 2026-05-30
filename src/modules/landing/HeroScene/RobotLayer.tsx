@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
@@ -156,11 +157,18 @@ export function RobotLayer({
     setGuideVisible(true);
     const timeoutId = window.setTimeout(dismissGuide, ROBOT_GUIDE_DISMISS_DELAY_MS);
     const dismissOnScroll = () => dismissGuide();
+    const dismissOnIntent = () => dismissGuide();
     window.addEventListener("scroll", dismissOnScroll, { passive: true });
+    window.addEventListener("mousemove", dismissOnIntent, { passive: true });
+    window.addEventListener("pointerdown", dismissOnIntent, { passive: true });
+    window.addEventListener("keydown", dismissOnIntent);
 
     return () => {
       window.clearTimeout(timeoutId);
       window.removeEventListener("scroll", dismissOnScroll);
+      window.removeEventListener("mousemove", dismissOnIntent);
+      window.removeEventListener("pointerdown", dismissOnIntent);
+      window.removeEventListener("keydown", dismissOnIntent);
     };
   }, [dismissGuide]);
 
@@ -176,7 +184,8 @@ export function RobotLayer({
       }}
     >
       <motion.div
-        className="pointer-events-auto relative cursor-pointer"
+        className="group pointer-events-auto relative min-h-11 min-w-11 cursor-pointer touch-manipulation outline-none transition-[filter,transform] focus-visible:ring-2 focus-visible:ring-[#D1FF55]/70"
+        data-robot-affordance="clickable-watch-entry"
         role="button"
         tabIndex={0}
         aria-label={t.hero.speechBubbleAriaLabel}
@@ -192,12 +201,39 @@ export function RobotLayer({
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        whileHover={reduceMotion ? undefined : { scale: 1.04, y: -4 }}
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
         animate={reduceMotion ? { y: 0 } : { y: [0, -12, 0] }}
         transition={
           reduceMotion ? { duration: 0 } : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
         }
       >
+        <motion.span
+          aria-hidden="true"
+          className="claw42-hero-robot-hover-glow pointer-events-none absolute inset-[-10%] rounded-[42%] opacity-0 blur-xl transition-opacity duration-200 group-hover:opacity-100"
+          animate={
+            reduceMotion || !hovered
+              ? { opacity: 0, scale: 1 }
+              : { opacity: 0.56, scale: [1, 1.05, 1] }
+          }
+          transition={
+            reduceMotion || !hovered
+              ? { duration: 0 }
+              : { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
+          }
+          style={{
+            background:
+              "radial-gradient(circle at 50% 54%, rgba(82,39,255,0.34), rgba(73,201,255,0.2) 36%, transparent 70%)",
+          }}
+        />
+        {reduceMotion ? null : (
+          <motion.span
+            aria-hidden="true"
+            className="claw42-hero-robot-mobile-tap-ripple pointer-events-none absolute left-1/2 top-[88%] z-20 h-12 w-12 -translate-x-1/2 rounded-full border border-[#D1FF55]/60 md:hidden"
+            animate={{ opacity: [0, 0.74, 0], scale: [0.5, 1.08, 1.45] }}
+            transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 1.8, ease: "easeOut" }}
+          />
+        )}
         <HeroRobotGuide
           label={t.hero.robotGuide}
           visible={guideVisible}

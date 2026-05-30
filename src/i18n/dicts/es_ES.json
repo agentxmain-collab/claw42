@@ -28,7 +28,7 @@
       "Hace 42 segundos leía datos on-chain. Ahora te toca a ti preguntar."
     ],
     "speechBubbleAriaLabel": "Burbuja de diálogo de Claw 42 Agent",
-    "robotGuide": "Tócame para analizar",
+    "robotGuide": "Toca para ver el análisis de mercado con IA",
     "miniPlayer": {
       "title": "Mesa táctica rápida de Agent",
       "loading": "Agent está analizando...",
