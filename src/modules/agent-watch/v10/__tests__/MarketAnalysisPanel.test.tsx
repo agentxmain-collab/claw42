@@ -1,6 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
+import enUS from "@/i18n/dicts/en_US.json";
 import zhCN from "@/i18n/dicts/zh_CN.json";
 import type { Dict } from "@/i18n/types";
 import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
@@ -15,6 +16,7 @@ import {
 } from "../MarketAnalysisPanel";
 
 const dict = (zhCN as Dict).agentWatch.dispatchV10;
+const enDict = (enUS as Dict).agentWatch.dispatchV10;
 
 function topicFixture({
   id,
@@ -581,7 +583,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain('class="v3-time-chip"');
     expect((html.match(/class="v3-cell"/g) ?? []).length).toBe(3);
     expect(html).toContain("入场区间");
-    expect(html).toContain("当前");
+    expect(html).not.toContain("当前围绕");
     expect(html).toContain("77,200");
     expect(html).toContain("74,000");
     expect(html).toContain('class="v3-mega-top"');
@@ -612,6 +614,66 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain(longRisk);
     expect(html).not.toContain("4 Agent");
     expect(html).not.toContain("7 轮辩论");
+  });
+
+  test("renders the localized position size label inside the visible trade CTA", () => {
+    const zhHtml = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "symbol-btc-cta-size-zh",
+              candidateType: "symbol",
+              candidateKey: "BTC",
+              title: "BTC 实时行情分析",
+              symbol: "BTC",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            strategy: {
+              ...dispatchV10DemoTopics[0]!.strategy,
+              action: "long",
+              actionLabel: "LONG 10%",
+              ticker: "$BTC",
+            },
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+    const enHtml = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "symbol-btc-cta-size-en",
+              candidateType: "symbol",
+              candidateKey: "BTC",
+              title: "BTC live market analysis",
+              symbol: "BTC",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            strategy: {
+              ...dispatchV10DemoTopics[0]!.strategy,
+              action: "long",
+              actionLabel: "LONG 10%",
+              ticker: "$BTC",
+            },
+          },
+        ]}
+        dict={enDict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(zhHtml).toContain('<span class="v3-mega-size">建议仓位 10%</span>');
+    expect(enHtml).toContain('<span class="v3-mega-size">Suggested size 10%</span>');
+    expect(zhHtml).not.toContain('<span class="v3-mega-size">10%</span>');
+    expect(enHtml).not.toContain('<span class="v3-mega-size">10%</span>');
   });
 
   test("renders accumulated server-loaded pages and final infinite-scroll state", () => {

@@ -419,12 +419,12 @@ function directionIcon(action: DispatchTopic["strategy"]["action"]) {
   return "•";
 }
 
-function allocationText(strategy: DispatchTopic["strategy"]) {
+function allocationText(strategy: DispatchTopic["strategy"], dict: DispatchV10Dict) {
   const fromAction = strategy.actionLabel.match(/(\d+(?:\.\d+)?)%/);
-  if (fromAction) return `${fromAction[1]}%`;
+  if (fromAction) return `${dict.market.positionSizeLabel} ${fromAction[1]}%`;
   const fromMeta = strategy.meta.match(/(\d+(?:\.\d+)?)%/);
-  if (fromMeta) return `${fromMeta[1]}%`;
-  return "待定";
+  if (fromMeta) return `${dict.market.positionSizeLabel} ${fromMeta[1]}%`;
+  return `${dict.market.positionSizeLabel} 待定`;
 }
 
 function splitTickerTitle(topic: DispatchTopic) {
@@ -479,7 +479,6 @@ function matrixSubtexts(strategy: DispatchTopic["strategy"]) {
   const stop = parseFirstNumber(strategy.stopLoss);
   const takeProfit = parseFirstNumber(strategy.takeProfit);
   return {
-    current: entryReference ? `当前围绕 ${strategy.entry}` : "当前待确认",
     stop: formatDeltaPct(entryReference, stop, strategy.action),
     takeProfit: formatDeltaPct(entryReference, takeProfit, strategy.action),
   };
@@ -660,7 +659,7 @@ function TopicStrategyV10({
         {directionIcon(strategy.action)}
       </span>
       <span className="v3-mega-dir">{directionText(strategy.action)}</span>
-      <span className="v3-mega-size">{allocationText(strategy)}</span>
+      <span className="v3-mega-size">{allocationText(strategy, dict)}</span>
     </span>
   );
   const ctaBottom = (
@@ -736,7 +735,6 @@ function TopicStrategyV10({
                 <span className="v3-cell-val">
                   {isObservationMode ? "观察结论" : strategy.entry}
                 </span>
-                <span className="v3-cell-sub ok">{matrixSubs.current}</span>
               </div>
               <div className="v3-cell">
                 <span className="v3-cell-label">{dict.market.stopLoss}</span>
