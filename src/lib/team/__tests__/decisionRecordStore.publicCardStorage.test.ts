@@ -12,6 +12,7 @@ const persistDecisionRecordDirectMock = vi.hoisted(() => vi.fn());
 const writePublicCardIndexEntryMock = vi.hoisted(() => vi.fn());
 const writePublicCardIndexFailureMarkerMock = vi.hoisted(() => vi.fn());
 const cleanupPublicCardIndexMock = vi.hoisted(() => vi.fn());
+const schedulePublicTimelineSnapshotRefreshMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/kv-shim", () => ({
   kv: kvMock,
@@ -27,6 +28,10 @@ vi.mock("@/lib/watch/publicCardIndex", () => ({
   cleanupPublicCardIndex: cleanupPublicCardIndexMock,
   writePublicCardIndexEntry: writePublicCardIndexEntryMock,
   writePublicCardIndexFailureMarker: writePublicCardIndexFailureMarkerMock,
+}));
+
+vi.mock("@/lib/watch/publicTimelineSnapshotProducer", () => ({
+  schedulePublicTimelineSnapshotRefresh: schedulePublicTimelineSnapshotRefreshMock,
 }));
 
 describe("decisionRecordStore public card storage failures", () => {
@@ -48,6 +53,7 @@ describe("decisionRecordStore public card storage failures", () => {
       removedByNonStrategy: 0,
       count: 0,
     });
+    schedulePublicTimelineSnapshotRefreshMock.mockReset().mockResolvedValue(null);
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
   });
 
@@ -77,6 +83,20 @@ describe("decisionRecordStore public card storage failures", () => {
     expect(getLastDecisionRecordWriteDiagnostics()).toMatchObject({
       storageMode: "persistent",
       publicCardStorageFailures: [{ stage: "public-card-index", error: "Error: zadd down" }],
+    });
+  });
+
+  it("schedules one shared timeline snapshot refresh after a public card write", async () => {
+    writePublicCardIndexEntryMock.mockResolvedValueOnce({
+      id: "record-1",
+      recordKey: "claw42:strategy:record-by-id:v1:zh_CN:record-1",
+    });
+    const { appendDecisionRecord } = await import("@/lib/team/decisionRecordStore");
+
+    await appendDecisionRecord(record());
+
+    expect(schedulePublicTimelineSnapshotRefreshMock).toHaveBeenCalledWith("zh_CN", {
+      reason: "decision-record-write",
     });
   });
 });

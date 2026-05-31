@@ -23,7 +23,7 @@ describe("/api/watch/follow-stats", () => {
     __resetFollowStatsForTests();
   });
 
-  it("returns empty stats and sets an anonymous cookie", async () => {
+  it("returns shared count stats without setting an anonymous cookie", async () => {
     const response = await GET(
       new NextRequest("https://claw42.ai/api/watch/follow-stats?recordIds=record-1"),
     );
@@ -31,7 +31,12 @@ describe("/api/watch/follow-stats", () => {
 
     expect(response.status).toBe(200);
     expect(body.stats["record-1"]).toEqual({ watchCount: 0, followCount: 0, userFollowed: false });
-    expect(response.headers.get("set-cookie")).toContain("claw42-anon-id=");
+    expect(body.scope).toBe("shared-counts");
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=0, must-revalidate");
+    expect(response.headers.get("Vercel-CDN-Cache-Control")).toBe(
+      "public, s-maxage=60, stale-while-revalidate=300",
+    );
+    expect(response.headers.get("set-cookie")).toBeNull();
   });
 
   it("records follow actions idempotently for one anon cookie", async () => {
@@ -122,5 +127,6 @@ describe("/api/watch/follow-stats", () => {
       followCount: 0,
       userFollowed: false,
     });
+    expect(statsBody.scope).toBe("shared-counts");
   });
 });

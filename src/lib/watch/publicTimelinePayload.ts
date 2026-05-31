@@ -1,5 +1,4 @@
 import type { Locale } from "@/i18n/types";
-import { waitUntil } from "@vercel/functions";
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { getNewsEvidence } from "@/lib/news/newsEvidenceStore";
 import { readAllDecisionRecords, readDecisionRecords } from "@/lib/team/decisionRecordStore";
@@ -27,12 +26,7 @@ import {
   filterPublicTimelineEvents,
   projectDecisionRecordToPublicEvent,
 } from "@/lib/watch/publicTimelineProjection";
-import {
-  backfillPublicCardIndexFromRecords,
-  PUBLIC_CARD_PAGE_SIZE,
-  prunePublicCardIndexByStrategy,
-  readPublicCardIndexPage,
-} from "@/lib/watch/publicCardIndex";
+import { PUBLIC_CARD_PAGE_SIZE, readPublicCardIndexPage } from "@/lib/watch/publicCardIndex";
 
 export const MAX_PUBLIC_TIMELINE_WINDOW_MINUTES = 24 * 60;
 export const MAX_PUBLIC_RESIDENT_FLOOR_WINDOW_MINUTES = 72 * 60;
@@ -41,8 +35,28 @@ export const PUBLIC_SYMBOL_FLOOR_TARGET = 3;
 const MAX_EVIDENCE_MAP_ITEMS = 120;
 
 export type WatchTimelineMode = "public" | "debug";
+export type PublicTimelineSnapshotStatus = "fresh" | "stale" | "degraded" | "empty";
+
+export interface PublicTimelineSourceHealth {
+  state: string;
+  reason?: string;
+  error?: string;
+  generatedFrom?: string;
+  readSource?: string;
+  storageError?: boolean;
+  estimatedKvCommands?: number;
+}
+
+export interface PublicTimelineFollowStatsSnapshot {
+  watchCount: number;
+  followCount: number;
+  userFollowed?: boolean;
+}
 
 export interface PublicWatchTimelinePayload {
+  version?: string;
+  generatedAt?: string;
+  expiresAt?: string;
   events: PublicTimelineEvent[];
   evidenceMap: Record<string, NewsEvidence>;
   oldestTs: number | null;
@@ -55,6 +69,9 @@ export interface PublicWatchTimelinePayload {
   page?: number;
   pageSize?: number;
   totalCount?: number;
+  followStats?: Record<string, PublicTimelineFollowStatsSnapshot>;
+  sourceHealth?: PublicTimelineSourceHealth;
+  snapshotStatus?: PublicTimelineSnapshotStatus;
 }
 
 export interface DebugWatchTimelinePayload {
@@ -238,7 +255,6 @@ async function buildIndexedPublicTimelinePayload({
   windowMinutes,
   servedAt = Date.now(),
 }: Omit<WatchTimelinePayloadOptions, "mode">): Promise<PublicWatchTimelinePayload | null> {
-  await prunePublicCardIndexByStrategy(locale).catch(() => 0);
   const indexPage = await readPublicCardIndexPage(locale, {
     page,
     pageSize: Math.min(pageSize, limit),
@@ -411,9 +427,6 @@ export async function buildWatchTimelinePayload({
     ),
     limit,
   );
-  if (usingEmptyIndexFallback && decisionRecords.length > 0) {
-    await schedulePublicCardIndexBackfill(decisionRecords, locale);
-  }
   const evidenceMap = stagingFixture
     ? Object.fromEntries(
         Array.from(new Set(events.flatMap((event) => event.evidenceIds)))
@@ -442,21 +455,4 @@ export async function buildWatchTimelinePayload({
       now: servedAt,
     }),
   };
-}
-
-async function schedulePublicCardIndexBackfill(records: StrategyDecisionRecord[], locale: Locale) {
-  const task = backfillPublicCardIndexFromRecords(records, { locale }).catch(() => null);
-  if (shouldUseVercelWaitUntil()) {
-    try {
-      waitUntil(task);
-      return;
-    } catch {
-      // Fall through to inline await for local/test runtimes that cannot register waitUntil.
-    }
-  }
-  await task;
-}
-
-function shouldUseVercelWaitUntil() {
-  return process.env.VERCEL === "1" || process.env.VERCEL === "true";
 }

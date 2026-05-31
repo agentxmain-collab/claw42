@@ -122,6 +122,10 @@ export async function getFollowStats(
   return Object.fromEntries(pairs);
 }
 
+export async function getSharedFollowStats(recordIds: readonly string[]) {
+  return getFollowStats(recordIds, null);
+}
+
 export async function followRecord(recordId: string, anonId: string): Promise<FollowStatsSnapshot> {
   const hashedAnonId = hashAnonIdForFollowStats(anonId);
 

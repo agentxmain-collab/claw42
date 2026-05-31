@@ -37,7 +37,7 @@ describe("/api/watch/stream", () => {
     vi.unstubAllEnvs();
   });
 
-  it("serves the public watch timeline stream in production", async () => {
+  it("closes the public watch timeline stream in production", async () => {
     vi.stubEnv("NODE_ENV", "production");
 
     const response = await GET(
@@ -46,15 +46,11 @@ describe("/api/watch/stream", () => {
       }),
     );
 
-    expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Type")).toContain("text/event-stream");
-    expect(checkRateLimitMock).toHaveBeenCalledWith(expect.stringMatching(/^watch-stream:ip:/), {
-      max: 20,
-      windowMs: 60_000,
-    });
-    expect(createWatchTimelineSseStreamMock).toHaveBeenCalledWith(
-      expect.objectContaining({ locale: "zh_CN", windowMinutes: 60 }),
-    );
+    expect(response.status).toBe(410);
+    expect(response.headers.get("Content-Type")).not.toContain("text/event-stream");
+    await expect(response.json()).resolves.toEqual({ error: "public_stream_disabled" });
+    expect(checkRateLimitMock).not.toHaveBeenCalled();
+    expect(createWatchTimelineSseStreamMock).not.toHaveBeenCalled();
     expect(subscribeSharedThreadMock).not.toHaveBeenCalled();
   });
 
@@ -77,13 +73,14 @@ describe("/api/watch/stream", () => {
     expect(subscribeSharedThreadMock).toHaveBeenCalledWith("BTC");
   });
 
-  it("rate limits public watch timeline streams before opening the SSE broker", async () => {
+  it("does not spend rate-limit storage on closed public streams", async () => {
     checkRateLimitMock.mockResolvedValueOnce({ allowed: false, remaining: 0, resetAt: 1234 });
 
     const response = await GET(new Request("https://claw42.ai/api/watch/stream?locale=zh_CN"));
 
-    expect(response.status).toBe(429);
-    await expect(response.json()).resolves.toEqual({ error: "rate_limited" });
+    expect(response.status).toBe(410);
+    await expect(response.json()).resolves.toEqual({ error: "public_stream_disabled" });
+    expect(checkRateLimitMock).not.toHaveBeenCalled();
     expect(createWatchTimelineSseStreamMock).not.toHaveBeenCalled();
   });
 });

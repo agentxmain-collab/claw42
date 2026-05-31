@@ -10,6 +10,10 @@ import { localeFromRequestUrl } from "@/lib/watch/locale";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+const PUBLIC_CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=0, must-revalidate",
+  "Vercel-CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+} as const;
 
 export async function GET(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -60,7 +64,7 @@ export async function GET(request: NextRequest) {
       events,
     },
     {
-      headers: { "Cache-Control": "no-store" },
+      headers: PUBLIC_CACHE_HEADERS,
     },
   );
 }

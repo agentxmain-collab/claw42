@@ -6,6 +6,7 @@ import { FlowIntroView } from "./FlowIntroView";
 import { MarketAnalysisView } from "./MarketAnalysisView";
 import { WatchTabs } from "./WatchTabs";
 import type {
+  DispatchFreshnessState,
   DispatchConsoleV9Props,
   DispatchTopic,
   DispatchTopicAction,
@@ -15,9 +16,11 @@ import type {
 function DispatchPageHeader({
   activeView,
   onViewChange,
+  freshness,
 }: {
   activeView: DispatchView;
   onViewChange: (view: DispatchView) => void;
+  freshness?: DispatchFreshnessState;
 }) {
   return (
     <header className="dispatch-page-header">
@@ -50,8 +53,31 @@ function DispatchPageHeader({
           </div>
         </div>
       </div>
+      <SnapshotStatus freshness={freshness} />
       <WatchTabs activeView={activeView} onViewChange={onViewChange} />
     </header>
+  );
+}
+
+function SnapshotStatus({ freshness }: { freshness?: DispatchFreshnessState }) {
+  if (!freshness?.snapshotStatus && !freshness?.snapshotGeneratedAt) return null;
+  const status = freshness?.snapshotStatus ?? "stale";
+  const label =
+    status === "fresh"
+      ? "Snapshot fresh"
+      : status === "empty"
+        ? "Snapshot empty"
+        : status === "degraded"
+          ? "Snapshot degraded"
+          : "Snapshot stale";
+  const timestamp = freshness?.snapshotGeneratedAt
+    ? freshness.snapshotGeneratedAt.replace("T", " ").slice(0, 16)
+    : null;
+  return (
+    <div className="snapshot-status-row" aria-label="Timeline snapshot status">
+      <span className={`snapshot-pill ${status}`}>{label}</span>
+      {timestamp ? <span className="snapshot-generated-at">{timestamp}</span> : null}
+    </div>
   );
 }
 
@@ -61,6 +87,7 @@ export function DispatchConsoleV9({
   onViewChange,
   onTopicAction,
   followTradeDict,
+  freshness,
 }: DispatchConsoleV9Props) {
   const [activeView, setActiveView] = useState<DispatchView>(initialView);
   const [placeholder, setPlaceholder] = useState<{
@@ -92,7 +119,7 @@ export function DispatchConsoleV9({
 
   return (
     <section className={`${styles.root} dispatch-console-v9`} aria-label="Claw42 dispatch console">
-      <DispatchPageHeader activeView={activeView} onViewChange={changeView} />
+      <DispatchPageHeader activeView={activeView} onViewChange={changeView} freshness={freshness} />
 
       <div
         id="dispatch-panel-flow"

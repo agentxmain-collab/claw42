@@ -10,6 +10,7 @@ import {
   writePublicCardIndexEntry,
   writePublicCardIndexFailureMarker,
 } from "@/lib/watch/publicCardIndex";
+import { schedulePublicTimelineSnapshotRefresh } from "@/lib/watch/publicTimelineSnapshotProducer";
 
 type KvListClient = {
   lpush(key: string, value: string): Promise<unknown>;
@@ -441,6 +442,7 @@ async function writePublicCardStorage(record: StrategyDecisionRecord) {
     persistDecisionRecordDirect(record),
     writePublicCardIndexEntry(record),
   ]);
+  const publicCardResult = results[1];
   const failures = results.flatMap((result, index) =>
     result.status === "rejected"
       ? [
@@ -476,6 +478,17 @@ async function writePublicCardStorage(record: StrategyDecisionRecord) {
       error: safeErrorMessage(error),
     });
   });
+  if (publicCardResult.status === "fulfilled" && publicCardResult.value) {
+    void Promise.resolve(
+      schedulePublicTimelineSnapshotRefresh(record.locale, { reason: "decision-record-write" }),
+    ).catch((error) => {
+      console.warn("[claw42] public timeline snapshot refresh schedule failed", {
+        locale: record.locale,
+        recordId: record.id,
+        error: safeErrorMessage(error),
+      });
+    });
+  }
   return failures;
 }
 

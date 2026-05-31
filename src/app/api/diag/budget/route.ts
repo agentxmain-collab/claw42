@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { PUBLIC_CARD_PAGE_SIZE, getPublicCardIndexStats } from "@/lib/watch/publicCardIndex";
 import { localeFromRequestUrl } from "@/lib/watch/locale";
+import { estimatePublicBoardTrafficBudget } from "@/lib/watch/publicBoardBudget";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const PUBLIC_CARD_COMMANDS_PER_PAGE_ESTIMATE = 34;
 const PUBLIC_CARD_MONTHLY_COMMAND_WARNING = 350_000;
 
 function isAuthorized(request: Request) {
@@ -24,10 +24,19 @@ export async function GET(request: Request) {
   const locale = localeFromRequestUrl(url, request.headers.get("accept-language"));
   const publicCardIndex = await getPublicCardIndexStats(locale);
   const pagesInIndex = Math.ceil(publicCardIndex.count / PUBLIC_CARD_PAGE_SIZE);
+  const testProjectedMonthlyCommands = Number(url.searchParams.get("testProjectedMonthlyCommands"));
+  const cacheMissesPerMinuteParam = url.searchParams.get("cacheMissesPerMinute");
+  const trafficBudget = estimatePublicBoardTrafficBudget({
+    viewerCount: Number(url.searchParams.get("viewerCount") ?? 500),
+    cacheMissesPerMinute: Number(cacheMissesPerMinuteParam ?? Math.max(pagesInIndex, 1)),
+    snapshotWritesPerMinute: Number(url.searchParams.get("snapshotWritesPerMinute") ?? 1),
+  });
   const estimatedMonthlyCommandsAtOneFullBrowsePerDay =
-    pagesInIndex * PUBLIC_CARD_COMMANDS_PER_PAGE_ESTIMATE * 30;
-  const warning =
-    estimatedMonthlyCommandsAtOneFullBrowsePerDay > PUBLIC_CARD_MONTHLY_COMMAND_WARNING;
+    trafficBudget.snapshot.kvCommandsPerMinute * 60 * 24 * 30;
+  const projectedMonthlyCommands = Number.isFinite(testProjectedMonthlyCommands)
+    ? testProjectedMonthlyCommands
+    : estimatedMonthlyCommandsAtOneFullBrowsePerDay;
+  const warning = projectedMonthlyCommands > PUBLIC_CARD_MONTHLY_COMMAND_WARNING;
 
   if (warning) {
     console.warn("[claw42] public-card index monthly command budget warning", {
@@ -44,9 +53,11 @@ export async function GET(request: Request) {
       publicCardIndex,
       budget: {
         pageSize: PUBLIC_CARD_PAGE_SIZE,
-        estimatedCommandsPerPage: PUBLIC_CARD_COMMANDS_PER_PAGE_ESTIMATE,
+        model: "shared-public-timeline-snapshot-v1",
         pagesInIndex,
+        trafficBudget,
         estimatedMonthlyCommandsAtOneFullBrowsePerDay,
+        projectedMonthlyCommands,
         warningThreshold: PUBLIC_CARD_MONTHLY_COMMAND_WARNING,
         warning,
       },

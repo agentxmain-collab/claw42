@@ -1,5 +1,9 @@
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import type {
+  PublicTimelineSnapshotStatus,
+  PublicTimelineSourceHealth,
+} from "@/lib/watch/publicTimelinePayload";
 import type { DispatchV10FollowTradeDict } from "@/i18n/types";
 import type { TradingReadinessState } from "@/lib/coinw/tradeReadinessState";
 import type { DecisionFreshnessStatus } from "@/lib/team/freshnessStatus";
@@ -148,6 +152,9 @@ export interface DispatchFreshnessState {
   refreshStarted?: boolean;
   refreshSource?: "records" | "timeline" | "none";
   residentStatus?: ResidentPrewarmStatus;
+  snapshotStatus?: PublicTimelineSnapshotStatus;
+  snapshotGeneratedAt?: string;
+  snapshotSourceHealth?: PublicTimelineSourceHealth;
 }
 
 export interface DispatchTopic {

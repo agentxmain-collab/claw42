@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/storage/kv-rate-limiter";
 import {
   followRecord,
   getFollowStats,
+  getSharedFollowStats,
   hashAnonIdForFollowStats,
 } from "@/lib/watch/followStatsStore";
 
@@ -14,6 +15,10 @@ const ANON_COOKIE = "claw42-anon-id";
 const ANON_COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 const MAX_RECORD_IDS = 50;
 const RECORD_ID_PATTERN = /^[a-zA-Z0-9:_-]{1,160}$/;
+const PUBLIC_COUNT_CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=0, must-revalidate",
+  "Vercel-CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+} as const;
 
 function getClientIp(request: NextRequest) {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -88,9 +93,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "invalid_record_ids" }, { status: 400 });
   }
 
+  if (url.searchParams.get("user") !== "1") {
+    const stats = await getSharedFollowStats(recordIds);
+    return NextResponse.json(
+      { scope: "shared-counts", stats },
+      { headers: PUBLIC_COUNT_CACHE_HEADERS },
+    );
+  }
+
   const anon = getOrCreateAnonId(request);
   const stats = await getFollowStats(recordIds, anon.anonId);
-  return jsonWithAnonCookie({ stats }, anon);
+  return jsonWithAnonCookie({ scope: "user-action", stats }, anon);
 }
 
 export async function POST(request: NextRequest) {

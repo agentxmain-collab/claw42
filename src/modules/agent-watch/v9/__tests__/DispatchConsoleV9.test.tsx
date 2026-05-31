@@ -81,6 +81,24 @@ describe("DispatchConsoleV9", () => {
     expect(html).not.toContain("BTC live market check");
   });
 
+  test("renders public timeline snapshot freshness honestly", () => {
+    const html = renderToStaticMarkup(
+      <DispatchConsoleV9
+        initialView="mkt"
+        topics={[]}
+        freshness={{
+          status: "stale",
+          snapshotStatus: "degraded",
+          snapshotGeneratedAt: "2026-05-31T05:00:00.000Z",
+        }}
+      />,
+    );
+
+    expect(html).toContain("Snapshot degraded");
+    expect(html).toContain("2026-05-31 05:00");
+    expect(html).toContain('aria-label="Timeline snapshot status"');
+  });
+
   test("renders ranked topics in rank order even when transport inserts older cards first", () => {
     const [baseTopic] = dispatchTopics;
     const html = renderToStaticMarkup(

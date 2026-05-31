@@ -213,7 +213,7 @@ describe("publicTimelinePayload", () => {
     expect(page.totalCount).toBe(0);
   });
 
-  it("uses Vercel waitUntil for empty-index backfill in deployed runtimes", async () => {
+  it("does not schedule GET-time public index backfill in deployed runtimes", async () => {
     process.env.VERCEL = "1";
     const servedAt = Date.UTC(2026, 4, 24, 6, 20, 0);
     await appendDecisionRecord(
@@ -231,8 +231,7 @@ describe("publicTimelinePayload", () => {
       servedAt,
     });
 
-    expect(waitUntil).toHaveBeenCalledTimes(1);
-    expect(waitUntil).toHaveBeenCalledWith(expect.any(Promise));
+    expect(waitUntil).not.toHaveBeenCalled();
   });
 
   it("keeps up to three stale-but-real executable symbol records as a public floor", () => {

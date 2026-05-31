@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType }
 import type { NewsEvidence } from "@/lib/news/newsEvidence";
 import { apiPath } from "@/lib/basePath";
 import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
+import type {
+  PublicTimelineSnapshotStatus,
+  PublicTimelineSourceHealth,
+} from "@/lib/watch/publicTimelinePayload";
 import {
   comparePublicTimelineEvents,
   mergePublicTimelineEvents,
@@ -35,22 +39,20 @@ import { resolveAgentWatchLocale } from "./locale";
 const PUBLIC_TIMELINE_PAGE_SIZE = 15;
 const PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES = 60;
 const DEFAULT_TIMELINE_POLL_MS = 90_000;
-const TIMELINE_STREAM_RETRY_MS = 30_000;
 const TIMELINE_HIDDEN_POLL_MS = 5 * 60_000;
-const FOLLOW_STATS_VISIBLE_POLL_MS = 60_000;
-const FOLLOW_STATS_MARKET_POLL_MS = 30_000;
-const FOLLOW_STATS_HIDDEN_POLL_MS = 5 * 60_000;
 const FOLLOW_STATS_BROADCAST = "claw42-follow-stats";
 const FOLLOW_STATS_STORAGE_EVENT = "claw42-follow-stats-updated";
 const DECISION_HISTORY_LIMIT = 20;
 const VISIBLE_SESSION_NO_SIGNAL_RETRY_MS = 5 * 60_000;
 const VISIBLE_SESSION_REFRESH_STARTED_RETRY_MS = 90_000;
-const VISIBLE_SESSION_MAX_RETRY_MS = 5 * 60_000;
 const AUTO_SYMBOL_REFRESH_CANDIDATE = "symbol";
 const AUTO_SYMBOL_REFRESH_SYMBOL = "SYMBOL";
 const HISTORY_WALL_ENABLED = process.env.NEXT_PUBLIC_HISTORY_WALL_ENABLED === "true";
 
 interface PublicTimelinePayload {
+  version?: string;
+  generatedAt?: string;
+  expiresAt?: string;
   events: PublicTimelineEvent[];
   evidenceMap?: Record<string, NewsEvidence>;
   oldestTs: number | null;
@@ -62,6 +64,9 @@ interface PublicTimelinePayload {
   page?: number;
   pageSize?: number;
   totalCount?: number;
+  followStats?: Record<string, FollowStatsSnapshot>;
+  snapshotStatus?: PublicTimelineSnapshotStatus;
+  sourceHealth?: PublicTimelineSourceHealth;
 }
 
 interface FollowStatsPayload {
@@ -226,7 +231,6 @@ export function AgentWatchBoard({
   const [followStatsByRecordId, setFollowStatsByRecordId] = useState<
     Record<string, FollowStatsSnapshot>
   >({});
-  const [activeDispatchView, setActiveDispatchView] = useState<DispatchView>(initialView);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historySymbol, setHistorySymbol] = useState<string | null>(null);
   const [historyItems, setHistoryItems] = useState<HistoryWallItem[]>([]);
@@ -236,7 +240,6 @@ export function AgentWatchBoard({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [freshness, setFreshness] = useState<DispatchFreshnessState>({ status: "idle" });
   const [residentStatus, setResidentStatus] = useState<ResidentPrewarmStatus | null>(null);
-  const [timelineLoaded, setTimelineLoaded] = useState(false);
   const [timelinePage, setTimelinePage] = useState(1);
   const [timelineHasMore, setTimelineHasMore] = useState(false);
   const [timelineTotalCount, setTimelineTotalCount] = useState(0);
@@ -262,7 +265,36 @@ export function AgentWatchBoard({
               : { ...current, ...payload.evidenceMap },
         );
       }
+      if (payload.followStats) {
+        setFollowStatsByRecordId((current) => {
+          const next = { ...current };
+          for (const [recordId, stats] of Object.entries(payload.followStats ?? {})) {
+            next[recordId] = {
+              watchCount: stats.watchCount,
+              followCount: stats.followCount,
+              userFollowed: current[recordId]?.userFollowed ?? Boolean(stats.userFollowed),
+            };
+          }
+          return next;
+        });
+      }
       if (payload.residentStatus) setResidentStatus(payload.residentStatus);
+      if (payload.snapshotStatus || payload.generatedAt) {
+        const snapshotStatus = payload.snapshotStatus ?? "stale";
+        setFreshness({
+          status:
+            snapshotStatus === "fresh"
+              ? "cached"
+              : snapshotStatus === "empty"
+                ? "no_signal"
+                : "stale",
+          lastDecisionAt: payload.generatedAt ?? null,
+          refreshSource: "timeline",
+          snapshotStatus,
+          snapshotGeneratedAt: payload.generatedAt,
+          snapshotSourceHealth: payload.sourceHealth,
+        });
+      }
       if (typeof payload.page === "number") {
         setTimelinePage((current) =>
           mode === "replace" && payload.page === 1 ? 1 : Math.max(current, payload.page ?? 1),
@@ -270,7 +302,6 @@ export function AgentWatchBoard({
       }
       if (typeof payload.totalCount === "number") setTimelineTotalCount(payload.totalCount);
       setTimelineHasMore(payload.hasMore);
-      setTimelineLoaded(true);
     },
     [],
   );
@@ -278,14 +309,12 @@ export function AgentWatchBoard({
   const fetchTimelineWindow = useCallback(
     async ({
       windowMinutes,
-      before,
       limit = PUBLIC_TIMELINE_PAGE_SIZE,
       page = 1,
       pageSize = PUBLIC_TIMELINE_PAGE_SIZE,
       signal,
     }: {
       windowMinutes: number;
-      before?: number | null;
       limit?: number;
       page?: number;
       pageSize?: number;
@@ -298,9 +327,7 @@ export function AgentWatchBoard({
         pageSize: String(pageSize),
         locale: agentWatchLocale,
       });
-      if (before) params.set("before", String(before));
       const response = await fetch(apiPath(`/api/watch/timeline?${params}`), {
-        cache: "no-store",
         signal,
       });
       if (!response.ok) throw new Error(`watch timeline ${response.status}`);
@@ -312,24 +339,13 @@ export function AgentWatchBoard({
   useEffect(() => {
     let cancelled = false;
     let pollTimer: number | null = null;
-    let reconnectTimer: number | null = null;
     let controller: AbortController | null = null;
-    let eventSource: EventSource | null = null;
 
     function clearTimers() {
       if (pollTimer) {
         window.clearTimeout(pollTimer);
         pollTimer = null;
       }
-      if (reconnectTimer) {
-        window.clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
-    }
-
-    function closeEventSource() {
-      eventSource?.close();
-      eventSource = null;
     }
 
     function currentTimelinePollMs() {
@@ -367,84 +383,28 @@ export function AgentWatchBoard({
       }
     }
 
-    async function applyStreamPayload(payload: PublicTimelinePayload) {
-      nextTimelinePollMsRef.current = payload.nextPollMs ?? DEFAULT_TIMELINE_POLL_MS;
-      controller?.abort();
-      controller = new AbortController();
-      if (!cancelled) applyTimelinePayload(payload, "replace");
-    }
-
     function startPolling(delay = 0) {
       if (pollTimer) window.clearTimeout(pollTimer);
       pollTimer = window.setTimeout(() => void loadTimeline(), delay);
     }
 
-    function startStream() {
-      if (document.visibilityState === "hidden" || typeof window.EventSource === "undefined") {
-        startPolling(0);
-        return;
-      }
-
-      if (pollTimer) {
-        window.clearTimeout(pollTimer);
-        pollTimer = null;
-      }
-      closeEventSource();
-      const params = new URLSearchParams({
-        windowMinutes: String(PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES),
-        limit: String(PUBLIC_TIMELINE_PAGE_SIZE),
-        page: "1",
-        pageSize: String(PUBLIC_TIMELINE_PAGE_SIZE),
-        locale: agentWatchLocale,
-      });
-      eventSource = new EventSource(apiPath(`/api/watch/stream?${params}`));
-      eventSource.addEventListener("timeline", (message) => {
-        try {
-          void applyStreamPayload(JSON.parse(message.data) as PublicTimelinePayload).catch(
-            (error: unknown) => {
-              if (
-                (error as { name?: string }).name !== "AbortError" &&
-                process.env.NODE_ENV !== "production"
-              ) {
-                console.warn("[claw42] public timeline stream apply failed", error);
-              }
-            },
-          );
-        } catch (error: unknown) {
-          if (process.env.NODE_ENV !== "production") {
-            console.warn("[claw42] public timeline stream payload failed", error);
-          }
-        }
-      });
-      eventSource.onerror = () => {
-        closeEventSource();
-        startPolling(0);
-        if (reconnectTimer) window.clearTimeout(reconnectTimer);
-        reconnectTimer = window.setTimeout(() => {
-          if (!cancelled) startStream();
-        }, TIMELINE_STREAM_RETRY_MS);
-      };
-    }
-
     function restartTimelineTransport() {
       controller?.abort();
       clearTimers();
-      closeEventSource();
       if (document.visibilityState === "hidden") {
         startPolling(currentTimelinePollMs());
       } else {
-        startStream();
+        startPolling(0);
       }
     }
 
-    startStream();
+    startPolling(0);
     document.addEventListener("visibilitychange", restartTimelineTransport);
 
     return () => {
       cancelled = true;
       controller?.abort();
       clearTimers();
-      closeEventSource();
       document.removeEventListener("visibilitychange", restartTimelineTransport);
     };
   }, [agentWatchLocale, applyTimelinePayload, fetchTimelineWindow]);
@@ -493,11 +453,11 @@ export function AgentWatchBoard({
   const recordIdsKey = recordIds.join(",");
 
   const fetchFollowStats = useCallback(
-    async (signal?: AbortSignal) => {
+    async ({ signal, userScoped = false }: { signal?: AbortSignal; userScoped?: boolean } = {}) => {
       if (!recordIdsKey) return;
       const params = new URLSearchParams({ recordIds: recordIdsKey });
+      if (userScoped) params.set("user", "1");
       const response = await fetch(apiPath(`/api/watch/follow-stats?${params}`), {
-        cache: "no-store",
         credentials: "same-origin",
         signal,
       });
@@ -510,60 +470,11 @@ export function AgentWatchBoard({
 
   useEffect(() => {
     if (!recordIdsKey) return;
-    let cancelled = false;
-    let timer: number | null = null;
-    let controller: AbortController | null = null;
-
-    function currentPollMs() {
-      if (document.visibilityState === "hidden") return FOLLOW_STATS_HIDDEN_POLL_MS;
-      return activeDispatchView === "mkt"
-        ? FOLLOW_STATS_MARKET_POLL_MS
-        : FOLLOW_STATS_VISIBLE_POLL_MS;
-    }
-
-    async function poll() {
-      controller?.abort();
-      controller = new AbortController();
-
-      try {
-        if (document.visibilityState !== "hidden") {
-          await fetchFollowStats(controller.signal);
-        }
-      } catch (error: unknown) {
-        if (
-          (error as { name?: string }).name !== "AbortError" &&
-          process.env.NODE_ENV !== "production"
-        ) {
-          console.warn("[claw42] follow stats fetch failed", error);
-        }
-      } finally {
-        if (!cancelled) timer = window.setTimeout(poll, currentPollMs());
-      }
-    }
-
-    function handleVisibilityChange() {
-      if (timer) window.clearTimeout(timer);
-      void poll();
-    }
-
-    void poll();
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      cancelled = true;
-      controller?.abort();
-      if (timer) window.clearTimeout(timer);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [activeDispatchView, fetchFollowStats, recordIdsKey]);
-
-  useEffect(() => {
-    if (!recordIdsKey) return;
     const channel =
       typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(FOLLOW_STATS_BROADCAST) : null;
 
     function refresh() {
-      void fetchFollowStats();
+      void fetchFollowStats({ userScoped: true });
     }
 
     function handleStorage(event: StorageEvent) {
@@ -609,98 +520,6 @@ export function AgentWatchBoard({
     }),
     [freshness, residentStatus],
   );
-  useEffect(() => {
-    const refreshTarget = resolveVisibleSessionRefreshTarget({
-      topics,
-      residentStatus,
-      timelineLoaded,
-      locale: agentWatchLocale,
-    });
-    if (!refreshTarget) return;
-    const target = refreshTarget;
-    let cancelled = false;
-    let controller: AbortController | null = null;
-    let retryTimer: number | null = null;
-
-    async function triggerRefresh() {
-      if (document.visibilityState !== "visible") return;
-      try {
-        if (window.sessionStorage.getItem(target.sessionKey)) return;
-      } catch {
-        // Session storage can be blocked; still allow a single visible effect run.
-      }
-
-      controller?.abort();
-      controller = new AbortController();
-      const params = new URLSearchParams({
-        locale: agentWatchLocale,
-      });
-      for (const [key, value] of Object.entries(target.params)) {
-        params.set(key, value);
-      }
-
-      try {
-        const response = await fetch(apiPath(`/api/watch/refresh?${params}`), {
-          method: "POST",
-          cache: "no-store",
-          credentials: "same-origin",
-          signal: controller.signal,
-        });
-        if (!response.ok && response.status !== 429) {
-          throw new Error(`watch refresh ${response.status}`);
-        }
-        const payload = (await response.json()) as WatchRefreshPayload;
-        if (!cancelled) {
-          setFreshness({
-            status: payload.status,
-            symbol: payload.symbol || target.symbol,
-            lastDecisionAt: payload.lastDecisionAt,
-            nextAllowedAt: payload.nextAllowedAt,
-            refreshStarted: payload.refreshStarted,
-            refreshSource: payload.refreshSource,
-          });
-          const retryDelay = retryDelayForVisibleSessionRefresh(payload);
-          if (retryDelay !== null) {
-            if (retryTimer !== null) window.clearTimeout(retryTimer);
-            retryTimer = window.setTimeout(
-              () => {
-                void triggerRefresh();
-              },
-              Math.min(retryDelay, VISIBLE_SESSION_MAX_RETRY_MS),
-            );
-          }
-
-          if (shouldPersistVisibleSessionRefreshResult(payload)) {
-            try {
-              window.sessionStorage.setItem(target.sessionKey, String(Date.now()));
-            } catch {
-              // Session storage can be blocked; the request has already completed.
-            }
-          }
-        }
-      } catch (error: unknown) {
-        if ((error as { name?: string }).name === "AbortError") return;
-        if (!cancelled) setFreshness({ status: "error", symbol: target.symbol });
-        if (process.env.NODE_ENV !== "production") {
-          console.warn("[claw42] watch freshness trigger failed", error);
-        }
-      }
-    }
-
-    function handleVisibilityChange() {
-      void triggerRefresh();
-    }
-
-    void triggerRefresh();
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      cancelled = true;
-      controller?.abort();
-      if (retryTimer !== null) window.clearTimeout(retryTimer);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [agentWatchLocale, residentStatus, timelineLoaded, topics]);
 
   const historySymbols = useMemo(
     () => Array.from(new Set(topics.map((topic) => topic.symbol).filter(Boolean))),
@@ -737,7 +556,6 @@ export function AgentWatchBoard({
       setHistoryError(null);
       try {
         const response = await fetch(apiPath(`/api/watch/decision-history?${params}`), {
-          cache: "no-store",
           signal,
         });
         if (!response.ok) throw new Error(`decision history ${response.status}`);
@@ -859,7 +677,6 @@ export function AgentWatchBoard({
       <Console
         topics={topics}
         initialView={initialView}
-        onViewChange={setActiveDispatchView}
         onTopicAction={handleTopicAction}
         marketSnapshot={null}
         followTradeDict={followTradeDict}

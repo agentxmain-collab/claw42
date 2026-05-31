@@ -26,7 +26,6 @@ function timelineUrl(locale: AgentWatchLocale) {
 
 async function loadHeroAnalysisBrief(locale: AgentWatchLocale, signal: AbortSignal) {
   const response = await fetch(timelineUrl(locale), {
-    cache: "no-store",
     signal,
   });
   if (!response.ok) return null;

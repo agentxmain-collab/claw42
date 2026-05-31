@@ -15,6 +15,7 @@ export const PUBLIC_CARD_TOTAL_CAP = 8_000;
 export const PUBLIC_CARD_PAGE_SIZE = 15;
 export const PUBLIC_CARD_INDEX_ESTIMATED_ENTRY_BYTES = 500;
 export const PUBLIC_CARD_INDEX_WRITE_FAILURE_LOG_CAP = 100;
+export const PUBLIC_CARD_INDEX_STRATEGY_PRUNE_SCAN_CAP = 200;
 
 const PUBLIC_CARD_INDEX_PREFIX = "claw42:public-card-index:v1:";
 const PUBLIC_CARD_INDEX_WRITE_FAILURE_LOG_PREFIX = "claw42:public-card-index:v1:write-failure-log:";
@@ -177,6 +178,7 @@ export async function cleanupPublicCardIndex(
       : await prunePublicCardIndexByStrategy(locale, {
           client,
           readRecord,
+          maxMembers: PUBLIC_CARD_INDEX_STRATEGY_PRUNE_SCAN_CAP,
         });
   const count = await client.zcard(key);
   const overflow = Math.max(0, count - PUBLIC_CARD_TOTAL_CAP);
@@ -194,14 +196,17 @@ export async function prunePublicCardIndexByStrategy(
   {
     client = kv as PublicCardIndexClient,
     readRecord = readIndexedDecisionRecord,
+    maxMembers,
   }: {
     client?: PublicCardIndexClient;
     readRecord?: (entry: PublicCardIndexEntry) => Promise<StrategyDecisionRecord | null>;
+    maxMembers?: number;
   } = {},
 ) {
   if (!hasKvConfig(client)) return 0;
   const key = publicCardIndexKey(locale);
-  const members = await client.zrange<unknown[]>(key, 0, -1);
+  const stop = maxMembers && maxMembers > 0 ? Math.floor(maxMembers) - 1 : -1;
+  const members = await client.zrange<unknown[]>(key, 0, stop);
   let removed = 0;
 
   for (const member of members) {

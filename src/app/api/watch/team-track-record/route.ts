@@ -5,6 +5,10 @@ import { localeFromRequestUrl } from "@/lib/watch/locale";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+const PUBLIC_CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=0, must-revalidate",
+  "Vercel-CDN-Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+} as const;
 
 export async function GET(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -17,6 +21,6 @@ export async function GET(request: Request) {
   const payload = await fetchTeamTrackRecord(locale);
 
   return NextResponse.json(payload, {
-    headers: { "Cache-Control": "no-store" },
+    headers: PUBLIC_CACHE_HEADERS,
   });
 }
