@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import { WATCH_REFRESH_STATUSES } from "@/lib/watch/refreshStatus";
-import { maxDuration, POST } from "./route";
+import { GET, maxDuration, POST } from "./route";
 
 const waitUntilMock = vi.hoisted(() => vi.fn());
 const checkRateLimitMock = vi.hoisted(() => vi.fn());
@@ -84,7 +84,7 @@ const now = Date.UTC(2026, 4, 15, 12, 0, 0);
 function request(symbol = "BTC") {
   return new Request(`https://claw42.ai/api/watch/refresh?symbol=${symbol}&locale=zh_CN`, {
     method: "POST",
-    headers: { "x-forwarded-for": "203.0.113.10" },
+    headers: { "x-forwarded-for": "203.0.113.10", "x-claw42-debug": "1" },
   });
 }
 
@@ -93,7 +93,7 @@ function residentRequest() {
     `https://claw42.ai/api/watch/refresh?candidateType=market_overview&locale=zh_CN&testNow=${now}`,
     {
       method: "POST",
-      headers: { "x-forwarded-for": "203.0.113.10" },
+      headers: { "x-forwarded-for": "203.0.113.10", "x-claw42-debug": "1" },
     },
   );
 }
@@ -103,7 +103,7 @@ function autoSymbolRequest() {
     `https://claw42.ai/api/watch/refresh?candidateType=symbol&locale=zh_CN&testNow=${now}`,
     {
       method: "POST",
-      headers: { "x-forwarded-for": "203.0.113.10" },
+      headers: { "x-forwarded-for": "203.0.113.10", "x-claw42-debug": "1" },
     },
   );
 }
@@ -226,6 +226,26 @@ describe("/api/watch/refresh", () => {
       "locked",
       "no_signal",
     ]);
+  });
+
+  it("closes public refresh before rate-limit or lock KV calls", async () => {
+    const getResponse = await GET(
+      new Request("https://claw42.ai/api/watch/refresh?symbol=BTC&locale=zh_CN"),
+    );
+    const postResponse = await POST(
+      new Request("https://claw42.ai/api/watch/refresh?symbol=BTC&locale=zh_CN", {
+        method: "POST",
+        headers: { "x-forwarded-for": "203.0.113.10" },
+      }),
+    );
+
+    expect(getResponse.status).toBe(410);
+    expect(postResponse.status).toBe(410);
+    expect(await getResponse.json()).toEqual({ error: "public_refresh_closed" });
+    expect(await postResponse.json()).toEqual({ error: "public_refresh_closed" });
+    expect(checkRateLimitMock).not.toHaveBeenCalled();
+    expect(checkLockMock).not.toHaveBeenCalled();
+    expect(readAllDecisionRecordsMock).not.toHaveBeenCalled();
   });
 
   it("follows rate, in-flight, freshness, cooldown, per-symbol lock ordering before scheduling", async () => {

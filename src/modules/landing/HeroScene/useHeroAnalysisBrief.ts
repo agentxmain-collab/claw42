@@ -17,9 +17,7 @@ const HERO_ANALYSIS_BRIEF_REFRESH_MS = 90_000;
 function timelineUrl(locale: AgentWatchLocale) {
   const query = new URLSearchParams({
     locale,
-    windowMinutes: "1440",
-    pageSize: "8",
-    limit: "8",
+    page: "1",
   });
   return apiPath(`/api/watch/timeline?${query.toString()}` as `/api/${string}`);
 }

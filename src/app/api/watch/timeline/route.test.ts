@@ -8,6 +8,9 @@ const publishSnapshotMock = vi.hoisted(() => vi.fn());
 const createEmptySnapshotMock = vi.hoisted(() => vi.fn());
 const buildWatchTimelinePayloadMock = vi.hoisted(() => vi.fn());
 const getDiagnosticsMock = vi.hoisted(() => vi.fn());
+const checkPublicBoardKvBudgetMock = vi.hoisted(() => vi.fn());
+const rememberPublicBoardLastGoodMock = vi.hoisted(() => vi.fn());
+const readPublicBoardLastGoodMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/rateLimit", () => ({
   rateLimit: rateLimitMock,
@@ -38,6 +41,12 @@ vi.mock("@/lib/team/decisionRecordStore", () => ({
   getDecisionRecordStoreDiagnostics: getDiagnosticsMock,
 }));
 
+vi.mock("@/lib/watch/publicBoardKvBudgetGuard", () => ({
+  checkPublicBoardKvBudget: checkPublicBoardKvBudgetMock,
+  rememberPublicBoardLastGood: rememberPublicBoardLastGoodMock,
+  readPublicBoardLastGood: readPublicBoardLastGoodMock,
+}));
+
 describe("/api/watch/timeline", () => {
   beforeEach(() => {
     rateLimitMock.mockReset().mockReturnValue(true);
@@ -57,22 +66,23 @@ describe("/api/watch/timeline", () => {
       }),
     );
     getDiagnosticsMock.mockReset().mockResolvedValue({ ok: true });
+    checkPublicBoardKvBudgetMock.mockReset().mockReturnValue({ allowed: true });
+    rememberPublicBoardLastGoodMock.mockReset();
+    readPublicBoardLastGoodMock.mockReset().mockReturnValue(null);
   });
 
   it("serves public timeline snapshots with CDN cache headers and no no-store", async () => {
     readSnapshotMock.mockResolvedValueOnce({ source: "current", payload: snapshot() });
 
     const response = await GET(
-      new NextRequest(
-        "https://claw42.ai/api/watch/timeline?locale=zh_CN&windowMinutes=60&page=1&pageSize=15&before=999999",
-      ),
+      new NextRequest("https://claw42.ai/api/watch/timeline?locale=zh_CN&page=1"),
     );
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=0, must-revalidate");
     expect(response.headers.get("Vercel-CDN-Cache-Control")).toBe(
-      "public, s-maxage=60, stale-while-revalidate=300",
+      "public, s-maxage=900, stale-while-revalidate=3600",
     );
     expect(response.headers.get("Cache-Control")).not.toContain("no-store");
     expect(body.snapshotStatus).toBe("fresh");
@@ -84,6 +94,64 @@ describe("/api/watch/timeline", () => {
         pageSize: 15,
       }),
     );
+    expect(buildWatchTimelinePayloadMock).not.toHaveBeenCalled();
+    expect(rememberPublicBoardLastGoodMock).toHaveBeenCalledWith(
+      "timeline:zh_CN:60:1:15",
+      expect.objectContaining({ snapshotStatus: "fresh" }),
+    );
+  });
+
+  it("accepts only canonical page one or two snapshot queries before touching KV", async () => {
+    readSnapshotMock.mockResolvedValueOnce({ source: "current", payload: snapshot({ page: 2 }) });
+    const valid = await GET(
+      new NextRequest(
+        "https://claw42.ai/api/watch/timeline?locale=zh_CN&windowMinutes=60&page=2&pageSize=15",
+      ),
+    );
+    expect(valid.status).toBe(200);
+    expect(readSnapshotMock).toHaveBeenCalledTimes(1);
+
+    readSnapshotMock.mockClear();
+    checkPublicBoardKvBudgetMock.mockClear();
+
+    for (const query of [
+      "locale=zh_CN&page=3",
+      "locale=zh_CN&page=1&before=999999",
+      "locale=zh_CN&page=1&limit=15",
+      "locale=zh_CN&page=1&pageSize=30",
+      "locale=zh_CN&page=1&windowMinutes=120",
+      "locale=zh_CN&page=1&unknown=1",
+    ]) {
+      const response = await GET(new NextRequest(`https://claw42.ai/api/watch/timeline?${query}`));
+      expect(response.status).toBe(400);
+    }
+
+    expect(readSnapshotMock).not.toHaveBeenCalled();
+    expect(buildWatchTimelinePayloadMock).not.toHaveBeenCalled();
+    expect(checkPublicBoardKvBudgetMock).not.toHaveBeenCalled();
+  });
+
+  it("returns in-memory last-good payloads without KV when the hard fuse is tripped", async () => {
+    checkPublicBoardKvBudgetMock.mockReturnValueOnce({
+      allowed: false,
+      reason: "public_board_kv_budget_exhausted",
+    });
+    readPublicBoardLastGoodMock.mockReturnValueOnce(
+      snapshot({
+        snapshotStatus: "stale",
+        events: [{ id: "event-last-good" }],
+        sourceHealth: { state: "degraded", reason: "last_good" },
+      }),
+    );
+
+    const response = await GET(
+      new NextRequest("https://claw42.ai/api/watch/timeline?locale=zh_CN&page=1"),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.events).toEqual([{ id: "event-last-good" }]);
+    expect(readSnapshotMock).not.toHaveBeenCalled();
     expect(buildWatchTimelinePayloadMock).not.toHaveBeenCalled();
   });
 
@@ -100,7 +168,7 @@ describe("/api/watch/timeline", () => {
     expect(body.events).toEqual([]);
   });
 
-  it("allows one controlled source fallback on snapshot miss and publishes that result", async () => {
+  it("does not rebuild the public timeline on a per-request snapshot miss", async () => {
     readSnapshotMock.mockResolvedValueOnce({
       source: "empty",
       storageError: false,
@@ -114,9 +182,9 @@ describe("/api/watch/timeline", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.events).toHaveLength(1);
-    expect(buildWatchTimelinePayloadMock).toHaveBeenCalledTimes(1);
-    expect(publishSnapshotMock).toHaveBeenCalledTimes(1);
+    expect(body.events).toEqual([]);
+    expect(buildWatchTimelinePayloadMock).not.toHaveBeenCalled();
+    expect(publishSnapshotMock).not.toHaveBeenCalled();
   });
 
   it("keeps storage diagnostics private and no-store", async () => {

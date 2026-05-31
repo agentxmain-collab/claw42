@@ -23,20 +23,17 @@ describe("/api/watch/follow-stats", () => {
     __resetFollowStatsForTests();
   });
 
-  it("returns shared count stats without setting an anonymous cookie", async () => {
+  it("closes shared public counts before follow-stat KV reads", async () => {
     const response = await GET(
       new NextRequest("https://claw42.ai/api/watch/follow-stats?recordIds=record-1"),
     );
     const body = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(body.stats["record-1"]).toEqual({ watchCount: 0, followCount: 0, userFollowed: false });
-    expect(body.scope).toBe("shared-counts");
-    expect(response.headers.get("Cache-Control")).toBe("public, max-age=0, must-revalidate");
-    expect(response.headers.get("Vercel-CDN-Cache-Control")).toBe(
-      "public, s-maxage=60, stale-while-revalidate=300",
-    );
+    expect(response.status).toBe(410);
+    expect(body).toEqual({ error: "shared_follow_stats_closed" });
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(response.headers.get("set-cookie")).toBeNull();
+    expect(checkRateLimitMock).not.toHaveBeenCalled();
   });
 
   it("records follow actions idempotently for one anon cookie", async () => {
@@ -115,8 +112,11 @@ describe("/api/watch/follow-stats", () => {
       }),
     );
     const body = await response.json();
+    const cookie = response.headers.get("set-cookie")?.match(/claw42-anon-id=([^;]+)/)?.[1];
     const statsResponse = await GET(
-      new NextRequest("https://claw42.ai/api/watch/follow-stats?recordIds=record-1"),
+      new NextRequest("https://claw42.ai/api/watch/follow-stats?recordIds=record-1&user=1", {
+        headers: cookie ? { cookie: `claw42-anon-id=${cookie}` } : undefined,
+      }),
     );
     const statsBody = await statsResponse.json();
 
@@ -127,6 +127,6 @@ describe("/api/watch/follow-stats", () => {
       followCount: 0,
       userFollowed: false,
     });
-    expect(statsBody.scope).toBe("shared-counts");
+    expect(statsBody.scope).toBe("user-action");
   });
 });

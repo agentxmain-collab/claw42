@@ -90,6 +90,17 @@ function ipKey(request: Request) {
   return (forwarded || realIp || "unknown").replace(/[^a-zA-Z0-9:._-]/g, "_");
 }
 
+function canRunOperatorRefresh(request: Request) {
+  return process.env.NODE_ENV !== "production" && request.headers.get("x-claw42-debug") === "1";
+}
+
+function publicRefreshClosed() {
+  return NextResponse.json(
+    { error: "public_refresh_closed" },
+    { status: 410, headers: { "Cache-Control": "no-store" } },
+  );
+}
+
 function isoOrNull(value: number | null | undefined) {
   return typeof value === "number" && Number.isFinite(value) ? new Date(value).toISOString() : null;
 }
@@ -318,10 +329,12 @@ async function handleStatus(request: Request) {
 }
 
 export async function GET(request: Request) {
+  if (!canRunOperatorRefresh(request)) return publicRefreshClosed();
   return handleStatus(request);
 }
 
 export async function POST(request: Request) {
+  if (!canRunOperatorRefresh(request)) return publicRefreshClosed();
   const url = requestUrl(request);
   const now = requestNow(url);
   const locale = normalizeWatchLocale(url.searchParams.get("locale"));

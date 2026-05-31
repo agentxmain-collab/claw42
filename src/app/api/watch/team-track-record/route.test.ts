@@ -23,7 +23,7 @@ describe("/api/watch/team-track-record", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=0, must-revalidate");
     expect(response.headers.get("Vercel-CDN-Cache-Control")).toBe(
-      "public, s-maxage=300, stale-while-revalidate=600",
+      "public, s-maxage=900, stale-while-revalidate=3600",
     );
     expect(payload).toMatchObject({
       generatedAt: "2026-05-15T12:00:00.000Z",

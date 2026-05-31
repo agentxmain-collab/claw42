@@ -18,8 +18,11 @@ export { publishPublicTimelineSnapshot } from "@/lib/watch/publicTimelineSnapsho
 export const PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_WINDOW_MINUTES = 60;
 export const PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_PAGE = 1;
 export const PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_PAGE_SIZE = 15;
+export const PUBLIC_TIMELINE_SNAPSHOT_MAX_REBUILDS_PER_DAY = 24;
+export const PUBLIC_TIMELINE_SNAPSHOT_MIN_REBUILD_INTERVAL_MS = 60 * 60_000;
 
 const pendingRefreshes = new Map<string, Promise<unknown>>();
+const rebuildStartedAt: number[] = [];
 
 export function buildPublicTimelineSnapshotFromPayload(
   payload: PublicWatchTimelinePayload,
@@ -126,6 +129,11 @@ export function schedulePublicTimelineSnapshotRefresh(
   const existing = pendingRefreshes.get(key);
   if (existing) return existing;
 
+  const gate = claimGlobalSnapshotRebuildSlot(Date.now());
+  if (!gate.allowed) {
+    return Promise.resolve({ ok: true, skipped: true, reason: gate.reason });
+  }
+
   const task = rebuildPublicTimelineSnapshot({
     locale,
     windowMinutes,
@@ -155,6 +163,22 @@ export function schedulePublicTimelineSnapshotRefresh(
   return task;
 }
 
+function claimGlobalSnapshotRebuildSlot(now: number) {
+  const windowStart = now - 24 * 60 * 60_000;
+  for (let index = rebuildStartedAt.length - 1; index >= 0; index -= 1) {
+    if (rebuildStartedAt[index] < windowStart) rebuildStartedAt.splice(index, 1);
+  }
+  const latest = rebuildStartedAt.at(-1);
+  if (latest !== undefined && now - latest < PUBLIC_TIMELINE_SNAPSHOT_MIN_REBUILD_INTERVAL_MS) {
+    return { allowed: false as const, reason: "snapshot_refresh_deferred" };
+  }
+  if (rebuildStartedAt.length >= PUBLIC_TIMELINE_SNAPSHOT_MAX_REBUILDS_PER_DAY) {
+    return { allowed: false as const, reason: "snapshot_refresh_daily_cap" };
+  }
+  rebuildStartedAt.push(now);
+  return { allowed: true as const };
+}
+
 async function attachSharedFollowStats(payload: PublicWatchTimelinePayload) {
   const recordIds = Array.from(
     new Set(
@@ -170,3 +194,13 @@ async function attachSharedFollowStats(payload: PublicWatchTimelinePayload) {
     followStats,
   };
 }
+
+export const __publicTimelineSnapshotProducerTestUtils = {
+  reset() {
+    pendingRefreshes.clear();
+    rebuildStartedAt.length = 0;
+  },
+  rebuildStartedAt() {
+    return [...rebuildStartedAt];
+  },
+};

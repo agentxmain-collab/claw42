@@ -159,10 +159,12 @@ export async function cleanupPublicCardIndex(
   {
     client = kv as PublicCardIndexClient,
     now = Date.now(),
+    pruneStrategies = false,
     readRecord = readIndexedDecisionRecord,
   }: {
     client?: PublicCardIndexClient;
     now?: number;
+    pruneStrategies?: boolean;
     readRecord?: (entry: PublicCardIndexEntry) => Promise<StrategyDecisionRecord | null>;
   } = {},
 ) {
@@ -172,14 +174,13 @@ export async function cleanupPublicCardIndex(
   const key = publicCardIndexKey(locale);
   const cutoff = now - PUBLIC_CARD_RETENTION_MS;
   const removedByAge = await client.zremrangebyscore(key, 0, cutoff);
-  const removedByNonStrategy =
-    isMemoryClient(client) && readRecord === readIndexedDecisionRecord
-      ? 0
-      : await prunePublicCardIndexByStrategy(locale, {
-          client,
-          readRecord,
-          maxMembers: PUBLIC_CARD_INDEX_STRATEGY_PRUNE_SCAN_CAP,
-        });
+  const removedByNonStrategy = pruneStrategies
+    ? await prunePublicCardIndexByStrategy(locale, {
+        client,
+        readRecord,
+        maxMembers: PUBLIC_CARD_INDEX_STRATEGY_PRUNE_SCAN_CAP,
+      })
+    : 0;
   const count = await client.zcard(key);
   const overflow = Math.max(0, count - PUBLIC_CARD_TOTAL_CAP);
   const removedByCap = overflow > 0 ? await client.zremrangebyrank(key, 0, overflow - 1) : 0;
@@ -616,10 +617,12 @@ function hasFailureLogConfig(client: PublicCardIndexFailureLogClient) {
 
 type MemoryPublicCardIndexClient = PublicCardIndexClient & {
   __memoryPublicCardIndexClient: true;
+  calls: Array<{ name: keyof PublicCardIndexClient; key: string }>;
 };
 
 function createMemoryClient(): MemoryPublicCardIndexClient {
   const store = new Map<string, Map<string, number>>();
+  const calls: Array<{ name: keyof PublicCardIndexClient; key: string }> = [];
   function sorted(key: string) {
     return Array.from(store.get(key)?.entries() ?? []).sort((a, b) => {
       const scoreDelta = a[1] - b[1];
@@ -629,7 +632,9 @@ function createMemoryClient(): MemoryPublicCardIndexClient {
   }
   return {
     __memoryPublicCardIndexClient: true,
+    calls,
     async zadd(key, value) {
+      calls.push({ name: "zadd", key });
       const zset = store.get(key) ?? new Map<string, number>();
       zset.set(value.member, value.score);
       store.set(key, zset);
@@ -641,20 +646,24 @@ function createMemoryClient(): MemoryPublicCardIndexClient {
       stop: number,
       options?: { rev?: boolean },
     ) {
+      calls.push({ name: "zrange", key });
       const items = options?.rev ? sorted(key).reverse() : sorted(key);
       const normalizedStop = stop < 0 ? items.length + stop : stop;
       return items.slice(start, normalizedStop + 1).map(([member]) => member) as T;
     },
     async zcard(key) {
+      calls.push({ name: "zcard", key });
       return store.get(key)?.size ?? 0;
     },
     async zrem(key, member) {
+      calls.push({ name: "zrem", key });
       const zset = store.get(key);
       if (!zset) return 0;
       const existed = zset.delete(member);
       return existed ? 1 : 0;
     },
     async zremrangebyscore(key, min, max) {
+      calls.push({ name: "zremrangebyscore", key });
       const zset = store.get(key);
       if (!zset) return 0;
       const minScore = Number(min);
@@ -669,6 +678,7 @@ function createMemoryClient(): MemoryPublicCardIndexClient {
       return removed;
     },
     async zremrangebyrank(key, start, stop) {
+      calls.push({ name: "zremrangebyrank", key });
       const zset = store.get(key);
       if (!zset) return 0;
       const members = sorted(key)

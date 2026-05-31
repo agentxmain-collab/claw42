@@ -36,13 +36,13 @@ import type {
 } from "./v9/types";
 import { resolveAgentWatchLocale } from "./locale";
 
-const PUBLIC_TIMELINE_PAGE_SIZE = 15;
-const PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES = 60;
+const PUBLIC_TIMELINE_MAX_PAGE = 2;
+const PUBLIC_TIMELINE_STALE_AFTER_MS = 75 * 60_000;
 const DEFAULT_TIMELINE_POLL_MS = 90_000;
 const TIMELINE_HIDDEN_POLL_MS = 5 * 60_000;
 const FOLLOW_STATS_BROADCAST = "claw42-follow-stats";
 const FOLLOW_STATS_STORAGE_EVENT = "claw42-follow-stats-updated";
-const DECISION_HISTORY_LIMIT = 20;
+const DECISION_HISTORY_MAX_PAGE = 2;
 const VISIBLE_SESSION_NO_SIGNAL_RETRY_MS = 5 * 60_000;
 const VISIBLE_SESSION_REFRESH_STARTED_RETRY_MS = 90_000;
 const AUTO_SYMBOL_REFRESH_CANDIDATE = "symbol";
@@ -93,6 +93,15 @@ function visibleSessionRefreshStatus(result: VisibleSessionRefreshResult) {
 
 function visibleSessionRefreshStarted(result: VisibleSessionRefreshResult) {
   return typeof result === "string" ? false : result.refreshStarted;
+}
+
+function isSnapshotPayloadStale(payload: Pick<PublicTimelinePayload, "generatedAt" | "expiresAt">) {
+  const expiresAt = payload.expiresAt ? Date.parse(payload.expiresAt) : Number.NaN;
+  if (Number.isFinite(expiresAt)) return Date.now() > expiresAt;
+  const generatedAt = payload.generatedAt ? Date.parse(payload.generatedAt) : Number.NaN;
+  return Number.isFinite(generatedAt)
+    ? Date.now() - generatedAt > PUBLIC_TIMELINE_STALE_AFTER_MS
+    : false;
 }
 
 export function shouldPersistVisibleSessionRefreshResult(result: VisibleSessionRefreshResult) {
@@ -235,7 +244,7 @@ export function AgentWatchBoard({
   const [historySymbol, setHistorySymbol] = useState<string | null>(null);
   const [historyItems, setHistoryItems] = useState<HistoryWallItem[]>([]);
   const [historyHasMore, setHistoryHasMore] = useState(false);
-  const [historyNextBefore, setHistoryNextBefore] = useState<string | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [freshness, setFreshness] = useState<DispatchFreshnessState>({ status: "idle" });
@@ -280,7 +289,11 @@ export function AgentWatchBoard({
       }
       if (payload.residentStatus) setResidentStatus(payload.residentStatus);
       if (payload.snapshotStatus || payload.generatedAt) {
-        const snapshotStatus = payload.snapshotStatus ?? "stale";
+        const rawSnapshotStatus = payload.snapshotStatus ?? "stale";
+        const snapshotStatus =
+          rawSnapshotStatus === "fresh" && isSnapshotPayloadStale(payload)
+            ? "stale"
+            : rawSnapshotStatus;
         setFreshness({
           status:
             snapshotStatus === "fresh"
@@ -301,31 +314,17 @@ export function AgentWatchBoard({
         );
       }
       if (typeof payload.totalCount === "number") setTimelineTotalCount(payload.totalCount);
-      setTimelineHasMore(payload.hasMore);
+      setTimelineHasMore(payload.hasMore && (payload.page ?? 1) < PUBLIC_TIMELINE_MAX_PAGE);
     },
     [],
   );
 
   const fetchTimelineWindow = useCallback(
-    async ({
-      windowMinutes,
-      limit = PUBLIC_TIMELINE_PAGE_SIZE,
-      page = 1,
-      pageSize = PUBLIC_TIMELINE_PAGE_SIZE,
-      signal,
-    }: {
-      windowMinutes: number;
-      limit?: number;
-      page?: number;
-      pageSize?: number;
-      signal?: AbortSignal;
-    }) => {
+    async ({ page = 1, signal }: { page?: number; signal?: AbortSignal }) => {
+      const canonicalPage = Math.min(Math.max(Math.floor(page), 1), PUBLIC_TIMELINE_MAX_PAGE);
       const params = new URLSearchParams({
-        windowMinutes: String(windowMinutes),
-        limit: String(limit),
-        page: String(page),
-        pageSize: String(pageSize),
         locale: agentWatchLocale,
+        page: String(canonicalPage),
       });
       const response = await fetch(apiPath(`/api/watch/timeline?${params}`), {
         signal,
@@ -360,10 +359,7 @@ export function AgentWatchBoard({
 
       try {
         const primary = await fetchTimelineWindow({
-          windowMinutes: PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES,
-          limit: PUBLIC_TIMELINE_PAGE_SIZE,
           page: 1,
-          pageSize: PUBLIC_TIMELINE_PAGE_SIZE,
           signal: controller.signal,
         });
         if (cancelled) return;
@@ -413,11 +409,13 @@ export function AgentWatchBoard({
     if (!timelineHasMore || timelineLoadingMore) return;
     setTimelineLoadingMore(true);
     const nextPage = timelinePage + 1;
+    if (nextPage > PUBLIC_TIMELINE_MAX_PAGE) {
+      setTimelineHasMore(false);
+      setTimelineLoadingMore(false);
+      return;
+    }
     void fetchTimelineWindow({
-      windowMinutes: PUBLIC_TIMELINE_PRIMARY_WINDOW_MINUTES,
-      limit: PUBLIC_TIMELINE_PAGE_SIZE,
       page: nextPage,
-      pageSize: PUBLIC_TIMELINE_PAGE_SIZE,
     })
       .then((payload) => {
         nextTimelinePollMsRef.current = payload.nextPollMs ?? DEFAULT_TIMELINE_POLL_MS;
@@ -536,21 +534,20 @@ export function AgentWatchBoard({
   const fetchDecisionHistory = useCallback(
     async ({
       symbol,
-      before,
+      page = 1,
       mode,
       signal,
     }: {
       symbol: string;
-      before?: string | null;
+      page?: number;
       mode: "replace" | "append";
       signal?: AbortSignal;
     }) => {
       const params = new URLSearchParams({
         symbol,
         locale: agentWatchLocale,
-        limit: String(DECISION_HISTORY_LIMIT),
+        page: String(Math.min(Math.max(Math.floor(page), 1), DECISION_HISTORY_MAX_PAGE)),
       });
-      if (before) params.set("before", before);
 
       setHistoryLoading(true);
       setHistoryError(null);
@@ -563,8 +560,8 @@ export function AgentWatchBoard({
         setHistoryItems((current) =>
           mode === "replace" ? payload.items : [...current, ...payload.items],
         );
-        setHistoryHasMore(payload.hasMore);
-        setHistoryNextBefore(payload.nextBefore);
+        setHistoryPage(page);
+        setHistoryHasMore(payload.hasMore && page < DECISION_HISTORY_MAX_PAGE);
       } catch (error: unknown) {
         if ((error as { name?: string }).name === "AbortError") return;
         setHistoryError(historyDict.error);
@@ -593,17 +590,22 @@ export function AgentWatchBoard({
     setHistorySymbol(symbol);
     setHistoryItems([]);
     setHistoryHasMore(false);
-    setHistoryNextBefore(null);
+    setHistoryPage(1);
   }, []);
 
   const handleMoreHistory = useCallback(() => {
     if (!historySymbol || !historyHasMore || historyLoading) return;
+    const nextPage = historyPage + 1;
+    if (nextPage > DECISION_HISTORY_MAX_PAGE) {
+      setHistoryHasMore(false);
+      return;
+    }
     void fetchDecisionHistory({
       symbol: historySymbol,
-      before: historyNextBefore,
+      page: nextPage,
       mode: "append",
     });
-  }, [fetchDecisionHistory, historyHasMore, historyLoading, historyNextBefore, historySymbol]);
+  }, [fetchDecisionHistory, historyHasMore, historyLoading, historyPage, historySymbol]);
 
   const broadcastFollowUpdate = useCallback((recordId: string) => {
     const payload = { recordId, ts: Date.now() };

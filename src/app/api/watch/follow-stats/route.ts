@@ -4,9 +4,9 @@ import { checkRateLimit } from "@/lib/storage/kv-rate-limiter";
 import {
   followRecord,
   getFollowStats,
-  getSharedFollowStats,
   hashAnonIdForFollowStats,
 } from "@/lib/watch/followStatsStore";
+import { checkPublicBoardKvBudget } from "@/lib/watch/publicBoardKvBudgetGuard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,10 +15,6 @@ const ANON_COOKIE = "claw42-anon-id";
 const ANON_COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 const MAX_RECORD_IDS = 50;
 const RECORD_ID_PATTERN = /^[a-zA-Z0-9:_-]{1,160}$/;
-const PUBLIC_COUNT_CACHE_HEADERS = {
-  "Cache-Control": "public, max-age=0, must-revalidate",
-  "Vercel-CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-} as const;
 
 function getClientIp(request: NextRequest) {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -75,6 +71,12 @@ function jsonWithAnonCookie(
   return response;
 }
 
+function emptyFollowStats(recordIds: string[]) {
+  return Object.fromEntries(
+    recordIds.map((recordId) => [recordId, { watchCount: 0, followCount: 0, userFollowed: false }]),
+  );
+}
+
 async function canMutateFollowStats(request: NextRequest, anonId: string) {
   const ip = getClientIp(request);
   const ipRateLimitKey = hashAnonIdForFollowStats(ip);
@@ -94,14 +96,24 @@ export async function GET(request: NextRequest) {
   }
 
   if (url.searchParams.get("user") !== "1") {
-    const stats = await getSharedFollowStats(recordIds);
     return NextResponse.json(
-      { scope: "shared-counts", stats },
-      { headers: PUBLIC_COUNT_CACHE_HEADERS },
+      { error: "shared_follow_stats_closed" },
+      { status: 410, headers: { "Cache-Control": "no-store" } },
     );
   }
 
   const anon = getOrCreateAnonId(request);
+  const budget = checkPublicBoardKvBudget({
+    route: "follow-stats:user",
+    estimatedCommands: recordIds.length,
+  });
+  if (!budget.allowed) {
+    return jsonWithAnonCookie(
+      { scope: "user-action", stats: emptyFollowStats(recordIds), degraded: true },
+      anon,
+      { status: 503 },
+    );
+  }
   const stats = await getFollowStats(recordIds, anon.anonId);
   return jsonWithAnonCookie({ scope: "user-action", stats }, anon);
 }
@@ -121,6 +133,14 @@ export async function POST(request: NextRequest) {
     !isValidRecordId(body.recordId)
   ) {
     return jsonWithAnonCookie({ error: "invalid_follow_request" }, anon, { status: 400 });
+  }
+
+  const budget = checkPublicBoardKvBudget({
+    route: "follow-stats:mutate",
+    estimatedCommands: 4,
+  });
+  if (!budget.allowed) {
+    return jsonWithAnonCookie({ error: "public_board_budget_exhausted" }, anon, { status: 429 });
   }
 
   const allowed = await canMutateFollowStats(request, anon.anonId);

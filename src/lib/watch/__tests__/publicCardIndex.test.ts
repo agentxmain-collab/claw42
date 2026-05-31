@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { StrategyDecisionRecord } from "@/lib/team/strategyDecisionRecord";
 import {
   __publicCardIndexTestUtils,
@@ -128,6 +128,23 @@ describe("publicCardIndex", () => {
     const page = await readPublicCardIndexPage("zh_CN", { page: 1, pageSize: 10, client });
 
     expect(page.entries.map((entry) => entry.id)).toEqual(["pm-decision:pm:BTC:2"]);
+  });
+
+  it("does not scan direct records during normal write cleanup", async () => {
+    const client = __publicCardIndexTestUtils.createMemoryClient();
+    const readRecord = vi.fn();
+    const now = Date.UTC(2026, 4, 28, 7, 0, 0);
+
+    await writePublicCardIndexEntry(makeRecord(1, now), { client });
+    const result = await cleanupPublicCardIndex("zh_CN", {
+      client,
+      now,
+      readRecord,
+    });
+
+    expect(readRecord).not.toHaveBeenCalled();
+    expect(result.removedByNonStrategy).toBe(0);
+    expect(client.calls.map((call) => call.name)).toEqual(["zadd", "zremrangebyscore", "zcard"]);
   });
 
   it("keeps only the latest eight thousand cards when the safety cap is exceeded", async () => {

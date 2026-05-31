@@ -90,13 +90,13 @@ describe("/api/watch/decision-history", () => {
     expect(readDecisionRecordsMock).not.toHaveBeenCalled();
   });
 
-  it("returns symbol-keyed decision history with pagination capped at 100", async () => {
+  it("returns symbol-keyed decision history with public pagination capped to page two", async () => {
     const records = Array.from({ length: 105 }, (_, index) => record(104 - index));
     readDecisionRecordsMock.mockResolvedValue(records);
 
     const response = await GET(
       new Request(
-        "https://claw42.ai/api/watch/decision-history?symbol=BTCUSDT&limit=100&locale=zh_CN",
+        "https://claw42.ai/api/watch/decision-history?symbol=BTCUSDT&page=1&locale=zh_CN",
       ),
     );
     const payload = await response.json();
@@ -104,9 +104,9 @@ describe("/api/watch/decision-history", () => {
     expect(response.status).toBe(200);
     expect(readDecisionRecordsMock).toHaveBeenCalledWith("BTC", 500, "zh_CN");
     expect(payload.symbol).toBe("BTC");
-    expect(payload.items).toHaveLength(100);
+    expect(payload.items).toHaveLength(20);
     expect(payload.hasMore).toBe(true);
-    expect(payload.nextBefore).toBe(payload.items[99].createdAt);
+    expect(payload.nextBefore).toBeNull();
     expect(payload.items[0]).toMatchObject({
       recordId: "record-104",
       outcome: null,
@@ -114,20 +114,33 @@ describe("/api/watch/decision-history", () => {
     });
   });
 
-  it("filters records before a cursor", async () => {
-    const records = [record(3), record(2), record(1)];
+  it("returns page two without allowing arbitrary before cursors", async () => {
+    const records = Array.from({ length: 45 }, (_, index) => record(44 - index));
     readDecisionRecordsMock.mockResolvedValue(records);
 
     const response = await GET(
-      new Request(
-        `https://claw42.ai/api/watch/decision-history?symbol=BTC&before=${encodeURIComponent(
-          records[1]!.createdAt,
-        )}`,
-      ),
+      new Request("https://claw42.ai/api/watch/decision-history?symbol=BTC&page=2&locale=zh_CN"),
     );
     const payload = await response.json();
 
-    expect(payload.items.map((item: { recordId: string }) => item.recordId)).toEqual(["record-1"]);
+    expect(response.status).toBe(200);
+    expect(payload.items.map((item: { recordId: string }) => item.recordId)).toEqual(
+      Array.from({ length: 20 }, (_, index) => `record-${24 - index}`),
+    );
     expect(payload.hasMore).toBe(false);
+  });
+
+  it("rejects high-cardinality query variants before reading records", async () => {
+    for (const query of [
+      "symbol=BTC&before=2026-05-15T00%3A00%3A00.000Z",
+      "symbol=BTC&page=3",
+      "symbol=BTC&limit=100",
+    ]) {
+      const response = await GET(
+        new Request(`https://claw42.ai/api/watch/decision-history?${query}`),
+      );
+      expect(response.status).toBe(400);
+    }
+    expect(readDecisionRecordsMock).not.toHaveBeenCalled();
   });
 });

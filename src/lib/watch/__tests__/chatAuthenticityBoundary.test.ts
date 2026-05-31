@@ -404,29 +404,16 @@ describe("watch timeline debug guard", () => {
     expect(json.events).toBeUndefined();
   });
 
-  test("public mode returns projected events without raw debug entries", async () => {
-    getWatchHistoryMock.mockResolvedValueOnce({
-      entries: [rawDebugEntry, rawPublicEntry],
-      oldestTs: rawDebugEntry.ts,
-      hasMore: false,
-    });
-
+  test("canonical public mode never returns raw debug entries", async () => {
     const response = await getWatchTimeline(
-      new NextRequest("https://claw42.ai/api/watch/timeline?mode=public&locale=zh_CN"),
+      new NextRequest("https://claw42.ai/api/watch/timeline?locale=zh_CN&page=1"),
     );
     const json = await response.json();
 
     expect(response.status).toBe(200);
     expect(json.entries).toBeUndefined();
-    expect(json.events).toHaveLength(1);
-    expect(json.events[0]).toMatchObject({
-      id: "public-focus",
-      payload: {
-        kind: "market_signal",
-        symbol: "BTC",
-      },
-    });
-    expect(json.evidenceMap).toEqual({});
+    expect(Array.isArray(json.events)).toBe(true);
+    expect(getWatchHistoryMock).not.toHaveBeenCalled();
   });
 
   test("rejects invalid timeline pagination params before reading history", async () => {
@@ -438,9 +425,9 @@ describe("watch timeline debug guard", () => {
     );
 
     expect(beforeResponse.status).toBe(400);
-    expect(await beforeResponse.json()).toEqual({ error: "invalid query" });
+    expect(await beforeResponse.json()).toEqual({ error: "unsupported_query" });
     expect(sinceResponse.status).toBe(400);
-    expect(await sinceResponse.json()).toEqual({ error: "invalid query" });
+    expect(await sinceResponse.json()).toEqual({ error: "unsupported_query" });
     expect(getWatchHistoryMock).not.toHaveBeenCalled();
   });
 });
