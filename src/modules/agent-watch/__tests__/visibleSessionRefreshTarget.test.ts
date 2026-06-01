@@ -4,6 +4,7 @@ import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { ResidentPrewarmStatus } from "@/lib/watch/residentPrewarmStatus";
 import type { DispatchTopic } from "../v9/types";
 import {
+  buildTimelineWindowSearchParams,
   mergeTimelinePayloadForDisplay,
   reconcileTimelineEventsForDisplay,
   retryDelayForVisibleSessionRefresh,
@@ -257,6 +258,22 @@ describe("resolveVisibleSessionRefreshTarget", () => {
         mode: "replace",
       }),
     ).toEqual([]);
+  });
+
+  test("load-more uses the canonical page two query and appends older page events", () => {
+    const params = buildTimelineWindowSearchParams("zh_CN", 2);
+    const current = [pmEvent("btc", 200)];
+    const nextPage = [pmEvent("eth", 100)];
+
+    expect(params.toString()).toBe("locale=zh_CN&page=2");
+    expect(params.has("before")).toBe(false);
+    expect(
+      reconcileTimelineEventsForDisplay({
+        current,
+        next: nextPage,
+        mode: "append",
+      }).map((event) => (event.payload.kind === "pm_decision" ? event.payload.recordId : event.id)),
+    ).toEqual(["btc", "eth"]);
   });
 
   test("keeps existing display cards when a replacement payload is a transient short-window subset", () => {

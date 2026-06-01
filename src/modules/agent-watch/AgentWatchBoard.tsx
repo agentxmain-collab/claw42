@@ -49,6 +49,17 @@ const AUTO_SYMBOL_REFRESH_CANDIDATE = "symbol";
 const AUTO_SYMBOL_REFRESH_SYMBOL = "SYMBOL";
 const HISTORY_WALL_ENABLED = process.env.NEXT_PUBLIC_HISTORY_WALL_ENABLED === "true";
 
+export function buildTimelineWindowSearchParams(locale: string, page = 1) {
+  const canonicalPage = Math.min(
+    Math.max(Number.isFinite(page) ? Math.floor(page) : 1, 1),
+    PUBLIC_TIMELINE_MAX_PAGE,
+  );
+  return new URLSearchParams({
+    locale,
+    page: String(canonicalPage),
+  });
+}
+
 interface PublicTimelinePayload {
   version?: string;
   generatedAt?: string;
@@ -321,11 +332,7 @@ export function AgentWatchBoard({
 
   const fetchTimelineWindow = useCallback(
     async ({ page = 1, signal }: { page?: number; signal?: AbortSignal }) => {
-      const canonicalPage = Math.min(Math.max(Math.floor(page), 1), PUBLIC_TIMELINE_MAX_PAGE);
-      const params = new URLSearchParams({
-        locale: agentWatchLocale,
-        page: String(canonicalPage),
-      });
+      const params = buildTimelineWindowSearchParams(agentWatchLocale, page);
       const response = await fetch(apiPath(`/api/watch/timeline?${params}`), {
         signal,
       });

@@ -3,6 +3,7 @@ import type { Locale } from "@/i18n/types";
 import { withLock, LockBusyError } from "@/lib/storage/kv-lock";
 import { getSharedFollowStats } from "@/lib/watch/followStatsStore";
 import {
+  buildWatchTimelinePagePairPayloads,
   buildWatchTimelinePayload,
   type PublicWatchTimelinePayload,
 } from "@/lib/watch/publicTimelinePayload";
@@ -20,6 +21,7 @@ export const PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_PAGE = 1;
 export const PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_PAGE_SIZE = 15;
 export const PUBLIC_TIMELINE_SNAPSHOT_MAX_REBUILDS_PER_DAY = 24;
 export const PUBLIC_TIMELINE_SNAPSHOT_MIN_REBUILD_INTERVAL_MS = 60 * 60_000;
+export const PUBLIC_TIMELINE_SNAPSHOT_CANONICAL_PAGES = [1, 2] as const;
 
 const pendingRefreshes = new Map<string, Promise<unknown>>();
 const rebuildStartedAt: number[] = [];
@@ -111,21 +113,75 @@ export async function rebuildPublicTimelineSnapshot({
   }
 }
 
+export async function rebuildPublicTimelineSnapshotPagePair({
+  locale,
+  windowMinutes = PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_WINDOW_MINUTES,
+  pageSize = PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_PAGE_SIZE,
+  now = Date.now(),
+}: {
+  locale: Locale;
+  windowMinutes?: number;
+  pageSize?: number;
+  now?: number;
+}) {
+  try {
+    return await withLock(
+      publicTimelineSnapshotLockKey(locale, windowMinutes, PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_PAGE),
+      async () => {
+        const payloads = await buildWatchTimelinePagePairPayloads({
+          locale,
+          before: now,
+          limit: pageSize * PUBLIC_TIMELINE_SNAPSHOT_CANONICAL_PAGES.length,
+          pageSize,
+          windowMinutes,
+          servedAt: now,
+          pages: PUBLIC_TIMELINE_SNAPSHOT_CANONICAL_PAGES,
+        });
+        const withCounts = await attachSharedFollowStatsToPayloads(payloads);
+        const snapshots = withCounts.map((payload) =>
+          buildPublicTimelineSnapshotFromPayload(payload, {
+            now,
+            status: payload.events.length > 0 ? "fresh" : "empty",
+            sourceHealth: {
+              state: "ok",
+              generatedFrom: "producer-page-pair",
+              estimatedKvCommands: 277,
+            },
+          }),
+        );
+        const publishes = await Promise.all(
+          snapshots.map((snapshot) => publishPublicTimelineSnapshot(snapshot)),
+        );
+        return {
+          ok: publishes.every((publish) => publish.ok),
+          publish: publishes[0] ?? { ok: false, error: "snapshot_publish_missing" },
+          publishes,
+          snapshots,
+        };
+      },
+      { ttlMs: 45_000, waitMs: 0 },
+    );
+  } catch (error) {
+    if (error instanceof LockBusyError) {
+      return { ok: true, skipped: true, reason: "snapshot_refresh_already_running" };
+    }
+    throw error;
+  }
+}
+
 export function schedulePublicTimelineSnapshotRefresh(
   locale: Locale,
   {
     reason,
     windowMinutes = PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_WINDOW_MINUTES,
-    page = PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_PAGE,
     pageSize = PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_PAGE_SIZE,
   }: {
     reason: string;
     windowMinutes?: number;
-    page?: number;
     pageSize?: number;
   },
 ) {
-  const key = `${locale}:${windowMinutes}:${page}:${pageSize}`;
+  const key = `${locale}:${windowMinutes}:canonical-page-pair:${pageSize}`;
   const existing = pendingRefreshes.get(key);
   if (existing) return existing;
 
@@ -134,10 +190,9 @@ export function schedulePublicTimelineSnapshotRefresh(
     return Promise.resolve({ ok: true, skipped: true, reason: gate.reason });
   }
 
-  const task = rebuildPublicTimelineSnapshot({
+  const task = rebuildPublicTimelineSnapshotPagePair({
     locale,
     windowMinutes,
-    page,
     pageSize,
   })
     .catch((error) => {
@@ -193,6 +248,31 @@ async function attachSharedFollowStats(payload: PublicWatchTimelinePayload) {
     ...payload,
     followStats,
   };
+}
+
+async function attachSharedFollowStatsToPayloads(payloads: PublicWatchTimelinePayload[]) {
+  const recordIds = Array.from(
+    new Set(
+      payloads.flatMap((payload) =>
+        payload.events.flatMap((event) =>
+          event.payload.kind === "pm_decision" ? [event.payload.recordId] : [],
+        ),
+      ),
+    ),
+  );
+  if (recordIds.length === 0) return payloads;
+  const followStats: NonNullable<PublicWatchTimelinePayload["followStats"]> =
+    await getSharedFollowStats(recordIds).catch(() => ({}));
+  return payloads.map((payload) => ({
+    ...payload,
+    followStats: Object.fromEntries(
+      payload.events.flatMap((event) =>
+        event.payload.kind === "pm_decision" && followStats[event.payload.recordId]
+          ? [[event.payload.recordId, followStats[event.payload.recordId]]]
+          : [],
+      ),
+    ),
+  }));
 }
 
 export const __publicTimelineSnapshotProducerTestUtils = {

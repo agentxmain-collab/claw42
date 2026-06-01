@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { PublicWatchTimelinePayload } from "@/lib/watch/publicTimelinePayload";
 import {
   createEmptyPublicTimelineSnapshot,
+  PUBLIC_TIMELINE_SNAPSHOT_TTL_SECONDS,
   publicTimelineSnapshotBlobKey,
   publicTimelineSnapshotCurrentKey,
   publicTimelineSnapshotLastGoodKey,
@@ -11,7 +12,7 @@ import {
 
 class MemorySnapshotClient {
   values = new Map<string, string>();
-  setCalls: Array<{ key: string; value: string }> = [];
+  setCalls: Array<{ key: string; value: string; options?: { ex?: number; px?: number } }> = [];
   failGet = false;
   failKeys = new Set<string>();
 
@@ -20,8 +21,8 @@ class MemorySnapshotClient {
     return (this.values.get(key) as T | undefined) ?? null;
   }
 
-  async set(key: string, value: string) {
-    this.setCalls.push({ key, value });
+  async set(key: string, value: string, options?: { ex?: number; px?: number }) {
+    this.setCalls.push({ key, value, options });
     this.values.set(key, value);
     return "OK";
   }
@@ -59,6 +60,22 @@ describe("publicTimelineSnapshotStore", () => {
     expect(read.payload.snapshotStatus).toBe("fresh");
     expect(read.payload.generatedAt).toBe(snapshot.generatedAt);
     expect(read.source).toBe("current");
+  });
+
+  it("keeps the current pointer alive across hourly rebuild cadence for two-command reads", async () => {
+    const client = new MemorySnapshotClient();
+    const snapshot = snapshotPayload({
+      generatedAt: "2026-05-31T05:00:00.000Z",
+      events: [],
+    });
+
+    await publishPublicTimelineSnapshot(snapshot, { client });
+
+    expect(PUBLIC_TIMELINE_SNAPSHOT_TTL_SECONDS).toBeGreaterThanOrEqual(75 * 60);
+    expect(
+      client.setCalls.find((call) => call.key === publicTimelineSnapshotCurrentKey("zh_CN", 60, 1))
+        ?.options?.ex,
+    ).toBeGreaterThanOrEqual(75 * 60);
   });
 
   it("keeps serving last-good when the current pointer targets a missing blob", async () => {

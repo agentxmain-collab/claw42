@@ -98,6 +98,13 @@ export interface WatchTimelinePayloadOptions {
   servedAt?: number;
 }
 
+export interface WatchTimelinePagePairPayloadOptions extends Omit<
+  WatchTimelinePayloadOptions,
+  "mode" | "page"
+> {
+  pages?: readonly number[];
+}
+
 export function resolveWatchTimelineNextPollMs(servedAt: number) {
   return servedAt % (3 * 60_000) < 30_000 ? 30_000 : 90_000;
 }
@@ -314,6 +321,104 @@ async function evidenceMapForEvents(events: PublicTimelineEvent[]) {
       )
     ).flatMap(([evidenceId, evidence]) => (evidence ? [[evidenceId, evidence]] : [])),
   );
+}
+
+function evidenceMapSubsetForEvents(
+  events: PublicTimelineEvent[],
+  evidenceMap: Record<string, NewsEvidence>,
+) {
+  const evidenceIds = new Set(events.flatMap((event) => event.evidenceIds));
+  return Object.fromEntries(
+    Object.entries(evidenceMap).filter(([evidenceId]) => evidenceIds.has(evidenceId)),
+  );
+}
+
+function indexedPayloadOldestTs(events: PublicTimelineEvent[], fallbackEntriesCreatedAt: string[]) {
+  if (events.length > 0) return events[events.length - 1]?.ts ?? null;
+  const fallback = fallbackEntriesCreatedAt
+    .map((createdAt) => Date.parse(createdAt))
+    .find((timestamp) => Number.isFinite(timestamp));
+  return fallback ?? null;
+}
+
+export async function buildWatchTimelinePagePairPayloads({
+  locale,
+  before,
+  since,
+  limit,
+  pageSize = PUBLIC_CARD_PAGE_SIZE,
+  windowMinutes,
+  servedAt = Date.now(),
+  pages = [1, 2],
+}: WatchTimelinePagePairPayloadOptions): Promise<PublicWatchTimelinePayload[]> {
+  const normalizedPageSize = Math.max(1, Math.min(Math.floor(pageSize), PUBLIC_CARD_PAGE_SIZE));
+  const normalizedPages = Array.from(
+    new Set(pages.map((page) => Math.max(1, Math.floor(page))).filter(Number.isFinite)),
+  ).sort((a, b) => a - b);
+  const maxPage = Math.max(...normalizedPages, 1);
+  const indexPageSize = Math.min(Math.max(limit, normalizedPageSize * maxPage), 100);
+  const indexPage = await readPublicCardIndexPage(locale, {
+    page: 1,
+    pageSize: indexPageSize,
+  });
+  const indexedRecords = await Promise.all(
+    indexPage.entries.map(async (entry) => ({
+      entry,
+      record: await readDecisionRecordDirect(entry.recordKey),
+    })),
+  );
+  const recordSlots = indexedRecords.map(({ entry, record }) => {
+    const event = record ? projectDecisionRecordToPublicEvent(record) : null;
+    return {
+      entry,
+      record,
+      event:
+        event &&
+        event.locale === locale &&
+        event.ts < before &&
+        (since === undefined || event.ts > since)
+          ? event
+          : null,
+    };
+  });
+  const allEvents = recordSlots
+    .flatMap((slot) => (slot.event ? [slot.event] : []))
+    .sort(comparePublicTimelineEvents);
+  const allEvidenceMap = await evidenceMapForEvents(allEvents);
+  const records = recordSlots
+    .flatMap((slot) => (slot.record ? [slot.record] : []))
+    .filter((record): record is StrategyDecisionRecord => Boolean(record));
+  const jobs = await readPmDecisionJobs({ locale, limit: 100 }).catch(() => []);
+  const residentStatus = deriveResidentPrewarmStatus({
+    records,
+    jobs,
+    now: servedAt,
+  });
+
+  return normalizedPages.map((page) => {
+    const start = (page - 1) * normalizedPageSize;
+    const pageSlots = recordSlots.slice(start, start + normalizedPageSize);
+    const events = pageSlots
+      .flatMap((slot) => (slot.event ? [slot.event] : []))
+      .sort(comparePublicTimelineEvents);
+    return {
+      events,
+      evidenceMap: evidenceMapSubsetForEvents(events, allEvidenceMap),
+      oldestTs: indexedPayloadOldestTs(
+        events,
+        pageSlots.map((slot) => slot.entry.createdAt),
+      ),
+      hasMore: page * normalizedPageSize < indexPage.totalCount,
+      windowMinutes,
+      locale,
+      servedAt,
+      nextPollMs: resolveWatchTimelineNextPollMs(servedAt),
+      residentStatus,
+      page,
+      pageSize: normalizedPageSize,
+      totalCount: indexPage.totalCount,
+    };
+  });
 }
 
 export async function buildWatchTimelinePayload({
