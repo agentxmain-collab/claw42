@@ -101,11 +101,36 @@ describe("/api/watch/timeline", () => {
     );
   });
 
-  it("accepts only canonical page one or two snapshot queries before touching KV", async () => {
-    readSnapshotMock.mockResolvedValueOnce({ source: "current", payload: snapshot({ page: 2 }) });
+  it("serves cold timeline snapshots with six-hour CDN cache headers", async () => {
+    readSnapshotMock.mockResolvedValueOnce({ source: "current", payload: snapshot({ page: 11 }) });
+
+    const response = await GET(
+      new NextRequest(
+        "https://claw42.ai/api/watch/timeline?locale=zh_CN&windowMinutes=60&page=11&pageSize=15",
+      ),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Vercel-CDN-Cache-Control")).toBe(
+      "public, s-maxage=21600, stale-while-revalidate=86400",
+    );
+    expect(body.page).toBe(11);
+    expect(readSnapshotMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        locale: "zh_CN",
+        windowMinutes: 60,
+        page: 11,
+        pageSize: 15,
+      }),
+    );
+  });
+
+  it("accepts only finite canonical snapshot queries before touching KV", async () => {
+    readSnapshotMock.mockResolvedValueOnce({ source: "current", payload: snapshot({ page: 11 }) });
     const valid = await GET(
       new NextRequest(
-        "https://claw42.ai/api/watch/timeline?locale=zh_CN&windowMinutes=60&page=2&pageSize=15",
+        "https://claw42.ai/api/watch/timeline?locale=zh_CN&windowMinutes=60&page=11&pageSize=15",
       ),
     );
     expect(valid.status).toBe(200);
@@ -115,7 +140,7 @@ describe("/api/watch/timeline", () => {
     checkPublicBoardKvBudgetMock.mockClear();
 
     for (const query of [
-      "locale=zh_CN&page=3",
+      "locale=zh_CN&page=12",
       "locale=zh_CN&page=1&before=999999",
       "locale=zh_CN&page=1&limit=15",
       "locale=zh_CN&page=1&pageSize=30",

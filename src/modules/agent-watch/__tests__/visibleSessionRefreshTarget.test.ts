@@ -7,13 +7,18 @@ import {
   buildTimelineWindowSearchParams,
   mergeTimelinePayloadForDisplay,
   reconcileTimelineEventsForDisplay,
+  resolveFollowStatsRefreshRecordIds,
   retryDelayForVisibleSessionRefresh,
   resolveVisibleSessionRefreshTarget,
   shouldPersistVisibleSessionRefreshResult,
   sortTopicsForDisplay,
 } from "../AgentWatchBoard";
 
-function pmEvent(recordId: string, ts: number): PublicTimelineEvent {
+function pmEvent(
+  recordId: string,
+  ts: number,
+  symbol = recordId.toUpperCase(),
+): PublicTimelineEvent {
   return {
     id: `event-${recordId}`,
     ts,
@@ -25,7 +30,7 @@ function pmEvent(recordId: string, ts: number): PublicTimelineEvent {
     payload: {
       kind: "pm_decision",
       recordId,
-      symbol: recordId.toUpperCase(),
+      symbol,
       tradeDecision: null,
       rationaleByMember: {},
     },
@@ -260,12 +265,14 @@ describe("resolveVisibleSessionRefreshTarget", () => {
     ).toEqual([]);
   });
 
-  test("load-more uses the canonical page two query and appends older page events", () => {
-    const params = buildTimelineWindowSearchParams("zh_CN", 2);
+  test("load-more uses finite page queries through page eleven and never before cursors", () => {
+    const params = buildTimelineWindowSearchParams("zh_CN", 11);
+    const overflowParams = buildTimelineWindowSearchParams("zh_CN", 12);
     const current = [pmEvent("btc", 200)];
     const nextPage = [pmEvent("eth", 100)];
 
-    expect(params.toString()).toBe("locale=zh_CN&page=2");
+    expect(params.toString()).toBe("locale=zh_CN&page=11");
+    expect(overflowParams.toString()).toBe("locale=zh_CN&page=11");
     expect(params.has("before")).toBe(false);
     expect(
       reconcileTimelineEventsForDisplay({
@@ -274,6 +281,37 @@ describe("resolveVisibleSessionRefreshTarget", () => {
         mode: "append",
       }).map((event) => (event.payload.kind === "pm_decision" ? event.payload.recordId : event.id)),
     ).toEqual(["btc", "eth"]);
+  });
+
+  test("raw flow preserves repeated symbol records instead of collapsing to one topic candidate", () => {
+    const current = [pmEvent("btc-record-1", 200, "BTC")];
+    const nextPage = [pmEvent("btc-record-2", 100, "BTC")];
+
+    expect(
+      reconcileTimelineEventsForDisplay({
+        current,
+        next: nextPage,
+        mode: "append",
+      }).map((event) => (event.payload.kind === "pm_decision" ? event.payload.recordId : event.id)),
+    ).toEqual(["btc-record-1", "btc-record-2"]);
+  });
+
+  test("follow-stats refreshes only the explicit record from cross-tab messages", () => {
+    const loadedRecordIds = Array.from({ length: 165 }, (_, index) => `record-${index + 1}`);
+
+    expect(resolveFollowStatsRefreshRecordIds(loadedRecordIds, null)).toEqual([]);
+    expect(
+      resolveFollowStatsRefreshRecordIds(loadedRecordIds, {
+        recordId: "record-42",
+        ts: Date.UTC(2026, 4, 31),
+      }),
+    ).toEqual(["record-42"]);
+    expect(
+      resolveFollowStatsRefreshRecordIds(loadedRecordIds, {
+        recordId: "record-not-visible",
+        ts: Date.UTC(2026, 4, 31),
+      }),
+    ).toEqual([]);
   });
 
   test("keeps existing display cards when a replacement payload is a transient short-window subset", () => {

@@ -11,6 +11,7 @@ import {
   prunePublicCardIndexByStrategy,
   publicCardIndexKey,
   publicCardIndexWriteFailureLogKey,
+  readPublicCardIndexRange,
   readPublicCardIndexPage,
   readPublicCardIndexWriteFailureMarkers,
   rebuildPublicCardIndexFromRecords,
@@ -78,6 +79,27 @@ describe("publicCardIndex", () => {
     ]);
     expect(page.totalCount).toBe(20);
     expect(page.hasMore).toBe(true);
+  });
+
+  it("reads a deep finite range beyond the old 100-entry page cap in three KV commands", async () => {
+    const client = __publicCardIndexTestUtils.createMemoryClient();
+    const now = Date.UTC(2026, 4, 28, 7, 0, 0);
+
+    for (let index = 0; index < 180; index += 1) {
+      await writePublicCardIndexEntry(makeRecord(index, now + index * 1000), { client });
+    }
+    client.calls.length = 0;
+
+    const range = await readPublicCardIndexRange("zh_CN", {
+      offset: 30,
+      limit: 135,
+      client,
+    });
+
+    expect(range.entries).toHaveLength(135);
+    expect(range.totalCount).toBe(180);
+    expect(range.hasMore).toBe(true);
+    expect(client.calls.map((call) => call.name)).toEqual(["zrange", "zcard", "zrange"]);
   });
 
   it("keeps a bounded write-failure marker log per locale", async () => {

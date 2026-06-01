@@ -1,4 +1,4 @@
-export const PUBLIC_BOARD_HARDSTOP_MONTHLY_COMMAND_LIMIT = 416_640;
+export const PUBLIC_BOARD_HARDSTOP_MONTHLY_COMMAND_LIMIT = 475_635;
 
 interface PublicBoardBudgetCheckInput {
   route: string;

@@ -40,6 +40,15 @@ export interface PublicCardIndexPage {
   oldestAt: string | null;
 }
 
+export interface PublicCardIndexRange {
+  entries: PublicCardIndexEntry[];
+  offset: number;
+  limit: number;
+  totalCount: number;
+  hasMore: boolean;
+  oldestAt: string | null;
+}
+
 export interface PublicCardIndexWriteFailureMarker {
   recordId: string;
   locale: Locale;
@@ -262,6 +271,45 @@ export async function readPublicCardIndexPage(
     pageSize: normalizedPageSize,
     totalCount,
     hasMore: start + entries.length < totalCount,
+    oldestAt: oldestEntry?.createdAt ?? null,
+  };
+}
+
+export async function readPublicCardIndexRange(
+  locale: Locale,
+  {
+    offset = 0,
+    limit = PUBLIC_CARD_PAGE_SIZE,
+    client = kv as PublicCardIndexClient,
+  }: { offset?: number; limit?: number; client?: PublicCardIndexClient } = {},
+): Promise<PublicCardIndexRange> {
+  const normalizedOffset = Math.max(0, Math.floor(offset));
+  const normalizedLimit = Math.max(1, Math.min(Math.floor(limit), PUBLIC_CARD_TOTAL_CAP));
+  if (!hasKvConfig(client)) {
+    return {
+      entries: [],
+      offset: normalizedOffset,
+      limit: normalizedLimit,
+      totalCount: 0,
+      hasMore: false,
+      oldestAt: null,
+    };
+  }
+  const key = publicCardIndexKey(locale);
+  const stop = normalizedOffset + normalizedLimit - 1;
+  const [members, totalCount, oldest] = await Promise.all([
+    client.zrange<unknown[]>(key, normalizedOffset, stop, { rev: true }),
+    client.zcard(key),
+    client.zrange<unknown[]>(key, 0, 0),
+  ]);
+  const entries = members.map(parsePublicCardIndexEntry).filter(isPublicCardIndexEntry);
+  const oldestEntry = oldest.map(parsePublicCardIndexEntry).find(isPublicCardIndexEntry) ?? null;
+  return {
+    entries,
+    offset: normalizedOffset,
+    limit: normalizedLimit,
+    totalCount,
+    hasMore: normalizedOffset + entries.length < totalCount,
     oldestAt: oldestEntry?.createdAt ?? null,
   };
 }

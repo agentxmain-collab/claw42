@@ -24,6 +24,7 @@ import {
 } from "@/lib/watch/dispatchAgentMapping";
 import { calculateTopicRankingScore, formatTopicRanking } from "@/lib/watch/topicRanking";
 import {
+  groupPublicTimelineEventsAsRawRecords,
   groupPublicTimelineEventsByTopic,
   type DispatchTopicGroup,
   type PmDecisionTimelineEvent,
@@ -31,7 +32,10 @@ import {
 import type { PublicTimelineEvent, PublicTradeDecision } from "@/lib/watch/publicTimelineEvent";
 import type { TeamMemberId } from "@/lib/team/teamRegistry";
 import type { DecisionStageTraceId } from "@/lib/team/strategyDecisionRecord";
-import { publicTimelineEventStableId } from "@/lib/watch/publicTimelineOrdering";
+import {
+  comparePublicTimelineEvents,
+  publicTimelineEventStableId,
+} from "@/lib/watch/publicTimelineOrdering";
 import { resolveSymbolMapping } from "@/lib/team/symbolMapping";
 import { buildCoinWFuturesTradeUrl, normalizeCoinWFuturesPair } from "@/lib/coinw/futuresLinks";
 import {
@@ -65,6 +69,7 @@ export interface V9AdapterContext {
   evidenceMap?: Readonly<Record<string, NewsEvidence | undefined>>;
   followStatsByRecordId?: Readonly<Record<string, FollowStatsSnapshot | undefined>>;
   locale: Locale;
+  grouping?: "aggregated" | "raw";
   outcomeDict: DispatchV10OutcomeDict;
   roundDict: DispatchV10RoundDict;
   stageStatusDict: DispatchV10StageStatusDict;
@@ -1143,7 +1148,11 @@ function displayablePublicBetaGroup(group: DispatchTopicGroup) {
 export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): DispatchTopic[] {
   const now = ctx.now ?? Date.now();
   const displayableCandidateEvents = ctx.events.filter(isPublicDisplayablePmDecisionEvent);
-  const rankedGroups = groupPublicTimelineEventsByTopic(displayableCandidateEvents)
+  const groupedEvents =
+    ctx.grouping === "raw"
+      ? groupPublicTimelineEventsAsRawRecords(displayableCandidateEvents)
+      : groupPublicTimelineEventsByTopic(displayableCandidateEvents);
+  const rankedGroups = groupedEvents
     .filter(displayablePublicBetaGroup)
     .map((group) => {
       const tradeDecision = renderableTradeDecision(group.latestDecision);
@@ -1157,7 +1166,12 @@ export function mapPublicTimelineEventsToTopics(ctx: V9AdapterContext): Dispatch
       };
     })
     .sort(compareRankedGroups);
-  const visibleRankedGroups = interleaveRankedGroupsBySymbol(rankedGroups);
+  const visibleRankedGroups =
+    ctx.grouping === "raw"
+      ? [...rankedGroups].sort((a, b) =>
+          comparePublicTimelineEvents(a.group.latestDecision, b.group.latestDecision),
+        )
+      : interleaveRankedGroupsBySymbol(rankedGroups);
 
   return visibleRankedGroups.map(({ group, ranking }, index) => {
     const evidence = firstEvidence(group, ctx.evidenceMap);

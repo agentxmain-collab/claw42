@@ -20,11 +20,8 @@ export interface PublicBoardTrafficBudgetEstimate {
 
 export interface PublicBoardHardStopMonthlyBudgetEstimate {
   pieces: {
-    timelineCanonicalReads: number;
-    timelineSnapshotRebuilds: number;
-    publicCardWrites: number;
-    lowFrequencyPrune: number;
-    miscPublicEndpoints: number;
+    hotTimelineReadsRebuildsAndFixed: number;
+    coldTimelineReadsAndRebuilds: number;
   };
   total: number;
   planLimit: number;
@@ -36,11 +33,8 @@ const LEGACY_SSE_COMMANDS_PER_VIEWER = 2;
 const SNAPSHOT_READ_COMMANDS_PER_CACHE_MISS = 2;
 const SNAPSHOT_WRITE_COMMANDS_PER_WRITE = 45;
 const HARDSTOP_MONTHLY_PLAN_LIMIT = 500_000;
-const HARDSTOP_TIMELINE_CANONICAL_READS = 115_200;
-const HARDSTOP_TIMELINE_SNAPSHOT_REBUILDS = 199_440;
-const HARDSTOP_PUBLIC_CARD_WRITES = 12_000;
-const HARDSTOP_LOW_FREQUENCY_PRUNE = 30_000;
-const HARDSTOP_MISC_PUBLIC_ENDPOINTS = 60_000;
+const HARDSTOP_HOT_TIMELINE_READS_REBUILDS_AND_FIXED = 416_640;
+const HARDSTOP_COLD_TIMELINE_READS_AND_REBUILDS = 58_995;
 
 export function estimatePublicBoardTrafficBudget({
   viewerCount,
@@ -74,11 +68,8 @@ export function estimatePublicBoardTrafficBudget({
 
 export function estimatePublicBoardHardStopMonthlyBudget(): PublicBoardHardStopMonthlyBudgetEstimate {
   const pieces = {
-    timelineCanonicalReads: HARDSTOP_TIMELINE_CANONICAL_READS,
-    timelineSnapshotRebuilds: HARDSTOP_TIMELINE_SNAPSHOT_REBUILDS,
-    publicCardWrites: HARDSTOP_PUBLIC_CARD_WRITES,
-    lowFrequencyPrune: HARDSTOP_LOW_FREQUENCY_PRUNE,
-    miscPublicEndpoints: HARDSTOP_MISC_PUBLIC_ENDPOINTS,
+    hotTimelineReadsRebuildsAndFixed: HARDSTOP_HOT_TIMELINE_READS_REBUILDS_AND_FIXED,
+    coldTimelineReadsAndRebuilds: HARDSTOP_COLD_TIMELINE_READS_AND_REBUILDS,
   };
   return {
     pieces,

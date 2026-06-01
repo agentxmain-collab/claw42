@@ -186,3 +186,38 @@ export function groupPublicTimelineEventsByTopic(
 
   return groups.map(finalizeGroup).sort(compareGroups);
 }
+
+export function groupPublicTimelineEventsAsRawRecords(
+  events: readonly PublicTimelineEvent[],
+): DispatchTopicGroup[] {
+  return events
+    .filter(isPmDecisionEvent)
+    .sort(comparePublicTimelineEvents)
+    .flatMap((event) => {
+      const identity = candidateIdentity(event);
+      if (!identity) {
+        if (process.env.NODE_ENV !== "test") {
+          console.warn("[claw42] skipped raw pm_decision without candidate identity", {
+            eventId: event.id,
+            recordId: event.payload.recordId,
+          });
+        }
+        return [];
+      }
+      return [
+        finalizeGroup({
+          id: buildGroupId(event.locale, identity.candidateKey, event),
+          candidateType: identity.candidateType,
+          candidateKey: identity.candidateKey,
+          ...(identity.displayTitle ? { displayTitle: identity.displayTitle } : {}),
+          symbol: identity.symbol,
+          locale: event.locale,
+          latestDecision: event,
+          decisionsInWindow: [event],
+          evidenceIds: uniqueEvidenceIds([event]),
+          startedAt: event.ts,
+          latestAt: event.ts,
+        }),
+      ];
+    });
+}

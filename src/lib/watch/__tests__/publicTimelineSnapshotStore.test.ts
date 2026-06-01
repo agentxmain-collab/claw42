@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { PublicWatchTimelinePayload } from "@/lib/watch/publicTimelinePayload";
 import {
   createEmptyPublicTimelineSnapshot,
+  PUBLIC_TIMELINE_COLD_SNAPSHOT_TTL_SECONDS,
   PUBLIC_TIMELINE_SNAPSHOT_TTL_SECONDS,
   publicTimelineSnapshotBlobKey,
   publicTimelineSnapshotCurrentKey,
@@ -12,11 +13,13 @@ import {
 
 class MemorySnapshotClient {
   values = new Map<string, string>();
+  getCalls: string[] = [];
   setCalls: Array<{ key: string; value: string; options?: { ex?: number; px?: number } }> = [];
   failGet = false;
   failKeys = new Set<string>();
 
   async get<T = unknown>(key: string): Promise<T | null> {
+    this.getCalls.push(key);
     if (this.failGet || this.failKeys.has(key)) throw new Error("kv quota exhausted");
     return (this.values.get(key) as T | undefined) ?? null;
   }
@@ -76,6 +79,66 @@ describe("publicTimelineSnapshotStore", () => {
       client.setCalls.find((call) => call.key === publicTimelineSnapshotCurrentKey("zh_CN", 60, 1))
         ?.options?.ex,
     ).toBeGreaterThanOrEqual(75 * 60);
+  });
+
+  it("keeps cold current pointers alive for thirty hours and reads current snapshots in two commands", async () => {
+    const client = new MemorySnapshotClient();
+    const snapshot = snapshotPayload({
+      page: 11,
+      generatedAt: "2026-05-31T05:00:00.000Z",
+      events: [],
+    });
+
+    await publishPublicTimelineSnapshot(snapshot, {
+      client,
+      currentTtlSeconds: PUBLIC_TIMELINE_COLD_SNAPSHOT_TTL_SECONDS,
+    });
+    client.getCalls.length = 0;
+
+    const read = await readPublicTimelineSnapshot({
+      locale: "zh_CN",
+      windowMinutes: 60,
+      page: 11,
+      pageSize: 15,
+      now: Date.parse("2026-05-31T05:00:30.000Z"),
+      client,
+    });
+
+    expect(PUBLIC_TIMELINE_COLD_SNAPSHOT_TTL_SECONDS).toBe(30 * 60 * 60);
+    expect(
+      client.setCalls.find((call) => call.key === publicTimelineSnapshotCurrentKey("zh_CN", 60, 11))
+        ?.options?.ex,
+    ).toBe(PUBLIC_TIMELINE_COLD_SNAPSHOT_TTL_SECONDS);
+    expect(read.source).toBe("current");
+    expect(client.getCalls).toHaveLength(2);
+  });
+
+  it("counts the last-good path as three KV reads when the current pointer is missing", async () => {
+    const client = new MemorySnapshotClient();
+    const lastGood = snapshotPayload({
+      page: 11,
+      version: "2026-05-31T04:50:00.000Z:lg",
+      generatedAt: "2026-05-31T04:50:00.000Z",
+      events: [],
+    });
+    await publishPublicTimelineSnapshot(lastGood, {
+      client,
+      currentTtlSeconds: PUBLIC_TIMELINE_COLD_SNAPSHOT_TTL_SECONDS,
+    });
+    await client.del(publicTimelineSnapshotCurrentKey("zh_CN", 60, 11));
+    client.getCalls.length = 0;
+
+    const read = await readPublicTimelineSnapshot({
+      locale: "zh_CN",
+      windowMinutes: 60,
+      page: 11,
+      pageSize: 15,
+      now: Date.parse("2026-05-31T05:01:00.000Z"),
+      client,
+    });
+
+    expect(read.source).toBe("last-good");
+    expect(client.getCalls).toHaveLength(3);
   });
 
   it("keeps serving last-good when the current pointer targets a missing blob", async () => {

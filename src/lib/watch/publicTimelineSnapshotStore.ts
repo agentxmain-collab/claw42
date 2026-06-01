@@ -10,6 +10,7 @@ import type {
 
 export const PUBLIC_TIMELINE_SNAPSHOT_SCHEMA_VERSION = 1;
 export const PUBLIC_TIMELINE_SNAPSHOT_TTL_SECONDS = 90 * 60;
+export const PUBLIC_TIMELINE_COLD_SNAPSHOT_TTL_SECONDS = 30 * 60 * 60;
 export const PUBLIC_TIMELINE_SNAPSHOT_EXPIRES_MS = 75 * 60_000;
 export const PUBLIC_TIMELINE_SNAPSHOT_LAST_GOOD_TTL_SECONDS = 24 * 60 * 60;
 export const PUBLIC_TIMELINE_SNAPSHOT_MAX_BYTES = 750_000;
@@ -153,7 +154,12 @@ export async function publishPublicTimelineSnapshot(
   {
     client,
     maxBytes = PUBLIC_TIMELINE_SNAPSHOT_MAX_BYTES,
-  }: { client?: PublicTimelineSnapshotClient; maxBytes?: number } = {},
+    currentTtlSeconds = PUBLIC_TIMELINE_SNAPSHOT_TTL_SECONDS,
+  }: {
+    client?: PublicTimelineSnapshotClient;
+    maxBytes?: number;
+    currentTtlSeconds?: number;
+  } = {},
 ): Promise<PublicTimelineSnapshotPublishResult> {
   const storage = resolveClient(client);
   if (!storage) {
@@ -209,7 +215,7 @@ export async function publishPublicTimelineSnapshot(
       ex: PUBLIC_TIMELINE_SNAPSHOT_LAST_GOOD_TTL_SECONDS,
     });
     await storage.set(currentKey, JSON.stringify(pointer), {
-      ex: PUBLIC_TIMELINE_SNAPSHOT_TTL_SECONDS,
+      ex: Math.max(1, Math.floor(currentTtlSeconds)),
     });
     await storage.set(lastGoodKey, JSON.stringify(pointer), {
       ex: PUBLIC_TIMELINE_SNAPSHOT_LAST_GOOD_TTL_SECONDS,

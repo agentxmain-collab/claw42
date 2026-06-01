@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __publicTimelineSnapshotProducerTestUtils,
+  PUBLIC_TIMELINE_SNAPSHOT_COLD_PAGES,
+  PUBLIC_TIMELINE_SNAPSHOT_COLD_REBUILD_INTERVAL_MS,
+  PUBLIC_TIMELINE_SNAPSHOT_MAX_REBUILDS_PER_DAY,
+  rebuildPublicTimelineColdSnapshots,
+  rebuildPublicTimelineSnapshotPagePair,
   schedulePublicTimelineSnapshotRefresh,
 } from "@/lib/watch/publicTimelineSnapshotProducer";
 
@@ -8,6 +13,7 @@ const waitUntilMock = vi.hoisted(() => vi.fn());
 const withLockMock = vi.hoisted(() => vi.fn());
 const buildWatchTimelinePayloadMock = vi.hoisted(() => vi.fn());
 const buildWatchTimelinePagePairPayloadsMock = vi.hoisted(() => vi.fn());
+const buildWatchTimelinePageRangePayloadsMock = vi.hoisted(() => vi.fn());
 const publishPublicTimelineSnapshotMock = vi.hoisted(() => vi.fn());
 const getSharedFollowStatsMock = vi.hoisted(() => vi.fn());
 
@@ -22,10 +28,12 @@ vi.mock("@/lib/storage/kv-lock", () => ({
 
 vi.mock("@/lib/watch/publicTimelinePayload", () => ({
   buildWatchTimelinePagePairPayloads: buildWatchTimelinePagePairPayloadsMock,
+  buildWatchTimelinePageRangePayloads: buildWatchTimelinePageRangePayloadsMock,
   buildWatchTimelinePayload: buildWatchTimelinePayloadMock,
 }));
 
 vi.mock("@/lib/watch/publicTimelineSnapshotStore", () => ({
+  PUBLIC_TIMELINE_COLD_SNAPSHOT_TTL_SECONDS: 30 * 60 * 60,
   createEmptyPublicTimelineSnapshot: vi.fn(
     ({
       locale,
@@ -104,6 +112,16 @@ describe("publicTimelineSnapshotProducer", () => {
         events: [pmEvent("record-16", 900)],
       }),
     ]);
+    buildWatchTimelinePageRangePayloadsMock.mockReset().mockResolvedValue(
+      Array.from({ length: 9 }, (_, index) =>
+        timelinePayload({
+          page: index + 3,
+          totalCount: 165,
+          hasMore: index + 3 < 11,
+          events: [pmEvent(`record-${31 + index * 15}`, 800 - index)],
+        }),
+      ),
+    );
     publishPublicTimelineSnapshotMock.mockReset().mockResolvedValue({ ok: true });
     getSharedFollowStatsMock.mockReset().mockResolvedValue({});
   });
@@ -113,8 +131,8 @@ describe("publicTimelineSnapshotProducer", () => {
   });
 
   it("uses one rebuild slot to publish canonical page one and page two snapshots", async () => {
-    const result = await schedulePublicTimelineSnapshotRefresh("zh_CN", {
-      reason: "record-write",
+    const result = await rebuildPublicTimelineSnapshotPagePair({
+      locale: "zh_CN",
     });
 
     expect(result).toMatchObject({ ok: true });
@@ -140,16 +158,18 @@ describe("publicTimelineSnapshotProducer", () => {
     const burst = await schedulePublicTimelineSnapshotRefresh("zh_CN", { reason: "record-write" });
 
     expect(burst).toMatchObject({ ok: true, skipped: true, reason: "snapshot_refresh_deferred" });
-    expect(withLockMock).toHaveBeenCalledTimes(1);
-    expect(publishPublicTimelineSnapshotMock).toHaveBeenCalledTimes(2);
+    expect(withLockMock).toHaveBeenCalledTimes(2);
+    expect(publishPublicTimelineSnapshotMock).toHaveBeenCalledTimes(11);
 
     for (let hour = 1; hour < 24; hour += 1) {
       vi.setSystemTime(now + hour * 60 * 60_000);
       await schedulePublicTimelineSnapshotRefresh("zh_CN", { reason: "record-write" });
     }
 
-    expect(withLockMock).toHaveBeenCalledTimes(24);
-    expect(publishPublicTimelineSnapshotMock).toHaveBeenCalledTimes(48);
+    expect(__publicTimelineSnapshotProducerTestUtils.rebuildStartedAt()).toHaveLength(24);
+    expect(__publicTimelineSnapshotProducerTestUtils.coldRebuildStartedAt()).toHaveLength(1);
+    expect(withLockMock).toHaveBeenCalledTimes(25);
+    expect(publishPublicTimelineSnapshotMock).toHaveBeenCalledTimes(57);
 
     vi.setSystemTime(now + 24 * 60 * 60_000);
     const capped = await schedulePublicTimelineSnapshotRefresh("zh_CN", {
@@ -157,7 +177,53 @@ describe("publicTimelineSnapshotProducer", () => {
     });
 
     expect(capped).toMatchObject({ ok: true, skipped: true, reason: "snapshot_refresh_daily_cap" });
-    expect(withLockMock).toHaveBeenCalledTimes(24);
+    expect(withLockMock).toHaveBeenCalledTimes(25);
+  });
+
+  it("publishes cold pages three through eleven in one daily batch without raising the hot cap", async () => {
+    const result = await rebuildPublicTimelineColdSnapshots("zh_CN", {
+      reason: "daily-cold-rebuild",
+    });
+
+    expect(result).toMatchObject({ ok: true });
+    expect(PUBLIC_TIMELINE_SNAPSHOT_COLD_PAGES).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(PUBLIC_TIMELINE_SNAPSHOT_MAX_REBUILDS_PER_DAY).toBe(24);
+    expect(PUBLIC_TIMELINE_SNAPSHOT_COLD_REBUILD_INTERVAL_MS).toBe(24 * 60 * 60_000);
+    expect(withLockMock).toHaveBeenCalledTimes(1);
+    expect(buildWatchTimelinePageRangePayloadsMock).toHaveBeenCalledTimes(1);
+    expect(buildWatchTimelinePageRangePayloadsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        locale: "zh_CN",
+        limit: 135,
+        pageSize: 15,
+        pages: [3, 4, 5, 6, 7, 8, 9, 10, 11],
+      }),
+    );
+    expect(buildWatchTimelinePagePairPayloadsMock).not.toHaveBeenCalled();
+    expect(getSharedFollowStatsMock).toHaveBeenCalledTimes(1);
+    expect(getSharedFollowStatsMock).toHaveBeenCalledWith([
+      "record-31",
+      "record-46",
+      "record-61",
+      "record-76",
+      "record-91",
+      "record-106",
+      "record-121",
+      "record-136",
+      "record-151",
+    ]);
+    expect(publishPublicTimelineSnapshotMock).toHaveBeenCalledTimes(9);
+    expect(publishPublicTimelineSnapshotMock.mock.calls.map(([snapshot]) => snapshot.page)).toEqual(
+      [3, 4, 5, 6, 7, 8, 9, 10, 11],
+    );
+    expect(
+      publishPublicTimelineSnapshotMock.mock.calls.map(([, options]) => options?.currentTtlSeconds),
+    ).toEqual(Array(9).fill(30 * 60 * 60));
+    expect(
+      publishPublicTimelineSnapshotMock.mock.calls.map(
+        ([snapshot]) => snapshot.sourceHealth.estimatedKvCommands,
+      ),
+    ).toEqual(Array(9).fill(138.5));
   });
 });
 

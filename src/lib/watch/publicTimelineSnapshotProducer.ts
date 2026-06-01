@@ -4,10 +4,12 @@ import { withLock, LockBusyError } from "@/lib/storage/kv-lock";
 import { getSharedFollowStats } from "@/lib/watch/followStatsStore";
 import {
   buildWatchTimelinePagePairPayloads,
+  buildWatchTimelinePageRangePayloads,
   buildWatchTimelinePayload,
   type PublicWatchTimelinePayload,
 } from "@/lib/watch/publicTimelinePayload";
 import {
+  PUBLIC_TIMELINE_COLD_SNAPSHOT_TTL_SECONDS,
   createEmptyPublicTimelineSnapshot,
   publicTimelineSnapshotLockKey,
   publishPublicTimelineSnapshot,
@@ -22,9 +24,13 @@ export const PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_PAGE_SIZE = 15;
 export const PUBLIC_TIMELINE_SNAPSHOT_MAX_REBUILDS_PER_DAY = 24;
 export const PUBLIC_TIMELINE_SNAPSHOT_MIN_REBUILD_INTERVAL_MS = 60 * 60_000;
 export const PUBLIC_TIMELINE_SNAPSHOT_CANONICAL_PAGES = [1, 2] as const;
+export const PUBLIC_TIMELINE_SNAPSHOT_COLD_PAGES = [3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
+export const PUBLIC_TIMELINE_SNAPSHOT_COLD_REBUILD_INTERVAL_MS = 24 * 60 * 60_000;
+export const PUBLIC_TIMELINE_SNAPSHOT_COLD_ESTIMATED_COMMANDS_PER_PAGE = 138.5;
 
 const pendingRefreshes = new Map<string, Promise<unknown>>();
 const rebuildStartedAt: number[] = [];
+const coldRebuildStartedAt: number[] = [];
 
 export function buildPublicTimelineSnapshotFromPayload(
   payload: PublicWatchTimelinePayload,
@@ -169,6 +175,70 @@ export async function rebuildPublicTimelineSnapshotPagePair({
   }
 }
 
+export async function rebuildPublicTimelineColdSnapshots(
+  locale: Locale,
+  {
+    reason,
+    windowMinutes = PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_WINDOW_MINUTES,
+    pageSize = PUBLIC_TIMELINE_SNAPSHOT_DEFAULT_PAGE_SIZE,
+    now = Date.now(),
+  }: {
+    reason: string;
+    windowMinutes?: number;
+    pageSize?: number;
+    now?: number;
+  },
+) {
+  try {
+    return await withLock(
+      publicTimelineSnapshotLockKey(locale, windowMinutes, PUBLIC_TIMELINE_SNAPSHOT_COLD_PAGES[0]),
+      async () => {
+        void reason;
+        const payloads = await buildWatchTimelinePageRangePayloads({
+          locale,
+          before: now,
+          limit: pageSize * PUBLIC_TIMELINE_SNAPSHOT_COLD_PAGES.length,
+          pageSize,
+          windowMinutes,
+          servedAt: now,
+          pages: PUBLIC_TIMELINE_SNAPSHOT_COLD_PAGES,
+        });
+        const withCounts = await attachSharedFollowStatsToPayloads(payloads);
+        const snapshots = withCounts.map((payload) =>
+          buildPublicTimelineSnapshotFromPayload(payload, {
+            now,
+            status: payload.events.length > 0 ? "fresh" : "empty",
+            sourceHealth: {
+              state: "ok",
+              generatedFrom: "producer-cold-page-range",
+              estimatedKvCommands: PUBLIC_TIMELINE_SNAPSHOT_COLD_ESTIMATED_COMMANDS_PER_PAGE,
+            },
+          }),
+        );
+        const publishes = await Promise.all(
+          snapshots.map((snapshot) =>
+            publishPublicTimelineSnapshot(snapshot, {
+              currentTtlSeconds: PUBLIC_TIMELINE_COLD_SNAPSHOT_TTL_SECONDS,
+            }),
+          ),
+        );
+        return {
+          ok: publishes.every((publish) => publish.ok),
+          publish: publishes[0] ?? { ok: false, error: "snapshot_publish_missing" },
+          publishes,
+          snapshots,
+        };
+      },
+      { ttlMs: 45_000, waitMs: 0 },
+    );
+  } catch (error) {
+    if (error instanceof LockBusyError) {
+      return { ok: true, skipped: true, reason: "snapshot_refresh_already_running" };
+    }
+    throw error;
+  }
+}
+
 export function schedulePublicTimelineSnapshotRefresh(
   locale: Locale,
   {
@@ -185,16 +255,29 @@ export function schedulePublicTimelineSnapshotRefresh(
   const existing = pendingRefreshes.get(key);
   if (existing) return existing;
 
-  const gate = claimGlobalSnapshotRebuildSlot(Date.now());
+  const now = Date.now();
+  const gate = claimGlobalSnapshotRebuildSlot(now);
   if (!gate.allowed) {
     return Promise.resolve({ ok: true, skipped: true, reason: gate.reason });
   }
+  const coldGate = claimColdSnapshotRebuildSlot(now);
 
   const task = rebuildPublicTimelineSnapshotPagePair({
     locale,
     windowMinutes,
     pageSize,
   })
+    .then(async (result) => {
+      if (coldGate.allowed) {
+        await rebuildPublicTimelineColdSnapshots(locale, {
+          reason,
+          windowMinutes,
+          pageSize,
+          now,
+        });
+      }
+      return result;
+    })
     .catch((error) => {
       console.warn("[claw42] public timeline snapshot refresh failed", {
         locale,
@@ -231,6 +314,19 @@ function claimGlobalSnapshotRebuildSlot(now: number) {
     return { allowed: false as const, reason: "snapshot_refresh_daily_cap" };
   }
   rebuildStartedAt.push(now);
+  return { allowed: true as const };
+}
+
+function claimColdSnapshotRebuildSlot(now: number) {
+  const windowStart = now - PUBLIC_TIMELINE_SNAPSHOT_COLD_REBUILD_INTERVAL_MS;
+  for (let index = coldRebuildStartedAt.length - 1; index >= 0; index -= 1) {
+    if (coldRebuildStartedAt[index] < windowStart) coldRebuildStartedAt.splice(index, 1);
+  }
+  const latest = coldRebuildStartedAt.at(-1);
+  if (latest !== undefined && now - latest < PUBLIC_TIMELINE_SNAPSHOT_COLD_REBUILD_INTERVAL_MS) {
+    return { allowed: false as const, reason: "snapshot_cold_refresh_deferred" };
+  }
+  coldRebuildStartedAt.push(now);
   return { allowed: true as const };
 }
 
@@ -279,8 +375,12 @@ export const __publicTimelineSnapshotProducerTestUtils = {
   reset() {
     pendingRefreshes.clear();
     rebuildStartedAt.length = 0;
+    coldRebuildStartedAt.length = 0;
   },
   rebuildStartedAt() {
     return [...rebuildStartedAt];
+  },
+  coldRebuildStartedAt() {
+    return [...coldRebuildStartedAt];
   },
 };

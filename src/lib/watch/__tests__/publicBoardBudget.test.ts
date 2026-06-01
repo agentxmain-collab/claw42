@@ -3,6 +3,7 @@ import {
   estimatePublicBoardHardStopMonthlyBudget,
   estimatePublicBoardTrafficBudget,
 } from "@/lib/watch/publicBoardBudget";
+import { PUBLIC_BOARD_HARDSTOP_MONTHLY_COMMAND_LIMIT } from "@/lib/watch/publicBoardKvBudgetGuard";
 
 describe("publicBoardBudget", () => {
   it("keeps shared snapshot KV reads flat as viewer count grows", () => {
@@ -29,13 +30,12 @@ describe("publicBoardBudget", () => {
     const budget = estimatePublicBoardHardStopMonthlyBudget();
 
     expect(budget.pieces).toEqual({
-      timelineCanonicalReads: 115_200,
-      timelineSnapshotRebuilds: 199_440,
-      publicCardWrites: 12_000,
-      lowFrequencyPrune: 30_000,
-      miscPublicEndpoints: 60_000,
+      hotTimelineReadsRebuildsAndFixed: 416_640,
+      coldTimelineReadsAndRebuilds: 58_995,
     });
-    expect(budget.total).toBe(416_640);
+    expect(budget.total).toBe(475_635);
+    expect(PUBLIC_BOARD_HARDSTOP_MONTHLY_COMMAND_LIMIT).toBe(475_635);
     expect(budget.total).toBeLessThan(500_000);
+    expect(500_000 - budget.total).toBe(24_365);
   });
 });

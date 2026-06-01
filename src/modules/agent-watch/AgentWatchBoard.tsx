@@ -10,7 +10,7 @@ import type {
 } from "@/lib/watch/publicTimelinePayload";
 import {
   comparePublicTimelineEvents,
-  mergePublicTimelineEvents,
+  publicTimelineEventStableId,
 } from "@/lib/watch/publicTimelineOrdering";
 import type { ResidentPrewarmStatus } from "@/lib/watch/residentPrewarmStatus";
 import {
@@ -36,7 +36,7 @@ import type {
 } from "./v9/types";
 import { resolveAgentWatchLocale } from "./locale";
 
-const PUBLIC_TIMELINE_MAX_PAGE = 2;
+const PUBLIC_TIMELINE_MAX_PAGE = 11;
 const PUBLIC_TIMELINE_STALE_AFTER_MS = 75 * 60_000;
 const DEFAULT_TIMELINE_POLL_MS = 90_000;
 const TIMELINE_HIDDEN_POLL_MS = 5 * 60_000;
@@ -143,7 +143,26 @@ interface VisibleSessionRefreshTarget {
 }
 
 function mergeTimelineEvents(current: PublicTimelineEvent[], next: PublicTimelineEvent[]) {
-  return mergePublicTimelineEvents([...current, ...next]);
+  const byStableId = new Map<string, PublicTimelineEvent>();
+  for (const event of [...current, ...next].sort(comparePublicTimelineEvents)) {
+    const stableId = publicTimelineEventStableId(event);
+    if (!byStableId.has(stableId)) byStableId.set(stableId, event);
+  }
+  return Array.from(byStableId.values()).sort(comparePublicTimelineEvents);
+}
+
+interface FollowStatsRefreshMessage {
+  recordId?: unknown;
+  ts?: unknown;
+}
+
+export function resolveFollowStatsRefreshRecordIds(
+  loadedRecordIds: readonly string[],
+  message: FollowStatsRefreshMessage | null,
+) {
+  const recordId = typeof message?.recordId === "string" ? message.recordId : null;
+  if (!recordId) return [];
+  return loadedRecordIds.includes(recordId) ? [recordId] : [];
 }
 
 export function sortTopicsForDisplay(topics: DispatchTopic[]) {
@@ -262,7 +281,6 @@ export function AgentWatchBoard({
   const [residentStatus, setResidentStatus] = useState<ResidentPrewarmStatus | null>(null);
   const [timelinePage, setTimelinePage] = useState(1);
   const [timelineHasMore, setTimelineHasMore] = useState(false);
-  const [timelineTotalCount, setTimelineTotalCount] = useState(0);
   const [timelineLoadingMore, setTimelineLoadingMore] = useState(false);
   const nextTimelinePollMsRef = useRef(DEFAULT_TIMELINE_POLL_MS);
 
@@ -324,7 +342,6 @@ export function AgentWatchBoard({
           mode === "replace" && payload.page === 1 ? 1 : Math.max(current, payload.page ?? 1),
         );
       }
-      if (typeof payload.totalCount === "number") setTimelineTotalCount(payload.totalCount);
       setTimelineHasMore(payload.hasMore && (payload.page ?? 1) < PUBLIC_TIMELINE_MAX_PAGE);
     },
     [],
@@ -458,9 +475,18 @@ export function AgentWatchBoard({
   const recordIdsKey = recordIds.join(",");
 
   const fetchFollowStats = useCallback(
-    async ({ signal, userScoped = false }: { signal?: AbortSignal; userScoped?: boolean } = {}) => {
-      if (!recordIdsKey) return;
-      const params = new URLSearchParams({ recordIds: recordIdsKey });
+    async ({
+      signal,
+      userScoped = false,
+      refreshRecordIds,
+    }: {
+      signal?: AbortSignal;
+      userScoped?: boolean;
+      refreshRecordIds?: readonly string[];
+    } = {}) => {
+      const targetRecordIds = Array.from(new Set(refreshRecordIds ?? recordIds));
+      if (targetRecordIds.length === 0) return;
+      const params = new URLSearchParams({ recordIds: targetRecordIds.join(",") });
       if (userScoped) params.set("user", "1");
       const response = await fetch(apiPath(`/api/watch/follow-stats?${params}`), {
         credentials: "same-origin",
@@ -470,7 +496,7 @@ export function AgentWatchBoard({
       const payload = (await response.json()) as FollowStatsPayload;
       setFollowStatsByRecordId((current) => ({ ...current, ...payload.stats }));
     },
-    [recordIdsKey],
+    [recordIds],
   );
 
   useEffect(() => {
@@ -478,29 +504,48 @@ export function AgentWatchBoard({
     const channel =
       typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(FOLLOW_STATS_BROADCAST) : null;
 
-    function refresh() {
-      void fetchFollowStats({ userScoped: true });
+    function refresh(message: unknown) {
+      const refreshRecordIds = resolveFollowStatsRefreshRecordIds(
+        recordIds,
+        typeof message === "object" && message !== null
+          ? (message as FollowStatsRefreshMessage)
+          : null,
+      );
+      if (refreshRecordIds.length === 0) return;
+      void fetchFollowStats({ userScoped: true, refreshRecordIds });
     }
 
     function handleStorage(event: StorageEvent) {
-      if (event.key === FOLLOW_STATS_STORAGE_EVENT) refresh();
+      if (event.key !== FOLLOW_STATS_STORAGE_EVENT) return;
+      let payload: unknown = null;
+      try {
+        payload = event.newValue ? JSON.parse(event.newValue) : null;
+      } catch {
+        payload = null;
+      }
+      refresh(payload);
     }
 
-    channel?.addEventListener("message", refresh);
+    function handleMessage(event: MessageEvent) {
+      refresh(event.data);
+    }
+
+    channel?.addEventListener("message", handleMessage);
     window.addEventListener("storage", handleStorage);
 
     return () => {
-      channel?.removeEventListener("message", refresh);
+      channel?.removeEventListener("message", handleMessage);
       channel?.close();
       window.removeEventListener("storage", handleStorage);
     };
-  }, [fetchFollowStats, recordIdsKey]);
+  }, [fetchFollowStats, recordIds, recordIdsKey]);
 
   const topics = useMemo(() => {
     const mappedTopics = mapPublicTimelineEventsToTopics({
       events: timelineEvents,
       evidenceMap: timelineEvidenceMap,
       followStatsByRecordId,
+      grouping: "raw",
       locale: agentWatchLocale,
       outcomeDict,
       roundDict,
@@ -693,7 +738,7 @@ export function AgentWatchBoard({
         pagination={{
           hasMore: timelineHasMore,
           loading: timelineLoadingMore,
-          loadedCount: timelineTotalCount || topics.length,
+          loadedCount: topics.length,
           onLoadMore: handleLoadMoreTimeline,
         }}
       />

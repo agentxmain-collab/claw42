@@ -199,6 +199,28 @@ function withResolution(
 }
 
 describe("mapPublicTimelineEventsToTopics", () => {
+  it("can render repeated symbol decisions as raw records without topic aggregation", () => {
+    const first = pmDecisionWithRecordId("record-btc-1", {
+      id: "event-btc-1",
+      ts: now,
+    });
+    const second = pmDecisionWithRecordId("record-btc-2", {
+      id: "event-btc-2",
+      ts: now - 60_000,
+    });
+
+    const topics = mapTopics({
+      events: [first, second],
+      evidenceMap: { ev_1: evidence },
+      locale: "zh_CN",
+      now,
+      grouping: "raw",
+    });
+
+    expect(topics).toHaveLength(2);
+    expect(topics.map((topic) => topic.id)).toEqual(["record-btc-1", "record-btc-2"]);
+  });
+
   it("maps the first public evidence item into topic news summary", () => {
     const [topic] = mapTopics({
       events: [pmDecision()],

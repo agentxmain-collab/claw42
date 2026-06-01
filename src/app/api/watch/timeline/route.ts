@@ -22,11 +22,16 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 const PUBLIC_TIMELINE_PAGE_SIZE = 15;
 const PUBLIC_TIMELINE_WINDOW_MINUTES = 60;
-const PUBLIC_TIMELINE_ALLOWED_PAGES = new Set([1, 2]);
+const PUBLIC_TIMELINE_HOT_MAX_PAGE = 2;
+const PUBLIC_TIMELINE_MAX_PAGE = 11;
 const PUBLIC_TIMELINE_ALLOWED_QUERY_KEYS = new Set(["locale", "page", "windowMinutes", "pageSize"]);
-const PUBLIC_TIMELINE_CACHE_HEADERS = {
+const PUBLIC_TIMELINE_HOT_CACHE_HEADERS = {
   "Cache-Control": "public, max-age=0, must-revalidate",
   "Vercel-CDN-Cache-Control": "public, s-maxage=900, stale-while-revalidate=3600",
+} as const;
+const PUBLIC_TIMELINE_COLD_CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=0, must-revalidate",
+  "Vercel-CDN-Cache-Control": "public, s-maxage=21600, stale-while-revalidate=86400",
 } as const;
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" } as const;
 
@@ -76,7 +81,7 @@ function parseCanonicalPublicQuery(url: URL, request: NextRequest) {
     return { ok: false as const, error: "invalid_page" };
   }
   const page = Number(pageParam);
-  if (!PUBLIC_TIMELINE_ALLOWED_PAGES.has(page)) {
+  if (page < 1 || page > PUBLIC_TIMELINE_MAX_PAGE) {
     return { ok: false as const, error: "invalid_page" };
   }
 
@@ -87,6 +92,12 @@ function parseCanonicalPublicQuery(url: URL, request: NextRequest) {
     page,
     pageSize: PUBLIC_TIMELINE_PAGE_SIZE,
   };
+}
+
+function cacheHeadersForPublicTimelinePage(page: number) {
+  return page <= PUBLIC_TIMELINE_HOT_MAX_PAGE
+    ? PUBLIC_TIMELINE_HOT_CACHE_HEADERS
+    : PUBLIC_TIMELINE_COLD_CACHE_HEADERS;
 }
 
 function publicTimelineLastGoodKey({
@@ -184,7 +195,7 @@ export async function GET(request: NextRequest) {
               reason: budget.reason,
             },
           }),
-        { headers: PUBLIC_TIMELINE_CACHE_HEADERS },
+        { headers: cacheHeadersForPublicTimelinePage(page) },
       );
     }
 
@@ -219,7 +230,9 @@ export async function GET(request: NextRequest) {
     }
 
     rememberPublicBoardLastGood(lastGoodKey, readResult.payload);
-    return NextResponse.json(readResult.payload, { headers: PUBLIC_TIMELINE_CACHE_HEADERS });
+    return NextResponse.json(readResult.payload, {
+      headers: cacheHeadersForPublicTimelinePage(page),
+    });
   }
 
   const payload = await buildWatchTimelinePayload({
