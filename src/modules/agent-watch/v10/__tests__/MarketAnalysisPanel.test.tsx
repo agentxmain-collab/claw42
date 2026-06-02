@@ -625,7 +625,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("7 轮辩论");
   });
 
-  test("pins only the realtime analysis summary at the workbench footer", () => {
+  test("pins only the realtime analysis summary inside the expanded strategy scope", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
@@ -686,16 +686,47 @@ describe("MarketAnalysisPanel v10", () => {
     expect(sticky).not.toContain('class="v3-secondary"');
     expect(html).toMatch(/class="topic[^"]*expanded/);
     expect(html).toContain('class="topic-scroll-content"');
-    expect(html).toContain('class="chat-shell-body has-sticky-summary"');
-    expect(sticky).toContain('data-sticky-container="chat-shell-body"');
-    expect(html).toContain(
-      'class="chat-shell-sticky-summary topic-realtime-summary topic-realtime-sticky',
+    expect(html).not.toContain('class="chat-shell-body has-sticky-summary"');
+    expect(html).not.toContain('class="chat-shell-sticky-summary');
+    expect(sticky).toContain('data-sticky-container="topic-strategy"');
+    expect(html).toContain('class="topic-realtime-summary topic-realtime-sticky topic-card-v3');
+    expect(html.indexOf('data-realtime-analysis-sticky="true"')).toBeGreaterThan(
+      html.indexOf('class="topic-strategy'),
     );
-    const topicWrapper = html.slice(
-      html.indexOf('data-topic-card-id="symbol:BTC"'),
-      html.indexOf('class="chat-shell-sticky-summary'),
+  });
+
+  test("normalizes initially open topics to a single expanded strategy", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          topicFixture({
+            id: "btc-default-open",
+            candidateType: "symbol",
+            candidateKey: "BTC",
+            title: "BTC 实时行情分析",
+            symbol: "BTC",
+            score: 1,
+            lastUpdatedAt: 2,
+            executable: true,
+          }),
+          topicFixture({
+            id: "eth-default-open",
+            candidateType: "symbol",
+            candidateKey: "ETH",
+            title: "ETH 实时行情分析",
+            symbol: "ETH",
+            score: 2,
+            lastUpdatedAt: 1,
+            executable: true,
+          }),
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
     );
-    expect(topicWrapper).not.toContain('data-realtime-analysis-sticky="true"');
+
+    expect(html.match(/class="topic[^"]*expanded/g) ?? []).toHaveLength(1);
+    expect(html.match(/data-realtime-analysis-sticky="true"/g) ?? []).toHaveLength(1);
   });
 
   test("keeps collapsed topic cards from rendering the sticky realtime footer", () => {
@@ -816,8 +847,8 @@ describe("MarketAnalysisPanel v10", () => {
     );
 
     expect(html).not.toContain("topic-pagination");
-    expect(html).toContain("SYM15 实时行情分析");
-    expect(html).toContain("SYM16 实时行情分析");
+    expect(html).toContain('data-topic-card-id="symbol:SYM15"');
+    expect(html).toContain('data-topic-card-id="symbol:SYM16"');
     expect(html).toContain("已加载全部 16 张");
   });
 
@@ -1246,7 +1277,7 @@ describe("MarketAnalysisPanel v10", () => {
     }
   });
 
-  test("keeps collapse state attached to record id after reorder", () => {
+  test("keeps collapse state attached to record id after reorder while enforcing one expanded topic", () => {
     const topicA = topicFixture({
       id: "record-a",
       candidateType: "symbol",
@@ -1294,7 +1325,47 @@ describe("MarketAnalysisPanel v10", () => {
 
     expect(reordered[topicDisplayIdentity(topicB)]).toBe(false);
     expect(reordered[topicDisplayIdentity(topicC)]).toBe(true);
-    expect(reordered[topicDisplayIdentity(topicA)]).toBe(topicA.defaultCollapsed);
+    expect(reordered[topicDisplayIdentity(topicA)]).toBe(true);
+    expect(Object.values(reordered).filter((collapsed) => collapsed === false)).toHaveLength(1);
+  });
+
+  test("expanding a topic collapses any previously expanded topic", () => {
+    const topicA = {
+      ...topicFixture({
+        id: "single-a",
+        candidateType: "symbol",
+        candidateKey: "BTC",
+        title: "BTC 决策流",
+        symbol: "BTC",
+        score: 1,
+        lastUpdatedAt: 1,
+        executable: true,
+      }),
+      defaultCollapsed: false,
+    };
+    const topicB = {
+      ...topicFixture({
+        id: "single-b",
+        candidateType: "symbol",
+        candidateKey: "ETH",
+        title: "ETH 决策流",
+        symbol: "ETH",
+        score: 2,
+        lastUpdatedAt: 2,
+        executable: true,
+      }),
+      defaultCollapsed: true,
+    };
+    const initial = reconcileTopicCollapseState([topicA, topicB], {});
+    const expandedB = toggleTopicCollapseState(
+      initial,
+      topicDisplayIdentity(topicB),
+      topicB.defaultCollapsed,
+    );
+
+    expect(expandedB[topicDisplayIdentity(topicA)]).toBe(true);
+    expect(expandedB[topicDisplayIdentity(topicB)]).toBe(false);
+    expect(Object.values(expandedB).filter((collapsed) => collapsed === false)).toHaveLength(1);
   });
 
   test("keeps collapse state attached to candidate identity when a newer record replaces the card", () => {

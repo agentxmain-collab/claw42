@@ -187,13 +187,27 @@ export function reconcileTopicCollapseState(
 ): TopicCollapseState {
   let changed = false;
   const next: TopicCollapseState = {};
+  let expandedTopicId: string | null = null;
 
   for (const topic of topics) {
     const identity = topicDisplayIdentity(topic);
+    const hasCurrentValue = Object.prototype.hasOwnProperty.call(current, identity);
+    const currentCollapsed = hasCurrentValue ? current[identity] : topic.defaultCollapsed;
+    let collapsed = currentCollapsed;
+
+    if (!collapsed) {
+      if (expandedTopicId) {
+        collapsed = true;
+      } else {
+        expandedTopicId = identity;
+      }
+    }
+
     if (Object.prototype.hasOwnProperty.call(current, identity)) {
-      next[identity] = current[identity];
+      next[identity] = collapsed;
+      if (collapsed !== current[identity]) changed = true;
     } else {
-      next[identity] = topic.defaultCollapsed;
+      next[identity] = collapsed;
       changed = true;
     }
   }
@@ -213,9 +227,20 @@ export function toggleTopicCollapseState(
   topicId: string,
   fallbackCollapsed: boolean,
 ): TopicCollapseState {
+  const nextCollapsed = !(current[topicId] ?? fallbackCollapsed);
+
+  if (!nextCollapsed) {
+    const next: TopicCollapseState = {};
+    for (const currentTopicId of Object.keys(current)) {
+      next[currentTopicId] = true;
+    }
+    next[topicId] = false;
+    return next;
+  }
+
   return {
     ...current,
-    [topicId]: !(current[topicId] ?? fallbackCollapsed),
+    [topicId]: true,
   };
 }
 
@@ -600,6 +625,7 @@ function primaryReasoning(
 function TopicRealtimeSummary({
   topic,
   sticky,
+  stickyContainer = "topic-strategy",
   className,
   dict,
   locale,
@@ -607,6 +633,7 @@ function TopicRealtimeSummary({
 }: {
   topic: DispatchTopic;
   sticky: boolean;
+  stickyContainer?: string;
   className?: string;
   dict: DispatchV10Dict;
   locale: Locale;
@@ -731,17 +758,17 @@ function TopicRealtimeSummary({
   return (
     <section
       className={[
-        className,
         "topic-realtime-summary",
         sticky && "topic-realtime-sticky",
         "topic-card-v3",
+        className,
         `v3-${tone}`,
         isObservationMode && "observation",
       ]
         .filter(Boolean)
         .join(" ")}
       data-realtime-analysis-sticky={sticky ? "true" : undefined}
-      data-sticky-container={sticky ? "chat-shell-body" : undefined}
+      data-sticky-container={sticky ? stickyContainer : undefined}
       aria-label="实时行情分析"
     >
       <header className="v3-head">
@@ -1059,6 +1086,16 @@ function TopicStrategyV10({
           )}
         </div>
       </article>
+      {!collapsed ? (
+        <TopicRealtimeSummary
+          topic={topic}
+          sticky
+          className="topic-scoped-sticky-summary"
+          dict={dict}
+          locale={locale}
+          onPlaceholder={onPlaceholder}
+        />
+      ) : null}
       {tradeReadinessKind ? (
         <span
           hidden
@@ -1150,7 +1187,9 @@ export function MarketAnalysisPanel({
       (topic) => topicCandidateType(topic) === "symbol",
     );
   }, [dict.roles, topics]);
-  const [collapsedByTopicId, setCollapsedByTopicId] = useState<TopicCollapseState>({});
+  const [collapsedByTopicId, setCollapsedByTopicId] = useState<TopicCollapseState>(() =>
+    reconcileTopicCollapseState(resolvedTopics, {}),
+  );
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const scrollAnchorRef = useRef<ScrollAnchor>({ topicId: null, offset: 0, scrollTop: 0 });
@@ -1168,7 +1207,7 @@ export function MarketAnalysisPanel({
       collapsed: collapsedByTopicId[topicIdentity] ?? topic.defaultCollapsed,
     };
   });
-  const stickyTopicRow = topicRows.find((row) => !row.collapsed);
+  const hasScopedStickySummary = topicRows.some((row) => !row.collapsed);
 
   useEffect(() => {
     setCollapsedByTopicId((current) => reconcileTopicCollapseState(resolvedTopics, current));
@@ -1221,7 +1260,7 @@ export function MarketAnalysisPanel({
         </div>
 
         <div
-          className={["chat-shell-body", stickyTopicRow && "has-sticky-summary"]
+          className={["chat-shell-body", hasScopedStickySummary && "has-scoped-sticky-summary"]
             .filter(Boolean)
             .join(" ")}
           ref={bodyRef}
@@ -1263,16 +1302,6 @@ export function MarketAnalysisPanel({
                   </div>
                 );
               })}
-              {stickyTopicRow ? (
-                <TopicRealtimeSummary
-                  topic={stickyTopicRow.topic}
-                  sticky
-                  className="chat-shell-sticky-summary"
-                  dict={dict}
-                  locale={locale}
-                  onPlaceholder={onPlaceholder}
-                />
-              ) : null}
               {pagination ? (
                 <div className="topic-infinite-status" ref={loadMoreRef} role="status">
                   {pagination.loading

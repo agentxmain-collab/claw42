@@ -19,22 +19,25 @@ function countMatches(source: string, pattern: RegExp) {
   return (source.match(pattern) ?? []).length;
 }
 
+function selectorPattern(selector: string) {
+  const escapedTokens = selector
+    .trim()
+    .split(/\s+/)
+    .map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  return escapedTokens.join("\\s+");
+}
+
 function cssBlock(selector: string) {
-  const start = css.indexOf(selector);
-  if (start === -1) return "";
-  const open = css.indexOf("{", start);
-  const close = css.indexOf("}", open);
-  return open === -1 || close === -1 ? "" : css.slice(open + 1, close);
+  const match = css.match(new RegExp(`${selectorPattern(selector)}\\s*\\{([\\s\\S]*?)\\}`));
+  return match?.[1] ?? "";
 }
 
 function cssBlockContaining(selector: string, marker: string) {
-  let start = css.indexOf(selector);
-  while (start !== -1) {
-    const open = css.indexOf("{", start);
-    const close = css.indexOf("}", open);
-    const block = open === -1 || close === -1 ? "" : css.slice(open + 1, close);
+  const pattern = new RegExp(`${selectorPattern(selector)}\\s*\\{([\\s\\S]*?)\\}`, "g");
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(css)) !== null) {
+    const block = match[1] ?? "";
     if (block.includes(marker)) return block;
-    start = css.indexOf(selector, start + selector.length);
   }
   return "";
 }
@@ -202,16 +205,23 @@ describe("DispatchConsoleV10 visual motion", () => {
   });
 
   test("pins the expanded realtime summary footer without clipping the scroll content", () => {
-    const stickyBody = cssBlock(".dispatchConsoleV10 :global(.chat-shell-body.has-sticky-summary)");
+    const expandedTopic = cssBlock(".dispatchConsoleV10 :global(.topic.expanded)");
+    const expandedStrategy = cssBlock(
+      ".dispatchConsoleV10 :global(.topic.expanded .topic-strategy.topic-card-v3)",
+    );
+    const stickyBody = cssBlock(
+      ".dispatchConsoleV10 :global(.chat-shell-body.has-scoped-sticky-summary)",
+    );
     const scrollContent = cssBlock(
       ".dispatchConsoleV10 :global(.topic.expanded .topic-card-v3 .topic-scroll-content)",
     );
     const stickyFooter = cssBlock(
-      ".dispatchConsoleV10 :global(.chat-shell-body > .chat-shell-sticky-summary)",
+      ".dispatchConsoleV10 :global(.topic.expanded .topic-strategy.topic-card-v3 > .topic-realtime-sticky)",
     );
 
-    expect(css).not.toContain(".topic.expanded .topic-card-v3 .topic-realtime-sticky");
-    expect(stickyBody).toContain("padding-bottom");
+    expect(css).not.toContain(".chat-shell-body > .chat-shell-sticky-summary");
+    expect(expandedTopic).toContain("overflow: visible");
+    expect(expandedStrategy).toContain("overflow: visible");
     expect(stickyBody).toContain("scroll-padding-bottom");
     expect(scrollContent).toContain("padding-bottom");
     expect(scrollContent).toContain("scroll-padding-bottom");
