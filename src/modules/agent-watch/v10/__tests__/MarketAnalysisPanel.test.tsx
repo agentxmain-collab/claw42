@@ -78,6 +78,15 @@ function topicFixture({
   };
 }
 
+function extractRealtimeStickyBlock(html: string) {
+  const marker = 'data-realtime-analysis-sticky="true"';
+  const markerIndex = html.indexOf(marker);
+  if (markerIndex === -1) return "";
+  const start = html.lastIndexOf("<section", markerIndex);
+  const end = html.indexOf("</section>", markerIndex);
+  return start === -1 || end === -1 ? "" : html.slice(start, end + "</section>".length);
+}
+
 describe("MarketAnalysisPanel v10", () => {
   test("renders a no-data empty state when real topics are empty", () => {
     const html = renderToStaticMarkup(
@@ -614,6 +623,99 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toContain(longRisk);
     expect(html).not.toContain("4 Agent");
     expect(html).not.toContain("7 轮辩论");
+  });
+
+  test("pins only the realtime analysis summary in the expanded topic footer", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "btc-expanded-sticky",
+              candidateType: "symbol",
+              candidateKey: "BTC",
+              title: "BTC 实时行情分析",
+              symbol: "BTC",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            defaultCollapsed: false,
+            strategy: {
+              ...dispatchV10DemoTopics[0]!.strategy,
+              action: "short",
+              actionLabel: "SHORT 25%",
+              ticker: "$BTC",
+              entry: "76,200 - 76,500",
+              stopLoss: "77,200",
+              takeProfit: "74,000",
+            },
+            newsItems: [
+              {
+                headline: "BTC 跌破 76,000 USD 关键支撑位",
+                source: "PANews",
+                observedAt: "2026-05-28 07:14",
+                url: "https://example.com/btc-expanded",
+              },
+            ],
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+    const sticky = extractRealtimeStickyBlock(html);
+
+    expect(sticky).toContain('data-realtime-analysis-sticky="true"');
+    expect(sticky).toContain('class="v3-head"');
+    expect(sticky).toContain("BTC");
+    expect(sticky).toContain("实时行情分析");
+    expect(sticky).toContain('class="v3-time-chip"');
+    expect(sticky).toContain('class="v3-matrix"');
+    expect(sticky).toContain("入场区间");
+    expect(sticky).toContain("77,200");
+    expect(sticky).toContain("74,000");
+    expect(sticky).toContain('class="v3-mega-cta"');
+    expect(sticky).toContain("SHORT");
+    expect(sticky).toContain("25%");
+    expect(sticky).not.toContain("决策源");
+    expect(sticky).not.toContain("核心推理");
+    expect(sticky).not.toContain("查看完整推理链");
+    expect(sticky).not.toContain('class="v3-news-hero"');
+    expect(sticky).not.toContain('class="v3-reasoning"');
+    expect(sticky).not.toContain('class="v3-secondary"');
+    expect(html).toMatch(/class="topic[^"]*expanded/);
+    expect(html).toContain('class="topic-scroll-content"');
+  });
+
+  test("keeps collapsed topic cards from rendering the sticky realtime footer", () => {
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel
+        topics={[
+          {
+            ...topicFixture({
+              id: "btc-collapsed-no-sticky",
+              candidateType: "symbol",
+              candidateKey: "BTC",
+              title: "BTC 实时行情分析",
+              symbol: "BTC",
+              score: 1,
+              lastUpdatedAt: 1,
+              executable: true,
+            }),
+            defaultCollapsed: true,
+          },
+        ]}
+        dict={dict}
+        onPlaceholder={() => undefined}
+      />,
+    );
+
+    expect(html).not.toContain('data-realtime-analysis-sticky="true"');
+    expect(html).not.toContain('class="topic-realtime-sticky"');
+    expect(html).toMatch(/class="topic[^"]*collapsed/);
+    expect(html).toContain('class="v3-news-hero"');
+    expect(html).toContain('class="v3-secondary"');
   });
 
   test("renders the localized position size label inside the visible trade CTA", () => {

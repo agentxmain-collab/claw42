@@ -597,6 +597,26 @@ function primaryReasoning(
   );
 }
 
+function RealtimeAnalysisSummary({
+  sticky,
+  children,
+}: {
+  sticky: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className={["topic-realtime-summary", sticky && "topic-realtime-sticky"]
+        .filter(Boolean)
+        .join(" ")}
+      data-realtime-analysis-sticky={sticky ? "true" : undefined}
+      aria-label="实时行情分析"
+    >
+      {children}
+    </section>
+  );
+}
+
 function TopicStrategyV10({
   topic,
   latest,
@@ -672,6 +692,179 @@ function TopicStrategyV10({
       </span>
     </span>
   );
+  const renderNewsHero = () => (
+    <div className="v3-news-hero">
+      <span className="v3-news-tag">决策源</span>
+      <div className="v3-news-headline">{highlightedHeadline(cardHeadline)}</div>
+      {newsItem?.url ? (
+        <a
+          className="v3-news-orig"
+          href={newsItem.url}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(event) => event.stopPropagation()}
+        >
+          原文 ↗
+        </a>
+      ) : (
+        <span className="v3-news-orig muted">原文 ↗</span>
+      )}
+      <div className="v3-news-foot">
+        <span className="src">{newsItem?.source || dict.market.noNews}</span>
+        {newsItem?.observedAt ? (
+          <>
+            <span className="sep">·</span>
+            <span>{newsItem.observedAt}</span>
+          </>
+        ) : null}
+        <span className="sep">·</span>
+        <span className="sym">{strategy.ticker}</span>
+      </div>
+    </div>
+  );
+  const renderRealtimeHead = () => (
+    <header className="v3-head">
+      <h2 className="v3-title">
+        <span className="v3-title-ticker">{titleParts.ticker}</span>
+        <span className="v3-title-rest">{titleParts.rest}</span>
+      </h2>
+      <span className="v3-time-chip">{progressLabel}</span>
+    </header>
+  );
+  const renderMatrix = () => (
+    <div className="v3-matrix" aria-label="交易方案">
+      <div className="v3-cell">
+        <span className="v3-cell-label">入场区间</span>
+        <span className="v3-cell-val">{isObservationMode ? "观察结论" : strategy.entry}</span>
+      </div>
+      <div className="v3-cell">
+        <span className="v3-cell-label">{dict.market.stopLoss}</span>
+        <span className="v3-cell-val risk">{isObservationMode ? "不涉及" : strategy.stopLoss}</span>
+        <span className="v3-cell-sub">{isObservationMode ? "观察卡" : matrixSubs.stop}</span>
+      </div>
+      <div className="v3-cell">
+        <span className="v3-cell-label">{dict.market.takeProfit}</span>
+        <span className="v3-cell-val reward">
+          {isObservationMode ? "不涉及" : strategy.takeProfit}
+        </span>
+        <span className="v3-cell-sub">
+          {isObservationMode ? "不生成交易方案" : matrixSubs.takeProfit}
+        </span>
+      </div>
+    </div>
+  );
+  const renderMegaCta = () => {
+    if (isObservationMode) {
+      return (
+        <a
+          className="v3-mega-cta"
+          href={coinwFuturesUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(event) => {
+            event.stopPropagation();
+            trackEvent("coinw_trade_cta_click", {
+              topicId: topic.id,
+              candidateType,
+              candidateKey: topic.candidateKey ?? null,
+              symbol: topic.symbol,
+              linkType: "generic",
+              executable: false,
+            });
+          }}
+        >
+          {ctaTop}
+          {ctaBottom}
+        </a>
+      );
+    }
+    if (canRenderCoinWTrade) {
+      return (
+        <a
+          className="v3-mega-cta"
+          href={coinwFuturesUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(event) => {
+            event.stopPropagation();
+            trackEvent("coinw_trade_cta_click", {
+              topicId: topic.id,
+              candidateType,
+              candidateKey: topic.candidateKey ?? null,
+              symbol: topic.symbol,
+              linkType: coinwLinkType,
+              executable: true,
+            });
+          }}
+        >
+          {ctaTop}
+          {ctaBottom}
+        </a>
+      );
+    }
+    if (renderBlockedTradeCTA) {
+      return (
+        <button className="v3-mega-cta disabled" type="button" disabled>
+          {ctaTop}
+          {ctaBottom}
+        </button>
+      );
+    }
+    return (
+      <button
+        className="v3-mega-cta"
+        type="button"
+        onClick={() => onPlaceholder(topic, dict.market.coinwFuturesLink, "primary")}
+      >
+        {ctaTop}
+        {ctaBottom}
+      </button>
+    );
+  };
+  const renderReasoning = () => (
+    <section className="v3-reasoning" aria-label="核心推理">
+      <div className="v3-reason-head">
+        <span className="v3-reason-tag">核心推理</span>
+        <span className="v3-reason-byline">{byline}</span>
+      </div>
+      {reasoningCopy.map((paragraph, index) => (
+        <p className="v3-reason-p" key={`${paragraph}-${index}`}>
+          {emphasizeReasoning(paragraph, index)}
+        </p>
+      ))}
+    </section>
+  );
+  const renderSecondaryToggle = () => (
+    <button
+      className="v3-secondary"
+      type="button"
+      aria-expanded={!collapsed}
+      aria-controls={bodyId}
+      onClick={onToggle}
+    >
+      <div className="v3-sec-head">
+        <span className="v3-sec-clock" aria-hidden="true">
+          ◷
+        </span>
+        <span className="v3-sec-title">{collapsed ? "查看完整推理链" : "收起完整推理链"}</span>
+        <span className="v3-sec-chevron" aria-hidden="true">
+          {collapsed ? "⌄" : "⌃"}
+        </span>
+      </div>
+      <div className="v3-sec-foot">
+        <span className="v3-sec-cta">{collapsed ? "展开 →" : "收起 →"}</span>
+      </div>
+    </button>
+  );
+  const renderRealtimeSummary = (sticky: boolean) => (
+    <RealtimeAnalysisSummary sticky={sticky}>
+      {renderRealtimeHead()}
+      <div className="v3-body topic-realtime-body">
+        {renderMatrix()}
+        {renderMegaCta()}
+      </div>
+    </RealtimeAnalysisSummary>
+  );
 
   return (
     <div
@@ -691,164 +884,27 @@ function TopicStrategyV10({
       <article className={["v3-topic", visualTone, latest && "latest"].filter(Boolean).join(" ")}>
         <div className="v3-accent" aria-hidden="true" />
         <div className="v3-inner">
-          <div className="v3-news-hero">
-            <span className="v3-news-tag">决策源</span>
-            <div className="v3-news-headline">{highlightedHeadline(cardHeadline)}</div>
-            {newsItem?.url ? (
-              <a
-                className="v3-news-orig"
-                href={newsItem.url}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(event) => event.stopPropagation()}
-              >
-                原文 ↗
-              </a>
-            ) : (
-              <span className="v3-news-orig muted">原文 ↗</span>
-            )}
-            <div className="v3-news-foot">
-              <span className="src">{newsItem?.source || dict.market.noNews}</span>
-              {newsItem?.observedAt ? (
-                <>
-                  <span className="sep">·</span>
-                  <span>{newsItem.observedAt}</span>
-                </>
-              ) : null}
-              <span className="sep">·</span>
-              <span className="sym">{strategy.ticker}</span>
-            </div>
-          </div>
-
-          <header className="v3-head">
-            <h2 className="v3-title">
-              <span className="v3-title-ticker">{titleParts.ticker}</span>
-              <span className="v3-title-rest">{titleParts.rest}</span>
-            </h2>
-            <span className="v3-time-chip">{progressLabel}</span>
-          </header>
-
-          <div className="v3-body">
-            <div className="v3-matrix" aria-label="交易方案">
-              <div className="v3-cell">
-                <span className="v3-cell-label">入场区间</span>
-                <span className="v3-cell-val">
-                  {isObservationMode ? "观察结论" : strategy.entry}
-                </span>
+          {collapsed ? (
+            <>
+              {renderNewsHero()}
+              {renderRealtimeHead()}
+              <div className="v3-body">
+                {renderMatrix()}
+                {renderMegaCta()}
+                {renderReasoning()}
+                {renderSecondaryToggle()}
               </div>
-              <div className="v3-cell">
-                <span className="v3-cell-label">{dict.market.stopLoss}</span>
-                <span className="v3-cell-val risk">
-                  {isObservationMode ? "不涉及" : strategy.stopLoss}
-                </span>
-                <span className="v3-cell-sub">
-                  {isObservationMode ? "观察卡" : matrixSubs.stop}
-                </span>
+            </>
+          ) : (
+            <>
+              <div className="topic-scroll-content">
+                {renderNewsHero()}
+                {renderReasoning()}
+                {renderSecondaryToggle()}
               </div>
-              <div className="v3-cell">
-                <span className="v3-cell-label">{dict.market.takeProfit}</span>
-                <span className="v3-cell-val reward">
-                  {isObservationMode ? "不涉及" : strategy.takeProfit}
-                </span>
-                <span className="v3-cell-sub">
-                  {isObservationMode ? "不生成交易方案" : matrixSubs.takeProfit}
-                </span>
-              </div>
-            </div>
-
-            {isObservationMode ? (
-              <a
-                className="v3-mega-cta"
-                href={coinwFuturesUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  trackEvent("coinw_trade_cta_click", {
-                    topicId: topic.id,
-                    candidateType,
-                    candidateKey: topic.candidateKey ?? null,
-                    symbol: topic.symbol,
-                    linkType: "generic",
-                    executable: false,
-                  });
-                }}
-              >
-                {ctaTop}
-                {ctaBottom}
-              </a>
-            ) : canRenderCoinWTrade ? (
-              <a
-                className="v3-mega-cta"
-                href={coinwFuturesUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  trackEvent("coinw_trade_cta_click", {
-                    topicId: topic.id,
-                    candidateType,
-                    candidateKey: topic.candidateKey ?? null,
-                    symbol: topic.symbol,
-                    linkType: coinwLinkType,
-                    executable: true,
-                  });
-                }}
-              >
-                {ctaTop}
-                {ctaBottom}
-              </a>
-            ) : renderBlockedTradeCTA ? (
-              <button className="v3-mega-cta disabled" type="button" disabled>
-                {ctaTop}
-                {ctaBottom}
-              </button>
-            ) : (
-              <button
-                className="v3-mega-cta"
-                type="button"
-                onClick={() => onPlaceholder(topic, dict.market.coinwFuturesLink, "primary")}
-              >
-                {ctaTop}
-                {ctaBottom}
-              </button>
-            )}
-
-            <section className="v3-reasoning" aria-label="核心推理">
-              <div className="v3-reason-head">
-                <span className="v3-reason-tag">核心推理</span>
-                <span className="v3-reason-byline">{byline}</span>
-              </div>
-              {reasoningCopy.map((paragraph, index) => (
-                <p className="v3-reason-p" key={`${paragraph}-${index}`}>
-                  {emphasizeReasoning(paragraph, index)}
-                </p>
-              ))}
-            </section>
-
-            <button
-              className="v3-secondary"
-              type="button"
-              aria-expanded={!collapsed}
-              aria-controls={bodyId}
-              onClick={onToggle}
-            >
-              <div className="v3-sec-head">
-                <span className="v3-sec-clock" aria-hidden="true">
-                  ◷
-                </span>
-                <span className="v3-sec-title">
-                  {collapsed ? "查看完整推理链" : "收起完整推理链"}
-                </span>
-                <span className="v3-sec-chevron" aria-hidden="true">
-                  {collapsed ? "⌄" : "⌃"}
-                </span>
-              </div>
-              <div className="v3-sec-foot">
-                <span className="v3-sec-cta">{collapsed ? "展开 →" : "收起 →"}</span>
-              </div>
-            </button>
-          </div>
+              {renderRealtimeSummary(true)}
+            </>
+          )}
         </div>
       </article>
       {tradeReadinessKind ? (

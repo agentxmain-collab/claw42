@@ -19,6 +19,26 @@ function countMatches(source: string, pattern: RegExp) {
   return (source.match(pattern) ?? []).length;
 }
 
+function cssBlock(selector: string) {
+  const start = css.indexOf(selector);
+  if (start === -1) return "";
+  const open = css.indexOf("{", start);
+  const close = css.indexOf("}", open);
+  return open === -1 || close === -1 ? "" : css.slice(open + 1, close);
+}
+
+function cssBlockContaining(selector: string, marker: string) {
+  let start = css.indexOf(selector);
+  while (start !== -1) {
+    const open = css.indexOf("{", start);
+    const close = css.indexOf("}", open);
+    const block = open === -1 || close === -1 ? "" : css.slice(open + 1, close);
+    if (block.includes(marker)) return block;
+    start = css.indexOf(selector, start + selector.length);
+  }
+  return "";
+}
+
 describe("DispatchConsoleV10 visual motion", () => {
   test("adds blink-capable eyes to every inline bot avatar surface", () => {
     const heroHtml = renderToStaticMarkup(
@@ -177,7 +197,62 @@ describe("DispatchConsoleV10 visual motion", () => {
       /\.topic-card-v3 \.v3-reasoning\)[\s\S]*height:\s*64px;[\s\S]*overflow-y:\s*auto;[\s\S]*padding:\s*7px 12px;/,
     );
     expect(css).toMatch(
-      /\.topic-card-v3 \.v3-secondary\)[\s\S]*height:\s*64px;[\s\S]*overflow-y:\s*auto;[\s\S]*padding:\s*8px 12px;/,
+      /\.topic-card-v3 \.v3-secondary\)[\s\S]*min-height:\s*72px;[\s\S]*overflow-y:\s*auto;[\s\S]*padding:\s*10px 14px;/,
     );
+  });
+
+  test("pins the expanded realtime summary footer without clipping the scroll content", () => {
+    const expandedTopic = cssBlock(
+      ".dispatchConsoleV10 :global(.topic.expanded .topic-card-v3 .v3-topic)",
+    );
+    const scrollContent = cssBlock(
+      ".dispatchConsoleV10 :global(.topic.expanded .topic-card-v3 .topic-scroll-content)",
+    );
+    const stickyFooter = cssBlock(
+      ".dispatchConsoleV10 :global(.topic.expanded .topic-card-v3 .topic-realtime-sticky)",
+    );
+
+    expect(expandedTopic).toContain("overflow: visible");
+    expect(scrollContent).toContain("padding-bottom");
+    expect(scrollContent).toContain("scroll-padding-bottom");
+    expect(stickyFooter).toContain("position: sticky");
+    expect(stickyFooter).toContain("bottom: 0");
+    expect(stickyFooter).toContain("z-index");
+    expect(stickyFooter).toContain("env(safe-area-inset-bottom)");
+    expect(stickyFooter).toContain("background:");
+    expect(stickyFooter).toContain("var(--lime)");
+  });
+
+  test("uses the brand-green CTA treatment for source and expand links", () => {
+    const originalLink = cssBlock(".dispatchConsoleV10 :global(.topic-card-v3 .v3-news-orig)");
+    const secondary = cssBlockContaining(
+      ".dispatchConsoleV10 :global(.topic-card-v3 .v3-secondary)",
+      "display: flex",
+    );
+    const secondaryHover = cssBlock(
+      ".dispatchConsoleV10 :global(.topic-card-v3 .v3-secondary:hover)",
+    );
+    const secondaryHead = cssBlock(".dispatchConsoleV10 :global(.topic-card-v3 .v3-sec-head)");
+    const secondaryTitle = cssBlock(".dispatchConsoleV10 :global(.topic-card-v3 .v3-sec-title)");
+    const secondaryFoot = cssBlock(".dispatchConsoleV10 :global(.topic-card-v3 .v3-sec-foot)");
+    const secondaryCta = cssBlock(".dispatchConsoleV10 :global(.topic-card-v3 .v3-sec-cta)");
+
+    expect(originalLink).toContain("color: var(--lime)");
+    expect(originalLink).toContain("font-size: 14px");
+    expect(originalLink).toContain("font-weight: 800");
+    expect(originalLink).toContain("min-height: 32px");
+    expect(originalLink).not.toContain("#5227ff");
+    expect(secondary).toContain("min-height: 72px");
+    expect(secondary).toContain("padding: 10px 14px");
+    expect(secondary).toContain("rgb(209 255 85");
+    expect(secondary).not.toContain("#5227ff");
+    expect(secondaryHover).toContain("rgb(209 255 85");
+    expect(secondaryHead).toContain("color: var(--lime)");
+    expect(secondaryTitle).toContain("font-size: 14px");
+    expect(secondaryTitle).toContain("font-weight: 800");
+    expect(secondaryFoot).toContain("rgb(209 255 85");
+    expect(secondaryCta).toContain("color: var(--lime)");
+    expect(secondaryCta).toContain("font-size: 13px");
+    expect(secondaryCta).toContain("font-weight: 800");
   });
 });
