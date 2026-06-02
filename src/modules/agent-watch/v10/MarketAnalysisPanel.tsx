@@ -597,22 +597,185 @@ function primaryReasoning(
   );
 }
 
-function RealtimeAnalysisSummary({
+function TopicRealtimeSummary({
+  topic,
   sticky,
-  children,
+  className,
+  dict,
+  locale,
+  onPlaceholder,
 }: {
+  topic: DispatchTopic;
   sticky: boolean;
-  children: React.ReactNode;
+  className?: string;
+  dict: DispatchV10Dict;
+  locale: Locale;
+  onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
 }) {
+  const { strategy } = topic;
+  const candidateType = topicCandidateType(topic);
+  const isObservationMode =
+    strategy.mode === "observation" ||
+    candidateType === "market_overview" ||
+    candidateType === "hotspot";
+  const executableSymbol = candidateType === "symbol" && topic.execution?.executable === true;
+  const canRenderCoinWTrade = canRenderTradeCTA({
+    externalNavigationEnabled: true,
+    executable: executableSymbol,
+    readinessStates: topic.execution?.tradeReadiness?.states,
+    freshness: freshnessForTrade(topic),
+  });
+  const renderBlockedTradeCTA = executableSymbol && !canRenderCoinWTrade;
+  const coinwPair = canRenderCoinWTrade ? fallbackCoinwPairForTopic(topic) : null;
+  const coinwFuturesUrl =
+    isObservationMode || !canRenderCoinWTrade
+      ? buildCoinWFuturesTradeUrl({ coinwPair: null, locale })
+      : (topic.execution?.tradeUrl ??
+        buildCoinWFuturesTradeUrl({
+          coinwPair,
+          locale,
+        }));
+  const coinwLinkType = canRenderCoinWTrade && coinwPair ? "pair" : "generic";
+  const progressLabel = topic.progress || topic.startedAt;
+  const titleParts = splitTickerTitle(topic);
+  const matrixSubs = matrixSubtexts(strategy);
+  const tone = directionTone(strategy.action);
+  const ctaTop = (
+    <span className="v3-mega-top">
+      <span className="v3-mega-icon" aria-hidden="true">
+        {directionIcon(strategy.action)}
+      </span>
+      <span className="v3-mega-dir">{directionText(strategy.action)}</span>
+      <span className="v3-mega-size">{allocationText(strategy, dict)}</span>
+    </span>
+  );
+  const ctaBottom = (
+    <span className="v3-mega-bottom">
+      <span className="v3-mega-action">
+        {isObservationMode ? dict.market.coinwNavigate : dict.market.coinwFuturesLink}
+      </span>
+      <span className="v3-mega-arrow" aria-hidden="true">
+        →
+      </span>
+    </span>
+  );
+  const renderMegaCta = () => {
+    if (isObservationMode) {
+      return (
+        <a
+          className="v3-mega-cta"
+          href={coinwFuturesUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(event) => {
+            event.stopPropagation();
+            trackEvent("coinw_trade_cta_click", {
+              topicId: topic.id,
+              candidateType,
+              candidateKey: topic.candidateKey ?? null,
+              symbol: topic.symbol,
+              linkType: "generic",
+              executable: false,
+            });
+          }}
+        >
+          {ctaTop}
+          {ctaBottom}
+        </a>
+      );
+    }
+    if (canRenderCoinWTrade) {
+      return (
+        <a
+          className="v3-mega-cta"
+          href={coinwFuturesUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(event) => {
+            event.stopPropagation();
+            trackEvent("coinw_trade_cta_click", {
+              topicId: topic.id,
+              candidateType,
+              candidateKey: topic.candidateKey ?? null,
+              symbol: topic.symbol,
+              linkType: coinwLinkType,
+              executable: true,
+            });
+          }}
+        >
+          {ctaTop}
+          {ctaBottom}
+        </a>
+      );
+    }
+    if (renderBlockedTradeCTA) {
+      return (
+        <button className="v3-mega-cta disabled" type="button" disabled>
+          {ctaTop}
+          {ctaBottom}
+        </button>
+      );
+    }
+    return (
+      <button
+        className="v3-mega-cta"
+        type="button"
+        onClick={() => onPlaceholder(topic, dict.market.coinwFuturesLink, "primary")}
+      >
+        {ctaTop}
+        {ctaBottom}
+      </button>
+    );
+  };
+
   return (
     <section
-      className={["topic-realtime-summary", sticky && "topic-realtime-sticky"]
+      className={[
+        className,
+        "topic-realtime-summary",
+        sticky && "topic-realtime-sticky",
+        "topic-card-v3",
+        `v3-${tone}`,
+        isObservationMode && "observation",
+      ]
         .filter(Boolean)
         .join(" ")}
       data-realtime-analysis-sticky={sticky ? "true" : undefined}
+      data-sticky-container={sticky ? "chat-shell-body" : undefined}
       aria-label="实时行情分析"
     >
-      {children}
+      <header className="v3-head">
+        <h2 className="v3-title">
+          <span className="v3-title-ticker">{titleParts.ticker}</span>
+          <span className="v3-title-rest">{titleParts.rest}</span>
+        </h2>
+        <span className="v3-time-chip">{progressLabel}</span>
+      </header>
+      <div className="v3-body topic-realtime-body">
+        <div className="v3-matrix" aria-label="交易方案">
+          <div className="v3-cell">
+            <span className="v3-cell-label">入场区间</span>
+            <span className="v3-cell-val">{isObservationMode ? "观察结论" : strategy.entry}</span>
+          </div>
+          <div className="v3-cell">
+            <span className="v3-cell-label">{dict.market.stopLoss}</span>
+            <span className="v3-cell-val risk">
+              {isObservationMode ? "不涉及" : strategy.stopLoss}
+            </span>
+            <span className="v3-cell-sub">{isObservationMode ? "观察卡" : matrixSubs.stop}</span>
+          </div>
+          <div className="v3-cell">
+            <span className="v3-cell-label">{dict.market.takeProfit}</span>
+            <span className="v3-cell-val reward">
+              {isObservationMode ? "不涉及" : strategy.takeProfit}
+            </span>
+            <span className="v3-cell-sub">
+              {isObservationMode ? "不生成交易方案" : matrixSubs.takeProfit}
+            </span>
+          </div>
+        </div>
+        {renderMegaCta()}
+      </div>
     </section>
   );
 }
@@ -856,16 +1019,6 @@ function TopicStrategyV10({
       </div>
     </button>
   );
-  const renderRealtimeSummary = (sticky: boolean) => (
-    <RealtimeAnalysisSummary sticky={sticky}>
-      {renderRealtimeHead()}
-      <div className="v3-body topic-realtime-body">
-        {renderMatrix()}
-        {renderMegaCta()}
-      </div>
-    </RealtimeAnalysisSummary>
-  );
-
   return (
     <div
       className={[
@@ -902,7 +1055,6 @@ function TopicStrategyV10({
                 {renderReasoning()}
                 {renderSecondaryToggle()}
               </div>
-              {renderRealtimeSummary(true)}
             </>
           )}
         </div>
@@ -1007,6 +1159,16 @@ export function MarketAnalysisPanel({
   const paginationOnLoadMore = pagination?.onLoadMore;
   const topicOrderSignature = resolvedTopics.map(topicDisplayIdentity).join("|");
   const freshnessText = formatFreshnessText(freshness, dict);
+  const topicRows = resolvedTopics.map((topic, index) => {
+    const topicIdentity = topicDisplayIdentity(topic);
+    return {
+      topic,
+      topicIdentity,
+      latest: index === 0,
+      collapsed: collapsedByTopicId[topicIdentity] ?? topic.defaultCollapsed,
+    };
+  });
+  const stickyTopicRow = topicRows.find((row) => !row.collapsed);
 
   useEffect(() => {
     setCollapsedByTopicId((current) => reconcileTopicCollapseState(resolvedTopics, current));
@@ -1059,7 +1221,9 @@ export function MarketAnalysisPanel({
         </div>
 
         <div
-          className="chat-shell-body"
+          className={["chat-shell-body", stickyTopicRow && "has-sticky-summary"]
+            .filter(Boolean)
+            .join(" ")}
           ref={bodyRef}
           onScroll={(event) => {
             scrollAnchorRef.current = readScrollAnchor(event.currentTarget);
@@ -1075,14 +1239,13 @@ export function MarketAnalysisPanel({
             </div>
           ) : (
             <>
-              {resolvedTopics.map((topic, index) => {
-                const topicIdentity = topicDisplayIdentity(topic);
+              {topicRows.map(({ topic, topicIdentity, latest, collapsed }, index) => {
                 return (
                   <div key={topicIdentity} data-topic-card-id={topicIdentity}>
                     <TopicCardV10
                       topic={topic}
-                      latest={index === 0}
-                      collapsed={collapsedByTopicId[topicIdentity] ?? topic.defaultCollapsed}
+                      latest={latest}
+                      collapsed={collapsed}
                       onToggle={() => {
                         setCollapsedByTopicId((current) =>
                           toggleTopicCollapseState(current, topicIdentity, topic.defaultCollapsed),
@@ -1092,7 +1255,7 @@ export function MarketAnalysisPanel({
                       locale={locale}
                       onPlaceholder={onPlaceholder}
                     />
-                    {index < resolvedTopics.length - 1 ? (
+                    {index < topicRows.length - 1 ? (
                       <div className="topic-separator" aria-hidden="true">
                         <span className="topic-separator-dot" />
                       </div>
@@ -1100,6 +1263,16 @@ export function MarketAnalysisPanel({
                   </div>
                 );
               })}
+              {stickyTopicRow ? (
+                <TopicRealtimeSummary
+                  topic={stickyTopicRow.topic}
+                  sticky
+                  className="chat-shell-sticky-summary"
+                  dict={dict}
+                  locale={locale}
+                  onPlaceholder={onPlaceholder}
+                />
+              ) : null}
               {pagination ? (
                 <div className="topic-infinite-status" ref={loadMoreRef} role="status">
                   {pagination.loading

@@ -625,7 +625,7 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).not.toContain("7 轮辩论");
   });
 
-  test("pins only the realtime analysis summary in the expanded topic footer", () => {
+  test("pins only the realtime analysis summary at the workbench footer", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
         topics={[
@@ -686,6 +686,16 @@ describe("MarketAnalysisPanel v10", () => {
     expect(sticky).not.toContain('class="v3-secondary"');
     expect(html).toMatch(/class="topic[^"]*expanded/);
     expect(html).toContain('class="topic-scroll-content"');
+    expect(html).toContain('class="chat-shell-body has-sticky-summary"');
+    expect(sticky).toContain('data-sticky-container="chat-shell-body"');
+    expect(html).toContain(
+      'class="chat-shell-sticky-summary topic-realtime-summary topic-realtime-sticky',
+    );
+    const topicWrapper = html.slice(
+      html.indexOf('data-topic-card-id="symbol:BTC"'),
+      html.indexOf('class="chat-shell-sticky-summary'),
+    );
+    expect(topicWrapper).not.toContain('data-realtime-analysis-sticky="true"');
   });
 
   test("keeps collapsed topic cards from rendering the sticky realtime footer", () => {

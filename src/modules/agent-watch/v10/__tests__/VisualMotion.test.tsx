@@ -202,17 +202,17 @@ describe("DispatchConsoleV10 visual motion", () => {
   });
 
   test("pins the expanded realtime summary footer without clipping the scroll content", () => {
-    const expandedTopic = cssBlock(
-      ".dispatchConsoleV10 :global(.topic.expanded .topic-card-v3 .v3-topic)",
-    );
+    const stickyBody = cssBlock(".dispatchConsoleV10 :global(.chat-shell-body.has-sticky-summary)");
     const scrollContent = cssBlock(
       ".dispatchConsoleV10 :global(.topic.expanded .topic-card-v3 .topic-scroll-content)",
     );
     const stickyFooter = cssBlock(
-      ".dispatchConsoleV10 :global(.topic.expanded .topic-card-v3 .topic-realtime-sticky)",
+      ".dispatchConsoleV10 :global(.chat-shell-body > .chat-shell-sticky-summary)",
     );
 
-    expect(expandedTopic).toContain("overflow: visible");
+    expect(css).not.toContain(".topic.expanded .topic-card-v3 .topic-realtime-sticky");
+    expect(stickyBody).toContain("padding-bottom");
+    expect(stickyBody).toContain("scroll-padding-bottom");
     expect(scrollContent).toContain("padding-bottom");
     expect(scrollContent).toContain("scroll-padding-bottom");
     expect(stickyFooter).toContain("position: sticky");
