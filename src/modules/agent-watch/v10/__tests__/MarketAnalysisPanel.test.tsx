@@ -12,7 +12,7 @@ import type { DispatchTopic } from "../../v9/types";
 import { dispatchV10DemoTopics } from "../demoTopics";
 import realTimelineZhCnPage1 from "./fixtures/real-timeline-zh-cn-page1.json";
 import {
-  advanceTopicCollapseState,
+  collapseActiveTopicState,
   MarketAnalysisPanel,
   reconcileTopicCollapseState,
   topicDisplayIdentities,
@@ -791,9 +791,9 @@ describe("MarketAnalysisPanel v10", () => {
     expect(cardIds.some((id) => id === "symbol:BTC")).toBe(false);
   });
 
-  test("advances the active strategy to the next raw record without multi-expand", () => {
+  test("collapses the active strategy at the end without opening the next record", () => {
     const topicIds = ["record:btc-a", "record:btc-b", "record:eth-a"];
-    const advanced = advanceTopicCollapseState(
+    const collapsed = collapseActiveTopicState(
       {
         "record:btc-a": false,
         "record:btc-b": true,
@@ -803,13 +803,7 @@ describe("MarketAnalysisPanel v10", () => {
       "record:btc-a",
     );
 
-    expect(advanced).toEqual({
-      "record:btc-a": true,
-      "record:btc-b": false,
-      "record:eth-a": true,
-    });
-
-    expect(advanceTopicCollapseState(advanced, topicIds, "record:eth-a")).toEqual({
+    expect(collapsed).toEqual({
       "record:btc-a": true,
       "record:btc-b": true,
       "record:eth-a": true,

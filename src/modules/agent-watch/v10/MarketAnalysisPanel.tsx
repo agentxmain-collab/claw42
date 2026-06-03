@@ -258,20 +258,17 @@ export function toggleTopicCollapseState(
   };
 }
 
-export function advanceTopicCollapseState(
+export function collapseActiveTopicState(
   current: TopicCollapseState,
   topicIds: readonly string[],
   activeTopicId: string,
 ): TopicCollapseState {
   const next: TopicCollapseState = { ...current };
-  const activeIndex = topicIds.indexOf(activeTopicId);
 
   for (const topicId of topicIds) {
     next[topicId] = true;
   }
-
-  const nextTopicId = activeIndex >= 0 ? topicIds[activeIndex + 1] : undefined;
-  if (nextTopicId) next[nextTopicId] = false;
+  next[activeTopicId] = true;
 
   return next;
 }
@@ -1248,36 +1245,13 @@ export function MarketAnalysisPanel({
     autoAdvanceLockRef.current = null;
   }, [activeTopicIdentity]);
 
-  const scrollTopicIntoWorkbench = (topicIdentity: string) => {
-    if (typeof window === "undefined") return;
-    const body = bodyRef.current;
-    if (!body) return;
-
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        const nextCard = body.querySelector<HTMLElement>(topicCardSelector(topicIdentity));
-        if (!nextCard) return;
-
-        const bodyRect = body.getBoundingClientRect();
-        const nextRect = nextCard.getBoundingClientRect();
-        body.scrollTop += nextRect.top - bodyRect.top - 12;
-        scrollAnchorRef.current = readScrollAnchor(body);
-      });
-    });
-  };
-
-  const advanceActiveTopic = (topicIdentity: string) => {
-    const activeIndex = topicIdentities.indexOf(topicIdentity);
-    const nextTopicIdentity = activeIndex >= 0 ? topicIdentities[activeIndex + 1] : undefined;
-
+  const collapseActiveTopic = (topicIdentity: string) => {
     setCollapsedByTopicId((current) =>
-      advanceTopicCollapseState(current, topicIdentities, topicIdentity),
+      collapseActiveTopicState(current, topicIdentities, topicIdentity),
     );
-
-    if (nextTopicIdentity) scrollTopicIntoWorkbench(nextTopicIdentity);
   };
 
-  const maybeAdvanceActiveTopic = (body: HTMLDivElement) => {
+  const maybeCollapseActiveTopic = (body: HTMLDivElement) => {
     if (!activeTopicIdentity || autoAdvanceLockRef.current === activeTopicIdentity) return;
 
     const activeCard = body.querySelector<HTMLElement>(topicCardSelector(activeTopicIdentity));
@@ -1286,12 +1260,16 @@ export function MarketAnalysisPanel({
     );
     if (!activeCard || !activeSummary) return;
 
-    const activeCardRect = activeCard.getBoundingClientRect();
+    const lastContent =
+      activeCard.querySelector<HTMLElement>(".topic-scroll-content .v3-secondary") ??
+      activeCard.querySelector<HTMLElement>(".topic-scroll-content > :last-child") ??
+      activeCard;
+    const lastContentRect = lastContent.getBoundingClientRect();
     const activeSummaryRect = activeSummary.getBoundingClientRect();
-    if (activeCardRect.bottom > activeSummaryRect.top + 8) return;
+    if (lastContentRect.bottom > activeSummaryRect.top + 8) return;
 
     autoAdvanceLockRef.current = activeTopicIdentity;
-    advanceActiveTopic(activeTopicIdentity);
+    collapseActiveTopic(activeTopicIdentity);
   };
 
   useEffect(() => {
@@ -1352,7 +1330,7 @@ export function MarketAnalysisPanel({
           ref={bodyRef}
           onScroll={(event) => {
             scrollAnchorRef.current = readScrollAnchor(event.currentTarget);
-            maybeAdvanceActiveTopic(event.currentTarget);
+            maybeCollapseActiveTopic(event.currentTarget);
           }}
         >
           {resolvedTopics.length === 0 ? (

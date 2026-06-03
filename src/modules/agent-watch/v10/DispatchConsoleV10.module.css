@@ -1875,11 +1875,13 @@
 
 .dispatchConsoleV10 :global(.chat-shell-active-summary) {
   position: absolute;
-  right: 22px;
-  bottom: calc(24px + env(safe-area-inset-bottom));
-  left: 22px;
+  right: 0;
+  bottom: -1px;
+  left: 0;
   z-index: 42;
   min-width: 0;
+  padding: 12px 22px 0;
+  background: linear-gradient(180deg, rgb(39 36 49 / 0%), var(--card) 18%, var(--card));
   pointer-events: auto;
 }
 
@@ -3031,9 +3033,10 @@
   }
 
   .dispatchConsoleV10 :global(.chat-shell-active-summary) {
-    right: 14px;
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    left: 14px;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    padding: 8px 14px 0;
   }
 
   .dispatchConsoleV10 :global(.chat-shell-active-summary .topic-realtime-sticky) {
