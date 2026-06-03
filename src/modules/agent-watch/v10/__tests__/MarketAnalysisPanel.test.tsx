@@ -12,6 +12,7 @@ import type { DispatchTopic } from "../../v9/types";
 import { dispatchV10DemoTopics } from "../demoTopics";
 import realTimelineZhCnPage1 from "./fixtures/real-timeline-zh-cn-page1.json";
 import {
+  advanceTopicCollapseState,
   MarketAnalysisPanel,
   reconcileTopicCollapseState,
   topicDisplayIdentities,
@@ -705,11 +706,14 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html).toMatch(/class="topic[^"]*expanded/);
     expect(html).toContain('class="topic-scroll-content"');
     expect(html).not.toContain('class="chat-shell-body has-sticky-summary"');
-    expect(html).not.toContain('class="chat-shell-sticky-summary');
-    expect(sticky).toContain('data-sticky-container="topic-strategy"');
+    expect(html).toContain('class="chat-shell-active-summary"');
+    expect(html).toContain(
+      'class="chat-shell-active-summary" data-active-topic-card-id="record:btc-expanded-sticky"',
+    );
+    expect(sticky).toContain('data-sticky-container="chat-shell"');
     expect(html).toContain('class="topic-realtime-summary topic-realtime-sticky topic-card-v3');
     expect(html.indexOf('data-realtime-analysis-sticky="true"')).toBeGreaterThan(
-      html.indexOf('class="topic-strategy'),
+      html.indexOf('class="chat-shell-active-summary"'),
     );
   });
 
@@ -785,6 +789,31 @@ describe("MarketAnalysisPanel v10", () => {
     expect(cardIds).toHaveLength(topics.length);
     expect(new Set(cardIds).size).toBe(cardIds.length);
     expect(cardIds.some((id) => id === "symbol:BTC")).toBe(false);
+  });
+
+  test("advances the active strategy to the next raw record without multi-expand", () => {
+    const topicIds = ["record:btc-a", "record:btc-b", "record:eth-a"];
+    const advanced = advanceTopicCollapseState(
+      {
+        "record:btc-a": false,
+        "record:btc-b": true,
+        "record:eth-a": true,
+      },
+      topicIds,
+      "record:btc-a",
+    );
+
+    expect(advanced).toEqual({
+      "record:btc-a": true,
+      "record:btc-b": false,
+      "record:eth-a": true,
+    });
+
+    expect(advanceTopicCollapseState(advanced, topicIds, "record:eth-a")).toEqual({
+      "record:btc-a": true,
+      "record:btc-b": true,
+      "record:eth-a": true,
+    });
   });
 
   test("keeps collapsed topic cards from rendering the sticky realtime footer", () => {

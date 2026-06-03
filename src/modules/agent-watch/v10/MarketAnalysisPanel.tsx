@@ -183,17 +183,6 @@ export function topicDisplayIdentity(topic: DispatchTopic) {
 
 type TopicCollapseState = Record<string, boolean>;
 
-interface ScopedStickyFrame {
-  left: number;
-  width: number;
-  bottom: number;
-}
-
-function sameScopedStickyFrame(left: ScopedStickyFrame | null, right: ScopedStickyFrame | null) {
-  if (!left || !right) return left === right;
-  return left.left === right.left && left.width === right.width && left.bottom === right.bottom;
-}
-
 export function topicDisplayIdentities(topics: readonly DispatchTopic[]) {
   const seen = new Map<string, number>();
   return topics.map((topic) => {
@@ -269,10 +258,36 @@ export function toggleTopicCollapseState(
   };
 }
 
+export function advanceTopicCollapseState(
+  current: TopicCollapseState,
+  topicIds: readonly string[],
+  activeTopicId: string,
+): TopicCollapseState {
+  const next: TopicCollapseState = { ...current };
+  const activeIndex = topicIds.indexOf(activeTopicId);
+
+  for (const topicId of topicIds) {
+    next[topicId] = true;
+  }
+
+  const nextTopicId = activeIndex >= 0 ? topicIds[activeIndex + 1] : undefined;
+  if (nextTopicId) next[nextTopicId] = false;
+
+  return next;
+}
+
 interface ScrollAnchor {
   topicId: string | null;
   offset: number;
   scrollTop: number;
+}
+
+function topicCardSelector(topicId: string) {
+  const escapedTopicId =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(topicId)
+      : topicId.replace(/["\\]/g, "\\$&");
+  return `[data-topic-card-id="${escapedTopicId}"]`;
 }
 
 function readScrollAnchor(body: HTMLElement): ScrollAnchor {
@@ -294,11 +309,7 @@ function readScrollAnchor(body: HTMLElement): ScrollAnchor {
 
 function restoreScrollAnchor(body: HTMLElement, anchor: ScrollAnchor) {
   if (anchor.topicId) {
-    const escapedTopicId =
-      typeof CSS !== "undefined" && typeof CSS.escape === "function"
-        ? CSS.escape(anchor.topicId)
-        : anchor.topicId.replace(/["\\]/g, "\\$&");
-    const nextAnchor = body.querySelector<HTMLElement>(`[data-topic-card-id="${escapedTopicId}"]`);
+    const nextAnchor = body.querySelector<HTMLElement>(topicCardSelector(anchor.topicId));
     if (nextAnchor) {
       body.scrollTop = Math.max(0, nextAnchor.offsetTop - anchor.offset);
       return;
@@ -650,22 +661,16 @@ function primaryReasoning(
 function TopicRealtimeSummary({
   topic,
   sticky,
-  stickyFixed,
   stickyContainer = "topic-strategy",
   className,
-  summaryRef,
-  style,
   dict,
   locale,
   onPlaceholder,
 }: {
   topic: DispatchTopic;
   sticky: boolean;
-  stickyFixed?: boolean;
   stickyContainer?: string;
   className?: string;
-  summaryRef?: React.Ref<HTMLElement>;
-  style?: React.CSSProperties;
   dict: DispatchV10Dict;
   locale: Locale;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
@@ -788,11 +793,9 @@ function TopicRealtimeSummary({
 
   return (
     <section
-      ref={summaryRef}
       className={[
         "topic-realtime-summary",
         sticky && "topic-realtime-sticky",
-        stickyFixed && "is-fixed",
         "topic-card-v3",
         className,
         `v3-${tone}`,
@@ -802,8 +805,7 @@ function TopicRealtimeSummary({
         .join(" ")}
       data-realtime-analysis-sticky={sticky ? "true" : undefined}
       data-sticky-container={sticky ? stickyContainer : undefined}
-      data-sticky-mode={stickyFixed ? "fixed" : sticky ? "scoped" : undefined}
-      style={style}
+      data-sticky-mode={sticky ? "scoped" : undefined}
       aria-label="实时行情分析"
     >
       <header className="v3-head">
@@ -898,66 +900,6 @@ function TopicStrategyV10({
   const titleParts = splitTickerTitle(topic);
   const matrixSubs = matrixSubtexts(strategy);
   const reasoningCopy = reasoningParagraphs(topic, reasoningSections, mainReasoning);
-  const strategyRef = useRef<HTMLDivElement | null>(null);
-  const summaryRef = useRef<HTMLElement | null>(null);
-  const [stickyFrame, setStickyFrame] = useState<ScopedStickyFrame | null>(null);
-
-  useIsomorphicLayoutEffect(() => {
-    if (collapsed) {
-      setStickyFrame((current) => (current === null ? current : null));
-      return;
-    }
-
-    const updateStickyFrame = () => {
-      const strategyNode = strategyRef.current;
-      const summaryNode = summaryRef.current;
-      if (!strategyNode || !summaryNode) {
-        setStickyFrame((current) => (current === null ? current : null));
-        return;
-      }
-
-      const strategyRect = strategyNode.getBoundingClientRect();
-      const viewportBottomGap = 12;
-      const shouldFix =
-        strategyRect.top < window.innerHeight - viewportBottomGap &&
-        strategyRect.bottom > viewportBottomGap;
-      const nextFrame = shouldFix
-        ? {
-            left: Math.round(strategyRect.left),
-            width: Math.round(strategyRect.width),
-            bottom: viewportBottomGap,
-          }
-        : null;
-
-      setStickyFrame((current) =>
-        sameScopedStickyFrame(current, nextFrame) ? current : nextFrame,
-      );
-    };
-
-    updateStickyFrame();
-    window.addEventListener("scroll", updateStickyFrame, { passive: true });
-    window.addEventListener("resize", updateStickyFrame);
-    const resizeObserver =
-      typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateStickyFrame) : null;
-    if (resizeObserver) {
-      if (strategyRef.current) resizeObserver.observe(strategyRef.current);
-      if (summaryRef.current) resizeObserver.observe(summaryRef.current);
-    }
-
-    return () => {
-      window.removeEventListener("scroll", updateStickyFrame);
-      window.removeEventListener("resize", updateStickyFrame);
-      resizeObserver?.disconnect();
-    };
-  }, [collapsed, topic.id]);
-
-  const stickyStyle = stickyFrame
-    ? {
-        left: `${stickyFrame.left}px`,
-        width: `${stickyFrame.width}px`,
-        bottom: `calc(${stickyFrame.bottom}px + env(safe-area-inset-bottom))`,
-      }
-    : undefined;
   const ctaTop = (
     <span className="v3-mega-top">
       <span className="v3-mega-icon" aria-hidden="true">
@@ -1143,7 +1085,6 @@ function TopicStrategyV10({
   );
   return (
     <div
-      ref={strategyRef}
       className={[
         "topic-strategy",
         "topic-card-v3",
@@ -1182,19 +1123,6 @@ function TopicStrategyV10({
           )}
         </div>
       </article>
-      {!collapsed ? (
-        <TopicRealtimeSummary
-          topic={topic}
-          sticky
-          stickyFixed={Boolean(stickyFrame)}
-          className="topic-scoped-sticky-summary"
-          summaryRef={summaryRef}
-          style={stickyStyle}
-          dict={dict}
-          locale={locale}
-          onPlaceholder={onPlaceholder}
-        />
-      ) : null}
       {tradeReadinessKind ? (
         <span
           hidden
@@ -1292,6 +1220,7 @@ export function MarketAnalysisPanel({
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const scrollAnchorRef = useRef<ScrollAnchor>({ topicId: null, offset: 0, scrollTop: 0 });
+  const autoAdvanceLockRef = useRef<string | null>(null);
   const paginationHasMore = pagination?.hasMore ?? false;
   const paginationLoading = pagination?.loading ?? false;
   const paginationOnLoadMore = pagination?.onLoadMore;
@@ -1307,11 +1236,63 @@ export function MarketAnalysisPanel({
       collapsed: collapsedByTopicId[topicIdentity] ?? topic.defaultCollapsed,
     };
   });
+  const activeTopicRow = topicRows.find((row) => !row.collapsed) ?? null;
+  const activeTopicIdentity = activeTopicRow?.topicIdentity ?? null;
   const hasScopedStickySummary = topicRows.some((row) => !row.collapsed);
 
   useEffect(() => {
     setCollapsedByTopicId((current) => reconcileTopicCollapseState(resolvedTopics, current));
   }, [resolvedTopics]);
+
+  useEffect(() => {
+    autoAdvanceLockRef.current = null;
+  }, [activeTopicIdentity]);
+
+  const scrollTopicIntoWorkbench = (topicIdentity: string) => {
+    if (typeof window === "undefined") return;
+    const body = bodyRef.current;
+    if (!body) return;
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const nextCard = body.querySelector<HTMLElement>(topicCardSelector(topicIdentity));
+        if (!nextCard) return;
+
+        const bodyRect = body.getBoundingClientRect();
+        const nextRect = nextCard.getBoundingClientRect();
+        body.scrollTop += nextRect.top - bodyRect.top - 12;
+        scrollAnchorRef.current = readScrollAnchor(body);
+      });
+    });
+  };
+
+  const advanceActiveTopic = (topicIdentity: string) => {
+    const activeIndex = topicIdentities.indexOf(topicIdentity);
+    const nextTopicIdentity = activeIndex >= 0 ? topicIdentities[activeIndex + 1] : undefined;
+
+    setCollapsedByTopicId((current) =>
+      advanceTopicCollapseState(current, topicIdentities, topicIdentity),
+    );
+
+    if (nextTopicIdentity) scrollTopicIntoWorkbench(nextTopicIdentity);
+  };
+
+  const maybeAdvanceActiveTopic = (body: HTMLDivElement) => {
+    if (!activeTopicIdentity || autoAdvanceLockRef.current === activeTopicIdentity) return;
+
+    const activeCard = body.querySelector<HTMLElement>(topicCardSelector(activeTopicIdentity));
+    const activeSummary = body.parentElement?.querySelector<HTMLElement>(
+      ".chat-shell-active-summary",
+    );
+    if (!activeCard || !activeSummary) return;
+
+    const activeCardRect = activeCard.getBoundingClientRect();
+    const activeSummaryRect = activeSummary.getBoundingClientRect();
+    if (activeCardRect.bottom > activeSummaryRect.top + 8) return;
+
+    autoAdvanceLockRef.current = activeTopicIdentity;
+    advanceActiveTopic(activeTopicIdentity);
+  };
 
   useEffect(() => {
     if (!paginationHasMore || paginationLoading || !paginationOnLoadMore) return;
@@ -1371,6 +1352,7 @@ export function MarketAnalysisPanel({
           ref={bodyRef}
           onScroll={(event) => {
             scrollAnchorRef.current = readScrollAnchor(event.currentTarget);
+            maybeAdvanceActiveTopic(event.currentTarget);
           }}
         >
           {resolvedTopics.length === 0 ? (
@@ -1419,6 +1401,21 @@ export function MarketAnalysisPanel({
             </>
           )}
         </div>
+        {activeTopicRow ? (
+          <div
+            className="chat-shell-active-summary"
+            data-active-topic-card-id={activeTopicRow.topicIdentity}
+          >
+            <TopicRealtimeSummary
+              topic={activeTopicRow.topic}
+              sticky
+              stickyContainer="chat-shell"
+              dict={dict}
+              locale={locale}
+              onPlaceholder={onPlaceholder}
+            />
+          </div>
+        ) : null}
       </section>
     </div>
   );
