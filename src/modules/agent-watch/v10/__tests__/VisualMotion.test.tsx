@@ -206,9 +206,11 @@ describe("DispatchConsoleV10 visual motion", () => {
 
   test("pins the expanded realtime summary footer without clipping the scroll content", () => {
     const expandedTopic = cssBlock(".dispatchConsoleV10 :global(.topic.expanded)");
+    const expandedTopicHover = cssBlock(".dispatchConsoleV10 :global(.topic.expanded:hover)");
     const expandedStrategy = cssBlock(
       ".dispatchConsoleV10 :global(.topic.expanded .topic-strategy.topic-card-v3)",
     );
+    const shellBody = cssBlock(".dispatchConsoleV10 :global(.chat-shell-body)");
     const stickyBody = cssBlock(
       ".dispatchConsoleV10 :global(.chat-shell-body.has-scoped-sticky-summary)",
     );
@@ -218,15 +220,24 @@ describe("DispatchConsoleV10 visual motion", () => {
     const stickyFooter = cssBlock(
       ".dispatchConsoleV10 :global(.topic.expanded .topic-strategy.topic-card-v3 > .topic-realtime-sticky)",
     );
+    const fixedStickyFooter = cssBlock(
+      ".dispatchConsoleV10 :global(.topic.expanded .topic-strategy.topic-card-v3 > .topic-realtime-sticky.is-fixed)",
+    );
 
     expect(css).not.toContain(".chat-shell-body > .chat-shell-sticky-summary");
+    expect(shellBody).toContain("height: auto");
+    expect(shellBody).toContain("max-height: none");
+    expect(shellBody).toContain("overflow: visible");
     expect(expandedTopic).toContain("overflow: visible");
+    expect(expandedTopicHover).toContain("transform: none");
     expect(expandedStrategy).toContain("overflow: visible");
     expect(stickyBody).toContain("scroll-padding-bottom");
     expect(scrollContent).toContain("padding-bottom");
     expect(scrollContent).toContain("scroll-padding-bottom");
     expect(stickyFooter).toContain("position: sticky");
     expect(stickyFooter).toContain("bottom: 0");
+    expect(fixedStickyFooter).toContain("position: fixed");
+    expect(fixedStickyFooter).toContain("bottom:");
     expect(stickyFooter).toContain("z-index");
     expect(stickyFooter).toContain("env(safe-area-inset-bottom)");
     expect(stickyFooter).toContain("background:");

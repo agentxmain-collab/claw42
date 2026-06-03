@@ -173,6 +173,8 @@ export function topicDisplayIdentity(topic: DispatchTopic) {
   const candidateType = topicCandidateType(topic);
   const candidateKey = topic.candidateKey?.trim();
   const symbol = topic.symbol?.trim().replace(/^\$+/, "").toUpperCase();
+  const recordId = topic.id?.trim();
+  if (candidateType === "symbol" && recordId) return `record:${recordId}`;
   if (candidateType === "symbol" && symbol) return `symbol:${symbol}`;
   if (candidateKey) return `${candidateType}:${candidateKey}`;
   if (symbol) return `${candidateType}:${symbol}`;
@@ -181,6 +183,27 @@ export function topicDisplayIdentity(topic: DispatchTopic) {
 
 type TopicCollapseState = Record<string, boolean>;
 
+interface ScopedStickyFrame {
+  left: number;
+  width: number;
+  bottom: number;
+}
+
+function sameScopedStickyFrame(left: ScopedStickyFrame | null, right: ScopedStickyFrame | null) {
+  if (!left || !right) return left === right;
+  return left.left === right.left && left.width === right.width && left.bottom === right.bottom;
+}
+
+export function topicDisplayIdentities(topics: readonly DispatchTopic[]) {
+  const seen = new Map<string, number>();
+  return topics.map((topic) => {
+    const baseIdentity = topicDisplayIdentity(topic);
+    const occurrence = seen.get(baseIdentity) ?? 0;
+    seen.set(baseIdentity, occurrence + 1);
+    return occurrence === 0 ? baseIdentity : `${baseIdentity}:occurrence-${occurrence + 1}`;
+  });
+}
+
 export function reconcileTopicCollapseState(
   topics: DispatchTopic[],
   current: TopicCollapseState,
@@ -188,9 +211,11 @@ export function reconcileTopicCollapseState(
   let changed = false;
   const next: TopicCollapseState = {};
   let expandedTopicId: string | null = null;
+  const identities = topicDisplayIdentities(topics);
 
-  for (const topic of topics) {
-    const identity = topicDisplayIdentity(topic);
+  for (let index = 0; index < topics.length; index += 1) {
+    const topic = topics[index]!;
+    const identity = identities[index]!;
     const hasCurrentValue = Object.prototype.hasOwnProperty.call(current, identity);
     const currentCollapsed = hasCurrentValue ? current[identity] : topic.defaultCollapsed;
     let collapsed = currentCollapsed;
@@ -625,16 +650,22 @@ function primaryReasoning(
 function TopicRealtimeSummary({
   topic,
   sticky,
+  stickyFixed,
   stickyContainer = "topic-strategy",
   className,
+  summaryRef,
+  style,
   dict,
   locale,
   onPlaceholder,
 }: {
   topic: DispatchTopic;
   sticky: boolean;
+  stickyFixed?: boolean;
   stickyContainer?: string;
   className?: string;
+  summaryRef?: React.Ref<HTMLElement>;
+  style?: React.CSSProperties;
   dict: DispatchV10Dict;
   locale: Locale;
   onPlaceholder: (topic: DispatchTopic, actionLabel: string, action: DispatchTopicAction) => void;
@@ -757,9 +788,11 @@ function TopicRealtimeSummary({
 
   return (
     <section
+      ref={summaryRef}
       className={[
         "topic-realtime-summary",
         sticky && "topic-realtime-sticky",
+        stickyFixed && "is-fixed",
         "topic-card-v3",
         className,
         `v3-${tone}`,
@@ -769,6 +802,8 @@ function TopicRealtimeSummary({
         .join(" ")}
       data-realtime-analysis-sticky={sticky ? "true" : undefined}
       data-sticky-container={sticky ? stickyContainer : undefined}
+      data-sticky-mode={stickyFixed ? "fixed" : sticky ? "scoped" : undefined}
+      style={style}
       aria-label="实时行情分析"
     >
       <header className="v3-head">
@@ -863,6 +898,66 @@ function TopicStrategyV10({
   const titleParts = splitTickerTitle(topic);
   const matrixSubs = matrixSubtexts(strategy);
   const reasoningCopy = reasoningParagraphs(topic, reasoningSections, mainReasoning);
+  const strategyRef = useRef<HTMLDivElement | null>(null);
+  const summaryRef = useRef<HTMLElement | null>(null);
+  const [stickyFrame, setStickyFrame] = useState<ScopedStickyFrame | null>(null);
+
+  useIsomorphicLayoutEffect(() => {
+    if (collapsed) {
+      setStickyFrame((current) => (current === null ? current : null));
+      return;
+    }
+
+    const updateStickyFrame = () => {
+      const strategyNode = strategyRef.current;
+      const summaryNode = summaryRef.current;
+      if (!strategyNode || !summaryNode) {
+        setStickyFrame((current) => (current === null ? current : null));
+        return;
+      }
+
+      const strategyRect = strategyNode.getBoundingClientRect();
+      const viewportBottomGap = 12;
+      const shouldFix =
+        strategyRect.top < window.innerHeight - viewportBottomGap &&
+        strategyRect.bottom > viewportBottomGap;
+      const nextFrame = shouldFix
+        ? {
+            left: Math.round(strategyRect.left),
+            width: Math.round(strategyRect.width),
+            bottom: viewportBottomGap,
+          }
+        : null;
+
+      setStickyFrame((current) =>
+        sameScopedStickyFrame(current, nextFrame) ? current : nextFrame,
+      );
+    };
+
+    updateStickyFrame();
+    window.addEventListener("scroll", updateStickyFrame, { passive: true });
+    window.addEventListener("resize", updateStickyFrame);
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateStickyFrame) : null;
+    if (resizeObserver) {
+      if (strategyRef.current) resizeObserver.observe(strategyRef.current);
+      if (summaryRef.current) resizeObserver.observe(summaryRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", updateStickyFrame);
+      window.removeEventListener("resize", updateStickyFrame);
+      resizeObserver?.disconnect();
+    };
+  }, [collapsed, topic.id]);
+
+  const stickyStyle = stickyFrame
+    ? {
+        left: `${stickyFrame.left}px`,
+        width: `${stickyFrame.width}px`,
+        bottom: `calc(${stickyFrame.bottom}px + env(safe-area-inset-bottom))`,
+      }
+    : undefined;
   const ctaTop = (
     <span className="v3-mega-top">
       <span className="v3-mega-icon" aria-hidden="true">
@@ -1048,6 +1143,7 @@ function TopicStrategyV10({
   );
   return (
     <div
+      ref={strategyRef}
       className={[
         "topic-strategy",
         "topic-card-v3",
@@ -1090,7 +1186,10 @@ function TopicStrategyV10({
         <TopicRealtimeSummary
           topic={topic}
           sticky
+          stickyFixed={Boolean(stickyFrame)}
           className="topic-scoped-sticky-summary"
+          summaryRef={summaryRef}
+          style={stickyStyle}
           dict={dict}
           locale={locale}
           onPlaceholder={onPlaceholder}
@@ -1196,10 +1295,11 @@ export function MarketAnalysisPanel({
   const paginationHasMore = pagination?.hasMore ?? false;
   const paginationLoading = pagination?.loading ?? false;
   const paginationOnLoadMore = pagination?.onLoadMore;
-  const topicOrderSignature = resolvedTopics.map(topicDisplayIdentity).join("|");
+  const topicIdentities = useMemo(() => topicDisplayIdentities(resolvedTopics), [resolvedTopics]);
+  const topicOrderSignature = topicIdentities.join("|");
   const freshnessText = formatFreshnessText(freshness, dict);
   const topicRows = resolvedTopics.map((topic, index) => {
-    const topicIdentity = topicDisplayIdentity(topic);
+    const topicIdentity = topicIdentities[index]!;
     return {
       topic,
       topicIdentity,
@@ -1223,11 +1323,16 @@ export function MarketAnalysisPanel({
       return;
     }
 
+    const body = bodyRef.current;
+    const bodyCanScroll =
+      body &&
+      body.scrollHeight > body.clientHeight + 1 &&
+      window.getComputedStyle(body).overflowY !== "visible";
     const observer = new window.IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) paginationOnLoadMore();
       },
-      { root: bodyRef.current, rootMargin: "240px 0px" },
+      { root: bodyCanScroll ? body : null, rootMargin: "240px 0px" },
     );
     observer.observe(node);
     return () => observer.disconnect();

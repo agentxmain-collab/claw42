@@ -6,17 +6,22 @@ import zhCN from "@/i18n/dicts/zh_CN.json";
 import type { Dict } from "@/i18n/types";
 import type { TradingReadinessFailureKind } from "@/lib/coinw/tradeReadinessState";
 import type { CandidateType } from "@/lib/watch/decisionCandidate";
+import { mapPublicTimelineEventsToTopics } from "@/lib/watch/v9TopicAdapter";
+import type { PublicTimelineEvent } from "@/lib/watch/publicTimelineEvent";
 import type { DispatchTopic } from "../../v9/types";
 import { dispatchV10DemoTopics } from "../demoTopics";
+import realTimelineZhCnPage1 from "./fixtures/real-timeline-zh-cn-page1.json";
 import {
   MarketAnalysisPanel,
   reconcileTopicCollapseState,
+  topicDisplayIdentities,
   topicDisplayIdentity,
   toggleTopicCollapseState,
 } from "../MarketAnalysisPanel";
 
 const dict = (zhCN as Dict).agentWatch.dispatchV10;
 const enDict = (enUS as Dict).agentWatch.dispatchV10;
+const realTimelineEvents = (realTimelineZhCnPage1 as { events: PublicTimelineEvent[] }).events;
 
 function topicFixture({
   id,
@@ -85,6 +90,19 @@ function extractRealtimeStickyBlock(html: string) {
   const start = html.lastIndexOf("<section", markerIndex);
   const end = html.indexOf("</section>", markerIndex);
   return start === -1 || end === -1 ? "" : html.slice(start, end + "</section>".length);
+}
+
+function mapRealTimelineFixtureTopics() {
+  return mapPublicTimelineEventsToTopics({
+    events: realTimelineEvents,
+    grouping: "raw",
+    locale: "zh_CN",
+    outcomeDict: dict.outcome,
+    roundDict: dict.round,
+    stageStatusDict: dict.stageStatus,
+    topicRankingDict: dict.topicRanking,
+    now: Date.parse("2026-06-03T00:00:00+08:00"),
+  });
 }
 
 describe("MarketAnalysisPanel v10", () => {
@@ -729,6 +747,46 @@ describe("MarketAnalysisPanel v10", () => {
     expect(html.match(/data-realtime-analysis-sticky="true"/g) ?? []).toHaveLength(1);
   });
 
+  test("keeps real raw timeline records as separate collapse identities", () => {
+    const topics = mapRealTimelineFixtureTopics();
+    const repeatedSymbolCount = topics.filter((topic) => topic.symbol === "BTC").length;
+    expect(topics.length).toBeGreaterThan(1);
+    expect(repeatedSymbolCount).toBeGreaterThan(1);
+
+    const identities = topicDisplayIdentities(topics);
+    const initialCollapseState = reconcileTopicCollapseState(topics, {});
+    const targetBtcIndex = topics.findIndex(
+      (topic, index) =>
+        topic.symbol === "BTC" && initialCollapseState[identities[index]!] !== false,
+    );
+    const targetBtcTopic = topics[targetBtcIndex];
+    expect(targetBtcTopic).toBeDefined();
+    expect(targetBtcIndex).toBeGreaterThanOrEqual(0);
+    expect(new Set(identities).size).toBe(topics.length);
+
+    const expandedFirstBtc = toggleTopicCollapseState(
+      initialCollapseState,
+      identities[targetBtcIndex]!,
+      targetBtcTopic!.defaultCollapsed,
+    );
+    const expandedTopics = topics.filter(
+      (_, index) => expandedFirstBtc[identities[index]!] === false,
+    );
+    expect(expandedTopics).toHaveLength(1);
+    expect(expandedTopics[0]?.id).toBe(targetBtcTopic!.id);
+
+    const html = renderToStaticMarkup(
+      <MarketAnalysisPanel topics={topics} dict={dict} onPlaceholder={() => undefined} />,
+    );
+    const cardIds = Array.from(html.matchAll(/data-topic-card-id="([^"]+)"/g)).map(
+      (match) => match[1]!,
+    );
+
+    expect(cardIds).toHaveLength(topics.length);
+    expect(new Set(cardIds).size).toBe(cardIds.length);
+    expect(cardIds.some((id) => id === "symbol:BTC")).toBe(false);
+  });
+
   test("keeps collapsed topic cards from rendering the sticky realtime footer", () => {
     const html = renderToStaticMarkup(
       <MarketAnalysisPanel
@@ -847,8 +905,8 @@ describe("MarketAnalysisPanel v10", () => {
     );
 
     expect(html).not.toContain("topic-pagination");
-    expect(html).toContain('data-topic-card-id="symbol:SYM15"');
-    expect(html).toContain('data-topic-card-id="symbol:SYM16"');
+    expect(html).toContain('data-topic-card-id="record:symbol-15"');
+    expect(html).toContain('data-topic-card-id="record:symbol-16"');
     expect(html).toContain("已加载全部 16 张");
   });
 

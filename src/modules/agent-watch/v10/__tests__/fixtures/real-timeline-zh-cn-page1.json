@@ -1,0 +1,3154 @@
+{
+  "version": "2026-06-02T23:01:50.139Z:cd8fcb19-4c49-4c19-b89b-297ef54ba0df",
+  "generatedAt": "2026-06-02T23:01:50.139Z",
+  "expiresAt": "2026-06-03T00:16:50.139Z",
+  "locale": "zh_CN",
+  "windowMinutes": 60,
+  "page": 1,
+  "pageSize": 15,
+  "totalCount": 472,
+  "oldestTs": 1780426902393,
+  "hasMore": true,
+  "nextPollMs": 90000,
+  "events": [
+    {
+      "id": "pm-decision:pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780437651040",
+      "ts": 1780437651040,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_1qq3gvr"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780437651040",
+        "symbol": "BTC",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6",
+        "displayTitle": "BTC 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "BTC_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T22:00:51.040Z",
+          "ageMinutes": 60,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "BTC在24小时内下跌约4.72%，至67443美元附近，新闻面出现看空目标价，技术面可能测试关键支撑，但长期趋势尚未完全破坏。",
+        "tradeDecision": {
+          "id": "trade:BTC:1780437651040",
+          "schemaVersion": 1,
+          "symbol": "BTC",
+          "generatedAt": "2026-06-02T22:00:51.040Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 67600,
+          "entryRange": null,
+          "stopLoss": 68500,
+          "takeProfit": [66000, 64500],
+          "positionSizing": 0.08,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_1qq3gvr"],
+          "riskNote": "使用小仓位并设置止损，以应对高波动性和新闻反转风险。",
+          "invalidatesIf": "价格突破并维持在69000美元以上。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "Cointelegraph报道，在BTC价格单日暴跌6%后，有分析师将目标价下调至5万美元，暗示市场可能进一步下行。",
+          "pa_05": "BTC当前处于回调阶段，新闻驱动的看空情绪可能推动价格测试下方支撑，但若支撑有效，则可能反弹。",
+          "pa_08": "尽管短期下跌，BTC仍高于200日均线，且机构采用和减半效应可能提供长期支撑，若守住65000美元，则可能恢复上行。",
+          "pa_09": "新闻面看空目标价配合价格跌破短期均线，若67000美元支撑失守，可能加速跌向63000美元甚至更低。",
+          "pa_10": "基于当前看空动能和新闻催化，采用保守做空策略，在反弹至阻力位附近入场，设置紧密止损，目标为近期支撑位。",
+          "pa_06": "主要风险是BTC在支撑位快速反弹，或出现利好新闻扭转情绪，需严格止损。",
+          "pa_07": "若BTC价格回升并站稳69000美元上方，则短期看空观点失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_1qq3gvr"],
+          "pa_05": ["ev_1qq3gvr"],
+          "pa_08": ["ev_1qq3gvr"],
+          "pa_09": ["ev_1qq3gvr"],
+          "pa_10": ["ev_1qq3gvr"],
+          "pa_06": ["ev_1qq3gvr"],
+          "pa_07": ["ev_1qq3gvr"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "Cointelegraph报道，在BTC价格单日暴跌6%后，有分析师将目标价下调至5万美元，暗示市场可能进一步下行。",
+            "oneLineSummary": "Cointelegraph报道，在BTC价格单日暴跌6%后，有分析师将目标价下调至5万美元，暗示市场可能进一步下行。",
+            "detailedRationale": "Cointelegraph报道，在BTC价格单日暴跌6%后，有分析师将目标价下调至5万美元，暗示市场可能进一步下行。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "BTC当前处于回调阶段，新闻驱动的看空情绪可能推动价格测试下方支撑，但若支撑有效，则可能反弹。",
+            "oneLineSummary": "BTC当前处于回调阶段，新闻驱动的看空情绪可能推动价格测试下方支撑，但若支撑有效，则可能反弹。",
+            "detailedRationale": "BTC当前处于回调阶段，新闻驱动的看空情绪可能推动价格测试下方支撑，但若支撑有效，则可能反弹。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "尽管短期下跌，BTC仍高于200日均线，且机构采用和减半效应可能提供长期支撑，若守住65000美元，则可能恢复上行。",
+            "oneLineSummary": "尽管短期下跌，BTC仍高于200日均线，且机构采用和减半效应可能提供长期支撑，若守住65000美元，则可能恢复上行。",
+            "detailedRationale": "尽管短期下跌，BTC仍高于200日均线，且机构采用和减半效应可能提供长期支撑，若守住65000美元，则可能恢复上行。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "新闻面看空目标价配合价格跌破短期均线，若67000美元支撑失守，可能加速跌向63000美元甚至更低。",
+            "oneLineSummary": "新闻面看空目标价配合价格跌破短期均线，若67000美元支撑失守，可能加速跌向63000美元甚至更低。",
+            "detailedRationale": "新闻面看空目标价配合价格跌破短期均线，若67000美元支撑失守，可能加速跌向63000美元甚至更低。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "基于当前看空动能和新闻催化，采用保守做空策略，在反弹至阻力位附近入场，设置紧密止损，目标为近期支撑位。",
+            "oneLineSummary": "基于当前看空动能和新闻催化，采用保守做空策略，在反弹至阻力位附近入场，设置紧密止损，目标为近期支撑位。",
+            "detailedRationale": "基于当前看空动能和新闻催化，采用保守做空策略，在反弹至阻力位附近入场，设置紧密止损，目标为近期支撑位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "主要风险是BTC在支撑位快速反弹，或出现利好新闻扭转情绪，需严格止损。",
+            "oneLineSummary": "主要风险是BTC在支撑位快速反弹，或出现利好新闻扭转情绪，需严格止损。",
+            "detailedRationale": "主要风险是BTC在支撑位快速反弹，或出现利好新闻扭转情绪，需严格止损。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "若BTC价格回升并站稳69000美元上方，则短期看空观点失效。",
+            "oneLineSummary": "若BTC价格回升并站稳69000美元上方，则短期看空观点失效。",
+            "detailedRationale": "若BTC价格回升并站稳69000美元上方，则短期看空观点失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_07"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:BTC:news-driven:BTC:cnNzLWRlY3J5cHQ6aHR0cHM6:1780437651040",
+      "ts": 1780437651040,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_v64w1x"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BTC:news-driven:BTC:cnNzLWRlY3J5cHQ6aHR0cHM6:1780437651040",
+        "symbol": "BTC",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:BTC:cnNzLWRlY3J5cHQ6aHR0cHM6",
+        "displayTitle": "BTC 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "BTC_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T22:00:51.040Z",
+          "ageMinutes": 60,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "机构抛售消息打压市场情绪，BTC短期承压，但长期基本面未变。",
+        "tradeDecision": {
+          "id": "trade:BTC:1780437651040",
+          "schemaVersion": 1,
+          "symbol": "BTC",
+          "generatedAt": "2026-06-02T22:00:51.040Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 67450,
+          "entryRange": null,
+          "stopLoss": 68500,
+          "takeProfit": [66000, 65000],
+          "positionSizing": 0.1,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_v64w1x"],
+          "riskNote": "新闻驱动的波动可能剧烈，建议严格止损。",
+          "invalidatesIf": "价格突破并站稳68,500美元上方。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "Strategy公司，一家持有大量比特币的上市公司，披露出售了部分BTC，导致其股价连续第二日下跌，并引发市场对机构可能减持的担忧。",
+          "pa_05": "比特币短期面临机构抛售带来的压力，但去中心化特性和长期采用趋势未变，回调可能提供买入机会。",
+          "pa_08": "机构出售可能是为了获利了结或调整仓位，而非看空市场；比特币网络基本面依然强劲，长期持有者仍在积累。",
+          "pa_09": "大型机构减持可能引发连锁反应，导致更多抛售；技术面显示BTC跌破关键支撑位，可能进一步下探。",
+          "pa_10": "基于新闻驱动的短期波动，采用保守的做空策略，在反弹至阻力位附近入场，以捕捉潜在的下行空间。",
+          "pa_06": "主要风险在于新闻影响可能已被市场消化，或出现超卖反弹；此外，机构出售可能是一次性事件，不会持续。",
+          "pa_07": "如果BTC价格迅速收复68,500美元并站稳，则空头观点失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_v64w1x"],
+          "pa_05": ["ev_v64w1x"],
+          "pa_08": ["ev_v64w1x"],
+          "pa_09": ["ev_v64w1x"],
+          "pa_10": ["ev_v64w1x"],
+          "pa_06": ["ev_v64w1x"],
+          "pa_07": ["ev_v64w1x"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "Strategy公司，一家持有大量比特币的上市公司，披露出售了部分BTC，导致其股价连续第二日下跌，并引发市场对机构可能减持的担忧。",
+            "oneLineSummary": "Strategy公司，一家持有大量比特币的上市公司，披露出售了部分BTC，导致其股价连续第二日下跌，并引发市场对机构可能减持的担忧。",
+            "detailedRationale": "Strategy公司，一家持有大量比特币的上市公司，披露出售了部分BTC，导致其股价连续第二日下跌，并引发市场对机构可能减持的担忧。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "比特币短期面临机构抛售带来的压力，但去中心化特性和长期采用趋势未变，回调可能提供买入机会。",
+            "oneLineSummary": "比特币短期面临机构抛售带来的压力，但去中心化特性和长期采用趋势未变，回调可能提供买入机会。",
+            "detailedRationale": "比特币短期面临机构抛售带来的压力，但去中心化特性和长期采用趋势未变，回调可能提供买入机会。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "机构出售可能是为了获利了结或调整仓位，而非看空市场；比特币网络基本面依然强劲，长期持有者仍在积累。",
+            "oneLineSummary": "机构出售可能是为了获利了结或调整仓位，而非看空市场；比特币网络基本面依然强劲，长期持有者仍在积累。",
+            "detailedRationale": "机构出售可能是为了获利了结或调整仓位，而非看空市场；比特币网络基本面依然强劲，长期持有者仍在积累。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "大型机构减持可能引发连锁反应，导致更多抛售；技术面显示BTC跌破关键支撑位，可能进一步下探。",
+            "oneLineSummary": "大型机构减持可能引发连锁反应，导致更多抛售；技术面显示BTC跌破关键支撑位，可能进一步下探。",
+            "detailedRationale": "大型机构减持可能引发连锁反应，导致更多抛售；技术面显示BTC跌破关键支撑位，可能进一步下探。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "基于新闻驱动的短期波动，采用保守的做空策略，在反弹至阻力位附近入场，以捕捉潜在的下行空间。",
+            "oneLineSummary": "基于新闻驱动的短期波动，采用保守的做空策略，在反弹至阻力位附近入场，以捕捉潜在的下行空间。",
+            "detailedRationale": "基于新闻驱动的短期波动，采用保守的做空策略，在反弹至阻力位附近入场，以捕捉潜在的下行空间。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "主要风险在于新闻影响可能已被市场消化，或出现超卖反弹；此外，机构出售可能是一次性事件，不会持续。",
+            "oneLineSummary": "主要风险在于新闻影响可能已被市场消化，或出现超卖反弹；此外，机构出售可能是一次性事件，不会持续。",
+            "detailedRationale": "主要风险在于新闻影响可能已被市场消化，或出现超卖反弹；此外，机构出售可能是一次性事件，不会持续。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "如果BTC价格迅速收复68,500美元并站稳，则空头观点失效。",
+            "oneLineSummary": "如果BTC价格迅速收复68,500美元并站稳，则空头观点失效。",
+            "detailedRationale": "如果BTC价格迅速收复68,500美元并站稳，则空头观点失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_07"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780437651040",
+      "ts": 1780437651040,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_usofcs"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780437651040",
+        "symbol": "BTC",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow",
+        "displayTitle": "BTC 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "BTC_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T22:00:51.040Z",
+          "ageMinutes": 60,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "BTC在67000美元附近震荡，短期均线死叉，MACD绿柱放大，RSI偏弱，空头动能增强。",
+        "tradeDecision": {
+          "id": "trade:BTC:1780437651040",
+          "schemaVersion": 1,
+          "symbol": "BTC",
+          "generatedAt": "2026-06-02T22:00:51.040Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 67443.07,
+          "entryRange": null,
+          "stopLoss": 67850,
+          "takeProfit": [67000, 66500],
+          "positionSizing": 0.15,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_usofcs"],
+          "riskNote": "注意快讯后的波动性，严格止损。",
+          "invalidatesIf": "价格突破67850并持续上行。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "PANews快讯显示BTC跌破67000美元，日内下跌0.50%，市场对短期走势产生担忧。",
+          "pa_05": "BTC当前处于高位回调阶段，消息面利空叠加技术面走弱，可能进一步下探支撑。",
+          "pa_08": "若67000美元支撑有效，且成交量放大，可能反弹至68000美元上方。",
+          "pa_09": "若跌破67000美元并放量，可能加速下跌至66000美元甚至更低。",
+          "pa_10": "采用保守做空策略，在现价附近入场，止损设于近期小高点上方，目标看至支撑位。",
+          "pa_06": "市场波动较大，快讯影响可能已被部分消化，需警惕假突破和快速反转。",
+          "pa_07": "若价格回升至67800美元上方并站稳，则空头观点失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_usofcs"],
+          "pa_05": ["ev_usofcs"],
+          "pa_08": ["ev_usofcs"],
+          "pa_09": ["ev_usofcs"],
+          "pa_10": ["ev_usofcs"],
+          "pa_06": ["ev_usofcs"],
+          "pa_07": ["ev_usofcs"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "PANews快讯显示BTC跌破67000美元，日内下跌0.50%，市场对短期走势产生担忧。",
+            "oneLineSummary": "PANews快讯显示BTC跌破67000美元，日内下跌0.50%，市场对短期走势产生担忧。",
+            "detailedRationale": "PANews快讯显示BTC跌破67000美元，日内下跌0.50%，市场对短期走势产生担忧。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "BTC当前处于高位回调阶段，消息面利空叠加技术面走弱，可能进一步下探支撑。",
+            "oneLineSummary": "BTC当前处于高位回调阶段，消息面利空叠加技术面走弱，可能进一步下探支撑。",
+            "detailedRationale": "BTC当前处于高位回调阶段，消息面利空叠加技术面走弱，可能进一步下探支撑。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "若67000美元支撑有效，且成交量放大，可能反弹至68000美元上方。",
+            "oneLineSummary": "若67000美元支撑有效，且成交量放大，可能反弹至68000美元上方。",
+            "detailedRationale": "若67000美元支撑有效，且成交量放大，可能反弹至68000美元上方。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "若跌破67000美元并放量，可能加速下跌至66000美元甚至更低。",
+            "oneLineSummary": "若跌破67000美元并放量，可能加速下跌至66000美元甚至更低。",
+            "detailedRationale": "若跌破67000美元并放量，可能加速下跌至66000美元甚至更低。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "采用保守做空策略，在现价附近入场，止损设于近期小高点上方，目标看至支撑位。",
+            "oneLineSummary": "采用保守做空策略，在现价附近入场，止损设于近期小高点上方，目标看至支撑位。",
+            "detailedRationale": "采用保守做空策略，在现价附近入场，止损设于近期小高点上方，目标看至支撑位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "市场波动较大，快讯影响可能已被部分消化，需警惕假突破和快速反转。",
+            "oneLineSummary": "市场波动较大，快讯影响可能已被部分消化，需警惕假突破和快速反转。",
+            "detailedRationale": "市场波动较大，快讯影响可能已被部分消化，需警惕假突破和快速反转。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "若价格回升至67800美元上方并站稳，则空头观点失效。",
+            "oneLineSummary": "若价格回升至67800美元上方并站稳，则空头观点失效。",
+            "detailedRationale": "若价格回升至67800美元上方并站稳，则空头观点失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_07"]
+          }
+        ],
+        "resolution": {
+          "outcome": "hit_tp",
+          "resolvedAt": "2026-06-02T23:00:51.046Z",
+          "observedPrice": 66306.79,
+          "observedPriceSource": "pool",
+          "reason": "take_profit_reached"
+        }
+      }
+    },
+    {
+      "id": "pm-decision:pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780437651040",
+      "ts": 1780437651040,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_usofcs"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780437651040",
+        "symbol": "BTC",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow",
+        "displayTitle": "BTC 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "BTC_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T22:00:51.040Z",
+          "ageMinutes": 60,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "BTC在67000美元附近震荡，短期均线死叉，MACD绿柱放大，RSI偏弱，空头动能增强。",
+        "tradeDecision": {
+          "id": "trade:BTC:1780437651040",
+          "schemaVersion": 1,
+          "symbol": "BTC",
+          "generatedAt": "2026-06-02T22:00:51.040Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 67443.07,
+          "entryRange": null,
+          "stopLoss": 67850,
+          "takeProfit": [67000, 66500],
+          "positionSizing": 0.15,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_usofcs"],
+          "riskNote": "注意快讯后的波动性，严格止损。",
+          "invalidatesIf": "价格突破67850并持续上行。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "PANews快讯显示BTC跌破67000美元，日内下跌0.50%，市场对短期走势产生担忧。",
+          "pa_05": "BTC当前处于高位回调阶段，消息面利空叠加技术面走弱，可能进一步下探支撑。",
+          "pa_08": "若67000美元支撑有效，且成交量放大，可能反弹至68000美元上方。",
+          "pa_09": "若跌破67000美元并放量，可能加速下跌至66000美元甚至更低。",
+          "pa_10": "采用保守做空策略，在现价附近入场，止损设于近期小高点上方，目标看至支撑位。",
+          "pa_06": "市场波动较大，快讯影响可能已被部分消化，需警惕假突破和快速反转。",
+          "pa_07": "若价格回升至67800美元上方并站稳，则空头观点失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_usofcs"],
+          "pa_05": ["ev_usofcs"],
+          "pa_08": ["ev_usofcs"],
+          "pa_09": ["ev_usofcs"],
+          "pa_10": ["ev_usofcs"],
+          "pa_06": ["ev_usofcs"],
+          "pa_07": ["ev_usofcs"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "PANews快讯显示BTC跌破67000美元，日内下跌0.50%，市场对短期走势产生担忧。",
+            "oneLineSummary": "PANews快讯显示BTC跌破67000美元，日内下跌0.50%，市场对短期走势产生担忧。",
+            "detailedRationale": "PANews快讯显示BTC跌破67000美元，日内下跌0.50%，市场对短期走势产生担忧。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "BTC当前处于高位回调阶段，消息面利空叠加技术面走弱，可能进一步下探支撑。",
+            "oneLineSummary": "BTC当前处于高位回调阶段，消息面利空叠加技术面走弱，可能进一步下探支撑。",
+            "detailedRationale": "BTC当前处于高位回调阶段，消息面利空叠加技术面走弱，可能进一步下探支撑。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "若67000美元支撑有效，且成交量放大，可能反弹至68000美元上方。",
+            "oneLineSummary": "若67000美元支撑有效，且成交量放大，可能反弹至68000美元上方。",
+            "detailedRationale": "若67000美元支撑有效，且成交量放大，可能反弹至68000美元上方。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "若跌破67000美元并放量，可能加速下跌至66000美元甚至更低。",
+            "oneLineSummary": "若跌破67000美元并放量，可能加速下跌至66000美元甚至更低。",
+            "detailedRationale": "若跌破67000美元并放量，可能加速下跌至66000美元甚至更低。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "采用保守做空策略，在现价附近入场，止损设于近期小高点上方，目标看至支撑位。",
+            "oneLineSummary": "采用保守做空策略，在现价附近入场，止损设于近期小高点上方，目标看至支撑位。",
+            "detailedRationale": "采用保守做空策略，在现价附近入场，止损设于近期小高点上方，目标看至支撑位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "市场波动较大，快讯影响可能已被部分消化，需警惕假突破和快速反转。",
+            "oneLineSummary": "市场波动较大，快讯影响可能已被部分消化，需警惕假突破和快速反转。",
+            "detailedRationale": "市场波动较大，快讯影响可能已被部分消化，需警惕假突破和快速反转。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "若价格回升至67800美元上方并站稳，则空头观点失效。",
+            "oneLineSummary": "若价格回升至67800美元上方并站稳，则空头观点失效。",
+            "detailedRationale": "若价格回升至67800美元上方并站稳，则空头观点失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_07"]
+          }
+        ],
+        "resolution": {
+          "outcome": "hit_tp",
+          "resolvedAt": "2026-06-02T23:00:51.046Z",
+          "observedPrice": 66306.79,
+          "observedPriceSource": "pool",
+          "reason": "take_profit_reached"
+        }
+      }
+    },
+    {
+      "id": "pm-decision:pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780437651040",
+      "ts": 1780437651040,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_1091o9w"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780437651040",
+        "symbol": "COIN",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow",
+        "displayTitle": "COIN 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "COIN_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/coinusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T22:00:51.040Z",
+          "ageMinutes": 60,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "COIN在美股普涨背景下逆势下跌，表明市场对Coinbase短期前景存在分歧。",
+        "tradeDecision": {
+          "id": "trade:COIN:1780437651040",
+          "schemaVersion": 1,
+          "symbol": "COIN",
+          "generatedAt": "2026-06-02T22:00:51.040Z",
+          "direction": "long",
+          "entryType": "market",
+          "entryPrice": 210.5,
+          "entryRange": null,
+          "stopLoss": 200,
+          "takeProfit": [225, 235],
+          "positionSizing": 0.1,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_1091o9w"],
+          "riskNote": "加密货币相关股票波动剧烈，此计划基于新闻逆向假设，需密切关注比特币走势。",
+          "invalidatesIf": "COIN跌破200美元或比特币单日跌幅超过5%。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "PANews快讯报道，美股三大指数集体收涨，但Coinbase (COIN) 股价逆势下跌超过4.66%，表现弱于大盘。",
+          "pa_05": "COIN作为加密货币交易所龙头，股价与加密市场情绪高度相关。短期逆势下跌可能源于比特币价格回调或监管不确定性，但长期受益于加密资产采用率提升。",
+          "pa_08": "大盘强势可能带动超跌反弹；Coinbase基本面稳健，交易量回升预期；若比特币企稳，COIN有望修复跌幅。",
+          "pa_09": "加密市场情绪转弱，比特币可能进一步下跌；监管风险持续压制估值；技术面破位可能引发止损盘。",
+          "pa_10": "采用保守做多策略，在关键支撑位附近轻仓试多，严格止损，目标为短线反弹阻力位。",
+          "pa_06": "主要风险包括加密市场夜间波动、监管消息冲击以及大盘情绪逆转。仓位控制在0.1以限制下行风险。",
+          "pa_07": "若比特币跌破关键支撑或COIN放量跌破止损位，则反弹逻辑失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_1091o9w"],
+          "pa_05": ["ev_1091o9w"],
+          "pa_08": ["ev_1091o9w"],
+          "pa_09": ["ev_1091o9w"],
+          "pa_10": ["ev_1091o9w"],
+          "pa_06": ["ev_1091o9w"],
+          "pa_07": ["ev_1091o9w"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "PANews快讯报道，美股三大指数集体收涨，但Coinbase (COIN) 股价逆势下跌超过4.66%，表现弱于大盘。",
+            "oneLineSummary": "PANews快讯报道，美股三大指数集体收涨，但Coinbase (COIN) 股价逆势下跌超过4.66%，表现弱于大盘。",
+            "detailedRationale": "PANews快讯报道，美股三大指数集体收涨，但Coinbase (COIN) 股价逆势下跌超过4.66%，表现弱于大盘。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "COIN作为加密货币交易所龙头，股价与加密市场情绪高度相关。短期逆势下跌可能源于比特币价格回调或监管不确定性，但长期受益于加密资产采用率提升。",
+            "oneLineSummary": "COIN作为加密货币交易所龙头，股价与加密市场情绪高度相关。短期逆势下跌可能源于比特币价格回调或监管不确定性，但长期受益于加密资产采用率提升。",
+            "detailedRationale": "COIN作为加密货币交易所龙头，股价与加密市场情绪高度相关。短期逆势下跌可能源于比特币价格回调或监管不确定性，但长期受益于加密资产采用率提升。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "大盘强势可能带动超跌反弹；Coinbase基本面稳健，交易量回升预期；若比特币企稳，COIN有望修复跌幅。",
+            "oneLineSummary": "大盘强势可能带动超跌反弹；Coinbase基本面稳健，交易量回升预期；若比特币企稳，COIN有望修复跌幅。",
+            "detailedRationale": "大盘强势可能带动超跌反弹；Coinbase基本面稳健，交易量回升预期；若比特币企稳，COIN有望修复跌幅。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "加密市场情绪转弱，比特币可能进一步下跌；监管风险持续压制估值；技术面破位可能引发止损盘。",
+            "oneLineSummary": "加密市场情绪转弱，比特币可能进一步下跌；监管风险持续压制估值；技术面破位可能引发止损盘。",
+            "detailedRationale": "加密市场情绪转弱，比特币可能进一步下跌；监管风险持续压制估值；技术面破位可能引发止损盘。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "采用保守做多策略，在关键支撑位附近轻仓试多，严格止损，目标为短线反弹阻力位。",
+            "oneLineSummary": "采用保守做多策略，在关键支撑位附近轻仓试多，严格止损，目标为短线反弹阻力位。",
+            "detailedRationale": "采用保守做多策略，在关键支撑位附近轻仓试多，严格止损，目标为短线反弹阻力位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "主要风险包括加密市场夜间波动、监管消息冲击以及大盘情绪逆转。仓位控制在0.1以限制下行风险。",
+            "oneLineSummary": "主要风险包括加密市场夜间波动、监管消息冲击以及大盘情绪逆转。仓位控制在0.1以限制下行风险。",
+            "detailedRationale": "主要风险包括加密市场夜间波动、监管消息冲击以及大盘情绪逆转。仓位控制在0.1以限制下行风险。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "若比特币跌破关键支撑或COIN放量跌破止损位，则反弹逻辑失效。",
+            "oneLineSummary": "若比特币跌破关键支撑或COIN放量跌破止损位，则反弹逻辑失效。",
+            "detailedRationale": "若比特币跌破关键支撑或COIN放量跌破止损位，则反弹逻辑失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T22:00:51.040Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T22:00:51.040Z",
+            "agentIds": ["pa_07"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780434051268",
+      "ts": 1780434051268,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_1qq3gvr"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780434051268",
+        "symbol": "BTC",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6",
+        "displayTitle": "BTC 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "BTC_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T21:00:51.268Z",
+          "ageMinutes": 120,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "BTC在67600美元附近，24小时跌幅超5%，受Cointelegraph报道看空目标5万美元影响，市场情绪偏空，但超卖可能引发反弹，整体趋势偏弱。",
+        "tradeDecision": {
+          "id": "trade:BTC:1780434051268",
+          "schemaVersion": 1,
+          "symbol": "BTC",
+          "generatedAt": "2026-06-02T21:00:51.268Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 67600,
+          "entryRange": null,
+          "stopLoss": 68500,
+          "takeProfit": [66500, 65500],
+          "positionSizing": 0.1,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_1qq3gvr"],
+          "riskNote": "高波动环境下，建议轻仓操作，严格设置止损。",
+          "invalidatesIf": "价格突破69000美元并站稳。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "Cointelegraph报道，比特币价格单日暴跌6%后，分析师给出5万美元的新目标价，认为市场面临进一步下行压力。",
+          "pa_05": "BTC短期受负面消息和技术破位影响，空头占据主导，但需警惕超卖反弹，整体偏空但波动剧烈。",
+          "pa_08": "如果67600美元支撑有效，超卖反弹可能推动价格回升至70000美元上方，因长期持有者仍在积累。",
+          "pa_09": "若跌破67000美元，可能加速下跌至65000美元甚至更低，因止损盘和恐慌抛售将放大跌幅。",
+          "pa_10": "基于新闻驱动的看空情绪和技术面弱势，选择做空，但设置较近止损以控制反弹风险，目标看向近期支撑位。",
+          "pa_06": "主要风险是突发利好消息或市场情绪逆转导致轧空，需严格止损。",
+          "pa_07": "若价格反弹突破69000美元，则空头观点失效，可能转为震荡或反弹。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_1qq3gvr"],
+          "pa_05": ["ev_1qq3gvr"],
+          "pa_08": ["ev_1qq3gvr"],
+          "pa_09": ["ev_1qq3gvr"],
+          "pa_10": ["ev_1qq3gvr"],
+          "pa_06": ["ev_1qq3gvr"],
+          "pa_07": ["ev_1qq3gvr"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "Cointelegraph报道，比特币价格单日暴跌6%后，分析师给出5万美元的新目标价，认为市场面临进一步下行压力。",
+            "oneLineSummary": "Cointelegraph报道，比特币价格单日暴跌6%后，分析师给出5万美元的新目标价，认为市场面临进一步下行压力。",
+            "detailedRationale": "Cointelegraph报道，比特币价格单日暴跌6%后，分析师给出5万美元的新目标价，认为市场面临进一步下行压力。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "BTC短期受负面消息和技术破位影响，空头占据主导，但需警惕超卖反弹，整体偏空但波动剧烈。",
+            "oneLineSummary": "BTC短期受负面消息和技术破位影响，空头占据主导，但需警惕超卖反弹，整体偏空但波动剧烈。",
+            "detailedRationale": "BTC短期受负面消息和技术破位影响，空头占据主导，但需警惕超卖反弹，整体偏空但波动剧烈。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "如果67600美元支撑有效，超卖反弹可能推动价格回升至70000美元上方，因长期持有者仍在积累。",
+            "oneLineSummary": "如果67600美元支撑有效，超卖反弹可能推动价格回升至70000美元上方，因长期持有者仍在积累。",
+            "detailedRationale": "如果67600美元支撑有效，超卖反弹可能推动价格回升至70000美元上方，因长期持有者仍在积累。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "若跌破67000美元，可能加速下跌至65000美元甚至更低，因止损盘和恐慌抛售将放大跌幅。",
+            "oneLineSummary": "若跌破67000美元，可能加速下跌至65000美元甚至更低，因止损盘和恐慌抛售将放大跌幅。",
+            "detailedRationale": "若跌破67000美元，可能加速下跌至65000美元甚至更低，因止损盘和恐慌抛售将放大跌幅。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "基于新闻驱动的看空情绪和技术面弱势，选择做空，但设置较近止损以控制反弹风险，目标看向近期支撑位。",
+            "oneLineSummary": "基于新闻驱动的看空情绪和技术面弱势，选择做空，但设置较近止损以控制反弹风险，目标看向近期支撑位。",
+            "detailedRationale": "基于新闻驱动的看空情绪和技术面弱势，选择做空，但设置较近止损以控制反弹风险，目标看向近期支撑位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "主要风险是突发利好消息或市场情绪逆转导致轧空，需严格止损。",
+            "oneLineSummary": "主要风险是突发利好消息或市场情绪逆转导致轧空，需严格止损。",
+            "detailedRationale": "主要风险是突发利好消息或市场情绪逆转导致轧空，需严格止损。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "若价格反弹突破69000美元，则空头观点失效，可能转为震荡或反弹。",
+            "oneLineSummary": "若价格反弹突破69000美元，则空头观点失效，可能转为震荡或反弹。",
+            "detailedRationale": "若价格反弹突破69000美元，则空头观点失效，可能转为震荡或反弹。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_07"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:BTC:news-driven:BTC:cnNzLWRlY3J5cHQ6aHR0cHM6:1780434051268",
+      "ts": 1780434051268,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_v64w1x"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BTC:news-driven:BTC:cnNzLWRlY3J5cHQ6aHR0cHM6:1780434051268",
+        "symbol": "BTC",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:BTC:cnNzLWRlY3J5cHQ6aHR0cHM6",
+        "displayTitle": "BTC 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "BTC_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T21:00:51.268Z",
+          "ageMinutes": 120,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "新闻驱动的抛售情绪导致BTC价格下跌5.",
+        "tradeDecision": {
+          "id": "trade:BTC:1780434051268",
+          "schemaVersion": 1,
+          "symbol": "BTC",
+          "generatedAt": "2026-06-02T21:00:51.268Z",
+          "direction": "long",
+          "entryType": "market",
+          "entryPrice": 67600,
+          "entryRange": null,
+          "stopLoss": 66500,
+          "takeProfit": [68500, 69500],
+          "positionSizing": 0.1,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_v64w1x"],
+          "riskNote": "新闻事件可能放大波动，建议严格止损。",
+          "invalidatesIf": "价格跌破66500美元或出现新的重大利空新闻。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "Strategy公司（原MicroStrategy）的股票连续第二日下跌，原因是其持有价值560亿美元的比特币被部分出售，引发市场对机构抛售的担忧。",
+          "pa_05": "BTC短期承压，但长期看涨趋势未破，若支撑位守住则有望反弹。",
+          "pa_08": "机构抛售可能是获利了结而非趋势逆转，BTC在67000美元附近有强支撑，若企稳将吸引抄底资金。",
+          "pa_09": "若抛售持续，可能触发连锁止损，导致BTC进一步下探至65000美元以下。",
+          "pa_10": "在支撑位附近轻仓做多，设窄止损，目标为快速反弹至阻力位。",
+          "pa_06": "新闻驱动的波动可能持续，需警惕突发利空导致破位。",
+          "pa_07": "若BTC跌破66500美元且放量，则短期看涨逻辑失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_v64w1x"],
+          "pa_05": ["ev_v64w1x"],
+          "pa_08": ["ev_v64w1x"],
+          "pa_09": ["ev_v64w1x"],
+          "pa_10": ["ev_v64w1x"],
+          "pa_06": ["ev_v64w1x"],
+          "pa_07": ["ev_v64w1x"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "Strategy公司（原MicroStrategy）的股票连续第二日下跌，原因是其持有价值560亿美元的比特币被部分出售，引发市场对机构抛售的担忧。",
+            "oneLineSummary": "Strategy公司（原MicroStrategy）的股票连续第二日下跌，原因是其持有价值560亿美元的比特币被部分出售，引发市场对机构抛售的担忧。",
+            "detailedRationale": "Strategy公司（原MicroStrategy）的股票连续第二日下跌，原因是其持有价值560亿美元的比特币被部分出售，引发市场对机构抛售的担忧。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "BTC短期承压，但长期看涨趋势未破，若支撑位守住则有望反弹。",
+            "oneLineSummary": "BTC短期承压，但长期看涨趋势未破，若支撑位守住则有望反弹。",
+            "detailedRationale": "BTC短期承压，但长期看涨趋势未破，若支撑位守住则有望反弹。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "机构抛售可能是获利了结而非趋势逆转，BTC在67000美元附近有强支撑，若企稳将吸引抄底资金。",
+            "oneLineSummary": "机构抛售可能是获利了结而非趋势逆转，BTC在67000美元附近有强支撑，若企稳将吸引抄底资金。",
+            "detailedRationale": "机构抛售可能是获利了结而非趋势逆转，BTC在67000美元附近有强支撑，若企稳将吸引抄底资金。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "若抛售持续，可能触发连锁止损，导致BTC进一步下探至65000美元以下。",
+            "oneLineSummary": "若抛售持续，可能触发连锁止损，导致BTC进一步下探至65000美元以下。",
+            "detailedRationale": "若抛售持续，可能触发连锁止损，导致BTC进一步下探至65000美元以下。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "在支撑位附近轻仓做多，设窄止损，目标为快速反弹至阻力位。",
+            "oneLineSummary": "在支撑位附近轻仓做多，设窄止损，目标为快速反弹至阻力位。",
+            "detailedRationale": "在支撑位附近轻仓做多，设窄止损，目标为快速反弹至阻力位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "新闻驱动的波动可能持续，需警惕突发利空导致破位。",
+            "oneLineSummary": "新闻驱动的波动可能持续，需警惕突发利空导致破位。",
+            "detailedRationale": "新闻驱动的波动可能持续，需警惕突发利空导致破位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "若BTC跌破66500美元且放量，则短期看涨逻辑失效。",
+            "oneLineSummary": "若BTC跌破66500美元且放量，则短期看涨逻辑失效。",
+            "detailedRationale": "若BTC跌破66500美元且放量，则短期看涨逻辑失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_v64w1x"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_07"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780434051268",
+      "ts": 1780434051268,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_usofcs"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780434051268",
+        "symbol": "BTC",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow",
+        "displayTitle": "BTC 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "BTC_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T21:00:51.268Z",
+          "ageMinutes": 120,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "BTC当前价格67600.54美元，24小时跌幅5.38%，近期消息面偏空，技术面显示下行压力，但长期看涨结构未破坏。",
+        "tradeDecision": {
+          "id": "trade:BTC:1780434051268",
+          "schemaVersion": 1,
+          "symbol": "BTC",
+          "generatedAt": "2026-06-02T21:00:51.268Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 67600.54,
+          "entryRange": null,
+          "stopLoss": 68100,
+          "takeProfit": [67000, 66500],
+          "positionSizing": 0.1,
+          "timeHorizon": "intraday",
+          "rating": 3,
+          "confidence": 0.65,
+          "evidenceIds": ["ev_usofcs"],
+          "riskNote": "此交易基于短期新闻驱动，波动较大，建议轻仓操作，严格止损。",
+          "invalidatesIf": "价格突破并站稳68000美元上方。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "medium"
+        },
+        "rationaleByAgent": {
+          "pa_02": "PANews快讯报道BTC跌破67000美元，日内下跌0.50%，市场对宏观经济和监管不确定性反应敏感，短期抛压增加。",
+          "pa_05": "BTC作为加密货币龙头，受市场情绪和资金流动影响显著，当前消息面利空导致价格承压，但长期价值储存属性仍被认可。",
+          "pa_08": "若BTC在67000美元附近获得支撑，可能吸引抄底资金，推动价格反弹至68000美元上方，因长期持有者未大幅减持。",
+          "pa_09": "若跌破67000美元关键支撑，可能加速下跌至66000美元，因止损盘触发和市场恐慌情绪蔓延。",
+          "pa_10": "采用保守做空策略，在67600美元附近入场，止损设于68000美元上方，目标看至67000美元和66500美元，控制风险。",
+          "pa_06": "主要风险是市场突然反转，若BTC快速收复68000美元，空头将面临亏损；此外，新闻影响可能短暂，需警惕假突破。",
+          "pa_07": "若BTC价格突破68000美元并站稳，则做空逻辑失效，应止损离场。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_usofcs"],
+          "pa_05": ["ev_usofcs"],
+          "pa_08": ["ev_usofcs"],
+          "pa_09": ["ev_usofcs"],
+          "pa_10": ["ev_usofcs"],
+          "pa_06": ["ev_usofcs"],
+          "pa_07": ["ev_usofcs"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "PANews快讯报道BTC跌破67000美元，日内下跌0.50%，市场对宏观经济和监管不确定性反应敏感，短期抛压增加。",
+            "oneLineSummary": "PANews快讯报道BTC跌破67000美元，日内下跌0.50%，市场对宏观经济和监管不确定性反应敏感，短期抛压增加。",
+            "detailedRationale": "PANews快讯报道BTC跌破67000美元，日内下跌0.50%，市场对宏观经济和监管不确定性反应敏感，短期抛压增加。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "BTC作为加密货币龙头，受市场情绪和资金流动影响显著，当前消息面利空导致价格承压，但长期价值储存属性仍被认可。",
+            "oneLineSummary": "BTC作为加密货币龙头，受市场情绪和资金流动影响显著，当前消息面利空导致价格承压，但长期价值储存属性仍被认可。",
+            "detailedRationale": "BTC作为加密货币龙头，受市场情绪和资金流动影响显著，当前消息面利空导致价格承压，但长期价值储存属性仍被认可。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "若BTC在67000美元附近获得支撑，可能吸引抄底资金，推动价格反弹至68000美元上方，因长期持有者未大幅减持。",
+            "oneLineSummary": "若BTC在67000美元附近获得支撑，可能吸引抄底资金，推动价格反弹至68000美元上方，因长期持有者未大幅减持。",
+            "detailedRationale": "若BTC在67000美元附近获得支撑，可能吸引抄底资金，推动价格反弹至68000美元上方，因长期持有者未大幅减持。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "若跌破67000美元关键支撑，可能加速下跌至66000美元，因止损盘触发和市场恐慌情绪蔓延。",
+            "oneLineSummary": "若跌破67000美元关键支撑，可能加速下跌至66000美元，因止损盘触发和市场恐慌情绪蔓延。",
+            "detailedRationale": "若跌破67000美元关键支撑，可能加速下跌至66000美元，因止损盘触发和市场恐慌情绪蔓延。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "采用保守做空策略，在67600美元附近入场，止损设于68000美元上方，目标看至67000美元和66500美元，控制风险。",
+            "oneLineSummary": "采用保守做空策略，在67600美元附近入场，止损设于68000美元上方，目标看至67000美元和66500美元，控制风险。",
+            "detailedRationale": "采用保守做空策略，在67600美元附近入场，止损设于68000美元上方，目标看至67000美元和66500美元，控制风险。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.65,
+            "rationale": "主要风险是市场突然反转，若BTC快速收复68000美元，空头将面临亏损；此外，新闻影响可能短暂，需警惕假突破。",
+            "oneLineSummary": "主要风险是市场突然反转，若BTC快速收复68000美元，空头将面临亏损；此外，新闻影响可能短暂，需警惕假突破。",
+            "detailedRationale": "主要风险是市场突然反转，若BTC快速收复68000美元，空头将面临亏损；此外，新闻影响可能短暂，需警惕假突破。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "若BTC价格突破68000美元并站稳，则做空逻辑失效，应止损离场。",
+            "oneLineSummary": "若BTC价格突破68000美元并站稳，则做空逻辑失效，应止损离场。",
+            "detailedRationale": "若BTC价格突破68000美元并站稳，则做空逻辑失效，应止损离场。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_07"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780434051268",
+      "ts": 1780434051268,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_1091o9w"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780434051268",
+        "symbol": "COIN",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow",
+        "displayTitle": "COIN 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "COIN_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/coinusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T21:00:51.268Z",
+          "ageMinutes": 120,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "COIN在美股普涨背景下逆势下跌，表明个股利空因素主导。",
+        "tradeDecision": {
+          "id": "trade:COIN:1780434051268",
+          "schemaVersion": 1,
+          "symbol": "COIN",
+          "generatedAt": "2026-06-02T21:00:51.268Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 62.5,
+          "entryRange": null,
+          "stopLoss": 65.2,
+          "takeProfit": [58, 55.5],
+          "positionSizing": 0.15,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_1091o9w"],
+          "riskNote": "仓位控制在0.15以管理逆势反弹风险，若波动率放大可进一步降低。",
+          "invalidatesIf": "价格突破65.2美元止损位或出现重大加密利好。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "PANews快讯：美股三大指数收涨，但Coinbase股价下跌超4.66%，表现弱于大盘。",
+          "pa_05": "COIN与加密货币市场高度相关，近期监管不确定性和比特币价格波动对其构成压力，短期存在进一步下行风险。",
+          "pa_08": "若比特币企稳反弹，COIN可能跟随修复；公司基本面稳健，长期受益于加密采用率提升。",
+          "pa_09": "加密市场情绪低迷，交易量萎缩影响收入；监管收紧可能导致商业模式受损，股价破位后加速下跌。",
+          "pa_10": "基于逆势下跌的弱势信号，采用短线做空策略，在反弹至阻力位附近入场，目标前低支撑区域。",
+          "pa_06": "主要风险为大盘强势带动空头挤压，或突发加密利好引发反转。需严格止损。",
+          "pa_07": "若价格回升至65美元上方并站稳，则空头逻辑失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_1091o9w"],
+          "pa_05": ["ev_1091o9w"],
+          "pa_08": ["ev_1091o9w"],
+          "pa_09": ["ev_1091o9w"],
+          "pa_10": ["ev_1091o9w"],
+          "pa_06": ["ev_1091o9w"],
+          "pa_07": ["ev_1091o9w"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "PANews快讯：美股三大指数收涨，但Coinbase股价下跌超4.66%，表现弱于大盘。",
+            "oneLineSummary": "PANews快讯：美股三大指数收涨，但Coinbase股价下跌超4.66%，表现弱于大盘。",
+            "detailedRationale": "PANews快讯：美股三大指数收涨，但Coinbase股价下跌超4.66%，表现弱于大盘。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "COIN与加密货币市场高度相关，近期监管不确定性和比特币价格波动对其构成压力，短期存在进一步下行风险。",
+            "oneLineSummary": "COIN与加密货币市场高度相关，近期监管不确定性和比特币价格波动对其构成压力，短期存在进一步下行风险。",
+            "detailedRationale": "COIN与加密货币市场高度相关，近期监管不确定性和比特币价格波动对其构成压力，短期存在进一步下行风险。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "若比特币企稳反弹，COIN可能跟随修复；公司基本面稳健，长期受益于加密采用率提升。",
+            "oneLineSummary": "若比特币企稳反弹，COIN可能跟随修复；公司基本面稳健，长期受益于加密采用率提升。",
+            "detailedRationale": "若比特币企稳反弹，COIN可能跟随修复；公司基本面稳健，长期受益于加密采用率提升。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "加密市场情绪低迷，交易量萎缩影响收入；监管收紧可能导致商业模式受损，股价破位后加速下跌。",
+            "oneLineSummary": "加密市场情绪低迷，交易量萎缩影响收入；监管收紧可能导致商业模式受损，股价破位后加速下跌。",
+            "detailedRationale": "加密市场情绪低迷，交易量萎缩影响收入；监管收紧可能导致商业模式受损，股价破位后加速下跌。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "基于逆势下跌的弱势信号，采用短线做空策略，在反弹至阻力位附近入场，目标前低支撑区域。",
+            "oneLineSummary": "基于逆势下跌的弱势信号，采用短线做空策略，在反弹至阻力位附近入场，目标前低支撑区域。",
+            "detailedRationale": "基于逆势下跌的弱势信号，采用短线做空策略，在反弹至阻力位附近入场，目标前低支撑区域。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "主要风险为大盘强势带动空头挤压，或突发加密利好引发反转。需严格止损。",
+            "oneLineSummary": "主要风险为大盘强势带动空头挤压，或突发加密利好引发反转。需严格止损。",
+            "detailedRationale": "主要风险为大盘强势带动空头挤压，或突发加密利好引发反转。需严格止损。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "若价格回升至65美元上方并站稳，则空头逻辑失效。",
+            "oneLineSummary": "若价格回升至65美元上方并站稳，则空头逻辑失效。",
+            "detailedRationale": "若价格回升至65美元上方并站稳，则空头逻辑失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_07"]
+          }
+        ],
+        "resolution": {
+          "outcome": "hit_sl",
+          "resolvedAt": "2026-06-02T22:00:51.040Z",
+          "observedPrice": 174.14,
+          "observedPriceSource": "coinw-futures-ticker",
+          "reason": "stop_loss_reached"
+        }
+      }
+    },
+    {
+      "id": "pm-decision:pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780434051268",
+      "ts": 1780434051268,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_1091o9w"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780434051268",
+        "symbol": "COIN",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow",
+        "displayTitle": "COIN 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "COIN_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/coinusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T21:00:51.268Z",
+          "ageMinutes": 120,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "COIN在美股普涨背景下逆势下跌，表明个股利空因素主导。",
+        "tradeDecision": {
+          "id": "trade:COIN:1780434051268",
+          "schemaVersion": 1,
+          "symbol": "COIN",
+          "generatedAt": "2026-06-02T21:00:51.268Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 62.5,
+          "entryRange": null,
+          "stopLoss": 65.2,
+          "takeProfit": [58, 55.5],
+          "positionSizing": 0.15,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_1091o9w"],
+          "riskNote": "仓位控制在0.15以管理逆势反弹风险，若波动率放大可进一步降低。",
+          "invalidatesIf": "价格突破65.2美元止损位或出现重大加密利好。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "PANews快讯：美股三大指数收涨，但Coinbase股价下跌超4.66%，表现弱于大盘。",
+          "pa_05": "COIN与加密货币市场高度相关，近期监管不确定性和比特币价格波动对其构成压力，短期存在进一步下行风险。",
+          "pa_08": "若比特币企稳反弹，COIN可能跟随修复；公司基本面稳健，长期受益于加密采用率提升。",
+          "pa_09": "加密市场情绪低迷，交易量萎缩影响收入；监管收紧可能导致商业模式受损，股价破位后加速下跌。",
+          "pa_10": "基于逆势下跌的弱势信号，采用短线做空策略，在反弹至阻力位附近入场，目标前低支撑区域。",
+          "pa_06": "主要风险为大盘强势带动空头挤压，或突发加密利好引发反转。需严格止损。",
+          "pa_07": "若价格回升至65美元上方并站稳，则空头逻辑失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_1091o9w"],
+          "pa_05": ["ev_1091o9w"],
+          "pa_08": ["ev_1091o9w"],
+          "pa_09": ["ev_1091o9w"],
+          "pa_10": ["ev_1091o9w"],
+          "pa_06": ["ev_1091o9w"],
+          "pa_07": ["ev_1091o9w"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "PANews快讯：美股三大指数收涨，但Coinbase股价下跌超4.66%，表现弱于大盘。",
+            "oneLineSummary": "PANews快讯：美股三大指数收涨，但Coinbase股价下跌超4.66%，表现弱于大盘。",
+            "detailedRationale": "PANews快讯：美股三大指数收涨，但Coinbase股价下跌超4.66%，表现弱于大盘。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "COIN与加密货币市场高度相关，近期监管不确定性和比特币价格波动对其构成压力，短期存在进一步下行风险。",
+            "oneLineSummary": "COIN与加密货币市场高度相关，近期监管不确定性和比特币价格波动对其构成压力，短期存在进一步下行风险。",
+            "detailedRationale": "COIN与加密货币市场高度相关，近期监管不确定性和比特币价格波动对其构成压力，短期存在进一步下行风险。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "若比特币企稳反弹，COIN可能跟随修复；公司基本面稳健，长期受益于加密采用率提升。",
+            "oneLineSummary": "若比特币企稳反弹，COIN可能跟随修复；公司基本面稳健，长期受益于加密采用率提升。",
+            "detailedRationale": "若比特币企稳反弹，COIN可能跟随修复；公司基本面稳健，长期受益于加密采用率提升。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "加密市场情绪低迷，交易量萎缩影响收入；监管收紧可能导致商业模式受损，股价破位后加速下跌。",
+            "oneLineSummary": "加密市场情绪低迷，交易量萎缩影响收入；监管收紧可能导致商业模式受损，股价破位后加速下跌。",
+            "detailedRationale": "加密市场情绪低迷，交易量萎缩影响收入；监管收紧可能导致商业模式受损，股价破位后加速下跌。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "基于逆势下跌的弱势信号，采用短线做空策略，在反弹至阻力位附近入场，目标前低支撑区域。",
+            "oneLineSummary": "基于逆势下跌的弱势信号，采用短线做空策略，在反弹至阻力位附近入场，目标前低支撑区域。",
+            "detailedRationale": "基于逆势下跌的弱势信号，采用短线做空策略，在反弹至阻力位附近入场，目标前低支撑区域。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "主要风险为大盘强势带动空头挤压，或突发加密利好引发反转。需严格止损。",
+            "oneLineSummary": "主要风险为大盘强势带动空头挤压，或突发加密利好引发反转。需严格止损。",
+            "detailedRationale": "主要风险为大盘强势带动空头挤压，或突发加密利好引发反转。需严格止损。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "若价格回升至65美元上方并站稳，则空头逻辑失效。",
+            "oneLineSummary": "若价格回升至65美元上方并站稳，则空头逻辑失效。",
+            "detailedRationale": "若价格回升至65美元上方并站稳，则空头逻辑失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T21:00:51.268Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T21:00:51.268Z",
+            "agentIds": ["pa_07"]
+          }
+        ],
+        "resolution": {
+          "outcome": "hit_sl",
+          "resolvedAt": "2026-06-02T22:00:51.040Z",
+          "observedPrice": 174.14,
+          "observedPriceSource": "coinw-futures-ticker",
+          "reason": "stop_loss_reached"
+        }
+      }
+    },
+    {
+      "id": "pm-decision:pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780430451476",
+      "ts": 1780430451476,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_1qq3gvr"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780430451476",
+        "symbol": "BTC",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6",
+        "displayTitle": "BTC 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "BTC_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T20:00:51.476Z",
+          "ageMinutes": 180,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "BTC在67200美元附近，24小时跌幅超6%，新闻驱动看空情绪。",
+        "tradeDecision": {
+          "id": "trade:BTC:1780430451476",
+          "schemaVersion": 1,
+          "symbol": "BTC",
+          "generatedAt": "2026-06-02T20:00:51.476Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 67200,
+          "entryRange": null,
+          "stopLoss": 68500,
+          "takeProfit": [65000, 62000],
+          "positionSizing": 0.15,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_1qq3gvr"],
+          "riskNote": "高波动环境下，仓位控制在0.15，严格止损。",
+          "invalidatesIf": "价格突破并站稳68500美元上方。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "Cointelegraph报道，比特币价格单日暴跌6%后，分析师将目标价下调至5万美元，市场恐慌情绪蔓延。",
+          "pa_05": "BTC短期受利空消息打压，跌破关键支撑，但长期采用率和机构兴趣仍提供底部支撑。",
+          "pa_08": "若价格守住65000美元心理关口，超卖反弹可能推动回升至70000美元上方，因长期持有者仍在积累。",
+          "pa_09": "若跌破65000美元，恐慌抛售可能加速，目标看向60000美元甚至55000美元，与新闻中5万美元目标一致。",
+          "pa_10": "基于新闻驱动的空头动能，在现价附近做空，设置紧止损以防反转，目标分批止盈。",
+          "pa_06": "主要风险是超卖后的轧空反弹，若BTC迅速收复68000美元，空头将失效。",
+          "pa_07": "若BTC小时线收盘站上68500美元，则空头观点失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_1qq3gvr"],
+          "pa_05": ["ev_1qq3gvr"],
+          "pa_08": ["ev_1qq3gvr"],
+          "pa_09": ["ev_1qq3gvr"],
+          "pa_10": ["ev_1qq3gvr"],
+          "pa_06": ["ev_1qq3gvr"],
+          "pa_07": ["ev_1qq3gvr"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "Cointelegraph报道，比特币价格单日暴跌6%后，分析师将目标价下调至5万美元，市场恐慌情绪蔓延。",
+            "oneLineSummary": "Cointelegraph报道，比特币价格单日暴跌6%后，分析师将目标价下调至5万美元，市场恐慌情绪蔓延。",
+            "detailedRationale": "Cointelegraph报道，比特币价格单日暴跌6%后，分析师将目标价下调至5万美元，市场恐慌情绪蔓延。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "BTC短期受利空消息打压，跌破关键支撑，但长期采用率和机构兴趣仍提供底部支撑。",
+            "oneLineSummary": "BTC短期受利空消息打压，跌破关键支撑，但长期采用率和机构兴趣仍提供底部支撑。",
+            "detailedRationale": "BTC短期受利空消息打压，跌破关键支撑，但长期采用率和机构兴趣仍提供底部支撑。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "若价格守住65000美元心理关口，超卖反弹可能推动回升至70000美元上方，因长期持有者仍在积累。",
+            "oneLineSummary": "若价格守住65000美元心理关口，超卖反弹可能推动回升至70000美元上方，因长期持有者仍在积累。",
+            "detailedRationale": "若价格守住65000美元心理关口，超卖反弹可能推动回升至70000美元上方，因长期持有者仍在积累。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "若跌破65000美元，恐慌抛售可能加速，目标看向60000美元甚至55000美元，与新闻中5万美元目标一致。",
+            "oneLineSummary": "若跌破65000美元，恐慌抛售可能加速，目标看向60000美元甚至55000美元，与新闻中5万美元目标一致。",
+            "detailedRationale": "若跌破65000美元，恐慌抛售可能加速，目标看向60000美元甚至55000美元，与新闻中5万美元目标一致。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "基于新闻驱动的空头动能，在现价附近做空，设置紧止损以防反转，目标分批止盈。",
+            "oneLineSummary": "基于新闻驱动的空头动能，在现价附近做空，设置紧止损以防反转，目标分批止盈。",
+            "detailedRationale": "基于新闻驱动的空头动能，在现价附近做空，设置紧止损以防反转，目标分批止盈。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "主要风险是超卖后的轧空反弹，若BTC迅速收复68000美元，空头将失效。",
+            "oneLineSummary": "主要风险是超卖后的轧空反弹，若BTC迅速收复68000美元，空头将失效。",
+            "detailedRationale": "主要风险是超卖后的轧空反弹，若BTC迅速收复68000美元，空头将失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 1,
+            "rationale": "若BTC小时线收盘站上68500美元，则空头观点失效。",
+            "oneLineSummary": "若BTC小时线收盘站上68500美元，则空头观点失效。",
+            "detailedRationale": "若BTC小时线收盘站上68500美元，则空头观点失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_07"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780430451476",
+      "ts": 1780430451476,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_usofcs"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780430451476",
+        "symbol": "BTC",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow",
+        "displayTitle": "BTC 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "BTC_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T20:00:51.476Z",
+          "ageMinutes": 180,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "BTC当前价格67200美元附近，24小时跌幅约6%，市场受利空消息影响出现抛售，短期趋势偏空，但需关注关键支撑位。",
+        "tradeDecision": {
+          "id": "trade:BTC:1780430451476",
+          "schemaVersion": 1,
+          "symbol": "BTC",
+          "generatedAt": "2026-06-02T20:00:51.476Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 67200,
+          "entryRange": null,
+          "stopLoss": 68500,
+          "takeProfit": [66000, 65000],
+          "positionSizing": 0.1,
+          "timeHorizon": "intraday",
+          "rating": 3,
+          "confidence": 0.65,
+          "evidenceIds": ["ev_usofcs"],
+          "riskNote": "注意市场情绪变化，若出现放量反弹应及时离场。",
+          "invalidatesIf": "价格突破68500美元并维持30分钟以上。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "medium"
+        },
+        "rationaleByAgent": {
+          "pa_02": "PANews快讯报道BTC跌破67000美元，日内下跌0.50%，引发市场对进一步回调的担忧。",
+          "pa_05": "BTC在利空消息下跌破短期支撑，市场情绪转弱，可能测试下方关键支撑位。",
+          "pa_08": "若BTC能快速收复68000美元并站稳，则表明下方买盘强劲，可能形成假跌破，反弹目标看70000美元。",
+          "pa_09": "若BTC持续在67000美元下方运行，则可能加速下跌，目标看65000美元甚至更低。",
+          "pa_10": "采用保守做空策略，在现价附近入场，止损设在近期小高点上方，目标看前期支撑区域。",
+          "pa_06": "市场波动较大，需警惕突发利好导致空头挤压，严格止损。",
+          "pa_07": "若价格回升至68500美元以上并站稳，则空头观点失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_usofcs"],
+          "pa_05": ["ev_usofcs"],
+          "pa_08": ["ev_usofcs"],
+          "pa_09": ["ev_usofcs"],
+          "pa_10": ["ev_usofcs"],
+          "pa_06": ["ev_usofcs"],
+          "pa_07": ["ev_usofcs"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "PANews快讯报道BTC跌破67000美元，日内下跌0.50%，引发市场对进一步回调的担忧。",
+            "oneLineSummary": "PANews快讯报道BTC跌破67000美元，日内下跌0.50%，引发市场对进一步回调的担忧。",
+            "detailedRationale": "PANews快讯报道BTC跌破67000美元，日内下跌0.50%，引发市场对进一步回调的担忧。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "BTC在利空消息下跌破短期支撑，市场情绪转弱，可能测试下方关键支撑位。",
+            "oneLineSummary": "BTC在利空消息下跌破短期支撑，市场情绪转弱，可能测试下方关键支撑位。",
+            "detailedRationale": "BTC在利空消息下跌破短期支撑，市场情绪转弱，可能测试下方关键支撑位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "若BTC能快速收复68000美元并站稳，则表明下方买盘强劲，可能形成假跌破，反弹目标看70000美元。",
+            "oneLineSummary": "若BTC能快速收复68000美元并站稳，则表明下方买盘强劲，可能形成假跌破，反弹目标看70000美元。",
+            "detailedRationale": "若BTC能快速收复68000美元并站稳，则表明下方买盘强劲，可能形成假跌破，反弹目标看70000美元。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "若BTC持续在67000美元下方运行，则可能加速下跌，目标看65000美元甚至更低。",
+            "oneLineSummary": "若BTC持续在67000美元下方运行，则可能加速下跌，目标看65000美元甚至更低。",
+            "detailedRationale": "若BTC持续在67000美元下方运行，则可能加速下跌，目标看65000美元甚至更低。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "采用保守做空策略，在现价附近入场，止损设在近期小高点上方，目标看前期支撑区域。",
+            "oneLineSummary": "采用保守做空策略，在现价附近入场，止损设在近期小高点上方，目标看前期支撑区域。",
+            "detailedRationale": "采用保守做空策略，在现价附近入场，止损设在近期小高点上方，目标看前期支撑区域。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.65,
+            "rationale": "市场波动较大，需警惕突发利好导致空头挤压，严格止损。",
+            "oneLineSummary": "市场波动较大，需警惕突发利好导致空头挤压，严格止损。",
+            "detailedRationale": "市场波动较大，需警惕突发利好导致空头挤压，严格止损。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "若价格回升至68500美元以上并站稳，则空头观点失效。",
+            "oneLineSummary": "若价格回升至68500美元以上并站稳，则空头观点失效。",
+            "detailedRationale": "若价格回升至68500美元以上并站稳，则空头观点失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_usofcs"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_07"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-decision:pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780430451476",
+      "ts": 1780430451476,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_1091o9w"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780430451476",
+        "symbol": "COIN",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow",
+        "displayTitle": "COIN 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "COIN_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/coinusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T20:00:51.476Z",
+          "ageMinutes": 180,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "COIN在美股普涨背景下逆势下跌，显示相对弱势，短期可能继续承压，但需关注加密货币市场整体动向。",
+        "tradeDecision": {
+          "id": "trade:COIN:1780430451476",
+          "schemaVersion": 1,
+          "symbol": "COIN",
+          "generatedAt": "2026-06-02T20:00:51.476Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 210.5,
+          "entryRange": null,
+          "stopLoss": 218,
+          "takeProfit": [200, 190],
+          "positionSizing": 0.15,
+          "timeHorizon": "intraday",
+          "rating": 3,
+          "confidence": 0.65,
+          "evidenceIds": ["ev_1091o9w"],
+          "riskNote": "加密货币相关股票波动剧烈，建议严格控制仓位，避免隔夜重大消息冲击。",
+          "invalidatesIf": "价格突破218美元止损位或加密货币市场出现强劲反弹信号。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "medium"
+        },
+        "rationaleByAgent": {
+          "pa_02": "PANews快讯报道，美股三大指数集体收涨，但Coinbase股价逆势下跌超过4.66%，表现弱于大盘。",
+          "pa_05": "COIN作为加密货币交易所龙头，其股价与加密市场高度相关，近期加密市场情绪谨慎，COIN面临回调压力。",
+          "pa_08": "如果加密货币市场迅速反弹，COIN可能因交易量回升和情绪改善而快速修复跌幅。",
+          "pa_09": "加密市场持续低迷或监管利空可能导致COIN进一步下跌，跌破关键支撑位。",
+          "pa_10": "基于逆势下跌的弱势信号，采用短线做空策略，设置紧密止损以控制风险，目标为近期支撑区域。",
+          "pa_06": "主要风险在于加密市场突然反转或公司发布利好，导致空头挤压。",
+          "pa_07": "如果COIN价格回升至今日开盘价上方并站稳，则空头观点失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_1091o9w"],
+          "pa_05": ["ev_1091o9w"],
+          "pa_08": ["ev_1091o9w"],
+          "pa_09": ["ev_1091o9w"],
+          "pa_10": ["ev_1091o9w"],
+          "pa_06": ["ev_1091o9w"],
+          "pa_07": ["ev_1091o9w"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "PANews快讯报道，美股三大指数集体收涨，但Coinbase股价逆势下跌超过4.66%，表现弱于大盘。",
+            "oneLineSummary": "PANews快讯报道，美股三大指数集体收涨，但Coinbase股价逆势下跌超过4.66%，表现弱于大盘。",
+            "detailedRationale": "PANews快讯报道，美股三大指数集体收涨，但Coinbase股价逆势下跌超过4.66%，表现弱于大盘。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "COIN作为加密货币交易所龙头，其股价与加密市场高度相关，近期加密市场情绪谨慎，COIN面临回调压力。",
+            "oneLineSummary": "COIN作为加密货币交易所龙头，其股价与加密市场高度相关，近期加密市场情绪谨慎，COIN面临回调压力。",
+            "detailedRationale": "COIN作为加密货币交易所龙头，其股价与加密市场高度相关，近期加密市场情绪谨慎，COIN面临回调压力。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "如果加密货币市场迅速反弹，COIN可能因交易量回升和情绪改善而快速修复跌幅。",
+            "oneLineSummary": "如果加密货币市场迅速反弹，COIN可能因交易量回升和情绪改善而快速修复跌幅。",
+            "detailedRationale": "如果加密货币市场迅速反弹，COIN可能因交易量回升和情绪改善而快速修复跌幅。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "加密市场持续低迷或监管利空可能导致COIN进一步下跌，跌破关键支撑位。",
+            "oneLineSummary": "加密市场持续低迷或监管利空可能导致COIN进一步下跌，跌破关键支撑位。",
+            "detailedRationale": "加密市场持续低迷或监管利空可能导致COIN进一步下跌，跌破关键支撑位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "基于逆势下跌的弱势信号，采用短线做空策略，设置紧密止损以控制风险，目标为近期支撑区域。",
+            "oneLineSummary": "基于逆势下跌的弱势信号，采用短线做空策略，设置紧密止损以控制风险，目标为近期支撑区域。",
+            "detailedRationale": "基于逆势下跌的弱势信号，采用短线做空策略，设置紧密止损以控制风险，目标为近期支撑区域。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.65,
+            "rationale": "主要风险在于加密市场突然反转或公司发布利好，导致空头挤压。",
+            "oneLineSummary": "主要风险在于加密市场突然反转或公司发布利好，导致空头挤压。",
+            "detailedRationale": "主要风险在于加密市场突然反转或公司发布利好，导致空头挤压。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "如果COIN价格回升至今日开盘价上方并站稳，则空头观点失效。",
+            "oneLineSummary": "如果COIN价格回升至今日开盘价上方并站稳，则空头观点失效。",
+            "detailedRationale": "如果COIN价格回升至今日开盘价上方并站稳，则空头观点失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_07"]
+          }
+        ],
+        "resolution": {
+          "outcome": "hit_tp",
+          "resolvedAt": "2026-06-02T21:00:51.268Z",
+          "observedPrice": 174.39,
+          "observedPriceSource": "coinw-futures-ticker",
+          "reason": "take_profit_reached"
+        }
+      }
+    },
+    {
+      "id": "pm-decision:pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780430451476",
+      "ts": 1780430451476,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_1091o9w"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780430451476",
+        "symbol": "COIN",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow",
+        "displayTitle": "COIN 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "COIN_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/coinusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T20:00:51.476Z",
+          "ageMinutes": 180,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "COIN在美股普涨背景下逆势下跌，显示相对弱势，短期可能继续承压，但需关注加密货币市场整体动向。",
+        "tradeDecision": {
+          "id": "trade:COIN:1780430451476",
+          "schemaVersion": 1,
+          "symbol": "COIN",
+          "generatedAt": "2026-06-02T20:00:51.476Z",
+          "direction": "short",
+          "entryType": "market",
+          "entryPrice": 210.5,
+          "entryRange": null,
+          "stopLoss": 218,
+          "takeProfit": [200, 190],
+          "positionSizing": 0.15,
+          "timeHorizon": "intraday",
+          "rating": 3,
+          "confidence": 0.65,
+          "evidenceIds": ["ev_1091o9w"],
+          "riskNote": "加密货币相关股票波动剧烈，建议严格控制仓位，避免隔夜重大消息冲击。",
+          "invalidatesIf": "价格突破218美元止损位或加密货币市场出现强劲反弹信号。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "medium"
+        },
+        "rationaleByAgent": {
+          "pa_02": "PANews快讯报道，美股三大指数集体收涨，但Coinbase股价逆势下跌超过4.66%，表现弱于大盘。",
+          "pa_05": "COIN作为加密货币交易所龙头，其股价与加密市场高度相关，近期加密市场情绪谨慎，COIN面临回调压力。",
+          "pa_08": "如果加密货币市场迅速反弹，COIN可能因交易量回升和情绪改善而快速修复跌幅。",
+          "pa_09": "加密市场持续低迷或监管利空可能导致COIN进一步下跌，跌破关键支撑位。",
+          "pa_10": "基于逆势下跌的弱势信号，采用短线做空策略，设置紧密止损以控制风险，目标为近期支撑区域。",
+          "pa_06": "主要风险在于加密市场突然反转或公司发布利好，导致空头挤压。",
+          "pa_07": "如果COIN价格回升至今日开盘价上方并站稳，则空头观点失效。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_1091o9w"],
+          "pa_05": ["ev_1091o9w"],
+          "pa_08": ["ev_1091o9w"],
+          "pa_09": ["ev_1091o9w"],
+          "pa_10": ["ev_1091o9w"],
+          "pa_06": ["ev_1091o9w"],
+          "pa_07": ["ev_1091o9w"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "PANews快讯报道，美股三大指数集体收涨，但Coinbase股价逆势下跌超过4.66%，表现弱于大盘。",
+            "oneLineSummary": "PANews快讯报道，美股三大指数集体收涨，但Coinbase股价逆势下跌超过4.66%，表现弱于大盘。",
+            "detailedRationale": "PANews快讯报道，美股三大指数集体收涨，但Coinbase股价逆势下跌超过4.66%，表现弱于大盘。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "COIN作为加密货币交易所龙头，其股价与加密市场高度相关，近期加密市场情绪谨慎，COIN面临回调压力。",
+            "oneLineSummary": "COIN作为加密货币交易所龙头，其股价与加密市场高度相关，近期加密市场情绪谨慎，COIN面临回调压力。",
+            "detailedRationale": "COIN作为加密货币交易所龙头，其股价与加密市场高度相关，近期加密市场情绪谨慎，COIN面临回调压力。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "如果加密货币市场迅速反弹，COIN可能因交易量回升和情绪改善而快速修复跌幅。",
+            "oneLineSummary": "如果加密货币市场迅速反弹，COIN可能因交易量回升和情绪改善而快速修复跌幅。",
+            "detailedRationale": "如果加密货币市场迅速反弹，COIN可能因交易量回升和情绪改善而快速修复跌幅。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "加密市场持续低迷或监管利空可能导致COIN进一步下跌，跌破关键支撑位。",
+            "oneLineSummary": "加密市场持续低迷或监管利空可能导致COIN进一步下跌，跌破关键支撑位。",
+            "detailedRationale": "加密市场持续低迷或监管利空可能导致COIN进一步下跌，跌破关键支撑位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "基于逆势下跌的弱势信号，采用短线做空策略，设置紧密止损以控制风险，目标为近期支撑区域。",
+            "oneLineSummary": "基于逆势下跌的弱势信号，采用短线做空策略，设置紧密止损以控制风险，目标为近期支撑区域。",
+            "detailedRationale": "基于逆势下跌的弱势信号，采用短线做空策略，设置紧密止损以控制风险，目标为近期支撑区域。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.65,
+            "rationale": "主要风险在于加密市场突然反转或公司发布利好，导致空头挤压。",
+            "oneLineSummary": "主要风险在于加密市场突然反转或公司发布利好，导致空头挤压。",
+            "detailedRationale": "主要风险在于加密市场突然反转或公司发布利好，导致空头挤压。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "short",
+            "confidence": 0.65,
+            "rationale": "如果COIN价格回升至今日开盘价上方并站稳，则空头观点失效。",
+            "oneLineSummary": "如果COIN价格回升至今日开盘价上方并站稳，则空头观点失效。",
+            "detailedRationale": "如果COIN价格回升至今日开盘价上方并站稳，则空头观点失效。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1091o9w"],
+            "observedAt": "2026-06-02T20:00:51.476Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T20:00:51.476Z",
+            "agentIds": ["pa_07"]
+          }
+        ],
+        "resolution": {
+          "outcome": "hit_tp",
+          "resolvedAt": "2026-06-02T21:00:51.268Z",
+          "observedPrice": 174.39,
+          "observedPriceSource": "coinw-futures-ticker",
+          "reason": "take_profit_reached"
+        }
+      }
+    },
+    {
+      "id": "pm-decision:pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780426902393",
+      "ts": 1780426902393,
+      "visibility": "public",
+      "importance": "high",
+      "sourceTrigger": "pm_decision",
+      "evidenceIds": ["ev_1qq3gvr"],
+      "locale": "zh_CN",
+      "payload": {
+        "kind": "pm_decision",
+        "recordId": "pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780426902393",
+        "symbol": "BTC",
+        "candidateType": "symbol",
+        "candidateKey": "news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6",
+        "displayTitle": "BTC 实时行情分析",
+        "executable": true,
+        "execution": {
+          "executable": true,
+          "coinwPair": "BTC_USDT",
+          "tradeUrl": "https://www.coinw.com/zh_CN/futures/usdt/btcusdt",
+          "watchOnly": false
+        },
+        "freshnessStatus": {
+          "level": "aging",
+          "observedAt": "2026-06-02T19:01:42.393Z",
+          "ageMinutes": 240,
+          "staleAfterMinutes": 360,
+          "expiredAfterMinutes": 1440
+        },
+        "analysisSummary": "BTC在67355美元附近，24小时跌幅5.",
+        "tradeDecision": {
+          "id": "trade:BTC:1780426902393",
+          "schemaVersion": 1,
+          "symbol": "BTC",
+          "generatedAt": "2026-06-02T19:01:42.393Z",
+          "direction": "long",
+          "entryType": "market",
+          "entryPrice": 67355.24,
+          "entryRange": null,
+          "stopLoss": 64900,
+          "takeProfit": [69500, 71000],
+          "positionSizing": 0.1,
+          "timeHorizon": "intraday",
+          "rating": 5,
+          "confidence": 1,
+          "evidenceIds": ["ev_1qq3gvr"],
+          "riskNote": "新闻驱动型交易风险较高，请确保止损订单有效，避免隔夜跳空风险。",
+          "invalidatesIf": "价格跌破64900美元或4小时K线收盘低于65000美元。",
+          "promptVersion": "simple-pipeline:v1",
+          "modelProvider": "simple-pipeline",
+          "severity": "high"
+        },
+        "rationaleByAgent": {
+          "pa_02": "据Cointelegraph报道，比特币价格单日暴跌6%后，分析师给出5万美元的新目标价，认为市场可能进一步下探，但长期看涨趋势未变。",
+          "pa_05": "BTC短期受新闻冲击下跌，但长期基本面（减半、机构采用）未变，暴跌后可能出现技术性反弹。",
+          "pa_08": "价格已大幅下跌，RSI接近超卖，67000美元附近有较强支撑，若企稳可能反弹至70000美元上方。",
+          "pa_09": "市场恐慌情绪蔓延，若跌破65000美元关键支撑，可能加速下跌至60000美元甚至更低。",
+          "pa_10": "基于新闻驱动的超卖反弹逻辑，在67000美元附近轻仓做多，止损设在支撑位下方，目标看至近期阻力位。",
+          "pa_06": "新闻事件可能导致波动加剧，止损可能被触发。仓位控制在0.1，最大亏损约2%。",
+          "pa_07": "若价格跌破65000美元且成交量放大，则反弹假设失效，应立即离场。"
+        },
+        "citationsByAgent": {
+          "pa_02": ["ev_1qq3gvr"],
+          "pa_05": ["ev_1qq3gvr"],
+          "pa_08": ["ev_1qq3gvr"],
+          "pa_09": ["ev_1qq3gvr"],
+          "pa_10": ["ev_1qq3gvr"],
+          "pa_06": ["ev_1qq3gvr"],
+          "pa_07": ["ev_1qq3gvr"]
+        },
+        "rounds": [
+          {
+            "round": 1,
+            "agentId": "pa_02",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "据Cointelegraph报道，比特币价格单日暴跌6%后，分析师给出5万美元的新目标价，认为市场可能进一步下探，但长期看涨趋势未变。",
+            "oneLineSummary": "据Cointelegraph报道，比特币价格单日暴跌6%后，分析师给出5万美元的新目标价，认为市场可能进一步下探，但长期看涨趋势未变。",
+            "detailedRationale": "据Cointelegraph报道，比特币价格单日暴跌6%后，分析师给出5万美元的新目标价，认为市场可能进一步下探，但长期看涨趋势未变。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T19:01:42.393Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_05",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "BTC短期受新闻冲击下跌，但长期基本面（减半、机构采用）未变，暴跌后可能出现技术性反弹。",
+            "oneLineSummary": "BTC短期受新闻冲击下跌，但长期基本面（减半、机构采用）未变，暴跌后可能出现技术性反弹。",
+            "detailedRationale": "BTC短期受新闻冲击下跌，但长期基本面（减半、机构采用）未变，暴跌后可能出现技术性反弹。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T19:01:42.393Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_08",
+            "direction": "long",
+            "confidence": 0.5,
+            "rationale": "价格已大幅下跌，RSI接近超卖，67000美元附近有较强支撑，若企稳可能反弹至70000美元上方。",
+            "oneLineSummary": "价格已大幅下跌，RSI接近超卖，67000美元附近有较强支撑，若企稳可能反弹至70000美元上方。",
+            "detailedRationale": "价格已大幅下跌，RSI接近超卖，67000美元附近有较强支撑，若企稳可能反弹至70000美元上方。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T19:01:42.393Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_09",
+            "direction": "short",
+            "confidence": 0.5,
+            "rationale": "市场恐慌情绪蔓延，若跌破65000美元关键支撑，可能加速下跌至60000美元甚至更低。",
+            "oneLineSummary": "市场恐慌情绪蔓延，若跌破65000美元关键支撑，可能加速下跌至60000美元甚至更低。",
+            "detailedRationale": "市场恐慌情绪蔓延，若跌破65000美元关键支撑，可能加速下跌至60000美元甚至更低。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T19:01:42.393Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_10",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "基于新闻驱动的超卖反弹逻辑，在67000美元附近轻仓做多，止损设在支撑位下方，目标看至近期阻力位。",
+            "oneLineSummary": "基于新闻驱动的超卖反弹逻辑，在67000美元附近轻仓做多，止损设在支撑位下方，目标看至近期阻力位。",
+            "detailedRationale": "基于新闻驱动的超卖反弹逻辑，在67000美元附近轻仓做多，止损设在支撑位下方，目标看至近期阻力位。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T19:01:42.393Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_06",
+            "direction": "neutral",
+            "confidence": 0.7,
+            "rationale": "新闻事件可能导致波动加剧，止损可能被触发。仓位控制在0.1，最大亏损约2%。",
+            "oneLineSummary": "新闻事件可能导致波动加剧，止损可能被触发。仓位控制在0.1，最大亏损约2%。",
+            "detailedRationale": "新闻事件可能导致波动加剧，止损可能被触发。仓位控制在0.1，最大亏损约2%。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T19:01:42.393Z"
+          },
+          {
+            "round": 1,
+            "agentId": "pa_07",
+            "direction": "long",
+            "confidence": 1,
+            "rationale": "若价格跌破65000美元且成交量放大，则反弹假设失效，应立即离场。",
+            "oneLineSummary": "若价格跌破65000美元且成交量放大，则反弹假设失效，应立即离场。",
+            "detailedRationale": "若价格跌破65000美元且成交量放大，则反弹假设失效，应立即离场。",
+            "dataStatus": "ok",
+            "evidenceIds": ["ev_1qq3gvr"],
+            "observedAt": "2026-06-02T19:01:42.393Z"
+          }
+        ],
+        "stageTrace": [
+          {
+            "stageId": "analyst_inputs",
+            "status": "done",
+            "observedAt": "2026-06-02T19:01:42.393Z",
+            "agentIds": ["pa_02"]
+          },
+          {
+            "stageId": "research_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T19:01:42.393Z",
+            "agentIds": ["pa_05", "pa_08", "pa_09"]
+          },
+          {
+            "stageId": "trade_decision",
+            "status": "done",
+            "observedAt": "2026-06-02T19:01:42.393Z",
+            "agentIds": ["pa_10"]
+          },
+          {
+            "stageId": "risk_lead",
+            "status": "done",
+            "observedAt": "2026-06-02T19:01:42.393Z",
+            "agentIds": ["pa_06"]
+          },
+          {
+            "stageId": "record_write",
+            "status": "done",
+            "observedAt": "2026-06-02T19:01:42.393Z",
+            "agentIds": ["pa_07"]
+          },
+          {
+            "stageId": "public_timeline",
+            "status": "done",
+            "observedAt": "2026-06-02T19:01:42.393Z",
+            "agentIds": ["pa_07"]
+          }
+        ]
+      }
+    }
+  ],
+  "evidenceMap": {
+    "ev_1qq3gvr": {
+      "id": "ev_1qq3gvr",
+      "source": "Cointelegraph",
+      "sourceDomain": "cointelegraph.com",
+      "title": "比特币暴跌6%后获5万美元新目标价",
+      "url": "https://cointelegraph.com/markets/bitcoin-gets-new-50k-target-after-btc-price-crashes-6-in-a-day?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+      "publishedAt": "2026-06-02T17:54:18.000Z",
+      "fetchedAt": "2026-06-02T22:00:51.040Z",
+      "symbol": ["BTC"],
+      "impactSeverity": "medium",
+      "summary": "比特币单日暴跌6%后，Cointelegraph报道有分析师给出5万美元的新目标价，这可能加剧短期看空情绪并影响BTC的支撑位。"
+    },
+    "ev_v64w1x": {
+      "id": "ev_v64w1x",
+      "source": "Decrypt",
+      "sourceDomain": "decrypt.co",
+      "title": "Strategy连续第二日下跌，因持有560亿美元比特币的巨头出售BTC",
+      "url": "https://decrypt.co/369788/strategy-shares-fall-second-straight-day-bitcoin-giant-sells-btc",
+      "publishedAt": "2026-06-02T20:43:39.000Z",
+      "fetchedAt": "2026-06-02T22:00:51.040Z",
+      "symbol": ["56", "BTC"],
+      "impactSeverity": "medium",
+      "summary": "Strategy公司连续第二日股价下跌，此前其披露出售了部分比特币持仓，引发市场对机构抛售压力的担忧。"
+    },
+    "ev_usofcs": {
+      "id": "ev_usofcs",
+      "source": "PANews 快讯",
+      "sourceDomain": "panewslab.com",
+      "title": "BTC跌破67000美元，日内下跌0.50%",
+      "url": "https://www.panewslab.com/zh/articles/019e89ce-a16b-76de-8ebb-2141155d9a23",
+      "publishedAt": "2026-06-02T19:28:00.000Z",
+      "fetchedAt": "2026-06-02T22:00:51.040Z",
+      "symbol": ["BTC"],
+      "impactSeverity": "medium",
+      "summary": "BTC价格跌破67000美元关口，日内跌幅0.50%，市场情绪趋于谨慎，可能引发短期技术性抛售。"
+    },
+    "ev_1091o9w": {
+      "id": "ev_1091o9w",
+      "source": "PANews 快讯",
+      "sourceDomain": "panewslab.com",
+      "title": "美股三大指数集体收涨，COIN跌超4.66%",
+      "url": "https://www.panewslab.com/zh/articles/019e89ec-9588-7428-96e0-d38fdc933f89",
+      "publishedAt": "2026-06-02T20:00:37.000Z",
+      "fetchedAt": "2026-06-02T22:00:51.040Z",
+      "symbol": ["COIN"],
+      "impactSeverity": "medium",
+      "summary": "尽管美股大盘上涨，COIN逆势下跌超4.66%，显示加密货币相关股票面临独立抛压，可能受监管担忧或比特币价格波动影响。"
+    }
+  },
+  "residentStatus": {
+    "schemaVersion": 1,
+    "servedAt": 1780441310139,
+    "overallState": "empty",
+    "slaState": "critical",
+    "latestSucceededAt": null,
+    "marketOverview": {
+      "kind": "market_overview",
+      "state": "empty",
+      "slaState": "critical",
+      "stale": true,
+      "ageMs": null,
+      "expectedIntervalMs": 10800000,
+      "staleAfterMs": 21600000,
+      "lastSucceededAt": null,
+      "lastAttemptAt": null,
+      "nextRunAt": null,
+      "lastError": null,
+      "jobId": null,
+      "candidateKey": null
+    },
+    "hotspot": {
+      "kind": "hotspot",
+      "state": "empty",
+      "slaState": "critical",
+      "stale": true,
+      "ageMs": null,
+      "expectedIntervalMs": 10800000,
+      "staleAfterMs": 21600000,
+      "lastSucceededAt": null,
+      "lastAttemptAt": null,
+      "nextRunAt": null,
+      "lastError": null,
+      "jobId": null,
+      "candidateKey": null
+    }
+  },
+  "followStats": {
+    "pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780437651040": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:BTC:news-driven:BTC:cnNzLWRlY3J5cHQ6aHR0cHM6:1780437651040": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780437651040": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780437651040": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780434051268": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:BTC:news-driven:BTC:cnNzLWRlY3J5cHQ6aHR0cHM6:1780434051268": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780434051268": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780434051268": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780430451476": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:BTC:news-driven:BTC:cnNzLXBhbmV3cy1mbGFzaDow:1780430451476": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:COIN:news-driven:COIN:cnNzLXBhbmV3cy1mbGFzaDow:1780430451476": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    },
+    "pm:BTC:news-driven:BTC:cnNzLWNvaW50ZWxlZ3JhcGg6:1780426902393": {
+      "watchCount": 0,
+      "followCount": 0,
+      "userFollowed": false
+    }
+  },
+  "sourceHealth": {
+    "state": "ok",
+    "generatedFrom": "producer-page-pair",
+    "estimatedKvCommands": 277,
+    "readSource": "current"
+  },
+  "snapshotStatus": "fresh",
+  "servedAt": 1780443097296
+}
