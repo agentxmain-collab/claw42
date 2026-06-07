@@ -439,6 +439,40 @@
           "id": "ID",
           "role": "ROL",
           "stat": "ESTADO"
+        },
+        "coinwAgentMap": {
+          "ariaLabel": "Diagrama de análisis multiagente de CoinW",
+          "stages": [
+            {
+              "name": "Recogida de señales",
+              "agents": ["Noticias", "On-chain", "Social"]
+            },
+            {
+              "name": "Análisis mercado",
+              "agents": ["Técnico", "Liquidez"]
+            },
+            {
+              "name": "Debate largo/corto",
+              "agents": ["Líder alcista", "Líder bajista"],
+              "notes": ["Debate por rondas", "Diferencias registradas"],
+              "vsLabel": "VS"
+            },
+            {
+              "name": "Plan de trade",
+              "agents": ["Líder estrategia"]
+            },
+            {
+              "name": "Revisión riesgo",
+              "agents": ["Riesgo", "Gestión posición"]
+            },
+            {
+              "name": "Decisión final",
+              "agents": ["Director de inversión"],
+              "notes": ["Aprobar / Rechazar / Ajustar"]
+            }
+          ],
+          "conclusionTitle": "Conclusión de trading",
+          "conclusionDetails": "Dirección · Entrada · Stop · Objetivo · Tamaño"
         }
       },
       "tabs": {

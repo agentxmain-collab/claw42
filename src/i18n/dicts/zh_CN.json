@@ -439,6 +439,40 @@
           "id": "ID",
           "role": "角色",
           "stat": "状态"
+        },
+        "coinwAgentMap": {
+          "ariaLabel": "CoinW 多 Agent 组队分析流程示意图",
+          "stages": [
+            {
+              "name": "情报收集",
+              "agents": ["新闻", "链上", "社媒"]
+            },
+            {
+              "name": "行情分析",
+              "agents": ["技术面", "资金面"]
+            },
+            {
+              "name": "多空对辩",
+              "agents": ["多头总监", "空头总监"],
+              "notes": ["多轮交锋", "分歧全留档"],
+              "vsLabel": "VS"
+            },
+            {
+              "name": "交易方案",
+              "agents": ["策略总监"]
+            },
+            {
+              "name": "风险审查",
+              "agents": ["风控", "仓位管理"]
+            },
+            {
+              "name": "最终决策",
+              "agents": ["首席投资官"],
+              "notes": ["批准 / 否决 / 修正"]
+            }
+          ],
+          "conclusionTitle": "输出交易结论",
+          "conclusionDetails": "方向 · 入场 · 止损 · 止盈 · 仓位"
         }
       },
       "tabs": {

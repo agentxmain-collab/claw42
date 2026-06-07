@@ -439,6 +439,40 @@
           "id": "ID",
           "role": "ROLE",
           "stat": "STAT"
+        },
+        "coinwAgentMap": {
+          "ariaLabel": "CoinW multi-agent analysis flow diagram",
+          "stages": [
+            {
+              "name": "Intel Intake",
+              "agents": ["News", "On-chain", "Social"]
+            },
+            {
+              "name": "Market Analysis",
+              "agents": ["Technical", "Liquidity"]
+            },
+            {
+              "name": "Long/Short Debate",
+              "agents": ["Bull Lead", "Bear Lead"],
+              "notes": ["Multi-round debate", "All disagreements logged"],
+              "vsLabel": "VS"
+            },
+            {
+              "name": "Trade Plan",
+              "agents": ["Strategy Lead"]
+            },
+            {
+              "name": "Risk Review",
+              "agents": ["Risk", "Positioning"]
+            },
+            {
+              "name": "Final Decision",
+              "agents": ["Chief Investment Officer"],
+              "notes": ["Approve / Reject / Revise"]
+            }
+          ],
+          "conclusionTitle": "Output trade conclusion",
+          "conclusionDetails": "Direction · Entry · Stop · Target · Size"
         }
       },
       "tabs": {

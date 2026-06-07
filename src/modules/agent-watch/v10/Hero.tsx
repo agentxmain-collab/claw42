@@ -1,6 +1,7 @@
 import React from "react";
 import type { DispatchV10Dict } from "@/i18n/types";
 import type { DispatchView } from "../v9/types";
+import { CoinwAgentHeroMap } from "./CoinwAgentHeroMap";
 import { Constellation } from "./Constellation";
 import { WatchTabs } from "./WatchTabs";
 
@@ -8,10 +9,12 @@ export function Hero({
   dict,
   activeView,
   onViewChange,
+  siteShellVariant = "claw42",
 }: {
   dict: DispatchV10Dict;
   activeView: DispatchView;
   onViewChange: (view: DispatchView) => void;
+  siteShellVariant?: "claw42" | "coinw";
 }) {
   const accentParts = dict.hero.titleAccent
     .split("·")
@@ -73,7 +76,11 @@ export function Hero({
         />
       </div>
 
-      <Constellation dict={dict} active />
+      {siteShellVariant === "coinw" ? (
+        <CoinwAgentHeroMap dict={dict} />
+      ) : (
+        <Constellation dict={dict} active />
+      )}
     </section>
   );
 }

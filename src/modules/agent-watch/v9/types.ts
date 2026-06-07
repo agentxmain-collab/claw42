@@ -206,6 +206,7 @@ export interface DispatchConsoleV9Props {
   evidenceMap?: Record<string, NewsEvidence>;
   marketSnapshot?: MarketTickerPayload | null;
   topics?: DispatchTopic[];
+  siteShellVariant?: "claw42" | "coinw";
   initialView?: DispatchView;
   onViewChange?: (view: DispatchView) => void;
   onTopicAction?: (

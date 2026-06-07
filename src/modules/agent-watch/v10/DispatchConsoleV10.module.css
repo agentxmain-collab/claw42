@@ -325,6 +325,297 @@
   animation: dispatch-v10-scanline 6s linear infinite;
 }
 
+.dispatchConsoleV10 :global(.coinw-agent-map) {
+  position: relative;
+  width: min(100%, 640px);
+  margin: 0 auto;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid rgb(124 92 255 / 30%);
+  border-radius: 16px;
+  background: #0a0b10;
+  box-shadow:
+    0 28px 90px rgb(0 0 0 / 45%),
+    inset 0 1px 0 rgb(255 255 255 / 6%);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-map-glow) {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  width: 300px;
+  height: 150px;
+  border-radius: 999px;
+  background: rgb(124 92 255 / 9%);
+  filter: blur(36px);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-row) {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-stage) {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid rgb(124 92 255 / 40%);
+  border-radius: 12px;
+  background: #15161f;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-stage.wide) {
+  flex: 1.34;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-stage.debate) {
+  border-color: rgb(209 255 85 / 32%);
+  background:
+    radial-gradient(circle at 28% 60%, rgb(209 255 85 / 6%), transparent 34%),
+    radial-gradient(circle at 72% 60%, rgb(233 80 50 / 7%), transparent 34%), #15161f;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-stage.final) {
+  border-color: rgb(209 255 85 / 46%);
+  box-shadow: 0 0 24px rgb(209 255 85 / 8%);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-stage-title) {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: #e9edf2;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-stage-num) {
+  color: var(--lime);
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face-grid),
+.dispatchConsoleV10 :global(.coinw-agent-final-row) {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face-wrap) {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face) {
+  display: flex;
+  width: 38px;
+  height: 33px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--agent-border, rgb(124 92 255 / 70%));
+  border-radius: 9px;
+  background: #161126;
+  color: var(--agent-color, #7ee0ff);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face.size-large) {
+  width: 46px;
+  height: 40px;
+  font-size: 13px;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face.size-chief) {
+  width: 44px;
+  height: 38px;
+  font-size: 11px;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face.tone-cyan) {
+  --agent-border: rgb(126 224 255 / 62%);
+  --agent-color: #7ee0ff;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face.tone-green) {
+  --agent-border: rgb(58 165 122 / 70%);
+  --agent-color: #74d79e;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face.tone-pink) {
+  --agent-border: rgb(177 92 125 / 72%);
+  --agent-color: #ff83ad;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face.tone-gold) {
+  --agent-border: rgb(168 134 31 / 76%);
+  --agent-color: #fed500;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face.tone-purple) {
+  --agent-border: rgb(124 92 255 / 82%);
+  --agent-color: #9d83ff;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face.tone-lime) {
+  --agent-border: rgb(209 255 85 / 82%);
+  --agent-color: var(--lime);
+
+  box-shadow:
+    0 0 18px rgb(209 255 85 / 16%),
+    inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face.tone-red) {
+  --agent-border: rgb(233 80 50 / 78%);
+  --agent-color: #ff735e;
+
+  box-shadow:
+    0 0 18px rgb(233 80 50 / 14%),
+    inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-face.tone-blue) {
+  --agent-border: rgb(124 92 255 / 84%);
+  --agent-color: #7ee0ff;
+
+  box-shadow:
+    0 0 18px rgb(124 92 255 / 18%),
+    inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-name) {
+  max-width: 76px;
+  overflow: hidden;
+  color: rgb(255 255 255 / 70%);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.12;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-name.chief) {
+  color: var(--lime);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-connector) {
+  position: relative;
+  z-index: 1;
+  height: 15px;
+  margin: 4px 0;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-connector::before),
+.dispatchConsoleV10 :global(.coinw-agent-connector::after) {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 1.5px;
+  height: 100%;
+  border-left: 1.5px dashed rgb(124 92 255 / 70%);
+  transform: translateX(-50%);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-connector::after) {
+  display: none;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-connector.split::before) {
+  height: 20px;
+  transform: translateX(-12px) rotate(-16deg);
+  transform-origin: top center;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-connector.split::after) {
+  display: block;
+  height: 20px;
+  transform: translateX(12px) rotate(16deg);
+  transform-origin: top center;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-connector.lime::before) {
+  border-left-color: rgb(209 255 85 / 68%);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-debate-row) {
+  display: grid;
+  grid-template-columns: auto 34px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-vs) {
+  color: rgb(255 255 255 / 82%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-note) {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  color: rgb(255 255 255 / 68%);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-final-row > span) {
+  color: rgb(255 255 255 / 72%);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-output) {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 10px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  background: var(--lime);
+  color: #15200a;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  box-shadow:
+    0 0 26px rgb(209 255 85 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 30%);
+}
+
+.dispatchConsoleV10 :global(.coinw-agent-output span:first-child) {
+  font-size: 15px;
+}
+
 .dispatchConsoleV10 :global(.ground) {
   position: absolute;
   bottom: 8%;
@@ -3111,6 +3402,10 @@
     padding-bottom: 24px;
   }
 
+  .dispatchConsoleV10 :global(.coinw-agent-map) {
+    max-width: 680px;
+  }
+
   .dispatchConsoleV10 :global(.constellation) {
     min-height: 440px;
   }
@@ -3127,6 +3422,65 @@
 
   .dispatchConsoleV10 :global(.hero-right) {
     overflow: hidden;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-map) {
+    width: 100%;
+    max-width: 560px;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-row) {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-stage) {
+    padding: 10px 11px;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-stage-title) {
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-stage-num) {
+    font-size: 22px;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-face-grid),
+  .dispatchConsoleV10 :global(.coinw-agent-final-row) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-face) {
+    width: 36px;
+    height: 31px;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-face.size-large) {
+    width: 42px;
+    height: 36px;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-debate-row) {
+    grid-template-columns: auto 28px auto;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-note) {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .dispatchConsoleV10 :global(.coinw-agent-output) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
   }
 
   .dispatchConsoleV10 :global(.constellation) {

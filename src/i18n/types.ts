@@ -237,6 +237,17 @@ export type DispatchV10Dict = {
       role: string;
       stat: string;
     };
+    coinwAgentMap: {
+      ariaLabel: string;
+      stages: Array<{
+        name: string;
+        agents: string[];
+        notes?: string[];
+        vsLabel?: string;
+      }>;
+      conclusionTitle: string;
+      conclusionDetails: string;
+    };
     meta: Array<{ value: string; label: string }>;
   };
   tabs: {

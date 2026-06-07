@@ -439,6 +439,40 @@
           "id": "ID",
           "role": "角色",
           "stat": "狀態"
+        },
+        "coinwAgentMap": {
+          "ariaLabel": "CoinW 多 Agent 組隊分析流程示意圖",
+          "stages": [
+            {
+              "name": "情報收集",
+              "agents": ["新聞", "鏈上", "社媒"]
+            },
+            {
+              "name": "行情分析",
+              "agents": ["技術面", "資金面"]
+            },
+            {
+              "name": "多空對辯",
+              "agents": ["多頭總監", "空頭總監"],
+              "notes": ["多輪交鋒", "分歧全留檔"],
+              "vsLabel": "VS"
+            },
+            {
+              "name": "交易方案",
+              "agents": ["策略總監"]
+            },
+            {
+              "name": "風險審查",
+              "agents": ["風控", "倉位管理"]
+            },
+            {
+              "name": "最終決策",
+              "agents": ["首席投資官"],
+              "notes": ["批准 / 否決 / 修正"]
+            }
+          ],
+          "conclusionTitle": "輸出交易結論",
+          "conclusionDetails": "方向 · 入場 · 止損 · 止盈 · 倉位"
         }
       },
       "tabs": {

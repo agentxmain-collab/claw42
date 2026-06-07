@@ -16,6 +16,7 @@ export function DispatchConsoleV10({
   onTopicAction,
   freshness,
   pagination,
+  siteShellVariant = "claw42",
 }: DispatchConsoleV10Props) {
   const { locale, t } = useI18n();
   const dict = t.agentWatch.dispatchV10;
@@ -53,7 +54,12 @@ export function DispatchConsoleV10({
       className={`${styles.dispatchConsoleV10} dispatch-console-v10`}
       aria-label={dict.ariaLabel}
     >
-      <Hero dict={dict} activeView={activeView} onViewChange={changeView} />
+      <Hero
+        dict={dict}
+        activeView={activeView}
+        onViewChange={changeView}
+        siteShellVariant={siteShellVariant}
+      />
 
       <section
         id="dispatch-v10-panel-flow"

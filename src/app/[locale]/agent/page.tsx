@@ -8,6 +8,7 @@ import { resolveDispatchInitialView } from "@/modules/agent-watch/v9/initialView
 import { DispatchConsoleV10 } from "@/modules/agent-watch/v10/DispatchConsoleV10";
 
 export const dynamic = "force-dynamic";
+const SITE_SHELL_VARIANT = process.env.SITE_SHELL_VARIANT === "claw42" ? "claw42" : "coinw";
 
 export default async function AgentPage({
   params,
@@ -28,7 +29,11 @@ export default async function AgentPage({
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
       <div className="relative z-10">
-        <AgentWatchBoard console={DispatchConsoleV10} initialView={initialView} />
+        <AgentWatchBoard
+          console={DispatchConsoleV10}
+          initialView={initialView}
+          siteShellVariant={SITE_SHELL_VARIANT}
+        />
       </div>
       <section className="disclaimer-analysis-section relative px-6 py-20 md:px-12 lg:px-20">
         <div className="mx-auto flex max-w-7xl flex-col gap-[32px]">

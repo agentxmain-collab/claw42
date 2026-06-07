@@ -439,6 +439,40 @@
           "id": "ID",
           "role": "役割",
           "stat": "状態"
+        },
+        "coinwAgentMap": {
+          "ariaLabel": "CoinW マルチ Agent 分析フロー図",
+          "stages": [
+            {
+              "name": "情報収集",
+              "agents": ["ニュース", "オンチェーン", "SNS"]
+            },
+            {
+              "name": "相場分析",
+              "agents": ["テクニカル", "資金フロー"]
+            },
+            {
+              "name": "強弱討論",
+              "agents": ["強気責任者", "弱気責任者"],
+              "notes": ["複数ラウンド討論", "相違点を全記録"],
+              "vsLabel": "VS"
+            },
+            {
+              "name": "取引案",
+              "agents": ["戦略責任者"]
+            },
+            {
+              "name": "リスク審査",
+              "agents": ["リスク管理", "ポジション管理"]
+            },
+            {
+              "name": "最終判断",
+              "agents": ["最高投資責任者"],
+              "notes": ["承認 / 却下 / 修正"]
+            }
+          ],
+          "conclusionTitle": "取引結論を出力",
+          "conclusionDetails": "方向 · エントリー · 損切り · 利確 · 倉位"
         }
       },
       "tabs": {

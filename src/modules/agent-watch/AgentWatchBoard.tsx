@@ -253,9 +253,11 @@ export function resolveVisibleSessionRefreshTarget({
 export function AgentWatchBoard({
   console: Console = DispatchConsoleV9,
   initialView = "mkt",
+  siteShellVariant = "coinw",
 }: {
   console?: ComponentType<DispatchConsoleV9Props>;
   initialView?: DispatchView;
+  siteShellVariant?: DispatchConsoleV9Props["siteShellVariant"];
 }) {
   const { locale, t } = useI18n();
   const agentWatchLocale = resolveAgentWatchLocale(locale);
@@ -730,6 +732,7 @@ export function AgentWatchBoard({
     <>
       <Console
         topics={topics}
+        siteShellVariant={siteShellVariant}
         initialView={initialView}
         onTopicAction={handleTopicAction}
         marketSnapshot={null}
