@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import React from "react";
+import { withBasePath } from "@/lib/basePath";
 
 const COINW_BASE = "https://www.coinw.com/en_US";
 
@@ -126,7 +127,7 @@ export function CoinwGlobalHeader() {
           {...externalLinkProps("CoinW")}
         >
           <img
-            src="/images/coinw/coinw-logo-wordmark.svg"
+            src={withBasePath("/images/coinw/coinw-logo-wordmark.svg")}
             alt="CoinW"
             width={140}
             height={36}
@@ -209,7 +210,7 @@ export function CoinwGlobalHeader() {
                 {...externalLinkProps(label)}
               >
                 <img
-                  src={src}
+                  src={withBasePath(src)}
                   alt={label}
                   width={width}
                   height={height}

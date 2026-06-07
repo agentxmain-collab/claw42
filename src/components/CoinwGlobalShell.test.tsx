@@ -6,6 +6,14 @@ import { describe, expect, test } from "vitest";
 import { CoinwGlobalFooter } from "./CoinwGlobalFooter";
 import { CoinwGlobalHeader } from "./CoinwGlobalHeader";
 
+function coinwAssetPath(asset: string) {
+  const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "")
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
+  return `${basePath ? `/${basePath}` : ""}/images/coinw/${asset}`;
+}
+
 describe("CoinW global shell", () => {
   const root = process.cwd();
 
@@ -13,7 +21,7 @@ describe("CoinW global shell", () => {
     const html = renderToStaticMarkup(<CoinwGlobalHeader />);
 
     expect(html).toContain("CoinW");
-    expect(html).toContain("/images/coinw/coinw-logo-wordmark.svg");
+    expect(html).toContain(coinwAssetPath("coinw-logo-wordmark.svg"));
     expect(html).toContain('data-coinw-shell="header"');
     expect(html).toContain("Buy crypto");
     expect(html).toContain("Trade");
@@ -25,7 +33,7 @@ describe("CoinW global shell", () => {
     expect(html).toContain("More");
     expect(html).toContain("Wallet");
     expect(html).toContain("Deposit");
-    expect(html).toContain("/images/coinw/header-account.svg");
+    expect(html).toContain(coinwAssetPath("header-account.svg"));
     expect(html).toContain("https://www.coinw.com/en_US/futures/usdt/btcusdt");
     expect(html).toContain("h-[72px]");
     expect(html).toContain('target="_blank"');
@@ -36,7 +44,7 @@ describe("CoinW global shell", () => {
     const html = renderToStaticMarkup(<CoinwGlobalFooter />);
 
     expect(html).toContain("CopyRight © 2013 - 2026 CoinW.com. All Rights Reserved.");
-    expect(html).toContain("/images/coinw/coinw-logo-wordmark.svg");
+    expect(html).toContain(coinwAssetPath("coinw-logo-wordmark.svg"));
     expect(html).toContain('data-coinw-shell="footer"');
     expect(html).toContain("Company");
     expect(html).toContain("Products");
@@ -47,14 +55,14 @@ describe("CoinW global shell", () => {
     expect(html).toContain("Download app");
     expect(html).toContain('data-coinw-shell="footer-download-appstore"');
     expect(html).toContain('data-coinw-shell="footer-download-googleplay"');
-    expect(html).toContain("/images/coinw/btn-appstore.svg");
-    expect(html).toContain("/images/coinw/btn-googleplay.svg");
+    expect(html).toContain(coinwAssetPath("btn-appstore.svg"));
+    expect(html).toContain(coinwAssetPath("btn-googleplay.svg"));
     expect(html.indexOf("footer-download-appstore")).toBeLessThan(
       html.indexOf("footer-download-googleplay"),
     );
     expect(html).not.toContain(">Download</a>");
-    expect(html).toContain("/images/coinw/social-tiktok.svg");
-    expect(html).toContain("/images/coinw/lang-english.svg");
+    expect(html).toContain(coinwAssetPath("social-tiktok.svg"));
+    expect(html).toContain(coinwAssetPath("lang-english.svg"));
     expect(html).not.toContain("CopyRight © 2017 - 2023");
   });
 

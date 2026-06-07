@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import React from "react";
+import { withBasePath } from "@/lib/basePath";
 
 const COINW_BASE = "https://www.coinw.com/en_US";
 const COINW_ROOT = "https://www.coinw.com";
@@ -100,7 +101,7 @@ export function CoinwGlobalFooter() {
               {...externalLinkProps("CoinW")}
             >
               <img
-                src="/images/coinw/coinw-logo-wordmark.svg"
+                src={withBasePath("/images/coinw/coinw-logo-wordmark.svg")}
                 alt="CoinW"
                 width={140}
                 height={36}
@@ -119,7 +120,7 @@ export function CoinwGlobalFooter() {
                 {...externalLinkProps("Download on the App Store")}
               >
                 <img
-                  src="/images/coinw/btn-appstore.svg"
+                  src={withBasePath("/images/coinw/btn-appstore.svg")}
                   alt="App Store"
                   width={160}
                   height={48}
@@ -133,7 +134,7 @@ export function CoinwGlobalFooter() {
                 {...externalLinkProps("Get it on Google Play")}
               >
                 <img
-                  src="/images/coinw/btn-googleplay.svg"
+                  src={withBasePath("/images/coinw/btn-googleplay.svg")}
                   alt="Google Play"
                   width={160}
                   height={48}
@@ -204,7 +205,7 @@ export function CoinwGlobalFooter() {
                 {...externalLinkProps(label)}
               >
                 <img
-                  src={src}
+                  src={withBasePath(src)}
                   alt={label}
                   width={46}
                   height={46}
@@ -219,7 +220,7 @@ export function CoinwGlobalFooter() {
               {...externalLinkProps("English")}
             >
               <img
-                src="/images/coinw/lang-english.svg"
+                src={withBasePath("/images/coinw/lang-english.svg")}
                 alt="English"
                 width={124}
                 height={48}
